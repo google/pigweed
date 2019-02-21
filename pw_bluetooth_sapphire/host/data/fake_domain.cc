@@ -21,37 +21,18 @@ void FakeDomain::TriggerLEConnectionParameterUpdate(
     const hci::LEPreferredConnectionParameters& params) {
   ZX_DEBUG_ASSERT(initialized_);
 
-  LinkData& link_data = FindLinkData(handle);
+  LinkData& link_data = ConnectedLinkData(handle);
   async::PostTask(
       link_data.dispatcher,
       [params, cb = link_data.le_conn_param_cb.share()] { cb(params); });
 }
 
-void FakeDomain::TriggerOutboundL2capChannel(hci::ConnectionHandle handle,
-                                             l2cap::PSM psm,
-                                             l2cap::ChannelId id,
-                                             l2cap::ChannelId remote_id) {
+void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle,
+                                            l2cap::PSM psm, l2cap::ChannelId id,
+                                            l2cap::ChannelId remote_id) {
   ZX_DEBUG_ASSERT(initialized_);
-
-  LinkData& link_data = FindLinkData(handle);
-  auto cb_iter = link_data.outbound_conn_cbs.find(psm);
-  ZX_DEBUG_ASSERT_MSG(cb_iter != link_data.outbound_conn_cbs.end(),
-                      "no previous call to OpenChannel with PSM %#.4x", psm);
-
-  std::list<ChannelDelivery>& handlers = cb_iter->second;
-  ZX_DEBUG_ASSERT(!handlers.empty());
-
-  l2cap::ChannelCallback& cb = handlers.front().first;
-  auto chan = OpenFakeChannel(&link_data, id, remote_id);
-  async_dispatcher_t* const dispatcher = handlers.front().second;
-  async::PostTask(dispatcher, [cb = std::move(cb), chan = std::move(chan)] {
-    cb(std::move(chan));
-  });
-
-  handlers.pop_front();
-  if (handlers.empty()) {
-    link_data.outbound_conn_cbs.erase(cb_iter);
-  }
+  LinkData& link_data = GetLinkData(handle);
+  link_data.expected_outbound_conns[psm].emplace(id, remote_id);
 }
 
 void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle,
@@ -59,7 +40,7 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle,
                                             l2cap::ChannelId remote_id) {
   ZX_DEBUG_ASSERT(initialized_);
 
-  LinkData& link_data = FindLinkData(handle);
+  LinkData& link_data = ConnectedLinkData(handle);
   auto cb_iter = inbound_conn_cbs_.find(psm);
   ZX_DEBUG_ASSERT_MSG(cb_iter != inbound_conn_cbs_.end(),
                       "no service registered for PSM %#.4x", psm);
@@ -75,7 +56,7 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle,
 void FakeDomain::TriggerLinkError(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(initialized_);
 
-  LinkData& link_data = FindLinkData(handle);
+  LinkData& link_data = ConnectedLinkData(handle);
   async::PostTask(link_data.dispatcher,
                   [cb = link_data.link_error_cb.share()] { cb(); });
 }
@@ -134,9 +115,21 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                   async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(initialized_);
 
-  LinkData& link_data = FindLinkData(handle);
-  link_data.outbound_conn_cbs[psm].push_back(
-      std::make_pair(std::move(cb), dispatcher));
+  LinkData& link_data = ConnectedLinkData(handle);
+  auto psm_it = link_data.expected_outbound_conns.find(psm);
+
+  ZX_DEBUG_ASSERT_MSG(psm_it != link_data.expected_outbound_conns.end() &&
+                          !psm_it->second.empty(),
+                      "Unexpected outgoing L2CAP connection (PSM %#.4x)", psm);
+
+  auto [id, remote_id] = psm_it->second.front();
+  psm_it->second.pop();
+
+  auto chan = OpenFakeChannel(&link_data, id, remote_id);
+
+  async::PostTask(dispatcher, [cb = std::move(cb), chan = std::move(chan)]() {
+    cb(std::move(chan));
+  });
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
@@ -195,18 +188,17 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(
     hci::ConnectionHandle handle, hci::Connection::Role role,
     hci::Connection::LinkType link_type, l2cap::LinkErrorCallback link_error_cb,
     async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT_MSG(links_.find(handle) == links_.end(),
+  auto& data = GetLinkData(handle);
+  ZX_DEBUG_ASSERT_MSG(!data.connected,
                       "connection handle re-used (handle: %#.4x)", handle);
 
-  LinkData data;
-  data.handle = handle;
+  data.connected = true;
   data.role = role;
   data.type = link_type;
   data.link_error_cb = std::move(link_error_cb);
   data.dispatcher = dispatcher;
 
-  auto insert_res = links_.emplace(handle, std::move(data));
-  return &insert_res.first->second;
+  return &data;
 }
 
 fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(
@@ -227,10 +219,23 @@ fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeFixedChannel(LinkData* link,
   return OpenFakeChannel(link, id, id);
 }
 
-FakeDomain::LinkData& FakeDomain::FindLinkData(hci::ConnectionHandle handle) {
+FakeDomain::LinkData& FakeDomain::GetLinkData(hci::ConnectionHandle handle) {
+  auto [it, inserted] = links_.try_emplace(handle);
+  auto& data = it->second;
+  if (inserted) {
+    data.connected = false;
+    data.handle = handle;
+  }
+  return data;
+}
+
+FakeDomain::LinkData& FakeDomain::ConnectedLinkData(
+    hci::ConnectionHandle handle) {
   auto link_iter = links_.find(handle);
   ZX_DEBUG_ASSERT_MSG(link_iter != links_.end(),
                       "fake link not found (handle: %#.4x)", handle);
+  ZX_DEBUG_ASSERT_MSG(link_iter->second.connected,
+                      "fake link not connected yet (handle: %#.4x)", handle);
   return link_iter->second;
 }
 
