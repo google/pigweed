@@ -4,6 +4,7 @@
 
 #include "device_wrapper.h"
 
+#include <fuchsia/hardware/bluetooth/c/fidl.h>
 #include <zircon/assert.h>
 #include <zircon/device/bt-hci.h>
 #include <zircon/status.h>
@@ -14,33 +15,49 @@
 namespace btlib {
 namespace hci {
 
-IoctlDeviceWrapper::IoctlDeviceWrapper(fxl::UniqueFD device_fd)
-    : device_fd_(std::move(device_fd)) {
-  ZX_DEBUG_ASSERT(device_fd_.is_valid());
+// ================= FidlDeviceWrapper =================
+
+FidlDeviceWrapper::FidlDeviceWrapper(zx::channel device)
+    : device_(std::move(device)) {
+  ZX_DEBUG_ASSERT(device_.is_valid());
 }
 
-zx::channel IoctlDeviceWrapper::GetCommandChannel() {
-  zx::channel channel;
-  ssize_t status = ioctl_bt_hci_get_command_channel(
-      device_fd_.get(), channel.reset_and_get_address());
-  if (status < 0) {
-    bt_log(ERROR, "hci", "Failed to obtain command channel handle: %s",
+zx::channel FidlDeviceWrapper::GetCommandChannel() {
+  zx::channel ours, theirs;
+  zx_status_t status = zx::channel::create(0, &ours, &theirs);
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to create command channel: %s",
            zx_status_get_string(status));
-    ZX_DEBUG_ASSERT(!channel.is_valid());
   }
-  return channel;
+
+  zx_handle_t dev_handle = device_.release();
+  status = fuchsia_hardware_bluetooth_HciOpenCommandChannel(dev_handle, theirs.release());
+  *device_.reset_and_get_address() = dev_handle;
+
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to bind command channel: %s",
+           zx_status_get_string(status));
+  }
+  return ours;
 }
 
-zx::channel IoctlDeviceWrapper::GetACLDataChannel() {
-  zx::channel channel;
-  ssize_t status = ioctl_bt_hci_get_acl_data_channel(
-      device_fd_.get(), channel.reset_and_get_address());
-  if (status < 0) {
-    bt_log(ERROR, "hci", "Failed to obtain ACL data channel handle: %s",
+zx::channel FidlDeviceWrapper::GetACLDataChannel() {
+  zx::channel ours, theirs;
+  zx_status_t status = zx::channel::create(0, &ours, &theirs);
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to create ACL channel: %s",
            zx_status_get_string(status));
-    ZX_DEBUG_ASSERT(!channel.is_valid());
   }
-  return channel;
+
+  zx_handle_t dev_handle = device_.release();
+  status = fuchsia_hardware_bluetooth_HciOpenAclDataChannel(dev_handle, theirs.release());
+  *device_.reset_and_get_address() = dev_handle;
+
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to bind ACL channel: %s",
+           zx_status_get_string(status));
+  }
+  return ours;
 }
 
 // ================= DdkDeviceWrapper =================
@@ -49,25 +66,37 @@ DdkDeviceWrapper::DdkDeviceWrapper(const bt_hci_protocol_t& hci)
     : hci_proto_(hci) {}
 
 zx::channel DdkDeviceWrapper::GetCommandChannel() {
-  zx::channel channel;
-  zx_status_t status =
-      bt_hci_open_command_channel(&hci_proto_, channel.reset_and_get_address());
+  zx::channel ours, theirs;
+  zx_status_t status = zx::channel::create(0, &ours, &theirs);
   if (status != ZX_OK) {
-    bt_log(ERROR, "hci", "Failed to obtain command channel handle: %s",
+    bt_log(ERROR, "hci", "Failed to create command channel: %s",
            zx_status_get_string(status));
   }
-  return channel;
+
+  status = bt_hci_open_command_channel(&hci_proto_, theirs.release());
+
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to bind command channel: %s",
+           zx_status_get_string(status));
+  }
+  return ours;
 }
 
 zx::channel DdkDeviceWrapper::GetACLDataChannel() {
-  zx::channel channel;
-  zx_status_t status = bt_hci_open_acl_data_channel(
-      &hci_proto_, channel.reset_and_get_address());
+  zx::channel ours, theirs;
+  zx_status_t status = zx::channel::create(0, &ours, &theirs);
   if (status != ZX_OK) {
-    bt_log(ERROR, "hci", "Failed to obtain ACL data channel handle: %s",
+    bt_log(ERROR, "hci", "Failed to create ACL channel: %s",
            zx_status_get_string(status));
   }
-  return channel;
+
+  status = bt_hci_open_acl_data_channel(&hci_proto_, theirs.release());
+
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "Failed to bind ACL channel: %s",
+           zx_status_get_string(status));
+  }
+  return ours;
 }
 
 // ================= DummyDeviceWrapper =================

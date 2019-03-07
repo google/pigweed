@@ -9,15 +9,18 @@
 #include <zircon/types.h>
 
 #include <ddk/protocol/bt/hci.h>
+#include <fbl/unique_fd.h>
+#include <lib/fzl/fdio.h>
 #include <lib/zx/channel.h>
 
 #include "src/lib/files/unique_fd.h"
 #include "lib/fxl/macros.h"
+#include <fuchsia/hardware/bluetooth/c/fidl.h>
 
 namespace btlib {
 namespace hci {
 
-// A DeviceWrapper abstracts over a Bluetooth HCI device object and its ioctls.
+// A DeviceWrapper abstracts over a Bluetooth HCI device object and its fidl interface.
 class DeviceWrapper {
  public:
   virtual ~DeviceWrapper() = default;
@@ -31,23 +34,23 @@ class DeviceWrapper {
   virtual zx::channel GetACLDataChannel() = 0;
 };
 
-// A DeviceWrapper that obtains channels by invoking bt-hci ioctls on a devfs
-// file descriptor.
-class IoctlDeviceWrapper : public DeviceWrapper {
+// A DeviceWrapper that obtains channels by invoking bt-hci fidl requests on a
+// devfs file descriptor.
+class FidlDeviceWrapper : public DeviceWrapper {
  public:
-  // |device_fd| must be a valid file descriptor to a Bluetooth HCI device.
-  explicit IoctlDeviceWrapper(fxl::UniqueFD device_fd);
-  ~IoctlDeviceWrapper() override = default;
+  // |device| must be a valid channel connected to a Bluetooth HCI device.
+  explicit FidlDeviceWrapper(zx::channel device);
+  ~FidlDeviceWrapper() override = default;
 
   // DeviceWrapper overrides. These methods directly return the handle obtained
-  // via the corresponding ioctl.
+  // via the corresponding fidl request.
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
 
  private:
-  fxl::UniqueFD device_fd_;
+  zx::channel device_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(IoctlDeviceWrapper);
+  FXL_DISALLOW_COPY_AND_ASSIGN(FidlDeviceWrapper);
 };
 
 // A DeviceWrapper that obtains channels by calling bt-hci protocol ops.
