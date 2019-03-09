@@ -1,0 +1,120 @@
+# Copyright 2018 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/fuchsia/rules.gni")
+import("//build/package.gni")
+
+driver_module("driver") {
+  output_name = "bt-host"
+
+  deps = [
+    ":sources",
+  ]
+
+  configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
+  configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
+}
+
+source_set("sources") {
+  sources = [
+    "binding.c",
+    "driver.cc",
+    "gatt_host.cc",
+    "gatt_host.h",
+    "gatt_remote_service_device.cc",
+    "gatt_remote_service_device.h",
+    "host.cc",
+    "host.h",
+    "host_device.cc",
+    "host_device.h",
+
+    # FIDL servers
+    "fidl/gatt_client_server.cc",
+    "fidl/gatt_client_server.h",
+    "fidl/gatt_remote_service_server.cc",
+    "fidl/gatt_remote_service_server.h",
+    "fidl/gatt_server_server.cc",
+    "fidl/gatt_server_server.h",
+    "fidl/helpers.cc",
+    "fidl/helpers.h",
+    "fidl/host_server.cc",
+    "fidl/host_server.h",
+    "fidl/low_energy_central_server.cc",
+    "fidl/low_energy_central_server.h",
+    "fidl/low_energy_peripheral_server.cc",
+    "fidl/low_energy_peripheral_server.h",
+    "fidl/profile_server.cc",
+    "fidl/profile_server.h",
+    "fidl/server_base.h",
+  ]
+
+  deps = [
+    ":stack",
+    "//garnet/public/lib/fxl",
+    "//sdk/fidl/fuchsia.bluetooth",
+    "//sdk/fidl/fuchsia.bluetooth.control",
+    "//sdk/fidl/fuchsia.bluetooth.gatt",
+    "//sdk/fidl/fuchsia.bluetooth.host:fuchsia.bluetooth.host",
+    "//sdk/fidl/fuchsia.bluetooth.le",
+    "//src/connectivity/bluetooth/lib/c",
+    "//zircon/public/banjo/ddk-protocol-bt-gattsvc",
+    "//zircon/public/lib/ddk",
+    "//zircon/public/lib/driver",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zx",
+  ]
+}
+
+group("stack") {
+  public_deps = [
+    "att",
+    "common",
+    "data",
+    "gap",
+    "gatt",
+    "hci",
+    "l2cap",
+    "rfcomm",
+    "sdp",
+    "sm",
+  ]
+}
+
+# TODO(armansito): Enable debug assertions by default from here for all package
+# dependencies when there is a way for it.
+package("bt-host") {
+  deprecated_system_image = true
+
+  deps = [
+    ":driver",
+  ]
+
+  drivers = [
+    {
+      name = "bt-host.so"
+    },
+  ]
+}
+
+executable("tests") {
+  testonly = true
+
+  output_name = "bt-host-unittests"
+
+  deps = [
+    "att:tests",
+    "common:tests",
+    "data:tests",
+    "gap:tests",
+    "gatt:tests",
+    "hci:tests",
+    "l2cap:tests",
+    "rfcomm:tests",
+    "sdp:tests",
+    "sm:tests",
+    "testing:gtest_main",
+    "//third_party/googletest:gtest",
+  ]
+}

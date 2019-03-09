@@ -1,0 +1,76 @@
+# Copyright 2017 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("common") {
+  sources = [
+    "byte_buffer.cc",
+    "byte_buffer.h",
+    "device_address.cc",
+    "device_address.h",
+    "device_class.cc",
+    "device_class.h",
+    "identifier.cc",
+    "identifier.h",
+    "linked_list.h",
+    "log.cc",
+    "log.h",
+    "manufacturer_names.cc",
+    "manufacturer_names.h",
+    "packet_view.h",
+    "random.h",
+    "run_or_post.cc",
+    "run_or_post.h",
+    "run_task_sync.cc",
+    "run_task_sync.h",
+    "slab_allocator.cc",
+    "slab_allocator.h",
+    "slab_allocator_traits.h",
+    "slab_buffer.h",
+    "status.cc",
+    "status.h",
+    "task_domain.h",
+    "test_helpers.h",
+    "uint128.cc",
+    "uint128.h",
+    "uuid.cc",
+    "uuid.h",
+  ]
+
+  public_deps = [
+    "//garnet/public/lib/fxl",
+    "//zircon/public/lib/async-cpp",
+    "//zircon/public/lib/async-default",
+    "//zircon/public/lib/ddk",
+    "//zircon/public/lib/driver",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zx",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "byte_buffer_unittest.cc",
+    "device_address_unittest.cc",
+    "device_class_unittest.cc",
+    "identifier_unittest.cc",
+    "manufacturer_names_unittest.cc",
+    "packet_view_unittest.cc",
+    "run_or_post_unittest.cc",
+    "run_task_sync_unittest.cc",
+    "slab_allocator_traits_unittest.cc",
+    "slab_allocator_unittest.cc",
+    "status_unittest.cc",
+    "task_domain_unittest.cc",
+    "uuid_unittest.cc",
+  ]
+
+  deps = [
+    ":common",
+    "//garnet/public/lib/gtest",
+    "//third_party/googletest:gtest",
+  ]
+}

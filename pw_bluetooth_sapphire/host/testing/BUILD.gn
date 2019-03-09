@@ -1,0 +1,73 @@
+# Copyright 2017 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("testing") {
+  testonly = true
+
+  sources = [
+    "fake_controller_test.h",
+    "test_controller.cc",
+    "test_controller.h",
+  ]
+
+  deps = [
+    "//third_party/googletest:gtest",
+  ]
+
+  public_deps = [
+    ":fake_controller",
+    "//garnet/public/lib/gtest",
+  ]
+}
+
+# Target that includes Fake HCI emulation support. This should NOT depend on
+# gtest.
+source_set("fake_controller") {
+  sources = [
+    "fake_controller.cc",
+    "fake_controller.h",
+    "fake_controller_base.cc",
+    "fake_controller_base.h",
+    "fake_device.cc",
+    "fake_device.h",
+    "fake_gatt_server.cc",
+    "fake_gatt_server.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/att:definitions",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
+
+    # TODO(armansito): Pull in just the hci:definitions target.
+    "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
+    "//garnet/public/lib/fxl",
+    "//src/lib/files",
+    "//zircon/public/lib/async-cpp",
+    "//zircon/public/lib/async-default",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zx",
+  ]
+}
+
+# Main entry point for host library unittests.
+source_set("gtest_main") {
+  testonly = true
+
+  sources = [
+    "run_all_unittests.cc",
+  ]
+
+  deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//garnet/public/lib/fsl",
+    "//zircon/public/lib/driver",
+  ]
+
+  public_deps = [
+    "//third_party/googletest:gtest",
+  ]
+}

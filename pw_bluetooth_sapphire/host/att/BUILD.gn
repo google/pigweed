@@ -1,0 +1,53 @@
+# Copyright 2017 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
+source_set("definitions") {
+  sources = [
+    "att.h",
+    "packet.cc",
+    "packet.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+  ]
+}
+
+static_library("att") {
+  sources = [
+    "attribute.cc",
+    "attribute.h",
+    "bearer.cc",
+    "bearer.h",
+    "database.cc",
+    "database.h",
+    "status.cc",
+    "status.h",
+  ]
+
+  public_deps = [
+    ":definitions",
+    "//garnet/public/lib/fxl",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//zircon/public/lib/fit",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "attribute_unittest.cc",
+    "bearer_unittest.cc",
+    "database_unittest.cc",
+  ]
+
+  deps = [
+    ":att",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//third_party/googletest:gtest",
+  ]
+}

@@ -1,0 +1,65 @@
+# Copyright 2018 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
+source_set("definitions") {
+  sources = [
+    "data_element.cc",
+    "data_element.h",
+    "sdp.h",
+    "service_record.cc",
+    "service_record.h",
+    "status.cc",
+    "status.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/lib/uuid",
+  ]
+}
+
+static_library("sdp") {
+  sources = [
+    "client.cc",
+    "client.h",
+    "pdu.cc",
+    "pdu.h",
+    "server.cc",
+    "server.h",
+    "service_discoverer.cc",
+    "service_discoverer.h",
+  ]
+
+  public_deps = [
+    ":definitions",
+    "//src/connectivity/bluetooth/core/bt-host/data",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//src/connectivity/bluetooth/core/bt-host/rfcomm",
+    "//garnet/public/lib/fxl",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "client_unittest.cc",
+    "data_element_unittest.cc",
+    "pdu_unittest.cc",
+    "server_unittest.cc",
+    "service_discoverer_unittest.cc",
+    "service_record_unittest.cc",
+  ]
+
+  deps = [
+    ":sdp",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/data:testing",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gtest",
+  ]
+}

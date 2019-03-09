@@ -1,0 +1,110 @@
+# Copyright 2017 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
+source_set("definitions") {
+  sources = [
+    "connection_parameters.cc",
+    "connection_parameters.h",
+    "hci.h",
+    "hci_constants.h",
+    "link_key.cc",
+    "link_key.h",
+    "status.cc",
+    "status.h",
+    "util.cc",
+    "util.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+  ]
+}
+
+static_library("hci") {
+  sources = [
+    "acl_data_channel.cc",
+    "acl_data_channel.h",
+    "acl_data_packet.cc",
+    "acl_data_packet.h",
+    "advertising_report_parser.cc",
+    "advertising_report_parser.h",
+    "command_channel.cc",
+    "command_channel.h",
+    "connection.cc",
+    "connection.h",
+    "control_packets.cc",
+    "control_packets.h",
+    "defaults.h",
+    "device_wrapper.cc",
+    "device_wrapper.h",
+    "legacy_low_energy_advertiser.cc",
+    "legacy_low_energy_advertiser.h",
+    "legacy_low_energy_scanner.cc",
+    "legacy_low_energy_scanner.h",
+    "local_address_delegate.h",
+    "low_energy_advertiser.h",
+    "low_energy_connector.cc",
+    "low_energy_connector.h",
+    "low_energy_scanner.cc",
+    "low_energy_scanner.h",
+    "packet.h",
+    "sequential_command_runner.cc",
+    "sequential_command_runner.h",
+    "slab_allocators.h",
+    "transport.cc",
+    "transport.h",
+  ]
+
+  public_deps = [
+    ":definitions",
+    "//garnet/public/lib/fxl",
+    "//src/lib/files",
+    "//zircon/public/banjo/ddk-protocol-bt-hci",
+    "//zircon/public/lib/async-loop-cpp",
+    "//zircon/public/lib/ddk",
+    "//zircon/public/lib/fdio",
+    "//zircon/public/lib/fit",
+  ]
+}
+
+source_set("testing") {
+  testonly = true
+
+  sources = [
+    "//garnet/public/lib/fxl",
+    "fake_connection.cc",
+    "fake_connection.h",
+  ]
+
+  public_deps = [
+    ":hci",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "acl_data_channel_unittest.cc",
+    "advertising_report_parser_unittest.cc",
+    "command_channel_unittest.cc",
+    "connection_unittest.cc",
+    "legacy_low_energy_advertiser_unittest.cc",
+    "legacy_low_energy_scanner_unittest.cc",
+    "low_energy_connector_unittest.cc",
+    "packet_unittest.cc",
+    "sequential_command_runner_unittest.cc",
+    "slab_allocators_unittest.cc",
+    "status_unittest.cc",
+    "util_unittest.cc",
+  ]
+
+  deps = [
+    ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gtest",
+  ]
+}

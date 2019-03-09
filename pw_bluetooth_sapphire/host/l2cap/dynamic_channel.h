@@ -1,0 +1,125 @@
+// Copyright 2018 The Fuchsia Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
+
+#include <memory>
+
+#include <lib/fit/function.h>
+#include <lib/fxl/memory/weak_ptr.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+
+namespace btlib {
+namespace l2cap {
+namespace internal {
+
+class DynamicChannelRegistry;
+
+// Lifetime management and abstract command interface for opening and closing a
+// dynamic L2CAP channel. This is an internal object representing an entry in
+// and owned by DynamicChannelRegistry and does not implement the outward-facing
+// l2cap::Channel interface.
+//
+// Opening a channel may take multiple steps before data packets can flow. This
+// interface uses the terms "connected" and "open" to distinguish between
+// connection creation ("connected" but not ready to transfer data) and
+// establishment ("connected and open" when configuration completes and can
+// transfer data).
+//
+// For channels opened on ACL-U links, the lifetime is described by Core Spec
+// v5.0 Vol 3, Part A, Section 6, "State Machine."
+//
+// For channels opened on LE-U links, the lifetime of Credit Based Flow Control
+// connection-oriented channels is not explicitly described, but operation is
+// outlined in Core Spec v5.0 Vol 3, Part A, Section 4.22 to 4.24 "Signaling
+// Packet Formats" and Section 10 "Procedures for Credit Based Flow Control."
+//
+// A channel is considered "not connected and not open" after disconnection by
+// either endpoint. There is no "closed but not yet disconnected" state.
+//
+// This only drives the command transactions over a link's signaling channel to
+// manage a specific channel and is not used to send or receive data over that
+// channel (it exists in parallel with an btlib::l2cap::Channel for that
+// purpose). It is intended only to be run from the L2CAP thread.
+class DynamicChannel {
+ public:
+  // Public dtor for testing (tests can own channels through a base pointer
+  // without a DynamicChannelRegistry).
+  virtual ~DynamicChannel() = default;
+
+  // For outbound channels: begin a connection then configure the channel upon
+  // connection. For inbound channels: configure the channel (it is already
+  // connected if it exists).
+  //
+  // |open_result_cb| will be invoked exactly once, when the channel is ready
+  // for user data transfer or if an error occurred during connection or
+  // configuration. The caller must check |IsOpen| on this channel. If it's
+  // false, this channel must be destroyed and not reused. Otherwise, the
+  // channel is considered open.
+  virtual void Open(fit::closure open_result_cb) = 0;
+
+  // Close the channel and notify the remote of the closure if already
+  // connected. The owner should then destroy this object and not reuse it.
+  virtual void Disconnect() = 0;
+
+  // If true, both local and remote endpoints are connected and this instance
+  // shall have valid and unique identifiers.
+  virtual bool IsConnected() const = 0;
+
+  // If true, this channel has been connected, has not been disconnected, and
+  // can transfer data.
+  virtual bool IsOpen() const = 0;
+
+  // Service identifier provided by the endpoint requesting the channel.
+  PSM psm() const { return psm_; }
+
+  // Identifies the local device's endpoint of this channel. Will be unique on
+  // this device as long as this channel remains open.
+  ChannelId local_cid() const { return local_cid_; }
+
+  // Identifies the endpoint of this channel on the peer device. Set upon
+  // connection completion.
+  ChannelId remote_cid() const { return remote_cid_; }
+
+  // True if the channel was ever opened (that is, if |IsOpen| was ever true and
+  // |Open| provided that result to its caller). Used by DynamicChannelRegistry
+  // to track channel closure cleanup.
+  bool opened() const { return opened_; }
+
+ protected:
+  // |registry| points to the registry that created and owns this channel. It
+  // must be valid for the duration of this object.
+  DynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
+                 ChannelId remote_cid);
+
+  // Signal the registry of a remote-requested closure.
+  void OnDisconnected();
+
+  // TODO(NET-1320): This should query its DynamicChannelRegistry for uniqueness
+  // among open dynamic channels of this remote ID.
+  void set_remote_cid(ChannelId remote_cid) { remote_cid_ = remote_cid; }
+
+  void set_opened() { opened_ = true; }
+
+ private:
+  // Must be valid for the duration of this object.
+  DynamicChannelRegistry* const registry_;
+
+  const PSM psm_;
+  const ChannelId local_cid_;
+  ChannelId remote_cid_;
+  bool opened_;
+
+  FXL_DISALLOW_COPY_AND_ASSIGN(DynamicChannel);
+};
+
+using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;
+
+}  // namespace internal
+}  // namespace l2cap
+}  // namespace btlib
+
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_

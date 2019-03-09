@@ -1,0 +1,87 @@
+# Copyright 2017 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
+source_set("definitions") {
+  sources = [
+    "gatt_defs.cc",
+    "gatt_defs.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/att:definitions",
+  ]
+}
+
+static_library("gatt") {
+  sources = [
+    "client.cc",
+    "client.h",
+    "connection.cc",
+    "connection.h",
+    "gatt.cc",
+    "gatt.h",
+    "generic_attribute_service.cc",
+    "generic_attribute_service.h",
+    "local_service_manager.cc",
+    "local_service_manager.h",
+    "remote_characteristic.cc",
+    "remote_characteristic.h",
+    "remote_service.cc",
+    "remote_service.h",
+    "remote_service_manager.cc",
+    "remote_service_manager.h",
+    "server.cc",
+    "server.h",
+    "types.cc",
+    "types.h",
+  ]
+
+  public_deps = [
+    ":definitions",
+    "//sdk/lib/fidl/cpp",
+    "//src/connectivity/bluetooth/core/bt-host/att",
+    "//zircon/public/lib/fit",
+  ]
+}
+
+source_set("testing") {
+  testonly = true
+
+  sources = [
+    "fake_layer.cc",
+    "fake_layer.h",
+  ]
+
+  public_deps = [
+    ":gatt",
+    "//garnet/public/lib/fxl",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//zircon/public/lib/fbl",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "client_unittest.cc",
+    "fake_client.cc",
+    "fake_client.h",
+    "generic_attribute_service_unittest.cc",
+    "local_service_manager_unittest.cc",
+    "remote_service_manager_unittest.cc",
+    "server_unittest.cc",
+  ]
+
+  deps = [
+    ":gatt",
+    "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/att",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gtest",
+  ]
+}

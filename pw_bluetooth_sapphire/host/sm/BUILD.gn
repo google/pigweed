@@ -1,0 +1,56 @@
+# Copyright 2018 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("definitions") {
+  sources = [
+    "packet.cc",
+    "packet.h",
+    "smp.h",
+    "status.cc",
+    "status.h",
+    "types.cc",
+    "types.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/hci:definitions",  # for hci::LinkKey
+  ]
+}
+
+static_library("sm") {
+  sources = [
+    "bearer.cc",
+    "bearer.h",
+    "pairing_state.cc",
+    "pairing_state.h",
+    "util.cc",
+    "util.h",
+  ]
+
+  public_deps = [
+    ":definitions",
+    "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//third_party/boringssl",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "bearer_unittest.cc",
+    "pairing_state_unittest.cc",
+    "types_unittest.cc",
+    "util_unittest.cc",
+  ]
+
+  deps = [
+    ":sm",
+    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//third_party/googletest:gtest",
+  ]
+}

@@ -1,0 +1,44 @@
+# Copyright 2018 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+static_library("rfcomm") {
+  sources = [
+    "channel.cc",
+    "channel.h",
+    "channel_manager.cc",
+    "channel_manager.h",
+    "frames.cc",
+    "frames.h",
+    "mux_commands.cc",
+    "mux_commands.h",
+    "rfcomm.h",
+    "session.cc",
+    "session.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//garnet/public/lib/fxl",
+    "//zircon/public/lib/fit",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "frames_unittest.cc",
+    "mux_commands_unittest.cc",
+    "rfcomm_unittest.cc",
+  ]
+
+  deps = [
+    ":rfcomm",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//garnet/public/lib/fxl",
+    "//garnet/public/lib/gtest",
+  ]
+}
