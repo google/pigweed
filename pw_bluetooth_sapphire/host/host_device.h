@@ -14,6 +14,8 @@
 #include <ddk/device.h>
 #include <ddk/driver.h>
 
+#include <fuchsia/hardware/bluetooth/c/fidl.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/gatt_remote_service_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
 
@@ -39,17 +41,29 @@ class HostDevice final {
     static_cast<HostDevice*>(ctx)->Release();
   }
 
-  static zx_status_t DdkIoctl(void* ctx, uint32_t op, const void* in_buf,
-                              size_t in_len, void* out_buf, size_t out_len,
-                              size_t* out_actual) {
-    return static_cast<HostDevice*>(ctx)->Ioctl(op, in_buf, in_len, out_buf,
-                                                out_len, out_actual);
+  // Route ddk fidl messages to the dispatcher function
+  static zx_status_t DdkMessage(void* ctx, fidl_msg_t* msg, fidl_txn_t* txn) {
+    // Struct containing function pointers for all fidl ops to be dispatched on
+    static constexpr fuchsia_hardware_bluetooth_Host_ops_t fidl_ops = {
+      .Open = OpenFidlOp,
+    };
+
+    bt_log(TRACE, "bt-host", "fidl message");
+    return fuchsia_hardware_bluetooth_Host_dispatch(ctx, txn, msg, &fidl_ops);
+  }
+
+  // Fidl trampolines.
+  static zx_status_t OpenFidlOp(void* ctx, zx_handle_t channel) {
+    return static_cast<HostDevice*>(ctx)->OpenHostChannel(zx::channel(channel));
   }
 
   void Unbind();
   void Release();
-  zx_status_t Ioctl(uint32_t op, const void* in_buf, size_t in_len,
-                    void* out_buf, size_t out_len, size_t* out_actual);
+
+  // Open a new channel to the host. Send that channel to the fidl client
+  // or respond with an error if the channel could not be opened.
+  // Returns the status of the fidl send operation.
+  zx_status_t OpenHostChannel(zx::channel channel);
 
   // Called when a new remote GATT service has been found.
   void OnRemoteGattServiceAdded(

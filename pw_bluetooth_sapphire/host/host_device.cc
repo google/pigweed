@@ -8,7 +8,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
-#include "src/connectivity/bluetooth/lib/c/bt_host.h"
 
 #include "host.h"
 
@@ -21,7 +20,7 @@ HostDevice::HostDevice(zx_device_t* device)
   dev_proto_.version = DEVICE_OPS_VERSION;
   dev_proto_.unbind = &HostDevice::DdkUnbind;
   dev_proto_.release = &HostDevice::DdkRelease;
-  dev_proto_.ioctl = &HostDevice::DdkIoctl;
+  dev_proto_.message = &HostDevice::DdkMessage;
 }
 
 zx_status_t HostDevice::Bind() {
@@ -142,40 +141,17 @@ void HostDevice::Release() {
   delete this;
 }
 
-zx_status_t HostDevice::Ioctl(uint32_t op, const void* in_buf, size_t in_len,
-                              void* out_buf, size_t out_len,
-                              size_t* out_actual) {
-  bt_log(TRACE, "bt-host", "ioctl");
-
-  if (!out_buf)
-    return ZX_ERR_INVALID_ARGS;
-
-  if (out_len < sizeof(zx_handle_t))
-    return ZX_ERR_BUFFER_TOO_SMALL;
-
-  if (op != IOCTL_BT_HOST_OPEN_CHANNEL)
-    return ZX_ERR_NOT_SUPPORTED;
-
-  zx::channel local, remote;
-  zx_status_t status = zx::channel::create(0, &local, &remote);
-  if (status != ZX_OK)
-    return status;
-
-  ZX_DEBUG_ASSERT(local);
-  ZX_DEBUG_ASSERT(remote);
-
+zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
+  ZX_DEBUG_ASSERT(channel);
   std::lock_guard<std::mutex> lock(mtx_);
 
   // Tell Host to start processing messages on this handle.
   ZX_DEBUG_ASSERT(host_);
   async::PostTask(loop_.dispatcher(),
-                  [host = host_, chan = std::move(local)]() mutable {
+                  [host = host_, chan = std::move(channel)]() mutable {
                     host->BindHostInterface(std::move(chan));
                   });
 
-  zx_handle_t* reply = static_cast<zx_handle_t*>(out_buf);
-  *reply = remote.release();
-  *out_actual = sizeof(zx_handle_t);
 
   return ZX_OK;
 }
