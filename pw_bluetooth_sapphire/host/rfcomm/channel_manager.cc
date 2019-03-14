@@ -4,6 +4,7 @@
 
 #include "channel_manager.h"
 
+#include <fbl/function.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 

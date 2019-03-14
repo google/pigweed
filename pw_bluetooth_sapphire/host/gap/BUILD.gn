@@ -50,6 +50,7 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/uuid",
+    "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
   ]
 }

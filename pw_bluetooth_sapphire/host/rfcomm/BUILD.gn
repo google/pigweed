@@ -18,9 +18,10 @@ static_library("rfcomm") {
   ]
 
   public_deps = [
+    "//garnet/public/lib/fxl",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
-    "//garnet/public/lib/fxl",
+    "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
   ]
 }
@@ -36,9 +37,9 @@ source_set("tests") {
 
   deps = [
     ":rfcomm",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
     "//garnet/public/lib/fxl",
     "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 }

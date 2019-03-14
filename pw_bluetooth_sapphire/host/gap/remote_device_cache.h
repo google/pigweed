@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 
+#include <fbl/function.h>
 #include <lib/async/cpp/task.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
