@@ -10,7 +10,7 @@
 #include <fbl/function.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
-#include <zx/socket.h>
+#include <lib/zx/socket.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
