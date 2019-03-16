@@ -84,7 +84,9 @@ group("stack") {
 
 # TODO(armansito): Enable debug assertions by default from here for all package
 # dependencies when there is a way for it.
-driver_package("bt-host") {
+package("bt-host") {
+  deprecated_system_image = true
+
   deps = [
     ":driver",
   ]
