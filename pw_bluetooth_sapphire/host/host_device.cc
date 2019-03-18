@@ -145,6 +145,13 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
   ZX_DEBUG_ASSERT(channel);
   std::lock_guard<std::mutex> lock(mtx_);
 
+  // It's possible that this is being processed whilst the device is unbinding,
+  // in which case |host_| can be null
+  if (!host_) {
+    bt_log(ERROR, "bt-host", "Cannot open channel, host is unbound");
+    return ZX_ERR_BAD_STATE;
+  }
+
   // Tell Host to start processing messages on this handle.
   ZX_DEBUG_ASSERT(host_);
   async::PostTask(loop_.dispatcher(),
