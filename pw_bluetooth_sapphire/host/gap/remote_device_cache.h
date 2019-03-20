@@ -134,10 +134,6 @@ class RemoteDeviceCache final {
   size_t count() const { return devices_.size(); }
 
  private:
-  // Maps unique device IDs to the corresponding RemoteDevice entry.
-  using RemoteDeviceMap =
-      std::unordered_map<std::string, std::unique_ptr<RemoteDevice>>;
-
   class RemoteDeviceRecord final {
    public:
     RemoteDeviceRecord(std::unique_ptr<RemoteDevice> device,
