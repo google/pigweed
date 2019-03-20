@@ -13,7 +13,7 @@
 
 #include "channel.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -181,4 +181,4 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

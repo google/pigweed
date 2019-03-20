@@ -11,7 +11,7 @@
 
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <typename T>
@@ -74,21 +74,21 @@ constexpr DeviceId kInvalidDeviceId(0u);
 DeviceId RandomDeviceId();
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
 namespace std {
 
 template <typename T>
-struct hash<::btlib::common::Identifier<T>> {
-  size_t operator()(const ::btlib::common::Identifier<T>& id) const {
+struct hash<bt::common::Identifier<T>> {
+  size_t operator()(const bt::common::Identifier<T>& id) const {
     return std::hash<T>()(id.value());
   }
 };
 
 template <>
-struct hash<::btlib::common::DeviceId> {
-  size_t operator()(const ::btlib::common::DeviceId& id) const {
+struct hash<bt::common::DeviceId> {
+  size_t operator()(const bt::common::DeviceId& id) const {
     return std::hash<decltype(id.value())>()(id.value());
   }
 };

@@ -4,7 +4,7 @@
 
 #include "connection_parameters.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 namespace {
@@ -62,4 +62,4 @@ bool LEPreferredConnectionParameters::operator==(
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

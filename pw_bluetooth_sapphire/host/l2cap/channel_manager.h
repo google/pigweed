@@ -21,7 +21,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 
 namespace hci {
 class Transport;
@@ -178,6 +178,6 @@ class ChannelManager final {
 };
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_

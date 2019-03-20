@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -138,6 +138,6 @@ class DynamicChannelRegistry {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_REGISTRY_H_

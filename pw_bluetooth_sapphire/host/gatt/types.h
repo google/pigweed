@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // TODO(armansito): Rename this file to "local_types.h" and add the Local*
@@ -148,6 +148,6 @@ class Descriptor final {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_TYPES_H_

@@ -26,8 +26,8 @@
 
 namespace bthost {
 
-using btlib::gap::DeviceId;
-using btlib::sm::IOCapability;
+using bt::gap::DeviceId;
+using bt::sm::IOCapability;
 using fidl_helpers::DeviceIdFromString;
 using fidl_helpers::NewFidlError;
 using fuchsia::bluetooth::Bool;
@@ -38,7 +38,7 @@ using fuchsia::bluetooth::control::RemoteDevice;
 using fuchsia::bluetooth::host::BondingData;
 
 HostServer::HostServer(zx::channel channel,
-                       fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+                       fxl::WeakPtr<bt::gap::Adapter> adapter,
                        fbl::RefPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
@@ -84,7 +84,7 @@ void HostServer::GetInfo(GetInfoCallback callback) {
 void HostServer::ListDevices(ListDevicesCallback callback) {
   std::vector<RemoteDevice> fidl_devices;
   adapter()->remote_device_cache()->ForEach(
-      [&fidl_devices](const btlib::gap::RemoteDevice& dev) {
+      [&fidl_devices](const bt::gap::RemoteDevice& dev) {
         if (dev.connectable()) {
           fidl_devices.push_back(fidl_helpers::NewRemoteDevice(dev));
         }
@@ -182,7 +182,7 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
   // TODO(jamuraa): start these in parallel instead of sequence
   bredr_manager->RequestDiscovery(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
-          btlib::hci::Status status, auto session) mutable {
+          bt::hci::Status status, auto session) mutable {
         if (!self) {
           callback(NewFidlError(ErrorCode::FAILED, "Adapter Shutdown"));
           return;
@@ -260,8 +260,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
       continue;
     }
 
-    btlib::common::DeviceAddress address;
-    btlib::sm::PairingData le_bond_data;
+    bt::common::DeviceAddress address;
+    bt::sm::PairingData le_bond_data;
     if (bond.le) {
       if (bond.bredr && bond.le->address != bond.bredr->address) {
         bt_log(ERROR, "bt-host", "Dual-mode bonding data mismatched (id: %s)",
@@ -271,18 +271,18 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
       }
       le_bond_data = fidl_helpers::PairingDataFromFidl(*bond.le);
 
-      // The |identity_address| field in btlib::sm::PairingData is optional
+      // The |identity_address| field in bt::sm::PairingData is optional
       // however it is not nullable in the FIDL struct. Hence it must be
       // present.
       ZX_DEBUG_ASSERT(le_bond_data.identity_address);
       address = *le_bond_data.identity_address;
     }
 
-    std::optional<btlib::sm::LTK> bredr_link_key;
+    std::optional<bt::sm::LTK> bredr_link_key;
     if (bond.bredr) {
       // Dual-mode devices will have a BR/EDR-typed address.
-      address = btlib::common::DeviceAddress(
-          btlib::common::DeviceAddress::Type::kBREDR, bond.bredr->address);
+      address = bt::common::DeviceAddress(
+          bt::common::DeviceAddress::Type::kBREDR, bond.bredr->address);
       bredr_link_key = fidl_helpers::BrEdrKeyFromFidl(*bond.bredr);
     }
 
@@ -314,17 +314,17 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
 }
 
 void HostServer::OnRemoteDeviceBonded(
-    const ::btlib::gap::RemoteDevice& remote_device) {
+    const bt::gap::RemoteDevice& remote_device) {
   bt_log(TRACE, "bt-host", "OnRemoteDeviceBonded()");
   binding()->events().OnNewBondingData(
       fidl_helpers::NewBondingData(*adapter(), remote_device));
 }
 
-void HostServer::OnConnect(btlib::gap::LowEnergyConnectionRefPtr conn_ref,
+void HostServer::OnConnect(bt::gap::LowEnergyConnectionRefPtr conn_ref,
                            bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
-  btlib::gap::DeviceId id = conn_ref->device_identifier();
+  bt::gap::DeviceId id = conn_ref->device_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
     bt_log(WARN, "bt-host", "device already connected; reference dropped");
@@ -371,7 +371,7 @@ void HostServer::SetDiscoverable(bool discoverable,
   }
   bredr_manager->RequestDiscoverable(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
-          btlib::hci::Status status, auto session) {
+          bt::hci::Status status, auto session) {
         if (!self) {
           callback(NewFidlError(ErrorCode::FAILED, "Adapter Shutdown"));
           return;
@@ -425,7 +425,7 @@ void HostServer::SetPairingDelegate(
 
   io_capability_ = fidl_helpers::IoCapabilityFromFidl(input, output);
   bt_log(TRACE, "bt-host", "PairingDelegate assigned (I/O capability: %s)",
-         btlib::sm::util::IOCapabilityToString(io_capability_).c_str());
+         bt::sm::util::IOCapabilityToString(io_capability_).c_str());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   adapter()->SetPairingDelegate(self);
@@ -562,13 +562,13 @@ void HostServer::Close() {
   }
 }
 
-btlib::sm::IOCapability HostServer::io_capability() const {
+bt::sm::IOCapability HostServer::io_capability() const {
   bt_log(TRACE, "bt-host", "I/O capability: %s",
-         btlib::sm::util::IOCapabilityToString(io_capability_).c_str());
+         bt::sm::util::IOCapabilityToString(io_capability_).c_str());
   return io_capability_;
 }
 
-void HostServer::CompletePairing(DeviceId id, btlib::sm::Status status) {
+void HostServer::CompletePairing(DeviceId id, bt::sm::Status status) {
   bt_log(INFO, "bt-host", "pairing complete for device: %s, status: %s",
          bt_str(id), status.ToString().c_str());
   ZX_DEBUG_ASSERT(pairing_delegate_);
@@ -641,7 +641,7 @@ void HostServer::OnConnectionError(Server* server) {
 }
 
 void HostServer::OnRemoteDeviceUpdated(
-    const ::btlib::gap::RemoteDevice& remote_device) {
+    const bt::gap::RemoteDevice& remote_device) {
   if (!remote_device.connectable()) {
     return;
   }
@@ -655,7 +655,7 @@ void HostServer::OnRemoteDeviceUpdated(
   this->binding()->events().OnDeviceUpdated(std::move(*fidl_device));
 }
 
-void HostServer::OnRemoteDeviceRemoved(btlib::gap::DeviceId identifier) {
+void HostServer::OnRemoteDeviceRemoved(bt::gap::DeviceId identifier) {
   // TODO(armansito): Notify only if the device is connectable for symmetry with
   // OnDeviceUpdated?
   this->binding()->events().OnDeviceRemoved(identifier.ToString());

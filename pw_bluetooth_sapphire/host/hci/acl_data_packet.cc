@@ -9,7 +9,7 @@
 
 #include "slab_allocators.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace slab_allocators {
 
@@ -118,17 +118,14 @@ void ACLDataPacket::WriteHeader(ConnectionHandle connection_handle,
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::LargeACLTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::MediumACLTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::SmallACLTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeACLTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs,
+                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::MediumACLTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs,
+                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::SmallACLTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs,
+                                      true);

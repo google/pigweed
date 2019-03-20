@@ -16,7 +16,7 @@
 // This file defines constants that are used by the Security Manager Protocol
 // (SMP) that operates over the L2CAP SMP channel.
 
-namespace btlib {
+namespace bt {
 namespace sm {
 
 // v5.0, Vol 3, Part H, 3.2
@@ -291,6 +291,6 @@ constexpr Code kKeypressNotification = 0x0E;
 // See enum KeypressNotificationType above for parameters.
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_

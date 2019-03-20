@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
@@ -35,10 +35,10 @@ constexpr uint16_t kEDiv = 255;
 const DataBufferInfo kBrEdrBufferInfo(1024, 5);
 const DataBufferInfo kLeBufferInfo(1024, 1);
 
-using ::btlib::testing::CommandTransaction;
+using bt::testing::CommandTransaction;
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 class ConnectionTest : public TestingBase {
  public:
@@ -563,4 +563,4 @@ TEST_F(HCI_ConnectionTest, ClearAclState) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

@@ -9,7 +9,7 @@
 
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 namespace {
 
@@ -1344,4 +1344,4 @@ TEST_F(SMP_BearerTest, OnSecurityRequest) {
 
 }  // namespace
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

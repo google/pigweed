@@ -10,7 +10,7 @@
 
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // All LE connection parameters in this file are given in terms of a
@@ -97,6 +97,6 @@ class LEPreferredConnectionParameters final {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_PARAMETERS_H_

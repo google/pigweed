@@ -15,7 +15,7 @@
 #include "low_energy_address_manager.h"
 #include "remote_device.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 namespace {
@@ -165,4 +165,4 @@ bool LowEnergyAdvertisingManager::StopAdvertising(
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

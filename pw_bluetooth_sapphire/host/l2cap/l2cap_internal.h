@@ -13,7 +13,7 @@
 #include <zircon/assert.h>
 #include <zircon/compiler.h>
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -156,6 +156,6 @@ struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_INTERNAL_H_

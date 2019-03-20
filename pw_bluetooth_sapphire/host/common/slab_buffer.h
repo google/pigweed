@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <size_t BackingBufferSize>
@@ -74,6 +74,6 @@ class SlabBufferImpl
 }  // namespace internal
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_

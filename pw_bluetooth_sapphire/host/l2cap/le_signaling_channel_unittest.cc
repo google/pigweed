@@ -9,7 +9,7 @@
 
 #include "fake_channel_test.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace {
@@ -357,4 +357,4 @@ TEST_F(L2CAP_LESignalingChannelSlaveTest, ConnParamUpdateReject) {
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

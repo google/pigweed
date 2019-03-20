@@ -19,7 +19,7 @@
 #include "remote_service.h"
 #include "server.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -306,4 +306,4 @@ fbl::RefPtr<GATT> GATT::Create(async_dispatcher_t* gatt_dispatcher) {
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

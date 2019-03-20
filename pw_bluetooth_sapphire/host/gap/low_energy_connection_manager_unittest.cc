@@ -22,16 +22,16 @@
 
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
-using ::btlib::testing::FakeController;
-using ::btlib::testing::FakeDevice;
+using bt::testing::FakeController;
+using bt::testing::FakeDevice;
 
 using common::DeviceAddress;
 
-using TestingBase = ::btlib::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
                               "00:00:00:00:00:01");
@@ -926,4 +926,4 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

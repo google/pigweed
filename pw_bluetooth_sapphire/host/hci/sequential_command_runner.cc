@@ -8,7 +8,7 @@
 #include "hci.h"
 #include "transport.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 using common::HostError;
@@ -138,4 +138,4 @@ void SequentialCommandRunner::NotifyStatusAndReset(Status status) {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace testing {
@@ -215,4 +215,4 @@ void FakeSignalingChannel::ReceiveExpectInternal(
 }  // namespace testing
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

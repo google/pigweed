@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::HostError;
@@ -582,4 +582,4 @@ void BrEdrConnectionManager::OnUserConfirmationRequest(
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

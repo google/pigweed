@@ -16,7 +16,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/ref_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 class Transport;
@@ -198,6 +198,6 @@ class LowEnergyScanner {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_

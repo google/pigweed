@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -74,4 +74,4 @@ TEST(GAP_IdentityResolvingListTest, OverwriteIrk) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

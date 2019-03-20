@@ -11,7 +11,7 @@
 
 #include "logical_link.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 ChannelManager::ChannelManager(fxl::RefPtr<hci::Transport> hci,
@@ -246,4 +246,4 @@ ChannelCallback ChannelManager::QueryService(hci::ConnectionHandle handle,
 }
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

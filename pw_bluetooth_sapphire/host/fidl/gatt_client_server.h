@@ -21,7 +21,7 @@ class GattClientServer
     : public GattServerBase<fuchsia::bluetooth::gatt::Client> {
  public:
   GattClientServer(
-      btlib::gatt::DeviceId peer_id, fbl::RefPtr<btlib::gatt::GATT> gatt,
+      bt::gatt::DeviceId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
       fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
   ~GattClientServer() override = default;
 
@@ -35,7 +35,7 @@ class GattClientServer
       override;
 
   // The ID of the peer that this client is attached to.
-  btlib::gatt::DeviceId peer_id_;
+  bt::gatt::DeviceId peer_id_;
 
   // Remote GATT services that were connected through this client. The value can
   // be null while a ConnectToService request is in progress.

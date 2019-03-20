@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 
 // Represents the features exchanged during Pairing Phase 1.
@@ -156,6 +156,6 @@ struct PairingData final {
 };
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_

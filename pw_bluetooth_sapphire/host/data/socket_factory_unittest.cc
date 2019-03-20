@@ -16,7 +16,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
 namespace {
 
 // We'll test the template just for L2CAP channels.
@@ -112,4 +114,6 @@ TEST_F(DATA_SocketFactoryTest, SameChannelIdDifferentHandles) {
 }
 
 }  // namespace
-}  // namespace btlib::data::internal
+}  // namespace internal
+}  // namespace data
+}  // namespace bt

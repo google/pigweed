@@ -19,7 +19,7 @@
 #include "slab_allocators.h"
 #include "transport.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 namespace {
@@ -649,4 +649,4 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

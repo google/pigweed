@@ -10,7 +10,7 @@
 #include <lib/async/cpp/task.h>
 #include <lib/zx/time.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -39,4 +39,4 @@ TEST(RunTaskSyncTest, RunTaskSync) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

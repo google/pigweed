@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -25,4 +25,4 @@ bool BasicModeTxEngine::QueueSdu(common::ByteBufferPtr sdu) {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

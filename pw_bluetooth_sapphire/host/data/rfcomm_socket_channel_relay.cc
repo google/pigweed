@@ -6,7 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_channel_relay.cc"
 
-namespace btlib {
+namespace bt {
 namespace data {
 namespace internal {
 
@@ -14,4 +14,4 @@ template class SocketChannelRelay<rfcomm::Channel>;
 
 }  // namespace internal
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt

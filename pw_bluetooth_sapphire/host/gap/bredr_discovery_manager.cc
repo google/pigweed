@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 namespace {
@@ -549,4 +549,4 @@ void BrEdrDiscoveryManager::InvalidateDiscoverySessions() {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

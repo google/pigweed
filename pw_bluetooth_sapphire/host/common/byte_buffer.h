@@ -16,7 +16,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/strings/string_view.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 class BufferView;
@@ -327,6 +327,6 @@ class MutableBufferView final : public MutableByteBuffer {
 };
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_

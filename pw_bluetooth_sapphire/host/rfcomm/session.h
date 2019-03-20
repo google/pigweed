@@ -21,7 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/frames.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 // Represents a single RFCOMM session from this device to another remote device,
@@ -244,6 +244,6 @@ class Session {
 };
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_SESSION_H_

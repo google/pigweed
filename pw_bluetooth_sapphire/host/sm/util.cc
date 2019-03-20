@@ -9,7 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace btlib {
+namespace bt {
 
 using common::BufferView;
 using common::ByteBuffer;
@@ -326,4 +326,4 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
 
 }  // namespace util
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

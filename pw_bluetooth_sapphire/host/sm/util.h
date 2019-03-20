@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 namespace util {
 
@@ -90,6 +90,6 @@ common::DeviceAddress GenerateRandomAddress(bool is_static);
 
 }  // namespace util
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_UTIL_H_

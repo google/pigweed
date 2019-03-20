@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -45,4 +45,4 @@ TEST(StatusTest, ProtocolErrorAsInt) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

@@ -6,7 +6,7 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -29,4 +29,4 @@ TEST_F(RunOrPostTest, WithDispatcher) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

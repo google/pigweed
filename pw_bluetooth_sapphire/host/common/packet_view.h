@@ -11,7 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Base class-template for generic packets that contain a header and a payload.
@@ -172,6 +172,6 @@ class MutablePacketView : public PacketView<HeaderType> {
 };
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_

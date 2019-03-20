@@ -9,7 +9,7 @@
 
 #include "util.h"
 
-namespace btlib {
+namespace bt {
 
 using common::ByteBuffer;
 using common::DeviceAddress;
@@ -957,4 +957,4 @@ void PairingState::AssignLongTermKeyInternal(const LTK& ltk) {
 }
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

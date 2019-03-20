@@ -13,7 +13,7 @@
 
 #include "device_wrapper.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // static
@@ -187,4 +187,4 @@ void Transport::NotifyClosedCallback() {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

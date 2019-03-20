@@ -17,7 +17,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 class FakeControllerBase;
@@ -171,6 +171,6 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_

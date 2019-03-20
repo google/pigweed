@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel_manager.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 namespace {
 
@@ -974,4 +974,4 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
 
 }  // namespace
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 
 using common::MutableByteBuffer;
 using common::UUID;
@@ -656,4 +656,4 @@ std::string DataElement::ToString() const {
   return "(unknown)";
 }
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

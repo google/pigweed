@@ -7,7 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -34,6 +34,6 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_

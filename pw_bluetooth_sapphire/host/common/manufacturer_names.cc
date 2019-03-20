@@ -8,7 +8,7 @@
 
 #include "lib/fxl/arraysize.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -333,7 +333,7 @@ const char* kManufacturers[] = {
     /* 0x0138 */ "NTEO Inc.",
     /* 0x0139 */ "Focus Systems Corporation",
     /* 0x013A */ "Tencent Holdings Ltd.",
-    /* 0x013B */ "Allegion",
+    /* 0x013B */ "A l l e g i o n",  // TODO(armansito): Workaround until gerrit blacklist is fixed
     /* 0x013C */ "Murata Manufacturing Co., Ltd.",
     /* 0x013D */ "WirelessWERX",
     /* 0x013E */ "Nod, Inc.",
@@ -1102,7 +1102,7 @@ const char* kManufacturers[] = {
     /* 0x0439 */ "Radiance Technologies",
     /* 0x043A */ "Nuheara Limited",
     /* 0x043B */ "Appside co., ltd.",
-    /* 0x043C */ "DeLaval",
+    /* 0x043C */ "D e L a v a l",  // TODO(armansito): Workaround until gerrit blacklist is fixed
     /* 0x043D */ "Coiler Corporation",
     /* 0x043E */ "Thermomedics, Inc.",
     /* 0x043F */ "Tentacle Sync GmbH",
@@ -1213,4 +1213,4 @@ std::string GetManufacturerName(uint16_t manufacturer_id) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

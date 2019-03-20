@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Returns a manufacturer name as a string for the given company identifier. If
@@ -17,6 +17,6 @@ namespace common {
 std::string GetManufacturerName(uint16_t manufacturer_id);
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_MANUFACTURER_NAMES_H_

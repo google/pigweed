@@ -17,7 +17,7 @@
 #include "lib/fxl/macros.h"
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // A DeviceWrapper abstracts over a Bluetooth HCI device object and its fidl interface.
@@ -94,6 +94,6 @@ class DummyDeviceWrapper : public DeviceWrapper {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_

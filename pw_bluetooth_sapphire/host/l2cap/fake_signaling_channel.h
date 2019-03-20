@@ -18,7 +18,7 @@
   (fake_sig).AddOutbound(__FILE__, __LINE__, req_code, req_payload, \
                          {__VA_ARGS__})
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace testing {
@@ -121,6 +121,6 @@ class FakeSignalingChannel : public SignalingChannelInterface {
 }  // namespace testing
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_SIGNALING_CHANNEL_H_

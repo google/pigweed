@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "lib/fxl/strings/string_number_conversions.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -120,4 +120,4 @@ void GenericAttributeService::OnServiceChanged(IdType service_id,
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

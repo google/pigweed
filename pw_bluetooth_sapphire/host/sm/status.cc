@@ -4,7 +4,7 @@
 
 #include "status.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -53,4 +53,4 @@ std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

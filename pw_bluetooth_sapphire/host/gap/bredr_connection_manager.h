@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 
-namespace btlib {
+namespace bt {
 
 namespace hci {
 class SequentialCommandRunner;
@@ -124,6 +124,6 @@ class BrEdrConnectionManager final {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_MANAGER_H_

@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 namespace {
 
@@ -232,4 +232,4 @@ const Attribute* Database::FindAttribute(Handle handle) {
 }
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

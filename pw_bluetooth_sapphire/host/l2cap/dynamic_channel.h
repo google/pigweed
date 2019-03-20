@@ -12,7 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -42,7 +42,7 @@ class DynamicChannelRegistry;
 //
 // This only drives the command transactions over a link's signaling channel to
 // manage a specific channel and is not used to send or receive data over that
-// channel (it exists in parallel with an btlib::l2cap::Channel for that
+// channel (it exists in parallel with an bt::l2cap::Channel for that
 // purpose). It is intended only to be run from the L2CAP thread.
 class DynamicChannel {
  public:
@@ -120,6 +120,6 @@ using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_

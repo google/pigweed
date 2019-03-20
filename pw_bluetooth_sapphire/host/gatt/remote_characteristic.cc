@@ -12,7 +12,7 @@
 
 #include "client.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 using common::HostError;
@@ -308,4 +308,4 @@ void RemoteCharacteristic::HandleNotification(const common::ByteBuffer& value) {
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

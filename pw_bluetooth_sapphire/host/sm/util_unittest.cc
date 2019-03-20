@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 
 using common::ContainersEqual;
 using common::CreateStaticByteBuffer;
@@ -417,4 +417,4 @@ TEST(SMP_UtilTest, GenerateRandomAddress) {
 }  // namespace
 }  // namespace util
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

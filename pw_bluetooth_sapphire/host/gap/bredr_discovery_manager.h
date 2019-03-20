@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 
-namespace btlib {
+namespace bt {
 
 namespace hci {
 class Transport;
@@ -228,6 +228,6 @@ class BrEdrDiscoveryManager final {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_

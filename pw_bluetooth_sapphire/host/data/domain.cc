@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel_manager.h"
 
-namespace btlib {
+namespace bt {
 namespace data {
 
 class Impl final : public Domain, public common::TaskDomain<Impl, Domain> {
@@ -267,4 +267,4 @@ fbl::RefPtr<Domain> Domain::CreateWithDispatcher(
 }
 
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt

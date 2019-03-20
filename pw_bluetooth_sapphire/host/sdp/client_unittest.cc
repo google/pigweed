@@ -11,11 +11,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 namespace {
 
-using TestingBase = ::btlib::l2cap::testing::FakeChannelTest;
+using TestingBase = bt::l2cap::testing::FakeChannelTest;
 constexpr l2cap::ChannelId kTestChannelId = 0x0041;
 
 using common::CreateStaticByteBuffer;
@@ -473,4 +473,4 @@ TEST_F(SDP_ClientTest, Timeout) {
 
 }  // namespace
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

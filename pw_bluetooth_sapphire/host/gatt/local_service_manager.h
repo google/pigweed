@@ -13,7 +13,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/ref_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // Called to read the value of a dynamic characteristic or characteristic
@@ -120,6 +120,6 @@ class LocalServiceManager final {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_

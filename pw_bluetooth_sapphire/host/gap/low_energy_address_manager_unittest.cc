@@ -12,7 +12,7 @@
 
 #include "gap.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -392,4 +392,4 @@ TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

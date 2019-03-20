@@ -10,7 +10,7 @@
 
 #include "gap.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::DeviceAddress;
@@ -171,4 +171,4 @@ void LowEnergyAddressManager::ResolveAddressRequests() {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

@@ -9,7 +9,7 @@
 
 #include "rfcomm.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 namespace {
@@ -485,4 +485,4 @@ std::unique_ptr<MuxCommand> MuxCommandFrame::TakeMuxCommand() {
 }
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

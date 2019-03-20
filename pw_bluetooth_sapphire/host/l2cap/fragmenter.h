@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 // A Fragmenter is used to construct L2CAP PDUs composed of fragments that can
@@ -63,6 +63,6 @@ class Fragmenter final {
 };
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAGMENTER_H_

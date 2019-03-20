@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 
 using common::DeviceAddress;
 
@@ -206,4 +206,4 @@ LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

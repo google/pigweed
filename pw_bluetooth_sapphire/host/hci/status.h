@@ -28,7 +28,7 @@
 //   status.is_success() -> true
 //   status.is_protocol_error() -> false
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <>
@@ -49,6 +49,6 @@ class Status : public common::Status<StatusCode> {
 using StatusCallback = fit::function<void(const Status& status)>;
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_STATUS_H_

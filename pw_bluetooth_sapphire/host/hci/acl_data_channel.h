@@ -24,7 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 class Transport;
@@ -287,6 +287,6 @@ class ACLDataChannel final {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_

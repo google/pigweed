@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Represents a 24-bit "Class of Device/Service" field.
@@ -80,6 +80,6 @@ static_assert(sizeof(DeviceClass) == 3,
               "DeviceClass must take up exactly 3 bytes");
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_CLASS_H_

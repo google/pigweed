@@ -15,13 +15,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
-using ::btlib::testing::FakeController;
-using ::btlib::testing::FakeDevice;
-using TestingBase = ::btlib::testing::FakeControllerTest<FakeController>;
+using bt::testing::FakeController;
+using bt::testing::FakeDevice;
+using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 using common::HostError;
 const common::DeviceAddress kLocalAddress(
@@ -393,4 +393,4 @@ TEST_F(HCI_LowEnergyConnectorTest, SendRequestAndDelete) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

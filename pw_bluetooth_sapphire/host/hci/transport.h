@@ -21,7 +21,7 @@
 #include "lib/fxl/memory/weak_ptr.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 class DeviceWrapper;
@@ -153,6 +153,6 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_

@@ -11,7 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 CommandTransaction::CommandTransaction(
@@ -142,4 +142,4 @@ void TestController::OnACLDataPacketReceived(
 }
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt

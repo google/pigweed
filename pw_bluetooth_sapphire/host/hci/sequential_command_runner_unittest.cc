@@ -9,17 +9,17 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
 constexpr OpCode kTestOpCode = 0xFFFF;
 constexpr OpCode kTestOpCode2 = 0xF00F;
 
-using ::btlib::testing::CommandTransaction;
+using bt::testing::CommandTransaction;
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 class SequentialCommandRunnerTest : public TestingBase {
  public:
@@ -458,4 +458,4 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

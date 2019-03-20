@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 
-namespace btlib {
+namespace bt {
 
 using common::HostError;
 
@@ -196,4 +196,4 @@ void RemoteServiceManager::OnNotification(bool, att::Handle value_handle,
 
 }  // namespace internal
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

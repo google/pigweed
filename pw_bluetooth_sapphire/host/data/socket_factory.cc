@@ -9,7 +9,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
 
 template <typename ChannelT>
 SocketFactory<ChannelT>::SocketFactory() : weak_ptr_factory_(this) {}
@@ -63,4 +65,6 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
   return remote_socket;
 }
 
-}  // namespace btlib::data::internal
+}  // namespace internal
+}  // namespace data
+}  // namespace bt

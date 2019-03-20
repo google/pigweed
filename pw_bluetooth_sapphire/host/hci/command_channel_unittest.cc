@@ -13,16 +13,16 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
-using ::btlib::common::LowerBits;
-using ::btlib::common::UpperBits;
-using ::btlib::testing::CommandTransaction;
+using bt::common::LowerBits;
+using bt::common::UpperBits;
+using bt::testing::CommandTransaction;
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.
@@ -1062,4 +1062,4 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

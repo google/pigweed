@@ -12,12 +12,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace {
 
-using ::btlib::testing::TestController;
-using TestingBase = ::btlib::testing::FakeControllerTest<TestController>;
+using bt::testing::TestController;
+using TestingBase = bt::testing::FakeControllerTest<TestController>;
 
 using common::HostError;
 
@@ -1446,4 +1446,4 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
 
 }  // namespace
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

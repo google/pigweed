@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -72,4 +72,4 @@ TEST(DeviceClassTest, Comparison) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

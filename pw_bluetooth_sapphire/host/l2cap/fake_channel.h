@@ -15,7 +15,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace testing {
 
@@ -108,6 +108,6 @@ class FakeChannel : public Channel {
 
 }  // namespace testing
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_

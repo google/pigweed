@@ -11,7 +11,7 @@
 #include "fidl/host_server.h"
 #include "gatt_host.h"
 
-using namespace btlib;
+using namespace bt;
 
 namespace bthost {
 

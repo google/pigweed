@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -655,4 +655,4 @@ TEST(GAP_DiscoveryFilterTest, GeneralDiscoveryFlags) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

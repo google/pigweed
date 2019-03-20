@@ -4,7 +4,7 @@
 
 #include "fake_connection.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace testing {
 
@@ -36,4 +36,4 @@ bool FakeConnection::StartEncryption() {
 
 }  // namespace testing
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

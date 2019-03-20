@@ -21,7 +21,7 @@
 
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 // The SDP server object owns the Service Database and all Service Records.
@@ -106,6 +106,6 @@ class Server final {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_

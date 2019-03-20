@@ -7,7 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace testing {
 
@@ -167,6 +167,6 @@ class FakeClient final : public Client {
 
 }  // namespace testing
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_CLIENT_H_

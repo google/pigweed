@@ -14,7 +14,7 @@
 
 #include "logical_link.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 using common::RunOrPost;
@@ -254,4 +254,4 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

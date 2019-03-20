@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -19,4 +19,4 @@ common::ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

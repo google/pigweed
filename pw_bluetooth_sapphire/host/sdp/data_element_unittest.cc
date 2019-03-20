@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 namespace {
 
@@ -293,4 +293,4 @@ TEST_F(SDP_DataElementTest, ToString) {
 
 }  // namespace
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

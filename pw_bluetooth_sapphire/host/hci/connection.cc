@@ -13,7 +13,7 @@
 #include "defaults.h"
 #include "transport.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Production implementation of the Connection class against a HCI transport.
@@ -442,4 +442,4 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

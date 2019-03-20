@@ -18,7 +18,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_channel_relay.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
 
 // A SocketFactory vends zx::socket objects that an IPC peer can use to
 // communicate with l2cap::Channels.
@@ -69,6 +71,8 @@ class SocketFactory final {
   FXL_DISALLOW_COPY_AND_ASSIGN(SocketFactory);
 };
 
-}  // namespace btlib::data::internal
+}  // namespace internal
+}  // namespace data
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_FACTORY_H_

@@ -11,7 +11,7 @@
 
 #include <endian.h>
 
-namespace btlib {
+namespace bt {
 
 using common::BufferView;
 using common::ByteBuffer;
@@ -986,4 +986,4 @@ common::MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
   return buf;
 }
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

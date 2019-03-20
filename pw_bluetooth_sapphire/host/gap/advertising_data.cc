@@ -23,7 +23,7 @@
 template <typename T>
 struct fxl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
   static fidl::VectorPtr<unsigned char> Convert(const T& input) {
-    static_assert(std::is_base_of<::btlib::common::ByteBuffer, T>::value, "");
+    static_assert(std::is_base_of<bt::common::ByteBuffer, T>::value, "");
 
     fidl::VectorPtr<unsigned char> result =
         fidl::VectorPtr<unsigned char>::New(input.size());
@@ -34,7 +34,7 @@ struct fxl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
 
 namespace ble = fuchsia::bluetooth::le;
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::BufferView;
@@ -733,4 +733,4 @@ bool AdvertisingDataWriter::WriteField(DataType type, const ByteBuffer& data) {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

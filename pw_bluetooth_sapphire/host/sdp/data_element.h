@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 // See v5.0, Vol 3, Part B, Sec 3.1.
@@ -158,6 +158,6 @@ class DataElement {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_DATA_ELEMENT_H_

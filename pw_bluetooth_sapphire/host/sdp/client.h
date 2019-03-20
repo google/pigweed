@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 // The SDP client connects to the SDP server on a remote device and can perform
@@ -46,6 +46,6 @@ class Client {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_

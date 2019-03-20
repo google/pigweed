@@ -12,7 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 // A ServiceRecord represents a service record in a SDP database.
@@ -113,6 +113,6 @@ class ServiceRecord {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_RECORD_H_

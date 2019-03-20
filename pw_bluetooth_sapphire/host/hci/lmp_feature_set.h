@@ -11,7 +11,7 @@
 
 #include <zircon/assert.h>
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Remote devices and local controllers have a feature set defined by the
@@ -64,6 +64,6 @@ class LMPFeatureSet {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_

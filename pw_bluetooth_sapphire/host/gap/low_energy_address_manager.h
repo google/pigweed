@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 
-namespace btlib {
+namespace bt {
 
 namespace hci {
 class Transport;
@@ -156,6 +156,6 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADDRESS_MANAGER_H_

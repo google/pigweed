@@ -22,7 +22,7 @@ namespace bthost {
 namespace {
 
 bool FidlToDataElement(const fidlbredr::DataElement& fidl,
-                       btlib::sdp::DataElement* out) {
+                       bt::sdp::DataElement* out) {
   ZX_DEBUG_ASSERT(out);
   switch (fidl.type) {
     case DataElementType::NOTHING:
@@ -66,7 +66,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl,
       if (!fidl.data.is_uuid()) {
         return false;
       }
-      btlib::common::UUID uuid;
+      bt::common::UUID uuid;
       bool success = StringToUuid(fidl.data.uuid(), &uuid);
       if (!success) {
         return false;
@@ -93,9 +93,9 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl,
         return false;
       }
       bool success = true;
-      std::vector<btlib::sdp::DataElement> elems;
+      std::vector<bt::sdp::DataElement> elems;
       for (const auto& fidl_elem : fidl.data.sequence()) {
-        btlib::sdp::DataElement it;
+        bt::sdp::DataElement it;
         success = FidlToDataElement(*fidl_elem, &it);
         if (!success) {
           return false;
@@ -110,24 +110,24 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl,
   }
 }
 
-fidlbredr::DataElementPtr DataElementToFidl(const btlib::sdp::DataElement* in) {
+fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = fidlbredr::DataElement::New();
   bt_log(SPEW, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
   ZX_DEBUG_ASSERT(in);
   switch (in->type()) {
-    case btlib::sdp::DataElement::Type::kNull:
+    case bt::sdp::DataElement::Type::kNull:
       elem->type = DataElementType::NOTHING;
       return elem;
-    case btlib::sdp::DataElement::Type::kUnsignedInt: {
+    case bt::sdp::DataElement::Type::kUnsignedInt: {
       elem->type = DataElementType::UNSIGNED_INTEGER;
       auto size = in->size();
-      if (size == btlib::sdp::DataElement::Size::kOneByte) {
+      if (size == bt::sdp::DataElement::Size::kOneByte) {
         elem->data.set_integer(*in->Get<uint8_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kTwoBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kTwoBytes) {
         elem->data.set_integer(*in->Get<uint16_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kFourBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kFourBytes) {
         elem->data.set_integer(*in->Get<uint32_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kEightBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kEightBytes) {
         elem->data.set_integer(*in->Get<uint64_t>());
       } else {
         // TODO: handle 128-bit integers
@@ -136,16 +136,16 @@ fidlbredr::DataElementPtr DataElementToFidl(const btlib::sdp::DataElement* in) {
       }
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kSignedInt: {
+    case bt::sdp::DataElement::Type::kSignedInt: {
       elem->type = DataElementType::SIGNED_INTEGER;
       auto size = in->size();
-      if (size == btlib::sdp::DataElement::Size::kOneByte) {
+      if (size == bt::sdp::DataElement::Size::kOneByte) {
         elem->data.set_integer(*in->Get<int8_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kTwoBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kTwoBytes) {
         elem->data.set_integer(*in->Get<int16_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kFourBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kFourBytes) {
         elem->data.set_integer(*in->Get<int32_t>());
-      } else if (size == btlib::sdp::DataElement::Size::kEightBytes) {
+      } else if (size == bt::sdp::DataElement::Size::kEightBytes) {
         elem->data.set_integer(*in->Get<int64_t>());
       } else {
         // TODO: handle 128-bit integers
@@ -154,44 +154,44 @@ fidlbredr::DataElementPtr DataElementToFidl(const btlib::sdp::DataElement* in) {
       }
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kUuid: {
+    case bt::sdp::DataElement::Type::kUuid: {
       elem->type = DataElementType::UUID;
-      auto uuid = in->Get<btlib::common::UUID>();
+      auto uuid = in->Get<bt::common::UUID>();
       ZX_DEBUG_ASSERT(uuid);
       elem->data.uuid() = uuid->ToString();
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kString: {
+    case bt::sdp::DataElement::Type::kString: {
       elem->type = DataElementType::STRING;
       elem->data.str() = *in->Get<std::string>();
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kBoolean: {
+    case bt::sdp::DataElement::Type::kBoolean: {
       elem->type = DataElementType::BOOLEAN;
       elem->data.set_b(*in->Get<bool>());
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kSequence: {
+    case bt::sdp::DataElement::Type::kSequence: {
       elem->type = DataElementType::SEQUENCE;
       std::vector<fidlbredr::DataElementPtr> elems;
-      const btlib::sdp::DataElement* it;
+      const bt::sdp::DataElement* it;
       for (size_t idx = 0; (it = in->At(idx)); ++idx) {
         elems.emplace_back(DataElementToFidl(it));
       }
       elem->data.set_sequence(std::move(elems));
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kAlternative: {
+    case bt::sdp::DataElement::Type::kAlternative: {
       elem->type = DataElementType::ALTERNATIVE;
       std::vector<fidlbredr::DataElementPtr> elems;
-      const btlib::sdp::DataElement* it;
+      const bt::sdp::DataElement* it;
       for (size_t idx = 0; (it = in->At(idx)); ++idx) {
         elems.emplace_back(DataElementToFidl(it));
       }
       elem->data.set_sequence(std::move(elems));
       return elem;
     }
-    case btlib::sdp::DataElement::Type::kUrl: {
+    case bt::sdp::DataElement::Type::kUrl: {
       ZX_PANIC("not implemented");
       break;
     }
@@ -199,17 +199,17 @@ fidlbredr::DataElementPtr DataElementToFidl(const btlib::sdp::DataElement* in) {
 }
 
 fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(
-    const btlib::sdp::DataElement* in) {
+    const bt::sdp::DataElement* in) {
   auto desc = fidlbredr::ProtocolDescriptor::New();
-  if (in->type() != btlib::sdp::DataElement::Type::kSequence) {
+  if (in->type() != bt::sdp::DataElement::Type::kSequence) {
     return nullptr;
   }
-  const auto protocol_uuid = in->At(0)->Get<btlib::common::UUID>();
+  const auto protocol_uuid = in->At(0)->Get<bt::common::UUID>();
   if (!protocol_uuid) {
     return nullptr;
   }
   desc->protocol = fidlbredr::ProtocolIdentifier(*protocol_uuid->As16Bit());
-  const btlib::sdp::DataElement* it;
+  const bt::sdp::DataElement* it;
   for (size_t idx = 1; (it = in->At(idx)); ++idx) {
     desc->params.push_back(std::move(*DataElementToFidl(it)));
   }
@@ -218,16 +218,15 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(
 }
 
 void AddProtocolDescriptorList(
-    btlib::sdp::ServiceRecord* rec,
-    btlib::sdp::ServiceRecord::ProtocolListId id,
+    bt::sdp::ServiceRecord* rec, bt::sdp::ServiceRecord::ProtocolListId id,
     const ::std::vector<fidlbredr::ProtocolDescriptor>& descriptor_list) {
   bt_log(SPEW, "profile_server", "ProtocolDescriptorList %d", id);
   for (auto& descriptor : descriptor_list) {
-    btlib::sdp::DataElement protocol_params;
+    bt::sdp::DataElement protocol_params;
     if (descriptor.params.size() > 1) {
-      std::vector<btlib::sdp::DataElement> params;
+      std::vector<bt::sdp::DataElement> params;
       for (auto& fidl_param : descriptor.params) {
-        btlib::sdp::DataElement bt_param;
+        bt::sdp::DataElement bt_param;
         FidlToDataElement(fidl_param, &bt_param);
         params.emplace_back(std::move(bt_param));
       }
@@ -240,14 +239,14 @@ void AddProtocolDescriptorList(
            fidl::ToUnderlying(descriptor.protocol),
            protocol_params.ToString().c_str());
     rec->AddProtocolDescriptor(
-        id, btlib::common::UUID(static_cast<uint16_t>(descriptor.protocol)),
+        id, bt::common::UUID(static_cast<uint16_t>(descriptor.protocol)),
         std::move(protocol_params));
   }
 }
 
 }  // namespace
 
-ProfileServer::ProfileServer(fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                              fidl::InterfaceRequest<Profile> request)
     : AdapterServerBase(adapter, this, std::move(request)),
       last_service_id_(0),
@@ -269,21 +268,20 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   auto sdp = adapter()->sdp_server();
   ZX_DEBUG_ASSERT(sdp);
 
-  btlib::sdp::ServiceRecord rec;
-  std::vector<btlib::common::UUID> classes;
+  bt::sdp::ServiceRecord rec;
+  std::vector<bt::common::UUID> classes;
   for (auto& uuid_str : definition.service_class_uuids) {
-    btlib::common::UUID uuid;
+    bt::common::UUID uuid;
     bt_log(SPEW, "profile_server", "Setting Service Class UUID %s",
            uuid_str.c_str());
-    bool success = btlib::common::StringToUuid(uuid_str, &uuid);
+    bool success = bt::common::StringToUuid(uuid_str, &uuid);
     ZX_DEBUG_ASSERT(success);
     classes.emplace_back(std::move(uuid));
   }
 
   rec.SetServiceClassUUIDs(classes);
 
-  AddProtocolDescriptorList(&rec,
-                            btlib::sdp::ServiceRecord::kPrimaryProtocolList,
+  AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
                             definition.protocol_descriptors);
 
   size_t protocol_list_id = 1;
@@ -296,7 +294,7 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   for (const auto& profile : definition.profile_descriptors) {
     bt_log(SPEW, "profile_server", "Adding Profile %#x v%d.%d",
            profile.profile_id, profile.major_version, profile.minor_version);
-    rec.AddProfile(btlib::common::UUID(uint16_t(profile.profile_id)),
+    rec.AddProfile(bt::common::UUID(uint16_t(profile.profile_id)),
                    profile.major_version, profile.minor_version);
   }
 
@@ -308,7 +306,7 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   }
 
   for (const auto& attribute : *definition.additional_attributes) {
-    btlib::sdp::DataElement elem;
+    bt::sdp::DataElement elem;
     FidlToDataElement(attribute.element, &elem);
     bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
            elem.ToString().c_str());
@@ -333,7 +331,7 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
 
   registered_.emplace(next, handle);
   last_service_id_ = next;
-  callback(fidl_helpers::StatusToFidl(btlib::sdp::Status()), handle);
+  callback(fidl_helpers::StatusToFidl(bt::sdp::Status()), handle);
 }
 
 void ProfileServer::RemoveService(uint64_t service_id) {
@@ -357,7 +355,7 @@ void ProfileServer::ConnectL2cap(std::string remote_id, uint16_t channel,
   }
 
   auto connected_cb = [cb = callback.share()](zx::socket channel) {
-    cb(fidl_helpers::StatusToFidl(btlib::sdp::Status()), std::move(channel));
+    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(channel));
   };
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
       *peer_id, channel, std::move(connected_cb),
@@ -371,8 +369,8 @@ void ProfileServer::ConnectL2cap(std::string remote_id, uint16_t channel,
 }
 
 void ProfileServer::OnChannelConnected(
-    uint64_t service_id, zx::socket socket, btlib::hci::ConnectionHandle handle,
-    const btlib::sdp::DataElement& protocol_list) {
+    uint64_t service_id, zx::socket socket, bt::hci::ConnectionHandle handle,
+    const bt::sdp::DataElement& protocol_list) {
   auto id = adapter()->bredr_connection_manager()->GetPeerId(handle);
 
   const auto* prot_seq = protocol_list.At(1);

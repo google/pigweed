@@ -11,7 +11,7 @@
 
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -76,4 +76,4 @@ void UsePrintf(LogSeverity min_severity) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

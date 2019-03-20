@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -316,4 +316,4 @@ TEST(ByteBufferTest, Fill) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

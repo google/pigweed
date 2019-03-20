@@ -21,7 +21,7 @@ class ProfileServer
     : public AdapterServerBase<fuchsia::bluetooth::bredr::Profile> {
  public:
   ProfileServer(
-      fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+      fxl::WeakPtr<bt::gap::Adapter> adapter,
       fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
   ~ProfileServer() override;
 
@@ -36,11 +36,11 @@ class ProfileServer
 
   // Callback for incoming connections
   void OnChannelConnected(uint64_t service_id, zx::socket connection,
-                          btlib::hci::ConnectionHandle handle,
-                          const btlib::sdp::DataElement& protocol_list);
+                          bt::hci::ConnectionHandle handle,
+                          const bt::sdp::DataElement& protocol_list);
 
   // Registered service IDs handed out, correlated with Service Handles.
-  std::map<uint64_t, btlib::sdp::ServiceHandle> registered_;
+  std::map<uint64_t, bt::sdp::ServiceHandle> registered_;
 
   // Last service ID handed out
   uint64_t last_service_id_;

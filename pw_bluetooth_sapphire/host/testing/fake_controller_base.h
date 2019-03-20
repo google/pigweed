@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 // Abstract base for implementing a fake HCI controller endpoint. This can
@@ -105,6 +105,6 @@ class FakeControllerBase {
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_

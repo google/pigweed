@@ -12,7 +12,7 @@
 
 #include "advertising_data.h"
 
-namespace btlib {
+namespace bt {
 
 using common::BufferView;
 using common::ByteBuffer;
@@ -406,4 +406,4 @@ void RemoteDevice::MakeDualMode() {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

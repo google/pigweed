@@ -24,7 +24,7 @@ class LowEnergyCentralServer
     : public AdapterServerBase<fuchsia::bluetooth::le::Central> {
  public:
   LowEnergyCentralServer(
-      fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+      fxl::WeakPtr<bt::gap::Adapter> adapter,
       ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
       fbl::RefPtr<GattHost> gatt_host);
   ~LowEnergyCentralServer() override;
@@ -46,14 +46,14 @@ class LowEnergyCentralServer
                             DisconnectPeripheralCallback callback) override;
 
   // Called by |scan_session_| when a device is discovered.
-  void OnScanResult(const ::btlib::gap::RemoteDevice& remote_device);
+  void OnScanResult(const bt::gap::RemoteDevice& remote_device);
 
   // Notifies the delegate that the scan state for this Central has changed.
   void NotifyScanStateChanged(bool scanning);
 
   // Notifies the delegate that the device with the given identifier has been
   // disconnected.
-  void NotifyPeripheralDisconnected(::btlib::gap::DeviceId peer_id);
+  void NotifyPeripheralDisconnected(bt::gap::DeviceId peer_id);
 
   // The GATT host is used to instantiate GATT Clients upon connection.
   fbl::RefPtr<GattHost> gatt_host_;
@@ -61,15 +61,14 @@ class LowEnergyCentralServer
   // The currently active LE discovery session. This is initialized when a
   // client requests to perform a scan.
   bool requesting_scan_;
-  std::unique_ptr<::btlib::gap::LowEnergyDiscoverySession> scan_session_;
+  std::unique_ptr<bt::gap::LowEnergyDiscoverySession> scan_session_;
 
   // This client's connection references. A client can hold a connection to
   // multiple peers. Each key is a remote device identifier. Each value is
   //   a. nullptr, if a connect request to this device is currently pending.
   //   b. a valid reference if this Central is holding a connection reference to
   //   this device.
-  std::unordered_map<::btlib::gap::DeviceId,
-                     ::btlib::gap::LowEnergyConnectionRefPtr>
+  std::unordered_map<bt::gap::DeviceId, bt::gap::LowEnergyConnectionRefPtr>
       connections_;
 
   // Keep this as the last member to make sure that all weak pointers are

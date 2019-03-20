@@ -14,7 +14,7 @@
 #include "fake_controller.h"
 #include "fake_device.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 using common::ByteBuffer;
@@ -111,4 +111,4 @@ void FakeGattServer::SendErrorRsp(hci::ConnectionHandle conn,
 }
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt

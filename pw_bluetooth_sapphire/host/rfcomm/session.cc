@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/session.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 namespace {
@@ -1031,4 +1031,4 @@ void Session::HandleReceivedCredits(DLCI dlci, FrameCredits credits) {
 }
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

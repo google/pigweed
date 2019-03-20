@@ -15,7 +15,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 class Channel;
@@ -203,6 +203,6 @@ class SignalingChannel : public SignalingChannelInterface {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_

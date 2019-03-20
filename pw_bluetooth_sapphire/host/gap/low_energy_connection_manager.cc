@@ -22,7 +22,7 @@
 #include "remote_device.h"
 #include "remote_device_cache.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::DeviceAddress;
@@ -983,4 +983,4 @@ LowEnergyConnectionManager::FindConnection(hci::ConnectionHandle handle) {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

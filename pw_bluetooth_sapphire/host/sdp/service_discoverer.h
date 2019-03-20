@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 // The Service Discoverer keeps track of which services are of interest to
@@ -101,6 +101,6 @@ class ServiceDiscoverer final {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_

@@ -14,7 +14,7 @@
 
 #include "util.h"
 
-namespace btlib {
+namespace bt {
 
 using common::ByteBuffer;
 using common::DeviceAddress;
@@ -715,4 +715,4 @@ void Bearer::OnRxBFrame(common::ByteBufferPtr sdu) {
 }
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -89,4 +89,4 @@ TEST(PacketViewTest, NonEmptyPayload) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace testing {
 
@@ -132,4 +132,4 @@ void FakeClient::SetNotificationHandler(NotificationCallback callback) {
 
 }  // namespace testing
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

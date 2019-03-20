@@ -10,8 +10,8 @@
 #include <ddk/driver.h>
 
 // Logging utilities for the host library. This provides a common abstraction
-// over Zircon DDK debug utilities (used when btlib runs in a driver) and
-// printf.
+// over Zircon DDK debug utilities (used when the host stack code runs in a
+// driver) and printf (when it's used in unit tests and command-line tools).
 //
 // USAGE:
 //
@@ -47,12 +47,12 @@
 //
 // PRINTF MODE:
 //
-// When btlib code is run outside a driver (e.g. bt-host-unittests) log messages
-// can be routed to stdout via printf instead of driver_printf. To enable this
-// mode, call the UsePrintf() function at process start-up:
+// When the host stack code is run outside a driver (e.g. bt-host-unittests) log
+// messages can be routed to stdout via printf instead of driver_printf. To
+// enable this mode, call the UsePrintf() function at process start-up:
 //
 //    int main() {
-//      ::btlib::common::UsePrintf(::btlib::common::LogSeverity::ERROR);
+//      bt::common::UsePrintf(bt::common::LogSeverity::ERROR);
 //
 //      ...do stuff...
 //
@@ -78,10 +78,10 @@
 //    BT_DECLARE_FAKE_DRIVER();
 //
 //    int main() {
-//      ::btlib::common::UsePrintf(::btlib::common::LogSeverity::TRACE);
+//      bt::common::UsePrintf(bt::common::LogSeverity::TRACE);
 //    }
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Log severity levels used by the host library, following the convention of
@@ -118,15 +118,14 @@ void LogMessage(const char* file, int line, LogSeverity severity,
 void UsePrintf(LogSeverity min_severity);
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
-#define bt_log(flag, tag, fmt...)                                            \
-  do {                                                                       \
-    if (::btlib::common::IsLogLevelEnabled(                                  \
-            ::btlib::common::LogSeverity::flag)) {                           \
-      ::btlib::common::LogMessage(                                           \
-          __FILE__, __LINE__, ::btlib::common::LogSeverity::flag, tag, fmt); \
-    }                                                                        \
+#define bt_log(flag, tag, fmt...)                                           \
+  do {                                                                      \
+    if (bt::common::IsLogLevelEnabled(bt::common::LogSeverity::flag)) { \
+      bt::common::LogMessage(__FILE__, __LINE__,                          \
+                               bt::common::LogSeverity::flag, tag, fmt);  \
+    }                                                                       \
   } while (0)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};

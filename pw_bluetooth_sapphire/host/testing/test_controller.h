@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 // A CommandTransaction is used to set up an expectation for a command channel
@@ -100,6 +100,6 @@ class TestController : public FakeControllerBase {
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_

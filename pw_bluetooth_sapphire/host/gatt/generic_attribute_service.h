@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // Callback called to signal that an indication payload should be sent. Used to
@@ -59,6 +59,6 @@ class GenericAttributeService final {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GENERIC_ATTRIBUTE_SERVICE_H_

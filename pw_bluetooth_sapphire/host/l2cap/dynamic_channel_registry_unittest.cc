@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace {
@@ -373,4 +373,4 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

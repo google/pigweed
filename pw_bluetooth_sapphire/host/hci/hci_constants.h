@@ -15,7 +15,7 @@
 
 // This file contains constants and numbers used in HCI packet payloads.
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // HCI_Version Assigned Values See the "Assigned Numbers" document for
@@ -1404,6 +1404,6 @@ enum class PacketTypeBits : uint16_t {
 using PacketTypeType = uint16_t;
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_CONSTANTS_H_

@@ -13,7 +13,7 @@
 #include "lib/fxl/strings/string_number_conversions.h"
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -217,4 +217,4 @@ bool StringToUuid(const std::string& uuid_string, UUID* out_uuid) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

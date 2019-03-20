@@ -12,7 +12,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
 
 template <typename ChannelT>
 SocketChannelRelay<ChannelT>::SocketChannelRelay(
@@ -404,4 +406,6 @@ void SocketChannelRelay<ChannelT>::UnbindAndCancelWait(async::Wait* wait) {
                       "Cancel failed: %s", zx_status_get_string(cancel_res));
 }
 
-}  // namespace btlib::data::internal
+}  // namespace internal
+}  // namespace data
+}  // namespace bt

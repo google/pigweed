@@ -5,7 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/mux_commands.h"
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 namespace {
 
@@ -304,4 +304,4 @@ TEST_F(RFCOMM_MuxCommandTest, DLCParameterNegotiationCommand) {
 
 }  // namespace
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

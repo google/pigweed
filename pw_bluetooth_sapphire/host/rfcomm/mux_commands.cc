@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 namespace {
@@ -582,4 +582,4 @@ size_t DLCParameterNegotiationCommand::written_size() const {
 }
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

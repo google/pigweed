@@ -16,12 +16,12 @@
 // and SocketFactory in integration, as they are implemented by the domain
 // object. These exercise a production data plane against raw HCI endpoints.
 
-namespace btlib {
+namespace bt {
 namespace data {
 namespace {
 
-using ::btlib::testing::TestController;
-using TestingBase = ::btlib::testing::FakeControllerTest<TestController>;
+using bt::testing::TestController;
+using TestingBase = bt::testing::FakeControllerTest<TestController>;
 
 using common::CreateStaticByteBuffer;
 using common::LowerBits;
@@ -293,4 +293,4 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
 
 }  // namespace
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt

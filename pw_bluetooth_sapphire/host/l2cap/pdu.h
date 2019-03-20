@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 // Represents a L2CAP PDU. Each PDU contains a complete L2CAP frame that can be
@@ -111,6 +111,6 @@ class PDU final {
 };
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_

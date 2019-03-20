@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 using common::BufferView;
@@ -456,4 +456,4 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
 }
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

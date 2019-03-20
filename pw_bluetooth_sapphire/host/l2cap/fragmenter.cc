@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle,
@@ -107,4 +107,4 @@ PDU Fragmenter::BuildBasicFrame(ChannelId channel_id,
 }
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

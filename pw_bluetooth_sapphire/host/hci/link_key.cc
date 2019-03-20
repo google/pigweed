@@ -4,7 +4,7 @@
 
 #include "link_key.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 LinkKey::LinkKey() : rand_(0), ediv_(0) { value_.fill(0); }
@@ -13,4 +13,4 @@ LinkKey::LinkKey(const common::UInt128& ltk, uint64_t rand, uint16_t ediv)
     : value_(ltk), rand_(rand), ediv_(ediv) {}
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

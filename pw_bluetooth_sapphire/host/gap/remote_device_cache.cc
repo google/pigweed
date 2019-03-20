@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "lib/async/default.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::DeviceAddress;
@@ -344,4 +344,4 @@ std::optional<DeviceId> RemoteDeviceCache::FindIdByAddress(
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

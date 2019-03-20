@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -27,4 +27,4 @@ TEST(ManufacturerNamesTest, ExhaustiveLookUp) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

@@ -16,7 +16,7 @@
 #include "slab_allocators.h"
 #include "transport.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 DataBufferInfo::DataBufferInfo(size_t max_data_length, size_t max_num_packets)
@@ -478,4 +478,4 @@ void ACLDataChannel::OnChannelReady(
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

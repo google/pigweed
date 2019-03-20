@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 namespace {
@@ -133,4 +133,4 @@ std::string DeviceClass::ToString() const {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

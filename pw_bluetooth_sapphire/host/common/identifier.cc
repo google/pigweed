@@ -6,7 +6,7 @@
 
 #include "random.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 DeviceId RandomDeviceId() {
@@ -22,4 +22,4 @@ DeviceId RandomDeviceId() {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

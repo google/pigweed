@@ -4,7 +4,7 @@
 
 #include "status.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 std::string HostErrorToString(HostError error) {
@@ -40,4 +40,4 @@ std::string HostErrorToString(HostError error) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

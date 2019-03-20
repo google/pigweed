@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 
 namespace hci {
 class Connection;
@@ -96,6 +96,6 @@ class LowEnergyAdvertisingManager {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADVERTISING_MANAGER_H_

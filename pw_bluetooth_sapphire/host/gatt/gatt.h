@@ -19,7 +19,7 @@
 #include "lib/fidl/cpp/vector.h"
 #include "lib/fxl/memory/ref_ptr.h"
 
-namespace btlib {
+namespace bt {
 
 namespace l2cap {
 class Channel;
@@ -170,6 +170,6 @@ class GATT : public fbl::RefCounted<GATT> {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_H_

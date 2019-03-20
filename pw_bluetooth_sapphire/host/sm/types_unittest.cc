@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 namespace {
 
@@ -62,4 +62,4 @@ TEST(SMP_TypeTest, LinkKeyTypeToSecurityProperties) {
 
 }  // namespace
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/uuid/uuid.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 namespace {
@@ -225,4 +225,4 @@ bool ServiceRecord::AddInfo(const std::string& language_code,
 }
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

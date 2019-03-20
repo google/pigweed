@@ -24,7 +24,7 @@
 #include "lib/fxl/functional/cancelable_callback.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 class FakeDevice;
@@ -326,6 +326,6 @@ class FakeController : public FakeControllerBase,
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_

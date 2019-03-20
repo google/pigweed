@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace {
@@ -645,4 +645,4 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

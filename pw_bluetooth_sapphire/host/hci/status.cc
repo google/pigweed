@@ -6,7 +6,7 @@
 
 #include "util.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // static
@@ -30,4 +30,4 @@ Status::Status(hci::StatusCode proto_code)
     : Base(proto_code == StatusCode::kSuccess ? Base() : Base(proto_code)) {}
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

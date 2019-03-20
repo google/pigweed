@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 namespace {
 
@@ -225,4 +225,4 @@ TEST(ATT_AttributeTest, WriteAsync) {
 
 }  // namespace
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

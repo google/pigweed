@@ -9,7 +9,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -170,4 +170,4 @@ TEST(DeviceAddressTest, IsStatic) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

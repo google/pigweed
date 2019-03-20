@@ -15,7 +15,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/zx/time.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 // v5.0, Vol 3, Part G, 5.1.2
@@ -331,6 +331,6 @@ constexpr OpCode kConfirmation = 0x1E;
 using IndicationParams = NotificationParams;
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_

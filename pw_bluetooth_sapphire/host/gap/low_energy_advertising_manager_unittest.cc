@@ -17,7 +17,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -385,4 +385,4 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

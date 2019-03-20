@@ -13,7 +13,7 @@
 
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 
 using common::ByteBuffer;
 using common::DeviceAddress;
@@ -2067,4 +2067,4 @@ TEST_F(SMP_SlavePairingTest, ReceiveSecurityRequest) {
 
 }  // namespace
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

@@ -24,7 +24,7 @@ class GattServerServer
   // |adapter_manager| is used to lazily request a handle to the corresponding
   // adapter. It MUST out-live this GattServerServer instance.
   GattServerServer(
-      fbl::RefPtr<btlib::gatt::GATT> gatt,
+      fbl::RefPtr<bt::gatt::GATT> gatt,
       fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request);
 
   ~GattServerServer() override;
@@ -47,20 +47,19 @@ class GattServerServer
       PublishServiceCallback callback) override;
 
   // Called when a remote device issues a read request to one of our services.
-  void OnReadRequest(::btlib::gatt::IdType service_id, ::btlib::gatt::IdType id,
-                     uint16_t offset, ::btlib::gatt::ReadResponder responder);
+  void OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
+                     uint16_t offset, bt::gatt::ReadResponder responder);
 
   // Called when a remote device issues a write request to one of our services.
-  void OnWriteRequest(::btlib::gatt::IdType service_id,
-                      ::btlib::gatt::IdType id, uint16_t offset,
-                      const ::btlib::common::ByteBuffer& value,
-                      ::btlib::gatt::WriteResponder responder);
+  void OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
+                      uint16_t offset, const bt::common::ByteBuffer& value,
+                      bt::gatt::WriteResponder responder);
 
   // Called when a remote device has configured notifications or indications on
   // a local characteristic.
-  void OnCharacteristicConfig(::btlib::gatt::IdType service_id,
-                              ::btlib::gatt::IdType chrc_id,
-                              ::btlib::gatt::DeviceId peer_id, bool notify,
+  void OnCharacteristicConfig(bt::gatt::IdType service_id,
+                              bt::gatt::IdType chrc_id,
+                              bt::gatt::DeviceId peer_id, bool notify,
                               bool indicate);
 
   // The mapping between service identifiers and FIDL Service implementations.

@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -189,4 +189,4 @@ void DiscoveryFilter::Reset() {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

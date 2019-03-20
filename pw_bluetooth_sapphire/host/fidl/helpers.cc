@@ -28,13 +28,13 @@ namespace bthost {
 namespace fidl_helpers {
 namespace {
 
-fctrl::TechnologyType TechnologyTypeToFidl(::btlib::gap::TechnologyType type) {
+fctrl::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
   switch (type) {
-    case ::btlib::gap::TechnologyType::kLowEnergy:
+    case bt::gap::TechnologyType::kLowEnergy:
       return fctrl::TechnologyType::LOW_ENERGY;
-    case ::btlib::gap::TechnologyType::kClassic:
+    case bt::gap::TechnologyType::kClassic:
       return fctrl::TechnologyType::CLASSIC;
-    case ::btlib::gap::TechnologyType::kDualMode:
+    case bt::gap::TechnologyType::kDualMode:
       return fctrl::TechnologyType::DUAL_MODE;
     default:
       ZX_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
@@ -45,33 +45,33 @@ fctrl::TechnologyType TechnologyTypeToFidl(::btlib::gap::TechnologyType type) {
   return fctrl::TechnologyType::DUAL_MODE;
 }
 
-btlib::common::UInt128 KeyDataFromFidl(const fhost::Key& key) {
-  btlib::common::UInt128 result;
+bt::common::UInt128 KeyDataFromFidl(const fhost::Key& key) {
+  bt::common::UInt128 result;
   static_assert(sizeof(key.value) == result.size(),
                 "keys must have the same size");
   std::copy(key.value.begin(), key.value.end(), result.begin());
   return result;
 }
 
-::fidl::Array<uint8_t, 16> KeyDataToFidl(const btlib::common::UInt128& key) {
+::fidl::Array<uint8_t, 16> KeyDataToFidl(const bt::common::UInt128& key) {
   ::fidl::Array<uint8_t, 16> result;
   static_assert(sizeof(key) == result.size(), "keys must have the same size");
   std::copy(key.begin(), key.end(), result.begin());
   return result;
 }
 
-btlib::sm::SecurityProperties SecurityPropsFromFidl(
+bt::sm::SecurityProperties SecurityPropsFromFidl(
     const fhost::SecurityProperties& sec_prop) {
-  auto level = btlib::sm::SecurityLevel::kEncrypted;
+  auto level = bt::sm::SecurityLevel::kEncrypted;
   if (sec_prop.authenticated) {
-    level = btlib::sm::SecurityLevel::kAuthenticated;
+    level = bt::sm::SecurityLevel::kAuthenticated;
   }
-  return btlib::sm::SecurityProperties(level, sec_prop.encryption_key_size,
-                                       sec_prop.secure_connections);
+  return bt::sm::SecurityProperties(level, sec_prop.encryption_key_size,
+                                    sec_prop.secure_connections);
 }
 
 fhost::SecurityProperties SecurityPropsToFidl(
-    const btlib::sm::SecurityProperties& sec_prop) {
+    const bt::sm::SecurityProperties& sec_prop) {
   fhost::SecurityProperties result;
   result.authenticated = sec_prop.authenticated();
   result.secure_connections = sec_prop.secure_connections();
@@ -79,30 +79,29 @@ fhost::SecurityProperties SecurityPropsToFidl(
   return result;
 }
 
-btlib::common::DeviceAddress::Type BondingAddrTypeFromFidl(
+bt::common::DeviceAddress::Type BondingAddrTypeFromFidl(
     const fhost::AddressType& type) {
   switch (type) {
     case fhost::AddressType::LE_RANDOM:
-      return btlib::common::DeviceAddress::Type::kLERandom;
+      return bt::common::DeviceAddress::Type::kLERandom;
     case fhost::AddressType::LE_PUBLIC:
-      return btlib::common::DeviceAddress::Type::kLEPublic;
+      return bt::common::DeviceAddress::Type::kLEPublic;
     case fhost::AddressType::BREDR:
-      return btlib::common::DeviceAddress::Type::kBREDR;
+      return bt::common::DeviceAddress::Type::kBREDR;
     default:
       ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
       break;
   }
-  return btlib::common::DeviceAddress::Type::kBREDR;
+  return bt::common::DeviceAddress::Type::kBREDR;
 }
 
-fhost::AddressType BondingAddrTypeToFidl(
-    btlib::common::DeviceAddress::Type type) {
+fhost::AddressType BondingAddrTypeToFidl(bt::common::DeviceAddress::Type type) {
   switch (type) {
-    case btlib::common::DeviceAddress::Type::kLERandom:
+    case bt::common::DeviceAddress::Type::kLERandom:
       return fhost::AddressType::LE_RANDOM;
-    case btlib::common::DeviceAddress::Type::kLEPublic:
+    case bt::common::DeviceAddress::Type::kLEPublic:
       return fhost::AddressType::LE_PUBLIC;
-    case btlib::common::DeviceAddress::Type::kBREDR:
+    case bt::common::DeviceAddress::Type::kBREDR:
       return fhost::AddressType::BREDR;
     default:
       // Anonymous is not a valid address type to use for bonding, so we treat
@@ -114,13 +113,13 @@ fhost::AddressType BondingAddrTypeToFidl(
   return fhost::AddressType::BREDR;
 }
 
-btlib::sm::LTK LtkFromFidl(const fhost::LTK& ltk) {
-  return btlib::sm::LTK(
+bt::sm::LTK LtkFromFidl(const fhost::LTK& ltk) {
+  return bt::sm::LTK(
       SecurityPropsFromFidl(ltk.key.security_properties),
-      btlib::hci::LinkKey(KeyDataFromFidl(ltk.key), ltk.rand, ltk.ediv));
+      bt::hci::LinkKey(KeyDataFromFidl(ltk.key), ltk.rand, ltk.ediv));
 }
 
-fhost::LTK LtkToFidl(const btlib::sm::LTK& ltk) {
+fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
   fhost::LTK result;
   result.key.security_properties = SecurityPropsToFidl(ltk.security());
   result.key.value = KeyDataToFidl(ltk.key().value());
@@ -133,12 +132,12 @@ fhost::LTK LtkToFidl(const btlib::sm::LTK& ltk) {
   return result;
 }
 
-btlib::sm::Key KeyFromFidl(const fhost::Key& key) {
-  return btlib::sm::Key(SecurityPropsFromFidl(key.security_properties),
-                        KeyDataFromFidl(key));
+bt::sm::Key KeyFromFidl(const fhost::Key& key) {
+  return bt::sm::Key(SecurityPropsFromFidl(key.security_properties),
+                     KeyDataFromFidl(key));
 }
 
-fhost::Key KeyToFidl(const btlib::sm::Key& key) {
+fhost::Key KeyToFidl(const bt::sm::Key& key) {
   fhost::Key result;
   result.security_properties = SecurityPropsToFidl(key.security());
   result.value = KeyDataToFidl(key.value());
@@ -147,33 +146,32 @@ fhost::Key KeyToFidl(const btlib::sm::Key& key) {
 
 }  // namespace
 
-std::optional<btlib::common::DeviceId> DeviceIdFromString(
-    const std::string& id) {
+std::optional<bt::common::DeviceId> DeviceIdFromString(const std::string& id) {
   uint64_t value;
   if (!fxl::StringToNumberWithError<decltype(value)>(id, &value,
                                                      fxl::Base::k16)) {
     return std::nullopt;
   }
-  return btlib::common::DeviceId(value);
+  return bt::common::DeviceId(value);
 }
 
-ErrorCode HostErrorToFidl(::btlib::common::HostError host_error) {
+ErrorCode HostErrorToFidl(bt::common::HostError host_error) {
   switch (host_error) {
-    case ::btlib::common::HostError::kFailed:
+    case bt::common::HostError::kFailed:
       return ErrorCode::FAILED;
-    case ::btlib::common::HostError::kTimedOut:
+    case bt::common::HostError::kTimedOut:
       return ErrorCode::TIMED_OUT;
-    case ::btlib::common::HostError::kInvalidParameters:
+    case bt::common::HostError::kInvalidParameters:
       return ErrorCode::INVALID_ARGUMENTS;
-    case ::btlib::common::HostError::kCanceled:
+    case bt::common::HostError::kCanceled:
       return ErrorCode::CANCELED;
-    case ::btlib::common::HostError::kInProgress:
+    case bt::common::HostError::kInProgress:
       return ErrorCode::IN_PROGRESS;
-    case ::btlib::common::HostError::kNotSupported:
+    case bt::common::HostError::kNotSupported:
       return ErrorCode::NOT_SUPPORTED;
-    case ::btlib::common::HostError::kNotFound:
+    case bt::common::HostError::kNotFound:
       return ErrorCode::NOT_FOUND;
-    case ::btlib::common::HostError::kProtocolError:
+    case bt::common::HostError::kProtocolError:
       return ErrorCode::PROTOCOL_ERROR;
     default:
       break;
@@ -190,30 +188,30 @@ Status NewFidlError(ErrorCode error_code, std::string description) {
   return status;
 }
 
-btlib::sm::IOCapability IoCapabilityFromFidl(
-    fctrl::InputCapabilityType input, fctrl::OutputCapabilityType output) {
+bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
+                                          fctrl::OutputCapabilityType output) {
   if (input == fctrl::InputCapabilityType::NONE &&
       output == fctrl::OutputCapabilityType::NONE) {
-    return btlib::sm::IOCapability::kNoInputNoOutput;
+    return bt::sm::IOCapability::kNoInputNoOutput;
   } else if (input == fctrl::InputCapabilityType::KEYBOARD &&
              output == fctrl::OutputCapabilityType::DISPLAY) {
-    return btlib::sm::IOCapability::kKeyboardDisplay;
+    return bt::sm::IOCapability::kKeyboardDisplay;
   } else if (input == fctrl::InputCapabilityType::KEYBOARD &&
              output == fctrl::OutputCapabilityType::NONE) {
-    return btlib::sm::IOCapability::kKeyboardOnly;
+    return bt::sm::IOCapability::kKeyboardOnly;
   } else if (input == fctrl::InputCapabilityType::NONE &&
              output == fctrl::OutputCapabilityType::DISPLAY) {
-    return btlib::sm::IOCapability::kDisplayOnly;
+    return bt::sm::IOCapability::kDisplayOnly;
   } else if (input == fctrl::InputCapabilityType::CONFIRMATION &&
              output == fctrl::OutputCapabilityType::DISPLAY) {
-    return btlib::sm::IOCapability::kDisplayYesNo;
+    return bt::sm::IOCapability::kDisplayYesNo;
   }
-  return btlib::sm::IOCapability::kNoInputNoOutput;
+  return bt::sm::IOCapability::kNoInputNoOutput;
 }
 
-btlib::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
-  btlib::sm::PairingData result;
-  result.identity_address = btlib::common::DeviceAddress(
+bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
+  bt::sm::PairingData result;
+  result.identity_address = bt::common::DeviceAddress(
       BondingAddrTypeFromFidl(data.address_type), data.address);
   if (data.ltk) {
     result.ltk = LtkFromFidl(*data.ltk);
@@ -227,14 +225,14 @@ btlib::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
   return result;
 }
 
-std::optional<btlib::sm::LTK> BrEdrKeyFromFidl(const fhost::BREDRData& data) {
+std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fhost::BREDRData& data) {
   if (data.link_key) {
     return LtkFromFidl(*data.link_key);
   }
   return std::nullopt;
 }
 
-fctrl::AdapterInfo NewAdapterInfo(const ::btlib::gap::Adapter& adapter) {
+fctrl::AdapterInfo NewAdapterInfo(const bt::gap::Adapter& adapter) {
   fctrl::AdapterInfo adapter_info;
   adapter_info.identifier = adapter.identifier().ToString();
   adapter_info.technology = TechnologyTypeToFidl(adapter.state().type());
@@ -252,7 +250,7 @@ fctrl::AdapterInfo NewAdapterInfo(const ::btlib::gap::Adapter& adapter) {
   return adapter_info;
 }
 
-fctrl::RemoteDevice NewRemoteDevice(const ::btlib::gap::RemoteDevice& device) {
+fctrl::RemoteDevice NewRemoteDevice(const bt::gap::RemoteDevice& device) {
   fctrl::RemoteDevice fidl_device;
   fidl_device.identifier = device.identifier().ToString();
   fidl_device.address = device.address().value().ToString();
@@ -267,7 +265,7 @@ fctrl::RemoteDevice NewRemoteDevice(const ::btlib::gap::RemoteDevice& device) {
   // to it.
   fidl_device.service_uuids.resize(0);
 
-  if (device.rssi() != ::btlib::hci::kRSSIInvalid) {
+  if (device.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device.rssi = Int8::New();
     fidl_device.rssi->value = device.rssi();
   }
@@ -277,10 +275,10 @@ fctrl::RemoteDevice NewRemoteDevice(const ::btlib::gap::RemoteDevice& device) {
   }
 
   if (device.le()) {
-    ::btlib::gap::AdvertisingData adv_data;
+    bt::gap::AdvertisingData adv_data;
 
-    if (!::btlib::gap::AdvertisingData::FromBytes(
-            device.le()->advertising_data(), &adv_data)) {
+    if (!bt::gap::AdvertisingData::FromBytes(device.le()->advertising_data(),
+                                             &adv_data)) {
       return fidl_device;
     }
 
@@ -301,15 +299,14 @@ fctrl::RemoteDevice NewRemoteDevice(const ::btlib::gap::RemoteDevice& device) {
   return fidl_device;
 }
 
-fctrl::RemoteDevicePtr NewRemoteDevicePtr(
-    const ::btlib::gap::RemoteDevice& device) {
+fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::RemoteDevice& device) {
   auto fidl_device = fctrl::RemoteDevice::New();
   *fidl_device = NewRemoteDevice(device);
   return fidl_device;
 }
 
-fhost::BondingData NewBondingData(const ::btlib::gap::Adapter& adapter,
-                                  const ::btlib::gap::RemoteDevice& device) {
+fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
+                                  const bt::gap::RemoteDevice& device) {
   fhost::BondingData out_data;
   out_data.identifier = device.identifier().ToString();
   out_data.local_address = adapter.state().controller_address().ToString();
@@ -369,9 +366,8 @@ fhost::BondingData NewBondingData(const ::btlib::gap::Adapter& adapter,
   return out_data;
 }
 
-fble::RemoteDevicePtr NewLERemoteDevice(
-    const ::btlib::gap::RemoteDevice& device) {
-  ::btlib::gap::AdvertisingData ad;
+fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::RemoteDevice& device) {
+  bt::gap::AdvertisingData ad;
   if (!device.le()) {
     return nullptr;
   }
@@ -383,14 +379,14 @@ fble::RemoteDevicePtr NewLERemoteDevice(
 
   // Initialize advertising data only if its non-empty.
   if (le.advertising_data().size() != 0u) {
-    ::btlib::gap::AdvertisingData ad;
-    if (!::btlib::gap::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
+    bt::gap::AdvertisingData ad;
+    if (!bt::gap::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
       return nullptr;
     }
     fidl_device->advertising_data = ad.AsLEAdvertisingData();
   }
 
-  if (device.rssi() != ::btlib::hci::kRSSIInvalid) {
+  if (device.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device->rssi = Int8::New();
     fidl_device->rssi->value = device.rssi();
   }
@@ -405,7 +401,7 @@ bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
     return true;
 
   for (const auto& uuid_str : *fidl_filter.service_uuids) {
-    if (!::btlib::common::IsStringValidUuid(uuid_str))
+    if (!bt::common::IsStringValidUuid(uuid_str))
       return false;
   }
 
@@ -413,14 +409,14 @@ bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
 }
 
 bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
-                             ::btlib::gap::DiscoveryFilter* out_filter) {
+                             bt::gap::DiscoveryFilter* out_filter) {
   ZX_DEBUG_ASSERT(out_filter);
 
   if (fidl_filter.service_uuids) {
-    std::vector<::btlib::common::UUID> uuids;
+    std::vector<bt::common::UUID> uuids;
     for (const auto& uuid_str : *fidl_filter.service_uuids) {
-      ::btlib::common::UUID uuid;
-      if (!::btlib::common::StringToUuid(uuid_str, &uuid)) {
+      bt::common::UUID uuid;
+      if (!bt::common::StringToUuid(uuid_str, &uuid)) {
         bt_log(TRACE, "bt-host", "invalid parameters given to scan filter");
         return false;
       }
@@ -456,10 +452,10 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 
 // static
 fidl::VectorPtr<uint8_t>
-fxl::TypeConverter<fidl::VectorPtr<uint8_t>, ::btlib::common::ByteBuffer>::
-    Convert(const ::btlib::common::ByteBuffer& from) {
+fxl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer>::Convert(
+    const bt::common::ByteBuffer& from) {
   auto to = fidl::VectorPtr<uint8_t>::New(from.size());
-  ::btlib::common::MutableBufferView view(to->data(), to->size());
+  bt::common::MutableBufferView view(to->data(), to->size());
   view.Write(from);
   return to;
 }

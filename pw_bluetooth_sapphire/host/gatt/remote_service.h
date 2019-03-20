@@ -18,7 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // Callback type invoked to notify when GATT services get discovered.
@@ -300,6 +300,6 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_H_

@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -55,10 +55,10 @@ const auto kAdvData =
                            'T', 'e', 's', 't');
 const auto kEirData = kAdvData;
 
-const btlib::sm::LTK kLTK;
-const btlib::sm::Key kKey{};
+const bt::sm::LTK kLTK;
+const bt::sm::Key kKey{};
 
-const btlib::sm::LTK kBrEdrKey;
+const bt::sm::LTK kBrEdrKey;
 
 // Phone (Networking)
 const common::DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
@@ -1285,4 +1285,4 @@ TEST_F(GAP_RemoteDeviceCacheExpirationTest, SetNameUpdatesExpiration) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

@@ -4,7 +4,7 @@
 
 #include "types.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 Service::Service(bool primary, const common::UUID& type)
@@ -36,4 +36,4 @@ Descriptor::Descriptor(IdType id,
       write_permissions_(write_permissions) {}
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

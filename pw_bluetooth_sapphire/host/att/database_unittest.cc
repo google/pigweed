@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 namespace {
 
@@ -523,4 +523,4 @@ TEST_F(ATT_DatabaseIteratorManyTest, Range) {
 
 }  // namespace
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

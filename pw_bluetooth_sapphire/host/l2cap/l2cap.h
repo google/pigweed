@@ -20,7 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 class Channel;
@@ -371,6 +371,6 @@ struct LEFlowControlCreditParams {
 } __PACKED;
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_H_

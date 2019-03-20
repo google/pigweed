@@ -9,7 +9,7 @@
 #include "fidl/gatt_client_server.h"
 #include "fidl/gatt_server_server.h"
 
-using namespace btlib;
+using namespace bt;
 
 namespace bthost {
 
@@ -19,7 +19,7 @@ fbl::RefPtr<GattHost> GattHost::Create(std::string thrd_name) {
 }
 
 GattHost::GattHost(std::string thrd_name)
-    : btlib::common::TaskDomain<GattHost>(this, std::move(thrd_name)),
+    : bt::common::TaskDomain<GattHost>(this, std::move(thrd_name)),
       weak_ptr_factory_(this) {
   // Initialize the profile to operate on our task runner.
   gatt_ = gatt::GATT::Create(dispatcher());
@@ -55,7 +55,7 @@ void GattHost::ShutDown() {
     remote_service_watcher_ = {};
   }
 
-  btlib::common::TaskDomain<GattHost>::ScheduleCleanUp();
+  bt::common::TaskDomain<GattHost>::ScheduleCleanUp();
 }
 
 void GattHost::CleanUp() {
@@ -81,7 +81,7 @@ void GattHost::BindGattServer(
 }
 
 void GattHost::BindGattClient(
-    Token token, btlib::gatt::DeviceId peer_id,
+    Token token, bt::gatt::DeviceId peer_id,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request) {
   PostMessage([this, token, peer_id, request = std::move(request)]() mutable {
     if (client_servers_.find(token) != client_servers_.end()) {
@@ -109,7 +109,7 @@ void GattHost::UnbindGattClient(Token token) {
 }
 
 void GattHost::SetRemoteServiceWatcher(
-    btlib::gatt::GATT::RemoteServiceWatcher callback) {
+    bt::gatt::GATT::RemoteServiceWatcher callback) {
   std::lock_guard<std::mutex> lock(mtx_);
   remote_service_watcher_ = std::move(callback);
 }

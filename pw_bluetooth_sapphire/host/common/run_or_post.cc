@@ -7,7 +7,7 @@
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 void RunOrPost(fit::closure task, async_dispatcher_t* dispatcher) {
@@ -22,4 +22,4 @@ void RunOrPost(fit::closure task, async_dispatcher_t* dispatcher) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

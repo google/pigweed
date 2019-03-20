@@ -8,7 +8,7 @@
 
 #include "slab_allocators.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace slab_allocators {
 
@@ -144,17 +144,14 @@ void EventPacket::InitializeFromBuffer() {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::LargeCommandTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
+    bt::hci::slab_allocators::LargeCommandTraits,
+    bt::hci::slab_allocators::kMaxNumSlabs, true);
 DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::SmallCommandTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    ::btlib::hci::slab_allocators::EventTraits,
-    ::btlib::hci::slab_allocators::kMaxNumSlabs,
-    true);
+    bt::hci::slab_allocators::SmallCommandTraits,
+    bt::hci::slab_allocators::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::EventTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs,
+                                      true);

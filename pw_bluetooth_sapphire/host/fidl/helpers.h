@@ -24,13 +24,13 @@
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 class DiscoveryFilter;
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 namespace bthost {
 namespace fidl_helpers {
@@ -38,21 +38,18 @@ namespace fidl_helpers {
 // TODO(BT-305): Temporary logic for converting between the stack identifier
 // type (integer) and FIDL identifier type (string). Remove these once all FIDL
 // interfaces have been converted to use integer IDs.
-std::optional<btlib::common::DeviceId> DeviceIdFromString(
-    const std::string& id);
+std::optional<bt::common::DeviceId> DeviceIdFromString(const std::string& id);
 
 // Functions for generating a FIDL bluetooth::common::Status
 
-fuchsia::bluetooth::ErrorCode HostErrorToFidl(
-    ::btlib::common::HostError host_error);
+fuchsia::bluetooth::ErrorCode HostErrorToFidl(bt::common::HostError host_error);
 
 fuchsia::bluetooth::Status NewFidlError(
     fuchsia::bluetooth::ErrorCode error_code, std::string description);
 
 template <typename ProtocolErrorCode>
 fuchsia::bluetooth::Status StatusToFidl(
-    const ::btlib::common::Status<ProtocolErrorCode>& status,
-    std::string msg = "") {
+    const bt::common::Status<ProtocolErrorCode>& status, std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
   if (status.is_success()) {
     return fidl_status;
@@ -70,32 +67,31 @@ fuchsia::bluetooth::Status StatusToFidl(
 }
 
 // Functions that convert FIDL types to library objects
-btlib::sm::IOCapability IoCapabilityFromFidl(
+bt::sm::IOCapability IoCapabilityFromFidl(
     const fuchsia::bluetooth::control::InputCapabilityType,
     const fuchsia::bluetooth::control::OutputCapabilityType);
 
 // Functions to construct FIDL control library objects from library objects.
 fuchsia::bluetooth::control::AdapterInfo NewAdapterInfo(
-    const ::btlib::gap::Adapter& adapter);
+    const bt::gap::Adapter& adapter);
 fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(
-    const ::btlib::gap::RemoteDevice& device);
+    const bt::gap::RemoteDevice& device);
 fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
-    const ::btlib::gap::RemoteDevice& device);
+    const bt::gap::RemoteDevice& device);
 
 // Functions to convert Host FIDL library objects.
-btlib::sm::PairingData PairingDataFromFidl(
+bt::sm::PairingData PairingDataFromFidl(
     const fuchsia::bluetooth::host::LEData& data);
-std::optional<btlib::sm::LTK> BrEdrKeyFromFidl(
+std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
     const fuchsia::bluetooth::host::BREDRData& data);
 fuchsia::bluetooth::host::BondingData NewBondingData(
-    const ::btlib::gap::Adapter& adapter,
-    const ::btlib::gap::RemoteDevice& device);
+    const bt::gap::Adapter& adapter, const bt::gap::RemoteDevice& device);
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::AdvertisingDataPtr NewAdvertisingData(
-    const ::btlib::common::ByteBuffer& advertising_data);
+    const bt::common::ByteBuffer& advertising_data);
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(
-    const ::btlib::gap::RemoteDevice& device);
+    const bt::gap::RemoteDevice& device);
 
 // Validates the contents of a ScanFilter.
 bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
@@ -105,17 +101,15 @@ bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
 // unmodified.
 bool PopulateDiscoveryFilter(
     const fuchsia::bluetooth::le::ScanFilter& fidl_filter,
-    ::btlib::gap::DiscoveryFilter* out_filter);
+    bt::gap::DiscoveryFilter* out_filter);
 
 }  // namespace fidl_helpers
 }  // namespace bthost
 
 // fxl::TypeConverter specializations for common::ByteBuffer and friends.
 template <>
-struct fxl::TypeConverter<fidl::VectorPtr<uint8_t>,
-                          ::btlib::common::ByteBuffer> {
-  static fidl::VectorPtr<uint8_t> Convert(
-      const ::btlib::common::ByteBuffer& from);
+struct fxl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer> {
+  static fidl::VectorPtr<uint8_t> Convert(const bt::common::ByteBuffer& from);
 };
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_

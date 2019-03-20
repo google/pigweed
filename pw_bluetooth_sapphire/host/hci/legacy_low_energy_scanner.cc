@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace btlib {
+namespace bt {
 
 using common::BufferView;
 
@@ -340,4 +340,4 @@ void LegacyLowEnergyScanner::OnScanPeriodComplete() {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

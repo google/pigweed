@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Represents a 128-bit Bluetooth UUID. This class allows UUID values to be
@@ -216,14 +216,14 @@ inline bool operator!=(const UInt128& lhs, const UUID& rhs) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
 namespace std {
 
 template <>
-struct hash<::btlib::common::UUID> {
-  size_t operator()(const ::btlib::common::UUID& k) const { return k.Hash(); }
+struct hash<bt::common::UUID> {
+  size_t operator()(const bt::common::UUID& k) const { return k.Hash(); }
 };
 
 }  // namespace std

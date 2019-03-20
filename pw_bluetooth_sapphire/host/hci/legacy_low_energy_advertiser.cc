@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 namespace {
@@ -317,4 +317,4 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

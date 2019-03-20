@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 using common::DeviceAddress;
@@ -34,4 +34,4 @@ std::optional<DeviceAddress> IdentityResolvingList::Resolve(
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

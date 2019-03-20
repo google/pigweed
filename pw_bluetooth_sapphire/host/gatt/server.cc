@@ -14,7 +14,7 @@
 
 #include "gatt_defs.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -794,4 +794,4 @@ att::ErrorCode Server::ReadByTypeHelper(
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

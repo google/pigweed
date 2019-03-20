@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -161,4 +161,4 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
 
 }  // namespace
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

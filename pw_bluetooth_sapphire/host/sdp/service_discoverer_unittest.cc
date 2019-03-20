@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 namespace {
 
@@ -406,4 +406,4 @@ TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
 
 }  // namespace
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

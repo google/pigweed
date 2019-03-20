@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/mux_commands.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 class UnnumberedInfoHeaderCheckFrame;
@@ -290,6 +290,6 @@ class MuxCommandFrame : public UnnumberedInfoHeaderCheckFrame {
 };
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_FRAMES_H_

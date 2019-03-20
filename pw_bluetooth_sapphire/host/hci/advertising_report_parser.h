@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Convenience class for extracting the contents of a HCI LE Advertising Report
@@ -58,6 +58,6 @@ class AdvertisingReportParser final {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ADVERTISING_REPORT_PARSER_H_

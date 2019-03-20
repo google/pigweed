@@ -8,7 +8,7 @@
 
 #include "fake_channel_test.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace {
@@ -291,4 +291,4 @@ TEST_F(L2CAP_SignalingChannelTest, ValidRequestCommandIds) {
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

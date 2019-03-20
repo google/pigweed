@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 // Identifier type used to identify a peer device.
@@ -250,6 +250,6 @@ class AttributeGrouping final {
 };
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_

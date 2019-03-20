@@ -7,7 +7,7 @@
 
 #include <zircon/syscalls.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <typename T>
@@ -20,6 +20,6 @@ T Random() {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RANDOM_H_

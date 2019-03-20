@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
@@ -443,4 +443,4 @@ TEST(GAP_AdvertisingDataTest, WriteField) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

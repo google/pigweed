@@ -15,10 +15,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-using btlib::common::ContainersEqual;
-using btlib::common::StaticByteBuffer;
+using bt::common::ContainersEqual;
+using bt::common::StaticByteBuffer;
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace test {
 namespace {
@@ -328,4 +328,4 @@ TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
 }  // namespace
 }  // namespace test
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

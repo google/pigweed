@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 // A helper to build Adversiting Data, Scan Response Data, or Extended Inquiry
@@ -208,6 +208,6 @@ class AdvertisingDataWriter {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_

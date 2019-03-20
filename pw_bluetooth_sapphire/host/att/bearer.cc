@@ -12,7 +12,7 @@
 
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 using common::HostError;
@@ -774,4 +774,4 @@ void Bearer::OnRxBFrame(common::ByteBufferPtr sdu) {
 }
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

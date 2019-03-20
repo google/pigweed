@@ -5,6 +5,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.cc"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
+
 template class SocketFactory<l2cap::Channel>;
-}  // namespace btlib::data::internal
+
+}  // namespace internal
+}  // namespace data
+}  // namespace bt

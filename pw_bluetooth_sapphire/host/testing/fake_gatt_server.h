@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 class FakeDevice;
@@ -37,6 +37,6 @@ class FakeGattServer final {
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_

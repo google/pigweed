@@ -22,8 +22,8 @@ using fuchsia::bluetooth::gatt::ServiceInfoPtr;
 
 namespace bthost {
 
-GattClientServer::GattClientServer(btlib::gatt::DeviceId peer_id,
-                                   fbl::RefPtr<btlib::gatt::GATT> gatt,
+GattClientServer::GattClientServer(bt::gatt::DeviceId peer_id,
+                                   fbl::RefPtr<bt::gatt::GATT> gatt,
                                    fidl::InterfaceRequest<Client> request)
     : GattServerBase(gatt, this, std::move(request)),
       peer_id_(peer_id),
@@ -32,7 +32,7 @@ GattClientServer::GattClientServer(btlib::gatt::DeviceId peer_id,
 void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
   // Parse the UUID list.
-  std::vector<btlib::common::UUID> uuids;
+  std::vector<bt::common::UUID> uuids;
   if (!fidl_uuids.is_null()) {
     // Allocate all at once and convert in-place.
     uuids.resize(fidl_uuids->size());
@@ -47,7 +47,7 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
     }
   }
 
-  auto cb = [callback = std::move(callback)](btlib::att::Status status,
+  auto cb = [callback = std::move(callback)](bt::att::Status status,
                                              auto services) {
     std::vector<ServiceInfo> out;
     if (!status) {

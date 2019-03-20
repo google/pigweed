@@ -10,7 +10,7 @@
 #include "lib/fxl/strings/string_number_conversions.h"
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -135,13 +135,12 @@ std::string DeviceAddress::ToString() const {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 namespace std {
 
-hash<::btlib::common::DeviceAddress>::result_type
-hash<::btlib::common::DeviceAddress>::operator()(
-    argument_type const& value) const {
+hash<bt::common::DeviceAddress>::result_type hash<
+    bt::common::DeviceAddress>::operator()(argument_type const& value) const {
   return value.Hash();
 }
 

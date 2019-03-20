@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 
@@ -62,6 +62,6 @@ class LESignalingChannel final : public SignalingChannel {
 
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LE_SIGNALING_CHANNEL_H_

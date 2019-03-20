@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/session.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 // The main entry point for managing RFCOMM connections. ChannelManager has
@@ -97,6 +97,6 @@ class ChannelManager {
 };
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_MANAGER_H_

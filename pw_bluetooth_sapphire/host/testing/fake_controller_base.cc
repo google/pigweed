@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 FakeControllerBase::FakeControllerBase() {}
@@ -224,4 +224,4 @@ void FakeControllerBase::HandleACLPacket(
 }
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt

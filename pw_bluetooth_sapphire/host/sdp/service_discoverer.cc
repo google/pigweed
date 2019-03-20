@@ -6,7 +6,7 @@
 
 #include <lib/async/default.h>
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
@@ -90,4 +90,4 @@ void ServiceDiscoverer::FinishPeerSearch(common::DeviceId peer_id,
 }
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

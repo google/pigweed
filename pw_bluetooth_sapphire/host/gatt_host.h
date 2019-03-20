@@ -38,7 +38,7 @@ class GattServerServer;
 // at least once to properly clean up this object before destruction (this is
 // asserted).
 class GattHost final : public fbl::RefCounted<GattHost>,
-                       public btlib::common::TaskDomain<GattHost> {
+                       public bt::common::TaskDomain<GattHost> {
  public:
   // Type that can be used as a token in some of the functions below. Pointers
   // are allowed to be used as tokens.
@@ -66,20 +66,19 @@ class GattHost final : public fbl::RefCounted<GattHost>,
   // The handle associated with |request| will be closed if |token| is already
   // bound to another handle.
   void BindGattClient(
-      Token token, btlib::gatt::DeviceId peer_id,
+      Token token, bt::gatt::DeviceId peer_id,
       fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
 
   // Unbinds a previously bound GATT client server associated with |token|.
   void UnbindGattClient(Token token);
 
   // Returns the GATT profile implementation.
-  fbl::RefPtr<btlib::gatt::GATT> profile() const { return gatt_; }
+  fbl::RefPtr<bt::gatt::GATT> profile() const { return gatt_; }
 
   // Sets a remote service handler to be notified when remote GATT services are
   // discovered. These are used by HostDevice to publish bt-gatt-svc devices.
   // This method is thread-safe. |callback| will not be called after ShutDown().
-  void SetRemoteServiceWatcher(
-      btlib::gatt::GATT::RemoteServiceWatcher callback);
+  void SetRemoteServiceWatcher(bt::gatt::GATT::RemoteServiceWatcher callback);
 
  private:
   BT_FRIEND_TASK_DOMAIN(GattHost);
@@ -96,13 +95,13 @@ class GattHost final : public fbl::RefCounted<GattHost>,
   void CloseServersInternal();
 
   std::mutex mtx_;
-  btlib::gatt::GATT::RemoteServiceWatcher remote_service_watcher_
+  bt::gatt::GATT::RemoteServiceWatcher remote_service_watcher_
       __TA_GUARDED(mtx_);
 
   // NOTE: All members below must be accessed on the GATT thread
 
   // The GATT profile.
-  fbl::RefPtr<btlib::gatt::GATT> gatt_;
+  fbl::RefPtr<bt::gatt::GATT> gatt_;
 
   // All currently active FIDL connections. These objects are thread hostile and
   // must be accessed only via the TaskDomain dispatcher.

@@ -5,11 +5,11 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Runs |task|. Posts it on |dispatcher| if dispatcher is not null.
 void RunOrPost(fit::closure task, async_dispatcher_t* dispatcher);
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

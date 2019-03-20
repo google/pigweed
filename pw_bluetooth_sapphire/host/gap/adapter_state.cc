@@ -4,7 +4,7 @@
 
 #include "adapter_state.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 AdapterState::AdapterState() {
@@ -12,4 +12,4 @@ AdapterState::AdapterState() {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

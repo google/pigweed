@@ -29,7 +29,7 @@
 #include "lib/fxl/memory/ref_ptr.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 class Transport;
@@ -356,6 +356,6 @@ class CommandChannel final {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_

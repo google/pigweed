@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "rfcomm.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 // Defined in GSM 5.4.6.3.*.
@@ -467,6 +467,6 @@ class NonSupportedCommandResponse : public MuxCommand {
 };
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_MUX_COMMANDS_H_

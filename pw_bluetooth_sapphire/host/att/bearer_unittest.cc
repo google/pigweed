@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 namespace {
 
@@ -1358,4 +1358,4 @@ TEST_F(ATT_BearerTest_Security,
 
 }  // namespace
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

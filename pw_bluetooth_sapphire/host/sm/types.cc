@@ -6,7 +6,7 @@
 
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 namespace {
 
@@ -89,4 +89,4 @@ Key::Key(const SecurityProperties& security, const common::UInt128& value)
     : security_(security), value_(value) {}
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt

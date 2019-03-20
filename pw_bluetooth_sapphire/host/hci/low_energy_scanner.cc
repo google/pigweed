@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Default implementations do nothing.
@@ -49,4 +49,4 @@ LowEnergyScanner::LowEnergyScanner(Delegate* delegate,
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

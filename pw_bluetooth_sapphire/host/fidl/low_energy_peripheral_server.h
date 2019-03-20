@@ -24,17 +24,17 @@ class LowEnergyPeripheralServer
     : public AdapterServerBase<fuchsia::bluetooth::le::Peripheral> {
  public:
   LowEnergyPeripheralServer(
-      fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+      fxl::WeakPtr<bt::gap::Adapter> adapter,
       fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
   ~LowEnergyPeripheralServer() override;
 
  private:
-  using ConnectionRefPtr = ::btlib::gap::LowEnergyConnectionRefPtr;
+  using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
 
   class InstanceData final {
    public:
     InstanceData() = default;
-    InstanceData(::btlib::gap::AdvertisementId id,
+    InstanceData(bt::gap::AdvertisementId id,
                  fxl::WeakPtr<LowEnergyPeripheralServer> owner);
 
     InstanceData(InstanceData&& other) = default;
@@ -52,7 +52,7 @@ class LowEnergyPeripheralServer
     void ReleaseConnection();
 
    private:
-    ::btlib::gap::AdvertisementId id_;
+    bt::gap::AdvertisementId id_;
     ConnectionRefPtr conn_ref_;
     // The object that created and owns this InstanceData.
     // |owner_| must outlive the InstanceData.
@@ -70,15 +70,15 @@ class LowEnergyPeripheralServer
 
   void StopAdvertising(::std::string advertisement_id,
                        StopAdvertisingCallback callback) override;
-  bool StopAdvertisingInternal(btlib::gap::AdvertisementId id);
+  bool StopAdvertisingInternal(bt::gap::AdvertisementId id);
 
   // Called when a central connects to us.  When this is called, the
   // advertisement in |advertisement_id| has been stopped.
-  void OnConnected(btlib::gap::AdvertisementId advertisement_id,
-                   ::btlib::hci::ConnectionPtr link);
+  void OnConnected(bt::gap::AdvertisementId advertisement_id,
+                   bt::hci::ConnectionPtr link);
 
   // Tracks currently active advertisements.
-  std::unordered_map<::btlib::gap::AdvertisementId, InstanceData> instances_;
+  std::unordered_map<bt::gap::AdvertisementId, InstanceData> instances_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

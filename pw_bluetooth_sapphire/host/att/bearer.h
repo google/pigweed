@@ -28,7 +28,7 @@
 #include "lib/fxl/memory/weak_ptr.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 // Implements an ATT data bearer with the following features:
@@ -328,6 +328,6 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
 };
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_

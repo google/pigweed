@@ -10,11 +10,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
-using ::btlib::testing::CommandTransaction;
+using bt::testing::CommandTransaction;
 
 using common::DeviceAddress;
 using common::DeviceAddressBytes;
@@ -22,7 +22,7 @@ using common::LowerBits;
 using common::UpperBits;
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
@@ -821,4 +821,4 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 // A Channel wrapper that automatically deactivates a channel when it gets
@@ -43,6 +43,6 @@ class ScopedChannel final {
 };
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_

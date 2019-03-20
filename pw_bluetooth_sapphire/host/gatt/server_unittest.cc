@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -2252,4 +2252,4 @@ TEST_F(GATT_ServerTest_Security, WriteCommandErrorSecurity) {
 
 }  // namespace
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

@@ -6,10 +6,10 @@
 
 #include "random.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 UInt128 RandomUInt128() { return Random<UInt128>(); }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 class RemoteDeviceCache;
@@ -403,6 +403,6 @@ class RemoteDevice final {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_

@@ -12,10 +12,10 @@ using fuchsia::bluetooth::gatt::Characteristic;
 using fuchsia::bluetooth::gatt::CharacteristicPtr;
 using fuchsia::bluetooth::gatt::Descriptor;
 
-using btlib::common::ByteBuffer;
-using btlib::common::MutableBufferView;
-using btlib::gatt::IdType;
-using btlib::gatt::RemoteCharacteristic;
+using bt::common::ByteBuffer;
+using bt::common::MutableBufferView;
+using bt::gatt::IdType;
+using bt::gatt::RemoteCharacteristic;
 
 namespace bthost {
 namespace {
@@ -43,13 +43,13 @@ Characteristic CharacteristicToFidl(const RemoteCharacteristic& chrc) {
   return fidl_char;
 }
 
-void NopStatusCallback(btlib::att::Status) {}
+void NopStatusCallback(bt::att::Status) {}
 
 }  // namespace
 
 GattRemoteServiceServer::GattRemoteServiceServer(
-    fbl::RefPtr<btlib::gatt::RemoteService> service,
-    fbl::RefPtr<btlib::gatt::GATT> gatt,
+    fbl::RefPtr<bt::gatt::RemoteService> service,
+    fbl::RefPtr<bt::gatt::GATT> gatt,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),
@@ -59,7 +59,7 @@ GattRemoteServiceServer::GattRemoteServiceServer(
 
 GattRemoteServiceServer::~GattRemoteServiceServer() {
   for (const auto& iter : notify_handlers_) {
-    if (iter.second != btlib::gatt::kInvalidId) {
+    if (iter.second != bt::gatt::kInvalidId) {
       service_->DisableNotifications(iter.first, iter.second,
                                      NopStatusCallback);
     }
@@ -68,7 +68,7 @@ GattRemoteServiceServer::~GattRemoteServiceServer() {
 
 void GattRemoteServiceServer::DiscoverCharacteristics(
     DiscoverCharacteristicsCallback callback) {
-  auto res_cb = [callback = std::move(callback)](btlib::att::Status status,
+  auto res_cb = [callback = std::move(callback)](bt::att::Status status,
                                                  const auto& chrcs) {
     std::vector<Characteristic> fidl_chrcs;
     if (status) {
@@ -87,8 +87,7 @@ void GattRemoteServiceServer::DiscoverCharacteristics(
 void GattRemoteServiceServer::ReadCharacteristic(
     uint64_t id, ReadCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](
-                btlib::att::Status status,
-                const btlib::common::ByteBuffer& value) {
+                bt::att::Status status, const bt::common::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -110,8 +109,7 @@ void GattRemoteServiceServer::ReadLongCharacteristic(
     uint64_t id, uint16_t offset, uint16_t max_bytes,
     ReadLongCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](
-                btlib::att::Status status,
-                const btlib::common::ByteBuffer& value) {
+                bt::att::Status status, const bt::common::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -132,7 +130,7 @@ void GattRemoteServiceServer::ReadLongCharacteristic(
 void GattRemoteServiceServer::WriteCharacteristic(
     uint64_t id, uint16_t offset, ::std::vector<uint8_t> value,
     WriteCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](btlib::att::Status status) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status) {
     callback(fidl_helpers::StatusToFidl(status, ""));
   };
 
@@ -149,8 +147,7 @@ void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(
 void GattRemoteServiceServer::ReadDescriptor(uint64_t id,
                                              ReadDescriptorCallback callback) {
   auto cb = [callback = std::move(callback)](
-                btlib::att::Status status,
-                const btlib::common::ByteBuffer& value) {
+                bt::att::Status status, const bt::common::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -172,8 +169,7 @@ void GattRemoteServiceServer::ReadLongDescriptor(
     uint64_t id, uint16_t offset, uint16_t max_bytes,
     ReadLongDescriptorCallback callback) {
   auto cb = [callback = std::move(callback)](
-                btlib::att::Status status,
-                const btlib::common::ByteBuffer& value) {
+                bt::att::Status status, const bt::common::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -196,7 +192,7 @@ void GattRemoteServiceServer::WriteDescriptor(
     WriteDescriptorCallback callback) {
   service_->WriteDescriptor(
       id, std::move(value),
-      [callback = std::move(callback)](btlib::att::Status status) {
+      [callback = std::move(callback)](bt::att::Status status) {
         callback(fidl_helpers::StatusToFidl(status, ""));
       });
 }
@@ -211,7 +207,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(
       return;
     }
 
-    if (iter->second == btlib::gatt::kInvalidId) {
+    if (iter->second == bt::gatt::kInvalidId) {
       callback(fidl_helpers::NewFidlError(
           ErrorCode::IN_PROGRESS,
           "characteristic notification registration pending"));
@@ -220,7 +216,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(
 
     service_->DisableNotifications(
         id, iter->second,
-        [callback = std::move(callback)](btlib::att::Status status) {
+        [callback = std::move(callback)](bt::att::Status status) {
           callback(fidl_helpers::StatusToFidl(status, ""));
         });
     notify_handlers_.erase(iter);
@@ -235,7 +231,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(
   }
 
   // Prevent any races and leaks by marking a notification is in progress
-  notify_handlers_[id] = btlib::gatt::kInvalidId;
+  notify_handlers_[id] = bt::gatt::kInvalidId;
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto value_cb = [self, id](const ByteBuffer& value) {
@@ -250,7 +246,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(
   };
 
   auto status_cb = [self, svc = service_, id, callback = std::move(callback)](
-                       btlib::att::Status status, IdType handler_id) {
+                       bt::att::Status status, IdType handler_id) {
     if (!self) {
       if (status) {
         // Disable this handler so it doesn't leak.
@@ -262,9 +258,9 @@ void GattRemoteServiceServer::NotifyCharacteristic(
     }
 
     if (status) {
-      ZX_DEBUG_ASSERT(handler_id != btlib::gatt::kInvalidId);
+      ZX_DEBUG_ASSERT(handler_id != bt::gatt::kInvalidId);
       ZX_DEBUG_ASSERT(self->notify_handlers_.count(id) == 1u);
-      ZX_DEBUG_ASSERT(self->notify_handlers_[id] == btlib::gatt::kInvalidId);
+      ZX_DEBUG_ASSERT(self->notify_handlers_[id] == bt::gatt::kInvalidId);
       self->notify_handlers_[id] = handler_id;
     } else {
       // Remove our handle holder.

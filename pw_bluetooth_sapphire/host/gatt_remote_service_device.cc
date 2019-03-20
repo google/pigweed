@@ -11,7 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-using namespace btlib;
+using namespace bt;
 
 namespace bthost {
 
@@ -21,76 +21,76 @@ void CopyUUIDBytes(bt_gatt_uuid_t* dest, const common::UUID source) {
   memcpy(dest->bytes, source.value().data(), sizeof(dest->bytes));
 }
 
-bt_gatt_err_t AttErrorToDdkError(btlib::att::ErrorCode error) {
+bt_gatt_err_t AttErrorToDdkError(bt::att::ErrorCode error) {
   // Both of these enums *should* be identical and values.
   // Being explicit so we get compiler warnings if either changes.
   switch (error) {
-    case btlib::att::ErrorCode::kNoError:
+    case bt::att::ErrorCode::kNoError:
       return BT_GATT_ERR_NO_ERROR;
-    case btlib::att::ErrorCode::kInvalidHandle:
+    case bt::att::ErrorCode::kInvalidHandle:
       return BT_GATT_ERR_INVALID_HANDLE;
-    case btlib::att::ErrorCode::kReadNotPermitted:
+    case bt::att::ErrorCode::kReadNotPermitted:
       return BT_GATT_ERR_READ_NOT_PERMITTED;
-    case btlib::att::ErrorCode::kWriteNotPermitted:
+    case bt::att::ErrorCode::kWriteNotPermitted:
       return BT_GATT_ERR_WRITE_NOT_PERMITTED;
-    case btlib::att::ErrorCode::kInvalidPDU:
+    case bt::att::ErrorCode::kInvalidPDU:
       return BT_GATT_ERR_INVALID_PDU;
-    case btlib::att::ErrorCode::kInsufficientAuthentication:
+    case bt::att::ErrorCode::kInsufficientAuthentication:
       return BT_GATT_ERR_INSUFFICIENT_AUTHENTICATION;
-    case btlib::att::ErrorCode::kRequestNotSupported:
+    case bt::att::ErrorCode::kRequestNotSupported:
       return BT_GATT_ERR_REQUEST_NOT_SUPPORTED;
-    case btlib::att::ErrorCode::kInvalidOffset:
+    case bt::att::ErrorCode::kInvalidOffset:
       return BT_GATT_ERR_INVALID_OFFSET;
-    case btlib::att::ErrorCode::kInsufficientAuthorization:
+    case bt::att::ErrorCode::kInsufficientAuthorization:
       return BT_GATT_ERR_INSUFFICIENT_AUTHORIZATION;
-    case btlib::att::ErrorCode::kPrepareQueueFull:
+    case bt::att::ErrorCode::kPrepareQueueFull:
       return BT_GATT_ERR_PREPARE_QUEUE_FULL;
-    case btlib::att::ErrorCode::kAttributeNotFound:
+    case bt::att::ErrorCode::kAttributeNotFound:
       return BT_GATT_ERR_ATTRIBUTE_NOT_FOUND;
-    case btlib::att::ErrorCode::kAttributeNotLong:
+    case bt::att::ErrorCode::kAttributeNotLong:
       return BT_GATT_ERR_INVALID_ATTRIBUTE_VALUE_LENGTH;
-    case btlib::att::ErrorCode::kInsufficientEncryptionKeySize:
+    case bt::att::ErrorCode::kInsufficientEncryptionKeySize:
       return BT_GATT_ERR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
-    case btlib::att::ErrorCode::kInvalidAttributeValueLength:
+    case bt::att::ErrorCode::kInvalidAttributeValueLength:
       return BT_GATT_ERR_INVALID_ATTRIBUTE_VALUE_LENGTH;
-    case btlib::att::ErrorCode::kUnlikelyError:
+    case bt::att::ErrorCode::kUnlikelyError:
       return BT_GATT_ERR_UNLIKELY_ERROR;
-    case btlib::att::ErrorCode::kInsufficientEncryption:
+    case bt::att::ErrorCode::kInsufficientEncryption:
       return BT_GATT_ERR_INSUFFICIENT_ENCRYPTION;
-    case btlib::att::ErrorCode::kUnsupportedGroupType:
+    case bt::att::ErrorCode::kUnsupportedGroupType:
       return BT_GATT_ERR_UNSUPPORTED_GROUP_TYPE;
-    case btlib::att::ErrorCode::kInsufficientResources:
+    case bt::att::ErrorCode::kInsufficientResources:
       return BT_GATT_ERR_INSUFFICIENT_RESOURCES;
   }
   return BT_GATT_ERR_NO_ERROR;
 }
 
-zx_status_t HostErrorToZxError(btlib::common::HostError error) {
+zx_status_t HostErrorToZxError(bt::common::HostError error) {
   switch (error) {
-    case btlib::common::HostError::kNoError:
+    case bt::common::HostError::kNoError:
       return ZX_OK;
-    case btlib::common::HostError::kNotFound:
+    case bt::common::HostError::kNotFound:
       return ZX_ERR_NOT_FOUND;
-    case btlib::common::HostError::kNotReady:
+    case bt::common::HostError::kNotReady:
       return ZX_ERR_SHOULD_WAIT;
-    case btlib::common::HostError::kTimedOut:
+    case bt::common::HostError::kTimedOut:
       return ZX_ERR_TIMED_OUT;
-    case btlib::common::HostError::kInvalidParameters:
+    case bt::common::HostError::kInvalidParameters:
       return ZX_ERR_INVALID_ARGS;
-    case btlib::common::HostError::kCanceled:
+    case bt::common::HostError::kCanceled:
       return ZX_ERR_CANCELED;
-    case btlib::common::HostError::kNotSupported:
+    case bt::common::HostError::kNotSupported:
       return ZX_ERR_NOT_SUPPORTED;
-    case btlib::common::HostError::kLinkDisconnected:
+    case bt::common::HostError::kLinkDisconnected:
       return ZX_ERR_CONNECTION_ABORTED;
-    case btlib::common::HostError::kOutOfMemory:
+    case bt::common::HostError::kOutOfMemory:
       return ZX_ERR_NO_MEMORY;
     default:
       return ZX_ERR_INTERNAL;
   }
 }
 
-bt_gatt_status_t AttStatusToDdkStatus(const btlib::att::Status& status) {
+bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
   bt_gatt_status_t ddk_status = {
       .status = HostErrorToZxError(status.error()),
       .att_ecode = BT_GATT_ERR_NO_ERROR,
@@ -105,8 +105,8 @@ bt_gatt_status_t AttStatusToDdkStatus(const btlib::att::Status& status) {
 }  // namespace
 
 GattRemoteServiceDevice::GattRemoteServiceDevice(
-    zx_device_t* parent_device, btlib::gatt::DeviceId peer_id,
-    fbl::RefPtr<btlib::gatt::RemoteService> service)
+    zx_device_t* parent_device, bt::gatt::DeviceId peer_id,
+    fbl::RefPtr<bt::gatt::RemoteService> service)
     : loop_(&kAsyncLoopConfigNoAttachToThread),
       parent_device_(parent_device),
       dev_(nullptr),
@@ -272,7 +272,7 @@ void GattRemoteServiceDevice::ReadCharacteristic(
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadCharacteristic(static_cast<btlib::gatt::IdType>(id),
+  service_->ReadCharacteristic(static_cast<bt::gatt::IdType>(id),
                                std::move(read_callback), loop_.dispatcher());
 
   return;
@@ -286,7 +286,7 @@ void GattRemoteServiceDevice::ReadLongCharacteristic(
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadLongCharacteristic(static_cast<btlib::gatt::IdType>(id), offset,
+  service_->ReadLongCharacteristic(static_cast<bt::gatt::IdType>(id), offset,
                                    max_bytes, std::move(read_callback),
                                    loop_.dispatcher());
 
@@ -300,14 +300,14 @@ void GattRemoteServiceDevice::WriteCharacteristic(
   std::vector<uint8_t> data(buf, buf + len);
   if (write_cb == nullptr) {
     service_->WriteCharacteristicWithoutResponse(
-        static_cast<btlib::gatt::IdType>(id), std::move(data));
+        static_cast<bt::gatt::IdType>(id), std::move(data));
   } else {
-    auto status_callback = [cookie, id, write_cb](btlib::att::Status status) {
+    auto status_callback = [cookie, id, write_cb](bt::att::Status status) {
       bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
       write_cb(cookie, &ddk_status, id);
     };
 
-    service_->WriteCharacteristic(static_cast<btlib::gatt::IdType>(id),
+    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id),
                                   std::move(data), std::move(status_callback),
                                   loop_.dispatcher());
   }
@@ -322,14 +322,13 @@ void GattRemoteServiceDevice::EnableNotifications(
     value_cb.callback(value_cb.ctx, id, buff.data(), buff.size());
   };
 
-  auto status_callback = [cookie, id, status_cb](
-                             btlib::att::Status status,
-                             btlib::gatt::IdType handler_id) {
+  auto status_callback = [cookie, id, status_cb](bt::att::Status status,
+                                                 bt::gatt::IdType handler_id) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     status_cb(cookie, &ddk_status, id);
   };
 
-  service_->EnableNotifications(static_cast<btlib::gatt::IdType>(id),
+  service_->EnableNotifications(static_cast<bt::gatt::IdType>(id),
                                 notif_callback, std::move(status_callback),
                                 loop_.dispatcher());
 

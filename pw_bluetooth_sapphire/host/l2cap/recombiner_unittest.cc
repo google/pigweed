@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace {
 
@@ -457,4 +457,4 @@ TEST(L2CAP_RecombinerTest, DropPartial) {
 
 }  // namespace
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

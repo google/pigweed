@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace internal {
 namespace {
@@ -55,4 +55,4 @@ TEST(L2CAP_BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

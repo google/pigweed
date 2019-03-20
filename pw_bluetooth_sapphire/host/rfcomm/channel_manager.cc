@@ -13,7 +13,7 @@
 
 #include "session.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 ChannelManager::ChannelManager(OnL2capConnectionRequest l2cap_delegate)
@@ -129,4 +129,4 @@ void ChannelManager::ChannelOpened(fbl::RefPtr<Channel> rfcomm_channel,
 }
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

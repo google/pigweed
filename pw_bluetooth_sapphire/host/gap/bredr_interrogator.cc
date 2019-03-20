@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 BrEdrInterrogator::Interrogation::Interrogation(hci::ConnectionPtr conn,
@@ -372,4 +372,4 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(DeviceId device_id,
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

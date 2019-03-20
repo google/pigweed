@@ -20,7 +20,7 @@ using fuchsia::bluetooth::le::ScanFilterPtr;
 namespace bthost {
 
 LowEnergyCentralServer::LowEnergyCentralServer(
-    fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+    fxl::WeakPtr<bt::gap::Adapter> adapter,
     fidl::InterfaceRequest<Central> request, fbl::RefPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(request)),
       gatt_host_(gatt_host),
@@ -243,14 +243,14 @@ void LowEnergyCentralServer::DisconnectPeripheral(
 }
 
 void LowEnergyCentralServer::OnScanResult(
-    const ::btlib::gap::RemoteDevice& remote_device) {
+    const bt::gap::RemoteDevice& remote_device) {
   auto fidl_device = fidl_helpers::NewLERemoteDevice(remote_device);
   if (!fidl_device) {
     bt_log(TRACE, "bt-host", "ignoring malformed scan result");
     return;
   }
 
-  if (remote_device.rssi() != ::btlib::hci::kRSSIInvalid) {
+  if (remote_device.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device->rssi = Int8::New();
     fidl_device->rssi->value = remote_device.rssi();
   }
@@ -263,7 +263,7 @@ void LowEnergyCentralServer::NotifyScanStateChanged(bool scanning) {
 }
 
 void LowEnergyCentralServer::NotifyPeripheralDisconnected(
-    btlib::gap::DeviceId peer_id) {
+    bt::gap::DeviceId peer_id) {
   binding()->events().OnPeripheralDisconnected(peer_id.ToString());
 }
 

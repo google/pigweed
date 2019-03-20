@@ -28,33 +28,33 @@ using fuchsia::bluetooth::gatt::ServiceInfo;
 namespace bthost {
 namespace {
 
-::btlib::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code,
-                                              bool is_read) {
+bt::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code,
+                                         bool is_read) {
   switch (error_code) {
     case GattErrorCode::NO_ERROR:
-      return ::btlib::att::ErrorCode::kNoError;
+      return bt::att::ErrorCode::kNoError;
     case GattErrorCode::INVALID_OFFSET:
-      return ::btlib::att::ErrorCode::kInvalidOffset;
+      return bt::att::ErrorCode::kInvalidOffset;
     case GattErrorCode::INVALID_VALUE_LENGTH:
-      return ::btlib::att::ErrorCode::kInvalidAttributeValueLength;
+      return bt::att::ErrorCode::kInvalidAttributeValueLength;
     case GattErrorCode::NOT_PERMITTED:
       if (is_read)
-        return ::btlib::att::ErrorCode::kReadNotPermitted;
-      return ::btlib::att::ErrorCode::kWriteNotPermitted;
+        return bt::att::ErrorCode::kReadNotPermitted;
+      return bt::att::ErrorCode::kWriteNotPermitted;
     default:
       break;
   }
-  return ::btlib::att::ErrorCode::kUnlikelyError;
+  return bt::att::ErrorCode::kUnlikelyError;
 }
 
-::btlib::att::AccessRequirements ParseSecurityRequirements(
+bt::att::AccessRequirements ParseSecurityRequirements(
     const SecurityRequirementsPtr& reqs) {
   if (!reqs) {
-    return ::btlib::att::AccessRequirements();
+    return bt::att::AccessRequirements();
   }
-  return ::btlib::att::AccessRequirements(reqs->encryption_required,
-                                          reqs->authentication_required,
-                                          reqs->authorization_required);
+  return bt::att::AccessRequirements(reqs->encryption_required,
+                                     reqs->authentication_required,
+                                     reqs->authorization_required);
 }
 
 // Carries a either a successful Result or an error message that can be sent as
@@ -73,21 +73,21 @@ struct MaybeResult final {
   Error error;
 };
 
-using DescriptorResult = MaybeResult<::btlib::gatt::DescriptorPtr>;
+using DescriptorResult = MaybeResult<bt::gatt::DescriptorPtr>;
 DescriptorResult NewDescriptor(const Descriptor& fidl_desc) {
   auto read_reqs = ParseSecurityRequirements(fidl_desc.permissions->read);
   auto write_reqs = ParseSecurityRequirements(fidl_desc.permissions->write);
 
-  ::btlib::common::UUID type;
-  if (!::btlib::common::StringToUuid(fidl_desc.type, &type)) {
+  bt::common::UUID type;
+  if (!bt::common::StringToUuid(fidl_desc.type, &type)) {
     return DescriptorResult("Invalid descriptor UUID");
   }
 
-  return DescriptorResult(std::make_unique<::btlib::gatt::Descriptor>(
+  return DescriptorResult(std::make_unique<bt::gatt::Descriptor>(
       fidl_desc.id, type, read_reqs, write_reqs));
 }
 
-using CharacteristicResult = MaybeResult<::btlib::gatt::CharacteristicPtr>;
+using CharacteristicResult = MaybeResult<bt::gatt::CharacteristicPtr>;
 CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
   uint8_t props = fidl_chrc.properties & 0xFF;
   uint16_t ext_props = (fidl_chrc.properties & 0xFF00) >> 8;
@@ -96,8 +96,8 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
     return CharacteristicResult("Characteristic permissions missing");
   }
 
-  bool supports_update = (props & ::btlib::gatt::Property::kNotify) ||
-                         (props & ::btlib::gatt::Property::kIndicate);
+  bool supports_update = (props & bt::gatt::Property::kNotify) ||
+                         (props & bt::gatt::Property::kIndicate);
   if (supports_update != static_cast<bool>(fidl_chrc.permissions->update)) {
     return CharacteristicResult(
         supports_update ? "Characteristic update permission required"
@@ -108,12 +108,12 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
   auto write_reqs = ParseSecurityRequirements(fidl_chrc.permissions->write);
   auto update_reqs = ParseSecurityRequirements(fidl_chrc.permissions->update);
 
-  ::btlib::common::UUID type;
-  if (!::btlib::common::StringToUuid(fidl_chrc.type, &type)) {
+  bt::common::UUID type;
+  if (!bt::common::StringToUuid(fidl_chrc.type, &type)) {
     return CharacteristicResult("Invalid characteristic UUID");
   }
 
-  auto chrc = std::make_unique<::btlib::gatt::Characteristic>(
+  auto chrc = std::make_unique<bt::gatt::Characteristic>(
       fidl_chrc.id, type, props, ext_props, read_reqs, write_reqs, update_reqs);
   if (fidl_chrc.descriptors && !fidl_chrc.descriptors->empty()) {
     for (const auto& fidl_desc : *fidl_chrc.descriptors) {
@@ -194,7 +194,7 @@ class GattServerServer::LocalServiceImpl
 };
 
 GattServerServer::GattServerServer(
-    fbl::RefPtr<btlib::gatt::GATT> gatt,
+    fbl::RefPtr<bt::gatt::GATT> gatt,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request)
     : GattServerBase(gatt, this, std::move(request)), weak_ptr_factory_(this) {}
 
@@ -230,8 +230,8 @@ void GattServerServer::PublishService(
     return;
   }
 
-  ::btlib::common::UUID service_type;
-  if (!::btlib::common::StringToUuid(service_info.type, &service_type)) {
+  bt::common::UUID service_type;
+  if (!bt::common::StringToUuid(service_info.type, &service_type)) {
     auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                             "Invalid service UUID");
     callback(std::move(error));
@@ -239,8 +239,8 @@ void GattServerServer::PublishService(
   }
 
   // Process the FIDL service tree.
-  auto service = std::make_unique<::btlib::gatt::Service>(service_info.primary,
-                                                          service_type);
+  auto service =
+      std::make_unique<bt::gatt::Service>(service_info.primary, service_type);
   if (service_info.characteristics) {
     for (const auto& fidl_chrc : *service_info.characteristics) {
       auto chrc_result = NewCharacteristic(fidl_chrc);
@@ -263,8 +263,7 @@ void GattServerServer::PublishService(
     if (self) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
-      responder(::btlib::att::ErrorCode::kUnlikelyError,
-                ::btlib::common::BufferView());
+      responder(bt::att::ErrorCode::kUnlikelyError, bt::common::BufferView());
     }
   };
   auto write_handler = [self](auto svc_id, auto id, auto offset,
@@ -272,20 +271,18 @@ void GattServerServer::PublishService(
     if (self) {
       self->OnWriteRequest(svc_id, id, offset, value, std::move(responder));
     } else {
-      responder(::btlib::att::ErrorCode::kUnlikelyError);
+      responder(bt::att::ErrorCode::kUnlikelyError);
     }
   };
-  auto ccc_callback = [self](auto svc_id, auto id,
-                             btlib::gatt::DeviceId peer_id, bool notify,
-                             bool indicate) {
+  auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::DeviceId peer_id,
+                             bool notify, bool indicate) {
     if (self)
       self->OnCharacteristicConfig(svc_id, id, peer_id, notify, indicate);
   };
 
   auto id_cb = [self, delegate = std::move(delegate),
                 service_iface = std::move(service_iface),
-                callback =
-                    std::move(callback)](btlib::gatt::IdType id) mutable {
+                callback = std::move(callback)](bt::gatt::IdType id) mutable {
     if (!self)
       return;
 
@@ -324,20 +321,19 @@ void GattServerServer::PublishService(
                           std::move(ccc_callback));
 }
 
-void GattServerServer::OnReadRequest(::btlib::gatt::IdType service_id,
-                                     ::btlib::gatt::IdType id, uint16_t offset,
-                                     ::btlib::gatt::ReadResponder responder) {
+void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
+                                     bt::gatt::IdType id, uint16_t offset,
+                                     bt::gatt::ReadResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
-    responder(::btlib::att::ErrorCode::kUnlikelyError,
-              ::btlib::common::BufferView());
+    responder(bt::att::ErrorCode::kUnlikelyError, bt::common::BufferView());
     return;
   }
 
   auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> value,
                                                auto error_code) {
     responder(GattErrorCodeFromFidl(error_code, true /* is_read */),
-              ::btlib::common::BufferView(value->data(), value->size()));
+              bt::common::BufferView(value->data(), value->size()));
   };
 
   auto* delegate = iter->second->delegate();
@@ -345,13 +341,13 @@ void GattServerServer::OnReadRequest(::btlib::gatt::IdType service_id,
   delegate->OnReadValue(id, offset, std::move(cb));
 }
 
-void GattServerServer::OnWriteRequest(::btlib::gatt::IdType service_id,
-                                      ::btlib::gatt::IdType id, uint16_t offset,
-                                      const ::btlib::common::ByteBuffer& value,
-                                      ::btlib::gatt::WriteResponder responder) {
+void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
+                                      bt::gatt::IdType id, uint16_t offset,
+                                      const bt::common::ByteBuffer& value,
+                                      bt::gatt::WriteResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
-    responder(::btlib::att::ErrorCode::kUnlikelyError);
+    responder(bt::att::ErrorCode::kUnlikelyError);
     return;
   }
 
@@ -371,9 +367,9 @@ void GattServerServer::OnWriteRequest(::btlib::gatt::IdType service_id,
   delegate->OnWriteValue(id, offset, std::move(fidl_value), std::move(cb));
 }
 
-void GattServerServer::OnCharacteristicConfig(::btlib::gatt::IdType service_id,
-                                              ::btlib::gatt::IdType chrc_id,
-                                              ::btlib::gatt::DeviceId peer_id,
+void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id,
+                                              bt::gatt::IdType chrc_id,
+                                              bt::gatt::DeviceId peer_id,
                                               bool notify, bool indicate) {
   auto iter = services_.find(service_id);
   if (iter != services_.end()) {

@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 // Stores controller settings and state information.
@@ -113,6 +113,6 @@ class AdapterState final {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_

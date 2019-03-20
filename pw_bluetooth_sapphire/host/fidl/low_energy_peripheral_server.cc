@@ -28,13 +28,13 @@ namespace bthost {
 
 namespace {
 
-std::string MessageFromStatus(btlib::hci::Status status) {
+std::string MessageFromStatus(bt::hci::Status status) {
   switch (status.error()) {
-    case ::btlib::common::HostError::kNoError:
+    case bt::common::HostError::kNoError:
       return "Success";
-    case ::btlib::common::HostError::kNotSupported:
+    case bt::common::HostError::kNotSupported:
       return "Maximum advertisement amount reached";
-    case ::btlib::common::HostError::kInvalidParameters:
+    case bt::common::HostError::kInvalidParameters:
       return "Advertisement exceeds maximum allowed length";
     default:
       return status.ToString();
@@ -43,21 +43,20 @@ std::string MessageFromStatus(btlib::hci::Status status) {
 
 // TODO(BT-305): Remove this once the string IDs have been removed from the FIDL
 // API.
-std::optional<btlib::gap::AdvertisementId> AdvertisementIdFromString(
+std::optional<bt::gap::AdvertisementId> AdvertisementIdFromString(
     const std::string& id) {
   uint64_t value;
   if (!fxl::StringToNumberWithError<decltype(value)>(id, &value,
                                                      fxl::Base::k16)) {
     return std::nullopt;
   }
-  return btlib::gap::AdvertisementId(value);
+  return bt::gap::AdvertisementId(value);
 }
 
 }  // namespace
 
 LowEnergyPeripheralServer::InstanceData::InstanceData(
-    ::btlib::gap::AdvertisementId id,
-    fxl::WeakPtr<LowEnergyPeripheralServer> owner)
+    bt::gap::AdvertisementId id, fxl::WeakPtr<LowEnergyPeripheralServer> owner)
     : id_(id), owner_(owner) {
   ZX_DEBUG_ASSERT(owner_);
 }
@@ -82,7 +81,7 @@ void LowEnergyPeripheralServer::InstanceData::ReleaseConnection() {
 }
 
 LowEnergyPeripheralServer::LowEnergyPeripheralServer(
-    fxl::WeakPtr<::btlib::gap::Adapter> adapter,
+    fxl::WeakPtr<bt::gap::Adapter> adapter,
     fidl::InterfaceRequest<Peripheral> request)
     : AdapterServerBase(adapter, this, std::move(request)),
       weak_ptr_factory_(this) {}
@@ -103,8 +102,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
   auto* advertising_manager = adapter()->le_advertising_manager();
   ZX_DEBUG_ASSERT(advertising_manager);
 
-  ::btlib::gap::AdvertisingData ad_data, scan_data;
-  if (!::btlib::gap::AdvertisingData::FromFidl(advertising_data, &ad_data)) {
+  bt::gap::AdvertisingData ad_data, scan_data;
+  if (!bt::gap::AdvertisingData::FromFidl(advertising_data, &ad_data)) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "Invalid advertising data"),
              "");
@@ -112,7 +111,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   }
 
   if (scan_result &&
-      !::btlib::gap::AdvertisingData::FromFidl(*scan_result, &scan_data)) {
+      !bt::gap::AdvertisingData::FromFidl(*scan_result, &scan_data)) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "Invalid scan response data"),
              "");
@@ -121,7 +120,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
-  ::btlib::gap::LowEnergyAdvertisingManager::ConnectionCallback connect_cb;
+  bt::gap::LowEnergyAdvertisingManager::ConnectionCallback connect_cb;
   // TODO(armansito): The conversion from hci::Connection to
   // gap::LowEnergyConnectionRef should be performed by a gap library object
   // and not in this layer (see NET-355).
@@ -132,8 +131,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
     };
   }
   auto advertising_status_cb = [self, callback = std::move(callback)](
-                                   ::btlib::gap::AdvertisementId ad_id,
-                                   ::btlib::hci::Status status) mutable {
+                                   bt::gap::AdvertisementId ad_id,
+                                   bt::hci::Status status) mutable {
     if (!self)
       return;
 
@@ -173,7 +172,7 @@ void LowEnergyPeripheralServer::StopAdvertising(
 }
 
 bool LowEnergyPeripheralServer::StopAdvertisingInternal(
-    btlib::gap::AdvertisementId id) {
+    bt::gap::AdvertisementId id) {
   auto count = instances_.erase(id);
   if (count) {
     adapter()->le_advertising_manager()->StopAdvertising(id);
@@ -183,8 +182,7 @@ bool LowEnergyPeripheralServer::StopAdvertisingInternal(
 }
 
 void LowEnergyPeripheralServer::OnConnected(
-    btlib::gap::AdvertisementId advertisement_id,
-    ::btlib::hci::ConnectionPtr link) {
+    bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link) {
   ZX_DEBUG_ASSERT(link);
 
   // If the active adapter that was used to start advertising was changed before

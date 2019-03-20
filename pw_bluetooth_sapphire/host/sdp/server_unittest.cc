@@ -15,16 +15,16 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 namespace {
 
 using common::LowerBits;
 using common::UpperBits;
 
-using ::btlib::testing::FakeController;
+using bt::testing::FakeController;
 
-using TestingBase = ::btlib::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 constexpr hci::ConnectionHandle kTestHandle1 = 1;
 constexpr hci::ConnectionHandle kTestHandle2 = 2;
@@ -843,4 +843,4 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
 
 }  // namespace
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

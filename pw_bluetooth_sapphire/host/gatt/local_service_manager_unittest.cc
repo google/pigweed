@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -1185,4 +1185,4 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
 
 }  // namespace
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

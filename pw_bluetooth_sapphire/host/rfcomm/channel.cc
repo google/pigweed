@@ -7,7 +7,7 @@
 #include "channel.h"
 #include "session.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 Channel::Channel(DLCI dlci, Session* session)
@@ -63,4 +63,4 @@ void ChannelImpl::Receive(common::ByteBufferPtr data) {
 
 }  // namespace internal
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

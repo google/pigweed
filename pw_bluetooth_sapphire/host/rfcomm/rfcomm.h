@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 // C/R bit, used at both the frame level and the multiplexer channel command
@@ -144,6 +144,6 @@ enum class ParameterNegotiationState {
 };
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_RFCOMM_H_

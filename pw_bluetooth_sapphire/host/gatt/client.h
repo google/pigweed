@@ -15,7 +15,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // Implements GATT client-role procedures. A client operates over a single ATT
@@ -129,6 +129,6 @@ class Client {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CLIENT_H_

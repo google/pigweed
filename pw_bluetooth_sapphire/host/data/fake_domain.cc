@@ -9,7 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
-namespace btlib {
+namespace bt {
 
 using l2cap::testing::FakeChannel;
 
@@ -241,4 +241,4 @@ FakeDomain::LinkData& FakeDomain::ConnectedLinkData(
 
 }  // namespace testing
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt

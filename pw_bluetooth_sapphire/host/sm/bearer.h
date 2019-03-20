@@ -20,7 +20,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 
 // Represents the SMP data bearer operating over the fixed SMP L2CAP channel.
@@ -242,6 +242,6 @@ class Bearer final {
 };
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_BEARER_H_

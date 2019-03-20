@@ -7,7 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace testing {
 
@@ -38,6 +38,6 @@ class FakeConnection final : public Connection {
 
 }  // namespace testing
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_CONNECTION_H_

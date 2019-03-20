@@ -15,12 +15,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 class ACLDataChannelTest : public TestingBase {
  public:
@@ -701,4 +701,4 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

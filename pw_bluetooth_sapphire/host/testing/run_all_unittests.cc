@@ -13,7 +13,7 @@
 
 BT_DECLARE_FAKE_DRIVER();
 
-using ::btlib::common::LogSeverity;
+using bt::common::LogSeverity;
 
 namespace {
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   }
 
   // Set all library log messages to use printf instead ddk logging.
-  btlib::common::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
+  bt::common::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
 
   testing::InitGoogleTest(&argc, argv);
 

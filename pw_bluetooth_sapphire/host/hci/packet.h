@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // A Packet is a move-only object that can be used to hold sent and received HCI
@@ -126,6 +126,6 @@ class Packet : public PacketBase<HeaderType, Packet<HeaderType>> {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_PACKET_H_

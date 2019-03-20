@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace testing {
 
@@ -142,4 +142,4 @@ void FakeChannel::UpgradeSecurity(sm::SecurityLevel level,
 
 }  // namespace testing
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

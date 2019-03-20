@@ -8,7 +8,7 @@
 
 #include "lib/gtest/real_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -69,4 +69,4 @@ TEST_F(TaskDomainTest, PostMessageAndCleanUp) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

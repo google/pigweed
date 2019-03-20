@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 using CommandPacket = Packet<CommandHeader>;
@@ -110,7 +110,7 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 // Convenience macros to check and log any non-Success status of an event.
 // Evaluate to true if the event status is not success.

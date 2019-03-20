@@ -18,7 +18,7 @@
 #include "lib/fxl/memory/ref_counted.h"
 #include "lib/fxl/synchronization/thread_checker.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // LegacyLowEnergyScanner implements the LowEnergyScanner interface for
@@ -87,6 +87,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_SCANNER_H_

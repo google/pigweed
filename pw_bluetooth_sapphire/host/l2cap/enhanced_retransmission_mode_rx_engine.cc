@@ -4,7 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_rx_engine.h"
 
-namespace btlib::l2cap::internal {
+namespace bt {
+namespace l2cap {
+namespace internal {
 
 namespace {
 
@@ -169,4 +171,6 @@ void Engine::AdvanceSeqNum() {
   }
 }
 
-}  // namespace btlib::l2cap::internal
+}  // namespace internal
+}  // namespace l2cap
+}  // namespace bt

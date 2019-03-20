@@ -18,7 +18,7 @@
 
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // A task domain is a mixin for objects that maintain state that needs to be
@@ -185,11 +185,11 @@ class TaskDomain {
 };
 
 #define BT_FRIEND_TASK_DOMAIN(Type) BT_FRIEND_TASK_DOMAIN_FULL(Type, Type)
-#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType) \
-    friend class ::btlib::common::TaskDomain<Type, RefCountedType>; \
-    friend struct ::btlib::common::internal::has_clean_up<Type>
+#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType)       \
+  friend class bt::common::TaskDomain<Type, RefCountedType>; \
+  friend struct bt::common::internal::has_clean_up<Type>
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_

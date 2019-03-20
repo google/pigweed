@@ -31,9 +31,9 @@ class GattHost;
 // Implements the Host FIDL interface. Owns all FIDL connections that have been
 // opened through it.
 class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
-                   public btlib::gap::PairingDelegate {
+                   public bt::gap::PairingDelegate {
  public:
-  HostServer(zx::channel channel, fxl::WeakPtr<btlib::gap::Adapter> adapter,
+  HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
              fbl::RefPtr<GattHost> gatt_host);
   ~HostServer() override;
 
@@ -75,33 +75,31 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       override;
   void Close() override;
 
-  // btlib::gap::PairingDelegate overrides:
-  btlib::sm::IOCapability io_capability() const override;
-  void CompletePairing(btlib::gap::DeviceId id,
-                       btlib::sm::Status status) override;
-  void ConfirmPairing(btlib::gap::DeviceId id,
+  // bt::gap::PairingDelegate overrides:
+  bt::sm::IOCapability io_capability() const override;
+  void CompletePairing(bt::gap::DeviceId id, bt::sm::Status status) override;
+  void ConfirmPairing(bt::gap::DeviceId id, ConfirmCallback confirm) override;
+  void DisplayPasskey(bt::gap::DeviceId id, uint32_t passkey,
                       ConfirmCallback confirm) override;
-  void DisplayPasskey(btlib::gap::DeviceId id, uint32_t passkey,
-                      ConfirmCallback confirm) override;
-  void RequestPasskey(btlib::gap::DeviceId id,
+  void RequestPasskey(bt::gap::DeviceId id,
                       PasskeyResponseCallback respond) override;
 
   // Called by |adapter()->remote_device_cache()| when a remote device is
   // updated.
-  void OnRemoteDeviceUpdated(const btlib::gap::RemoteDevice& remote_device);
+  void OnRemoteDeviceUpdated(const bt::gap::RemoteDevice& remote_device);
 
   // Called by |adapter()->remote_device_cache()| when a remote device is
   // removed.
-  void OnRemoteDeviceRemoved(btlib::gap::DeviceId identifier);
+  void OnRemoteDeviceRemoved(bt::gap::DeviceId identifier);
 
   // Called by |adapter()->remote_device_cache()| when a remote device is
   // bonded.
-  void OnRemoteDeviceBonded(const btlib::gap::RemoteDevice& remote_device);
+  void OnRemoteDeviceBonded(const bt::gap::RemoteDevice& remote_device);
 
   // Called when a connection is established to a remote device, either when
   // initiated by a user via a client of Host.fidl, or automatically by the GAP
   // adapter
-  void OnConnect(btlib::gap::LowEnergyConnectionRefPtr conn_ref,
+  void OnConnect(bt::gap::LowEnergyConnectionRefPtr conn_ref,
                  bool auto_connect);
 
   // Called when |server| receives a channel connection error.
@@ -132,14 +130,14 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   fbl::RefPtr<GattHost> gatt_host_;
 
   bool requesting_discovery_;
-  std::unique_ptr<btlib::gap::LowEnergyDiscoverySession> le_discovery_session_;
-  std::unique_ptr<btlib::gap::BrEdrDiscoverySession> bredr_discovery_session_;
+  std::unique_ptr<bt::gap::LowEnergyDiscoverySession> le_discovery_session_;
+  std::unique_ptr<bt::gap::BrEdrDiscoverySession> bredr_discovery_session_;
 
   bool requesting_discoverable_;
-  std::unique_ptr<btlib::gap::BrEdrDiscoverableSession>
+  std::unique_ptr<bt::gap::BrEdrDiscoverableSession>
       bredr_discoverable_session_;
 
-  btlib::sm::IOCapability io_capability_;
+  bt::sm::IOCapability io_capability_;
 
   // All active FIDL interface servers.
   // NOTE: Each key is a raw pointer that is owned by the corresponding value.
@@ -151,8 +149,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // auto-connected by the system.
   // TODO(armansito): Consider storing auto-connected references separately from
   // directly connected references.
-  std::unordered_map<btlib::gap::DeviceId,
-                     btlib::gap::LowEnergyConnectionRefPtr>
+  std::unordered_map<bt::gap::DeviceId, bt::gap::LowEnergyConnectionRefPtr>
       le_connections_;
 
   // Keep this as the last member to make sure that all weak pointers are

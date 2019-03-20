@@ -4,7 +4,7 @@
 
 #include "fake_layer.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace testing {
 
@@ -63,4 +63,4 @@ void FakeLayer::FindService(DeviceId peer_id, IdType service_id,
 
 }  // namespace testing
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

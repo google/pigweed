@@ -8,7 +8,7 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // Posts |callback| on |dispatcher| and waits for it to finish running.
@@ -21,6 +21,6 @@ namespace common {
 void RunTaskSync(fit::closure callback, async_dispatcher_t* dispatcher);
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RUN_TASK_SYNC_H_

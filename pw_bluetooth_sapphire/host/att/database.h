@@ -16,7 +16,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/ref_counted.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 // This class provides a simple attribute database abstraction. Attributes can
@@ -149,6 +149,6 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
 };
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_

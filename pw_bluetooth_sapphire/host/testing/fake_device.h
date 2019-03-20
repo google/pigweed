@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_gatt_server.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace testing {
 
 class FakeController;
@@ -175,6 +175,6 @@ class FakeDevice {
 };
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_

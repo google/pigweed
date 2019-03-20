@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
 #include "lib/fxl/strings/string_printf.h"
 
-namespace btlib {
+namespace bt {
 
 using common::BufferView;
 using common::ByteBuffer;
@@ -1253,4 +1253,4 @@ void FakeController::OnACLDataPacketReceived(
 }
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt

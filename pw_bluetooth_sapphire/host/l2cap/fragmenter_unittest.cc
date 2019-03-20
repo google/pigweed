@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace {
 
@@ -216,4 +216,4 @@ TEST(L2CAP_FragmenterTest, MaximalSizedPayload) {
 
 }  // namespace
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

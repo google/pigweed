@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace {
 
@@ -650,4 +650,4 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, DirectedReport) {
 
 }  // namespace
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 namespace {
 
@@ -62,4 +62,4 @@ TEST(IdentifierTest, DeviceIdIsValid) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt

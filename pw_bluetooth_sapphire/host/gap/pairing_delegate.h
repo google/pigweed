@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 // An object that implements PairingDelegate is responsible for fulfilling user
@@ -54,6 +54,6 @@ class PairingDelegate {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_DELEGATE_H_

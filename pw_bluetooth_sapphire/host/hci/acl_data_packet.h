@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Packet template specialization for ACL data packets. This cannot be directly
@@ -55,6 +55,6 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_PACKET_H_

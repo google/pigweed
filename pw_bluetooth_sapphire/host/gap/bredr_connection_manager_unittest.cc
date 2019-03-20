@@ -11,11 +11,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
-using ::btlib::testing::CommandTransaction;
+using bt::testing::CommandTransaction;
 
 using common::DeviceAddress;
 using common::kInvalidDeviceId;
@@ -23,7 +23,7 @@ using common::LowerBits;
 using common::UpperBits;
 
 using TestingBase =
-    ::btlib::testing::FakeControllerTest<::btlib::testing::TestController>;
+    bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR,
@@ -974,4 +974,4 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedDeviceTimeout) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

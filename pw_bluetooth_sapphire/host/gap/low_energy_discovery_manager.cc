@@ -12,7 +12,7 @@
 #include "remote_device.h"
 #include "remote_device_cache.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
@@ -359,4 +359,4 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
 }
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

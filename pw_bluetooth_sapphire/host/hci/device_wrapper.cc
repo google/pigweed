@@ -12,7 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // ================= FidlDeviceWrapper =================
@@ -115,4 +115,4 @@ zx::channel DummyDeviceWrapper::GetACLDataChannel() {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

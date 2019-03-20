@@ -4,14 +4,14 @@
 
 #include "status.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 // static
 std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(
     sdp::ErrorCode ecode) {
   return fxl::StringPrintf("%s (SDP %#.2x)",
-                           btlib::sdp::ErrorCodeToString(ecode).c_str(),
+                           bt::sdp::ErrorCodeToString(ecode).c_str(),
                            static_cast<unsigned int>(ecode));
 }
 
@@ -48,4 +48,4 @@ Status::Status(common::HostError ecode) : Base(ecode) {}
 Status::Status(ErrorCode proto_code) : Base(proto_code) {}
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

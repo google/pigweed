@@ -12,7 +12,7 @@
 #include "client.h"
 #include "server.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace internal {
 
@@ -46,4 +46,4 @@ void Connection::Initialize() {
 
 }  // namespace internal
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

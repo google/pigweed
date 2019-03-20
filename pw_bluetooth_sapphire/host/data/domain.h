@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace data {
 
 // Represents the task domain that implements the host subsystem's data plane.
@@ -181,6 +181,6 @@ class Domain : public fbl::RefCounted<Domain> {
 };
 
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_

@@ -8,7 +8,7 @@
 
 #include "fake_channel.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace testing {
 
@@ -42,4 +42,4 @@ TEST(L2CAP_ChannelTest, UniqueId) {
 
 }  // namespace testing
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

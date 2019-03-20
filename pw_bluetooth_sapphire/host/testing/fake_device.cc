@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
-namespace btlib {
+namespace bt {
 
 using common::ByteBuffer;
 
@@ -262,4 +262,4 @@ void FakeDevice::OnRxL2CAP(hci::ConnectionHandle conn,
 }
 
 }  // namespace testing
-}  // namespace btlib
+}  // namespace bt

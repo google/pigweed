@@ -8,7 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace {
 
@@ -103,4 +103,4 @@ bool Recombiner::ProcessFirstFragment(const hci::ACLDataPacket& fragment) {
 }
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

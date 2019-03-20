@@ -11,7 +11,7 @@
 #include "mux_commands.h"
 #include "rfcomm.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 namespace {
 
@@ -430,4 +430,4 @@ TEST_F(RFCOMM_FrameTest, ReadInvalidFrame_InvalidDLCI) {
 
 }  // namespace
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt

@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 // Helper functions to convert HCI data types to library objects.
@@ -39,6 +39,6 @@ common::DeviceAddress::Type AddressTypeFromHCI(LEPeerAddressType type);
 LEAddressType AddressTypeToHCI(common::DeviceAddress::Type type);
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_UTIL_H_

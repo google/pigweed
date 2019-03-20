@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace sm {
 
 // Represents the pairing state of a connected peer. The peer device must be a
@@ -326,6 +326,6 @@ class PairingState final : public Bearer::Listener {
 };
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_

@@ -7,7 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace testing {
 
@@ -49,6 +49,6 @@ class FakeLayer final : public GATT {
 
 }  // namespace testing
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_

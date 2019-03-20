@@ -6,7 +6,7 @@
 
 #include <lib/async/default.h>
 
-namespace btlib {
+namespace bt {
 namespace sdp {
 
 namespace {
@@ -232,4 +232,4 @@ std::unique_ptr<Client> Client::Create(fbl::RefPtr<l2cap::Channel> channel) {
 }
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt

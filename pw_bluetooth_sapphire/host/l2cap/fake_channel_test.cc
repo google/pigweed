@@ -7,7 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace testing {
 
@@ -51,4 +51,4 @@ bool FakeChannelTest::ReceiveAndExpect(
 
 }  // namespace testing
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

@@ -27,8 +27,8 @@ namespace bthost {
 class GattRemoteServiceDevice final {
  public:
   GattRemoteServiceDevice(zx_device_t* parent_device,
-                          btlib::gatt::DeviceId peer_id,
-                          fbl::RefPtr<btlib::gatt::RemoteService> service);
+                          bt::gatt::DeviceId peer_id,
+                          fbl::RefPtr<bt::gatt::RemoteService> service);
 
   ~GattRemoteServiceDevice();
 
@@ -113,8 +113,8 @@ class GattRemoteServiceDevice final {
   zx_device_t* parent_device_;  // The BT Host device
   zx_device_t* dev_;            // The child we are creating.
 
-  const btlib::gatt::DeviceId peer_id_;
-  fbl::RefPtr<btlib::gatt::RemoteService> service_;
+  const bt::gatt::DeviceId peer_id_;
+  fbl::RefPtr<bt::gatt::RemoteService> service_;
 
   // The base DDK device ops.
   zx_protocol_device_t dev_proto_ = {};

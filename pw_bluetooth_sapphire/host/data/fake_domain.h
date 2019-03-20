@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
-namespace btlib {
+namespace bt {
 
 namespace l2cap {
 namespace testing {
@@ -150,6 +150,6 @@ class FakeDomain final : public Domain {
 
 }  // namespace testing
 }  // namespace data
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_FAKE_DOMAIN_H_

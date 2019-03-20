@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 #include "garnet/public/lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace rfcomm {
 
 class Session;  // Break mutual dependency.
@@ -113,6 +113,6 @@ class ChannelImpl : public Channel {
 }  //  namespace internal
 
 }  // namespace rfcomm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_H_

@@ -13,7 +13,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 namespace testing {
 
@@ -76,6 +76,6 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
 }  // namespace testing
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_

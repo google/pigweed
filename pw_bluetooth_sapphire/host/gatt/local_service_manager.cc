@@ -12,7 +12,7 @@
 
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 namespace {
 
@@ -578,4 +578,4 @@ void LocalServiceManager::DisconnectClient(DeviceId peer_id) {
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

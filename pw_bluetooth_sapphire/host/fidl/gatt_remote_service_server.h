@@ -23,8 +23,8 @@ class GattRemoteServiceServer
     : public GattServerBase<fuchsia::bluetooth::gatt::RemoteService> {
  public:
   GattRemoteServiceServer(
-      fbl::RefPtr<btlib::gatt::RemoteService> service,
-      fbl::RefPtr<btlib::gatt::GATT> gatt,
+      fbl::RefPtr<bt::gatt::RemoteService> service,
+      fbl::RefPtr<bt::gatt::GATT> gatt,
       fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request);
   ~GattRemoteServiceServer() override;
 
@@ -50,10 +50,10 @@ class GattRemoteServiceServer
                             NotifyCharacteristicCallback callback) override;
 
   // The remote GATT service that backs this service.
-  fbl::RefPtr<btlib::gatt::RemoteService> service_;
+  fbl::RefPtr<bt::gatt::RemoteService> service_;
 
   // Maps characteristic IDs to notification handler IDs.
-  std::unordered_map<btlib::gatt::IdType, btlib::gatt::IdType> notify_handlers_;
+  std::unordered_map<bt::gatt::IdType, bt::gatt::IdType> notify_handlers_;
 
   fxl::WeakPtrFactory<GattRemoteServiceServer> weak_ptr_factory_;
 

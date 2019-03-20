@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <>
@@ -27,6 +27,6 @@ using Status = common::Status<ErrorCode>;
 using StatusCallback = fit::function<void(Status)>;
 
 }  // namespace sm
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_STATUS_H_

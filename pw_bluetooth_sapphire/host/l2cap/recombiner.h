@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "lib/fxl/macros.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 // A Recombiner can be used to obtain complete L2CAP frames from received
@@ -76,6 +76,6 @@ class Recombiner final {
 };
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_RECOMBINER_H_

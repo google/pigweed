@@ -37,7 +37,7 @@
     ASSERT_NO_FATAL_FAILURE(statement); \
   } while (false)
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <class InputIt>
@@ -94,6 +94,6 @@ constexpr uint8_t UpperBits(const uint16_t x) { return x >> 8; }
 constexpr uint8_t LowerBits(const uint16_t x) { return x & 0x00FF; }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TEST_HELPERS_H_

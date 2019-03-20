@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "lib/fxl/time/time_delta.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 using common::DeviceAddress;
@@ -251,4 +251,4 @@ void LowEnergyConnector::OnCreateConnectionTimeout() {
 }
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt

@@ -164,8 +164,7 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
 }
 
 void HostDevice::OnRemoteGattServiceAdded(
-    btlib::gatt::DeviceId peer_id,
-    fbl::RefPtr<btlib::gatt::RemoteService> service) {
+    bt::gatt::DeviceId peer_id, fbl::RefPtr<bt::gatt::RemoteService> service) {
   auto gatt_device =
       std::make_unique<GattRemoteServiceDevice>(dev_, peer_id, service);
   auto gatt_device_ptr = gatt_device.get();

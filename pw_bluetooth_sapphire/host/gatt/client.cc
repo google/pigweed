@@ -11,9 +11,9 @@
 
 #include "gatt_defs.h"
 
-using btlib::common::HostError;
+using bt::common::HostError;
 
-namespace btlib {
+namespace bt {
 
 using att::StatusCallback;
 using common::BufferView;
@@ -740,4 +740,4 @@ std::unique_ptr<Client> Client::Create(fxl::RefPtr<att::Bearer> bearer) {
 }
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

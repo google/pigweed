@@ -20,13 +20,13 @@
 #include "low_energy_advertising_manager.h"
 #include "low_energy_discovery_manager.h"
 
-namespace btlib {
+namespace bt {
 namespace gap {
 namespace {
 
-using ::btlib::testing::FakeController;
-using ::btlib::testing::FakeDevice;
-using TestingBase = ::btlib::testing::FakeControllerTest<FakeController>;
+using bt::testing::FakeController;
+using bt::testing::FakeDevice;
+using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 class AdapterTest : public TestingBase {
  public:
@@ -393,4 +393,4 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
 }  // namespace
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt

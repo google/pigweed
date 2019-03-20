@@ -11,7 +11,7 @@
 // for certain commands. These are informational and for testing purposes only;
 // each higher-layer library defines its own defaults.
 
-namespace btlib {
+namespace bt {
 namespace hci {
 namespace defaults {
 
@@ -32,6 +32,6 @@ constexpr uint16_t kLESupervisionTimeout = 0x002A;
 
 }  // namespace defaults
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEFAULTS_H_

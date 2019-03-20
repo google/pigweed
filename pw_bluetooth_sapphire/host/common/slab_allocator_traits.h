@@ -9,7 +9,7 @@
 
 #include <fbl/slab_allocator.h>
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 namespace internal {
@@ -25,7 +25,7 @@ using SlabAllocatorTraits =
                                        internal::kSlabOverhead>;
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 namespace fbl {
 namespace internal {

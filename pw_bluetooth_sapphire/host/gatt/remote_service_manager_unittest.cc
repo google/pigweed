@@ -12,7 +12,7 @@
 
 #include "fake_client.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // This must be in the correct namespace for it to be visible to EXPECT_EQ.
@@ -2208,4 +2208,4 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
 }  // namespace
 }  // namespace internal
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt

@@ -19,7 +19,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace btlib::data::internal {
+namespace bt {
+namespace data {
+namespace internal {
 
 // SocketChannelRelay relays data between a zx::socket and a Channel. This class
 // should not be used directly. Instead, see SocketFactory.
@@ -156,6 +158,8 @@ class SocketChannelRelay final {
   FXL_DISALLOW_COPY_AND_ASSIGN(SocketChannelRelay);
 };
 
-}  // namespace btlib::data::internal
+}  // namespace internal
+}  // namespace data
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_CHANNEL_RELAY_H_

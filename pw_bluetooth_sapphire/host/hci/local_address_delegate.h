@@ -9,7 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 
-namespace btlib {
+namespace bt {
 namespace hci {
 
 class LocalAddressDelegate {
@@ -32,6 +32,6 @@ class LocalAddressDelegate {
 };
 
 }  // namespace hci
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOCAL_ADDRESS_DELEGATE_H_

@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 namespace {
@@ -57,9 +57,7 @@ TEST(SlabAllocatedBufferTest, Basic) {
 
 }  // namespace
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 // Creates no more than one slab.
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(::btlib::common::test::TestTraits,
-                                      1,
-                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::common::test::TestTraits, 1, true);

@@ -14,7 +14,7 @@
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/weak_ptr.h"
 
-namespace btlib {
+namespace bt {
 
 namespace gap {
 class Adapter;
@@ -24,7 +24,7 @@ namespace gatt {
 class GATT;
 }  // namespace gatt
 
-}  // namespace btlib
+}  // namespace bt
 
 namespace bthost {
 
@@ -72,11 +72,11 @@ class ServerBase : public Server, public Interface {
 template <typename Interface>
 class AdapterServerBase : public ServerBase<Interface> {
  public:
-  AdapterServerBase(fxl::WeakPtr<btlib::gap::Adapter> adapter, Interface* impl,
+  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl,
                     fidl::InterfaceRequest<Interface> request)
       : AdapterServerBase(adapter, impl, request.TakeChannel()) {}
 
-  AdapterServerBase(fxl::WeakPtr<btlib::gap::Adapter> adapter, Interface* impl,
+  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl,
                     zx::channel channel)
       : ServerBase<Interface>(impl, std::move(channel)), adapter_(adapter) {
     ZX_DEBUG_ASSERT(adapter_);
@@ -85,10 +85,10 @@ class AdapterServerBase : public ServerBase<Interface> {
   ~AdapterServerBase() override = default;
 
  protected:
-  btlib::gap::Adapter* adapter() const { return adapter_.get(); }
+  bt::gap::Adapter* adapter() const { return adapter_.get(); }
 
  private:
-  fxl::WeakPtr<btlib::gap::Adapter> adapter_;
+  fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
   FXL_DISALLOW_COPY_AND_ASSIGN(AdapterServerBase);
 };
@@ -98,7 +98,7 @@ class AdapterServerBase : public ServerBase<Interface> {
 template <typename Interface>
 class GattServerBase : public ServerBase<Interface> {
  public:
-  GattServerBase(fbl::RefPtr<btlib::gatt::GATT> gatt, Interface* impl,
+  GattServerBase(fbl::RefPtr<bt::gatt::GATT> gatt, Interface* impl,
                  fidl::InterfaceRequest<Interface> request)
       : ServerBase<Interface>(impl, std::move(request)), gatt_(gatt) {
     ZX_DEBUG_ASSERT(gatt_);
@@ -107,10 +107,10 @@ class GattServerBase : public ServerBase<Interface> {
   ~GattServerBase() override = default;
 
  protected:
-  fbl::RefPtr<btlib::gatt::GATT> gatt() const { return gatt_; }
+  fbl::RefPtr<bt::gatt::GATT> gatt() const { return gatt_; }
 
  private:
-  fbl::RefPtr<btlib::gatt::GATT> gatt_;
+  fbl::RefPtr<bt::gatt::GATT> gatt_;
 
   FXL_DISALLOW_COPY_AND_ASSIGN(GattServerBase);
 };

@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-namespace btlib {
+namespace bt {
 
 namespace common {
 class ByteBuffer;
@@ -121,6 +121,6 @@ class DiscoveryFilter final {
 };
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_DISCOVERY_FILTER_H_

@@ -11,7 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 const size_t kDeviceAddressSize = 6;
@@ -148,15 +148,15 @@ static_assert(sizeof(DeviceAddress) == 8,
               "DeviceAddress must take up exactly 8 bytes");
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
 // Custom specialization of std::hash to support unordered associative
 // containers.
 namespace std {
 
 template <>
-struct hash<::btlib::common::DeviceAddress> {
-  using argument_type = ::btlib::common::DeviceAddress;
+struct hash<bt::common::DeviceAddress> {
+  using argument_type = bt::common::DeviceAddress;
   using result_type = std::size_t;
 
   result_type operator()(argument_type const& value) const;

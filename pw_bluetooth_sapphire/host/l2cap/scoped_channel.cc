@@ -4,7 +4,7 @@
 
 #include "scoped_channel.h"
 
-namespace btlib {
+namespace bt {
 namespace l2cap {
 
 ScopedChannel::ScopedChannel(fbl::RefPtr<Channel> chan) : chan_(chan) {}
@@ -26,4 +26,4 @@ void ScopedChannel::Close() {
 }
 
 }  // namespace l2cap
-}  // namespace btlib
+}  // namespace bt

@@ -13,7 +13,7 @@
 // This file contains constants and numbers that are part of the Generic Access
 // Profile specification.
 
-namespace btlib {
+namespace bt {
 namespace gap {
 
 // Bluetooth technologies that a device can support.
@@ -150,6 +150,6 @@ constexpr zx::duration kCacheTimeout = zx::sec(60);
 constexpr zx::duration kPrivateAddressTimeout = zx::min(15);
 
 }  // namespace gap
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GAP_H_

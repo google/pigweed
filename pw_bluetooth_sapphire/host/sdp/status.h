@@ -21,12 +21,12 @@
 //   // 3. Status containing SDP status code:
 //   sdp::Status status(sdp::ErrorCode::kInvalidSize);
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 template <>
-struct ProtocolErrorTraits<btlib::sdp::ErrorCode> {
-  static std::string ToString(btlib::sdp::ErrorCode ecode);
+struct ProtocolErrorTraits<bt::sdp::ErrorCode> {
+  static std::string ToString(bt::sdp::ErrorCode ecode);
 };
 
 }  // namespace common
@@ -42,6 +42,6 @@ class Status : public common::Status<ErrorCode> {
 };
 
 }  // namespace sdp
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_STATUS_H_

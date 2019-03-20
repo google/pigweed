@@ -4,7 +4,7 @@
 
 #include "attribute.h"
 
-namespace btlib {
+namespace bt {
 namespace att {
 
 AccessRequirements::AccessRequirements() : value_(0u) {}
@@ -106,4 +106,4 @@ Attribute* AttributeGrouping::AddAttribute(
 }
 
 }  // namespace att
-}  // namespace btlib
+}  // namespace bt

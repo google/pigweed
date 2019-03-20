@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 // 16-bit Attribute Types defined by the GATT profile (Vol 3, Part G, 3.4).
@@ -45,9 +45,8 @@ constexpr common::UUID kCharacteristicAggregateFormat(
     kCharacteristicAggregateFormat16);
 
 // Defined Generic Attribute Profile Service (Vol 3, Part G, 7)
-constexpr ::btlib::common::UUID kGenericAttributeService(
-    kGenericAttributeService16);
-constexpr ::btlib::common::UUID kServiceChangedCharacteristic(
+constexpr bt::common::UUID kGenericAttributeService(kGenericAttributeService16);
+constexpr bt::common::UUID kServiceChangedCharacteristic(
     kServiceChangedCharacteristic16);
 
 }  // namespace types
@@ -117,6 +116,6 @@ struct DescriptorData {
 };
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_

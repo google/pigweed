@@ -9,7 +9,7 @@
 #include "byte_buffer.h"
 #include "slab_buffer.h"
 
-namespace btlib {
+namespace bt {
 namespace common {
 
 using SmallBufferTraits =
@@ -33,11 +33,9 @@ common::MutableByteBufferPtr NewSlabBuffer(size_t size) {
 }
 
 }  // namespace common
-}  // namespace btlib
+}  // namespace bt
 
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(::btlib::common::LargeBufferTraits,
-                                      ::btlib::common::kMaxNumSlabs,
-                                      true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(::btlib::common::SmallBufferTraits,
-                                      ::btlib::common::kMaxNumSlabs,
-                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::common::LargeBufferTraits,
+                                      bt::common::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::common::SmallBufferTraits,
+                                      bt::common::kMaxNumSlabs, true);

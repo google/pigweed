@@ -4,7 +4,7 @@
 
 #include "gatt_defs.h"
 
-namespace btlib {
+namespace bt {
 namespace gatt {
 
 ServiceData::ServiceData(att::Handle start,
@@ -25,4 +25,4 @@ DescriptorData::DescriptorData(att::Handle handle, const common::UUID& type)
     : handle(handle), type(type) {}
 
 }  // namespace gatt
-}  // namespace btlib
+}  // namespace bt
