@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 
 namespace bt {
 
@@ -56,6 +57,25 @@ class BrEdrConnectionManager final {
   bool OpenL2capChannel(DeviceId device_id, l2cap::PSM psm, SocketCallback cb,
                         async_dispatcher_t* dispatcher);
 
+  // Add a service search to be performed on new connected remote devices.
+  // This search will happen on every device connection.
+  // |callback| will be called with the |attributes| that exist in the service
+  // entry on the remote SDP server.  This callback is called in the same
+  // dispatcher as BrEdrConnectionManager was created.
+  // Returns a SearchId which can be used to remove the search later.
+  // Identical searches will perform the same search for each search added.
+  // TODO(BT-785): Make identifcal searches just search once
+  using SearchCallback = sdp::ServiceDiscoverer::ResultCallback;
+  using SearchId = sdp::ServiceDiscoverer::SearchId;
+  SearchId AddServiceSearch(const common::UUID& uuid,
+                            std::unordered_set<sdp::AttributeId> attributes,
+                            SearchCallback callback);
+
+  // Remove a search previously added with AddServiceSearch()
+  // Returns true if a search was removed.
+  // This function is idempotent.
+  bool RemoveServiceSearch(SearchId id);
+
  private:
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
@@ -91,6 +111,9 @@ class BrEdrConnectionManager final {
 
   // Interregator for new connections to pass.
   BrEdrInterrogator interrogator_;
+
+  // Discoverer for SDP services
+  sdp::ServiceDiscoverer discoverer_;
 
   // Holds the connections that are active.
   std::unordered_map<hci::ConnectionHandle, hci::ConnectionPtr> connections_;

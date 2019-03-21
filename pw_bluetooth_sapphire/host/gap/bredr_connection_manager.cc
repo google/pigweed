@@ -203,6 +203,17 @@ bool BrEdrConnectionManager::OpenL2capChannel(DeviceId device_id,
   return true;
 }
 
+BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
+    const common::UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
+    BrEdrConnectionManager::SearchCallback callback) {
+  return discoverer_.AddSearch(uuid, std::move(attributes),
+                               std::move(callback));
+}
+
+bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
+  return discoverer_.RemoveSearch(id);
+}
+
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
                                                    uint16_t window,
                                                    bool interlaced,
@@ -387,10 +398,23 @@ void BrEdrConnectionManager::OnConnectionComplete(
             },
             std::move(security_callback), self->dispatcher_);
 
-        self->connections_.emplace(conn_ptr->handle(), std::move(conn_ptr));
+        auto handle = conn_ptr->handle();
+
+        self->connections_.emplace(handle, std::move(conn_ptr));
         device->MutBrEdr().SetConnectionState(
             RemoteDevice::ConnectionState::kConnected);
-        // TODO(NET-1019): Start SDP service discovery.
+
+        self->data_domain_->OpenL2capChannel(
+            handle, l2cap::kSDP,
+            [self, peer_id = device->identifier()](auto channel) {
+              if (!self)
+                return;
+              auto client = sdp::Client::Create(std::move(channel));
+
+              self->discoverer_.StartServiceDiscovery(peer_id,
+                                                      std::move(client));
+            },
+            self->dispatcher_);
       });
 }
 
