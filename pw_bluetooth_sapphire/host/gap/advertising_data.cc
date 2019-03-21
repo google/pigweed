@@ -9,19 +9,19 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
 #include "lib/fxl/strings/string_printf.h"
 #include "lib/fxl/strings/utf_codecs.h"
-#include "lib/fxl/type_converter.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-// A partial fxl::TypeConverter template specialization for copying the
+// A partial fidl::TypeConverter template specialization for copying the
 // contents of a type that derives from ByteBuffer into a
 // fidl::VectorPtr<unsigned char>. If the input array is empty, the output array
 // will be empty. Used by Vector<uint8_t>::From() in AsLEAdvertisingData()
 template <typename T>
-struct fxl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
+struct fidl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
   static fidl::VectorPtr<unsigned char> Convert(const T& input) {
     static_assert(std::is_base_of<bt::common::ByteBuffer, T>::value, "");
 
@@ -275,14 +275,14 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data,
   for (const auto& pair : manufacturer_data_) {
     ::ble::ManufacturerSpecificDataEntry entry;
     entry.company_id = pair.first;
-    entry.data = fxl::To<fidl::VectorPtr<unsigned char>>(pair.second);
+    entry.data = fidl::To<fidl::VectorPtr<unsigned char>>(pair.second);
     fidl_data->manufacturer_specific_data.push_back(std::move(entry));
   }
 
   for (const auto& pair : service_data_) {
     ::ble::ServiceDataEntry entry;
     entry.uuid = pair.first.ToString();
-    entry.data = fxl::To<fidl::VectorPtr<unsigned char>>(pair.second);
+    entry.data = fidl::To<fidl::VectorPtr<unsigned char>>(pair.second);
     fidl_data->service_data.push_back(std::move(entry));
   }
 

@@ -351,7 +351,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
     return;
   }
 
-  auto fidl_value = fxl::To<fidl::VectorPtr<uint8_t>>(value);
+  auto fidl_value = fidl::To<fidl::VectorPtr<uint8_t>>(value);
   auto* delegate = iter->second->delegate();
   ZX_DEBUG_ASSERT(delegate);
 

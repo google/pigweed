@@ -8,11 +8,11 @@
 
 #include <endian.h>
 
+#include "lib/fxl/strings/string_number_conversions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
-#include "lib/fxl/strings/string_number_conversions.h"
 
 using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::Error;
@@ -452,7 +452,7 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 
 // static
 fidl::VectorPtr<uint8_t>
-fxl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer>::Convert(
+fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer>::Convert(
     const bt::common::ByteBuffer& from) {
   auto to = fidl::VectorPtr<uint8_t>::New(from.size());
   bt::common::MutableBufferView view(to->data(), to->size());

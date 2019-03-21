@@ -13,8 +13,8 @@
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <fuchsia/bluetooth/le/cpp/fidl.h>
 
+#include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
-#include "lib/fxl/type_converter.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -106,9 +106,9 @@ bool PopulateDiscoveryFilter(
 }  // namespace fidl_helpers
 }  // namespace bthost
 
-// fxl::TypeConverter specializations for common::ByteBuffer and friends.
+// fidl::TypeConverter specializations for common::ByteBuffer and friends.
 template <>
-struct fxl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer> {
+struct fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer> {
   static fidl::VectorPtr<uint8_t> Convert(const bt::common::ByteBuffer& from);
 };
 
