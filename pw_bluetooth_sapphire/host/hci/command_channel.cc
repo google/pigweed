@@ -10,11 +10,11 @@
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
+#include "lib/fxl/strings/string_printf.h"
+#include "lib/fxl/time/time_delta.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
-#include "lib/fxl/strings/string_printf.h"
-#include "lib/fxl/time/time_delta.h"
 
 #include "slab_allocators.h"
 #include "transport.h"
@@ -38,19 +38,20 @@ CommandChannel::QueuedCommand::QueuedCommand(
   ZX_DEBUG_ASSERT(packet);
 }
 
-CommandChannel::TransactionData::TransactionData(TransactionId id,
-                                                 OpCode opcode,
-                                                 EventCode complete_event_code,
-                                                 CommandCallback callback,
-                                                 async_dispatcher_t* dispatcher)
+CommandChannel::TransactionData::TransactionData(
+    TransactionId id, OpCode opcode, EventCode complete_event_code,
+    std::unordered_set<OpCode> exclusions, CommandCallback callback,
+    async_dispatcher_t* dispatcher)
     : id_(id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
+      exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
       dispatcher_(dispatcher),
       handler_id_(0u) {
   ZX_DEBUG_ASSERT(id != 0u);
   ZX_DEBUG_ASSERT(dispatcher_);
+  exclusions_.insert(opcode_);
 }
 
 CommandChannel::TransactionData::~TransactionData() {
@@ -184,7 +185,6 @@ void CommandChannel::ShutDownInternal() {
     event_code_handlers_.clear();
     subevent_code_handlers_.clear();
     pending_transactions_.clear();
-    async_cmd_handlers_.clear();
   }
 }
 
@@ -192,6 +192,16 @@ CommandChannel::TransactionId CommandChannel::SendCommand(
     std::unique_ptr<CommandPacket> command_packet,
     async_dispatcher_t* dispatcher, CommandCallback callback,
     const EventCode complete_event_code) {
+  return SendExclusiveCommand(std::move(command_packet), dispatcher,
+                              std::move(callback), complete_event_code,
+                              std::unordered_set<OpCode>());
+}
+
+CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
+    std::unique_ptr<CommandPacket> command_packet,
+    async_dispatcher_t* dispatcher, CommandCallback callback,
+    const EventCode complete_event_code,
+    std::unordered_set<OpCode> exclusions) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "can't send commands while uninitialized");
     return 0u;
@@ -208,11 +218,10 @@ CommandChannel::TransactionId CommandChannel::SendCommand(
                         "Asynchronous handling of LE commands not supported");
 
     std::lock_guard<std::mutex> lock(event_handler_mutex_);
-    auto it = event_code_handlers_.find(complete_event_code);
     // Cannot send an asynchronous command if there's an external event handler
     // registered for the completion event.
-    if (it != event_code_handlers_.end() &&
-        async_cmd_handlers_.count(complete_event_code) == 0) {
+    auto* handler = FindEventHandler(complete_event_code);
+    if (handler && !handler->is_async()) {
       bt_log(TRACE, "hci", "event handler already handling this event");
       return 0u;
     }
@@ -226,8 +235,8 @@ CommandChannel::TransactionId CommandChannel::SendCommand(
 
   TransactionId id = next_transaction_id_++;
   auto data = std::make_unique<TransactionData>(
-      id, command_packet->opcode(), complete_event_code, std::move(callback),
-      dispatcher);
+      id, command_packet->opcode(), complete_event_code, std::move(exclusions),
+      std::move(callback), dispatcher);
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 
@@ -253,15 +262,15 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
   }
 
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
-  auto it = async_cmd_handlers_.find(event_code);
-  if (it != async_cmd_handlers_.end()) {
+  auto* handler = FindEventHandler(event_code);
+  if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
            "async event handler %zu already registered for event code %#.2x",
-           it->second, event_code);
+           handler->id, event_code);
     return 0u;
   }
 
-  auto id = NewEventHandler(event_code, false /* is_le_meta */,
+  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp,
                             std::move(event_callback), dispatcher);
   event_code_handlers_.emplace(event_code, id);
   return id;
@@ -272,7 +281,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
     async_dispatcher_t* dispatcher) {
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
 
-  auto id = NewEventHandler(subevent_code, true /* is_le_meta */,
+  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp,
                             std::move(event_callback), dispatcher);
   subevent_code_handlers_.emplace(subevent_code, id);
   return id;
@@ -281,14 +290,22 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
 void CommandChannel::RemoveEventHandler(EventHandlerId id) {
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
 
-  // Internal handler ids can't be removed.
-  auto it = std::find_if(async_cmd_handlers_.begin(), async_cmd_handlers_.end(),
-                         [id](auto&& p) { return p.second == id; });
-  if (it != async_cmd_handlers_.end()) {
+  // If the ID doesn't exist or it is internal. it can't be removed.
+  auto iter = event_handler_id_map_.find(id);
+  if (iter == event_handler_id_map_.end() || iter->second.is_async()) {
     return;
   }
 
   RemoveEventHandlerInternal(id);
+}
+
+CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(
+    EventCode code) {
+  auto it = event_code_handlers_.find(code);
+  if (it == event_code_handlers_.end()) {
+    return nullptr;
+  }
+  return &event_handler_id_map_[it->second];
 }
 
 void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
@@ -335,8 +352,18 @@ void CommandChannel::TrySendQueuedCommands() {
        allowed_command_packets_ > 0 && it != send_queue_.end();) {
     std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
 
-    // Already a pending command with the same opcode, we can't send.
-    if (pending_transactions_.count(it->data->opcode()) != 0) {
+    // Can't send if another is running with an opcode this can't coexist with.
+    bool excluded = false;
+    for (const auto& excluded_opcode : it->data->exclusions()) {
+      if (pending_transactions_.count(excluded_opcode) != 0) {
+        bt_log(DEBUG, "hci",
+               "pending command (%#.4x) delayed due to running opcode %#.4x",
+               it->data->opcode(), excluded_opcode);
+        excluded = true;
+        break;
+      }
+    }
+    if (excluded) {
       ++it;
       continue;
     }
@@ -398,18 +425,17 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   }
 
   // The handler hasn't been added yet.
-  auto id = NewEventHandler(data->complete_event_code(), false,
+  auto id = NewEventHandler(data->complete_event_code(), false, data->opcode(),
                             data->MakeCallback(), data->dispatcher());
   ZX_DEBUG_ASSERT(id != 0u);
   data->set_handler_id(id);
-  async_cmd_handlers_[data->complete_event_code()] = id;
   event_code_handlers_.emplace(data->complete_event_code(), id);
   bt_log(SPEW, "hci", "async command %zu assigned handler %zu", data->id(), id);
 }
 
 CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
-    EventCode event_code, bool is_le_meta, EventCallback event_callback,
-    async_dispatcher_t* dispatcher) {
+    EventCode event_code, bool is_le_meta, OpCode pending_opcode,
+    EventCallback event_callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
   ZX_DEBUG_ASSERT(dispatcher);
@@ -418,6 +444,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
   EventHandlerData data;
   data.id = id;
   data.event_code = event_code;
+  data.pending_opcode = pending_opcode;
   data.event_callback = std::move(event_callback);
   data.dispatcher = dispatcher;
   data.is_le_meta_subevent = is_le_meta;
@@ -468,15 +495,14 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  auto pending = std::move(it->second);
-  pending_transactions_.erase(it);
-
+  auto& pending = it->second;
   ZX_DEBUG_ASSERT(pending->opcode() == matching_opcode);
 
   pending->Complete(std::move(event));
 
-  // If the command is synchronous, we are done.
+  // If the command is synchronous or there's no handler to cleanup, we're done.
   if (pending->handler_id() == 0u) {
+    pending_transactions_.erase(it);
     return;
   }
 
@@ -493,7 +519,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   if (unregister_async_handler) {
     bt_log(DEBUG, "hci", "async command failed; removing its handler");
     RemoveEventHandlerInternal(pending->handler_id());
-    async_cmd_handlers_.erase(pending->complete_event_code());
+    pending_transactions_.erase(it);
   }
 }
 
@@ -541,15 +567,12 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       ++iter;  // Advance so we don't point to an invalid iterator.
 
       // Async command handling is not supported for LE events.
-      if (!is_le_event) {
-        auto complete_it = async_cmd_handlers_.find(event_code);
-        if (complete_it != async_cmd_handlers_.end()) {
-          bt_log(DEBUG, "hci",
-                 "removing completed async handler (id %zu, event code: %#.2x)",
-                 event_id, event_code);
-          RemoveEventHandlerInternal(event_id);
-          async_cmd_handlers_.erase(complete_it);
-        }
+      if (!is_le_event && handler.is_async()) {
+        bt_log(DEBUG, "hci",
+               "removing completed async handler (id %zu, event code: %#.2x)",
+               event_id, event_code);
+        RemoveEventHandlerInternal(event_id);
+        pending_transactions_.erase(handler.pending_opcode);
       }
 
       pending_callbacks.emplace_back(std::move(callback), dispatcher);

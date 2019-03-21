@@ -20,14 +20,14 @@
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "lib/fxl/functional/cancelable_callback.h"
 #include "lib/fxl/macros.h"
 #include "lib/fxl/memory/ref_ptr.h"
 #include "lib/fxl/synchronization/thread_checker.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
 namespace bt {
 namespace hci {
@@ -108,6 +108,17 @@ class CommandChannel final {
       async_dispatcher_t* dispatcher, CommandCallback callback,
       const EventCode complete_event_code = kCommandCompleteEventCode);
 
+  // As SendCommand, but will wait to run this command until there are no
+  // commands with with opcodes specified in |exclude| from executing. This
+  // is useful to prevent running different commands that cannot run
+  // concurrently (i.e. Inquiry and Connect).
+  // Two commands with the same opcode will never run simultaneously.
+  TransactionId SendExclusiveCommand(
+      std::unique_ptr<CommandPacket> command_packet,
+      async_dispatcher_t* dispatcher, CommandCallback callback,
+      const EventCode complete_event_code = kCommandCompleteEventCode,
+      std::unordered_set<OpCode> exclusions = {});
+
   // Used to identify an individual HCI event handler that was registered with
   // this CommandChannel.
   using EventHandlerId = size_t;
@@ -172,12 +183,27 @@ class CommandChannel final {
   const zx::channel& channel() const { return channel_; }
 
  private:
-  // Represents a pending or running HCI command.
+  // Data related to a queued or running command.
+  //
+  // When a command is sent to the controller, it is placed in the
+  // pending_transactions_ map.  It remains in the pending_transactions_ map
+  // until it is completed - asynchronous commands remain until their
+  // complete_event_code_ is received.
+  //
+  // There are a number of reasons a command may be queued before sending:
+  //  - An asynchronous command is waiting on the same event code
+  //  - A command with an opcode that is in the exclusions set for this
+  //    transaction is pending.
+  //  - We cannot send any commands because of the limit of outstanding command
+  //    packets from the controller
+  // Queued commands are held in the send_queue_ and are sent when possible,
+  // FIFO (but skipping commands that cannot be sent)
   class TransactionData {
    public:
     TransactionData(TransactionId id, OpCode opcode,
-                    EventCode complete_event_code, CommandCallback callback,
-                    async_dispatcher_t* dispatcher);
+                    EventCode complete_event_code,
+                    std::unordered_set<OpCode> exclusions,
+                    CommandCallback callback, async_dispatcher_t* dispatcher);
     ~TransactionData();
 
     // Starts the transaction timer, which will call timeout_cb if it's not
@@ -187,13 +213,17 @@ class CommandChannel final {
     // Completes the transaction with |event|.
     void Complete(std::unique_ptr<EventPacket> event);
 
-    // Makes an EventCallback that calls the callback correctly.
+    // Makes an EventCallback that calls |callback_| correctly.
     EventCallback MakeCallback();
 
     async_dispatcher_t* dispatcher() const { return dispatcher_; }
     EventCode complete_event_code() const { return complete_event_code_; }
     OpCode opcode() const { return opcode_; }
     TransactionId id() const { return id_; }
+    // The set of opcodes in progress that will hold this transaction in queue.
+    const std::unordered_set<OpCode>& exclusions() const {
+      return exclusions_;
+    };
 
     EventHandlerId handler_id() const { return handler_id_; }
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }
@@ -202,9 +232,12 @@ class CommandChannel final {
     TransactionId id_;
     OpCode opcode_;
     EventCode complete_event_code_;
+    std::unordered_set<OpCode> exclusions_;
     CommandCallback callback_;
     async_dispatcher_t* dispatcher_;
     async::TaskClosure timeout_task_;
+    // If non-zero, the id of the handler registered for this transaction.
+    // Always zero if this transaction is synchronous.
     EventHandlerId handler_id_;
 
     FXL_DISALLOW_COPY_ASSIGN_AND_MOVE(TransactionData);
@@ -229,17 +262,26 @@ class CommandChannel final {
     std::unique_ptr<TransactionData> data;
   };
 
-  // Data stored for each event handler registered via AddEventHandler.
+  // Data stored for each event handler registered.
   struct EventHandlerData {
     EventHandlerId id;
     EventCode event_code;
+    // For asynchronous transaction event handlers, the pending command opcode.
+    // kNoOp if this is a static event handler.
+    OpCode pending_opcode;
     EventCallback event_callback;
     bool is_le_meta_subevent;
     async_dispatcher_t* dispatcher;
+
+    bool is_async() const { return pending_opcode != kNoOp; }
   };
 
   void ShutDownInternal()
       __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
+
+  // Finds the event handler for |code|.  Returns nullptr if one doesn't exist.
+  EventHandlerData* FindEventHandler(EventCode code)
+      __TA_REQUIRES(event_handler_mutex_);
 
   // Removes internal event handler structures for |id|.
   void RemoveEventHandlerInternal(EventHandlerId id)
@@ -257,6 +299,7 @@ class CommandChannel final {
   // Creates a new event handler entry in the event handler map and returns its
   // ID.
   EventHandlerId NewEventHandler(EventCode event_code, bool is_le_meta,
+                                 OpCode pending_opcode,
                                  EventCallback event_callback,
                                  async_dispatcher_t* dispatcher)
       __TA_REQUIRES(event_handler_mutex_);
@@ -340,16 +383,6 @@ class CommandChannel final {
   // Mapping from LE Meta Event Subevent code to the event handlers that were
   // registered to handle that event code.
   std::unordered_multimap<EventCode, EventHandlerId> subevent_code_handlers_
-      __TA_GUARDED(event_handler_mutex_);
-
-  // Mapping from event code to the event handler for async command completion.
-  // These are automatically removed after being called once.
-  // Any event codes in this map are also in event_code_handlers_ and
-  // the event handler id here must be the only one for this event code.
-  //
-  // The event ids in this map can not be detected or removed using
-  // RemoveEventHandler (but can by RemoveEventHandlerInternal).
-  std::unordered_map<EventCode, EventHandlerId> async_cmd_handlers_
       __TA_GUARDED(event_handler_mutex_);
 
   FXL_DISALLOW_COPY_AND_ASSIGN(CommandChannel);

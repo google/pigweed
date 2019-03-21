@@ -1060,6 +1060,207 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
   EXPECT_EQ(4u, cb_count);
 }
 
+// Tests:
+//  - Commands that are exclusive of other commands cannot run together, and
+//    instead wait until the exclusive commands finish.
+//  - Exclusive Commands in the queue still get started in order
+//  - Commands that aren't exclusive run as normal even when an exclusive one is
+//    waiting.
+TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
+  constexpr EventCode kExclOneCompleteEvent = 0xFE;
+  constexpr EventCode kExclTwoCompleteEvent = 0xFD;
+  constexpr OpCode kExclusiveOne = DefineOpCode(0x01, 0x01);
+  constexpr OpCode kExclusiveTwo = DefineOpCode(0x01, 0x02);
+  constexpr OpCode kNonExclusive = DefineOpCode(0x01, 0x03);
+
+  // Set up expectations
+  //  - kExclusiveOne can't run at the same time as kExclusiveTwo, and
+  //  vice-versa.
+  //  - kExclusiveOne finishes with kExclOneCompleteEvent
+  //  - kExclusiveTwo finishes with kExclTwoCompleteEvent
+  //  - kNonExclusive can run whenever it wants.
+  //  - For testing, we omit the payloads of all commands.
+  auto excl_one_cmd = common::CreateStaticByteBuffer(
+      LowerBits(kExclusiveOne), UpperBits(kExclusiveOne), 0x00  // (no payload)
+  );
+  auto rsp_excl_one_status = common::CreateStaticByteBuffer(
+      kCommandStatusEventCode,
+      0x04,                        // parameter_total_size (4 byte payload)
+      StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+      LowerBits(kExclusiveOne),
+      UpperBits(kExclusiveOne)  // HCI opcode
+  );
+  auto rsp_one_complete = common::CreateStaticByteBuffer(
+      kExclOneCompleteEvent, 0x00  // parameter_total_size (no payload)
+  );
+
+  auto excl_two_cmd = common::CreateStaticByteBuffer(
+      LowerBits(kExclusiveTwo), UpperBits(kExclusiveTwo), 0x00  // (no payload)
+  );
+  auto rsp_excl_two_status = common::CreateStaticByteBuffer(
+      kCommandStatusEventCode,
+      0x04,                        // parameter_total_size (4 byte payload)
+      StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+      LowerBits(kExclusiveTwo),
+      UpperBits(kExclusiveTwo)  // HCI opcode
+  );
+  auto rsp_two_complete = common::CreateStaticByteBuffer(
+      kExclTwoCompleteEvent, 0x00  // parameter_total_size (no payload)
+  );
+
+  auto nonexclusive_cmd = common::CreateStaticByteBuffer(
+      LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
+      0x00  // parameter_total_size (no payload)
+  );
+  auto nonexclusive_complete = common::CreateStaticByteBuffer(
+      kCommandCompleteEventCode,
+      0x04,  // parameter_total_size (4 byte payload)
+      0xFA,  // num_hci_command_packets (250)
+      LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
+      StatusCode::kSuccess                                 // Command succeeded
+  );
+
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(excl_two_cmd, {&rsp_excl_two_status}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
+
+  StartTestDevice();
+
+  CommandChannel::TransactionId id1, id2, id3;
+  CommandChannel::CommandCallback exclusive_cb;
+  size_t exclusive_cb_count = 0u;
+
+  size_t nonexclusive_cb_count = 0;
+  CommandChannel::CommandCallback nonexclusive_cb =
+      [&nonexclusive_cb_count](auto callback_id, const EventPacket& event) {
+        EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
+        nonexclusive_cb_count++;
+      };
+
+  exclusive_cb =
+      [&exclusive_cb, &nonexclusive_cb, cmd_channel = cmd_channel(),
+       dispatcher = dispatcher(), &id1, &id2, &id3, &exclusive_cb_count,
+       kExclOneCompleteEvent, kExclTwoCompleteEvent](
+          CommandChannel::TransactionId callback_id, const EventPacket& event) {
+        // Expected event -> Action in response
+        // 0. Status for kExclusiveOne -> Send a kExclusiveTwo
+        // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and
+        // kNonExclusive
+        // 2. Status for kExclusiveTwo -> Nothing
+        // 3. Complete for kExclusiveTwo -> Nothing
+        // 4. Status for kExclusiveOne -> Nothing
+        // 5. Complete for kExclusiveOne -> Nothing
+        switch (exclusive_cb_count) {
+          case 0: {
+            // Status for kExclusiveOne -> Send kExclusiveTwo (queued)
+            EXPECT_EQ(id1, callback_id);
+            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+            auto params = event.view().payload<CommandStatusEventParams>();
+            EXPECT_EQ(StatusCode::kSuccess, params.status);
+            auto packet = CommandPacket::New(kExclusiveTwo);
+            id2 = cmd_channel->SendExclusiveCommand(
+                std::move(packet), dispatcher, exclusive_cb.share(),
+                kExclTwoCompleteEvent, {kExclusiveOne});
+            std::cout << "queued Exclusive Two: " << id2 << std::endl;
+            break;
+          }
+          case 1: {
+            // Complete for kExclusiveOne -> Resend kExclusiveOne
+            EXPECT_EQ(id1, callback_id);
+            EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
+            // Add the second command when the first one completes.
+            auto packet = CommandPacket::New(kExclusiveOne);
+            id3 = cmd_channel->SendExclusiveCommand(
+                std::move(packet), dispatcher, exclusive_cb.share(),
+                kExclOneCompleteEvent, {kExclusiveTwo});
+            std::cout << "queued Second Exclusive One: " << id3 << std::endl;
+            packet = CommandPacket::New(kNonExclusive);
+            cmd_channel->SendCommand(std::move(packet), dispatcher,
+                                     nonexclusive_cb.share());
+
+            break;
+          }
+          case 2: {  // Status for kExclusiveTwo
+            EXPECT_EQ(id2, callback_id);
+            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+            auto params = event.view().payload<CommandStatusEventParams>();
+            EXPECT_EQ(StatusCode::kSuccess, params.status);
+            break;
+          }
+          case 3: {  // Complete for kExclusiveTwo
+            EXPECT_EQ(id2, callback_id);
+            EXPECT_EQ(kExclTwoCompleteEvent, event.event_code());
+            break;
+          }
+          case 4: {  // Status for Second kExclusiveOne
+            EXPECT_EQ(id3, callback_id);
+            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+            auto params = event.view().payload<CommandStatusEventParams>();
+            EXPECT_EQ(StatusCode::kSuccess, params.status);
+            break;
+          }
+          case 5: {  // Complete for Second kExclusiveOne
+            EXPECT_EQ(id3, callback_id);
+            EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
+            break;
+          }
+          default: {
+            ASSERT_TRUE(false);  // Should never be called more than 6 times.
+            break;
+          }
+        }
+        exclusive_cb_count++;
+      };
+
+  auto packet = CommandPacket::New(kExclusiveOne);
+  id1 = cmd_channel()->SendExclusiveCommand(
+      std::move(packet), dispatcher(), exclusive_cb.share(),
+      kExclOneCompleteEvent, {kExclusiveTwo});
+  packet = CommandPacket::New(kNonExclusive);
+  cmd_channel()->SendCommand(std::move(packet), dispatcher(),
+                             nonexclusive_cb.share());
+
+  RunLoopUntilIdle();
+
+  // Should have received the Status but not the result.
+  EXPECT_EQ(1u, exclusive_cb_count);
+  // But the WriteLocalName should be fine.
+  EXPECT_EQ(1u, nonexclusive_cb_count);
+
+  // Sending the complete will finish the command and add the next command.
+  test_device()->SendCommandChannelPacket(rsp_one_complete);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(3u, exclusive_cb_count);
+  EXPECT_EQ(2u, nonexclusive_cb_count);
+
+  // Finish out the ExclusiveTwo
+  test_device()->SendCommandChannelPacket(rsp_two_complete);
+  packet = CommandPacket::New(kNonExclusive);
+  cmd_channel()->SendCommand(std::move(packet), dispatcher(),
+                             nonexclusive_cb.share());
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(5u, exclusive_cb_count);
+  EXPECT_EQ(3u, nonexclusive_cb_count);
+
+  // Finish the second kExclusiveOne
+  test_device()->SendCommandChannelPacket(rsp_one_complete);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(6u, exclusive_cb_count);
+  EXPECT_EQ(3u, nonexclusive_cb_count);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt
