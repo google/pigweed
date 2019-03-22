@@ -11,6 +11,7 @@
 #include "lib/fxl/memory/weak_ptr.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 
@@ -30,8 +31,11 @@ class ProfileServer
   void AddService(fuchsia::bluetooth::bredr::ServiceDefinition definition,
                   fuchsia::bluetooth::bredr::SecurityLevel sec_level,
                   bool devices, AddServiceCallback callback) override;
+  void AddSearch(
+      fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
+      std::vector<uint16_t> attr_ids) override;
   void RemoveService(uint64_t service_id) override;
-  void ConnectL2cap(std::string remote_id, uint16_t psm,
+  void ConnectL2cap(std::string peer_id, uint16_t psm,
                     ConnectL2capCallback callback) override;
 
   // Callback for incoming connections
@@ -39,11 +43,18 @@ class ProfileServer
                           bt::hci::ConnectionHandle handle,
                           const bt::sdp::DataElement& protocol_list);
 
+  // Callback for services found on connected device
+  void OnServiceFound(
+      bt::common::DeviceId peer_id,
+      const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
+
   // Registered service IDs handed out, correlated with Service Handles.
   std::map<uint64_t, bt::sdp::ServiceHandle> registered_;
 
   // Last service ID handed out
   uint64_t last_service_id_;
+
+  std::vector<bt::gap::BrEdrConnectionManager::SearchId> searches_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

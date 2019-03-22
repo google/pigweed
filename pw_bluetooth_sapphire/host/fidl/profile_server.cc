@@ -5,7 +5,6 @@
 #include "profile_server.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
 #include "helpers.h"
@@ -217,6 +216,40 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(
   return desc;
 }
 
+fidlbredr::ProfileDescriptorPtr DataElementToProfileDescriptor(
+    const bt::sdp::DataElement* in) {
+  auto desc = fidlbredr::ProfileDescriptor::New();
+  if (in->type() != bt::sdp::DataElement::Type::kSequence) {
+    return nullptr;
+  }
+
+  const bt::sdp::DataElement* profile_desc = in->At(0);
+  const bt::sdp::DataElement* profile_elem = profile_desc->At(0);
+  if (!profile_elem) {
+    return nullptr;
+  }
+  const auto profile_uuid = profile_elem->Get<bt::common::UUID>();
+  if (!profile_uuid) {
+    return nullptr;
+  }
+  desc->profile_id =
+      fidlbredr::ServiceClassProfileIdentifier(*profile_uuid->As16Bit());
+
+  const bt::sdp::DataElement* version_elem = profile_desc->At(1);
+  if (!version_elem) {
+    return nullptr;
+  }
+  const auto version = version_elem->Get<uint16_t>();
+  if (!version) {
+    return nullptr;
+  }
+
+  desc->major_version = static_cast<uint8_t>(*version >> 8);
+  desc->minor_version = static_cast<uint8_t>(*version & 0xFF);
+
+  return desc;
+}
+
 void AddProtocolDescriptorList(
     bt::sdp::ServiceRecord* rec, bt::sdp::ServiceRecord::ProtocolListId id,
     const ::std::vector<fidlbredr::ProtocolDescriptor>& descriptor_list) {
@@ -257,6 +290,9 @@ ProfileServer::~ProfileServer() {
   auto sdp = adapter()->sdp_server();
   for (const auto& it : registered_) {
     sdp->UnregisterService(it.second);
+  }
+  for (const auto& search_id : searches_) {
+    adapter()->bredr_connection_manager()->RemoveServiceSearch(search_id);
   }
 }
 
@@ -344,10 +380,28 @@ void ProfileServer::RemoveService(uint64_t service_id) {
   }
 }
 
-void ProfileServer::ConnectL2cap(std::string remote_id, uint16_t channel,
+void ProfileServer::AddSearch(
+    fidlbredr::ServiceClassProfileIdentifier service_uuid,
+    std::vector<uint16_t> attr_ids) {
+  bt::common::UUID search_uuid(static_cast<uint32_t>(service_uuid));
+  std::unordered_set<bt::sdp::AttributeId> attributes(attr_ids.begin(),
+                                                      attr_ids.end());
+  // Always request the ProfileDescriptor for the event
+  attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
+
+  auto search_id = adapter()->bredr_connection_manager()->AddServiceSearch(
+      search_uuid, std::move(attributes),
+      [this](auto id, const auto& attrs) { OnServiceFound(id, attrs); });
+
+  if (search_id) {
+    searches_.emplace_back(search_id);
+  }
+}
+
+void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
                                  ConnectL2capCallback callback) {
-  auto peer_id = fidl_helpers::DeviceIdFromString(remote_id);
-  if (!peer_id.has_value()) {
+  auto dev_id = fidl_helpers::DeviceIdFromString(peer_id);
+  if (!dev_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "invalid device ID"),
              zx::socket());
@@ -358,7 +412,7 @@ void ProfileServer::ConnectL2cap(std::string remote_id, uint16_t channel,
     cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(channel));
   };
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      *peer_id, channel, std::move(connected_cb),
+      *dev_id, channel, std::move(connected_cb),
       async_get_default_dispatcher());
   if (!connecting) {
     callback(
@@ -389,6 +443,34 @@ void ProfileServer::OnChannelConnected(
 
   binding()->events().OnConnected(id.ToString(), service_id, std::move(socket),
                                   std::move(*desc));
+}
+
+void ProfileServer::OnServiceFound(
+    bt::common::DeviceId peer_id,
+    const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes) {
+  // Convert ProfileDescriptor Attribute
+  auto it = attributes.find(bt::sdp::kBluetoothProfileDescriptorList);
+  if (it == attributes.end()) {
+    bt_log(WARN, "profile_server",
+           "Found service on %d didn't contain profile descriptor, dropping",
+           peer_id);
+    return;
+  }
+  fidlbredr::ProfileDescriptorPtr desc =
+      DataElementToProfileDescriptor(&it->second);
+
+  // Add the rest of the attributes
+  std::vector<fidlbredr::Attribute> fidl_attrs;
+
+  for (const auto& it : attributes) {
+    auto attr = fidlbredr::Attribute::New();
+    attr->id = it.first;
+    attr->element = std::move(*DataElementToFidl(&it.second));
+    fidl_attrs.emplace_back(std::move(*attr));
+  }
+
+  binding()->events().OnServiceFound(peer_id.ToString(), std::move(*desc),
+                                     std::move(fidl_attrs));
 }
 
 }  // namespace bthost
