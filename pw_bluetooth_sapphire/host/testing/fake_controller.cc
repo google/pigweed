@@ -825,7 +825,7 @@ void FakeController::OnCommandPacketReceived(
       le_adv_state_.adv_type = in_params.adv_type;
       le_adv_state_.own_address_type = in_params.own_address_type;
 
-      bt_log(INFO, "fake-hci", "start advertising using address type: %d",
+      bt_log(INFO, "fake-hci", "start advertising using address type: %hhd",
              le_adv_state_.own_address_type);
 
       RespondWithSuccess(opcode);

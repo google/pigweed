@@ -213,7 +213,7 @@ ServiceSearchRequest::ServiceSearchRequest(const common::ByteBuffer& params)
   }
   size_t min_size = read_size + sizeof(uint16_t) + sizeof(uint8_t);
   if (params.size() < min_size) {
-    bt_log(SPEW, "sdp", "Params too small: %d < %d", params.size(), min_size);
+    bt_log(SPEW, "sdp", "Params too small: %zu < %zu", params.size(), min_size);
     return;
   }
   const DataElement* it;
@@ -402,7 +402,7 @@ ServiceAttributeRequest::ServiceAttributeRequest(
   size_t read_size = sizeof(uint32_t);
   max_attribute_byte_count_ = betoh16(params.view(read_size).As<uint16_t>());
   if (max_attribute_byte_count_ < kMinMaximumAttributeByteCount) {
-    bt_log(SPEW, "sdp", "max attribute byte count too small (%d < %d)",
+    bt_log(SPEW, "sdp", "max attribute byte count too small (%hu < %zu)",
            max_attribute_byte_count_, kMinMaximumAttributeByteCount);
     return;
   }
@@ -709,7 +709,7 @@ ServiceSearchAttributeRequest::ServiceSearchAttributeRequest(
   }
 
   bt_log(SPEW, "sdp",
-         "parsed: %d search uuids, %d max bytes, %d attribute ranges",
+         "parsed: %zu search uuids, %hu max bytes, %zu attribute ranges",
          service_search_pattern_.size(), max_attribute_byte_count_,
          attribute_ranges_.size());
 
@@ -879,7 +879,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
   for (auto* list_it = attribute_lists.At(0); list_it != nullptr;
        list_it = attribute_lists.At(++list_idx)) {
     if ((list_it->type() != DataElement::Type::kSequence)) {
-      bt_log(SPEW, "sdp", "list %d wasn't a sequence", list_idx);
+      bt_log(SPEW, "sdp", "list %zu wasn't a sequence", list_idx);
       return Status(common::HostError::kPacketMalformed);
     }
     attribute_lists_.emplace(list_idx, std::map<AttributeId, DataElement>());
@@ -892,8 +892,8 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
         bt_log(SPEW, "sdp", "attribute isn't a ptr or doesn't exist");
         return Status(common::HostError::kPacketMalformed);
       }
-      bt_log(SPEW, "sdp", "adding %d:%s = %s", list_idx, it->ToString().c_str(),
-             val->ToString().c_str());
+      bt_log(SPEW, "sdp", "adding %zu:%s = %s", list_idx, bt_str(*it),
+             bt_str(*val));
       AttributeId id = *(it->Get<uint16_t>());
       if (id < last_id) {
         attribute_lists_.clear();

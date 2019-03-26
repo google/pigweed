@@ -26,7 +26,7 @@ std::unordered_set<RemoteDevice*> ProcessInquiryResult(
 
   size_t result_size = event.view().payload_size() - sizeof(EventParamType);
   if ((result_size % sizeof(ResultType)) != 0) {
-    bt_log(INFO, "gap-bredr", "ignoring wrong size result (%zu % %zu != 0)",
+    bt_log(INFO, "gap-bredr", "ignoring wrong size result (%zu %% %zu != 0)",
            result_size, sizeof(ResultType));
     return updated;
   }

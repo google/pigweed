@@ -437,7 +437,7 @@ void Bearer::UnregisterHandler(HandlerId id) {
 
   auto iter = handler_id_map_.find(id);
   if (iter == handler_id_map_.end()) {
-    bt_log(TRACE, "att", "cannot unregister unknown handler id: %u", id);
+    bt_log(TRACE, "att", "cannot unregister unknown handler id: %zu", id);
     return;
   }
 
@@ -611,8 +611,8 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
   }
 
   bt_log(SPEW, "att",
-         "Received security error for transaction %#.2x; requesting upgrade to "
-         "level: %s",
+         "Received security error for transaction %#.2hhx; requesting upgrade "
+         "to level: %s",
          error_code, sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
@@ -704,7 +704,7 @@ Bearer::RemoteTransaction* Bearer::FindRemoteTransaction(TransactionId id) {
     return &remote_indication_;
   }
 
-  bt_log(TRACE, "att", "id %u does not match any transaction", id);
+  bt_log(TRACE, "att", "id %zu does not match any transaction", id);
   return nullptr;
 }
 

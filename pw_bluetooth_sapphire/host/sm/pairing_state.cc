@@ -262,8 +262,8 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq,
 
     auto* state = self->legacy_state_.get();
     if (!state || id != state->id) {
-      bt_log(TRACE, "sm", "ignoring TK callback for expired pairing: (id = %u)",
-             id);
+      bt_log(TRACE, "sm",
+             "ignoring TK callback for expired pairing: (id = %lu)", id);
       return;
     }
 

@@ -636,7 +636,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
 
     if (read_size < sizeof(EventHeader)) {
       bt_log(ERROR, "hci",
-             "malformed data packet - expected at least %zu bytes, got %zu",
+             "malformed data packet - expected at least %zu bytes, got %u",
              sizeof(EventHeader), read_size);
       // TODO(armansito): Should this be fatal? Ignore for now.
       continue;

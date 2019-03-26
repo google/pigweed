@@ -287,7 +287,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
   hci_cmd_runner_->QueueCommand(std::move(scan_rsp_packet));
 
   hci_cmd_runner_->RunCommands([](Status status) {
-    bt_log(TRACE, "hci-le", "advertising stopped: ", status.ToString().c_str());
+    bt_log(TRACE, "hci-le", "advertising stopped: %s", bt_str(status));
   });
 }
 

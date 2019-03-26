@@ -9,6 +9,8 @@
 
 #include <ddk/driver.h>
 
+#include "lib/fxl/compiler_specific.h"
+
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a
 // driver) and printf (when it's used in unit tests and command-line tools).
@@ -113,19 +115,19 @@ constexpr size_t kNumLogSeverities = 6;
 
 bool IsLogLevelEnabled(LogSeverity severity);
 void LogMessage(const char* file, int line, LogSeverity severity,
-                const char* tag, const char* fmt, ...);
+                const char* tag, const char* fmt, ...) FXL_PRINTF_FORMAT(5, 6);
 
 void UsePrintf(LogSeverity min_severity);
 
 }  // namespace common
 }  // namespace bt
 
-#define bt_log(flag, tag, fmt...)                                           \
-  do {                                                                      \
+#define bt_log(flag, tag, fmt...)                                       \
+  do {                                                                  \
     if (bt::common::IsLogLevelEnabled(bt::common::LogSeverity::flag)) { \
-      bt::common::LogMessage(__FILE__, __LINE__,                          \
-                               bt::common::LogSeverity::flag, tag, fmt);  \
-    }                                                                       \
+      bt::common::LogMessage(__FILE__, __LINE__,                        \
+                             bt::common::LogSeverity::flag, tag, fmt);  \
+    }                                                                   \
   } while (0)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};

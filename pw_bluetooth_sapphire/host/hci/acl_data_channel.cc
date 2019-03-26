@@ -443,7 +443,7 @@ void ACLDataChannel::OnChannelReady(
 
     if (read_size < sizeof(ACLDataHeader)) {
       bt_log(ERROR, "hci",
-             "malformed data packet - expected at least %zu bytes, got %zu",
+             "malformed data packet - expected at least %zu bytes, got %u",
              sizeof(ACLDataHeader), read_size);
       // TODO(jamuraa): signal stream error somehow
       continue;

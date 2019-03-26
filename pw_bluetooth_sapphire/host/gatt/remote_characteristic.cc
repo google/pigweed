@@ -241,7 +241,7 @@ bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
   ZX_DEBUG_ASSERT(!shut_down_);
 
   if (!notify_handlers_.erase(handler_id)) {
-    bt_log(SPEW, "gatt", "notify handler not found (id: %u)", handler_id);
+    bt_log(SPEW, "gatt", "notify handler not found (id: %lu)", handler_id);
     return false;
   }
 

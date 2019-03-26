@@ -411,7 +411,7 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   uint64_t rand = le64toh(params->random_number);
   uint16_t ediv = le16toh(params->encrypted_diversifier);
 
-  bt_log(TRACE, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16x", ediv,
+  bt_log(TRACE, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv,
          rand);
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     cmd = CommandPacket::New(kLELongTermKeyRequestReply,

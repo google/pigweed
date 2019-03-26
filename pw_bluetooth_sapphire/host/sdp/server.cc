@@ -322,7 +322,7 @@ ServiceSearchResponse Server::SearchServices(
       matched.push_back(it.first);
     }
   }
-  bt_log(SPEW, "sdp", "ServiceSearch matched %d records", matched.size());
+  bt_log(SPEW, "sdp", "ServiceSearch matched %zu records", matched.size());
   resp.set_service_record_handle_list(matched);
   return resp;
 }
@@ -337,7 +337,7 @@ ServiceAttributeResponse Server::GetServiceAttributes(
       resp.set_attribute(attr, record.GetAttribute(attr).Clone());
     }
   }
-  bt_log(SPEW, "sdp", "ServiceAttribute %d attributes",
+  bt_log(SPEW, "sdp", "ServiceAttribute %zu attributes",
          resp.attributes().size());
   return resp;
 }
@@ -358,7 +358,7 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
     }
   }
 
-  bt_log(SPEW, "sdp", "ServiceSearchAttribute %d records",
+  bt_log(SPEW, "sdp", "ServiceSearchAttribute %zu records",
          resp.num_attribute_lists());
   return resp;
 }
@@ -388,7 +388,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
   uint16_t param_length = betoh16(packet.header().param_length);
 
   if (param_length != (sdu->size() - sizeof(Header))) {
-    bt_log(SPEW, "sdp", "request isn't the correct size (%d != %d)",
+    bt_log(SPEW, "sdp", "request isn't the correct size (%hu != %zu)",
            param_length, sdu->size() - sizeof(Header));
     SendErrorResponse(chan, tid, ErrorCode::kInvalidSize);
     return;

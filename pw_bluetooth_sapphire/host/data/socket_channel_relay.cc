@@ -387,7 +387,7 @@ bool SocketChannelRelay<ChannelT>::BeginWait(const char* wait_name,
   ZX_DEBUG_ASSERT(wait_res == ZX_OK || wait_res == ZX_ERR_BAD_STATE);
 
   if (wait_res != ZX_OK) {
-    bt_log(ERROR, "l2cap", "Failed to enable waiting on %s: ", wait_name,
+    bt_log(ERROR, "l2cap", "Failed to enable waiting on %s: %s", wait_name,
            zx_status_get_string(wait_res));
     return false;
   }

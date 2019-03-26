@@ -649,7 +649,7 @@ std::string DataElement::ToString() const {
       return fxl::StringPrintf("Alternatives { %s}", str.c_str());
     }
     default:
-      bt_log(SPEW, "sdp", "unhandled type (%d) in ToString()", type_);
+      bt_log(SPEW, "sdp", "unhandled type (%hhu) in ToString()", type_);
       // Fallthrough to unknown.
   }
 

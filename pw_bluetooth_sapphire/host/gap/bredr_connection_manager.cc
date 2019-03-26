@@ -587,7 +587,7 @@ void BrEdrConnectionManager::OnUserConfirmationRequest(
   const auto& params =
       event.view().payload<hci::UserConfirmationRequestEventParams>();
 
-  bt_log(INFO, "gap-bredr", "auto-confirming pairing from %s (%lu)",
+  bt_log(INFO, "gap-bredr", "auto-confirming pairing from %s (%u)",
          bt_str(params.bd_addr), params.numeric_value);
 
   // TODO(jamuraa, BT-169): if we are not NoInput/NoOutput then we need to ask

@@ -452,8 +452,8 @@ void ProfileServer::OnServiceFound(
   auto it = attributes.find(bt::sdp::kBluetoothProfileDescriptorList);
   if (it == attributes.end()) {
     bt_log(WARN, "profile_server",
-           "Found service on %d didn't contain profile descriptor, dropping",
-           peer_id);
+           "Found service on %s didn't contain profile descriptor, dropping",
+           bt_str(peer_id));
     return;
   }
   fidlbredr::ProfileDescriptorPtr desc =

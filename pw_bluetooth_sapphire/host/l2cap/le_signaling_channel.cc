@@ -121,7 +121,7 @@ void LESignalingChannel::DecodeRxUnit(common::ByteBufferPtr sdu,
   uint16_t expected_payload_length = le16toh(packet.header().length);
   if (expected_payload_length != sdu->size() - sizeof(CommandHeader)) {
     bt_log(TRACE, "l2cap-le",
-           "sig: packet size mismatch (expected: %zu, recv: %zu); drop",
+           "sig: packet size mismatch (expected: %u, recv: %zu); drop",
            expected_payload_length, sdu->size() - sizeof(CommandHeader));
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
                       common::BufferView());
