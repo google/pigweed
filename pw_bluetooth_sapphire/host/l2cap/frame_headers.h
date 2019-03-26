@@ -37,6 +37,9 @@ struct EnhancedControlField {
 
   EnhancedControlField() : raw_value(0) {}
 
+  bool designates_information_frame() const {
+    return !(le16toh(raw_value) & 0b1);
+  }
   bool designates_supervisory_frame() const { return le16toh(raw_value) & 0x1; }
   bool designates_start_of_segmented_sdu() const {
     return !designates_supervisory_frame() &&
