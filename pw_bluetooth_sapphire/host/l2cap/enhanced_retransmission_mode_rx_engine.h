@@ -8,7 +8,7 @@
 #include <variant>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_internal.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
 
 namespace bt {
