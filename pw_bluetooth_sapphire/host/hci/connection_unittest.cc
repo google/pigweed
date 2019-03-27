@@ -65,6 +65,28 @@ class ConnectionTest : public TestingBase {
   }
 };
 
+// Tests using this harness will be instantiated using ACL and LE link types.
+// See INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest, ...)
+class LinkTypeConnectionTest
+    : public ConnectionTest,
+      public ::testing::WithParamInterface<Connection::LinkType> {
+ protected:
+  ConnectionPtr NewConnection(
+      Connection::Role role = Connection::Role::kMaster) {
+    const Connection::LinkType ll_type = GetParam();
+    switch (ll_type) {
+      case Connection::LinkType::kACL:
+        return NewACLConnection(role);
+      case Connection::LinkType::kLE:
+        return NewLEConnection(role);
+      default:
+        break;
+    }
+    ZX_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));
+    return nullptr;
+  }
+};
+
 using HCI_ConnectionTest = ConnectionTest;
 
 TEST_F(HCI_ConnectionTest, Getters) {
@@ -79,7 +101,7 @@ TEST_F(HCI_ConnectionTest, Getters) {
   EXPECT_TRUE(connection->is_open());
 }
 
-TEST_F(HCI_ConnectionTest, Close) {
+TEST_P(LinkTypeConnectionTest, Close) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
@@ -103,7 +125,7 @@ TEST_F(HCI_ConnectionTest, Close) {
   test_device()->SetTransactionCallback(
       [&callback_called, this] { callback_called = true; }, dispatcher());
 
-  auto connection = NewLEConnection();
+  auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());
 
   connection->Close(StatusCode::kRemoteUserTerminatedConnection);
@@ -113,7 +135,7 @@ TEST_F(HCI_ConnectionTest, Close) {
   EXPECT_TRUE(callback_called);
 }
 
-TEST_F(HCI_ConnectionTest, CloseError) {
+TEST_P(LinkTypeConnectionTest, CloseError) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
@@ -138,7 +160,7 @@ TEST_F(HCI_ConnectionTest, CloseError) {
   test_device()->SetTransactionCallback(
       [&callback_called, this] { callback_called = true; }, dispatcher());
 
-  auto connection = NewLEConnection();
+  auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());
 
   connection->Close(StatusCode::kRemoteUserTerminatedConnection);
@@ -154,7 +176,7 @@ TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsSlave) {
   EXPECT_FALSE(conn->StartEncryption());
 }
 
-// TODO(armansito): This test is temporary to document the current state of
+// TODO(BT-374): This test is temporary to document the current state of
 // support for link layer encryption. Remove this and replace it with new tests
 // when StartEncryption can work with BR/EDR.
 TEST_F(HCI_ConnectionTest, StartEncryptionNotSupportedOnACL) {
@@ -163,8 +185,8 @@ TEST_F(HCI_ConnectionTest, StartEncryptionNotSupportedOnACL) {
   EXPECT_FALSE(conn->StartEncryption());
 }
 
-TEST_F(HCI_ConnectionTest, StartEncryptionNoLinkKey) {
-  auto conn = NewLEConnection();
+TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
+  auto conn = NewConnection();
   EXPECT_FALSE(conn->StartEncryption());
 }
 
@@ -239,7 +261,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionSuccess) {
   EXPECT_FALSE(callback);
 }
 
-TEST_F(HCI_ConnectionTest, EncryptionChangeIgnoredEvents) {
+TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   // clang-format off
   auto kEncChangeMalformed = CreateStaticByteBuffer(
     0x08,       // HCI Encryption Change event code
@@ -258,7 +280,7 @@ TEST_F(HCI_ConnectionTest, EncryptionChangeIgnoredEvents) {
   // clang-format on
 
   bool callback = false;
-  auto conn = NewLEConnection();
+  auto conn = NewConnection();
   conn->set_link_key(LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Status, bool) { callback = true; });
 
@@ -560,6 +582,11 @@ TEST_F(HCI_ConnectionTest, ClearAclState) {
   RunLoopUntilIdle();
   ASSERT_EQ(2u, packet_count);
 }
+
+// Test connection handling cases for all types of links.
+INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
+                         ::testing::Values(Connection::LinkType::kACL,
+                                           Connection::LinkType::kLE));
 
 }  // namespace
 }  // namespace hci

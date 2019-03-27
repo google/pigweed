@@ -183,7 +183,7 @@ class Connection {
 
   EncryptionChangeCallback encryption_change_callback_;
 
-  // TODO(armansito): Add a BREDRParameters struct.
+  // TODO(BT-715): Add a BREDRParameters struct.
 
   FXL_DISALLOW_COPY_AND_ASSIGN(Connection);
 };

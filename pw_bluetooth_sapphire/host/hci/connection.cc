@@ -239,7 +239,7 @@ bool ConnectionImpl::StartEncryption() {
   if (ll_type() != LinkType::kLE) {
     bt_log(TRACE, "hci", "encrypting BR/EDR links not supported");
 
-    // TODO(armansito): Support this.
+    // TODO(BT-374): Support this.
     return false;
   }
 
@@ -298,7 +298,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // "On an authentication failure, the connection shall be automatically
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
-  // TODO(armansito): Do the same thing for ACL links?
+  // TODO(BT-374): Do the same thing for ACL links?
   if (!status && ll_type() == LinkType::kLE) {
     Close(StatusCode::kAuthenticationFailure);
   } else {
