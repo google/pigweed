@@ -29,6 +29,14 @@ namespace internal {
 // For Retransmission and Flow Control Modes. (Vol 3, Part A, Sec 3.3.2)
 using StandardControlField = uint16_t;
 
+// See Vol 3, Part A, Table 3.4.
+enum class SegmentationStatus {
+  Unsegmented = 0b00,
+  FirstSegment = 0b01,  // AKA "Start of L2CAP SDU"
+  LastSegment = 0b10,   // AKA "End of L2CAP SDU"
+  MiddleSegment = 0b11  // AKA "Continuation of L2CAP SDU"
+};
+
 // For Enhanced Retransmission and Streaming Modes _without_ Extended Window
 // Size. (Vol 3, Part A, Sec 3.3.2)
 struct EnhancedControlField {
@@ -66,6 +74,13 @@ struct EnhancedControlField {
     ZX_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
     // See Vol 3, Part A, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (seq_num << 8));
+  }
+
+  void set_segmentation_status(SegmentationStatus status) {
+    // See Vol 3, Part A, Table 3.2.
+    raw_value =
+        htole16(le16toh(raw_value) & (static_cast<uint8_t>(0b0011'1111) << 8) |
+                (static_cast<uint8_t>(status) << 14));
   }
 
  protected:

@@ -137,6 +137,74 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
   }
 }
 
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
+     SetSegmentationStatusWorksCorrectlyOnFreshFrame) {
+  // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0), BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::FirstSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::LastSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+}
+
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
+     SetSegmentationStatusWorksCorrectlyOnRecycledFrame) {
+  // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0), BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    ecf.set_segmentation_status(SegmentationStatus::FirstSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    ecf.set_segmentation_status(SegmentationStatus::LastSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+
+  {
+    EnhancedControlField ecf;
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000),
+              BufferView(&ecf, sizeof(ecf)));
+  }
+}
+
 TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
      ReadsTxSequenceNumber) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Core Spec v5, Vol 3, Part
