@@ -42,13 +42,13 @@ struct EnhancedControlField {
   }
   bool designates_supervisory_frame() const { return le16toh(raw_value) & 0x1; }
   bool designates_start_of_segmented_sdu() const {
-    return !designates_supervisory_frame() &&
+    return designates_information_frame() &&
            ((le16toh(raw_value) & (0b11 << 14)) == (0b01 << 14));
   }
   // Returns true for all segmented frames, including the start-of-segment frame
   // (even though the start-of-segment frame has a different header format).
   bool designates_part_of_segmented_sdu() const {
-    return !designates_supervisory_frame() &&
+    return designates_information_frame() &&
            (le16toh(raw_value) & (0b11 << 14));
   }
 
