@@ -259,7 +259,7 @@ bool ConnectionImpl::StartEncryption() {
 bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  // TODO(NET-1042): Tell the data channel to stop data flow.
+  // TODO(BT-208): Tell the data channel to stop data flow.
 
   auto cmd = CommandPacket::New(kLEStartEncryption,
                                 sizeof(LEStartEncryptionCommandParams));
@@ -302,7 +302,13 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   if (!status && ll_type() == LinkType::kLE) {
     Close(StatusCode::kAuthenticationFailure);
   } else {
-    // TODO(NET-1042): Tell the data channel to resume data flow.
+    // TODO(BT-208): Tell the data channel to resume data flow.
+  }
+
+  if (!encryption_change_callback()) {
+    bt_log(TRACE, "hci", "%#.4x: no encryption status callback assigned",
+           handle());
+    return;
   }
 
   encryption_change_callback()(status, enabled);
@@ -311,11 +317,6 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
 void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionChangeEventCode);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-
-  if (!encryption_change_callback()) {
-    bt_log(TRACE, "hci", "encryption changed event ignored");
-    return;
-  }
 
   if (event.view().payload_size() != sizeof(EncryptionChangeEventParams)) {
     bt_log(WARN, "hci", "malformed encryption change event");
@@ -341,8 +342,6 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
   bt_log(TRACE, "hci", "encryption change (%s) %s",
          enabled ? "enabled" : "disabled", status.ToString().c_str());
 
-  // TODO(NET-1042): Tell the data channel to resume data flow.
-
   HandleEncryptionStatus(status, enabled);
 }
 
@@ -350,11 +349,6 @@ void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
     const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionKeyRefreshCompleteEventCode);
-
-  if (!encryption_change_callback()) {
-    bt_log(TRACE, "hci", "encryption key refresh event ignored");
-    return;
-  }
 
   if (event.view().payload_size() !=
       sizeof(EncryptionKeyRefreshCompleteEventParams)) {
@@ -404,7 +398,7 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
     return;
   }
 
-  // TODO(NET-1042): Tell the data channel to stop data flow.
+  // TODO(BT-767): Tell the data channel to stop data flow.
 
   std::unique_ptr<CommandPacket> cmd;
 
