@@ -31,6 +31,8 @@ std::string HostErrorToString(HostError error) {
       return "link disconnected";
     case HostError::kOutOfMemory:
       return "out of memory";
+    case HostError::kInsufficientSecurity:
+      return "insufficient security";
     case HostError::kProtocolError:
       return "protocol error";
     case HostError::kFailed:

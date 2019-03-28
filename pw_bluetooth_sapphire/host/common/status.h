@@ -53,6 +53,9 @@ enum class HostError : uint8_t {
   // Ran out of resources.
   kOutOfMemory,
 
+  // Operation security requirements were not met.
+  kInsufficientSecurity,
+
   // Error code for protocol errors. The actual error code is specified by a
   // protocol error code type.
   kProtocolError,
