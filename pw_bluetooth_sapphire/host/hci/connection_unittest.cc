@@ -291,7 +291,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   EXPECT_FALSE(callback);
 }
 
-TEST_F(HCI_ConnectionTest, EncryptionChangeEvents) {
+TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   // clang-format off
   auto kEncryptionEnabled = CreateStaticByteBuffer(
     0x08,        // HCI Encryption Change event code
@@ -324,7 +324,7 @@ TEST_F(HCI_ConnectionTest, EncryptionChangeEvents) {
   // clang-format on
 
   int callback_count = 0;
-  auto conn = NewLEConnection();
+  auto conn = NewConnection();
 
   Status status(HostError::kFailed);
   bool enabled = false;
@@ -358,7 +358,7 @@ TEST_F(HCI_ConnectionTest, EncryptionChangeEvents) {
   EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
 }
 
-TEST_F(HCI_ConnectionTest, EncryptionKeyRefreshEvents) {
+TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   // clang-format off
   auto kEncryptionKeyRefresh = CreateStaticByteBuffer(
     0x30,       // HCI Encryption Key Refresh Complete event
@@ -382,7 +382,7 @@ TEST_F(HCI_ConnectionTest, EncryptionKeyRefreshEvents) {
   // clang-format on
 
   int callback_count = 0;
-  auto conn = NewLEConnection();
+  auto conn = NewConnection();
 
   Status status(HostError::kFailed);
   bool enabled = false;

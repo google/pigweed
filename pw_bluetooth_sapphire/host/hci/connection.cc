@@ -298,8 +298,12 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // "On an authentication failure, the connection shall be automatically
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
-  // TODO(BT-374): Do the same thing for ACL links?
-  if (!status && ll_type() == LinkType::kLE) {
+  //
+  // For ACL-U, Vol 3, Part C, 5.2.2.1.1 and 5.2.2.2.1 mention disconnecting the
+  // link after pairing failures (supported by TS GAP/SEC/SEM/BV-10-C), but do
+  // not specify actions to take after encryption failures. We'll choose to
+  // disconnect ACL links after encryption failure.
+  if (!status) {
     Close(StatusCode::kAuthenticationFailure);
   } else {
     // TODO(BT-208): Tell the data channel to resume data flow.
