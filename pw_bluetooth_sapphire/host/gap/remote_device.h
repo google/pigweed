@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gap {

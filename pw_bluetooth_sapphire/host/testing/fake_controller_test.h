@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {

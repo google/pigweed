@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "gtest/gtest.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 // Run |statement| and return if a fatal test error occurred. Include the file
 // name and line number in the output.

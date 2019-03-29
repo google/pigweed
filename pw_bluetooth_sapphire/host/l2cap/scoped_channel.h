@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {

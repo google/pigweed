@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "low_energy_address_manager.h"
 #include "remote_device.h"

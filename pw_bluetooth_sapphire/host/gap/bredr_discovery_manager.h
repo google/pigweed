@@ -11,8 +11,8 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"

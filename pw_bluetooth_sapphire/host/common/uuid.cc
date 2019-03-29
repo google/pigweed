@@ -10,8 +10,8 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "lib/fxl/strings/string_number_conversions.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_number_conversions.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace common {

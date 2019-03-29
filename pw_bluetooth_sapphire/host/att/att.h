@@ -12,7 +12,7 @@
 #include <zircon/compiler.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include "lib/zx/time.h"
 
 namespace bt {

@@ -26,8 +26,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace l2cap {

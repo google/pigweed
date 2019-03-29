@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "pairing_delegate.h"
 #include "remote_device.h"

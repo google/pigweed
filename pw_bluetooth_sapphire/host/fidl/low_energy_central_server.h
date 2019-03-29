@@ -10,7 +10,7 @@
 
 #include <fuchsia/bluetooth/le/cpp/fidl.h>
 #include "lib/fidl/cpp/binding.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"

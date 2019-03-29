@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace sdp {

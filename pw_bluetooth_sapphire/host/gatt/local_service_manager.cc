@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace gatt {

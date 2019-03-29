@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "logical_link.h"
 

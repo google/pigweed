@@ -13,8 +13,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/ref_counted.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bt {
 namespace att {

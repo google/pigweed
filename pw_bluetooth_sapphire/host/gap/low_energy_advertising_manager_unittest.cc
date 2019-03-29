@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {

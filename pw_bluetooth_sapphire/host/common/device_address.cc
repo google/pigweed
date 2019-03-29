@@ -6,9 +6,9 @@
 
 #include <zircon/assert.h>
 
-#include "lib/fxl/strings/split_string.h"
-#include "lib/fxl/strings/string_number_conversions.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/split_string.h"
+#include "src/lib/fxl/strings/string_number_conversions.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace common {

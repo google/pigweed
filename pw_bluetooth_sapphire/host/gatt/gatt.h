@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 
 #include "lib/fidl/cpp/vector.h"
-#include "lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
 

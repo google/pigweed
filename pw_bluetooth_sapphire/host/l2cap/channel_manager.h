@@ -18,8 +18,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
 
-#include "lib/fxl/macros.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 

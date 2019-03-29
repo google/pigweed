@@ -9,7 +9,7 @@
 
 #include <ddk/debug.h>
 
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace common {

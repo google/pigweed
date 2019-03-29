@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 // This file contains general opcode/number and static packet definitions for
 // the Bluetooth Host-Controller Interface. Each packet payload structure

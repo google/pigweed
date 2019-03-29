@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace common {

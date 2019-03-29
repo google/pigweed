@@ -8,8 +8,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-#include "lib/fxl/command_line.h"
-#include "lib/fxl/log_settings_command_line.h"
+#include "src/lib/fxl/command_line.h"
+#include "src/lib/fxl/log_settings_command_line.h"
 
 BT_DECLARE_FAKE_DRIVER();
 

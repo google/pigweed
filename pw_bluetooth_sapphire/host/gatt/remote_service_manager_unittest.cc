@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
 #include "fake_client.h"

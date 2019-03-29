@@ -7,7 +7,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "logical_link.h"
 

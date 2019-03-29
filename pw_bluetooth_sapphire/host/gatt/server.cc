@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "gatt_defs.h"
 

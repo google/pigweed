@@ -8,8 +8,8 @@
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
 #include "lib/fidl/cpp/binding.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_remote_service_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"

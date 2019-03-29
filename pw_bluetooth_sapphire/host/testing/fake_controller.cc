@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 

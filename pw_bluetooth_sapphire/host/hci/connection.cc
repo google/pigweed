@@ -7,7 +7,7 @@
 #include <endian.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "command_channel.h"
 #include "defaults.h"

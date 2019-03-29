@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {

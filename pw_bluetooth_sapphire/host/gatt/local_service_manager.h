@@ -10,8 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
 namespace gatt {

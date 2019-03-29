@@ -15,8 +15,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 

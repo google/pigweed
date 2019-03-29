@@ -13,7 +13,7 @@
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
 
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"

@@ -9,9 +9,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/ref_ptr.h"
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 

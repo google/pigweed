@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 // This file defines a fbl::SlabAllocator trait template that can be used to
 // slab-allocate instances of hci::Packet. It's signature is as follows:

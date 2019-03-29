@@ -8,7 +8,7 @@
 
 #include <endian.h>
 
-#include "lib/fxl/strings/string_number_conversions.h"
+#include "src/lib/fxl/strings/string_number_conversions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"

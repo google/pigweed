@@ -7,7 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
-#include "lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
 namespace hci {

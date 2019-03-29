@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {

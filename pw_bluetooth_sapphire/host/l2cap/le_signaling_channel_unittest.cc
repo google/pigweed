@@ -5,7 +5,7 @@
 #include "le_signaling_channel.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "lib/fxl/arraysize.h"
+#include "src/lib/fxl/arraysize.h"
 
 #include "fake_channel_test.h"
 

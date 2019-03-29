@@ -22,7 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace hci {

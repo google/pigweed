@@ -8,7 +8,7 @@
 #include <memory>
 
 #include <lib/fit/function.h>
-#include <lib/fxl/memory/weak_ptr.h>
+#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 

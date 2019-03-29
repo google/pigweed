@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-#include "lib/fxl/time/time_delta.h"
+#include "src/lib/fxl/time/time_delta.h"
 
 namespace bt {
 namespace hci {

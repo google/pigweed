@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/linked_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {

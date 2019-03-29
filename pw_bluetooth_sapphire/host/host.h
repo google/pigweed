@@ -16,8 +16,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
-#include "lib/fxl/memory/ref_counted.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/memory/ref_counted.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bthost {
 

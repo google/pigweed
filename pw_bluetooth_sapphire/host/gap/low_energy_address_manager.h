@@ -11,8 +11,8 @@
 #include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 
-#include "lib/fxl/memory/ref_ptr.h"
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"

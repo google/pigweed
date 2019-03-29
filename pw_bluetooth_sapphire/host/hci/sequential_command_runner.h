@@ -11,10 +11,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
-#include "lib/fxl/functional/cancelable_callback.h"
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/ref_ptr.h"
-#include "lib/fxl/synchronization/thread_checker.h"
+#include "src/lib/fxl/functional/cancelable_callback.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace hci {

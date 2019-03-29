@@ -11,8 +11,8 @@
 
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
-#include "lib/fxl/strings/string_printf.h"
-#include "lib/fxl/strings/utf_codecs.h"
+#include "src/lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/utf_codecs.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 

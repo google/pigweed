@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-#include "lib/fxl/strings/string_number_conversions.h"
+#include "src/lib/fxl/strings/string_number_conversions.h"
 
 #include "helpers.h"
 

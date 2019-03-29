@@ -14,7 +14,7 @@
 #include <lib/zx/channel.h>
 
 #include "src/lib/files/unique_fd.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
 
 namespace bt {

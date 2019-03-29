@@ -9,7 +9,7 @@
 
 #include <ddk/driver.h>
 
-#include "lib/fxl/compiler_specific.h"
+#include "src/lib/fxl/compiler_specific.h"
 
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a

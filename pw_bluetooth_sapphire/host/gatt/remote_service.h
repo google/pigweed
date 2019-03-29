@@ -11,8 +11,8 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include "lib/fxl/macros.h"
-#include "lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"

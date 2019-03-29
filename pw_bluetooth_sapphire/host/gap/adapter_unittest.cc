@@ -14,7 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 #include "low_energy_address_manager.h"
 #include "low_energy_advertising_manager.h"

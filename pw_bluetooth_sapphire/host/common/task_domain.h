@@ -16,7 +16,7 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace common {

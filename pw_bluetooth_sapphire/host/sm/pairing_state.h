@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace sm {

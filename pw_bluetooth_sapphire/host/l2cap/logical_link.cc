@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-#include "lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 #include "bredr_dynamic_channel.h"
 #include "bredr_signaling_channel.h"

@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt_remote_service_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
 
-#include "lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bthost {
 
