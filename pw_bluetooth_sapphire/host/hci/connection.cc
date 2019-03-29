@@ -40,6 +40,12 @@ class ConnectionImpl final : public Connection {
   // change handler.
   void HandleEncryptionStatus(Status status, bool enabled);
 
+  // Request the current encryption key size and call |key_size_validity_cb|
+  // when the controller responds. |key_size_validity_cb| will be called with a
+  // success only if the link is encrypted with a key of size at least
+  // |hci::kMinEncryptionKeySize|. Only valid for ACL-U connections.
+  void ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb);
+
   // HCI event handlers.
   void OnEncryptionChangeEvent(const EventPacket& event);
   void OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event);
@@ -318,6 +324,47 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   encryption_change_callback()(status, enabled);
 }
 
+void ConnectionImpl::ValidateAclEncryptionKeySize(
+    hci::StatusCallback key_size_validity_cb) {
+  ZX_ASSERT(ll_type() == LinkType::kACL);
+  ZX_ASSERT(is_open());
+
+  auto cmd = CommandPacket::New(kReadEncryptionKeySize,
+                                sizeof(ReadEncryptionKeySizeParams));
+  auto* params =
+      cmd->mutable_view()->mutable_payload<ReadEncryptionKeySizeParams>();
+  params->connection_handle = htole16(handle());
+
+  auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(),
+                    valid_cb = std::move(key_size_validity_cb)](
+                       auto, const EventPacket& event) {
+    if (!self) {
+      return;
+    }
+
+    Status status = event.ToStatus();
+    if (!bt_is_error(status, ERROR, "hci",
+                     "Could not read ACL encryption key size on %#.4x",
+                     self->handle())) {
+      const auto& return_params =
+          *event.return_params<ReadEncryptionKeySizeReturnParams>();
+      const auto key_size = return_params.key_size;
+      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu",
+             self->handle(), key_size);
+
+      if (key_size < hci::kMinEncryptionKeySize) {
+        bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient",
+               self->handle(), key_size);
+        status = Status(common::HostError::kInsufficientSecurity);
+      }
+    }
+    valid_cb(status);
+  };
+
+  hci_->command_channel()->SendCommand(
+      std::move(cmd), async_get_default_dispatcher(), std::move(status_cb));
+}
+
 void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionChangeEventCode);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -345,6 +392,13 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
 
   bt_log(TRACE, "hci", "encryption change (%s) %s",
          enabled ? "enabled" : "disabled", status.ToString().c_str());
+
+  if (ll_type() == LinkType::kACL && status && enabled) {
+    ValidateAclEncryptionKeySize([this](const Status& key_valid_status) {
+      HandleEncryptionStatus(key_valid_status, true /* enabled */);
+    });
+    return;
+  }
 
   HandleEncryptionStatus(status, enabled);
 }

@@ -1322,6 +1322,13 @@ enum class InquiryMode : uint8_t {
 // Length of the Extended Inquiry Response data. (Vol 3, Part C, Section 8)
 constexpr size_t kExtendedInquiryResponseBytes = 240;
 
+// Minimum supported encryption key size for ACL-U links, as queried by Read
+// Encryption Key Size. This isn't specified so the value is taken from the LE
+// limit for SM Long Term Keys (v5.0 Vol 3, Part H, 2.3.4). This limit applies
+// to the per-session encryption key, not the semi-permanent Link Key (v5.0
+// Vol 2, Part H, 1).
+constexpr uint8_t kMinEncryptionKeySize = 7;
+
 // Values for the IO Capabilities
 enum class IOCapability : uint8_t {
   kDisplayOnly = 0x00,

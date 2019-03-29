@@ -291,23 +291,37 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
   EXPECT_FALSE(callback);
 }
 
+const auto kEncryptionChangeEventEnabled =
+    CreateStaticByteBuffer(0x08,        // HCI Encryption Change event code
+                           4,           // parameter total size
+                           0x00,        // status
+                           0x01, 0x00,  // connection handle: 1
+                           0x01         // encryption enabled
+    );
+
+const auto kReadEncryptionKeySizeCommand =
+    CreateStaticByteBuffer(0x08, 0x14,  // opcode: HCI_ReadEncryptionKeySize
+                           0x02,        // parameter size
+                           0x01, 0x00   // connection handle: 0x0001
+    );
+
+const auto kDisconnectCommand =
+    CreateStaticByteBuffer(0x06, 0x04,  // opcode: HCI_Disconnect
+                           0x03,        // parameter total size
+                           0x01, 0x00,  // handle: 1
+                           0x05         // reason: authentication failure
+    );
+
 TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   // clang-format off
-  auto kEncryptionEnabled = CreateStaticByteBuffer(
-    0x08,        // HCI Encryption Change event code
-    4,           // parameter total size
-    0x00,        // status
-    0x01, 0x00,  // connection handle: 1
-    0x01         // encryption enabled
-  );
-  auto kEncryptionDisabled = CreateStaticByteBuffer(
+  auto kEncryptionChangeEventDisabled = CreateStaticByteBuffer(
     0x08,        // HCI Encryption Change event code
     4,           // parameter total size
     0x00,        // status
     0x01, 0x00,  // connection handle: 1
     0x00         // encryption disabled
   );
-  auto kEncryptionFailed = CreateStaticByteBuffer(
+  auto kEncryptionChangeEventFailed = CreateStaticByteBuffer(
     0x08,        // HCI Encryption Change event code
     4,           // parameter total size
     0x06,        // status: Pin or Key missing
@@ -315,11 +329,16 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
     0x00         // encryption disabled
   );
 
-  auto kDisconnect = CreateStaticByteBuffer(
-    0x06, 0x04,  // opcode: HCI_Disconnect
-    0x03,        // parameter total size
-    0x01, 0x00,  // handle: 1
-    0x05         // reason: authentication failure
+  auto kKeySizeComplete = CreateStaticByteBuffer(
+    0x0E,        // event code: Command Complete
+    0x07,        // parameters total size
+    0xFF,        // num command packets allowed (255)
+    0x08, 0x14,  // original opcode
+
+    // return parameters
+    0x00,        // status (success)
+    0x01, 0x00,  // connection handle: 0x0001
+    0x10         // encryption key size: 16
   );
   // clang-format on
 
@@ -334,14 +353,20 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
     enabled = cb_enabled;
   });
 
-  test_device()->SendCommandChannelPacket(kEncryptionEnabled);
+  if (conn->ll_type() == Connection::LinkType::kACL) {
+    // The host tries to validate the size of key used to encrypt ACL links.
+    test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
+                                           {&kKeySizeComplete});
+  }
+
+  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, callback_count);
   EXPECT_TRUE(status);
   EXPECT_TRUE(enabled);
 
-  test_device()->SendCommandChannelPacket(kEncryptionDisabled);
+  test_device()->SendCommandChannelPacket(kEncryptionChangeEventDisabled);
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
@@ -349,13 +374,75 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   EXPECT_FALSE(enabled);
 
   // The host should disconnect the link if encryption fails.
-  test_device()->QueueCommandTransaction(kDisconnect, {});
-  test_device()->SendCommandChannelPacket(kEncryptionFailed);
+  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  test_device()->SendCommandChannelPacket(kEncryptionChangeEventFailed);
   RunLoopUntilIdle();
 
   EXPECT_EQ(3, callback_count);
   EXPECT_FALSE(status);
   EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
+}
+
+TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
+  auto kKeySizeComplete =
+      CreateStaticByteBuffer(0x0E,        // event code: Command Complete
+                             0x07,        // parameters total size
+                             0xFF,        // num command packets allowed (255)
+                             0x08, 0x14,  // original opcode
+
+                             // return parameters
+                             0x2F,        // status (insufficient security)
+                             0x01, 0x00,  // connection handle: 0x0001
+                             0x10         // encryption key size: 16
+      );
+
+  int callback_count = 0;
+  auto conn = NewACLConnection();
+  conn->set_encryption_change_callback(
+      [&callback_count](Status status, bool enabled) {
+        callback_count++;
+        EXPECT_FALSE(status);
+        EXPECT_TRUE(enabled);
+      });
+
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
+                                         {&kKeySizeComplete});
+  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, callback_count);
+}
+
+TEST_F(HCI_ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
+  auto kKeySizeComplete =
+      CreateStaticByteBuffer(0x0E,        // event code: Command Complete
+                             0x07,        // parameters total size
+                             0xFF,        // num command packets allowed (255)
+                             0x08, 0x14,  // original opcode
+
+                             // return parameters
+                             0x00,        // status (success)
+                             0x01, 0x00,  // connection handle: 0x0001
+                             0x01         // encryption key size: 1
+      );
+
+  int callback_count = 0;
+  auto conn = NewACLConnection();
+  conn->set_encryption_change_callback(
+      [&callback_count](Status status, bool enabled) {
+        callback_count++;
+        EXPECT_FALSE(status);
+        EXPECT_TRUE(enabled);
+      });
+
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
+                                         {&kKeySizeComplete});
+  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, callback_count);
 }
 
 TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
@@ -371,13 +458,6 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
     3,          // parameter total size
     0x06,       // status: Pin or Key missing
     0x01, 0x00  // connection handle: 1
-  );
-
-  auto kDisconnect = CreateStaticByteBuffer(
-    0x06, 0x04,  // opcode: HCI_Disconnect
-    0x03,        // parameter total size
-    0x01, 0x00,  // handle: 1
-    0x05         // reason: authentication failure
   );
   // clang-format on
 
@@ -400,7 +480,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   EXPECT_TRUE(enabled);
 
   // The host should disconnect the link if encryption fails.
-  test_device()->QueueCommandTransaction(kDisconnect, {});
+  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
   test_device()->SendCommandChannelPacket(kEncryptionKeyRefreshFailed);
   RunLoopUntilIdle();
 
