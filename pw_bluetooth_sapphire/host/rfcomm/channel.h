@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/frames.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
-#include "garnet/public/lib/fxl/macros.h"
+#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace rfcomm {
