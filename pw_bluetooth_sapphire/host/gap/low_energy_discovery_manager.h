@@ -25,6 +25,7 @@
 namespace bt {
 
 namespace hci {
+class LowEnergyScanner;
 class Transport;
 }  // namespace hci
 
@@ -171,7 +172,8 @@ class LowEnergyDiscoverySession final {
 class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  public:
   // |device_cache| MUST out-live this LowEnergyDiscoveryManager.
-  LowEnergyDiscoveryManager(Mode mode, fxl::RefPtr<hci::Transport> hci,
+  LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
+                            hci::LowEnergyScanner* scanner,
                             RemoteDeviceCache* device_cache);
   virtual ~LowEnergyDiscoveryManager();
 
@@ -271,8 +273,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // The value (in ms) that we use for the duration of each scan period.
   zx::duration scan_period_ = kLEGeneralDiscoveryScanMin;
 
-  // The scanner that performs the HCI procedures.
-  std::unique_ptr<hci::LowEnergyScanner> scanner_;
+  // The scanner that performs the HCI procedures. |scanner_| must out-live this
+  // discovery manager.
+  hci::LowEnergyScanner* scanner_;  // weak
 
   fxl::ThreadChecker thread_checker_;
 

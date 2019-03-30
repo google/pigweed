@@ -28,6 +28,7 @@ namespace bt {
 namespace hci {
 class LowEnergyAdvertiser;
 class LowEnergyConnector;
+class LowEnergyScanner;
 class SequentialCommandRunner;
 class Transport;
 }  // namespace hci
@@ -262,9 +263,9 @@ class Adapter final {
 
   // Objects that abstract the controller for connection and advertising
   // procedures.
-  // TODO(armansito): Move hci::LowEnergyScanner here.
   std::unique_ptr<hci::LowEnergyAdvertiser> hci_le_advertiser_;
   std::unique_ptr<hci::LowEnergyConnector> hci_le_connector_;
+  std::unique_ptr<hci::LowEnergyScanner> hci_le_scanner_;
 
   // Objects that perform LE procedures.
   std::unique_ptr<LowEnergyAddressManager> le_address_manager_;

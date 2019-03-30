@@ -43,10 +43,9 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
 
 }  // namespace
 
-LegacyLowEnergyScanner::LegacyLowEnergyScanner(Delegate* delegate,
-                                               fxl::RefPtr<Transport> hci,
+LegacyLowEnergyScanner::LegacyLowEnergyScanner(fxl::RefPtr<Transport> hci,
                                                async_dispatcher_t* dispatcher)
-    : LowEnergyScanner(delegate, hci, dispatcher) {
+    : LowEnergyScanner(hci, dispatcher) {
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       kLEAdvertisingReportSubeventCode,
       fit::bind_member(this, &LegacyLowEnergyScanner::OnAdvertisingReportEvent),

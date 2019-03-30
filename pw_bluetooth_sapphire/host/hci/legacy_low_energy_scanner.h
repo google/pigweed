@@ -29,7 +29,7 @@ namespace hci {
 //     - HCI_LE_Advertising_Report event
 class LegacyLowEnergyScanner : public LowEnergyScanner {
  public:
-  LegacyLowEnergyScanner(Delegate* delegate, fxl::RefPtr<Transport> hci,
+  LegacyLowEnergyScanner(fxl::RefPtr<Transport> hci,
                          async_dispatcher_t* dispatcher);
   ~LegacyLowEnergyScanner() override;
 

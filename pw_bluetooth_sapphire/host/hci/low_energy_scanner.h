@@ -88,8 +88,7 @@ class LowEnergyScanner {
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result);
   };
 
-  LowEnergyScanner(Delegate* delegate, fxl::RefPtr<Transport> hci,
-                   async_dispatcher_t* dispatcher);
+  LowEnergyScanner(fxl::RefPtr<Transport> hci, async_dispatcher_t* dispatcher);
   virtual ~LowEnergyScanner() = default;
 
   // Returns the current Scan state.
@@ -164,13 +163,19 @@ class LowEnergyScanner {
   // true.
   virtual bool StopScan() = 0;
 
+  // Assigns the delegate for scan events.
+  void set_delegate(Delegate* delegate) { delegate_ = delegate; }
+
  protected:
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
   Transport* transport() const { return transport_.get(); }
   SequentialCommandRunner* hci_cmd_runner() const {
     return hci_cmd_runner_.get();
   }
-  Delegate* delegate() const { return delegate_; }
+  Delegate* delegate() const {
+    ZX_DEBUG_ASSERT(delegate_);
+    return delegate_;
+  }
 
   void set_state(State state) { state_ = state; }
 

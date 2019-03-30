@@ -15,8 +15,7 @@ namespace hci {
 // Default implementations do nothing.
 
 void LowEnergyScanner::Delegate::OnDeviceFound(
-    const LowEnergyScanResult& result,
-    const common::ByteBuffer& data) {}
+    const LowEnergyScanResult& result, const common::ByteBuffer& data) {}
 
 void LowEnergyScanner::Delegate::OnDirectedAdvertisement(
     const LowEnergyScanResult& result) {}
@@ -32,15 +31,13 @@ LowEnergyScanResult::LowEnergyScanResult(const common::DeviceAddress& address,
       connectable(connectable),
       rssi(rssi) {}
 
-LowEnergyScanner::LowEnergyScanner(Delegate* delegate,
-                                   fxl::RefPtr<Transport> hci,
+LowEnergyScanner::LowEnergyScanner(fxl::RefPtr<Transport> hci,
                                    async_dispatcher_t* dispatcher)
     : state_(State::kIdle),
       active_scan_requested_(false),
-      delegate_(delegate),
+      delegate_(nullptr),
       dispatcher_(dispatcher),
       transport_(hci) {
-  ZX_DEBUG_ASSERT(delegate_);
   ZX_DEBUG_ASSERT(transport_);
   ZX_DEBUG_ASSERT(dispatcher_);
 

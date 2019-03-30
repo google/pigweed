@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_advertiser.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
@@ -538,13 +539,15 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
       hci_, adapter_identity, dispatcher_,
       fit::bind_member(hci_le_advertiser_.get(),
                        &hci::LowEnergyAdvertiser::OnIncomingConnection));
+  hci_le_scanner_ =
+      std::make_unique<hci::LegacyLowEnergyScanner>(hci_, dispatcher_);
 
   // Initialize the LE manager objects
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
       adapter_identity,
       fit::bind_member(this, &Adapter::IsLeRandomAddressChangeAllowed), hci_);
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-      Mode::kLegacy, hci_, &device_cache_);
+      hci_, hci_le_scanner_.get(), &device_cache_);
   le_discovery_manager_->set_directed_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
@@ -661,6 +664,7 @@ void Adapter::CleanUp() {
 
   hci_le_connector_ = nullptr;
   hci_le_advertiser_ = nullptr;
+  hci_le_scanner_ = nullptr;
 
   // Clean up the data domain as it gets initialized by the Adapter.
   data_domain_->ShutDown();

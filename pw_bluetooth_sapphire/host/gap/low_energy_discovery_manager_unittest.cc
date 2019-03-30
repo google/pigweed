@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
@@ -53,8 +54,10 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(transport(),
+                                                             dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        Mode::kLegacy, transport(), &device_cache_);
+        transport(), scanner_.get(), &device_cache_);
     test_device()->SetScanStateCallback(
         std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this,
                   std::placeholders::_1),
@@ -187,6 +190,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
  private:
   RemoteDeviceCache device_cache_;
+  std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
 
   bool scan_enabled_;

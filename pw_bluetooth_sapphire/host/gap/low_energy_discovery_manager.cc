@@ -6,7 +6,6 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
 #include "remote_device.h"
@@ -65,24 +64,24 @@ void LowEnergyDiscoverySession::NotifyError() {
 }
 
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
-    Mode mode, fxl::RefPtr<hci::Transport> hci, RemoteDeviceCache* device_cache)
+    fxl::RefPtr<hci::Transport> hci, hci::LowEnergyScanner* scanner,
+    RemoteDeviceCache* device_cache)
     : dispatcher_(async_get_default_dispatcher()),
       device_cache_(device_cache),
       background_scan_enabled_(false),
+      scanner_(scanner),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci);
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(device_cache_);
+  ZX_DEBUG_ASSERT(scanner_);
 
-  // We currently do not support the Extended Advertising feature.
-  ZX_DEBUG_ASSERT(mode == Mode::kLegacy);
-
-  scanner_ =
-      std::make_unique<hci::LegacyLowEnergyScanner>(this, hci, dispatcher_);
+  scanner_->set_delegate(this);
 }
 
 LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
+  scanner_->set_delegate(nullptr);
   // TODO(armansito): Invalidate all known session objects here.
 }
 
