@@ -84,8 +84,8 @@ bool Bearer::InitiateFeatureExchange() {
     return false;
   }
 
-  if (role_ == hci::Connection::Role::kSlave) {
-    bt_log(TRACE, "sm", "slave cannot initiate a feature exchange!");
+  if (role_ != hci::Connection::Role::kMaster) {
+    bt_log(TRACE, "sm", "only master can initiate a feature exchange!");
     return false;
   }
 
@@ -343,7 +343,7 @@ void Bearer::BuildPairingParameters(PairingRequestParams* params,
   *out_local_keys = 0;
   *out_remote_keys = KeyDistGen::kIdKey;
 
-  // When we are the master, we request that the slave send us encryption
+  // When we are the master, we request that the peer send us encryption
   // information as it is required to do so (Vol 3, Part H, 2.4.2.3). Otherwise
   // we always request to distribute it.
   if (role_ == hci::Connection::Role::kMaster) {
@@ -380,7 +380,7 @@ void Bearer::OnPairingRequest(const PacketReader& reader) {
 
   // Reject the command if we are the master.
   if (role_ == hci::Connection::Role::kMaster) {
-    bt_log(TRACE, "sm", "rejecting \"Pairing Request\" from slave");
+    bt_log(TRACE, "sm", "rejecting \"Pairing Request\" as master");
     SendPairingFailed(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -450,8 +450,8 @@ void Bearer::OnPairingResponse(const PacketReader& reader) {
     return;
   }
 
-  // Reject the command if we are the slave.
-  if (role_ == hci::Connection::Role::kSlave) {
+  // Support receiving a pairing response only as the initiator.
+  if (role_ != hci::Connection::Role::kMaster) {
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }

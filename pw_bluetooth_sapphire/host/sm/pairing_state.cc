@@ -185,9 +185,9 @@ void PairingState::UpgradeSecurity(SecurityLevel level,
     return;
   }
 
-  // TODO(armansito): Support initiating a security upgrade as slave (Bearer
-  // needs to support the SMP Security Request).
-  if (le_smp_->role() == hci::Connection::Role::kSlave) {
+  // TODO(armansito): Support initiating a security upgrade using the SMP
+  // Security Request.
+  if (le_smp_->role() != hci::Connection::Role::kMaster) {
     callback(Status(HostError::kNotSupported), SecurityProperties());
     return;
   }
@@ -529,12 +529,12 @@ void PairingState::OnPairingConfirm(const UInt128& confirm) {
     ZX_DEBUG_ASSERT(legacy_state_->has_tk);
 
     // We are the master and have previously sent Mconfirm and just received
-    // Sconfirm. We now send Mrand for the slave to compare.
+    // Sconfirm. We now send Mrand for the peer to compare.
     ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kMaster);
     LegacySendRandomValue();
   } else {
-    // We are the slave and have just received Mconfirm.
-    ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kSlave);
+    // We are the responder and have just received Mconfirm.
+    ZX_DEBUG_ASSERT(le_smp_->role() != hci::Connection::Role::kMaster);
 
     if (!legacy_state_->WaitingForTK()) {
       LegacySendConfirmValue();
@@ -581,14 +581,14 @@ void PairingState::OnPairingRandom(const UInt128& random) {
   if (legacy_state_->features->initiator) {
     ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kMaster);
 
-    // The master distributes both values before the slave sends Srandom.
+    // The initiator distributes both values before the responder sends Srandom.
     if (!legacy_state_->sent_local_rand || !legacy_state_->sent_local_confirm) {
       bt_log(ERROR, "sm", "\"Pairing Random\" received in wrong order!");
       AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
       return;
     }
   } else {
-    ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kSlave);
+    ZX_DEBUG_ASSERT(le_smp_->role() != hci::Connection::Role::kMaster);
 
     // We cannot have sent the Srand without receiving Mrand first.
     ZX_DEBUG_ASSERT(!legacy_state_->sent_local_rand);

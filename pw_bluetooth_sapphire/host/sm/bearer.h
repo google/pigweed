@@ -59,11 +59,10 @@ class Bearer final {
     //     should be ignored if |secure_connections| is true.
     //
     // When the local device is the master, the feature exchange is either
-    // initiated directly via InitiateFeatureExchange() or automatically as a
-    // response to a "Security Request" received from the slave.
-    //
-    // When the local device is the slave, the feature exchange is initiated by
-    // the master or locally by calling SecurityRequest().
+    // initiated directly via InitiateFeatureExchange() or in response to a
+    // a "Security Request" received from the peer. Otherwise, the feature
+    // exchange is initiated by the peer (possibly in response to a locally
+    // initiated "Security Request").
     //
     // TODO(armansito): Support locally initiated "Security Request".
     //
@@ -135,7 +134,7 @@ class Bearer final {
   //
   // Returns false if the procedure cannot be initiated because:
   //   - This procedure is already in progress.
-  //   - The local device is the slave in the connection.
+  //   - The local device is not the link layer master.
   //
   // This method can be called on both LE and BR/EDR.
   bool InitiateFeatureExchange();
