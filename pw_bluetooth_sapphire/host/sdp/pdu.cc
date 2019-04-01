@@ -386,7 +386,6 @@ common::MutableByteBufferPtr ServiceSearchResponse::GetPDU(
   return buf;
 }
 
-
 ServiceAttributeRequest::ServiceAttributeRequest()
     : service_record_handle_(0), max_attribute_byte_count_(0xFFFF) {}
 
@@ -609,7 +608,15 @@ common::MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
     list.emplace_back(it.second.Clone());
   }
   DataElement list_elem(std::move(list));
-  uint16_t attribute_list_byte_count = list_elem.WriteSize() - bytes_skipped;
+
+  size_t write_size = list_elem.WriteSize();
+
+  if (bytes_skipped > write_size) {
+    bt_log(SPEW, "sdp", "continuation out of range: %d > %zu", bytes_skipped,
+           write_size);
+    return nullptr;
+  }
+  uint16_t attribute_list_byte_count = write_size - bytes_skipped;
   uint8_t info_length = 0;
   if (attribute_list_byte_count > max) {
     attribute_list_byte_count = max;
@@ -627,7 +634,7 @@ common::MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
   buf->WriteObj(htobe16(attribute_list_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = common::NewSlabBuffer(list_elem.WriteSize());
+  auto attribute_list_bytes = common::NewSlabBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(
       attribute_list_bytes->view(bytes_skipped, attribute_list_byte_count),
@@ -949,7 +956,16 @@ common::MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
   }
 
   DataElement list_elem(std::move(lists));
-  uint16_t attribute_lists_byte_count = list_elem.WriteSize() - bytes_skipped;
+
+  size_t write_size = list_elem.WriteSize();
+
+  if (bytes_skipped > write_size) {
+    bt_log(SPEW, "sdp", "continuation out of range: %d > %zu", bytes_skipped,
+           write_size);
+    return nullptr;
+  }
+
+  uint16_t attribute_lists_byte_count = write_size - bytes_skipped;
   uint8_t info_length = 0;
   if (attribute_lists_byte_count > max) {
     attribute_lists_byte_count = max;
@@ -967,7 +983,7 @@ common::MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
   buf->WriteObj(htobe16(attribute_lists_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = common::NewSlabBuffer(list_elem.WriteSize());
+  auto attribute_list_bytes = common::NewSlabBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(
       attribute_list_bytes->view(bytes_skipped, attribute_lists_byte_count),

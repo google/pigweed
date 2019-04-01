@@ -184,7 +184,7 @@ class ServiceSearchResponse : public Response {
   // The ServiceRecordHandleList contains as list of service record handles.
   // This should be set to the list of handles that match the request.
   // Limiting the response to the maximum requested is handled by
-  // GetParameters();
+  // GetPDU();
   void set_service_record_handle_list(std::vector<ServiceHandle> handles) {
     service_record_handle_list_ = handles;
     total_service_record_count_ = handles.size();

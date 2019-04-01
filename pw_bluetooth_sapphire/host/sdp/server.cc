@@ -424,9 +424,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
         return;
       }
       auto resp = GetServiceAttributes(handle, request.attribute_ranges());
-
-      chan->Send(resp.GetPDU(request.max_attribute_byte_count(), tid,
-                             request.ContinuationState()));
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid,
+                               request.ContinuationState());
+      if (!bytes) {
+        SendErrorResponse(chan, tid, ErrorCode::kInvalidContinuationState);
+        return;
+      }
+      chan->Send(std::move(bytes));
       return;
     }
     case kServiceSearchAttributeRequest: {
@@ -438,8 +442,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
       }
       auto resp = SearchAllServiceAttributes(request.service_search_pattern(),
                                              request.attribute_ranges());
-      chan->Send(resp.GetPDU(request.max_attribute_byte_count(), tid,
-                             request.ContinuationState()));
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid,
+                               request.ContinuationState());
+      if (!bytes) {
+        SendErrorResponse(chan, tid, ErrorCode::kInvalidContinuationState);
+        return;
+      }
+      chan->Send(std::move(bytes));
       return;
     }
     case kErrorResponse: {

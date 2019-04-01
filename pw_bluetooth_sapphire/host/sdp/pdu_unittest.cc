@@ -796,6 +796,49 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRepsonseGetPDU) {
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 }
 
+TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
+  ServiceSearchResponse rsp_search;
+  rsp_search.set_service_record_handle_list({1, 2, 3, 4});
+  auto buf = rsp_search.GetPDU(0xFFFF, 0x0110, common::BufferView());
+  EXPECT_TRUE(buf);
+  // Any contnuation state is out of range for ServiceSearch
+  buf = rsp_search.GetPDU(0xFFFF, 0x0110,
+                          common::CreateStaticByteBuffer(0x01, 0xFF));
+  EXPECT_FALSE(buf);
+
+  ServiceAttributeResponse rsp_attr;
+  rsp_attr.set_attribute(1, DataElement(uint32_t(45)));
+
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, common::BufferView());
+  EXPECT_TRUE(buf);
+
+  uint32_t rsp_size = htobe32(buf->size() + 5);
+  auto too_large_cont = common::DynamicByteBuffer(sizeof(uint32_t));
+  too_large_cont.WriteObj(rsp_size, 0);
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, too_large_cont);
+
+  EXPECT_FALSE(buf);
+
+  ServiceSearchAttributeResponse rsp_search_attr;
+
+  rsp_search_attr.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
+  rsp_search_attr.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
+  rsp_search_attr.SetAttribute(0, kServiceRecordHandle,
+                               DataElement(uint32_t(0)));
+  rsp_search_attr.SetAttribute(5, kServiceRecordHandle,
+                               DataElement(uint32_t(0x10002000)));
+
+  buf = rsp_search_attr.GetPDU(0xFFFF, 0x0110, common::BufferView());
+
+  EXPECT_TRUE(buf);
+
+  rsp_size = htobe32(buf->size() + 5);
+  too_large_cont.WriteObj(rsp_size, 0);
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, too_large_cont);
+
+  EXPECT_FALSE(buf);
+}
+
 }  // namespace
 }  // namespace sdp
 }  // namespace bt
