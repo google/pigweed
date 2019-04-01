@@ -13,9 +13,12 @@ namespace bt {
 namespace common {
 namespace {
 
+// Initialize from string literal.
 const DeviceAddress kClassic(DeviceAddress::Type::kBREDR, "41:11:22:33:44:55");
+
+// Initialize from bytes.
 const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic,
-                            "42:11:22:33:44:55");
+                            {0x42, 0x11, 0x22, 0x33, 0x44, 0x55});
 const DeviceAddress kNonResolvable(DeviceAddress::Type::kLERandom,
                                    "00:11:22:33:44:55");
 const DeviceAddress kResolvable(DeviceAddress::Type::kLERandom,

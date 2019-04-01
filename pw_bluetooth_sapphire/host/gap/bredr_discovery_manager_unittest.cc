@@ -131,15 +131,15 @@ const auto kInquiryCompleteError = common::CreateStaticByteBuffer(
 #define BD_ADDR(addr1) addr1, 0x00, 0x00, 0x00, 0x00, 0x00
 
 const DeviceAddress kDeviceAddress1(DeviceAddress::Type::kBREDR,
-                                    DeviceAddressBytes{BD_ADDR(0x01)});
+                                    {BD_ADDR(0x01)});
 const DeviceAddress kLeAliasAddress1(DeviceAddress::Type::kLEPublic,
                                      kDeviceAddress1.value());
 const DeviceAddress kDeviceAddress2(DeviceAddress::Type::kBREDR,
-                                    DeviceAddressBytes{BD_ADDR(0x02)});
+                                    {BD_ADDR(0x02)});
 const DeviceAddress kLeAliasAddress2(DeviceAddress::Type::kLEPublic,
                                      kDeviceAddress2.value());
 const DeviceAddress kDeviceAddress3(DeviceAddress::Type::kBREDR,
-                                    DeviceAddressBytes{BD_ADDR(0x03)});
+                                    {BD_ADDR(0x03)});
 
 const auto kInquiryResult = common::CreateStaticByteBuffer(
   hci::kInquiryResultEventCode,

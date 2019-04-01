@@ -9,6 +9,8 @@
 #include <initializer_list>
 #include <string>
 
+#include <fbl/string_piece.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
@@ -24,17 +26,17 @@ class DeviceAddressBytes {
   DeviceAddressBytes();
 
   // Initializes the contents from |bytes|.
-  explicit DeviceAddressBytes(std::initializer_list<uint8_t> bytes);
+  explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
   explicit DeviceAddressBytes(const common::ByteBuffer& bytes);
 
   // Initializes the contents from a string of the form XX:XX:XX:XX:XX:XX where
   // each "XX" is an ASCII encoded two-digit hexadecimal integer.
-  explicit DeviceAddressBytes(const std::string& bdaddr_string);
+  explicit DeviceAddressBytes(const fbl::StringPiece bdaddr_string);
 
   // Resets the contents from a string of the form XX:XX:XX:XX:XX:XX where each
   // "XX" is an ASCII encoded two-digit hexadecimal integer. Returns false if
   // |bdaddr_string| is badly formatted.
-  bool SetFromString(const std::string& bdaddr_string);
+  bool SetFromString(const fbl::StringPiece bdaddr_string);
 
   // Returns a string representation of the device address. The bytes in
   // human-readable form will appear in big-endian byte order even though the
@@ -96,10 +98,11 @@ class DeviceAddress {
 
   // Initializes the contents from a string of the form XX:XX:XX:XX:XX:XX where
   // each "XX" is an ASCII encoded two-digit hexadecimal integer.
-  DeviceAddress(Type type, const std::string& bdaddr_string);
+  DeviceAddress(Type type, const fbl::StringPiece bdaddr_string);
 
   // Initializes the contents from raw data.
   DeviceAddress(Type type, const DeviceAddressBytes& value);
+  DeviceAddress(Type type, std::array<uint8_t, kDeviceAddressSize> bytes);
 
   Type type() const { return type_; }
   const DeviceAddressBytes& value() const { return value_; }

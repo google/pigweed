@@ -35,9 +35,9 @@ DeviceAddressBytes::DeviceAddressBytes() {
   SetToZero();
 }
 
-DeviceAddressBytes::DeviceAddressBytes(std::initializer_list<uint8_t> bytes) {
-  ZX_DEBUG_ASSERT(bytes.size() == bytes_.size());
-  std::copy(bytes.begin(), bytes.end(), bytes_.begin());
+DeviceAddressBytes::DeviceAddressBytes(
+    std::array<uint8_t, kDeviceAddressSize> bytes) {
+  bytes_ = std::move(bytes);
 }
 
 DeviceAddressBytes::DeviceAddressBytes(const common::ByteBuffer& bytes) {
@@ -45,18 +45,19 @@ DeviceAddressBytes::DeviceAddressBytes(const common::ByteBuffer& bytes) {
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
-DeviceAddressBytes::DeviceAddressBytes(const std::string& bdaddr_string) {
+DeviceAddressBytes::DeviceAddressBytes(const fbl::StringPiece bdaddr_string) {
   // Use ZX_ASSERT to prevent this from being compiled out on non-debug builds.
   ZX_ASSERT(SetFromString(bdaddr_string));
 }
 
-bool DeviceAddressBytes::SetFromString(const std::string& bdaddr_string) {
+bool DeviceAddressBytes::SetFromString(const fbl::StringPiece bdaddr_string) {
   // There are 17 characters in XX:XX:XX:XX:XX:XX
   if (bdaddr_string.size() != 17)
     return false;
 
-  auto split = fxl::SplitString(bdaddr_string, ":", fxl::kKeepWhitespace,
-                                fxl::kSplitWantAll);
+  auto split = fxl::SplitString(
+      fxl::StringView(bdaddr_string.data(), bdaddr_string.size()), ":",
+      fxl::kKeepWhitespace, fxl::kSplitWantAll);
   if (split.size() != 6)
     return false;
 
@@ -96,11 +97,15 @@ std::size_t DeviceAddressBytes::Hash() const {
 
 DeviceAddress::DeviceAddress() : type_(Type::kBREDR) {}
 
-DeviceAddress::DeviceAddress(Type type, const std::string& bdaddr_string)
-    : type_(type), value_(bdaddr_string) {}
+DeviceAddress::DeviceAddress(Type type, const fbl::StringPiece bdaddr_string)
+    : DeviceAddress(type, DeviceAddressBytes(bdaddr_string)) {}
 
 DeviceAddress::DeviceAddress(Type type, const DeviceAddressBytes& value)
     : type_(type), value_(value) {}
+
+DeviceAddress::DeviceAddress(Type type,
+                             std::array<uint8_t, kDeviceAddressSize> bytes)
+    : DeviceAddress(type, DeviceAddressBytes(bytes)) {}
 
 bool DeviceAddress::IsResolvablePrivate() const {
   // "The two most significant bits of [a RPA] shall be equal to 0 and 1".
