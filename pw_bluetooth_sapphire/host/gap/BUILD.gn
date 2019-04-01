@@ -39,7 +39,7 @@ static_library("gap") {
   ]
 
   public_deps = [
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//src/connectivity/bluetooth/core/bt-host/common",

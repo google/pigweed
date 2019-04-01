@@ -43,7 +43,7 @@ source_set("fake_controller") {
     # TODO(armansito): Pull in just the hci:definitions target.
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "//src/lib/files",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/async-default",

@@ -38,7 +38,7 @@ static_library("sdp") {
     "//src/connectivity/bluetooth/core/bt-host/data",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/connectivity/bluetooth/core/bt-host/rfcomm",
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
   ]
 }
 

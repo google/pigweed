@@ -60,7 +60,7 @@ static_library("hci") {
 
   public_deps = [
     ":definitions",
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "//src/lib/files",
     "//zircon/public/banjo/ddk-protocol-bt-hci",
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
@@ -78,7 +78,7 @@ source_set("testing") {
   testonly = true
 
   sources = [
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "fake_connection.cc",
     "fake_connection.h",
   ]

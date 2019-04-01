@@ -30,7 +30,7 @@ static_library("att") {
 
   public_deps = [
     ":definitions",
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//zircon/public/lib/fit",
   ]

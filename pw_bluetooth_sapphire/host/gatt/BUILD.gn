@@ -57,7 +57,7 @@ source_set("testing") {
 
   public_deps = [
     ":gatt",
-    "//garnet/public/lib/fxl",
+    "//src/lib/fxl",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//zircon/public/lib/fbl",
   ]
