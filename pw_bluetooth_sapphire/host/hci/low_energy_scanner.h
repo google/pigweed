@@ -94,10 +94,16 @@ class LowEnergyScanner {
   // Returns the current Scan state.
   State state() const { return state_; }
 
-  // True if a device scan is currently being performed.
   bool IsActiveScanning() const { return state() == State::kActiveScanning; }
   bool IsPassiveScanning() const { return state() == State::kPassiveScanning; }
   bool IsScanning() const { return IsActiveScanning() || IsPassiveScanning(); }
+  bool IsInitiating() const { return state() == State::kInitiating; }
+
+  // Returns true if configuring the controller random address is allowed by
+  // this scanner.
+  bool AllowsRandomAddressChange() const {
+    return !IsScanning() && hci_cmd_runner()->IsReady();
+  }
 
   // True if no scan procedure is currently enabled.
   bool IsIdle() const { return state() == State::kIdle; }

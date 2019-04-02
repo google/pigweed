@@ -340,8 +340,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   EXPECT_EQ(hci::LEOwnAddressType::kPublic,
             test_device()->le_advertising_state().own_address_type);
 
-  // Enable privacy. The random address should not configured while advertising
-  // is in progress.
+  // Enable privacy. The random address should not get configured while
+  // advertising is in progress.
   adapter()->le_address_manager()->EnablePrivacy(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_random_address());
@@ -389,6 +389,76 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic,
             test_device()->le_advertising_state().own_address_type);
+}
+
+// Tests the interactions between the discovery manager and the local address
+// manager.
+TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  // Set a scan period that is longer than the private address timeout, for
+  // testing.
+  constexpr auto kTestDelay = zx::sec(5);
+  constexpr auto kTestScanPeriod = kPrivateAddressTimeout + kTestDelay;
+  adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
+
+  // Discovery should use the public address by default.
+  LowEnergyDiscoverySessionPtr session;
+  auto cb = [&](auto s) { session = std::move(s); };
+  adapter()->le_discovery_manager()->StartDiscovery(cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(session);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->le_scan_state().own_address_type);
+
+  // Enable privacy. The random address should not get configured while a scan
+  // is in progress.
+  adapter()->le_address_manager()->EnablePrivacy(true);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_random_address());
+
+  // Stop discovery.
+  session = nullptr;
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+  EXPECT_FALSE(test_device()->le_random_address());
+
+  // Restart discovery. This should configure the LE random address and scan
+  // using it.
+  adapter()->le_discovery_manager()->StartDiscovery(cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(session);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_scan_state().own_address_type);
+
+  // Advance time to force the random address to refresh. The update should be
+  // deferred while still scanning.
+  ASSERT_TRUE(test_device()->le_random_address());
+  auto last_random_addr = *test_device()->le_random_address();
+  RunLoopFor(kPrivateAddressTimeout);
+  EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
+
+  // Let the scan period expire. This should restart scanning and refresh the
+  // random address.
+  RunLoopFor(kTestDelay);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_scan_state().own_address_type);
+  ASSERT_TRUE(test_device()->le_random_address());
+  EXPECT_NE(last_random_addr, test_device()->le_random_address());
+
+  // Disable privacy. The next time scanning gets started it should use a
+  // public address.
+  adapter()->le_address_manager()->EnablePrivacy(false);
+  RunLoopFor(kTestScanPeriod);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->le_scan_state().own_address_type);
 }
 
 }  // namespace

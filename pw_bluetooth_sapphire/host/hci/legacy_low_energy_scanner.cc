@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/advertising_report_parser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -17,6 +18,7 @@
 namespace bt {
 
 using common::BufferView;
+using common::DeviceAddress;
 
 namespace hci {
 namespace {
@@ -43,9 +45,12 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
 
 }  // namespace
 
-LegacyLowEnergyScanner::LegacyLowEnergyScanner(fxl::RefPtr<Transport> hci,
-                                               async_dispatcher_t* dispatcher)
-    : LowEnergyScanner(hci, dispatcher) {
+LegacyLowEnergyScanner::LegacyLowEnergyScanner(
+    LocalAddressDelegate* local_addr_delegate, fxl::RefPtr<Transport> hci,
+    async_dispatcher_t* dispatcher)
+    : LowEnergyScanner(hci, dispatcher),
+      local_addr_delegate_(local_addr_delegate) {
+  ZX_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       kLEAdvertisingReportSubeventCode,
       fit::bind_member(this, &LegacyLowEnergyScanner::OnAdvertisingReportEvent),
@@ -88,6 +93,37 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
   set_active_scan_requested(active);
   scan_cb_ = std::move(callback);
 
+  // Obtain the local address type.
+  local_addr_delegate_->EnsureLocalAddress(
+      [this, active, scan_interval, scan_window, filter_duplicates,
+       filter_policy, period,
+       callback = std::move(callback)](const auto& address) mutable {
+        StartScanInternal(address, active, scan_interval, scan_window,
+                          filter_duplicates, filter_policy, period,
+                          std::move(callback));
+      });
+
+  return true;
+}
+
+void LegacyLowEnergyScanner::StartScanInternal(
+    const common::DeviceAddress& local_address, bool active,
+    uint16_t scan_interval, uint16_t scan_window, bool filter_duplicates,
+    LEScanFilterPolicy filter_policy, zx::duration period,
+    ScanStatusCallback callback) {
+  // Check if the scan request was canceled by StopScan() while we were waiting
+  // for the local address.
+  if (state() != State::kInitiating) {
+    bt_log(TRACE, "hci-le",
+           "scan request was canceled while obtaining local address");
+    return;
+  }
+
+  bt_log(TRACE, "hci-le",
+         "requesting scan (%s, address: %s, interval: %#.4x, window: %#.4x)",
+         (active ? "active" : "passive"), local_address.ToString().c_str(),
+         scan_interval, scan_window);
+
   // HCI_LE_Set_Scan_Parameters
   auto command = CommandPacket::New(kLESetScanParameters,
                                     sizeof(LESetScanParametersCommandParams));
@@ -98,9 +134,11 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
   scan_params->scan_window = htole16(scan_window);
   scan_params->filter_policy = filter_policy;
 
-  // TODO(armansito): Stop using a public address here when we support LE
-  // Privacy. We should *always* use LE Privacy.
-  scan_params->own_address_type = LEOwnAddressType::kPublic;
+  if (local_address.type() == DeviceAddress::Type::kLERandom) {
+    scan_params->own_address_type = LEOwnAddressType::kRandom;
+  } else {
+    scan_params->own_address_type = LEOwnAddressType::kPublic;
+  }
   hci_cmd_runner()->QueueCommand(std::move(command));
 
   // HCI_LE_Set_Scan_Enable
@@ -148,8 +186,6 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
       scan_cb_(ScanStatus::kPassive);
     }
   });
-
-  return true;
 }
 
 bool LegacyLowEnergyScanner::StopScan() {

@@ -81,6 +81,8 @@ source_set("testing") {
     "//src/lib/fxl",
     "fake_connection.cc",
     "fake_connection.h",
+    "fake_local_address_delegate.cc",
+    "fake_local_address_delegate.h",
   ]
 
   public_deps = [

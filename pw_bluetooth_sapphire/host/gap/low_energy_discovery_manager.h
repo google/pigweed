@@ -168,6 +168,8 @@ class LowEnergyDiscoverySession final {
   FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyDiscoverySession);
 };
 
+using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
+
 // See comments above.
 class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  public:
@@ -184,8 +186,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   //
   // TODO(armansito): Implement option to disable duplicate filtering. Would
   // this require software filtering for clients that did not request it?
-  using SessionCallback =
-      fit::function<void(std::unique_ptr<LowEnergyDiscoverySession>)>;
+  using SessionCallback = fit::function<void(LowEnergyDiscoverySessionPtr)>;
   void StartDiscovery(SessionCallback callback);
 
   // Enable or disable the background scan feature. When enabled, the discovery

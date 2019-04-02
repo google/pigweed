@@ -533,19 +533,21 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   common::DeviceAddress adapter_identity(common::DeviceAddress::Type::kLEPublic,
                                          state_.controller_address());
 
+  // Initialize the LE local address manager.
+  le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
+      adapter_identity,
+      fit::bind_member(this, &Adapter::IsLeRandomAddressChangeAllowed), hci_);
+
   // Initialize the HCI adapters.
   hci_le_advertiser_ = std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
       hci_, adapter_identity, dispatcher_,
       fit::bind_member(hci_le_advertiser_.get(),
                        &hci::LowEnergyAdvertiser::OnIncomingConnection));
-  hci_le_scanner_ =
-      std::make_unique<hci::LegacyLowEnergyScanner>(hci_, dispatcher_);
+  hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
+      le_address_manager_.get(), hci_, dispatcher_);
 
   // Initialize the LE manager objects
-  le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
-      adapter_identity,
-      fit::bind_member(this, &Adapter::IsLeRandomAddressChangeAllowed), hci_);
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
       hci_, hci_le_scanner_.get(), &device_cache_);
   le_discovery_manager_->set_directed_connectable_callback(
@@ -654,17 +656,18 @@ void Adapter::CleanUp() {
   state_ = AdapterState();
   transport_closed_cb_ = nullptr;
 
+  // Destroy objects in reverse order of construction.
   sdp_server_ = nullptr;
   bredr_discovery_manager_ = nullptr;
-
   le_advertising_manager_ = nullptr;
   le_connection_manager_ = nullptr;
   le_discovery_manager_ = nullptr;
-  le_address_manager_ = nullptr;
 
   hci_le_connector_ = nullptr;
   hci_le_advertiser_ = nullptr;
   hci_le_scanner_ = nullptr;
+
+  le_address_manager_ = nullptr;
 
   // Clean up the data domain as it gets initialized by the Adapter.
   data_domain_->ShutDown();
@@ -705,7 +708,8 @@ void Adapter::OnLeAutoConnectRequest(DeviceId device_id) {
 
 bool Adapter::IsLeRandomAddressChangeAllowed() {
   // TODO(BT-611): Query scan and connection states here as well.
-  return hci_le_advertiser_->AllowsRandomAddressChange();
+  return hci_le_advertiser_->AllowsRandomAddressChange() &&
+         hci_le_scanner_->AllowsRandomAddressChange();
 }
 
 }  // namespace gap

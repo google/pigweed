@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 
 #include "src/lib/fxl/macros.h"
 #include "lib/gtest/test_loop_fixture.h"
@@ -126,15 +126,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
 using TestingBase = ::gtest::TestLoopFixture;
 
-class GAP_LowEnergyAdvertisingManagerTest : public TestingBase,
-                                            public hci::LocalAddressDelegate {
+class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
  public:
   GAP_LowEnergyAdvertisingManagerTest() = default;
   ~GAP_LowEnergyAdvertisingManagerTest() override = default;
 
  protected:
   void SetUp() override {
-    set_local_address(kRandomAddress);
+    fake_address_delegate_.set_local_address(kRandomAddress);
     MakeFakeAdvertiser();
     MakeAdvertisingManager();
   }
@@ -186,13 +185,8 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase,
   }
 
   void MakeAdvertisingManager() {
-    adv_mgr_ =
-        std::make_unique<LowEnergyAdvertisingManager>(advertiser(), this);
-  }
-
-  // LocalAddressDelegate override:
-  void EnsureLocalAddress(AddressCallback callback) override {
-    callback(local_address_);
+    adv_mgr_ = std::make_unique<LowEnergyAdvertisingManager>(
+        advertiser(), &fake_address_delegate_);
   }
 
   LowEnergyAdvertisingManager* adv_mgr() const { return adv_mgr_.get(); }
@@ -208,15 +202,13 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase,
   }
 
   FakeLowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
-  void set_local_address(const DeviceAddress& local_address) {
-    local_address_ = local_address;
-  }
 
  private:
+  hci::FakeLocalAddressDelegate fake_address_delegate_;
+
   std::map<common::DeviceAddress, AdvertisementStatus> ad_store_;
   AdvertisementId last_ad_id_;
   std::optional<hci::Status> last_status_;
-  DeviceAddress local_address_;
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
   std::unique_ptr<LowEnergyAdvertisingManager> adv_mgr_;
 
@@ -229,7 +221,6 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp;  // Empty scan response
 
-  set_local_address(kRandomAddress);
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval,
                               false /* anonymous */, GetSuccessCallback());
 
@@ -321,7 +312,6 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
     link = std::move(cb_link);
     EXPECT_EQ(advertised_id, connected_id);
   };
-  set_local_address(kRandomAddress);
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, connect_cb, kTestInterval,
                               false /* anonymous */, GetSuccessCallback());
 

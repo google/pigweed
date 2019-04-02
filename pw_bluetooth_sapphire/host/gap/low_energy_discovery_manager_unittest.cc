@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
@@ -54,8 +55,12 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(transport(),
-                                                             dispatcher());
+    // TODO(armansito): Now that the hci::LowEnergyScanner is injected into
+    // |discovery_manager_| rather than constructed by it, a fake implementation
+    // could be injected directly. Consider providing fake behavior here in this
+    // harness rather than using a FakeController.
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
+        &fake_address_delegate_, transport(), dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
         transport(), scanner_.get(), &device_cache_);
     test_device()->SetScanStateCallback(
@@ -190,6 +195,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
  private:
   RemoteDeviceCache device_cache_;
+  hci::FakeLocalAddressDelegate fake_address_delegate_;
   std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
 

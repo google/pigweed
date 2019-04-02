@@ -27,6 +27,9 @@ class LocalAddressDelegate {
   //     typically factory-assigned.
   //   - A random device address that has been assigned to the controller by the
   //     host using the HCI_LE_Set_Random_Address command.
+  //
+  // This method runs |callback| when the procedure ends. |callback| may run
+  // synchronously or asynchronously.
   using AddressCallback = fit::function<void(const common::DeviceAddress&)>;
   virtual void EnsureLocalAddress(AddressCallback callback) = 0;
 };

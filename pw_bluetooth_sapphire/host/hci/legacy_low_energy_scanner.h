@@ -21,6 +21,8 @@
 namespace bt {
 namespace hci {
 
+class LocalAddressDelegate;
+
 // LegacyLowEnergyScanner implements the LowEnergyScanner interface for
 // controllers that do not support the 5.0 Extended Advertising feature. This
 // uses the legacy HCI LE device scan commands and events:
@@ -29,7 +31,8 @@ namespace hci {
 //     - HCI_LE_Advertising_Report event
 class LegacyLowEnergyScanner : public LowEnergyScanner {
  public:
-  LegacyLowEnergyScanner(fxl::RefPtr<Transport> hci,
+  LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
+                         fxl::RefPtr<Transport> hci,
                          async_dispatcher_t* dispatcher);
   ~LegacyLowEnergyScanner() override;
 
@@ -52,6 +55,13 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
     common::StaticByteBuffer<kMaxLEAdvertisingDataLength * 2> data;
   };
 
+  // Called by StartScan() after the local device address has been obtained.
+  void StartScanInternal(const common::DeviceAddress& local_address,
+                         bool active, uint16_t scan_interval,
+                         uint16_t scan_window, bool filter_duplicates,
+                         LEScanFilterPolicy filter_policy, zx::duration period,
+                         ScanStatusCallback callback);
+
   // Called by StopScan() and by the scan timeout handler set up by StartScan().
   void StopScanInternal(bool stopped);
 
@@ -67,6 +77,9 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
 
   // Called when the scan timeout task executes.
   void OnScanPeriodComplete();
+
+  // Used to obtain the local device address type to use during scanning.
+  LocalAddressDelegate* local_addr_delegate_;  // weak
 
   // Callback passed in to the most recently accepted call to StartScan();
   ScanStatusCallback scan_cb_;
