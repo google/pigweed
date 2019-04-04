@@ -13,13 +13,16 @@ namespace gap {
 using common::DeviceAddress;
 using common::UInt128;
 
-void IdentityResolvingList::Add(const DeviceAddress& identity,
-                                const UInt128& irk) {
+void IdentityResolvingList::Add(DeviceAddress identity, const UInt128& irk) {
   registry_[identity] = irk;
 }
 
+void IdentityResolvingList::Remove(DeviceAddress identity) {
+  registry_.erase(identity);
+}
+
 std::optional<DeviceAddress> IdentityResolvingList::Resolve(
-    const DeviceAddress& rpa) const {
+    DeviceAddress rpa) const {
   if (!rpa.IsResolvablePrivate()) {
     return std::nullopt;
   }

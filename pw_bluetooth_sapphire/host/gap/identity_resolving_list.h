@@ -28,13 +28,15 @@ class IdentityResolvingList final {
 
   // Associate the given |irk| with |identity|. If |identity| is already in the
   // list, the existing entry is updated with the new IRK.
-  void Add(const common::DeviceAddress& identity, const common::UInt128& irk);
+  void Add(common::DeviceAddress identity, const common::UInt128& irk);
+
+  // Delete |identity| and associated IRK, if present.
+  void Remove(common::DeviceAddress identity);
 
   // Tries to resolve the given RPA against the identities in the registry.
   // Returns std::nullopt if the address is not a RPA or cannot be resolved.
   // Otherwise, returns a value containing the identity address.
-  std::optional<common::DeviceAddress> Resolve(
-      const common::DeviceAddress& rpa) const;
+  std::optional<common::DeviceAddress> Resolve(common::DeviceAddress rpa) const;
 
  private:
   // Maps identity addresses to IRKs.

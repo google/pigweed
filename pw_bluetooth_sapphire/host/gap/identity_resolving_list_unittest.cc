@@ -53,6 +53,15 @@ TEST(GAP_IdentityResolvingListTest, Resolve) {
   DeviceAddress unknown_rpa = sm::util::GenerateRpa(unknown_irk);
   auto result = rl.Resolve(unknown_rpa);
   EXPECT_FALSE(result);
+
+  // Removed identities should no longer resolve.
+  rl.Remove(kAddress2);
+  EXPECT_FALSE(rl.Resolve(rpa2));
+  EXPECT_EQ(kAddress1, *rl.Resolve(rpa1));
+
+  // Removing unknown devices should not crash.
+  rl.Remove(unknown_rpa);
+  rl.Remove(kAddress2);
 }
 
 // Tests that an identity address can be assigned a new IRK.
