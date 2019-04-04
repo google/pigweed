@@ -199,9 +199,9 @@ void BrEdrInterrogator::MakeRemoteNameRequest(DeviceId device_id) {
 
   bt_log(SPEW, "gap-bredr", "name request %s",
          device->address().ToString().c_str());
-  hci_->command_channel()->SendCommand(
+  hci_->command_channel()->SendExclusiveCommand(
       std::move(packet), dispatcher_, it->second->callbacks.back().callback(),
-      hci::kRemoteNameRequestCompleteEventCode);
+      hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
 }
 
 void BrEdrInterrogator::ReadRemoteVersionInformation(

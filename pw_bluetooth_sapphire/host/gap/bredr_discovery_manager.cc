@@ -184,7 +184,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
   params->lap = hci::kGIAC;
   params->inquiry_length = kInquiryLengthDefault;
   params->num_responses = 0;
-  hci_->command_channel()->SendCommand(
+  hci_->command_channel()->SendExclusiveCommand(
       std::move(inquiry), dispatcher_,
       [self](auto, const auto& event) {
         if (!self) {
@@ -224,7 +224,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         bt_log(SPEW, "gap-bredr", "inquiry complete, restart");
         self->MaybeStartInquiry();
       },
-      hci::kInquiryCompleteEventCode);
+      hci::kInquiryCompleteEventCode, {hci::kRemoteNameRequest});
 }
 
 // Stops the inquiry procedure.
@@ -346,9 +346,9 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
     }
   };
 
-  hci_->command_channel()->SendCommand(
+  hci_->command_channel()->SendExclusiveCommand(
       std::move(packet), dispatcher_, std::move(cb),
-      hci::kRemoteNameRequestCompleteEventCode);
+      hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {

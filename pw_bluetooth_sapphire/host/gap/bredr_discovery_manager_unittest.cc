@@ -351,6 +351,16 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
   test_device()->QueueCommandTransaction(CommandTransaction(
       kRemoteNameRequest1,
       {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  // TODO(BT-816) the code inquires for each result until the request completes.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest1,
+      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest1,
+      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest1,
+      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t devices_found1 = 0u;
@@ -421,6 +431,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
   EXPECT_FALSE(discovery_manager()->discovering());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
+
+  RunLoopUntilIdle();
 }
 
 // Test: starting a session "while" the other one is stopping a session should
@@ -473,6 +485,10 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   // returned.
   EXPECT_TRUE(session2);
   test_device()->SendCommandChannelPacket(kInquiryResult);
+  // TODO(BT-816) the code inquires for each result until the request completes.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest1,
+      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   RunLoopUntilIdle();
 
@@ -781,6 +797,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
   EXPECT_EQ(TechnologyType::kDualMode, device->technology());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
+
+  RunLoopUntilIdle();
 }
 
 TEST_F(GAP_BrEdrDiscoveryManagerTest,
@@ -817,6 +835,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
   EXPECT_EQ(TechnologyType::kDualMode, device->technology());
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
+
+  RunLoopUntilIdle();
 }
 
 }  // namespace
