@@ -179,25 +179,16 @@ DeviceId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   return device->identifier();
 }
 
-bool BrEdrConnectionManager::OpenL2capChannel(DeviceId device_id,
-                                              l2cap::PSM psm, SocketCallback cb,
+bool BrEdrConnectionManager::OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm,
+                                              SocketCallback cb,
                                               async_dispatcher_t* dispatcher) {
-  auto* device = cache_->FindDeviceById(device_id);
-  if (!device || !device->bredr() || !device->bredr()->connected()) {
+  std::optional<hci::ConnectionHandle> handle = FindConnectionById(peer_id);
+  if (!handle) {
     return false;
   }
 
-  auto it = std::find_if(connections_.begin(), connections_.end(),
-                         [&](const auto& x) {
-                           return x.second->peer_address() == device->address();
-                         });
-
-  // If we're connected we must have an ID
-  ZX_DEBUG_ASSERT_MSG(it != connections_.end(),
-                      "couldn't find handle for device %s", bt_str(device_id));
-
   data_domain_->OpenL2capChannel(
-      it->first, psm,
+      *handle, psm,
       [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); },
       dispatcher);
   return true;
@@ -212,6 +203,21 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
 
 bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
   return discoverer_.RemoveSearch(id);
+}
+
+bool BrEdrConnectionManager::Disconnect(DeviceId peer_id) {
+  std::optional<hci::ConnectionHandle> handle = FindConnectionById(peer_id);
+  if (!handle) {
+    return false;
+  }
+
+  hci::ConnectionPtr& connection = connections_[*handle];
+  if (!connection->is_open()) {
+    return false;
+  }
+
+  connection->Close();
+  return true;
 }
 
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
@@ -271,6 +277,28 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
       });
 
   hci_cmd_runner_->RunCommands(std::move(cb));
+}
+
+std::optional<hci::ConnectionHandle> BrEdrConnectionManager::FindConnectionById(
+    DeviceId peer_id) {
+  auto* const device = cache_->FindDeviceById(peer_id);
+  if (!device || !device->bredr() || !device->bredr()->connected()) {
+    return std::nullopt;
+  }
+
+  auto it = std::find_if(connections_.cbegin(), connections_.cend(),
+                         [address = device->address()](auto& x) {
+                           return x.second->peer_address() == address;
+                         });
+
+  // If we're connected, we must have an ID.
+  ZX_ASSERT_MSG(it != connections_.cend(), "couldn't find handle for peer %s",
+                bt_str(peer_id));
+
+  auto& [handle, conn_ptr] = *it;
+  ZX_ASSERT(conn_ptr->ll_type() != hci::Connection::LinkType::kLE);
+
+  return handle;
 }
 
 void BrEdrConnectionManager::OnConnectionRequest(

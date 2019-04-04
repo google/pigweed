@@ -1071,6 +1071,37 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   QueueDisconnection();
 }
 
+// Test: user-initiated disconnection
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  // Disconnecting an unknown device should do nothing.
+  EXPECT_FALSE(connmgr()->Disconnect(DeviceId(999)));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
+  ASSERT_TRUE(dev);
+  ASSERT_TRUE(dev->bredr()->connected());
+
+  QueueDisconnection();
+
+  EXPECT_TRUE(connmgr()->Disconnect(dev->identifier()));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
+  EXPECT_FALSE(dev->bredr()->connected());
+
+  // Disconnecting a closed connection returns false.
+  EXPECT_FALSE(connmgr()->Disconnect(dev->identifier()));
+}
+
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP
 

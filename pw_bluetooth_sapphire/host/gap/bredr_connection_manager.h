@@ -51,10 +51,10 @@ class BrEdrConnectionManager final {
   // Returns common::kInvalidDeviceId if no such device exists.
   DeviceId GetPeerId(hci::ConnectionHandle handle) const;
 
-  // Opens a new L2CAP channel to the already-connected |device_id| on psm
-  // |psm|.  Returns false if the device is not already connected.
+  // Opens a new L2CAP channel to service |psm| on |peer_id|. Returns false if
+  // the device is not already connected.
   using SocketCallback = fit::function<void(zx::socket)>;
-  bool OpenL2capChannel(DeviceId device_id, l2cap::PSM psm, SocketCallback cb,
+  bool OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm, SocketCallback cb,
                         async_dispatcher_t* dispatcher);
 
   // Add a service search to be performed on new connected remote devices.
@@ -76,6 +76,11 @@ class BrEdrConnectionManager final {
   // This function is idempotent.
   bool RemoveServiceSearch(SearchId id);
 
+  // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
+  // |peer_id| is not a recognized BR/EDR device or the corresponding peer is
+  // not connected.
+  bool Disconnect(DeviceId peer_id);
+
  private:
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
@@ -89,6 +94,10 @@ class BrEdrConnectionManager final {
   // Helper to register an event handler to run.
   hci::CommandChannel::EventHandlerId AddEventHandler(
       const hci::EventCode& code, hci::CommandChannel::EventCallback cb);
+
+  // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
+  // |peer_id| is connected.
+  std::optional<hci::ConnectionHandle> FindConnectionById(DeviceId peer_id);
 
   // Callbacks for registered events
   void OnConnectionRequest(const hci::EventPacket& event);
