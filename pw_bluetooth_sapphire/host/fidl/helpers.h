@@ -82,6 +82,8 @@ fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
 // Functions to convert Host FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(
     const fuchsia::bluetooth::host::LEData& data);
+bt::common::UInt128 LocalKeyFromFidl(
+    const fuchsia::bluetooth::host::LocalKey& key);
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
     const fuchsia::bluetooth::host::BREDRData& data);
 fuchsia::bluetooth::host::BondingData NewBondingData(
