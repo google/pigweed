@@ -386,8 +386,10 @@ void ProfileServer::AddSearch(
   bt::common::UUID search_uuid(static_cast<uint32_t>(service_uuid));
   std::unordered_set<bt::sdp::AttributeId> attributes(attr_ids.begin(),
                                                       attr_ids.end());
-  // Always request the ProfileDescriptor for the event
-  attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
+  if (!attr_ids.empty()) {
+    // Always request the ProfileDescriptor for the event
+    attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
+  }
 
   auto search_id = adapter()->bredr_connection_manager()->AddServiceSearch(
       search_uuid, std::move(attributes),

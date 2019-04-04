@@ -44,6 +44,7 @@ class ServiceDiscoverer final {
   // Discoverer will search for services with |uuid| in their records, and
   // return via |callback| all of the attributes specified in |attributes|,
   // along with the peer's |device_id|.
+  // If |attributes| is empty, all attributes will be requested.
   // Returns a SearchId can be used to remove the search later if successful,
   // or kInvalidSearchId if adding the search failed.
   // |callback| will be called on the creation thread of ServiceDiscoverer.

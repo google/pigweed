@@ -31,6 +31,7 @@ class Client {
 
   // Perform a ServiceSearchAttribute transaction, searching for the UUIDs in
   // |search_pattern|, and requesting the attributes in |req_attributes|.
+  // If |req_attributes| is empty, all attributes will be requested.
   // Results are returned asynchronously:
   //   - |result_cb| is called for each service which matches the pattern with
   //     the attributes requested. As long as true is returned, it can still

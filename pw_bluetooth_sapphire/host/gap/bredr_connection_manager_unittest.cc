@@ -1102,6 +1102,68 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   EXPECT_FALSE(connmgr()->Disconnect(dev->identifier()));
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
+  size_t search_cb_count = 0;
+  auto search_cb = [&](auto id, const auto&) {
+    auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
+    ASSERT_TRUE(dev);
+    ASSERT_EQ(id, dev->identifier());
+    search_cb_count++;
+  };
+
+  connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {}, search_cb);
+
+  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  std::optional<uint32_t> sdp_request_tid;
+
+  data_domain()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid](auto new_chan) {
+        new_chan->SetSendCallback(
+            [&sdp_request_tid](auto packet) {
+              const auto kSearchExpectedParams = common::CreateStaticByteBuffer(
+                  // ServiceSearchPattern
+                  0x35, 0x03,        // Sequence uint8 3 bytes
+                  0x19, 0x11, 0x0B,  // UUID (kAudioSink)
+                  0xFF, 0xFF,        // MaxAttributeByteCount (none)
+                  // Attribute ID list
+                  0x35, 0x05,                    // Sequence uint8 5 bytes
+                  0x0A, 0x00, 0x00, 0xFF, 0xFF,  // uint32_t (all attributes)
+                  0x00                           // No continuation state
+              );
+              // First byte should be type.
+              ASSERT_LE(3u, packet->size());
+              ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
+              ASSERT_EQ(kSearchExpectedParams, packet->view(5));
+              sdp_request_tid = (*packet)[1] << 8 || (*packet)[2];
+            },
+            async_get_default_dispatcher());
+        sdp_chan = std::move(new_chan);
+      });
+
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(sdp_chan);
+  ASSERT_TRUE(sdp_request_tid);
+  ASSERT_EQ(0u, search_cb_count);
+
+  sdp::ServiceSearchAttributeResponse rsp;
+  rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(common::UUID()));
+  auto rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid,
+                            common::BufferView());
+
+  sdp_chan->Receive(*rsp_ptr);
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(1u, search_cb_count);
+
+  QueueDisconnection();
+}
+
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP
 

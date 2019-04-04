@@ -104,8 +104,12 @@ void Impl::ServiceSearchAttributes(
     SearchResultCallback result_cb, async_dispatcher_t* cb_dispatcher) {
   ServiceSearchAttributeRequest req;
   req.set_search_pattern(std::move(search_pattern));
-  for (const auto& id : req_attributes) {
-    req.AddAttribute(id);
+  if (req_attributes.empty()) {
+    req.AddAttributeRange(0, 0xFFFF);
+  } else {
+    for (const auto& id : req_attributes) {
+      req.AddAttribute(id);
+    }
   }
   TransactionId next = GetNextId();
 
