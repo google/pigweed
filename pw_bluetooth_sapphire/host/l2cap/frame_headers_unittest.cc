@@ -220,7 +220,7 @@ TEST(L2CAP_FrameHeaders_SimpleStartOfSduFrameHeaderTest,
      IsConstructedProperly) {
   SimpleStartOfSduFrameHeader frame;
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Figure 3.3.
-  EXPECT_EQ(CreateStaticByteBuffer(0, 0, 0, 0),
+  EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000, 0, 0),
             BufferView(&frame, sizeof(frame)));
 }
 

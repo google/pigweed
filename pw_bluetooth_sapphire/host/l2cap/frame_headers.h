@@ -113,7 +113,9 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
 // * the frame _is_ a "Start of L2CAP SDU" frame.
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleStartOfSduFrameHeader : public SimpleInformationFrameHeader {
-  SimpleStartOfSduFrameHeader() : sdu_len(0) {}
+  SimpleStartOfSduFrameHeader() : sdu_len(0) {
+    set_segmentation_status(SegmentationStatus::FirstSegment);
+  }
   uint16_t sdu_len;
 } __PACKED;
 
