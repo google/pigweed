@@ -108,15 +108,13 @@ class RemoteDeviceCache final {
   // that have either type of address.
   RemoteDevice* FindDeviceByAddress(const common::DeviceAddress& address) const;
 
-  // When set, |callback| will be invoked whenever a device is added
-  // or updated.
+  // When set, |callback| will be invoked whenever a device is added or updated.
   void set_device_updated_callback(DeviceCallback callback) {
     ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
     device_updated_callback_ = std::move(callback);
   }
 
-  // When set, |callback| will be invoked whenever a device is
-  // removed.
+  // When set, |callback| will be invoked whenever a device is removed.
   void set_device_removed_callback(DeviceIdCallback callback) {
     ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
     device_removed_callback_ = std::move(callback);
@@ -207,9 +205,6 @@ class RemoteDeviceCache final {
   //
   // Dual-mode devices shall have identity addresses of both technologies
   // mapped to the same ID, if the addresses have the same value.
-  //
-  // TODO(armansito): Replace this with an implementation that can resolve
-  // device identity, to handle bonded LE devices that use privacy.
   std::unordered_map<common::DeviceAddress, DeviceId> address_map_;
 
   // The LE identity resolving list used to resolve RPAs.
