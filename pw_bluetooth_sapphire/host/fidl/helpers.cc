@@ -52,8 +52,8 @@ bt::common::UInt128 KeyDataFromFidl(const ::fidl::Array<uint8_t, 16>& key) {
   return result;
 }
 
-::fidl::Array<uint8_t, 16> KeyDataToFidl(const bt::common::UInt128& key) {
-  ::fidl::Array<uint8_t, 16> result;
+::std::array<uint8_t, 16> KeyDataToFidl(const bt::common::UInt128& key) {
+  ::std::array<uint8_t, 16> result;
   static_assert(sizeof(key) == result.size(), "keys must have the same size");
   std::copy(key.begin(), key.end(), result.begin());
   return result;
