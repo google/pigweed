@@ -51,12 +51,12 @@ source_set("sources") {
 
   deps = [
     ":stack",
-    "//src/lib/fxl",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.control",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//sdk/fidl/fuchsia.bluetooth.host:fuchsia.bluetooth.host",
     "//sdk/fidl/fuchsia.bluetooth.le",
+    "//src/lib/fxl",
     "//zircon/public/banjo/ddk-protocol-bt-gattsvc",
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/public/lib/ddk",

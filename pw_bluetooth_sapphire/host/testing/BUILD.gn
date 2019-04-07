@@ -43,8 +43,8 @@ source_set("fake_controller") {
     # TODO(armansito): Pull in just the hci:definitions target.
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
-    "//src/lib/fxl",
     "//src/lib/files",
+    "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/async-default",
     "//zircon/public/lib/fbl",
@@ -62,8 +62,8 @@ source_set("gtest_main") {
   ]
 
   deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
     "//garnet/public/lib/fsl",
+    "//src/connectivity/bluetooth/core/bt-host/common",
     "//zircon/public/lib/driver",
   ]
 

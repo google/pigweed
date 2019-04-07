@@ -18,9 +18,9 @@ static_library("rfcomm") {
   ]
 
   public_deps = [
-    "//src/lib/fxl",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//src/lib/fxl",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
   ]
@@ -37,9 +37,9 @@ source_set("tests") {
 
   deps = [
     ":rfcomm",
-    "//src/lib/fxl",
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/lib/fxl",
   ]
 }

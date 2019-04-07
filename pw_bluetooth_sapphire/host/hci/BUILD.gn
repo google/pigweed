@@ -60,8 +60,8 @@ static_library("hci") {
 
   public_deps = [
     ":definitions",
-    "//src/lib/fxl",
     "//src/lib/files",
+    "//src/lib/fxl",
     "//zircon/public/banjo/ddk-protocol-bt-hci",
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c_client",

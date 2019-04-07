@@ -60,8 +60,8 @@ static_library("l2cap") {
 
   public_deps = [
     ":definitions",
-    "//src/lib/fxl",
     "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//src/lib/fxl",
     "//zircon/public/lib/fit",
   ]
 }
@@ -80,10 +80,10 @@ source_set("testing") {
 
   public_deps = [
     ":l2cap",
-    "//src/lib/fxl",
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//src/lib/fxl",
     "//third_party/googletest:gtest",
   ]
 }
