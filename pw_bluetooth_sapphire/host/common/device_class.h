@@ -52,15 +52,10 @@ class DeviceClass {
   // controller (little-endian)
   explicit DeviceClass(std::initializer_list<uint8_t> bytes);
 
-  // Initializes the contents from |uint32_t|
-  explicit DeviceClass(uint32_t value);
-
   // Initializes the contents using the given |major_class|.
   explicit DeviceClass(MajorClass major_class);
 
-  MajorClass major_class() const { return MajorClass(bytes_[1] & 0b1'1111); }
-
-  uint8_t minor_class() const { return (bytes_[0] >> 2) & 0b11'1111; }
+  MajorClass major_class() const { return MajorClass(bytes_[1] & 0x1F); }
 
   // Sets the major service classes of this.
   // Clears any service classes that are not set.

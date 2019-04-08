@@ -51,21 +51,6 @@ TEST(DeviceClassTest, CastFromBytes) {
   EXPECT_EQ(srvs_expected, test_payload->class_of_device.GetServiceClasses());
 }
 
-TEST(DeviceClassTest, ConstructFromUInt32) {
-  // AudioVideo -- headset with Rendering and Audio services
-  DeviceClass class_of_device(0x240404);
-
-  EXPECT_EQ(DeviceClass::MajorClass::kAudioVideo,
-            class_of_device.major_class());
-
-  const uint8_t WEARABLE_HEADSET_DEVICE_MINOR_CLASS = 1;
-  EXPECT_EQ(WEARABLE_HEADSET_DEVICE_MINOR_CLASS, class_of_device.minor_class());
-
-  std::unordered_set<DeviceClass::ServiceClass> srvs_expected = {
-      DeviceClass::ServiceClass::kAudio, DeviceClass::ServiceClass::kRendering};
-  EXPECT_EQ(srvs_expected, class_of_device.GetServiceClasses());
-}
-
 TEST(DeviceClassTest, ToString) {
   DeviceClass device;
   EXPECT_EQ("Unspecified", device.ToString());
