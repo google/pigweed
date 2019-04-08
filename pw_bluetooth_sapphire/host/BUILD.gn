@@ -18,7 +18,6 @@ driver_module("driver") {
 
 source_set("sources") {
   sources = [
-    "binding.c",
     "driver.cc",
     "gatt_host.cc",
     "gatt_host.h",
