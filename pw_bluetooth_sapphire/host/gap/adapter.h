@@ -171,8 +171,8 @@ class Adapter final {
   void SetLocalName(std::string name, hci::StatusCallback callback);
 
   // Sets the Device Class of this adapter.
-  void SetClassOfDevice(common::DeviceClass dev_class,
-                        hci::StatusCallback callback);
+  void SetDeviceClass(common::DeviceClass dev_class,
+                      hci::StatusCallback callback);
 
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE device in the directed connectable mode (Vol 3,
