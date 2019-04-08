@@ -197,6 +197,9 @@ class BrEdrDiscoveryManager final {
   // TODO(NET-619): we should not need these once we can Inquiry Cancel.
   std::unordered_set<BrEdrDiscoverySession*> zombie_discovering_;
 
+  // The set of devices that we have pending name requests for.
+  std::unordered_set<DeviceId> requesting_names_;
+
   // The set of callbacks that are waiting on inquiry to start.
   std::queue<DiscoveryCallback> pending_discovery_;
 

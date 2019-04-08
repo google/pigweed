@@ -297,6 +297,10 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(
 }
 
 void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
+  if (requesting_names_.count(id)) {
+    bt_log(SPEW, "gap-bredr", "already requesting name for %s", bt_str(id));
+    return;
+  }
   RemoteDevice* device = cache_->FindDeviceById(id);
   if (!device) {
     bt_log(WARN, "gap-bredr", "cannot request name, unknown id: %s",
@@ -319,8 +323,11 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
 
   auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto,
                                                         const auto& event) {
-    if (!self ||
-        hci_is_error(event, SPEW, "gap-bredr", "remote name request failed")) {
+    if (!self) {
+      return;
+    }
+    if (hci_is_error(event, SPEW, "gap-bredr", "remote name request failed")) {
+      self->requesting_names_.erase(id);
       return;
     }
 
@@ -331,6 +338,7 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
     ZX_DEBUG_ASSERT(event.event_code() ==
                     hci::kRemoteNameRequestCompleteEventCode);
 
+    self->requesting_names_.erase(id);
     const auto& params =
         event.view()
             .template payload<hci::RemoteNameRequestCompleteEventParams>();
@@ -346,9 +354,12 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
     }
   };
 
-  hci_->command_channel()->SendExclusiveCommand(
+  auto cmd_id = hci_->command_channel()->SendExclusiveCommand(
       std::move(packet), dispatcher_, std::move(cb),
       hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
+  if (cmd_id) {
+    requesting_names_.insert(id);
+  }
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
