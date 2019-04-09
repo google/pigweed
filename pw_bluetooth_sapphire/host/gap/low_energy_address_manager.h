@@ -5,19 +5,18 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADDRESS_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADDRESS_MANAGER_H_
 
-#include <optional>
-#include <queue>
-
 #include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 
-#include "src/lib/fxl/memory/ref_ptr.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include <optional>
+#include <queue>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -78,7 +77,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // Assigns the IRK to generate a RPA for the next address refresh when privacy
   // is enabled.
-  void set_irk(const common::UInt128& irk) { irk_ = irk; }
+  void set_irk(const std::optional<common::UInt128>& irk) { irk_ = irk; }
 
   // Enable or disable the privacy feature. When enabled, the controller will be
   // configured to use a new random address if it is currently allowed to do so.

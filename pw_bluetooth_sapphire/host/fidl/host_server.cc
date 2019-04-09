@@ -6,23 +6,23 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
+#include "helpers.h"
+#include "low_energy_central_server.h"
+#include "low_energy_peripheral_server.h"
+#include "profile_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/logging.h"
 #include "src/lib/fxl/strings/join_strings.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 #include "src/lib/fxl/strings/string_printf.h"
-
-#include "helpers.h"
-#include "low_energy_central_server.h"
-#include "low_energy_peripheral_server.h"
-#include "profile_server.h"
 
 namespace bthost {
 
@@ -79,6 +79,16 @@ HostServer::~HostServer() { Close(); }
 
 void HostServer::GetInfo(GetInfoCallback callback) {
   callback(fidl_helpers::NewAdapterInfo(*adapter()));
+}
+
+void HostServer::SetLocalData(::fuchsia::bluetooth::host::HostData host_data) {
+  if (host_data.irk) {
+    bt_log(TRACE, "bt-host", "assign IRK");
+    auto addr_mgr = adapter()->le_address_manager();
+    if (addr_mgr) {
+      addr_mgr->set_irk(fidl_helpers::LocalKeyFromFidl(*host_data.irk));
+    }
+  }
 }
 
 void HostServer::ListDevices(ListDevicesCallback callback) {
@@ -402,10 +412,18 @@ void HostServer::SetDiscoverable(bool discoverable,
 
 void HostServer::EnableBackgroundScan(bool enabled) {
   bt_log(TRACE, "bt-host", "%s background scan",
-         (enabled ? "enabled" : "disable"));
+         (enabled ? "enable" : "disable"));
   auto le_manager = adapter()->le_discovery_manager();
   if (le_manager) {
     le_manager->EnableBackgroundScan(enabled);
+  }
+}
+
+void HostServer::EnablePrivacy(bool enabled) {
+  bt_log(TRACE, "bt-host", "%s LE privacy", (enabled ? "enable" : "disable"));
+  auto addr_mgr = adapter()->le_address_manager();
+  if (addr_mgr) {
+    addr_mgr->EnablePrivacy(enabled);
   }
 }
 
@@ -550,6 +568,11 @@ void HostServer::Close() {
   auto le_manager = adapter()->le_discovery_manager();
   if (le_manager) {
     le_manager->EnableBackgroundScan(false);
+  }
+  auto addr_mgr = adapter()->le_address_manager();
+  if (addr_mgr) {
+    addr_mgr->EnablePrivacy(false);
+    addr_mgr->set_irk(std::nullopt);
   }
 
   // Disallow future pairing.

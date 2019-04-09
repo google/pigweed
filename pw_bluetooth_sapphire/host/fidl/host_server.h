@@ -5,24 +5,23 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 
-#include <memory>
-#include <unordered_map>
-
 #include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <lib/zx/channel.h>
 
+#include <memory>
+#include <unordered_map>
+
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
+#include "src/lib/fxl/macros.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -40,6 +39,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
  private:
   // ::fuchsia::bluetooth::Host overrides:
   void GetInfo(GetInfoCallback callback) override;
+  void SetLocalData(::fuchsia::bluetooth::host::HostData host_data) override;
   void ListDevices(ListDevicesCallback callback) override;
   void AddBondedDevices(
       ::std::vector<fuchsia::bluetooth::host::BondingData> bonds,
@@ -54,6 +54,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void SetDiscoverable(bool discoverable,
                        SetDiscoverableCallback callback) override;
   void EnableBackgroundScan(bool enabled) override;
+  void EnablePrivacy(bool enabled) override;
   void SetPairingDelegate(
       ::fuchsia::bluetooth::control::InputCapabilityType input,
       ::fuchsia::bluetooth::control::OutputCapabilityType output,
