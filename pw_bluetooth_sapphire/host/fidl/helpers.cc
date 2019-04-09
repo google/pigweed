@@ -45,20 +45,6 @@ fctrl::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
   return fctrl::TechnologyType::DUAL_MODE;
 }
 
-bt::common::UInt128 KeyDataFromFidl(const ::fidl::Array<uint8_t, 16>& key) {
-  bt::common::UInt128 result;
-  static_assert(sizeof(key) == result.size(), "keys must have the same size");
-  std::copy(key.begin(), key.end(), result.begin());
-  return result;
-}
-
-::std::array<uint8_t, 16> KeyDataToFidl(const bt::common::UInt128& key) {
-  ::std::array<uint8_t, 16> result;
-  static_assert(sizeof(key) == result.size(), "keys must have the same size");
-  std::copy(key.begin(), key.end(), result.begin());
-  return result;
-}
-
 bt::sm::SecurityProperties SecurityPropsFromFidl(
     const fhost::SecurityProperties& sec_prop) {
   auto level = bt::sm::SecurityLevel::kEncrypted;
@@ -115,13 +101,13 @@ fhost::AddressType BondingAddrTypeToFidl(bt::common::DeviceAddress::Type type) {
 bt::sm::LTK LtkFromFidl(const fhost::LTK& ltk) {
   return bt::sm::LTK(
       SecurityPropsFromFidl(ltk.key.security_properties),
-      bt::hci::LinkKey(KeyDataFromFidl(ltk.key.value), ltk.rand, ltk.ediv));
+      bt::hci::LinkKey(ltk.key.value, ltk.rand, ltk.ediv));
 }
 
 fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
   fhost::LTK result;
   result.key.security_properties = SecurityPropsToFidl(ltk.security());
-  result.key.value = KeyDataToFidl(ltk.key().value());
+  result.key.value = ltk.key().value();
 
   // TODO(armansito): Remove this field since its already captured in security
   // properties.
@@ -133,13 +119,13 @@ fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
 
 bt::sm::Key KeyFromFidl(const fhost::RemoteKey& key) {
   return bt::sm::Key(SecurityPropsFromFidl(key.security_properties),
-                     KeyDataFromFidl(key.value));
+                     key.value);
 }
 
 fhost::RemoteKey KeyToFidl(const bt::sm::Key& key) {
   fhost::RemoteKey result;
   result.security_properties = SecurityPropsToFidl(key.security());
-  result.value = KeyDataToFidl(key.value());
+  result.value = key.value();
   return result;
 }
 
@@ -225,7 +211,7 @@ bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
 }
 
 bt::common::UInt128 LocalKeyFromFidl(const fhost::LocalKey& key) {
-  return KeyDataFromFidl(key.value);
+  return key.value;
 }
 
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fhost::BREDRData& data) {
