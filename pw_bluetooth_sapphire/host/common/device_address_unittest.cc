@@ -171,6 +171,14 @@ TEST(DeviceAddressTest, IsStatic) {
   EXPECT_TRUE(kStatic.IsStaticRandom());
 }
 
+TEST(DeviceAddressTest, IsPublic) {
+  EXPECT_FALSE(kClassic.IsPublic());
+  EXPECT_TRUE(kPublic.IsPublic());
+  EXPECT_FALSE(kNonResolvable.IsPublic());
+  EXPECT_FALSE(kResolvable.IsPublic());
+  EXPECT_FALSE(kStatic.IsPublic());
+}
+
 }  // namespace
 }  // namespace common
 }  // namespace bt
