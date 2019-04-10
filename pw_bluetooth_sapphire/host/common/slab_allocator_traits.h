@@ -27,20 +27,4 @@ using SlabAllocatorTraits =
 }  // namespace common
 }  // namespace bt
 
-namespace fbl {
-namespace internal {
-
-// SlabAllocatorPtrTraits specialization for std::unique_ptr.
-template <typename T>
-struct SlabAllocatorPtrTraits<std::unique_ptr<T>> {
-  using ObjType = T;
-  using PtrType = std::unique_ptr<T>;
-
-  static constexpr bool IsManaged = true;
-  static constexpr PtrType CreatePtr(ObjType* ptr) { return PtrType(ptr); }
-};
-
-}  // namespace internal
-}  // namespace fbl
-
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_ALLOCATOR_TRAITS_H_
