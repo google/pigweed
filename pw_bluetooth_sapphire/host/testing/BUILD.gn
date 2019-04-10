@@ -9,6 +9,8 @@ source_set("testing") {
     "fake_controller_test.h",
     "test_controller.cc",
     "test_controller.h",
+    "test_packets.cc",
+    "test_packets.h",
   ]
 
   deps = [

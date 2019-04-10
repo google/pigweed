@@ -19,6 +19,7 @@ namespace bt {
 
 using common::BufferView;
 using common::ByteBuffer;
+using common::DeviceAddress;
 using common::StaticByteBuffer;
 
 namespace testing {
@@ -95,6 +96,10 @@ void FakeController::Settings::ApplyLEOnlyDefaults() {
 }
 
 void FakeController::Settings::AddBREDRSupportedCommands() {
+  SetBit(supported_commands + 0, hci::SupportedCommand::kCreateConnection);
+  SetBit(supported_commands + 0,
+         hci::SupportedCommand::kCreateConnectionCancel);
+  SetBit(supported_commands + 0, hci::SupportedCommand::kDisconnect);
   SetBit(supported_commands + 7, hci::SupportedCommand::kWriteLocalName);
   SetBit(supported_commands + 7, hci::SupportedCommand::kReadLocalName);
   SetBit(supported_commands + 7, hci::SupportedCommand::kReadScanEnable);
@@ -580,6 +585,107 @@ void FakeController::NotifyLEConnectionParameters(
       [addr, params, cb = le_conn_params_cb_.share()] { cb(addr, params); });
 }
 
+void FakeController::OnCreateConnectionCommandReceived(
+    const hci::CreateConnectionCommandParams& params) {
+  // Cannot issue this command while a request is already pending.
+  if (bredr_connect_pending_) {
+    RespondWithCommandStatus(hci::kCreateConnection,
+                             hci::StatusCode::kCommandDisallowed);
+    return;
+  }
+
+  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+  hci::StatusCode status = hci::StatusCode::kSuccess;
+
+  // Find the device that matches the requested address.
+  FakeDevice* device = FindDeviceByAddress(peer_address);
+  if (device) {
+    if (device->connected())
+      status = hci::StatusCode::kConnectionAlreadyExists;
+    else
+      status = device->connect_status();
+  }
+
+  // First send the Command Status response.
+  RespondWithCommandStatus(hci::kCreateConnection, status);
+
+  // If we just sent back an error status then the operation is complete.
+  if (status != hci::StatusCode::kSuccess)
+    return;
+
+  bredr_connect_pending_ = true;
+  pending_bredr_connect_addr_ = peer_address;
+
+  // The procedure was initiated successfully but the device cannot be connected
+  // because it either doesn't exist or isn't connectable.
+  if (!device || !device->connectable()) {
+    bt_log(INFO, "fake-hci",
+           "requested device %s cannot be connected; request will time out",
+           peer_address.ToString().c_str());
+
+    pending_bredr_connect_rsp_.Reset([this, peer_address] {
+      hci::ConnectionCompleteEventParams response = {};
+
+      response.status = hci::StatusCode::kPageTimeout;
+      response.bd_addr = peer_address.value();
+
+      bredr_connect_pending_ = false;
+      SendEvent(hci::kConnectionCompleteEventCode,
+                BufferView(&response, sizeof(response)));
+    });
+
+    // Default page timeout of 5.12s
+    // See Core Spec v5.0 Vol 2, Part E, Section 6.6
+    constexpr zx::duration default_page_timeout = zx::usec(625 * 0x2000);
+
+    async::PostDelayedTask(
+        dispatcher(), [cb = pending_bredr_connect_rsp_.callback()] { cb(); },
+        default_page_timeout);
+    return;
+  }
+
+  if (next_conn_handle_ == 0x0FFF) {
+    // Ran out of handles
+    status = hci::StatusCode::kConnectionLimitExceeded;
+  } else {
+    status = device->connect_response();
+  }
+
+  hci::ConnectionCompleteEventParams response = {};
+
+  response.status = status;
+  response.bd_addr = params.bd_addr;
+  response.link_type = hci::LinkType::kACL;
+  response.encryption_enabled = 0x0;
+
+  if (status == hci::StatusCode::kSuccess) {
+    hci::ConnectionHandle handle = ++next_conn_handle_;
+    response.connection_handle = htole16(handle);
+  }
+
+  // Don't send a connection event if we were asked to force the request to
+  // remain pending. This is used by test cases that operate during the pending
+  // state.
+  if (device->force_pending_connect())
+    return;
+
+  pending_bredr_connect_rsp_.Reset([response, device, this] {
+    bredr_connect_pending_ = false;
+
+    if (response.status == hci::StatusCode::kSuccess) {
+      bool notify = !device->connected();
+      device->AddLink(le16toh(response.connection_handle));
+      if (notify && device->connected())
+        NotifyConnectionState(device->address(), true);
+    }
+
+    SendEvent(hci::kConnectionCompleteEventCode,
+              BufferView(&response, sizeof(response)));
+  });
+  async::PostTask(dispatcher(),
+                  [cb = pending_bredr_connect_rsp_.callback()] { cb(); });
+}
+
 void FakeController::OnLECreateConnectionCommandReceived(
     const hci::LECreateConnectionCommandParams& params) {
   // Cannot issue this command while a request is already pending.
@@ -886,6 +992,40 @@ void FakeController::OnCommandPacketReceived(
     case hci::kDisconnect: {
       OnDisconnectCommandReceived(
           command_packet.payload<hci::DisconnectCommandParams>());
+      break;
+    }
+    case hci::kCreateConnection: {
+      OnCreateConnectionCommandReceived(
+          command_packet.payload<hci::CreateConnectionCommandParams>());
+      break;
+    }
+    case hci::kCreateConnectionCancel: {
+      hci::CreateConnectionCancelReturnParams params;
+      params.status = hci::StatusCode::kSuccess;
+      params.bd_addr = pending_bredr_connect_addr_.value();
+
+      if (!bredr_connect_pending_) {
+        // No request is currently pending.
+        params.status = hci::StatusCode::kUnknownConnectionId;
+        RespondWithCommandComplete(hci::kCreateConnectionCancel,
+                                   BufferView(&params, sizeof(params)));
+        return;
+      }
+
+      bredr_connect_pending_ = false;
+      pending_bredr_connect_rsp_.Cancel();
+
+      NotifyConnectionState(pending_bredr_connect_addr_, false, true);
+
+      hci::ConnectionCompleteEventParams response = {};
+
+      response.status = hci::StatusCode::kUnknownConnectionId;
+      response.bd_addr = pending_bredr_connect_addr_.value();
+
+      RespondWithCommandComplete(hci::kCreateConnectionCancel,
+                                 BufferView(&params, sizeof(params)));
+      SendEvent(hci::kConnectionCompleteEventCode,
+                BufferView(&response, sizeof(response)));
       break;
     }
     case hci::kWriteLocalName: {

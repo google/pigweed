@@ -7,8 +7,8 @@
 
 #include <cstdint>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 
 // This file contains constants and numbers that are part of the Generic Access
 // Profile specification.
@@ -129,6 +129,8 @@ constexpr uint16_t kLEScanSlowWindow2Coded = 0x006C;    // 67.5 ms
 
 // Timeout used for the LE Create Connection command.
 constexpr zx::duration kLECreateConnectionTimeout = zx::sec(20);
+// Timeout used for the Br/Edr Create Connection command.
+constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
 
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)

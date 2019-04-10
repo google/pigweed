@@ -9,7 +9,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
@@ -26,6 +28,26 @@ namespace gap {
 
 class PairingDelegate;
 class RemoteDeviceCache;
+class BrEdrConnectionManager;
+
+// Represents an established Br/Edr connection, after we have performed
+// interrogation
+class BrEdrConnection final {
+ public:
+  BrEdrConnection(DeviceId peer_id, std::unique_ptr<hci::Connection> link)
+      : link_(std::move(link)), peer_id_(peer_id) {}
+
+  const hci::Connection& link() const { return *link_; }
+  hci::Connection& link() { return *link_; }
+
+  DeviceId peer_id() const { return peer_id_; }
+
+ private:
+  std::unique_ptr<hci::Connection> link_;
+  DeviceId peer_id_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
+};
 
 // Manages all activity related to connections in the BR/EDR section of the
 // controller, including whether the device can be connected to, incoming
@@ -34,6 +56,7 @@ class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci,
                          RemoteDeviceCache* device_cache,
+                         common::DeviceAddress local_address,
                          fbl::RefPtr<data::Domain> data_domain,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
@@ -77,6 +100,26 @@ class BrEdrConnectionManager final {
   // This function is idempotent.
   bool RemoveServiceSearch(SearchId id);
 
+  using ConnectResultCallback =
+      fit::function<void(hci::Status, BrEdrConnection*)>;
+
+  // Initiates an outgoing Create Connection Request to attempt to connect to
+  // the device identified by |peer_id|. Returns false if the connection
+  // request was invalid, otherwise returns true and |callback| will be called
+  // with the result of the procedure, whether successful or not
+  // TODO(BT-820) - implement a timeout
+  [[nodiscard]] bool Connect(DeviceId peer_id, ConnectResultCallback callback);
+
+  // Intialize a GAP-level ACL connection from the hci connection_handle
+  void InitializeConnection(common::DeviceAddress addr,
+                            hci::ConnectionHandle connection_handle);
+
+  // Called when an outgoing connection fails to establish
+  void OnConnectFailure(hci::Status status, common::DeviceId peer_id);
+
+  // Called to cancel an outgoing connection request
+  void SendCreateConnectionCancelCommand(common::DeviceAddress addr);
+
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
   // |peer_id| is not a recognized BR/EDR device or the corresponding peer is
   // not connected.
@@ -98,7 +141,7 @@ class BrEdrConnectionManager final {
 
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
-  std::optional<hci::ConnectionHandle> FindConnectionById(DeviceId peer_id);
+  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionById(DeviceId peer_id);
 
   // Callbacks for registered events
   void OnConnectionRequest(const hci::EventPacket& event);
@@ -109,6 +152,31 @@ class BrEdrConnectionManager final {
   void OnIOCapabilitiesRequest(const hci::EventPacket& event);
   void OnUserConfirmationRequest(const hci::EventPacket& event);
 
+  // Called once interrogation is complete to establish a BrEdrConnection and,
+  // if in response to an outgoing connection request, completes the request
+  void EstablishConnection(RemoteDevice* device, hci::Status status,
+                           std::unique_ptr<hci::Connection> conn_ptr);
+
+  RemoteDevice* FindOrInitDevice(common::DeviceAddress addr);
+
+  // Called when we complete a pending request. Initiates a new connection
+  // attempt for the next device in the pending list, if any.
+  void TryCreateNextConnection();
+
+  // Called when a request times out waiting for a connection complete packet,
+  // *after* the command status was received. This is responsible for canceling
+  // the request and initiating the next one in the queue
+  void OnRequestTimeout();
+
+  // Cleanup a connection which has been deliberately disconnected, or had all
+  // references to it dropped
+  void CleanupConnection(hci::ConnectionHandle handle,
+                         BrEdrConnection& conn,
+                         bool link_already_closed);
+
+  using ConnectionMap =
+      std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
+
   fxl::RefPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
 
@@ -116,6 +184,8 @@ class BrEdrConnectionManager final {
   // update the state of connected devices as well as introduce unknown devices.
   // This object must outlive this instance.
   RemoteDeviceCache* cache_;
+
+  const common::DeviceAddress local_address_;
 
   fbl::RefPtr<data::Domain> data_domain_;
 
@@ -126,7 +196,7 @@ class BrEdrConnectionManager final {
   sdp::ServiceDiscoverer discoverer_;
 
   // Holds the connections that are active.
-  std::unordered_map<hci::ConnectionHandle, hci::ConnectionPtr> connections_;
+  ConnectionMap connections_;
 
   // Handler ID for connection events
   hci::CommandChannel::EventHandlerId conn_complete_handler_id_;
@@ -145,6 +215,15 @@ class BrEdrConnectionManager final {
   uint16_t page_scan_window_;
   hci::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
+
+  // Outstanding connection requests based on remote device ID.
+  std::unordered_map<DeviceId, ConnectionRequest<BrEdrConnection*>>
+      connection_requests_;
+
+  std::optional<hci::BrEdrConnectionRequest> pending_request_;
+
+  // Time after which a connection attempt is considered to have timed out.
+  zx::duration request_timeout_;
 
   // The dispatcher that all commands are queued on.
   async_dispatcher_t* dispatcher_;

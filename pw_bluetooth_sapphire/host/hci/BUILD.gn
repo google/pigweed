@@ -31,6 +31,8 @@ static_library("hci") {
     "acl_data_packet.h",
     "advertising_report_parser.cc",
     "advertising_report_parser.h",
+    "bredr_connection_request.cc",
+    "bredr_connection_request.h",
     "command_channel.cc",
     "command_channel.h",
     "connection.cc",

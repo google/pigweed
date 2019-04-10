@@ -248,6 +248,10 @@ class FakeController : public FakeControllerBase,
   void NotifyConnectionState(const common::DeviceAddress& addr, bool connected,
                              bool canceled = false);
 
+  // Called when a HCI_Create_Connection command is received.
+  void OnCreateConnectionCommandReceived(
+      const hci::CreateConnectionCommandParams& params);
+
   // Notifies |le_conn_params_cb_|
   void NotifyLEConnectionParameters(const common::DeviceAddress& addr,
                                     const hci::LEConnectionParameters& params);
@@ -292,6 +296,12 @@ class FakeController : public FakeControllerBase,
   fxl::CancelableClosure pending_le_connect_rsp_;
   common::DeviceAddress pending_le_connect_addr_;
   bool le_connect_pending_;
+
+  // Variables used for
+  // HCI_BREDR_Create_Connection/HCI_BREDR_Create_Connection_Cancel.
+  bool bredr_connect_pending_;
+  common::DeviceAddress pending_bredr_connect_addr_;
+  fxl::CancelableClosure pending_bredr_connect_rsp_;
 
   // ID used for L2CAP LE signaling channel commands.
   uint8_t next_le_sig_id_;

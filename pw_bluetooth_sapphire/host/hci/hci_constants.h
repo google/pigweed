@@ -1410,6 +1410,11 @@ enum class PacketTypeBits : uint16_t {
 
 using PacketTypeType = uint16_t;
 
+enum class RoleSwitchBits : uint8_t {
+  kDisallowRoleSwitch = 0x0,
+  kAllowRoleSwitch = 0x1
+};
+
 }  // namespace hci
 }  // namespace bt
 

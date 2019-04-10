@@ -100,11 +100,14 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // bonded.
   void OnRemoteDeviceBonded(const bt::gap::RemoteDevice& remote_device);
 
+  void ConnectLowEnergy(bt::gap::DeviceId id, ConnectCallback callback);
+  void ConnectBrEdr(bt::gap::DeviceId peer_id, ConnectCallback callback);
+
   // Called when a connection is established to a remote device, either when
   // initiated by a user via a client of Host.fidl, or automatically by the GAP
   // adapter
-  void OnConnect(bt::gap::LowEnergyConnectionRefPtr conn_ref,
-                 bool auto_connect);
+  void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref,
+                                   bool auto_connect);
 
   // Called when |server| receives a channel connection error.
   void OnConnectionError(Server* server);

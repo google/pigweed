@@ -8,9 +8,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt {
 namespace gap {
@@ -19,6 +22,7 @@ namespace {
 using bt::testing::CommandTransaction;
 
 using common::DeviceAddress;
+using common::DynamicByteBuffer;
 using common::kInvalidDeviceId;
 using common::LowerBits;
 using common::UpperBits;
@@ -27,8 +31,14 @@ using TestingBase =
     bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
+const DeviceAddress kLocalDevAddr(DeviceAddress::Type::kBREDR,
+                                  "00:00:00:00:00:00");
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR,
                                  "00:00:00:00:00:01");
+const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic,
+                                   "00:00:00:00:00:02");
+const DeviceAddress kTestDevAddr2(DeviceAddress::Type::kBREDR,
+                                  "00:00:00:00:00:03");
 
 #define TEST_DEV_ADDR_BYTES_LE 0x01, 0x00, 0x00, 0x00, 0x00, 0x00
 
@@ -125,6 +135,55 @@ const auto kConnectionComplete = common::CreateStaticByteBuffer(
     0x01,                       // link_type (ACL)
     0x00                        // encryption not enabled
 );
+
+const auto kConnectionCompleteError = common::CreateStaticByteBuffer(
+    hci::kConnectionCompleteEventCode,
+    0x0B,                                               // parameter_total_size (11 byte payload)
+    hci::StatusCode::kConnectionFailedToBeEstablished,  // status
+    0x00, 0x00,                                         // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                             // peer address
+    0x01,                                               // link_type (ACL)
+    0x00                                                // encryption not enabled
+);
+
+const auto kConnectionCompleteCanceled = common::CreateStaticByteBuffer(
+    hci::kConnectionCompleteEventCode,
+    0x0B,  // parameter_total_size (11 byte payload)
+    hci::StatusCode::kUnknownConnectionId,  // status
+    0x00, 0x00,                             // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                 // peer address
+    0x01,                                   // link_type (ACL)
+    0x00                                    // encryption not enabled
+);
+
+const auto kCreateConnection = common::CreateStaticByteBuffer(
+    LowerBits(hci::kCreateConnection), UpperBits(hci::kCreateConnection),
+    0x0d,                                  // parameter_total_size (13 bytes)
+    TEST_DEV_ADDR_BYTES_LE,                // peer address
+    LowerBits(hci::kEnableAllPacketTypes),  // allowable packet types
+    UpperBits(hci::kEnableAllPacketTypes),  // allowable packet types
+    0x02,                                  // page_scan_repetition_mode (R2)
+    0x00,                                  // reserved
+    0x00, 0x00,                            // clock_offset
+    0x00                                   // allow_role_switch (don't)
+);
+
+const auto kCreateConnectionRsp =
+    COMMAND_STATUS_RSP(hci::kCreateConnection, hci::StatusCode::kSuccess);
+
+const auto kCreateConnectionRspError = COMMAND_STATUS_RSP(
+    hci::kCreateConnection, hci::StatusCode::kConnectionFailedToBeEstablished);
+
+const auto kCreateConnectionCancel =
+    common::CreateStaticByteBuffer(LowerBits(hci::kCreateConnectionCancel),
+                                   UpperBits(hci::kCreateConnectionCancel),
+                                   0x06,  // parameter_total_size (6 bytes)
+                                   TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kCreateConnectionCancelRsp =
+    COMMAND_COMPLETE_RSP(hci::kCreateConnectionCancel);
+
 const auto kRemoteNameRequest = common::CreateStaticByteBuffer(
     LowerBits(hci::kRemoteNameRequest), UpperBits(hci::kRemoteNameRequest),
     0x0a,                    // parameter_total_size (10 bytes)
@@ -237,6 +296,7 @@ const auto kDisconnect = common::CreateStaticByteBuffer(
     0xAA, 0x0B,  // connection_handle
     0x13         // Reason (Remote User Terminated Connection)
 );
+
 const auto kDisconnectRsp =
     COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess);
 
@@ -260,8 +320,10 @@ class BrEdrConnectionManagerTest : public TestingBase {
     device_cache_ = std::make_unique<RemoteDeviceCache>();
     data_domain_ = data::testing::FakeDomain::Create();
     data_domain_->Initialize();
+    auto hci = transport();
+
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        transport(), device_cache_.get(), data_domain_, true);
+        hci, device_cache_.get(), kLocalDevAddr, data_domain_, true);
 
     StartTestDevice();
 
@@ -308,29 +370,55 @@ class BrEdrConnectionManagerTest : public TestingBase {
     test_device()->QueueCommandTransaction(CommandTransaction(
         kAcceptConnectionRequest,
         {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kRemoteNameRequest,
-        {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kReadRemoteVersionInfo,
-        {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kReadRemoteSupportedFeatures, {&kReadRemoteSupportedFeaturesRsp,
-                                       &kReadRemoteSupportedFeaturesComplete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kReadRemoteExtended1,
-        {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kReadRemoteExtended2,
-        {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended2Complete}));
-
-    data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP,
-                                              0x40, 0x41);
+    QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   }
 
-  void QueueDisconnection() const {
+  void QueueSuccessfulCreateConnection(RemoteDevice* peer,
+                                 hci::ConnectionHandle conn) const {
+    const DynamicByteBuffer complete_packet =
+        testing::ConnectionCompletePacket(peer->address(), conn);
+    test_device()->QueueCommandTransaction(
+        CommandTransaction(testing::CreateConnectionPacket(peer->address()),
+                           {&kCreateConnectionRsp, &complete_packet}));
+  }
+  void QueueSuccessfulInterrogation(DeviceAddress addr,
+                                hci::ConnectionHandle conn) const {
+    const DynamicByteBuffer remote_name_complete_packet =
+        testing::RemoteNameRequestCompletePacket(addr);
+    const DynamicByteBuffer remote_version_complete_packet =
+        testing::ReadRemoteVersionInfoCompletePacket(conn);
+    const DynamicByteBuffer remote_supported_complete_packet =
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn);
+    const DynamicByteBuffer remote_extended1_complete_packet =
+        testing::ReadRemoteExtended1CompletePacket(conn);
+    const DynamicByteBuffer remote_extended2_complete_packet =
+        testing::ReadRemoteExtended2CompletePacket(conn);
+
     test_device()->QueueCommandTransaction(CommandTransaction(
-        kDisconnect, {&kDisconnectRsp, &kDisconnectionComplete}));
+        testing::RemoteNameRequestPacket(addr),
+        {&kRemoteNameRequestRsp, &remote_name_complete_packet}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        testing::ReadRemoteVersionInfoPacket(conn),
+        {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        testing::ReadRemoteSupportedFeaturesPacket(conn),
+        {&kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        testing::ReadRemoteExtended1Packet(conn),
+        {&kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        testing::ReadRemoteExtended2Packet(conn),
+        {&kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet}));
+
+    data_domain()->ExpectOutboundL2capChannel(conn, l2cap::kSDP, 0x40, 0x41);
+  }
+
+  void QueueDisconnection(hci::ConnectionHandle conn) const {
+    const DynamicByteBuffer disconnect_complete =
+        testing::DisconnectionCompletePacket(conn);
+    test_device()->QueueCommandTransaction(
+        CommandTransaction(testing::DisconnectPacket(conn),
+                           {&kDisconnectRsp, &disconnect_complete}));
   }
 
  private:
@@ -517,7 +605,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   EXPECT_EQ(TechnologyType::kDualMode, dev->technology());
 
   // Prepare for disconnection upon teardown.
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 // Test: A remote disconnect should correctly remove the connection.
@@ -713,7 +801,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
   EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 const hci::LinkKey kRawKey({0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d,
@@ -774,7 +862,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedDevice) {
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 const auto kLinkKeyNotificationChanged = common::CreateStaticByteBuffer(
@@ -839,7 +927,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, BondRemoteDevice) {
   EXPECT_TRUE(dev->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 // Test: can't change the link key of an unbonded device
@@ -873,7 +961,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedDeviceChangeLinkKey) {
   EXPECT_FALSE(dev->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 const auto kLinkKeyNotificationLegacy = common::CreateStaticByteBuffer(
@@ -915,7 +1003,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
   EXPECT_FALSE(dev->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
 
 // Test: if L2CAP gets a link error, we disconnect the connection
@@ -929,7 +1017,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
   // When we deallocate the connection manager next, we should disconnect.
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 
   data_domain()->TriggerLinkError(kConnectionHandle);
 
@@ -1068,7 +1156,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   ASSERT_FALSE(sdp_request_tid);
   ASSERT_EQ(1u, search_cb_count);
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownDevice) {
+  EXPECT_FALSE(connmgr()->Connect(DeviceId(456), {}));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyDevice) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddrLe, true);
+  EXPECT_FALSE(connmgr()->Connect(dev->identifier(), {}));
 }
 
 // Test: user-initiated disconnection
@@ -1089,7 +1186,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   ASSERT_TRUE(dev);
   ASSERT_TRUE(dev->bredr()->connected());
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 
   EXPECT_TRUE(connmgr()->Disconnect(dev->identifier()));
 
@@ -1161,8 +1258,328 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
 
   ASSERT_EQ(1u, search_cb_count);
 
-  QueueDisconnection();
+  QueueDisconnection(kConnectionHandle);
 }
+
+std::string FormatConnectionState(RemoteDevice::ConnectionState s) {
+  switch (s) {
+    case RemoteDevice::ConnectionState::kConnected:
+      return "kConnected";
+    case RemoteDevice::ConnectionState::kInitializing:
+      return "kInitializing";
+    case RemoteDevice::ConnectionState::kNotConnected:
+      return "kNotConnected";
+  }
+  return "<Invalid state>";
+}
+
+::testing::AssertionResult IsInitializing(RemoteDevice* dev) {
+  if (RemoteDevice::ConnectionState::kInitializing != dev->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+      << "Expected device connection_state: kInitializing, found "
+      << FormatConnectionState(dev->bredr()->connection_state());
+  }
+  return ::testing::AssertionSuccess();
+}
+::testing::AssertionResult IsConnected(RemoteDevice* dev) {
+  if (RemoteDevice::ConnectionState::kConnected != dev->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+      << "Expected device connection_state: kConnected, found "
+      << FormatConnectionState(dev->bredr()->connection_state());
+  }
+  if (dev->temporary()) {
+    return ::testing::AssertionFailure()
+      << "Expected device to be non-temporary, but found temporary";
+  }
+  return ::testing::AssertionSuccess();
+}
+::testing::AssertionResult NotConnected(RemoteDevice* dev) {
+  if (RemoteDevice::ConnectionState::kNotConnected != dev->bredr()->connection_state()) {
+    return ::testing::AssertionFailure()
+      << "Expected device connection_state: kNotConnected, found "
+      << FormatConnectionState(dev->bredr()->connection_state());
+  }
+  return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult HasConnectionTo(RemoteDevice* dev, BrEdrConnection* conn) {
+  if (!conn) {
+    return ::testing::AssertionFailure()
+      << "Expected BrEdrConnection, but found nullptr";
+  }
+  if (dev->identifier() != conn->peer_id()) {
+    return ::testing::AssertionFailure()
+      << "Expected connection peer_id " << bt_str(dev->identifier())
+      << " but found " << bt_str(conn->peer_id());
+  }
+  return ::testing::AssertionSuccess();
+}
+
+#define CALLBACK_EXPECT_FAILURE(status_param)       \
+  ([&status_param](auto cb_status, auto conn_ref) { \
+    EXPECT_FALSE(conn_ref);                         \
+    status_param = cb_status;                       \
+  })
+
+// An error is received via the HCI Command cb_status event
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceErrorStatus) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRspError}));
+
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(NotConnected(dev));
+
+  hci::Status status;
+  EXPECT_TRUE(
+      connmgr()->Connect(dev->identifier(), CALLBACK_EXPECT_FAILURE(status)));
+  EXPECT_TRUE(IsInitializing(dev));
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished,
+            status.protocol_error());
+  EXPECT_TRUE(NotConnected(dev));
+}
+
+::testing::AssertionResult StatusEqual(hci::StatusCode expected,
+                                       hci::StatusCode actual) {
+  if (expected == actual)
+    return ::testing::AssertionSuccess();
+  else
+    return ::testing::AssertionFailure()
+           << expected << " is '" << StatusCodeToString(expected) << "', "
+           << actual << " is '" << StatusCodeToString(actual) << "'";
+}
+
+// Connection Complete event reports error
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceFailure) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnection, {&kCreateConnectionRsp, &kConnectionCompleteError}));
+
+  hci::Status status(common::HostError::kFailed);
+  bool callback_run = false;
+
+  auto callback = [&status, &callback_run](auto cb_status, auto conn_ref) {
+    EXPECT_FALSE(conn_ref);
+    status = cb_status;
+    callback_run = true;
+  };
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(IsInitializing(dev));
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(callback_run);
+
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_TRUE(StatusEqual(hci::StatusCode::kConnectionFailedToBeEstablished,
+                          status.protocol_error()));
+  EXPECT_TRUE(NotConnected(dev));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTimeout) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnectionCancel,
+      {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+
+  hci::Status status;
+  auto callback = [&status](auto cb_status, auto conn_ref) {
+    EXPECT_FALSE(conn_ref);
+    status = cb_status;
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(IsInitializing(dev));
+  RunLoopFor(kBrEdrCreateConnectionTimeout);
+  RunLoopFor(kBrEdrCreateConnectionTimeout);
+  EXPECT_FALSE(status);
+  EXPECT_EQ(common::HostError::kTimedOut, status.error()) << status.ToString();
+  EXPECT_TRUE(NotConnected(dev));
+}
+
+// Successful connection to single device
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDevice) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+  EXPECT_TRUE(dev->temporary());
+
+  // Queue up the connection
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(common::HostError::kFailed);
+  BrEdrConnection* conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(IsInitializing(dev));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
+  EXPECT_TRUE(IsConnected(dev));
+}
+
+// Connecting to an already connected device should complete instantly
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceAlreadyConnected) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+  EXPECT_TRUE(dev->temporary());
+
+  // Queue up the connection
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(common::HostError::kFailed);
+  int num_callbacks = 0;
+  BrEdrConnection* conn_ref;
+  auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status,
+                                                       auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    ++num_callbacks;
+  };
+
+  // Connect to the device for the first time
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(IsInitializing(dev));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
+  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_EQ(num_callbacks, 1);
+
+  // Attempt to connect again to the already connected device
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  RunLoopUntilIdle();
+  EXPECT_EQ(num_callbacks, 2);
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
+  EXPECT_TRUE(IsConnected(dev));
+}
+
+// Initiating Two Connections to the same (currently unconnected) device should
+// successfully establish both
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTwoInFlight) {
+  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+  EXPECT_TRUE(dev->temporary());
+
+  // Queue up the connection
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(common::HostError::kFailed);
+  int num_callbacks = 0;
+  BrEdrConnection* conn_ref;
+  auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status,
+                                                       auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    ++num_callbacks;
+  };
+
+  // Launch one request, but don't run the loop
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->bredr());
+  EXPECT_TRUE(IsInitializing(dev));
+
+  // Launch second inflight request
+  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+
+  // Run the loop which should complete both requests
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
+  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_EQ(num_callbacks, 2);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondDeviceFirstTimesOut) {
+  auto* peer_a = device_cache()->NewDevice(kTestDevAddr, true);
+  auto* peer_b = device_cache()->NewDevice(kTestDevAddr2, true);
+
+  // Enqueue first connection request (which will timeout and be cancelled)
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnectionCancel,
+      {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+
+  // Enqueue second connection (which will succeed once previous has ended)
+  const hci::ConnectionHandle conn = 0x0BAB;
+  QueueSuccessfulCreateConnection(peer_b, conn);
+  QueueSuccessfulInterrogation(peer_b->address(), conn);
+  QueueDisconnection(conn);
+
+  // Initialize as success to verify that |callback_a| assigns failure.
+  hci::Status status_a;
+  auto callback_a = [&status_a](auto cb_status, auto cb_conn_ref) {
+    status_a = cb_status;
+    EXPECT_FALSE(cb_conn_ref);
+  };
+
+  // Initialize as error to verify that |callback_b| assigns success.
+  hci::Status status_b(common::HostError::kFailed);
+  BrEdrConnection* connection;
+  auto callback_b = [&status_b, &connection](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status_b = cb_status;
+    connection = std::move(cb_conn_ref);
+  };
+
+  // Launch one request (this will timeout)
+  EXPECT_TRUE(connmgr()->Connect(peer_a->identifier(), callback_a));
+  ASSERT_TRUE(peer_a->bredr());
+  EXPECT_TRUE(IsInitializing(peer_a));
+
+  RunLoopUntilIdle();
+
+  // Launch second inflight request (this will wait for the first)
+  EXPECT_TRUE(connmgr()->Connect(peer_b->identifier(), callback_b));
+  ASSERT_TRUE(peer_b->bredr());
+
+  // Run the loop which should complete both requests
+  RunLoopFor(kBrEdrCreateConnectionTimeout);
+  RunLoopFor(kBrEdrCreateConnectionTimeout);
+
+  EXPECT_FALSE(status_a);
+  EXPECT_TRUE(status_b);
+  EXPECT_EQ(status_b.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(peer_b, connection));
+  EXPECT_TRUE(NotConnected(peer_a));
+  EXPECT_TRUE(IsConnected(peer_b));
+}
+
+// TODO(BT-819) Connecting a device that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP

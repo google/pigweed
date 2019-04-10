@@ -30,6 +30,7 @@ using bt::gap::DeviceId;
 using bt::sm::IOCapability;
 using fidl_helpers::DeviceIdFromString;
 using fidl_helpers::NewFidlError;
+using fidl_helpers::StatusToFidl;
 using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -70,7 +71,7 @@ HostServer::HostServer(zx::channel channel,
       });
   adapter->set_auto_connect_callback([self](auto conn_ref) {
     if (self) {
-      self->OnConnect(std::move(conn_ref), true);
+      self->RegisterLowEnergyConnection(std::move(conn_ref), true);
     }
   });
 }
@@ -118,7 +119,7 @@ void HostServer::SetLocalName(::std::string local_name,
           state.local_name = std::move(local_name);
           self->binding()->events().OnAdapterStateChanged(std::move(state));
         }
-        callback(fidl_helpers::StatusToFidl(status, "Can't Set Local Name"));
+        callback(StatusToFidl(status, "Can't Set Local Name"));
       });
 }
 
@@ -221,8 +222,8 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
 
         if (!status || !session) {
           bt_log(TRACE, "bt-host", "failed to start BR/EDR discovery session");
-          callback(fidl_helpers::StatusToFidl(
-              status, "Failed to start BR/EDR discovery session"));
+          callback(
+              StatusToFidl(status, "Failed to start BR/EDR discovery session"));
           self->requesting_discovery_ = false;
           return;
         }
@@ -265,7 +266,7 @@ void HostServer::SetConnectable(bool connectable,
   }
   bredr_conn_manager->SetConnectable(
       connectable, [callback = std::move(callback)](const auto& status) {
-        callback(fidl_helpers::StatusToFidl(status));
+        callback(StatusToFidl(status));
       });
 }
 
@@ -346,8 +347,8 @@ void HostServer::OnRemoteDeviceBonded(
       fidl_helpers::NewBondingData(*adapter(), remote_device));
 }
 
-void HostServer::OnConnect(bt::gap::LowEnergyConnectionRefPtr conn_ref,
-                           bool auto_connect) {
+void HostServer::RegisterLowEnergyConnection(
+    bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
   bt::gap::DeviceId id = conn_ref->device_identifier();
@@ -410,8 +411,7 @@ void HostServer::SetDiscoverable(bool discoverable,
 
         if (!status || !session) {
           bt_log(TRACE, "bt-host", "failed to set discoverable");
-          callback(
-              fidl_helpers::StatusToFidl(status, "Failed to set discoverable"));
+          callback(StatusToFidl(status, "Failed to set discoverable"));
           self->requesting_discoverable_ = false;
           return;
         }
@@ -471,6 +471,9 @@ void HostServer::SetPairingDelegate(
   });
 }
 
+// Attempt to connect to device identified by |device_id|. The device must be
+// in our device cache. We will attempt to connect technologies (LowEnergy,
+// Classic or Dual-Mode) as the device claims to support when discovered
 void HostServer::Connect(::std::string device_id, ConnectCallback callback) {
   auto id = DeviceIdFromString(device_id);
   if (!id.has_value()) {
@@ -479,44 +482,74 @@ void HostServer::Connect(::std::string device_id, ConnectCallback callback) {
   }
   auto device = adapter()->remote_device_cache()->FindDeviceById(*id);
   if (!device) {
-    // We don't support connections to devices not in our cache
+    // We don't support connecting to devices that are not in our cache
     callback(NewFidlError(ErrorCode::NOT_FOUND,
                           "Cannot find device with the given ID"));
     return;
   }
 
+  // TODO(BT-649): Dual-mode currently not supported; if the device supports
+  // LowEnergy we assume LE. If a dual-mode device, we should attempt to connect
+  // both protocols.
   if (!device->le()) {
-    // TODO(NET-411): implement BR/EDR connect
-    // TODO(NET-411): If a dual-mode device, we attempt to connect both
-    // protocols, and if either fails, close the other and return failure
-    callback(
-        NewFidlError(ErrorCode::NOT_SUPPORTED,
-                     "Device does not support LowEnergy connections, and "
-                     "outgoing Classic connections are not yet supported"));
+    ConnectBrEdr(*id, std::move(callback));
     return;
   }
 
-  // TODO(NET-411): Once dual-mode is supported, this logic will vary depending
-  // on whether we are initiating a BR/EDR connection as well. We may want to
-  // refactor this into a separate ConnectLowEnergy method.
+  ConnectLowEnergy(*id, std::move(callback));
+}
+
+void HostServer::ConnectLowEnergy(DeviceId peer_id, ConnectCallback callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_complete = [self, callback = std::move(callback), peer_id = *id](
-                         auto status, auto conn_ref) {
+  auto on_complete = [self, callback = std::move(callback), peer_id](
+                         auto status, auto connection) {
     if (!status) {
-      ZX_DEBUG_ASSERT(!conn_ref);
+      ZX_ASSERT(!connection);
       bt_log(TRACE, "bt-host", "failed to connect to connect to device (id %s)",
              bt_str(peer_id));
-      callback(fidl_helpers::StatusToFidl(status, "failed to connect"));
-    } else {
-      ZX_DEBUG_ASSERT(conn_ref);
-      ZX_DEBUG_ASSERT(peer_id == conn_ref->device_identifier());
-      if (self) {
-        self->OnConnect(std::move(conn_ref), false);
-      }
-      callback(Status());
+      callback(StatusToFidl(status, "failed to connect"));
+      return;
     }
+
+    // We must be connected and to the right device
+    ZX_ASSERT(connection);
+    ZX_ASSERT(peer_id == connection->device_identifier());
+
+    callback(Status());
+
+    if (self)
+      self->RegisterLowEnergyConnection(std::move(connection), false);
   };
-  adapter()->le_connection_manager()->Connect(*id, std::move(on_complete));
+  if (!adapter()->le_connection_manager()->Connect(peer_id,
+                                                   std::move(on_complete))) {
+    callback(NewFidlError(ErrorCode::FAILED, "failed to connect"));
+  }
+}
+
+// Initiate an outgoing Br/Edr connection, unless already connected
+// Br/Edr connections are host-wide, and stored in BrEdrConnectionManager
+void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
+  auto on_complete = [callback = std::move(callback), peer_id](
+                         auto status, auto connection) {
+    if (!status) {
+      ZX_ASSERT(!connection);
+      bt_log(TRACE, "bt-host", "failed to connect to connect to device (id %s)",
+             bt_str(peer_id));
+      callback(StatusToFidl(status, "failed to connect"));
+      return;
+    }
+
+    // We must be connected and to the right device
+    ZX_ASSERT(connection);
+    ZX_ASSERT(peer_id == connection->peer_id());
+
+    callback(Status());
+  };
+
+  if (!adapter()->bredr_connection_manager()->Connect(peer_id,
+                                                      std::move(on_complete))) {
+    callback(NewFidlError(ErrorCode::FAILED, "failed to connect"));
+  }
 }
 
 void HostServer::RequestLowEnergyCentral(
@@ -611,8 +644,7 @@ void HostServer::CompletePairing(DeviceId id, bt::sm::Status status) {
   bt_log(INFO, "bt-host", "pairing complete for device: %s, status: %s",
          bt_str(id), status.ToString().c_str());
   ZX_DEBUG_ASSERT(pairing_delegate_);
-  pairing_delegate_->OnPairingComplete(id.ToString(),
-                                       fidl_helpers::StatusToFidl(status));
+  pairing_delegate_->OnPairingComplete(id.ToString(), StatusToFidl(status));
 }
 
 void HostServer::ConfirmPairing(DeviceId id, ConfirmCallback confirm) {

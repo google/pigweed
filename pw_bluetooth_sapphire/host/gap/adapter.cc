@@ -559,8 +559,11 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
   // Initialize the BR/EDR manager objects if the controller supports BR/EDR.
   if (state_.IsBREDRSupported()) {
+    common::DeviceAddress local_bredr_address(
+        common::DeviceAddress::Type::kBREDR, state_.controller_address());
+
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci_, &device_cache_, data_domain_,
+        hci_, &device_cache_, local_bredr_address, data_domain_,
         state_.features().HasBit(0, hci::LMPFeature::kInterlacedPageScan));
 
     hci::InquiryMode mode = hci::InquiryMode::kStandard;
