@@ -240,7 +240,7 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
       });
 }
 
-void Adapter::SetClassOfDevice(common::DeviceClass dev_class,
+void Adapter::SetDeviceClass(common::DeviceClass dev_class,
                                hci::StatusCallback callback) {
   auto write_dev_class = hci::CommandPacket::New(
       hci::kWriteClassOfDevice, sizeof(hci::WriteClassOfDeviceCommandParams));
@@ -591,7 +591,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   // TODO(BT-641): set this from a platform configuration file
   common::DeviceClass dev_class(common::DeviceClass::MajorClass::kComputer);
   dev_class.SetServiceClasses({common::DeviceClass::ServiceClass::kAudio});
-  SetClassOfDevice(dev_class, [](const auto&) {});
+  SetDeviceClass(dev_class, [](const auto&) {});
 
   // This completes the initialization sequence.
   init_state_ = State::kInitialized;

@@ -46,6 +46,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       AddBondedDevicesCallback callback) override;
   void SetLocalName(::std::string local_name,
                     SetLocalNameCallback callback) override;
+  void SetDeviceClass(
+      fuchsia::bluetooth::control::DeviceClass device_class,
+      SetDeviceClassCallback callback) override;
 
   void StartDiscovery(StartDiscoveryCallback callback) override;
   void StopDiscovery(StopDiscoveryCallback callback) override;

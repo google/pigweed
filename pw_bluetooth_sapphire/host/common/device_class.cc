@@ -69,6 +69,15 @@ DeviceClass::DeviceClass(std::initializer_list<uint8_t> bytes) {
   std::copy(bytes.begin(), bytes.end(), bytes_.begin());
 }
 
+DeviceClass::DeviceClass(uint32_t value) {
+  ZX_DEBUG_ASSERT(value < 1 << 24);  // field should only populate 24 bits
+  bytes_ = {
+      static_cast<uint8_t>((value >> 0) & 0xFF),
+      static_cast<uint8_t>((value >> 8) & 0xFF),
+      static_cast<uint8_t>((value >> 16) & 0xFF),
+  };
+}
+
 void DeviceClass::SetServiceClasses(
     const std::unordered_set<ServiceClass>& classes) {
   for (const auto& c : classes) {

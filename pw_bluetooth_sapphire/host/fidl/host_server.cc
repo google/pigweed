@@ -122,6 +122,22 @@ void HostServer::SetLocalName(::std::string local_name,
       });
 }
 
+void HostServer::SetDeviceClass(
+    fuchsia::bluetooth::control::DeviceClass device_class,
+    SetDeviceClassCallback callback) {
+  // Device Class values must only contain data in the lower 3 bytes.
+  if (device_class.value >= 1 << 24) {
+    callback(
+        NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Can't Set Device Class"));
+    return;
+  }
+  bt::common::DeviceClass dev_class(device_class.value);
+  adapter()->SetDeviceClass(
+      dev_class, [callback = std::move(callback)](auto status) {
+        callback(fidl_helpers::StatusToFidl(status, "Can't Set Device Class"));
+      });
+}
+
 void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
   auto le_manager = adapter()->le_discovery_manager();
   if (!le_manager) {
