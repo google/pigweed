@@ -5,20 +5,19 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
+#include <fbl/macros.h>
+#include <lib/async/dispatcher.h>
+#include <zircon/compiler.h>
+
 #include <memory>
 #include <mutex>
 #include <unordered_map>
-
-#include <lib/async/dispatcher.h>
-#include <zircon/compiler.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -54,7 +53,8 @@ class ChannelManager final {
  public:
   using LinkErrorCallback = fit::closure;
 
-  ChannelManager(fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* l2cap_dispatcher);
+  ChannelManager(fxl::RefPtr<hci::Transport> hci,
+                 async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
   // Registers the ACL connection with the L2CAP layer. L2CAP channels can be
@@ -174,7 +174,7 @@ class ChannelManager final {
   fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<ChannelManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ChannelManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManager);
 };
 
 }  // namespace l2cap

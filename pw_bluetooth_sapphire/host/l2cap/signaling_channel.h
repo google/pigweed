@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 
+#include <fbl/macros.h>
+
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -12,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -198,7 +199,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   fxl::WeakPtrFactory<SignalingChannel> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SignalingChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannel);
 };
 
 }  // namespace internal

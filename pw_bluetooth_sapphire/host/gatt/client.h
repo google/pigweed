@@ -11,8 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -109,8 +107,7 @@ class Client {
   // Reports the status of the procedure in |callback|.
   // HostError::kPacketMalformed is returned if |value| is too large to write in
   // a single ATT request.
-  virtual void WriteRequest(att::Handle handle,
-                            const common::ByteBuffer& value,
+  virtual void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
                             att::StatusCallback callback) = 0;
 
   // Sends an ATT Write Command with the requested |handle| and |value|. This
@@ -121,10 +118,8 @@ class Client {
 
   // Assigns a callback that will be called when a notification or indication
   // PDU is received.
-  using NotificationCallback =
-      fit::function<void(bool indication,
-                         att::Handle handle,
-                         const common::ByteBuffer& value)>;
+  using NotificationCallback = fit::function<void(
+      bool indication, att::Handle handle, const common::ByteBuffer& value)>;
   virtual void SetNotificationHandler(NotificationCallback handler) = 0;
 };
 

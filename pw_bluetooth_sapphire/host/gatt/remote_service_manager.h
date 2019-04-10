@@ -5,19 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 
-#include <map>
-#include <memory>
-#include <vector>
-
 #include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <zircon/assert.h>
 
+#include <map>
+#include <memory>
+#include <vector>
+
 #include "src/connectivity/bluetooth/core/bt-host/att/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -84,7 +82,7 @@ class RemoteServiceManager final {
     ServiceListCallback callback_;
     std::vector<common::UUID> uuids_;
 
-    FXL_DISALLOW_COPY_AND_ASSIGN(ServiceListRequest);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
 
   // Shuts down and cleans up all services.
@@ -109,7 +107,7 @@ class RemoteServiceManager final {
   fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(RemoteServiceManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);
 };
 
 }  // namespace internal

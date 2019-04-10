@@ -4,21 +4,19 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 
-#include <memory>
-
 #include <lib/async/cpp/task.h>
 #include <lib/zx/channel.h>
 
+#include <memory>
+
+#include "low_energy_address_manager.h"
+#include "low_energy_advertising_manager.h"
+#include "low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "src/lib/fxl/macros.h"
-
-#include "low_energy_address_manager.h"
-#include "low_energy_advertising_manager.h"
-#include "low_energy_discovery_manager.h"
 
 namespace bt {
 namespace gap {
@@ -69,7 +67,7 @@ class AdapterTest : public TestingBase {
   bool transport_closed_called_;
   std::unique_ptr<Adapter> adapter_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(AdapterTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
 };
 
 using GAP_AdapterTest = AdapterTest;

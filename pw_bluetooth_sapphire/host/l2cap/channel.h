@@ -5,18 +5,19 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_H_
 
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
+#include <lib/async/dispatcher.h>
+#include <lib/fit/function.h>
+#include <zircon/compiler.h>
+
 #include <atomic>
 #include <climits>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <queue>
-
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
-#include <lib/async/dispatcher.h>
-#include <lib/fit/function.h>
-#include <zircon/compiler.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -26,7 +27,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -168,7 +168,7 @@ class Channel : public fbl::RefCounted<Channel> {
   const uint16_t tx_mtu_;
   const uint16_t rx_mtu_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Channel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
 
 namespace internal {
@@ -239,7 +239,7 @@ class ChannelImpl : public Channel {
   std::queue<common::ByteBufferPtr, std::list<common::ByteBufferPtr>>
       pending_rx_sdus_ __TA_GUARDED(mtx_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ChannelImpl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };
 
 }  // namespace internal

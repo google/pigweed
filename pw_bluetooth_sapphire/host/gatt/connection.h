@@ -5,15 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 
+#include <memory>
+
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 
@@ -66,7 +65,7 @@ class Connection final {
   std::unique_ptr<Server> server_;
   std::unique_ptr<RemoteServiceManager> remote_service_manager_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Connection);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };
 
 }  // namespace internal

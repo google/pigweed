@@ -221,7 +221,7 @@ class BrEdrCommandHandler final {
                        ChannelId local_cid = kInvalidChannelId,
                        ChannelId remote_cid = kInvalidChannelId);
     virtual ~Responder() = default;
-    FXL_DISALLOW_COPY_AND_ASSIGN(Responder);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Responder);
 
     ChannelId local_cid() const { return local_cid_; }
     ChannelId remote_cid() const { return remote_cid_; }
@@ -297,7 +297,7 @@ class BrEdrCommandHandler final {
   // Disallow copy even though there's no state because having multiple
   // BrEdrCommandHandlers in the same scope is likely due to a bug or is at
   // least redundant.
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrCommandHandler);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrCommandHandler);
 
   // Outbound request sending methods. Response callbacks are required to be
   // non-empty. The callbacks are wrapped and moved into the SignalingChannel

@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_H_
 
-#include <memory>
-#include <string>
-
+#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
+
+#include <memory>
+#include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
@@ -19,7 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -287,7 +287,7 @@ class Adapter final {
   // invalidating before other members are destroyed.
   fxl::WeakPtrFactory<Adapter> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Adapter);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Adapter);
 };
 
 }  // namespace gap

@@ -5,9 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TX_ENGINE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TX_ENGINE_H_
 
-#include <zircon/assert.h>
-
 #include <lib/fit/function.h>
+#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -54,7 +53,7 @@ class TxEngine {
   const SendBasicFrameCallback send_basic_frame_callback_;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(TxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);
 };
 
 }  // namespace internal

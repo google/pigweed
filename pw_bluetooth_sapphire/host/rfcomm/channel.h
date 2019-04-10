@@ -5,17 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_H_
 
-#include <queue>
-
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+
+#include <queue>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/frames.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace rfcomm {
@@ -86,7 +86,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // registered.
   virtual void Receive(common::ByteBufferPtr data) = 0;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Channel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
 
 namespace internal {

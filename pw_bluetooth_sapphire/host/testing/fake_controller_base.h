@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_
 
+#include <fbl/macros.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/zx/channel.h>
 #include <zircon/device/bt-hci.h>
@@ -12,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace testing {
@@ -75,11 +75,9 @@ class FakeControllerBase {
  private:
   // Read and handle packets received over the channels.
   void HandleCommandPacket(async_dispatcher_t* dispatcher,
-                           async::WaitBase* wait,
-                           zx_status_t wait_status,
+                           async::WaitBase* wait, zx_status_t wait_status,
                            const zx_packet_signal_t* signal);
-  void HandleACLPacket(async_dispatcher_t* dispatcher,
-                       async::WaitBase* wait,
+  void HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                        zx_status_t wait_status,
                        const zx_packet_signal_t* signal);
 
@@ -96,12 +94,11 @@ class FakeControllerBase {
 
   async::WaitMethod<FakeControllerBase,
                     &FakeControllerBase::HandleCommandPacket>
-                    cmd_channel_wait_{this};
-  async::WaitMethod<FakeControllerBase,
-                    &FakeControllerBase::HandleACLPacket>
-                    acl_channel_wait_{this};
+      cmd_channel_wait_{this};
+  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleACLPacket>
+      acl_channel_wait_{this};
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeControllerBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerBase);
 };
 
 }  // namespace testing

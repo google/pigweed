@@ -4,13 +4,13 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
 
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gatt {
@@ -68,7 +68,7 @@ class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
   fxl::RefPtr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GATT_ServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT_ServerTest);
 };
 
 TEST_F(GATT_ServerTest, ExchangeMTURequestInvalidPDU) {

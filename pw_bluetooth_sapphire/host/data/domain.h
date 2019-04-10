@@ -5,13 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 #include <lib/zx/socket.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace data {
@@ -177,7 +177,7 @@ class Domain : public fbl::RefCounted<Domain> {
   virtual ~Domain() = default;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(Domain);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Domain);
 };
 
 }  // namespace data

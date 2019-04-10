@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LE_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LE_SIGNALING_CHANNEL_H_
 
+#include <fbl/macros.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -57,7 +57,7 @@ class LESignalingChannel final : public SignalingChannel {
   ConnectionParameterUpdateCallback conn_param_update_cb_;
   async_dispatcher_t* dispatcher_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LESignalingChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannel);
 };
 
 }  // namespace internal

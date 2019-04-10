@@ -10,7 +10,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace common {
@@ -42,7 +41,7 @@ class SlabBuffer : public MutableByteBuffer {
   // requested.
   common::StaticByteBuffer<BackingBufferSize> buffer_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SlabBuffer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBuffer);
 };
 
 namespace internal {
@@ -55,8 +54,7 @@ class SlabBufferImpl;
 template <size_t BufferSize, size_t NumBuffers>
 using SlabBufferTraits =
     SlabAllocatorTraits<internal::SlabBufferImpl<BufferSize, NumBuffers>,
-                        sizeof(SlabBuffer<BufferSize>),
-                        NumBuffers>;
+                        sizeof(SlabBuffer<BufferSize>), NumBuffers>;
 
 namespace internal {
 
@@ -68,7 +66,7 @@ class SlabBufferImpl
   explicit SlabBufferImpl(size_t size) : SlabBuffer<BufferSize>(size) {}
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(SlabBufferImpl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBufferImpl);
 };
 
 }  // namespace internal

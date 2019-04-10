@@ -33,7 +33,7 @@ class FakeGattServer final {
   // The fake device that owns this server. Must outlive this instance.
   FakeDevice* dev_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeGattServer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeGattServer);
 };
 
 }  // namespace testing

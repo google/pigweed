@@ -4,13 +4,13 @@
 
 #include "remote_service_manager.h"
 
+#include <fbl/macros.h>
+
 #include <vector>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/lib/fxl/macros.h"
-#include "lib/gtest/test_loop_fixture.h"
-
 #include "fake_client.h"
+#include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace gatt {
@@ -57,12 +57,11 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
  protected:
   void SetUp() override {
-    auto client =
-        std::make_unique<testing::FakeClient>(dispatcher());
+    auto client = std::make_unique<testing::FakeClient>(dispatcher());
     fake_client_ = client.get();
 
-    mgr_ = std::make_unique<RemoteServiceManager>(std::move(client),
-                                                  dispatcher());
+    mgr_ =
+        std::make_unique<RemoteServiceManager>(std::move(client), dispatcher());
   }
 
   void TearDown() override {
@@ -148,7 +147,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   // The memory is owned by |mgr_|.
   testing::FakeClient* fake_client_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GATT_RemoteServiceManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT_RemoteServiceManagerTest);
 };
 
 TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {

@@ -4,13 +4,14 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {
@@ -168,7 +169,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
 
   LowEnergyScanner::ScanStatus last_scan_status_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LegacyLowEnergyScannerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScannerTest);
 };
 
 using HCI_LegacyLowEnergyScannerTest = LegacyLowEnergyScannerTest;

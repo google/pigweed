@@ -4,10 +4,9 @@
 
 #include "le_signaling_channel.h"
 
+#include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/lib/fxl/arraysize.h"
-
-#include "fake_channel_test.h"
 
 namespace bt {
 namespace l2cap {
@@ -39,7 +38,7 @@ class LESignalingChannelTest : public testing::FakeChannelTest {
  private:
   std::unique_ptr<LESignalingChannel> sig_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LESignalingChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannelTest);
 };
 
 using L2CAP_LESignalingChannelTest = LESignalingChannelTest<>;

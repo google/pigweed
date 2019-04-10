@@ -5,12 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 
-#include <map>
-
 #include <fbl/function.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <lib/zx/socket.h>
+
+#include <map>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -18,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
-
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -102,7 +101,7 @@ class Server final {
 
   fxl::WeakPtrFactory<Server> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Server);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
 };
 
 }  // namespace sdp

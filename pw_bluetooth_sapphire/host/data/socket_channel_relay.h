@@ -5,19 +5,18 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_CHANNEL_RELAY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_CHANNEL_RELAY_H_
 
-#include <deque>
-
+#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/fit/function.h>
 #include <zircon/status.h>
 
-#include "src/lib/fxl/macros.h"
+#include <deque>
+
+#include "lib/zx/socket.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
-#include "lib/zx/socket.h"
-
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
 namespace data {
@@ -155,7 +154,7 @@ class SocketChannelRelay final {
   const fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<SocketChannelRelay> weak_ptr_factory_;  // Keep last.
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SocketChannelRelay);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
 };
 
 }  // namespace internal

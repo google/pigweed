@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_
 
+#include <fbl/macros.h>
+
 #include <list>
 #include <memory>
 
@@ -12,8 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bt {
@@ -145,7 +145,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // less space efficient.
   GroupingList groupings_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Database);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
 };
 
 }  // namespace att

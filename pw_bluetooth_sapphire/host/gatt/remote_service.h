@@ -6,17 +6,16 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_H_
 
 #include <fbl/intrusive_hash_table.h>
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace gatt {
@@ -62,7 +61,8 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Adds a handler which will be called when this service gets removed.
   // Returns false if the service was already shut down. |callback| will be
   // posted on |dispatcher|.
-  bool AddRemovedHandler(fit::closure handler, async_dispatcher_t* dispatcher = nullptr);
+  bool AddRemovedHandler(fit::closure handler,
+                         async_dispatcher_t* dispatcher = nullptr);
 
   // Returns true if all contents of this service have been discovered. This can
   // only be called on the GATT thread and is primarily intended for unit tests.
@@ -84,8 +84,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // NOTE: Providing a |dispatcher| results in a copy of the resulting value.
   using ReadValueCallback =
       fit::function<void(att::Status, const common::ByteBuffer&)>;
-  void ReadCharacteristic(IdType id,
-                          ReadValueCallback callback,
+  void ReadCharacteristic(IdType id, ReadValueCallback callback,
                           async_dispatcher_t* dispatcher = nullptr);
 
   // Performs the "Read Long Characteristic Values" procedure which allows
@@ -102,8 +101,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Fails if characteristics have not been discovered.
   //
   // TODO(armansito): Add a ByteBuffer version.
-  void WriteCharacteristic(IdType id,
-                           std::vector<uint8_t> value,
+  void WriteCharacteristic(IdType id, std::vector<uint8_t> value,
                            att::StatusCallback callback,
                            async_dispatcher_t* dispatcher = nullptr);
 
@@ -186,8 +184,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   using PendingCharacteristicCallback = PendingCallback<CharacteristicCallback>;
 
   // A RemoteService can only be constructed by a RemoteServiceManager.
-  RemoteService(const ServiceData& service_data,
-                fxl::WeakPtr<Client> client,
+  RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client,
                 async_dispatcher_t* gatt_dispatcher);
   ~RemoteService();
 
@@ -219,7 +216,8 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Used to complete a characteristic discovery request.
   void ReportCharacteristics(att::Status status,
                              CharacteristicCallback callback,
-                             async_dispatcher_t* dispatcher) __TA_EXCLUDES(mtx_);
+                             async_dispatcher_t* dispatcher)
+      __TA_EXCLUDES(mtx_);
 
   // Completes all pending characteristic discovery requests.
   void CompleteCharacteristicDiscovery(att::Status status) __TA_EXCLUDES(mtx_);
@@ -240,7 +238,8 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // procedure. Called by ReadLongCharacteristic().
   void ReadLongHelper(att::Handle value_handle, uint16_t offset,
                       common::MutableByteBufferPtr buffer, size_t bytes_read,
-                      ReadValueCallback callback, async_dispatcher_t* dispatcher);
+                      ReadValueCallback callback,
+                      async_dispatcher_t* dispatcher);
 
   // Returns true if characteristic discovery has completed. This must be
   // accessed only through |gatt_dispatcher_|.
@@ -296,7 +295,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Called by ShutDown().
   std::vector<PendingClosure> rm_handlers_ __TA_GUARDED(mtx_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(RemoteService);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
 };
 
 }  // namespace gatt

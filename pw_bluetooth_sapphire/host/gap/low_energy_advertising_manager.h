@@ -92,7 +92,7 @@ class LowEnergyAdvertisingManager {
   // invalidate it's pointers before other members are destroyed.
   fxl::WeakPtrFactory<LowEnergyAdvertisingManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyAdvertisingManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManager);
 };
 
 }  // namespace gap

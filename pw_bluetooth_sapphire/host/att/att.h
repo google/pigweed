@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 
+#include <fbl/macros.h>
+#include <zircon/compiler.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
-#include <zircon/compiler.h>
-
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/lib/fxl/macros.h"
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
 namespace bt {
 namespace att {
@@ -117,7 +117,8 @@ enum class ExecuteWriteFlag : uint8_t {
 };
 
 struct AttributeData {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(AttributeData);
+  AttributeData() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeData);
 
   Handle handle;
   uint8_t value[];
@@ -184,7 +185,8 @@ constexpr OpCode kFindByTypeValueRequest = 0x06;
 constexpr OpCode kFindByTypeValueResponse = 0x07;
 
 struct FindByTypeValueRequestParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(FindByTypeValueRequestParams);
+  FindByTypeValueRequestParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(FindByTypeValueRequestParams);
 
   Handle start_handle;
   Handle end_handle;
@@ -221,7 +223,8 @@ using ReadByTypeRequestParams16 = ReadByTypeRequestParams<UUIDType::k16Bit>;
 using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
 
 struct ReadByTypeResponseParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(ReadByTypeResponseParams);
+  ReadByTypeResponseParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByTypeResponseParams);
 
   uint8_t length;
   AttributeData attribute_data_list[];
@@ -272,7 +275,8 @@ using ReadByGroupTypeRequestParams16 = ReadByTypeRequestParams16;
 using ReadByGroupTypeRequestParams128 = ReadByTypeRequestParams128;
 
 struct AttributeGroupDataEntry {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(AttributeGroupDataEntry);
+  AttributeGroupDataEntry() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(AttributeGroupDataEntry);
 
   Handle start_handle;
   Handle group_end_handle;
@@ -280,7 +284,8 @@ struct AttributeGroupDataEntry {
 } __PACKED;
 
 struct ReadByGroupTypeResponseParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(ReadByGroupTypeResponseParams);
+  ReadByGroupTypeResponseParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ReadByGroupTypeResponseParams);
 
   uint8_t length;
   AttributeGroupDataEntry attribute_data_list[];
@@ -301,7 +306,8 @@ constexpr OpCode kPrepareWriteRequest = 0x16;
 constexpr OpCode kPrepareWriteResponse = 0x17;
 
 struct PrepareWriteRequestParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(PrepareWriteRequestParams);
+  PrepareWriteRequestParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(PrepareWriteRequestParams);
 
   Handle handle;
   uint16_t offset;

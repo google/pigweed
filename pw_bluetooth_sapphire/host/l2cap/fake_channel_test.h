@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 
+#include <fbl/macros.h>
+
 #include <memory>
 
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/lib/fxl/macros.h"
-#include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
 namespace l2cap {
@@ -71,7 +72,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
  private:
   fxl::WeakPtr<FakeChannel> fake_chan_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
 };
 
 }  // namespace testing

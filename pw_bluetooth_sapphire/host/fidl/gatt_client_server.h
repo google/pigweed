@@ -5,14 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_CLIENT_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_CLIENT_SERVER_H_
 
+#include <fbl/macros.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
 #include "lib/fidl/cpp/binding.h"
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_remote_service_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -44,7 +43,7 @@ class GattClientServer
 
   fxl::WeakPtrFactory<GattClientServer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GattClientServer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattClientServer);
 };
 
 }  // namespace bthost

@@ -7,11 +7,11 @@
 
 #include <endian.h>
 #include <fbl/intrusive_double_list.h>
+#include <fbl/macros.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -107,7 +107,7 @@ class PDU final {
   // is equal to the length of the frame (i.e. length() + sizeof(BasicHeader)).
   FragmentList fragments_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(PDU);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
 };
 
 }  // namespace l2cap

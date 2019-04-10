@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_MANAGER_H_
 
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
@@ -16,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -232,7 +231,7 @@ class BrEdrConnectionManager final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<BrEdrConnectionManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrConnectionManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManager);
 };
 
 }  // namespace gap

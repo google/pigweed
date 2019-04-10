@@ -4,14 +4,13 @@
 
 #include "gatt_server_server.h"
 
+#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
-
-#include "helpers.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -190,7 +189,7 @@ class GattServerServer::LocalServiceImpl
   // destruction).
   LocalServiceDelegatePtr delegate_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LocalServiceImpl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceImpl);
 };
 
 GattServerServer::GattServerServer(

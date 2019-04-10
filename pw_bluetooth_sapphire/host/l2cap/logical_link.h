@@ -5,15 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LOGICAL_LINK_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LOGICAL_LINK_H_
 
-#include <list>
-#include <memory>
-#include <mutex>
-#include <unordered_map>
-
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
+
+#include <list>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -24,7 +25,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -230,7 +230,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LogicalLink);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
 };
 
 }  // namespace internal

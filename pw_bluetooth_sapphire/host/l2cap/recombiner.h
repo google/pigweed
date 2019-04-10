@@ -6,13 +6,13 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_RECOMBINER_H_
 
 #include <endian.h>
+#include <fbl/macros.h>
 
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -72,7 +72,7 @@ class Recombiner final {
   // The PDU currently being constructed, if any.
   std::optional<PDU> pdu_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Recombiner);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Recombiner);
 };
 
 }  // namespace l2cap

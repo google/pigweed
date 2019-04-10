@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
 
-#include <memory>
-
 #include <lib/fit/function.h>
 #include <src/lib/fxl/memory/weak_ptr.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
@@ -113,7 +113,7 @@ class DynamicChannel {
   ChannelId remote_cid_;
   bool opened_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(DynamicChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannel);
 };
 
 using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;

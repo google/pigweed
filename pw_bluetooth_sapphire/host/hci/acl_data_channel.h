@@ -5,16 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_
 
-#include <list>
-#include <mutex>
-#include <queue>
-#include <unordered_map>
-
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
+
+#include <list>
+#include <mutex>
+#include <queue>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
@@ -201,10 +201,8 @@ class ACLDataChannel final {
       __TA_REQUIRES(send_mutex_);
 
   // Read Ready Handler for |channel_|
-  void OnChannelReady(async_dispatcher_t* dispatcher,
-                      async::WaitBase* wait,
-                      zx_status_t status,
-                      const zx_packet_signal_t* signal);
+  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                      zx_status_t status, const zx_packet_signal_t* signal);
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
@@ -283,7 +281,7 @@ class ACLDataChannel final {
   std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_
       __TA_GUARDED(send_mutex_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ACLDataChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
 };
 
 }  // namespace hci

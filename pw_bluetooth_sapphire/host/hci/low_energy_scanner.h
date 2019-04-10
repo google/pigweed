@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_
 
-#include <set>
-
+#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
+
+#include <set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
@@ -205,7 +205,7 @@ class LowEnergyScanner {
   // Command runner for all HCI commands sent out by implementations.
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyScanner);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyScanner);
 };
 
 }  // namespace hci

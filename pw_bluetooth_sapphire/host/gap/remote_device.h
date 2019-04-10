@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_
 
+#include <fbl/macros.h>
+
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -15,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gap {
@@ -399,7 +400,7 @@ class RemoteDevice final {
   // device is known to support BR/EDR.
   std::optional<BrEdrData> bredr_data_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(RemoteDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteDevice);
 };
 
 }  // namespace gap

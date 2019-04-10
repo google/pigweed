@@ -7,6 +7,9 @@
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
+#include "pairing_delegate.h"
+#include "remote_device.h"
+#include "remote_device_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -15,12 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-
 #include "src/lib/fxl/strings/string_printf.h"
-
-#include "pairing_delegate.h"
-#include "remote_device.h"
-#include "remote_device_cache.h"
 
 namespace bt {
 namespace gap {
@@ -322,7 +320,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
   fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnection);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnection);
 };
 
 }  // namespace internal

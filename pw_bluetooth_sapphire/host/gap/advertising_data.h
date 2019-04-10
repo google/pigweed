@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
 
+#include <fuchsia/bluetooth/le/cpp/fidl.h>
+
 #include <cstddef>
 #include <unordered_map>
 #include <unordered_set>
-
-#include <fuchsia/bluetooth/le/cpp/fidl.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -148,7 +148,7 @@ class AdvertisingData {
 
   std::unordered_set<std::string> uris_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(AdvertisingData);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingData);
 };
 
 // Convenience classes for reading and writing the contents

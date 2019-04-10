@@ -8,8 +8,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -99,7 +97,7 @@ class Server final {
 
   fxl::WeakPtrFactory<Server> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Server);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
 };
 
 }  // namespace gatt

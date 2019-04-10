@@ -5,16 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_REMOTE_SERVICE_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_REMOTE_SERVICE_SERVER_H_
 
-#include <unordered_map>
-
+#include <fbl/macros.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
-#include "lib/fidl/cpp/binding.h"
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include <unordered_map>
 
+#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -57,7 +56,7 @@ class GattRemoteServiceServer
 
   fxl::WeakPtrFactory<GattRemoteServiceServer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GattRemoteServiceServer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattRemoteServiceServer);
 };
 
 }  // namespace bthost

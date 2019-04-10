@@ -16,8 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -237,7 +235,7 @@ class Bearer final {
 
   fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Bearer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);
 };
 
 }  // namespace sm

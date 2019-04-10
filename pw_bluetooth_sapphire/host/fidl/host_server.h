@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 
+#include <fbl/macros.h>
 #include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <lib/zx/channel.h>
@@ -20,7 +21,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
@@ -46,9 +46,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       AddBondedDevicesCallback callback) override;
   void SetLocalName(::std::string local_name,
                     SetLocalNameCallback callback) override;
-  void SetDeviceClass(
-      fuchsia::bluetooth::control::DeviceClass device_class,
-      SetDeviceClassCallback callback) override;
+  void SetDeviceClass(fuchsia::bluetooth::control::DeviceClass device_class,
+                      SetDeviceClassCallback callback) override;
 
   void StartDiscovery(StartDiscoveryCallback callback) override;
   void StopDiscovery(StopDiscoveryCallback callback) override;
@@ -163,7 +162,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<HostServer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(HostServer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServer);
 };
 
 }  // namespace bthost

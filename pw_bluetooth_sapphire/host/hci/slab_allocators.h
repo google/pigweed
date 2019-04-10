@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <fbl/slab_allocator.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
-#include "src/lib/fxl/macros.h"
 
 // This file defines a fbl::SlabAllocator trait template that can be used to
 // slab-allocate instances of hci::Packet. It's signature is as follows:
@@ -113,7 +113,7 @@ class FixedSizePacket : public Packet<HeaderType> {
  private:
   common::StaticByteBuffer<BufferSize> buffer_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FixedSizePacket);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FixedSizePacket);
 };
 
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
@@ -124,8 +124,7 @@ class SlabPacket;
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
 using PacketTraits = common::SlabAllocatorTraits<
     internal::SlabPacket<HeaderType, BufferSize, NumBuffers>,
-    sizeof(internal::FixedSizePacket<HeaderType, BufferSize>),
-    NumBuffers>;
+    sizeof(internal::FixedSizePacket<HeaderType, BufferSize>), NumBuffers>;
 
 namespace internal {
 
@@ -138,7 +137,7 @@ class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
       : FixedSizePacket<HeaderType, BufferSize>(payload_size) {}
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(SlabPacket);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabPacket);
 };
 
 }  // namespace internal

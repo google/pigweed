@@ -4,10 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
+#include <fbl/macros.h>
+#include <zircon/assert.h>
+
 #include <memory>
 #include <vector>
-
-#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
@@ -19,8 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gap {
@@ -155,7 +154,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   DeviceList connected_devices_;
   DeviceList canceled_devices_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnectionManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManagerTest);
 };
 
 using GAP_LowEnergyConnectionManagerTest = LowEnergyConnectionManagerTest;

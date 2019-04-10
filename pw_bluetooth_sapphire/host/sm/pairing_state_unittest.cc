@@ -4,14 +4,13 @@
 
 #include "pairing_state.h"
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-
 #include "util.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 
@@ -369,7 +368,7 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
 
   fxl::WeakPtrFactory<SMP_PairingStateTest> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SMP_PairingStateTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_PairingStateTest);
 };
 
 class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
@@ -451,7 +450,7 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   }
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(SMP_InitiatorPairingTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_InitiatorPairingTest);
 };
 
 class SMP_ResponderPairingTest : public SMP_PairingStateTest {
@@ -543,7 +542,7 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
   }
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(SMP_ResponderPairingTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_ResponderPairingTest);
 };
 
 // Requesting pairing at the current security level should succeed immediately.

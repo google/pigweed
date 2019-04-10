@@ -5,16 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_
 
-#include <queue>
-#include <vector>
-
+#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+
+#include <queue>
+#include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace testing {
@@ -45,7 +45,7 @@ class CommandTransaction final {
   common::DynamicByteBuffer expected_;
   std::queue<common::DynamicByteBuffer> replies_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(CommandTransaction);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandTransaction);
 };
 
 // TestController allows unit tests to set up an expected sequence of HCI
@@ -96,7 +96,7 @@ class TestController : public FakeControllerBase {
   TransactionCallback transaction_callback_;
   async_dispatcher_t* transaction_dispatcher_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(TestController);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestController);
 };
 
 }  // namespace testing

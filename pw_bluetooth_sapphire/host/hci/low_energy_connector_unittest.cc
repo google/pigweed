@@ -4,16 +4,16 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 
-#include <vector>
-
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
+
+#include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {
@@ -93,7 +93,7 @@ class LowEnergyConnectorTest : public TestingBase {
   // Incoming connections.
   std::vector<std::unique_ptr<Connection>> in_connections_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnectorTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectorTest);
 };
 
 using HCI_LowEnergyConnectorTest = LowEnergyConnectorTest;

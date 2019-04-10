@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 
+#include <fbl/macros.h>
+#include <zircon/assert.h>
+#include <zircon/syscalls.h>
+
 #include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
 
-#include <zircon/assert.h>
-#include <zircon/syscalls.h>
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/strings/string_view.h"
 
 namespace bt {

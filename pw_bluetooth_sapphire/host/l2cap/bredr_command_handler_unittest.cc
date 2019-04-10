@@ -5,13 +5,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 
 #include <lib/async/cpp/task.h>
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
-#include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
 namespace l2cap {
@@ -32,7 +33,7 @@ class L2CAP_BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
  public:
   L2CAP_BrEdrCommandHandlerTest() = default;
   ~L2CAP_BrEdrCommandHandlerTest() override = default;
-  FXL_DISALLOW_COPY_AND_ASSIGN(L2CAP_BrEdrCommandHandlerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrCommandHandlerTest);
 
  protected:
   // TestLoopFixture overrides

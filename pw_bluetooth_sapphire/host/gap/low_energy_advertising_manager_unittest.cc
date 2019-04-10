@@ -4,18 +4,17 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 
-#include <map>
-
+#include <fbl/macros.h>
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
+#include <map>
+
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
-
-#include "src/lib/fxl/macros.h"
-#include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
 namespace gap {
@@ -121,7 +120,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   std::map<common::DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeLowEnergyAdvertiser);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
 
 using TestingBase = ::gtest::TestLoopFixture;
@@ -212,7 +211,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;
   std::unique_ptr<LowEnergyAdvertisingManager> adv_mgr_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GAP_LowEnergyAdvertisingManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GAP_LowEnergyAdvertisingManagerTest);
 };
 
 // Tests:

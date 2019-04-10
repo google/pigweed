@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_advertiser.h"
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -12,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 
@@ -103,7 +104,7 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   std::optional<Status> last_status_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(HCI_LegacyLowEnergyAdvertiserTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HCI_LegacyLowEnergyAdvertiserTest);
 };
 
 // TODO(jamuraa): Use typed tests to test LowEnergyAdvertiser common properties

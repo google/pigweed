@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 
+#include <fbl/macros.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
@@ -13,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -185,7 +185,7 @@ class Connection {
 
   // TODO(BT-715): Add a BREDRParameters struct.
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Connection);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };
 
 using ConnectionPtr = std::unique_ptr<Connection>;

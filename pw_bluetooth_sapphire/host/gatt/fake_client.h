@@ -82,8 +82,8 @@ class FakeClient final : public Client {
   }
 
   // Sets a callback which will run when WriteRequest gets called.
-  using WriteRequestCallback = fit::function<
-      void(att::Handle, const common::ByteBuffer&, att::StatusCallback)>;
+  using WriteRequestCallback = fit::function<void(
+      att::Handle, const common::ByteBuffer&, att::StatusCallback)>;
   void set_write_request_callback(WriteRequestCallback callback) {
     write_request_callback_ = std::move(callback);
   }
@@ -106,19 +106,16 @@ class FakeClient final : public Client {
   void ExchangeMTU(MTUCallback callback) override;
   void DiscoverPrimaryServices(ServiceCallback svc_callback,
                                att::StatusCallback status_callback) override;
-  void DiscoverCharacteristics(att::Handle range_start,
-                               att::Handle range_end,
+  void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::StatusCallback status_callback) override;
-  void DiscoverDescriptors(att::Handle range_start,
-                           att::Handle range_end,
+  void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadBlobRequest(att::Handle handle, uint16_t offset,
                        ReadCallback callback) override;
-  void WriteRequest(att::Handle handle,
-                    const common::ByteBuffer& value,
+  void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
                     att::StatusCallback callback) override;
   void WriteWithoutResponse(att::Handle handle,
                             const common::ByteBuffer& value) override;
@@ -162,7 +159,7 @@ class FakeClient final : public Client {
 
   fxl::WeakPtrFactory<FakeClient> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeClient);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeClient);
 };
 
 }  // namespace testing

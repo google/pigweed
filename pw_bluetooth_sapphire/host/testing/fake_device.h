@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_
 
+#include <fbl/macros.h>
+
 #include <unordered_set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -13,7 +15,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_gatt_server.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace testing {
@@ -29,8 +30,7 @@ class FakeDevice {
   // Response PDUs: we use this to test the condition in which the advertisement
   // is scannable but the host never receives a scan response.
   explicit FakeDevice(const common::DeviceAddress& address,
-                      bool connectable = true,
-                      bool scannable = true);
+                      bool connectable = true, bool scannable = true);
 
   void SetAdvertisingData(const common::ByteBuffer& data);
 
@@ -171,7 +171,7 @@ class FakeDevice {
 
   FakeGattServer gatt_server_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDevice);
 };
 
 }  // namespace testing

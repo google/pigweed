@@ -50,7 +50,7 @@ class PairingDelegate {
   PairingDelegate() = default;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(PairingDelegate);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingDelegate);
 };
 
 }  // namespace gap

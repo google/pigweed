@@ -5,22 +5,22 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_
 
+#include <ddk/protocol/bt/hci.h>
+#include <fbl/macros.h>
+#include <fbl/unique_fd.h>
+#include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <lib/fzl/fdio.h>
+#include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
 
-#include <ddk/protocol/bt/hci.h>
-#include <fbl/unique_fd.h>
-#include <lib/fzl/fdio.h>
-#include <lib/zx/channel.h>
-
 #include "src/lib/files/unique_fd.h"
-#include "src/lib/fxl/macros.h"
-#include <fuchsia/hardware/bluetooth/c/fidl.h>
 
 namespace bt {
 namespace hci {
 
-// A DeviceWrapper abstracts over a Bluetooth HCI device object and its fidl interface.
+// A DeviceWrapper abstracts over a Bluetooth HCI device object and its fidl
+// interface.
 class DeviceWrapper {
  public:
   virtual ~DeviceWrapper() = default;
@@ -50,7 +50,7 @@ class FidlDeviceWrapper : public DeviceWrapper {
  private:
   zx::channel device_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FidlDeviceWrapper);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FidlDeviceWrapper);
 };
 
 // A DeviceWrapper that obtains channels by calling bt-hci protocol ops.
@@ -67,7 +67,7 @@ class DdkDeviceWrapper : public DeviceWrapper {
  private:
   bt_hci_protocol_t hci_proto_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(DdkDeviceWrapper);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DdkDeviceWrapper);
 };
 
 // A pass-through DeviceWrapper that returns the channel endpoints that it is
@@ -90,7 +90,7 @@ class DummyDeviceWrapper : public DeviceWrapper {
   zx::channel cmd_channel_;
   zx::channel acl_data_channel_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(DummyDeviceWrapper);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
 };
 
 }  // namespace hci

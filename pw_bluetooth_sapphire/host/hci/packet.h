@@ -5,14 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_PACKET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_PACKET_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <zircon/assert.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/linked_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {
@@ -114,7 +114,7 @@ class PacketBase : public common::LinkedListable<T> {
  private:
   common::MutablePacketView<HeaderType> view_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(PacketBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PacketBase);
 };
 
 // The basic Packet template. See control_packets.h and acl_data_packet.h for

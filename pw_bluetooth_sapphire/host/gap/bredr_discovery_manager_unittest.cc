@@ -98,7 +98,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   RemoteDeviceCache device_cache_;
   std::unique_ptr<BrEdrDiscoveryManager> discovery_manager_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrDiscoveryManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManagerTest);
 };
 
 using GAP_BrEdrDiscoveryManagerTest = BrEdrDiscoveryManagerTest;

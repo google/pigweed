@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
 
-#include <memory>
-
 #include <endian.h>
+#include <fbl/macros.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace hci {

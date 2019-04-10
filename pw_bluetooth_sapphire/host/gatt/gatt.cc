@@ -4,20 +4,19 @@
 
 #include "gatt.h"
 
-#include <unordered_map>
-
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/task_domain.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/generic_attribute_service.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include <unordered_map>
 
 #include "client.h"
 #include "connection.h"
 #include "remote_service.h"
 #include "server.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/task_domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/generic_attribute_service.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
 namespace bt {
 namespace gatt {
@@ -290,12 +289,12 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     RemoteServiceWatcher watcher_;
     async_dispatcher_t* dispatcher_;
 
-    FXL_DISALLOW_COPY_AND_ASSIGN(RemoteServiceHandler);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceHandler);
   };
 
   std::vector<RemoteServiceHandler> remote_service_callbacks_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Impl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 }  // namespace

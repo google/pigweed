@@ -5,17 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
 
+#include <memory>
+
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-#include "src/lib/fxl/macros.h"
-#include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
 namespace testing {
@@ -66,30 +66,30 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
 
     transport_ = nullptr;
     test_device_ = nullptr;
- }
+  }
 
- // Directly initializes the ACL data channel and wires up its data rx
- // callback. It is OK to override the data rx callback after this is called.
- //
- // If data buffer information isn't provided, the ACLDataChannel will be
- // initialized with shared BR/EDR/LE buffers using the constants declared
- // above.
- bool InitializeACLDataChannel(
-     const hci::DataBufferInfo& bredr_buffer_info = hci::DataBufferInfo(
-         kDefaultMaxDataPacketLength, kDefaultMaxPacketCount),
-     const hci::DataBufferInfo& le_buffer_info = hci::DataBufferInfo()) {
-   if (!transport_->InitializeACLDataChannel(bredr_buffer_info,
-                                             le_buffer_info)) {
-     return false;
-   }
+  // Directly initializes the ACL data channel and wires up its data rx
+  // callback. It is OK to override the data rx callback after this is called.
+  //
+  // If data buffer information isn't provided, the ACLDataChannel will be
+  // initialized with shared BR/EDR/LE buffers using the constants declared
+  // above.
+  bool InitializeACLDataChannel(
+      const hci::DataBufferInfo& bredr_buffer_info = hci::DataBufferInfo(
+          kDefaultMaxDataPacketLength, kDefaultMaxPacketCount),
+      const hci::DataBufferInfo& le_buffer_info = hci::DataBufferInfo()) {
+    if (!transport_->InitializeACLDataChannel(bredr_buffer_info,
+                                              le_buffer_info)) {
+      return false;
+    }
 
-   transport_->acl_data_channel()->SetDataRxHandler(
-       std::bind(&FakeControllerTest<FakeControllerType>::OnDataReceived, this,
-                 std::placeholders::_1),
-       dispatcher());
+    transport_->acl_data_channel()->SetDataRxHandler(
+        std::bind(&FakeControllerTest<FakeControllerType>::OnDataReceived, this,
+                  std::placeholders::_1),
+        dispatcher());
 
-   return true;
- }
+    return true;
+  }
 
   // Sets a callback which will be invoked when we receive packets from the test
   // controller. |callback| will be posted on the test loop, thus no locking is
@@ -98,7 +98,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   // InitializeACLDataChannel() must be called once and its data rx handler must
   // not be overridden by tests for |callback| to work.
   void set_data_received_callback(
-       hci::ACLDataChannel::DataReceivedCallback callback) {
+      hci::ACLDataChannel::DataReceivedCallback callback) {
     data_received_callback_ = std::move(callback);
   }
 
@@ -164,7 +164,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   fxl::RefPtr<hci::Transport> transport_;
   hci::ACLDataChannel::DataReceivedCallback data_received_callback_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeControllerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerTest);
   static_assert(
       std::is_base_of<FakeControllerBase, FakeControllerType>::value,
       "TestBase must be used with a derivative of FakeControllerBase");

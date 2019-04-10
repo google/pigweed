@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_REGISTRY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_REGISTRY_H_
 
-#include <unordered_map>
-
 #include <lib/fit/function.h>
+
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
@@ -133,7 +133,7 @@ class DynamicChannelRegistry {
   // Maps local CIDs to alive dynamic channels on this logical link.
   std::unordered_map<ChannelId, DynamicChannelPtr> channels_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(DynamicChannelRegistry);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };
 
 }  // namespace internal

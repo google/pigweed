@@ -5,18 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
 
+#include <fbl/macros.h>
+#include <zircon/compiler.h>
+
 #include <array>
 #include <cstdint>
-
-#include <zircon/compiler.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
-
-#include "src/lib/fxl/macros.h"
 
 // This file contains general opcode/number and static packet definitions for
 // the Bluetooth Host-Controller Interface. Each packet payload structure
@@ -50,15 +49,11 @@ using PeriodicAdvertiserHandle = uint16_t;
 
 // Returns the OGF (OpCode Group Field) which occupies the upper 6-bits of the
 // opcode.
-inline uint8_t GetOGF(const OpCode opcode) {
-  return opcode >> 10;
-}
+inline uint8_t GetOGF(const OpCode opcode) { return opcode >> 10; }
 
 // Returns the OCF (OpCode Command Field) which occupies the lower 10-bits of
 // the opcode.
-inline uint16_t GetOCF(const OpCode opcode) {
-  return opcode & 0x3FF;
-}
+inline uint16_t GetOCF(const OpCode opcode) { return opcode & 0x3FF; }
 
 // Returns the opcode based on the given OGF and OCF fields.
 constexpr OpCode DefineOpCode(const uint8_t ogf, const uint16_t ocf) {
@@ -952,7 +947,8 @@ struct InquiryResult {
 } __PACKED;
 
 struct InquiryResultEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(InquiryResultEventParams);
+  InquiryResultEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultEventParams);
 
   // The number of responses included.
   uint8_t num_responses;
@@ -1042,7 +1038,8 @@ struct EncryptionChangeEventParams {
 constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
 
 struct RemoteNameRequestCompleteEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(RemoteNameRequestCompleteEventParams);
+  RemoteNameRequestCompleteEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteNameRequestCompleteEventParams);
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
@@ -1098,7 +1095,8 @@ struct ReadRemoteVersionInfoCompleteEventParams {
 constexpr EventCode kCommandCompleteEventCode = 0x0E;
 
 struct CommandCompleteEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(CommandCompleteEventParams);
+  CommandCompleteEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(CommandCompleteEventParams);
 
   // The Number of HCI command packets which are allowed to be sent to the
   // Controller from the Host.
@@ -1151,7 +1149,8 @@ struct NumberOfCompletedPacketsEventData {
 } __PACKED;
 
 struct NumberOfCompletedPacketsEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(NumberOfCompletedPacketsEventParams);
+  NumberOfCompletedPacketsEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedPacketsEventParams);
 
   uint8_t number_of_handles;
   NumberOfCompletedPacketsEventData data[];
@@ -1209,7 +1208,8 @@ struct InquiryResultRSSI {
 } __PACKED;
 
 struct InquiryResultWithRSSIEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(InquiryResultWithRSSIEventParams);
+  InquiryResultWithRSSIEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultWithRSSIEventParams);
 
   // The number of responses included.
   uint8_t num_responses;
@@ -1339,7 +1339,8 @@ struct UserConfirmationRequestEventParams {
 constexpr EventCode kLEMetaEventCode = 0x3E;
 
 struct LEMetaEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEMetaEventParams);
+  LEMetaEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEMetaEventParams);
 
   // The event code for the LE subevent.
   EventCode subevent_code;
@@ -1388,7 +1389,8 @@ struct LEConnectionCompleteSubeventParams {
 constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
 
 struct LEAdvertisingReportData {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEAdvertisingReportData);
+  LEAdvertisingReportData() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportData);
 
   // The event type.
   LEAdvertisingEventType event_type;
@@ -1419,7 +1421,8 @@ struct LEAdvertisingReportData {
 } __PACKED;
 
 struct LEAdvertisingReportSubeventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEAdvertisingReportSubeventParams);
+  LEAdvertisingReportSubeventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEAdvertisingReportSubeventParams);
 
   // Number of LEAdvertisingReportData instances contained in the array
   // |reports|.
@@ -1625,7 +1628,8 @@ struct LEDirectedAdvertisingReportData {
 } __PACKED;
 
 struct LEDirectedAdvertisingReportSubeventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEDirectedAdvertisingReportSubeventParams);
+  LEDirectedAdvertisingReportSubeventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEDirectedAdvertisingReportSubeventParams);
 
   // Number of LEAdvertisingReportData instances contained in the array
   // |reports|.
@@ -1658,7 +1662,8 @@ struct LEPHYUpdateCompleteSubeventParams {
 constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
 
 struct LEExtendedAdvertisingReportData {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEExtendedAdvertisingReportData);
+  LEExtendedAdvertisingReportData() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportData);
 
   // The advertising event type bitfield. For more information on how to
   // interpret this see kLEExtendedAdvEventType* constants in hci_constants.h
@@ -1718,7 +1723,8 @@ struct LEExtendedAdvertisingReportData {
 } __PACKED;
 
 struct LEExtendedAdvertisingReportSubeventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEExtendedAdvertisingReportSubeventParams);
+  LEExtendedAdvertisingReportSubeventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportSubeventParams);
 
   // Number of separate reports in the event.
   uint8_t num_reports;
@@ -1766,7 +1772,8 @@ struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
 constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
 
 struct LEPeriodicAdvertisingReportSubeventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEPeriodicAdvertisingReportSubeventParams);
+  LEPeriodicAdvertisingReportSubeventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEPeriodicAdvertisingReportSubeventParams);
 
   // (only the lower 12 bits are meaningful).
   PeriodicAdvertiserHandle sync_handle;
@@ -1866,7 +1873,8 @@ struct NumberOfCompletedDataBlocksEventData {
 } __PACKED;
 
 struct NumberOfCompletedDataBlocksEventParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(NumberOfCompletedDataBlocksEventParams);
+  NumberOfCompletedDataBlocksEventParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(NumberOfCompletedDataBlocksEventParams);
 
   uint16_t total_num_data_blocks;
   uint8_t number_of_handles;
@@ -2949,7 +2957,8 @@ constexpr OpCode kLESetExtendedAdvertisingData =
     LEControllerCommandOpCode(0x0037);
 
 struct LESetExtendedAdvertisingDataCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LESetExtendedAdvertisingDataCommandParams);
+  LESetExtendedAdvertisingDataCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -2977,8 +2986,8 @@ constexpr OpCode kLESetExtendedScanResponseData =
     LEControllerCommandOpCode(0x0038);
 
 struct LESetExtendedScanResponseDataCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(
-      LESetExtendedScanResponseDataCommandParams);
+  LESetExtendedScanResponseDataCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanResponseDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -3024,8 +3033,8 @@ struct LESetExtendedAdvertisingEnableData {
 } __PACKED;
 
 struct LESetExtendedAdvertisingEnableCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(
-      LESetExtendedAdvertisingEnableCommandParams);
+  LESetExtendedAdvertisingEnableCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingEnableCommandParams);
 
   // Enable or Disable extended advertising.
   GenericEnableParam enable;
@@ -3104,7 +3113,8 @@ constexpr OpCode kLESetPeriodicAdvertisingData =
     LEControllerCommandOpCode(0x003F);
 
 struct LESetPeriodicAdvertisingDataCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LESetPeriodicAdvertisingDataCommandParams);
+  LESetPeriodicAdvertisingDataCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetPeriodicAdvertisingDataCommandParams);
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
@@ -3151,7 +3161,8 @@ struct LESetExtendedScanParametersData {
 } __PACKED;
 
 struct LESetExtendedScanParametersCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LESetExtendedScanParametersCommandParams);
+  LESetExtendedScanParametersCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanParametersCommandParams);
 
   // Indicates the type of address being used in the scan request packets (for
   // active scanning).
@@ -3228,7 +3239,8 @@ struct LEExtendedCreateConnectionData {
 } __PACKED;
 
 struct LEExtendedCreateConnectionCommandParams {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(LEExtendedCreateConnectionCommandParams);
+  LEExtendedCreateConnectionCommandParams() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
 
   GenericEnableParam initiator_filter_policy;
   LEOwnAddressType own_address_type;

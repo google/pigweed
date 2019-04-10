@@ -5,15 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_
 
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
 #include <lib/zx/channel.h>
+
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
@@ -22,7 +23,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace testing {
@@ -332,7 +332,7 @@ class FakeController : public FakeControllerBase,
   LEConnectionParametersCallback le_conn_params_cb_;
   async_dispatcher_t* le_conn_params_cb_dispatcher_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeController);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
 
 }  // namespace testing

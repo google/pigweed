@@ -10,13 +10,12 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
+#include "lib/fidl/cpp/vector.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-
-#include "lib/fidl/cpp/vector.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
@@ -166,7 +165,7 @@ class GATT : public fbl::RefCounted<GATT> {
   virtual ~GATT() = default;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(GATT);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT);
 };
 
 }  // namespace gatt

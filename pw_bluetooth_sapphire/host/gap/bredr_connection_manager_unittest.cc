@@ -427,7 +427,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   fbl::RefPtr<data::testing::FakeDomain> data_domain_;
   int transaction_count_ = 0;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrConnectionManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
 };
 
 using GAP_BrEdrConnectionManagerTest = BrEdrConnectionManagerTest;

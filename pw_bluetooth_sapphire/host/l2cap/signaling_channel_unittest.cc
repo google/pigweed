@@ -4,9 +4,8 @@
 
 #include "signaling_channel.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-
 #include "fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace l2cap {
@@ -68,7 +67,7 @@ class TestSignalingChannel : public SignalingChannel {
 
   PacketCallback packet_cb_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(TestSignalingChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestSignalingChannel);
 };
 
 class L2CAP_SignalingChannelTest : public testing::FakeChannelTest {
@@ -102,7 +101,7 @@ class L2CAP_SignalingChannelTest : public testing::FakeChannelTest {
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.
   fbl::RefPtr<Channel> fake_channel_inst_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(L2CAP_SignalingChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_SignalingChannelTest);
 };
 
 TEST_F(L2CAP_SignalingChannelTest, IgnoreEmptyFrame) {

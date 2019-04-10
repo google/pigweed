@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 
-#include <map>
-#include <memory>
-#include <unordered_map>
-
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
+
+#include <map>
+#include <memory>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
@@ -21,9 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -324,7 +323,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Bearer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);
 };
 
 }  // namespace att

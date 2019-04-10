@@ -9,11 +9,10 @@
 
 #include <cstdint>
 
+#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
-
-#include "src/lib/fxl/macros.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -226,7 +225,8 @@ struct CommandHeader {
 constexpr CommandCode kCommandRejectCode = 0x01;
 constexpr size_t kCommandRejectMaxDataLength = 4;
 struct CommandRejectPayload {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(CommandRejectPayload);
+  CommandRejectPayload() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(CommandRejectPayload);
 
   // See RejectReason for possible values.
   uint16_t reason;
@@ -257,7 +257,8 @@ constexpr size_t kConfigurationOptionMaxDataLength = 22;
 
 // Element of configuration payload data (see Vol 3, Part A, Section 5)
 struct ConfigurationOption {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(ConfigurationOption);
+  ConfigurationOption() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationOption);
 
   uint8_t type;
   uint8_t length;
@@ -267,7 +268,8 @@ struct ConfigurationOption {
 } __PACKED;
 
 struct ConfigurationRequestPayload {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(ConfigurationRequestPayload);
+  ConfigurationRequestPayload() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationRequestPayload);
 
   ChannelId dst_cid;
   uint16_t flags;
@@ -279,7 +281,8 @@ struct ConfigurationRequestPayload {
 // ACL-U
 constexpr CommandCode kConfigurationResponse = 0x05;
 struct ConfigurationResponsePayload {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(ConfigurationResponsePayload);
+  ConfigurationResponsePayload() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationResponsePayload);
 
   ChannelId src_cid;
   uint16_t flags;
@@ -319,7 +322,8 @@ struct InformationRequestPayload {
 constexpr CommandCode kInformationResponse = 0x0B;
 constexpr size_t kInformationResponseMaxDataLength = 8;
 struct InformationResponsePayload {
-  FXL_DISALLOW_IMPLICIT_CONSTRUCTORS(InformationResponsePayload);
+  InformationResponsePayload() = delete;
+  DISALLOW_COPY_ASSIGN_AND_MOVE(InformationResponsePayload);
 
   InformationType type;
   InformationResult result;

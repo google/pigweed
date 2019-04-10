@@ -33,7 +33,7 @@ class FakeConnection final : public Connection {
 
   fxl::WeakPtrFactory<FakeConnection> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeConnection);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeConnection);
 };
 
 }  // namespace testing

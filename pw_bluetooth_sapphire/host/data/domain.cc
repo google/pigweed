@@ -248,7 +248,7 @@ class Impl final : public Domain, public common::TaskDomain<Impl, Domain> {
   std::unique_ptr<internal::SocketFactory<rfcomm::Channel>>
       rfcomm_socket_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Impl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 // static

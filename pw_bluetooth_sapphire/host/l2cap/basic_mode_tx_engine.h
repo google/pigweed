@@ -29,7 +29,7 @@ class BasicModeTxEngine final : public TxEngine {
   bool QueueSdu(common::ByteBufferPtr sdu) override;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(BasicModeTxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);
 };
 
 }  // namespace internal

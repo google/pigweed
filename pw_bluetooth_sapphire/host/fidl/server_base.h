@@ -5,13 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_SERVER_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_SERVER_BASE_H_
 
+#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -64,7 +64,7 @@ class ServerBase : public Server, public Interface {
   // Holds the channel from the FIDL client.
   ::fidl::Binding<Interface> binding_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ServerBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServerBase);
 };
 
 // Base template for GAP FIDL interface servers. The GAP profile is accessible
@@ -90,7 +90,7 @@ class AdapterServerBase : public ServerBase<Interface> {
  private:
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(AdapterServerBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterServerBase);
 };
 
 // Base template for GATT FIDL interface servers. The GATT profile is accessible
@@ -112,7 +112,7 @@ class GattServerBase : public ServerBase<Interface> {
  private:
   fbl::RefPtr<bt::gatt::GATT> gatt_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GattServerBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerBase);
 };
 
 }  // namespace bthost

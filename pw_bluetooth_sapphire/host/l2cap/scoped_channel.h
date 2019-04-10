@@ -5,8 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -39,7 +40,7 @@ class ScopedChannel final {
 
   fbl::RefPtr<Channel> chan_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ScopedChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScopedChannel);
 };
 
 }  // namespace l2cap

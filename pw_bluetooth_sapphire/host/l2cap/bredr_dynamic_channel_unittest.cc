@@ -5,11 +5,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 
 #include <lib/async/cpp/task.h>
+
 #include <vector>
 
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
-#include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
 namespace l2cap {
@@ -323,7 +324,7 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(L2CAP_BrEdrDynamicChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrDynamicChannelTest);
 };
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {

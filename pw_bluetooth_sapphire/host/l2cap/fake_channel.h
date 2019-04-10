@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_
 
+#include <fbl/macros.h>
+
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -12,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -103,7 +104,7 @@ class FakeChannel : public Channel {
 
   fxl::WeakPtrFactory<FakeChannel> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannel);
 };
 
 }  // namespace testing

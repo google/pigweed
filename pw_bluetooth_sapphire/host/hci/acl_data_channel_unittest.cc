@@ -4,10 +4,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 
-#include <unordered_map>
-
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
+
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
@@ -35,7 +35,7 @@ class ACLDataChannelTest : public TestingBase {
   }
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(ACLDataChannelTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannelTest);
 };
 
 using HCI_ACLDataChannelTest = ACLDataChannelTest;
@@ -671,8 +671,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallback) {
 
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called, this] { closed_cb_called = true; };
-  transport()->SetTransportClosedCallback(closed_cb,
-                                          dispatcher());
+  transport()->SetTransportClosedCallback(closed_cb, dispatcher());
 
   async::PostTask(dispatcher(),
                   [this] { test_device()->CloseACLDataChannel(); });
@@ -685,8 +684,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
 
   int closed_cb_count = 0;
   auto closed_cb = [&closed_cb_count] { closed_cb_count++; };
-  transport()->SetTransportClosedCallback(closed_cb,
-                                          dispatcher());
+  transport()->SetTransportClosedCallback(closed_cb, dispatcher());
 
   // We'll send closed events for both channels. The closed callback should get
   // invoked only once.

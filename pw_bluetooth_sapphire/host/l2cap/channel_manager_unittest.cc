@@ -4,13 +4,14 @@
 
 #include "channel_manager.h"
 
+#include <fbl/macros.h>
+
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -118,7 +119,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
  private:
   std::unique_ptr<ChannelManager> chanmgr_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(L2CAP_ChannelManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_ChannelManagerTest);
 };
 
 TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorNoConn) {

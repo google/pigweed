@@ -21,7 +21,7 @@ class BasicModeRxEngine final : public RxEngine {
   common::ByteBufferPtr ProcessPdu(PDU) override;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(BasicModeRxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeRxEngine);
 };
 
 }  // namespace internal

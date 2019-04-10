@@ -5,18 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_
 
-#include <queue>
-#include <unordered_set>
-
+#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include <queue>
+#include <unordered_set>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -82,7 +81,7 @@ class BrEdrDiscoverySession final {
   DeviceFoundCallback device_found_callback_;
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrDiscoverySession);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
 };
 
 class BrEdrDiscoverableSession final {
@@ -101,7 +100,7 @@ class BrEdrDiscoverableSession final {
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrDiscoverableSession);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
 };
 
 class BrEdrDiscoveryManager final {
@@ -227,7 +226,7 @@ class BrEdrDiscoveryManager final {
 
   fxl::WeakPtrFactory<BrEdrDiscoveryManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrDiscoveryManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManager);
 };
 
 }  // namespace gap

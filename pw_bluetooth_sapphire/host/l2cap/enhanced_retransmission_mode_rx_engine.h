@@ -43,7 +43,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
 
   SendBasicFrameCallback send_basic_frame_callback_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(EnhancedRetransmissionModeRxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };
 
 }  // namespace internal

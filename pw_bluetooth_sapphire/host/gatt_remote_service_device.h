@@ -5,19 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_DEVICE_H_
 
-#include <zircon/types.h>
-
 #include <ddk/device.h>
 #include <ddk/driver.h>
 #include <ddk/protocol/bt/gattsvc.h>
-
+#include <fbl/macros.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <zircon/types.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bthost {
 
@@ -119,7 +116,7 @@ class GattRemoteServiceDevice final {
   // The base DDK device ops.
   zx_protocol_device_t dev_proto_ = {};
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GattRemoteServiceDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattRemoteServiceDevice);
 };
 
 }  // namespace bthost

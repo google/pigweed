@@ -44,7 +44,7 @@ class FakeLayer final : public GATT {
   FakeLayer() = default;
   ~FakeLayer() override = default;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeLayer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };
 
 }  // namespace testing

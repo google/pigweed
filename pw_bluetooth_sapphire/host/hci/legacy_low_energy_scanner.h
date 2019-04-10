@@ -5,16 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_SCANNER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_SCANNER_H_
 
+#include <lib/async/dispatcher.h>
+
 #include <memory>
 #include <unordered_map>
-
-#include <lib/async/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -96,7 +95,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   std::unordered_map<common::DeviceAddress, PendingScanResult> pending_results_;
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LegacyLowEnergyScanner);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };
 
 }  // namespace hci

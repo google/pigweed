@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTOR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTOR_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -17,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -157,7 +157,7 @@ class LowEnergyConnector {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnector);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnector);
 };
 
 }  // namespace hci

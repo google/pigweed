@@ -5,14 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SEQUENTIAL_COMMAND_RUNNER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SEQUENTIAL_COMMAND_RUNNER_H_
 
-#include <queue>
-
 #include <lib/async/dispatcher.h>
+
+#include <queue>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -72,8 +71,7 @@ class SequentialCommandRunner final {
   // Cannot be called once RunCommands() has been called.
   using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
   void QueueCommand(std::unique_ptr<CommandPacket> command_packet,
-                    CommandCompleteCallback callback = {},
-                    bool wait = true);
+                    CommandCompleteCallback callback = {}, bool wait = true);
 
   // Runs all the queued commands. Once this is called no new commands can be
   // queued. This method will return before queued commands have been run.
@@ -153,7 +151,7 @@ class SequentialCommandRunner final {
 
   fxl::WeakPtrFactory<SequentialCommandRunner> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SequentialCommandRunner);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SequentialCommandRunner);
 };
 
 }  // namespace hci

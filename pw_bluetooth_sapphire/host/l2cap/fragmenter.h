@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAGMENTER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAGMENTER_H_
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace l2cap {
@@ -51,15 +52,14 @@ class Fragmenter final {
   // links based on the setting of an automatic flush timer. Only
   // non-automatically flushable PDUs can be sent over LE-U links (see Core Spec
   // v5.0, Vol 2, Part E, Section 5.4.2).
-  PDU BuildBasicFrame(ChannelId channel_id,
-                      const common::ByteBuffer& data,
+  PDU BuildBasicFrame(ChannelId channel_id, const common::ByteBuffer& data,
                       bool flushable = false);
 
  private:
   hci::ConnectionHandle connection_handle_;
   size_t max_acl_payload_size_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Fragmenter);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Fragmenter);
 };
 
 }  // namespace l2cap

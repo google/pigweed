@@ -5,6 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
 
+#include <fbl/macros.h>
+#include <lib/async/cpp/task.h>
+#include <lib/async/cpp/wait.h>
+#include <lib/async/dispatcher.h>
+#include <lib/fit/function.h>
+#include <lib/zx/channel.h>
+#include <zircon/compiler.h>
+
 #include <atomic>
 #include <list>
 #include <memory>
@@ -13,21 +21,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <lib/async/cpp/task.h>
-#include <lib/async/cpp/wait.h>
-#include <lib/async/dispatcher.h>
-#include <lib/fit/function.h>
-#include <lib/zx/channel.h>
-#include <zircon/compiler.h>
-
-#include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/lib/fxl/functional/cancelable_callback.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace hci {
@@ -240,7 +240,7 @@ class CommandChannel final {
     // Always zero if this transaction is synchronous.
     EventHandlerId handler_id_;
 
-    FXL_DISALLOW_COPY_ASSIGN_AND_MOVE(TransactionData);
+    DISALLOW_COPY_ASSIGN_AND_MOVE(TransactionData);
   };
 
   // Adds an internal event handler for |data| if one does not exist yet and
@@ -385,7 +385,7 @@ class CommandChannel final {
   std::unordered_multimap<EventCode, EventHandlerId> subevent_code_handlers_
       __TA_GUARDED(event_handler_mutex_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(CommandChannel);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
 };
 
 }  // namespace hci

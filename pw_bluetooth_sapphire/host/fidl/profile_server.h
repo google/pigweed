@@ -5,15 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_PROFILE_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_PROFILE_SERVER_H_
 
+#include <fbl/macros.h>
 #include <fuchsia/bluetooth/bredr/cpp/fidl.h>
-#include "lib/fidl/cpp/binding.h"
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
+#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -60,7 +60,7 @@ class ProfileServer
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<ProfileServer> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ProfileServer);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServer);
 };
 
 }  // namespace bthost

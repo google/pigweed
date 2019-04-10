@@ -5,14 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_SESSION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_SESSION_H_
 
-#include <map>
-#include <queue>
-#include <unordered_map>
-
 #include <fbl/ref_ptr.h>
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 #include <src/lib/fxl/memory/weak_ptr.h>
+
+#include <map>
+#include <queue>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -240,7 +240,7 @@ class Session {
 
   fxl::WeakPtrFactory<Session> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Session);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Session);
 };
 
 }  // namespace rfcomm

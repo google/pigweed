@@ -145,7 +145,7 @@ class FakeDomain final : public Domain {
   // Makes sockets for RegisterService
   internal::SocketFactory<l2cap::Channel> socket_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(FakeDomain);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDomain);
 };
 
 }  // namespace testing

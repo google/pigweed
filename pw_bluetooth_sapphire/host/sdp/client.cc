@@ -68,7 +68,7 @@ class Impl final : public Client {
 
   fxl::WeakPtrFactory<Impl> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Impl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)

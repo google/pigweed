@@ -6,7 +6,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace att {
@@ -56,7 +55,7 @@ class ATT_BearerTest : public l2cap::testing::FakeChannelTest {
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_att_chan_;
   fxl::RefPtr<Bearer> bearer_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ATT_BearerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ATT_BearerTest);
 };
 
 TEST_F(ATT_BearerTest, CreateFailsToActivate) {

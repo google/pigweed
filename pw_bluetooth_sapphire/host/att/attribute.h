@@ -5,17 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_
 
-#include <memory>
-#include <vector>
-
+#include <fbl/macros.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
+
+#include <memory>
+#include <vector>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace att {
@@ -169,7 +169,7 @@ class Attribute final {
 
   common::DynamicByteBuffer value_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Attribute);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Attribute);
 };
 
 // Represents a grouping of attributes (see Vol 3, Part F, 3.2.3). Each grouping
@@ -246,7 +246,7 @@ class AttributeGrouping final {
   // |attributes_| reflects how many of the attributes have been initialized.
   std::vector<Attribute> attributes_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(AttributeGrouping);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttributeGrouping);
 };
 
 }  // namespace att

@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_
 
+#include <fbl/macros.h>
+
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
@@ -116,7 +117,7 @@ class LocalServiceManager final {
 
   ServiceChangedCallback service_changed_callback_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LocalServiceManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
 };
 
 }  // namespace gatt

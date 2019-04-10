@@ -5,18 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_
 
-#include <string>
-
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
-
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
-#include "src/lib/fxl/macros.h"
+#include <string>
 
 namespace bt {
 namespace common {
@@ -181,11 +179,11 @@ class TaskDomain {
   async_dispatcher_t* dispatcher_;
   std::unique_ptr<async::Loop> loop_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(TaskDomain);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TaskDomain);
 };
 
 #define BT_FRIEND_TASK_DOMAIN(Type) BT_FRIEND_TASK_DOMAIN_FULL(Type, Type)
-#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType)       \
+#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType)     \
   friend class bt::common::TaskDomain<Type, RefCountedType>; \
   friend struct bt::common::internal::has_clean_up<Type>
 

@@ -9,7 +9,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -234,7 +233,7 @@ class LocalServiceManager::ServiceData final {
     att::Handle handle_;
     std::unordered_map<DeviceId, uint16_t> client_states_;
 
-    FXL_DISALLOW_COPY_AND_ASSIGN(CharacteristicConfig);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CharacteristicConfig);
   };
 
   // Called when a read request is performed on a CCC descriptor belonging to
@@ -480,7 +479,7 @@ class LocalServiceManager::ServiceData final {
 
   fxl::WeakPtrFactory<ServiceData> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ServiceData);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceData);
 };
 
 LocalServiceManager::LocalServiceManager()

@@ -6,10 +6,9 @@
 
 #include <zircon/assert.h>
 
+#include "gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-
-#include "gatt_defs.h"
 
 using bt::common::HostError;
 
@@ -33,11 +32,8 @@ common::MutableByteBufferPtr NewPDU(size_t param_size) {
 template <att::UUIDType Format,
           typename EntryType = att::InformationData<Format>>
 bool ProcessDescriptorDiscoveryResponse(
-    att::Handle range_start,
-    att::Handle range_end,
-    BufferView entries,
-    Client::DescriptorCallback desc_callback,
-    att::Handle* out_last_handle) {
+    att::Handle range_start, att::Handle range_end, BufferView entries,
+    Client::DescriptorCallback desc_callback, att::Handle* out_last_handle) {
   ZX_DEBUG_ASSERT(out_last_handle);
 
   if (entries.size() % sizeof(EntryType)) {
@@ -177,8 +173,9 @@ class Impl final : public Client {
       mtu_cb(att::Status(), final_mtu);
     });
 
-    auto error_cb = BindErrorCallback(
-        [this, mtu_cb = mtu_cb.share()](att::Status status, att::Handle handle) {
+    auto error_cb =
+        BindErrorCallback([this, mtu_cb = mtu_cb.share()](att::Status status,
+                                                          att::Handle handle) {
           // "If the Error Response is sent by the server with the Error Code
           // set to Request Not Supported, [...] the default MTU shall be used
           // (Vol 3, Part G, 4.3.1)"
@@ -196,7 +193,8 @@ class Impl final : public Client {
           mtu_cb(status, 0);
         });
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                           std::move(error_cb));
   }
 
   void DiscoverPrimaryServices(ServiceCallback svc_callback,
@@ -206,8 +204,7 @@ class Impl final : public Client {
                                     std::move(status_callback));
   }
 
-  void DiscoverPrimaryServicesInternal(att::Handle start,
-                                       att::Handle end,
+  void DiscoverPrimaryServicesInternal(att::Handle start, att::Handle end,
                                        ServiceCallback svc_callback,
                                        StatusCallback status_callback) {
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
@@ -303,8 +300,8 @@ class Impl final : public Client {
     });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](att::Status status,
-                                                           att::Handle handle) {
+        BindErrorCallback([this, res_cb = status_callback.share()](
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.4.1).
           if (status.is_protocol_error() &&
@@ -316,11 +313,11 @@ class Impl final : public Client {
           res_cb(status);
         });
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                           std::move(error_cb));
   }
 
-  void DiscoverCharacteristics(att::Handle range_start,
-                               att::Handle range_end,
+  void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                StatusCallback status_callback) override {
     ZX_DEBUG_ASSERT(range_start <= range_end);
@@ -457,8 +454,8 @@ class Impl final : public Client {
         });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](att::Status status,
-                                                           att::Handle handle) {
+        BindErrorCallback([this, res_cb = status_callback.share()](
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
           if (status.is_protocol_error() &&
@@ -470,11 +467,11 @@ class Impl final : public Client {
           res_cb(status);
         });
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                           std::move(error_cb));
   }
 
-  void DiscoverDescriptors(att::Handle range_start,
-                           att::Handle range_end,
+  void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            StatusCallback status_callback) override {
     ZX_DEBUG_ASSERT(range_start <= range_end);
@@ -544,8 +541,8 @@ class Impl final : public Client {
     });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](att::Status status,
-                                                           att::Handle handle) {
+        BindErrorCallback([this, res_cb = status_callback.share()](
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.7.1).
           if (status.is_protocol_error() &&
@@ -557,7 +554,8 @@ class Impl final : public Client {
           res_cb(status);
         });
 
-    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+    att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                           std::move(error_cb));
   }
 
   void ReadRequest(att::Handle handle, ReadCallback callback) override {
@@ -624,8 +622,7 @@ class Impl final : public Client {
     }
   }
 
-  void WriteRequest(att::Handle handle,
-                    const common::ByteBuffer& value,
+  void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
                     StatusCallback callback) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
@@ -669,7 +666,8 @@ class Impl final : public Client {
           callback(status);
         });
 
-    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
+    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                                std::move(error_cb))) {
       callback(att::Status(HostError::kPacketMalformed));
     }
   }
@@ -706,7 +704,8 @@ class Impl final : public Client {
   // still alive.
   att::Bearer::TransactionCallback BindCallback(
       att::Bearer::TransactionCallback callback) {
-    return [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](const auto& rsp) {
+    return [self = weak_ptr_factory_.GetWeakPtr(),
+            callback = std::move(callback)](const auto& rsp) {
       if (self) {
         callback(rsp);
       }
@@ -717,12 +716,13 @@ class Impl final : public Client {
   // alive.
   att::Bearer::ErrorCallback BindErrorCallback(
       att::Bearer::ErrorCallback callback) {
-    return [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
-               att::Status status, att::Handle handle) {
-      if (self) {
-        callback(status, handle);
-      }
-    };
+    return
+        [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
+            att::Status status, att::Handle handle) {
+          if (self) {
+            callback(status, handle);
+          }
+        };
   }
 
   fxl::RefPtr<att::Bearer> att_;
@@ -731,7 +731,7 @@ class Impl final : public Client {
   NotificationCallback notification_handler_;
   fxl::WeakPtrFactory<Client> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Impl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 // static

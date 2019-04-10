@@ -5,17 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_CACHE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_CACHE_H_
 
-#include <unordered_map>
-
 #include <fbl/function.h>
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
+
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/identity_resolving_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -216,7 +216,7 @@ class RemoteDeviceCache final {
 
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(RemoteDeviceCache);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteDeviceCache);
 };
 
 }  // namespace gap

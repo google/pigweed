@@ -28,7 +28,7 @@ class RxEngine {
   virtual common::ByteBufferPtr ProcessPdu(PDU) = 0;
 
  private:
-  FXL_DISALLOW_COPY_AND_ASSIGN(RxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);
 };
 
 }  // namespace internal

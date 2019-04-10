@@ -69,7 +69,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // if not null, the callback for connectable advertising.
   ConnectionCallback connect_callback_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LegacyLowEnergyAdvertiser);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
 
 }  // namespace hci

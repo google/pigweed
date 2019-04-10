@@ -5,15 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_HOST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_HOST_H_
 
+#include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
+#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/task_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-
-#include "lib/fidl/cpp/binding.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
@@ -113,7 +112,7 @@ class GattHost final : public fbl::RefCounted<GattHost>,
 
   fxl::WeakPtrFactory<GattHost> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(GattHost);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattHost);
 };
 
 }  // namespace bthost

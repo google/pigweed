@@ -5,14 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 
+#include <fbl/macros.h>
+#include <lib/async/dispatcher.h>
+#include <lib/fit/function.h>
+
 #include <list>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <lib/async/dispatcher.h>
-#include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -20,8 +21,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
-
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -81,7 +80,7 @@ class LowEnergyConnectionRef final {
   fit::closure closed_cb_;
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnectionRef);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRef);
 };
 
 using LowEnergyConnectionRefPtr = std::unique_ptr<LowEnergyConnectionRef>;
@@ -204,7 +203,7 @@ class LowEnergyConnectionManager final {
     common::DeviceAddress address_;
     std::list<ConnectionResultCallback> callbacks_;
 
-    FXL_DISALLOW_COPY_AND_ASSIGN(PendingRequestData);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
   };
 
   // Called by LowEnergyConnectionRef::Release().
@@ -361,7 +360,7 @@ class LowEnergyConnectionManager final {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyConnectionManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyConnectionManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
 };
 
 }  // namespace gap

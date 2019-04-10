@@ -6,11 +6,10 @@
 
 #include <endian.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/lib/fxl/strings/string_printf.h"
-
 #include "command_channel.h"
 #include "defaults.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
 namespace bt {
@@ -65,7 +64,7 @@ class ConnectionImpl final : public Connection {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<ConnectionImpl> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ConnectionImpl);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ConnectionImpl);
 };
 
 namespace {
@@ -349,8 +348,8 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(
       const auto& return_params =
           *event.return_params<ReadEncryptionKeySizeReturnParams>();
       const auto key_size = return_params.key_size;
-      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu",
-             self->handle(), key_size);
+      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu", self->handle(),
+             key_size);
 
       if (key_size < hci::kMinEncryptionKeySize) {
         bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient",

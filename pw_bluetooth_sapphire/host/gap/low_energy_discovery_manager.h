@@ -5,19 +5,18 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_DISCOVERY_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_DISCOVERY_MANAGER_H_
 
+#include <lib/async/dispatcher.h>
+#include <lib/fit/function.h>
+
 #include <memory>
 #include <queue>
 #include <unordered_set>
-
-#include <lib/async/dispatcher.h>
-#include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -165,7 +164,7 @@ class LowEnergyDiscoverySession final {
   DiscoveryFilter filter_;
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyDiscoverySession);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
 };
 
 using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
@@ -284,7 +283,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<LowEnergyDiscoveryManager> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyDiscoveryManager);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManager);
 };
 
 }  // namespace gap

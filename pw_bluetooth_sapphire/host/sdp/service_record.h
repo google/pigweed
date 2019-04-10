@@ -24,7 +24,7 @@ class ServiceRecord {
   // Also generates a UUID and sets the Service ID attribute.
   ServiceRecord();
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ServiceRecord);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceRecord);
   // Allow move.
   ServiceRecord(ServiceRecord&&) = default;
 

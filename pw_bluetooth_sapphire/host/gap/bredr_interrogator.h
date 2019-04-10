@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 
-#include <memory>
-
+#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
@@ -19,7 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -87,7 +87,7 @@ class BrEdrInterrogator {
   struct Interrogation {
     Interrogation(hci::ConnectionPtr conn_ptr, ResultCallback callback);
     ~Interrogation();
-    FXL_DISALLOW_COPY_AND_ASSIGN(Interrogation);
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Interrogation);
 
     // Connection to |device|
     hci::ConnectionPtr conn_ptr;
@@ -119,7 +119,7 @@ class BrEdrInterrogator {
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<BrEdrInterrogator> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(BrEdrInterrogator);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrInterrogator);
 };
 
 }  // namespace gap

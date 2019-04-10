@@ -419,7 +419,7 @@ class ATT_DatabaseIteratorManyTest : public ::testing::Test {
  private:
   fxl::RefPtr<Database> db_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(ATT_DatabaseIteratorManyTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ATT_DatabaseIteratorManyTest);
 };
 
 // static

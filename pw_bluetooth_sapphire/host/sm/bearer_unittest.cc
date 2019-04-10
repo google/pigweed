@@ -4,10 +4,10 @@
 
 #include "bearer.h"
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace sm {
@@ -169,7 +169,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
 
   fxl::WeakPtrFactory<SMP_BearerTest> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SMP_BearerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_BearerTest);
 };
 
 TEST_F(SMP_BearerTest, PacketsWhileIdle) {
@@ -354,8 +354,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   EXPECT_FALSE(bearer()->pairing_started());
   EXPECT_EQ(1, pairing_error_count());
   EXPECT_TRUE(last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kInvalidParameters,
-            last_error().protocol_error());
+  EXPECT_EQ(ErrorCode::kInvalidParameters, last_error().protocol_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 
@@ -399,8 +398,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
   EXPECT_FALSE(bearer()->pairing_started());
   EXPECT_EQ(1, pairing_error_count());
   EXPECT_TRUE(last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kInvalidParameters,
-            last_error().protocol_error());
+  EXPECT_EQ(ErrorCode::kInvalidParameters, last_error().protocol_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 

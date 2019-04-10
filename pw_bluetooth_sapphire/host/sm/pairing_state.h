@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/bearer.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace sm {
@@ -322,7 +321,7 @@ class PairingState final : public Bearer::Listener {
 
   fxl::WeakPtrFactory<PairingState> weak_ptr_factory_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(PairingState);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
 }  // namespace sm

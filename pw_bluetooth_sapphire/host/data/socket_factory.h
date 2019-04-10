@@ -5,18 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_FACTORY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_FACTORY_H_
 
-#include <memory>
-#include <unordered_map>
-
+#include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <lib/zx/socket.h>
 
-#include "src/lib/fxl/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
+#include <memory>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_channel_relay.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace data {
@@ -68,7 +67,7 @@ class SocketFactory final {
 
   fxl::WeakPtrFactory<SocketFactory> weak_ptr_factory_;  // Keep last.
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(SocketFactory);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketFactory);
 };
 
 }  // namespace internal

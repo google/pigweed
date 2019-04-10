@@ -5,17 +5,16 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 
-#include <memory>
-
 #include <ddk/protocol/bt/hci.h>
 #include <lib/fit/function.h>
 #include <zircon/types.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
+#include <memory>
+
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-
+#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -84,7 +83,7 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
 
   fxl::ThreadChecker thread_checker_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Host);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Host);
 };
 
 }  // namespace bthost

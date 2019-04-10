@@ -5,21 +5,18 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_DEVICE_H_
 
-#include <mutex>
-
+#include <ddk/device.h>
+#include <ddk/driver.h>
+#include <fbl/macros.h>
+#include <fuchsia/hardware/bluetooth/c/fidl.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 
-#include <ddk/device.h>
-#include <ddk/driver.h>
-
-#include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <mutex>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt_remote_service_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/host.h"
-
-#include "src/lib/fxl/macros.h"
 
 namespace bthost {
 
@@ -45,7 +42,7 @@ class HostDevice final {
   static zx_status_t DdkMessage(void* ctx, fidl_msg_t* msg, fidl_txn_t* txn) {
     // Struct containing function pointers for all fidl ops to be dispatched on
     static constexpr fuchsia_hardware_bluetooth_Host_ops_t fidl_ops = {
-      .Open = OpenFidlOp,
+        .Open = OpenFidlOp,
     };
 
     bt_log(TRACE, "bt-host", "fidl message");
@@ -93,7 +90,7 @@ class HostDevice final {
   async::Loop loop_;
   fxl::RefPtr<Host> host_ __TA_GUARDED(mtx_);
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(HostDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostDevice);
 };
 
 }  // namespace bthost

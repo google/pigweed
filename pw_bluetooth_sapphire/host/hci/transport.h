@@ -5,17 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 
+#include <fbl/macros.h>
+#include <lib/async-loop/cpp/loop.h>
+#include <lib/async/cpp/wait.h>
+#include <lib/async/dispatcher.h>
+
 #include <atomic>
 #include <memory>
 #include <thread>
 
-#include <lib/async/cpp/wait.h>
-#include <lib/async/dispatcher.h>
-#include <lib/async-loop/cpp/loop.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
-#include "src/lib/fxl/macros.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -83,9 +83,7 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
 
   // Returns the I/O thread dispatcher. If this is called when this Transport
   // instance is not initialized, the return value will be nullptr.
-  async_dispatcher_t*  io_dispatcher() const {
-    return io_dispatcher_;
-  }
+  async_dispatcher_t* io_dispatcher() const { return io_dispatcher_; }
 
   // Set a callback that should be invoked when any one of the underlying
   // channels gets closed for any reason (e.g. the HCI device has disappeared)
@@ -105,10 +103,8 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   ~Transport();
 
   // Channel closed callback.
-  void OnChannelClosed(async_dispatcher_t* dispatcher,
-                       async::WaitBase* wait,
-                       zx_status_t status,
-                       const zx_packet_signal_t* signal);
+  void OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                       zx_status_t status, const zx_packet_signal_t* signal);
   using Waiter = async::WaitMethod<Transport, &Transport::OnChannelClosed>;
 
   // Sets up a wait to watch for |channel| to close and calls OnChannelClosed
@@ -149,7 +145,7 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   fit::closure closed_cb_;
   async_dispatcher_t* closed_cb_dispatcher_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Transport);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };
 
 }  // namespace hci

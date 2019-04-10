@@ -4,10 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 
+#include <fbl/macros.h>
+#include <zircon/assert.h>
+
 #include <unordered_set>
 #include <vector>
-
-#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
@@ -16,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gap {
@@ -203,7 +203,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   std::vector<bool> scan_states_;
   std::unordered_map<size_t, fit::closure> scan_state_callbacks_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(LowEnergyDiscoveryManagerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManagerTest);
 };
 
 using GAP_LowEnergyDiscoveryManagerTest = LowEnergyDiscoveryManagerTest;

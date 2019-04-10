@@ -10,7 +10,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/lib/fxl/macros.h"
 
 namespace bt {
 namespace gatt {
@@ -54,7 +53,7 @@ class Service final {
   common::UUID type_;
   std::vector<CharacteristicPtr> characteristics_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Service);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Service);
 };
 
 using ServicePtr = std::unique_ptr<Service>;
@@ -66,9 +65,7 @@ using DescriptorPtr = std::unique_ptr<Descriptor>;
 // composition/structure of a characteristic and is not intended to carry state.
 class Characteristic final {
  public:
-  Characteristic(IdType id,
-                 const common::UUID& type,
-                 uint8_t properties,
+  Characteristic(IdType id, const common::UUID& type, uint8_t properties,
                  uint16_t extended_properties,
                  const att::AccessRequirements& read_permissions,
                  const att::AccessRequirements& write_permissions,
@@ -113,7 +110,7 @@ class Characteristic final {
   att::AccessRequirements update_permissions_;
   std::vector<DescriptorPtr> descriptors_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Characteristic);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Characteristic);
 };
 
 // Represents a single remote or local GATT characteristic descriptor. This
@@ -121,8 +118,7 @@ class Characteristic final {
 // to carry state.
 class Descriptor final {
  public:
-  Descriptor(IdType id,
-             const common::UUID& type,
+  Descriptor(IdType id, const common::UUID& type,
              const att::AccessRequirements& read_permissions,
              const att::AccessRequirements& write_permissions);
   ~Descriptor() = default;
@@ -144,7 +140,7 @@ class Descriptor final {
   att::AccessRequirements read_permissions_;
   att::AccessRequirements write_permissions_;
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(Descriptor);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Descriptor);
 };
 
 }  // namespace gatt
