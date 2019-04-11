@@ -4,10 +4,9 @@
 
 #include "profile_server.h"
 
+#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
-
-#include "helpers.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -367,17 +366,21 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
 
   registered_.emplace(next, handle);
   last_service_id_ = next;
-  callback(fidl_helpers::StatusToFidl(bt::sdp::Status()), handle);
+  callback(fidl_helpers::StatusToFidl(bt::sdp::Status()), next);
 }
 
 void ProfileServer::RemoveService(uint64_t service_id) {
   auto it = registered_.find(service_id);
-  if (it != registered_.end()) {
-    auto server = adapter()->sdp_server();
-    ZX_DEBUG_ASSERT(server);
-    server->UnregisterService(it->second);
-    registered_.erase(it);
+  if (it == registered_.end()) {
+    bt_log(INFO, "profile_server", "RemoveService with unused id %lu",
+           service_id);
+    return;
   }
+  auto server = adapter()->sdp_server();
+  ZX_DEBUG_ASSERT(server);
+  bool removed = server->UnregisterService(it->second);
+  ZX_DEBUG_ASSERT(removed);
+  registered_.erase(it);
 }
 
 void ProfileServer::AddSearch(
