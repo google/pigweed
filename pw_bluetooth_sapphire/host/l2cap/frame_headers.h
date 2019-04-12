@@ -6,12 +6,11 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_INTERNAL_H_
 
 #include <endian.h>
+#include <zircon/assert.h>
+#include <zircon/compiler.h>
 
 #include <cstdint>
 #include <type_traits>
-
-#include <zircon/assert.h>
-#include <zircon/compiler.h>
 
 namespace bt {
 namespace l2cap {
@@ -78,9 +77,8 @@ struct EnhancedControlField {
 
   void set_segmentation_status(SegmentationStatus status) {
     // See Vol 3, Part A, Table 3.2.
-    raw_value =
-        htole16(le16toh(raw_value) & (static_cast<uint8_t>(0b0011'1111) << 8) |
-                (static_cast<uint8_t>(status) << 14));
+    raw_value = htole16((le16toh(raw_value) & 0b0011'1111'1111'1111) |
+                        (static_cast<uint8_t>(status) << 14));
   }
 
  protected:
@@ -99,6 +97,11 @@ using ExtendedControlField = uint32_t;
 // * the frame is _not_ a "Start of L2CAP SDU" frame.
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleInformationFrameHeader : public EnhancedControlField {
+  explicit SimpleInformationFrameHeader(uint8_t tx_seq) {
+    ZX_DEBUG_ASSERT(tx_seq <= kMaxSeqNum);
+    raw_value = htole16(le16toh(raw_value) | (tx_seq << 1));
+  }
+
   uint8_t tx_seq() const {
     ZX_DEBUG_ASSERT(!designates_supervisory_frame());
     return (le16toh(raw_value) & (0b0111'1110)) >> 1;
@@ -113,7 +116,8 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
 // * the frame _is_ a "Start of L2CAP SDU" frame.
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleStartOfSduFrameHeader : public SimpleInformationFrameHeader {
-  SimpleStartOfSduFrameHeader() : sdu_len(0) {
+  explicit SimpleStartOfSduFrameHeader(uint8_t tx_seq)
+      : SimpleInformationFrameHeader(tx_seq), sdu_len(0) {
     set_segmentation_status(SegmentationStatus::FirstSegment);
   }
   uint16_t sdu_len;
@@ -134,7 +138,7 @@ enum class SupervisoryFunction {
 //   disabled
 // Omits the Basic L2CAP header. See Vol 3, Part A, Sec 3.3.
 struct SimpleSupervisoryFrame : public EnhancedControlField {
-  SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
+  explicit SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
     ZX_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
     // See Vol 3, Part A, Table 3.2.

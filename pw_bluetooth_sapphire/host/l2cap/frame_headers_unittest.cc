@@ -205,6 +205,14 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
   }
 }
 
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
+     SetSegmentationStatusPreservesRequestSeqNum) {
+  EnhancedControlField ecf;
+  ecf.set_request_seq_num(EnhancedControlField::kMaxSeqNum);
+  ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
+  EXPECT_EQ(EnhancedControlField::kMaxSeqNum, ecf.request_seq_num());
+}
+
 TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
      ReadsTxSequenceNumber) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Core Spec v5, Vol 3, Part
@@ -216,11 +224,29 @@ TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
   }
 }
 
+TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
+     IsConstructedProperly) {
+  constexpr uint8_t kTxSeq = 63;
+  SimpleInformationFrameHeader frame(kTxSeq);
+  // See Core Spec, v5, Vol 3, Part A, Table 3.2.
+  EXPECT_EQ(CreateStaticByteBuffer(0b111'1110, 0),
+            BufferView(&frame, sizeof(frame)));
+}
+
+TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
+     SetSegmentationStatusPreservesTxSeq) {
+  constexpr uint8_t kTxSeq = 63;
+  SimpleInformationFrameHeader frame(kTxSeq);
+  frame.set_segmentation_status(SegmentationStatus::Unsegmented);
+  EXPECT_EQ(kTxSeq, frame.tx_seq());
+}
+
 TEST(L2CAP_FrameHeaders_SimpleStartOfSduFrameHeaderTest,
      IsConstructedProperly) {
-  SimpleStartOfSduFrameHeader frame;
+  constexpr uint8_t kTxSeq = 63;
+  SimpleStartOfSduFrameHeader frame(kTxSeq);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Figure 3.3.
-  EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000, 0, 0),
+  EXPECT_EQ(CreateStaticByteBuffer(0b111'1110, 0b0100'0000, 0, 0),
             BufferView(&frame, sizeof(frame)));
 }
 
