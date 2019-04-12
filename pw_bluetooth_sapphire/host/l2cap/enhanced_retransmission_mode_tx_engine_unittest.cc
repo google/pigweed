@@ -20,8 +20,11 @@ using TxEngine = EnhancedRetransmissionModeTxEngine;
 
 class L2CAP_EnhancedRetransmissionModeTxEngineTest
     : public ::gtest::TestLoopFixture {
-  // All we need is the async loop that we inherit from
-  // TestLoopFixture.
+ protected:
+  // The default MTU is provided for use by tests which don't depend on the
+  // value of the MTU. This should make the tests easier to read, because the
+  // reader can focus on only the non-defaulted parameter values.
+  static constexpr auto kDefaultMTU = bt::l2cap::kDefaultMTU;
 };
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
@@ -83,18 +86,16 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        QueueSduSurvivesZeroByteSdu) {
-  constexpr size_t kMtu = 1;
-  TxEngine(kTestChannelId, kMtu, [](auto pdu) {
+  TxEngine(kTestChannelId, kDefaultMTU, [](auto pdu) {
   }).QueueSdu(std::make_unique<common::DynamicByteBuffer>());
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        QueueSduAdvancesSequenceNumber) {
-  constexpr size_t kMtu = 1;
   const auto payload = common::CreateStaticByteBuffer(1);
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
-  TxEngine tx_engine(kTestChannelId, kMtu, tx_callback);
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
 
   {
     // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
@@ -133,11 +134,10 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        QueueSduRollsOverSequenceNumber) {
-  constexpr size_t kMtu = 1;
   const auto payload = common::CreateStaticByteBuffer(1);
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
-  TxEngine tx_engine(kTestChannelId, kMtu, tx_callback);
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
 
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
