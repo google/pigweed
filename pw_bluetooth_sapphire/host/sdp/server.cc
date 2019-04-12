@@ -285,6 +285,7 @@ bool Server::UnregisterService(ServiceHandle handle) {
   auto psms_it = service_to_psms_.find(handle);
   if (psms_it != service_to_psms_.end()) {
     for (const auto& psm : psms_it->second) {
+      bt_log(TRACE, "sdp", "removing registration for psm %#.4x", psm);
       data_domain_->UnregisterService(psm);
       psm_to_service_.erase(psm);
     }
