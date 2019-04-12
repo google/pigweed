@@ -102,6 +102,10 @@ class RemoteDevice final {
     // as non-temporary if necessary.
     void SetBondData(const sm::PairingData& bond_data);
 
+    // Removes any stored keys. Does not make the device temporary, even if it
+    // is disconnected. Does not notify listeners.
+    void ClearBondData();
+
     // TODO(armansito): Store most recently seen random address and identity
     // address separately, once RemoteDeviceCache can index devices by multiple
     // addresses.
@@ -176,7 +180,11 @@ class RemoteDevice final {
     // Stores a link key resulting from Secure Simple Pairing and makes this
     // device "bonded." Marks the device as non-temporary if necessary. All
     // BR/EDR link keys are "long term" (reusable across sessions).
-    void SetLinkKey(const sm::LTK& link_key);
+    void SetBondData(const sm::LTK& link_key);
+
+    // Removes any stored link key. Does not make the device temporary, even if
+    // it is disconnected. Does not notify listeners.
+    void ClearBondData();
 
     // TODO(armansito): Store BD_ADDR here, once RemoteDeviceCache can index
     // devices by multiple addresses.

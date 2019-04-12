@@ -65,8 +65,12 @@ const common::DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
 
 class GAP_RemoteDeviceCacheTest : public ::gtest::TestLoopFixture {
  public:
-  void SetUp() {}
-  void TearDown() { RunLoopUntilIdle(); }
+  void SetUp() override { TestLoopFixture::SetUp(); }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+    TestLoopFixture::TearDown();
+  }
 
  protected:
   // Creates a new RemoteDevice, and caches a pointer to that device.
@@ -359,19 +363,34 @@ TEST_F(GAP_RemoteDeviceCacheTest,
 
 class GAP_RemoteDeviceCacheTest_BondingTest : public GAP_RemoteDeviceCacheTest {
  public:
-  void SetUp() {
-    was_called_ = false;
+  void SetUp() override {
+    GAP_RemoteDeviceCacheTest::SetUp();
     ASSERT_TRUE(NewDevice(kAddrLePublic, true));
+    bonded_callback_called_ = false;
     cache()->set_device_bonded_callback(
-        [this](const auto&) { was_called_ = true; });
-    EXPECT_FALSE(was_called_);
+        [this](const auto&) { bonded_callback_called_ = true; });
+    updated_callback_count_ = 0;
+    cache()->set_device_updated_callback(
+        [this](auto&) { updated_callback_count_++; });
+  }
+
+  void TearDown() override {
+    cache()->set_device_updated_callback(nullptr);
+    updated_callback_count_ = 0;
+    cache()->set_device_bonded_callback(nullptr);
+    bonded_callback_called_ = false;
+    GAP_RemoteDeviceCacheTest::TearDown();
   }
 
  protected:
-  bool bonded_callback_called() const { return was_called_; }
+  bool bonded_callback_called() const { return bonded_callback_called_; }
+
+  // Returns 0 at the beginning of each test case.
+  int updated_callback_count() const { return updated_callback_count_; }
 
  private:
-  bool was_called_;
+  bool bonded_callback_called_;
+  int updated_callback_count_;
 };
 
 TEST_F(GAP_RemoteDeviceCacheTest_BondingTest,
@@ -663,6 +682,113 @@ TEST_F(GAP_RemoteDeviceCacheTest_BondingTest, StoreBondsForBothTech) {
   EXPECT_TRUE(device()->le()->bonded());
 }
 
+TEST_F(GAP_RemoteDeviceCacheTest_BondingTest, ForgetUnknownPeer) {
+  const DeviceId id(0x9999);
+  ASSERT_FALSE(cache()->FindDeviceById(id));
+  EXPECT_FALSE(cache()->ForgetPeer(id));
+  EXPECT_EQ(0, updated_callback_count());
+}
+
+TEST_F(GAP_RemoteDeviceCacheTest_BondingTest, ForgetBrEdrDevice) {
+  ASSERT_TRUE(NewDevice(kAddrBrEdr, true));
+  ASSERT_TRUE(cache()->StoreBrEdrBond(kAddrBrEdr, kBrEdrKey));
+  ASSERT_TRUE(device()->bonded());
+  ASSERT_FALSE(device()->temporary());
+  ASSERT_EQ(3, updated_callback_count());
+
+  const DeviceId id = device()->identifier();
+  EXPECT_TRUE(cache()->ForgetPeer(id));
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+  EXPECT_FALSE(device()->bonded());
+  EXPECT_TRUE(device()->temporary());
+  EXPECT_EQ(4, updated_callback_count());
+}
+
+TEST_F(GAP_RemoteDeviceCacheTest_BondingTest,
+       ForgetLowEnergyPeerWithPublicAddress) {
+  sm::PairingData data;
+  data.ltk = kLTK;
+  ASSERT_TRUE(cache()->StoreLowEnergyBond(device()->identifier(), data));
+  ASSERT_EQ(DeviceAddress::Type::kLEPublic, device()->address().type());
+  ASSERT_TRUE(device()->bonded());
+  ASSERT_FALSE(device()->temporary());
+  ASSERT_EQ(2, updated_callback_count());
+
+  const DeviceId id = device()->identifier();
+  EXPECT_TRUE(cache()->ForgetPeer(id));
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+  EXPECT_FALSE(device()->bonded());
+  EXPECT_TRUE(device()->temporary());
+  EXPECT_EQ(3, updated_callback_count());
+}
+
+TEST_F(GAP_RemoteDeviceCacheTest_BondingTest, ForgetLowEnergyPeerWithIrk) {
+  ASSERT_TRUE(NewDevice(kAddrLeRandom, true));
+
+  sm::PairingData data;
+  data.ltk = kLTK;
+  data.identity_address = kAddrLeAlias;
+  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+  DeviceAddress rpa = sm::util::GenerateRpa(data.irk->value());
+
+  ASSERT_TRUE(cache()->StoreLowEnergyBond(device()->identifier(), data));
+  ASSERT_TRUE(device()->bonded());
+  ASSERT_FALSE(device()->temporary());
+  ASSERT_TRUE(device()->identity_known());
+  ASSERT_EQ(device(), cache()->FindDeviceByAddress(rpa));
+  ASSERT_EQ(kAddrLeAlias, device()->address());
+  EXPECT_EQ(3, updated_callback_count());
+
+  const DeviceId id = device()->identifier();
+  EXPECT_TRUE(cache()->ForgetPeer(id));
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+  EXPECT_FALSE(device()->bonded());
+  EXPECT_TRUE(device()->temporary());
+  EXPECT_FALSE(device()->identity_known());
+  EXPECT_FALSE(cache()->FindDeviceByAddress(rpa));
+
+  // Don't expect the original random address to be restored.
+  EXPECT_EQ(kAddrLeAlias, device()->address());
+  EXPECT_EQ(4, updated_callback_count());
+
+  RunLoopFor(kCacheTimeout);
+  EXPECT_FALSE(cache()->FindDeviceById(id));
+}
+
+// Test that a forgotten LE device using address privacy eventually expires out
+// of the cache.
+TEST_F(GAP_RemoteDeviceCacheTest_BondingTest,
+       RemoveForgetedLePrivacyPeerAfterDisconnectionThenExpiry) {
+  ASSERT_TRUE(NewDevice(kAddrLeRandom, true));
+
+  sm::PairingData data;
+  data.ltk = kLTK;
+  data.identity_address = kAddrLeAlias;
+  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+
+  ASSERT_TRUE(cache()->StoreLowEnergyBond(device()->identifier(), data));
+  device()->MutLe().SetConnectionState(
+      RemoteDevice::ConnectionState::kConnected);
+  ASSERT_TRUE(device()->bonded());
+  ASSERT_FALSE(device()->temporary());
+
+  const DeviceId id = device()->identifier();
+  EXPECT_TRUE(cache()->ForgetPeer(id));
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+  EXPECT_TRUE(device()->temporary());
+
+  RunLoopFor(kCacheTimeout);
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+
+  device()->MutLe().SetConnectionState(
+      RemoteDevice::ConnectionState::kNotConnected);
+  ASSERT_TRUE(cache()->FindDeviceById(id));
+  EXPECT_TRUE(device()->temporary());
+
+  RunLoopFor(kCacheTimeout);
+  EXPECT_FALSE(cache()->FindDeviceById(id));
+}
+
 // Fixture parameterized by device address
 class DualModeBondingTest
     : public GAP_RemoteDeviceCacheTest_BondingTest,
@@ -696,6 +822,24 @@ TEST_P(DualModeBondingTest, AddBondedDeviceSuccess) {
   // The "new bond" callback should not be called when restoring a previously
   // bonded device.
   EXPECT_FALSE(bonded_callback_called());
+}
+
+TEST_P(DualModeBondingTest, ForgetPeer) {
+  DeviceId kId(5);
+  sm::PairingData data;
+  data.ltk = kLTK;
+
+  const DeviceAddress& address = GetParam();
+  EXPECT_TRUE(cache()->AddBondedDevice(kId, address, data, kBrEdrKey));
+  auto* dev = cache()->FindDeviceById(kId);
+  ASSERT_TRUE(dev);
+  ASSERT_TRUE(dev->bonded());
+  EXPECT_EQ(5, updated_callback_count());
+
+  // Forgetting a dual-mode peer should only invoke the update callback once.
+  EXPECT_TRUE(cache()->ForgetPeer(kId));
+  EXPECT_FALSE(dev->bonded());
+  EXPECT_EQ(6, updated_callback_count());
 }
 
 // Test dual-mode character of device using the same address of both types.
@@ -1022,7 +1166,7 @@ TEST_F(GAP_RemoteDeviceCacheTest_BrEdrUpdateCallbackTest,
   EXPECT_EQ(TechnologyType::kDualMode, device()->technology());
   EXPECT_EQ(call_count, 1U);
 
-  // Calling MutLe again on doesn't trigger additional callbacks.
+  // Calling MutLe again doesn't trigger additional callbacks.
   device()->MutLe();
   EXPECT_EQ(call_count, 1U);
   device()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);

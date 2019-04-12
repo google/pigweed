@@ -107,7 +107,7 @@ void RemoteDevice::LowEnergyData::SetConnectionState(ConnectionState state) {
     dev_->TryMakeNonTemporary();
   } else if (state == ConnectionState::kNotConnected &&
              !dev_->identity_known()) {
-    bt_log(TRACE, "gap", "bacame temporary: %s:", dev_->ToString().c_str());
+    bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*dev_));
     dev_->temporary_ = true;
   }
 
@@ -146,6 +146,14 @@ void RemoteDevice::LowEnergyData::SetBondData(
   }
 
   dev_->NotifyListeners();
+}
+
+void RemoteDevice::LowEnergyData::ClearBondData() {
+  ZX_ASSERT(bond_data_);
+  if (bond_data_->irk) {
+    dev_->set_identity_known(false);
+  }
+  bond_data_ = std::nullopt;
 }
 
 RemoteDevice::BrEdrData::BrEdrData(RemoteDevice* owner)
@@ -265,7 +273,7 @@ bool RemoteDevice::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
   return changed;
 }
 
-void RemoteDevice::BrEdrData::SetLinkKey(const sm::LTK& link_key) {
+void RemoteDevice::BrEdrData::SetBondData(const sm::LTK& link_key) {
   ZX_DEBUG_ASSERT(dev_->connectable());
 
   // Make sure the device is non-temporary.
@@ -275,6 +283,11 @@ void RemoteDevice::BrEdrData::SetLinkKey(const sm::LTK& link_key) {
   link_key_ = link_key;
 
   dev_->NotifyListeners();
+}
+
+void RemoteDevice::BrEdrData::ClearBondData() {
+  ZX_ASSERT(link_key_);
+  link_key_ = std::nullopt;
 }
 
 RemoteDevice::RemoteDevice(DeviceCallback notify_listeners_callback,

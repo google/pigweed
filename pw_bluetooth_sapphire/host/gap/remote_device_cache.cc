@@ -96,7 +96,7 @@ bool RemoteDeviceCache::AddBondedDevice(
   }
 
   if (bond_bredr) {
-    device->MutBrEdr().SetLinkKey(*link_key);
+    device->MutBrEdr().SetBondData(*link_key);
     ZX_DEBUG_ASSERT(device->bredr()->bonded());
   }
 
@@ -183,12 +183,52 @@ bool RemoteDeviceCache::StoreBrEdrBond(const common::DeviceAddress& address,
 
   // TODO(BT-619): Check that we're not downgrading the security level before
   // overwriting the bond.
-  device->MutBrEdr().SetLinkKey(link_key);
+  device->MutBrEdr().SetBondData(link_key);
   ZX_DEBUG_ASSERT(!device->temporary());
   ZX_DEBUG_ASSERT(device->bredr()->bonded());
 
   NotifyDeviceBonded(*device);
   return true;
+}
+
+bool RemoteDeviceCache::ForgetPeer(DeviceId peer_id) {
+  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  auto* const peer = FindDeviceById(peer_id);
+  if (!peer) {
+    bt_log(TRACE, "gap", "failed to unbond unknown peer %s", bt_str(peer_id));
+    return false;
+  }
+
+  bool bond_removed = false;
+  if (peer->bredr() && peer->bredr()->bonded()) {
+    peer->MutBrEdr().ClearBondData();
+    ZX_ASSERT(!peer->bredr()->bonded());
+    bond_removed = true;
+  }
+
+  if (peer->le() && peer->le()->bonded()) {
+    if (auto& address = peer->le()->bond_data()->identity_address) {
+      le_resolving_list_.Remove(*address);
+    }
+    peer->MutLe().ClearBondData();
+    ZX_ASSERT(!peer->le()->bonded());
+    bond_removed = true;
+  }
+
+  // Make peer temporary but don't set up expiry task unless the peer is
+  // already disconnected.
+  // TODO(BT-824): Mark the peer as "delete after disconnection."
+  peer->temporary_ = true;
+  if (!peer->connected()) {
+    // TODO(BT-824): Remove the peer.
+    UpdateExpiry(*peer);
+  }
+
+  if (bond_removed) {
+    NotifyDeviceUpdated(*peer);
+  }
+
+  return bond_removed;
 }
 
 RemoteDevice* RemoteDeviceCache::FindDeviceById(DeviceId identifier) const {
@@ -314,6 +354,7 @@ void RemoteDeviceCache::RemoveDevice(RemoteDevice* device) {
   ZX_DEBUG_ASSERT(device_record_it->second.device() == device);
 
   DeviceId id = device->identifier();
+  bt_log(SPEW, "gap", "removing device %s", bt_str(id));
   for (auto iter = address_map_.begin(); iter != address_map_.end();) {
     if (iter->second == id) {
       iter = address_map_.erase(iter);

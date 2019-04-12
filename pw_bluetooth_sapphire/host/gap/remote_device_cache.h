@@ -98,6 +98,15 @@ class RemoteDeviceCache final {
   bool StoreBrEdrBond(const common::DeviceAddress& address,
                       const sm::LTK& link_key);
 
+  // Resets a peer |peer_id| to an unbonded state by removing secrets for its
+  // transports. The peer will become temporary and may expire. This does not
+  // otherwise disconnect the peer or remove its ID or address from the cache.
+  // Returns true if bonds were deleted from a known peer.
+  //
+  // TODO(BT-824): Delete the peer immediately after disconnecting. Will return
+  // true if a known peer was deleted or marked for deletion.
+  bool ForgetPeer(DeviceId peer_id);
+
   // Returns the remote device with identifier |identifier|. Returns nullptr if
   // |identifier| is not recognized.
   RemoteDevice* FindDeviceById(DeviceId identifier) const;
@@ -183,8 +192,7 @@ class RemoteDeviceCache final {
   // |device| must already exist in the cache.
   void MakeDualMode(const RemoteDevice& device);
 
-  // Removes |device| from this cache, and notifies listeners of the
-  // removal.
+  // Removes |device| from this cache, and notifies listeners of the removal.
   void RemoveDevice(RemoteDevice* device);
 
   // Search for an unique device ID by its device address |address|, by both
