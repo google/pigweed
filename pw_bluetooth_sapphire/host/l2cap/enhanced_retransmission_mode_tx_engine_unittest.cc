@@ -5,6 +5,7 @@
 #include "enhanced_retransmission_mode_tx_engine.h"
 
 #include "gtest/gtest.h"
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
@@ -17,8 +18,14 @@ constexpr ChannelId kTestChannelId = 0x0001;
 
 using TxEngine = EnhancedRetransmissionModeTxEngine;
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduTransmitsMinimalSizedSdu) {
+class L2CAP_EnhancedRetransmissionModeTxEngineTest
+    : public ::gtest::TestLoopFixture {
+  // All we need is the async loop that we inherit from
+  // TestLoopFixture.
+};
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduTransmitsMinimalSizedSdu) {
   common::ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -41,8 +48,8 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduTransmitsMaximalSizedSdu) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduTransmitsMaximalSizedSdu) {
   common::ByteBufferPtr last_pdu;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) {
@@ -65,8 +72,8 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduSurvivesOversizedSdu) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduSurvivesOversizedSdu) {
   // TODO(BT-440): Update this test when we add support for segmentation.
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, [](auto pdu) {})
@@ -74,15 +81,15 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
           common::CreateStaticByteBuffer(1, 2)));
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduSurvivesZeroByteSdu) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduSurvivesZeroByteSdu) {
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, [](auto pdu) {
   }).QueueSdu(std::make_unique<common::DynamicByteBuffer>());
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduAdvancesSequenceNumber) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduAdvancesSequenceNumber) {
   constexpr size_t kMtu = 1;
   const auto payload = common::CreateStaticByteBuffer(1);
   common::ByteBufferPtr last_pdu;
@@ -124,8 +131,8 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   }
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-     QueueSduRollsOverSequenceNumber) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduRollsOverSequenceNumber) {
   constexpr size_t kMtu = 1;
   const auto payload = common::CreateStaticByteBuffer(1);
   common::ByteBufferPtr last_pdu;
