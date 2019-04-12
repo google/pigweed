@@ -4,9 +4,9 @@
 
 #include "enhanced_retransmission_mode_tx_engine.h"
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "gtest/gtest.h"
 
 namespace bt {
 namespace l2cap {
@@ -32,7 +32,13 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
-  EXPECT_TRUE(common::ContainersEqual(payload, *last_pdu));
+
+  // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+  const auto expected_pdu =
+      common::CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                     0,   // SAR bits, ReqSeq
+                                     1);  // Payload
+  EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
@@ -50,7 +56,13 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
-  EXPECT_TRUE(common::ContainersEqual(payload, *last_pdu));
+
+  // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+  const auto expected_pdu =
+      common::CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                     0,   // SAR bits, ReqSeq
+                                     1);  // Payload
+  EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
@@ -67,6 +79,73 @@ TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, [](auto pdu) {
   }).QueueSdu(std::make_unique<common::DynamicByteBuffer>());
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+     QueueSduAdvancesSequenceNumber) {
+  constexpr size_t kMtu = 1;
+  const auto payload = common::CreateStaticByteBuffer(1);
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kMtu, tx_callback);
+
+  {
+    // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+    const auto expected_pdu =
+        common::CreateStaticByteBuffer(0,   // Final Bit, TxSeq, MustBeZeroBit
+                                       0,   // SAR bits, ReqSeq
+                                       1);  // Payload
+
+    tx_engine.QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
+    ASSERT_TRUE(last_pdu);
+    EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
+  }
+
+  {
+    // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+    const auto expected_pdu = common::CreateStaticByteBuffer(
+        1 << 1,  // Final Bit, TxSeq=1, MustBeZeroBit
+        0,       // SAR bits, ReqSeq
+        1);      // Payload
+    tx_engine.QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
+    ASSERT_TRUE(last_pdu);
+    EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
+  }
+
+  {
+    // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+    const auto expected_pdu = common::CreateStaticByteBuffer(
+        2 << 1,  // Final Bit, TxSeq=2, MustBeZeroBit
+        0,       // SAR bits, ReqSeq
+        1);      // Payload
+    tx_engine.QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
+    ASSERT_TRUE(last_pdu);
+    EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
+  }
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+     QueueSduRollsOverSequenceNumber) {
+  constexpr size_t kMtu = 1;
+  const auto payload = common::CreateStaticByteBuffer(1);
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kMtu, tx_callback);
+
+  constexpr size_t kMaxSeq = 64;
+  for (size_t i = 0; i < kMaxSeq; ++i) {
+    tx_engine.QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
+  }
+
+  // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
+  const auto expected_pdu = common::CreateStaticByteBuffer(
+      0,   // Final Bit, TxSeq (rolls over from 63 to 0), MustBeZeroBit
+      0,   // SAR bits, ReqSeq
+      1);  // Payload
+  last_pdu = nullptr;
+  tx_engine.QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
+  ASSERT_TRUE(last_pdu);
+  EXPECT_TRUE(common::ContainersEqual(expected_pdu, *last_pdu));
 }
 
 }  // namespace

@@ -15,21 +15,32 @@ namespace internal {
 // Mode. See Bluetooth Core Spec v5.0, Volume 3, Part A, Sec 2.4, "Modes of
 // Operation".
 //
-// THREAD-SAFETY: This class may is _not_ thread-safe. In particular, the class
-// assumes that some other party ensures that QueueSdu() is not invoked
-// concurrently with the destructor.
+// THREAD-SAFETY: This class may is _not_ thread-safe. In particular:
+// * the class assumes that some other party ensures that QueueSdu() is not
+//   invoked concurrently with the destructor, and
+// * the class assumes that all calls to QueueSdu occur on a single thread,
+//   for the entire lifetime of an object.
 class EnhancedRetransmissionModeTxEngine final : public TxEngine {
  public:
   EnhancedRetransmissionModeTxEngine(
       ChannelId channel_id, uint16_t tx_mtu,
       SendBasicFrameCallback send_basic_frame_callback)
-      : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)) {}
+      : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
+        next_seqnum_(0) {}
   ~EnhancedRetransmissionModeTxEngine() override = default;
 
   bool QueueSdu(common::ByteBufferPtr sdu) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
+  // Return and consume the next sequence number.
+  uint8_t GetNextSeqnum();
+
+  // We assume that the Extended Window Size option is _not_ enabled. In such
+  // cases, the sequence number is a 6-bit counter that wraps on overflow. See
+  // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
+  uint8_t next_seqnum_;  // (AKA NextTxSeq)
+
+  FXL_DISALLOW_COPY_AND_ASSIGN(EnhancedRetransmissionModeTxEngine);
 };
 
 }  // namespace internal
