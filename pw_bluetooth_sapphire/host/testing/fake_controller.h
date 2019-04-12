@@ -27,7 +27,7 @@
 namespace bt {
 namespace testing {
 
-class FakeDevice;
+class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to
 // respond to HCI commands in a predictable manner.
@@ -137,8 +137,8 @@ class FakeController : public FakeControllerBase,
   // Returns the current Local Name.set in the controller
   const std::string& local_name() const { return local_name_; }
 
-  // Adds a fake remote device.
-  void AddDevice(std::unique_ptr<FakeDevice> device);
+  // Adds a fake remote peer.
+  void AddPeer(std::unique_ptr<FakePeer> device);
 
   // Sets a callback to be invoked when the scan state changes.
   using ScanStateCallback = fit::function<void(bool enabled)>;
@@ -199,7 +199,7 @@ class FakeController : public FakeControllerBase,
       const common::DeviceAddress& addr,
       const hci::LEPreferredConnectionParameters& params);
 
-  // Marks the FakeDevice with address |address| as disconnected and sends a HCI
+  // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
   void Disconnect(const common::DeviceAddress& addr);
 
@@ -209,10 +209,10 @@ class FakeController : public FakeControllerBase,
     return async_get_default_dispatcher();
   }
 
-  // Finds and returns the FakeDevice with the given parameters or nullptr if no
+  // Finds and returns the FakePeer with the given parameters or nullptr if no
   // such device exists.
-  FakeDevice* FindDeviceByAddress(const common::DeviceAddress& addr);
-  FakeDevice* FindDeviceByConnHandle(hci::ConnectionHandle handle);
+  FakePeer* FindDeviceByAddress(const common::DeviceAddress& addr);
+  FakePeer* FindDeviceByConnHandle(hci::ConnectionHandle handle);
 
   // Returns the next available L2CAP signaling channel command ID.
   uint8_t NextL2CAPCommandId();
@@ -317,8 +317,8 @@ class FakeController : public FakeControllerBase,
   // Used to setup default status responses (for simulating errors)
   std::unordered_map<hci::OpCode, hci::StatusCode> default_status_map_;
 
-  // The set of fake devices that are visible.
-  std::vector<std::unique_ptr<FakeDevice>> devices_;
+  // The set of fake peers that are visible.
+  std::vector<std::unique_ptr<FakePeer>> peers_;
 
   ScanStateCallback scan_state_cb_;
   async_dispatcher_t* scan_state_cb_dispatcher_;

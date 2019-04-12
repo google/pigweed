@@ -442,7 +442,7 @@ void BrEdrConnectionManager::EstablishConnection(
            connection->handle());
 
     // Clean up after receiving the DisconnectComplete event.
-    // TODO(BT-70): Test link error behavior using FakeDevice.
+    // TODO(BT-70): Test link error behavior using FakePeer.
     connection->Close();
   };
 

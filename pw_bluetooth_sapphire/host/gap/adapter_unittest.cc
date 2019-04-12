@@ -16,14 +16,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
 namespace gap {
 namespace {
 
 using bt::testing::FakeController;
-using bt::testing::FakeDevice;
+using bt::testing::FakePeer;
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 class AdapterTest : public TestingBase {
@@ -287,9 +287,9 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   InitializeAdapter([](bool) {});
   adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  auto fake_dev = std::make_unique<FakeDevice>(kAddress, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  auto fake_peer = std::make_unique<FakePeer>(kAddress, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   LowEnergyConnectionRefPtr conn;
   adapter()->set_auto_connect_callback(

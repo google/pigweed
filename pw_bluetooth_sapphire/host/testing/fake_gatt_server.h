@@ -12,12 +12,12 @@
 namespace bt {
 namespace testing {
 
-class FakeDevice;
+class FakePeer;
 
 // Emulates a GATT server.
 class FakeGattServer final {
  public:
-  explicit FakeGattServer(FakeDevice* dev);
+  explicit FakeGattServer(FakePeer* dev);
 
   // Handle the ATT |pdu| received over link with handle |conn|.
   void HandlePdu(hci::ConnectionHandle conn, const common::ByteBuffer& pdu);
@@ -31,7 +31,7 @@ class FakeGattServer final {
                     att::Handle handle, att::ErrorCode ecode);
 
   // The fake device that owns this server. Must outlive this instance.
-  FakeDevice* dev_;
+  FakePeer* dev_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeGattServer);
 };

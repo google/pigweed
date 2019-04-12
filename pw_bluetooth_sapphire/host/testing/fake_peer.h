@@ -21,15 +21,15 @@ namespace testing {
 
 class FakeController;
 
-// FakeDevice is used to emulate a remote Bluetooth device.
-class FakeDevice {
+// FakePeer is used to emulate a remote Bluetooth device.
+class FakePeer {
  public:
   // NOTE: Setting |connectable| to true will result in a "Connectable and
   // Scannable Advertisement" (i.e. ADV_IND) even if |scannable| is set to
   // false. This is OK since we use |scannable| to drive the receipt of Scan
   // Response PDUs: we use this to test the condition in which the advertisement
   // is scannable but the host never receives a scan response.
-  explicit FakeDevice(const common::DeviceAddress& address,
+  explicit FakePeer(const common::DeviceAddress& address,
                       bool connectable = true, bool scannable = true);
 
   void SetAdvertisingData(const common::ByteBuffer& data);
@@ -80,7 +80,7 @@ class FakeDevice {
   // reports when the payloads are spread across events and when they are
   // batched together in the same event.
   //
-  // This isn't used by FakeDevice directly to generated batched reports. Rather
+  // This isn't used by FakePeer directly to generated batched reports. Rather
   // it is a hint to the corresponding FakeController which decides how the
   // reports should be generated.
   bool should_batch_reports() const { return should_batch_reports_; }
@@ -136,14 +136,14 @@ class FakeDevice {
  private:
   friend class FakeController;
 
-  // Called by a FakeController when a FakeDevice is registered with it.
+  // Called by a FakeController when a FakePeer is registered with it.
   void set_ctrl(FakeController* ctrl) { ctrl_ = ctrl; }
 
   void WriteScanResponseReport(hci::LEAdvertisingReportData* report) const;
 
   void OnRxL2CAP(hci::ConnectionHandle conn, const common::ByteBuffer& pdu);
 
-  // The FakeController that this FakeDevice has been assigned to.
+  // The FakeController that this FakePeer has been assigned to.
   FakeController* ctrl_;  // weak
 
   common::DeviceAddress address_;
@@ -171,7 +171,7 @@ class FakeDevice {
 
   FakeGattServer gatt_server_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
 };
 
 }  // namespace testing

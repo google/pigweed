@@ -11,7 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
 namespace hci {
@@ -19,7 +19,7 @@ namespace {
 
 using common::DeviceAddress;
 using testing::FakeController;
-using testing::FakeDevice;
+using testing::FakePeer;
 using TestingBase = testing::FakeControllerTest<FakeController>;
 
 constexpr zx::duration kScanPeriod = zx::sec(10);
@@ -106,7 +106,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
   }
 
   // Adds 6 fake devices using kAddress[0-5] above.
-  void AddFakeDevices() {
+  void AddFakePeers() {
     // We use malformed data for testing purposes, as we don't care about
     // integrity here.
     auto adv_data = common::CreateStaticByteBuffer('T', 'e', 's', 't');
@@ -114,42 +114,42 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     auto empty_data = common::DynamicByteBuffer();
 
     // Generates ADV_IND, scan response is reported in a single HCI event.
-    auto fake_device =
-        std::make_unique<FakeDevice>(kPublicAddress1, true, true);
-    fake_device->SetAdvertisingData(adv_data);
-    fake_device->SetScanResponse(true, scan_rsp);
-    test_device()->AddDevice(std::move(fake_device));
+    auto fake_peer =
+        std::make_unique<FakePeer>(kPublicAddress1, true, true);
+    fake_peer->SetAdvertisingData(adv_data);
+    fake_peer->SetScanResponse(true, scan_rsp);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
     // events.
-    fake_device = std::make_unique<FakeDevice>(kRandomAddress1, false, true);
-    fake_device->SetAdvertisingData(adv_data);
-    fake_device->SetScanResponse(false, scan_rsp);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kRandomAddress1, false, true);
+    fake_peer->SetAdvertisingData(adv_data);
+    fake_peer->SetScanResponse(false, scan_rsp);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty scan response is reported over multiple HCI
     // events.
-    fake_device = std::make_unique<FakeDevice>(kPublicAddress2, true, true);
-    fake_device->SetAdvertisingData(adv_data);
-    fake_device->SetScanResponse(false, empty_data);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kPublicAddress2, true, true);
+    fake_peer->SetAdvertisingData(adv_data);
+    fake_peer->SetScanResponse(false, empty_data);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty adv data and non-empty scan response is reported
     // over multiple HCI events.
-    fake_device = std::make_unique<FakeDevice>(kRandomAddress2, true, true);
-    fake_device->SetScanResponse(false, scan_rsp);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kRandomAddress2, true, true);
+    fake_peer->SetScanResponse(false, scan_rsp);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
     // scannable.
-    fake_device = std::make_unique<FakeDevice>(kRandomAddress3, true, false);
-    fake_device->SetAdvertisingData(adv_data);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kRandomAddress3, true, false);
+    fake_peer->SetAdvertisingData(adv_data);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_NONCONN_IND
-    fake_device = std::make_unique<FakeDevice>(kRandomAddress4, false, false);
-    fake_device->SetAdvertisingData(adv_data);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kRandomAddress4, false, false);
+    fake_peer->SetAdvertisingData(adv_data);
+    test_device()->AddPeer(std::move(fake_peer));
   }
 
   LegacyLowEnergyScanner* scanner() const { return scanner_.get(); }
@@ -311,7 +311,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
   // packets. That device doesn't get reported until the end of the scan period.
   constexpr size_t kExpectedResultCount = 5u;
 
-  AddFakeDevices();
+  AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
   set_device_found_callback([&, this](const auto& result, const auto& data) {
@@ -333,7 +333,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
   ASSERT_EQ(kExpectedResultCount + 1, results.size());
 
   // Verify the 6 results against the fake devices that were set up by
-  // AddFakeDevices(). Since the scan period ended naturally, LowEnergyScanner
+  // AddFakePeers(). Since the scan period ended naturally, LowEnergyScanner
   // should generate a device found event for all pending reports even if a scan
   // response was not received for a scannable device (see Fake Device 4, i.e.
   // kRandomAddress3).
@@ -414,7 +414,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
 }
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
-  AddFakeDevices();
+  AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
   set_device_found_callback(
@@ -449,7 +449,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
   constexpr size_t kExpectedResultCount = 6u;
-  AddFakeDevices();
+  AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
   set_device_found_callback([&, this](const auto& result, const auto& data) {
@@ -467,7 +467,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
   ASSERT_EQ(kExpectedResultCount, results.size());
 
   // Verify the 6 results against the fake devices that were set up by
-  // AddFakeDevices(). All Scan Response PDUs should have been ignored.
+  // AddFakePeers(). All Scan Response PDUs should have been ignored.
 
   // Result 0
   {
@@ -552,26 +552,26 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, DirectedReport) {
   constexpr size_t kExpectedResultCount = 4u;
 
   // Unresolved public.
-  auto fake_dev = std::make_unique<FakeDevice>(kPublicUnresolved, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  auto fake_peer = std::make_unique<FakePeer>(kPublicUnresolved, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   // Unresolved random.
-  fake_dev = std::make_unique<FakeDevice>(kRandomUnresolved, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  fake_peer = std::make_unique<FakePeer>(kRandomUnresolved, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved public.
-  fake_dev = std::make_unique<FakeDevice>(kPublicResolved, true, false);
-  fake_dev->set_address_resolved(true);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  fake_peer = std::make_unique<FakePeer>(kPublicResolved, true, false);
+  fake_peer->set_address_resolved(true);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   // Resolved random.
-  fake_dev = std::make_unique<FakeDevice>(kRandomResolved, true, false);
-  fake_dev->set_address_resolved(true);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  fake_peer = std::make_unique<FakePeer>(kRandomResolved, true, false);
+  fake_peer->set_address_resolved(true);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   std::unordered_map<DeviceAddress, LowEnergyScanResult> results;
   set_directed_adv_callback(

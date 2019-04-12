@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_device.h"
+#include "fake_peer.h"
 
 #include <endian.h>
 #include <zircon/assert.h>
@@ -32,7 +32,7 @@ void WriteRandomRSSI(int8_t* out_mem) {
 
 }  // namespace
 
-FakeDevice::FakeDevice(const common::DeviceAddress& address, bool connectable,
+FakePeer::FakePeer(const common::DeviceAddress& address, bool connectable,
                        bool scannable)
     : ctrl_(nullptr),
       address_(address),
@@ -47,12 +47,12 @@ FakeDevice::FakeDevice(const common::DeviceAddress& address, bool connectable,
       should_batch_reports_(false),
       gatt_server_(this) {}
 
-void FakeDevice::SetAdvertisingData(const common::ByteBuffer& data) {
+void FakePeer::SetAdvertisingData(const common::ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= hci::kMaxLEAdvertisingDataLength);
   adv_data_ = common::DynamicByteBuffer(data);
 }
 
-void FakeDevice::SetScanResponse(bool should_batch_reports,
+void FakePeer::SetScanResponse(bool should_batch_reports,
                                  const common::ByteBuffer& data) {
   ZX_DEBUG_ASSERT(scannable_);
   ZX_DEBUG_ASSERT(data.size() <= hci::kMaxLEAdvertisingDataLength);
@@ -60,7 +60,7 @@ void FakeDevice::SetScanResponse(bool should_batch_reports,
   should_batch_reports_ = should_batch_reports;
 }
 
-common::DynamicByteBuffer FakeDevice::CreateInquiryResponseEvent(
+common::DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
     hci::InquiryMode mode) const {
   ZX_DEBUG_ASSERT(address_.type() == common::DeviceAddress::Type::kBREDR);
 
@@ -106,7 +106,7 @@ common::DynamicByteBuffer FakeDevice::CreateInquiryResponseEvent(
   return buffer;
 }
 
-common::DynamicByteBuffer FakeDevice::CreateAdvertisingReportEvent(
+common::DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
     bool include_scan_rsp) const {
   size_t param_size = sizeof(hci::LEMetaEventParams) +
                       sizeof(hci::LEAdvertisingReportSubeventParams) +
@@ -166,7 +166,7 @@ common::DynamicByteBuffer FakeDevice::CreateAdvertisingReportEvent(
   return buffer;
 }
 
-common::DynamicByteBuffer FakeDevice::CreateScanResponseReportEvent() const {
+common::DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
   ZX_DEBUG_ASSERT(scannable_);
   size_t param_size = sizeof(hci::LEMetaEventParams) +
                       sizeof(hci::LEAdvertisingReportSubeventParams) +
@@ -193,7 +193,7 @@ common::DynamicByteBuffer FakeDevice::CreateScanResponseReportEvent() const {
   return buffer;
 }
 
-void FakeDevice::AddLink(hci::ConnectionHandle handle) {
+void FakePeer::AddLink(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(!HasLink(handle));
   logical_links_.insert(handle);
 
@@ -201,23 +201,23 @@ void FakeDevice::AddLink(hci::ConnectionHandle handle) {
     set_connected(true);
 }
 
-void FakeDevice::RemoveLink(hci::ConnectionHandle handle) {
+void FakePeer::RemoveLink(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(HasLink(handle));
   logical_links_.erase(handle);
   if (logical_links_.empty())
     set_connected(false);
 }
 
-bool FakeDevice::HasLink(hci::ConnectionHandle handle) const {
+bool FakePeer::HasLink(hci::ConnectionHandle handle) const {
   return logical_links_.count(handle) != 0u;
 }
 
-FakeDevice::HandleSet FakeDevice::Disconnect() {
+FakePeer::HandleSet FakePeer::Disconnect() {
   set_connected(false);
   return std::move(logical_links_);
 }
 
-void FakeDevice::WriteScanResponseReport(
+void FakePeer::WriteScanResponseReport(
     hci::LEAdvertisingReportData* report) const {
   ZX_DEBUG_ASSERT(scannable_);
   report->event_type = hci::LEAdvertisingEventType::kScanRsp;
@@ -233,7 +233,7 @@ void FakeDevice::WriteScanResponseReport(
       reinterpret_cast<int8_t*>(report->data + report->length_data));
 }
 
-void FakeDevice::OnRxL2CAP(hci::ConnectionHandle conn,
+void FakePeer::OnRxL2CAP(hci::ConnectionHandle conn,
                            const common::ByteBuffer& pdu) {
   if (pdu.size() < sizeof(l2cap::BasicHeader)) {
     bt_log(WARN, "fake-hci", "malformed L2CAP packet!");

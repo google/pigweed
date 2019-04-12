@@ -16,14 +16,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
 namespace gap {
 namespace {
 
 using bt::testing::FakeController;
-using bt::testing::FakeDevice;
+using bt::testing::FakePeer;
 
 using common::DeviceAddress;
 
@@ -131,7 +131,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   //
   // Device 3:
   //   - Not discoverable;
-  void AddFakeDevices() {
+  void AddFakePeers() {
     // Device 0
     const auto kAdvData0 = common::CreateStaticByteBuffer(
         // Flags
@@ -142,9 +142,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '0');
-    auto fake_device = std::make_unique<FakeDevice>(kAddress0, true, true);
-    fake_device->SetAdvertisingData(kAdvData0);
-    test_device()->AddDevice(std::move(fake_device));
+    auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, true);
+    fake_peer->SetAdvertisingData(kAdvData0);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Device 1
     const auto kAdvData1 = common::CreateStaticByteBuffer(
@@ -153,9 +153,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete 16-bit service UUIDs
         0x03, 0x03, 0x0d, 0x18);
-    fake_device = std::make_unique<FakeDevice>(kAddress1, true, true);
-    fake_device->SetAdvertisingData(kAdvData1);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kAddress1, true, true);
+    fake_peer->SetAdvertisingData(kAdvData1);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Device 2
     const auto kAdvData2 = common::CreateStaticByteBuffer(
@@ -164,9 +164,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '2');
-    fake_device = std::make_unique<FakeDevice>(kAddress2, false, false);
-    fake_device->SetAdvertisingData(kAdvData2);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kAddress2, false, false);
+    fake_peer->SetAdvertisingData(kAdvData2);
+    test_device()->AddPeer(std::move(fake_peer));
 
     // Device 3
     const auto kAdvData3 = common::CreateStaticByteBuffer(
@@ -175,9 +175,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
         // Complete local name
         0x09, 0x09, 'D', 'e', 'v', 'i', 'c', 'e', ' ', '3');
-    fake_device = std::make_unique<FakeDevice>(kAddress3, false, false);
-    fake_device->SetAdvertisingData(kAdvData3);
-    test_device()->AddDevice(std::move(fake_device));
+    fake_peer = std::make_unique<FakePeer>(kAddress3, false, false);
+    fake_peer->SetAdvertisingData(kAdvData3);
+    test_device()->AddPeer(std::move(fake_peer));
   }
 
   // Creates and returns a discovery session.
@@ -584,7 +584,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
-  AddFakeDevices();
+  AddFakePeers();
 
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
 
@@ -681,7 +681,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
        StartDiscoveryWithFiltersCachedDeviceNotifications) {
-  AddFakeDevices();
+  AddFakePeers();
 
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
 
@@ -780,9 +780,9 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
-  auto fake_dev = std::make_unique<FakeDevice>(kAddress0, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   int count = 0;
   discovery_manager()->set_directed_connectable_callback(
@@ -815,7 +815,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   ASSERT_EQ(device, device_cache()->FindDeviceByAddress(kAddress0));
   ASSERT_EQ(TechnologyType::kClassic, device->technology());
 
-  AddFakeDevices();
+  AddFakePeers();
 
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
@@ -994,12 +994,12 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
        BackgroundScanOnlyHandlesDirectedEventsFromBondedDevices) {
   DeviceId kBondedDeviceId(1);
-  AddFakeDevices();
+  AddFakePeers();
 
   // Add a bonded device.
-  auto fake_dev = std::make_unique<FakeDevice>(kAddress0, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
@@ -1008,9 +1008,9 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   // Add a second device the sends directed advertisements but do not mark it as
   // bonded. Advertisements from this device should be ignored.
-  fake_dev = std::make_unique<FakeDevice>(kAddress1, true, false);
-  fake_dev->enable_directed_advertising(true);
-  test_device()->AddDevice(std::move(fake_dev));
+  fake_peer = std::make_unique<FakePeer>(kAddress1, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   int count = 0;
   discovery_manager()->set_directed_connectable_callback([&](const auto& id) {

@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -199,9 +199,9 @@ void FakeController::ClearDefaultResponseStatus(hci::OpCode opcode) {
   default_status_map_.erase(opcode);
 }
 
-void FakeController::AddDevice(std::unique_ptr<FakeDevice> device) {
-  device->set_ctrl(this);
-  devices_.push_back(std::move(device));
+void FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
+  peer->set_ctrl(this);
+  peers_.push_back(std::move(peer));
 }
 
 void FakeController::SetScanStateCallback(ScanStateCallback callback,
@@ -240,18 +240,18 @@ void FakeController::SetLEConnectionParametersCallback(
   le_conn_params_cb_dispatcher_ = dispatcher;
 }
 
-FakeDevice* FakeController::FindDeviceByAddress(
+FakePeer* FakeController::FindDeviceByAddress(
     const common::DeviceAddress& addr) {
-  for (auto& dev : devices_) {
+  for (auto& dev : peers_) {
     if (dev->address() == addr)
       return dev.get();
   }
   return nullptr;
 }
 
-FakeDevice* FakeController::FindDeviceByConnHandle(
+FakePeer* FakeController::FindDeviceByConnHandle(
     hci::ConnectionHandle handle) {
-  for (auto& dev : devices_) {
+  for (auto& dev : peers_) {
     if (dev->HasLink(handle))
       return dev.get();
   }
@@ -387,7 +387,7 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
 void FakeController::ConnectLowEnergy(const common::DeviceAddress& addr,
                                       hci::ConnectionRole role) {
   async::PostTask(dispatcher(), [addr, role, this] {
-    FakeDevice* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindDeviceByAddress(addr);
     if (!dev) {
       bt_log(WARN, "fake-hci", "no device found with address: %s",
              addr.ToString().c_str());
@@ -436,7 +436,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
     const common::DeviceAddress& addr,
     const hci::LEPreferredConnectionParameters& params) {
   async::PostTask(dispatcher(), [addr, params, this] {
-    FakeDevice* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindDeviceByAddress(addr);
     if (!dev) {
       bt_log(WARN, "fake-hci", "no device found with address: %s",
              addr.ToString().c_str());
@@ -467,7 +467,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
 
 void FakeController::Disconnect(const common::DeviceAddress& addr) {
   async::PostTask(dispatcher(), [addr, this] {
-    FakeDevice* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindDeviceByAddress(addr);
     if (!dev || !dev->connected()) {
       bt_log(WARN, "fake-hci", "no connected device found with address: %s",
              addr.ToString().c_str());
@@ -508,7 +508,7 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
 
 void FakeController::SendInquiryResponses() {
   // TODO(jamuraa): combine some of these into a single response event
-  for (const auto& device : devices_) {
+  for (const auto& device : peers_) {
     if (!device->has_inquiry_response()) {
       continue;
     }
@@ -522,10 +522,10 @@ void FakeController::SendInquiryResponses() {
 }
 
 void FakeController::SendAdvertisingReports() {
-  if (!le_scan_state_.enabled || devices_.empty())
+  if (!le_scan_state_.enabled || peers_.empty())
     return;
 
-  for (const auto& device : devices_) {
+  for (const auto& device : peers_) {
     if (!device->has_advertising_reports()) {
       continue;
     }
@@ -598,7 +598,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
   // Find the device that matches the requested address.
-  FakeDevice* device = FindDeviceByAddress(peer_address);
+  FakePeer* device = FindDeviceByAddress(peer_address);
   if (device) {
     if (device->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;
@@ -703,7 +703,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
   // Find the device that matches the requested address.
-  FakeDevice* device = FindDeviceByAddress(peer_address);
+  FakePeer* device = FindDeviceByAddress(peer_address);
   if (device) {
     if (device->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;
@@ -789,7 +789,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
 void FakeController::OnLEConnectionUpdateCommandReceived(
     const hci::LEConnectionUpdateCommandParams& params) {
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
-  FakeDevice* device = FindDeviceByConnHandle(handle);
+  FakePeer* device = FindDeviceByConnHandle(handle);
   if (!device) {
     RespondWithCommandStatus(hci::kLEConnectionUpdate,
                              hci::StatusCode::kUnknownConnectionId);
@@ -834,7 +834,7 @@ void FakeController::OnDisconnectCommandReceived(
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
 
   // Find the device that matches the disconnected handle.
-  FakeDevice* device = FindDeviceByConnHandle(handle);
+  FakePeer* device = FindDeviceByConnHandle(handle);
   if (!device) {
     RespondWithCommandStatus(hci::kDisconnect,
                              hci::StatusCode::kUnknownConnectionId);
@@ -1382,7 +1382,7 @@ void FakeController::OnACLDataPacketReceived(
 
   const auto& header = acl_data_packet.As<hci::ACLDataHeader>();
   hci::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
-  FakeDevice* dev = FindDeviceByConnHandle(handle);
+  FakePeer* dev = FindDeviceByConnHandle(handle);
   if (!dev) {
     bt_log(WARN, "fake-hci", "ACL data received for unknown handle!");
     return;

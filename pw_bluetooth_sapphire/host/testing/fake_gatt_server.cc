@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
 #include "fake_controller.h"
-#include "fake_device.h"
+#include "fake_peer.h"
 
 namespace bt {
 namespace testing {
@@ -21,7 +21,7 @@ using common::ByteBuffer;
 using common::CreateStaticByteBuffer;
 using common::StaticByteBuffer;
 
-FakeGattServer::FakeGattServer(FakeDevice* dev) : dev_(dev) {
+FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
   ZX_DEBUG_ASSERT(dev_);
 }
 
