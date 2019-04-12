@@ -22,6 +22,9 @@ namespace internal {
 // "Modes of Operation" for more information about the possible modes.
 class TxEngine {
  public:
+  // Type defining the callback that a TxEngine uses to deliver a PDU to lower
+  // layers. The callee may assume that the ByteBufferPtr owns an instance of a
+  // DynamicByteBuffer or SlabBuffer.
   using SendBasicFrameCallback = fit::function<void(common::ByteBufferPtr pdu)>;
 
   // Creates a transmit engine, which will invoke |send_basic_frame_callback|
@@ -41,9 +44,12 @@ class TxEngine {
   }
   virtual ~TxEngine() = default;
 
-  // Queues an SDU for transmission, returning true on success. As noted in the
-  // ctor documentation, this _may_ result in a synchronous invocation of
-  // |send_basic_frame_callback_|.
+  // Queues an SDU for transmission, returning true on success.
+  //
+  // * As noted in the ctor documentation, this _may_ result in a synchronous
+  //   invocation of |send_basic_frame_callback_|.
+  // * It is presumed that the ByteBufferPtr owns an instance of a
+  //   DynamicByteBuffer or SlabBuffer.
   virtual bool QueueSdu(common::ByteBufferPtr) = 0;
 
  protected:
