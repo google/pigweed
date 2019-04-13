@@ -552,6 +552,38 @@ void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
   }
 }
 
+void HostServer::Forget(::std::string device_id, ForgetCallback callback) {
+  auto id = DeviceIdFromString(device_id);
+  if (!id.has_value()) {
+    callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Invalid peer ID"));
+    return;
+  }
+  auto peer = adapter()->remote_device_cache()->FindDeviceById(*id);
+  if (!peer) {
+    callback(NewFidlError(ErrorCode::NOT_FOUND,
+                          "Cannot find peer with the given ID"));
+    return;
+  }
+
+  if (peer->le()) {
+    adapter()->le_connection_manager()->Disconnect(*id);
+  }
+  if (peer->bredr()) {
+    adapter()->bredr_connection_manager()->Disconnect(*id);
+  }
+
+  const bool forgot = adapter()->remote_device_cache()->ForgetPeer(*id);
+  bt_log(TRACE, "bt-host", "forget peer (id %s) %s", device_id.c_str(),
+         forgot ? "succeeded" : "failed");
+  if (!forgot) {
+    callback(NewFidlError(ErrorCode::FAILED, "Failed to forget peer"));
+    return;
+  }
+
+  // TODO(BT-652): This should be called when disconnection completes.
+  callback(Status());
+}
+
 void HostServer::RequestLowEnergyCentral(
     fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request) {
   BindServer<LowEnergyCentralServer>(std::move(request), gatt_host_);

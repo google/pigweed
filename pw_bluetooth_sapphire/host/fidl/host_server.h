@@ -63,6 +63,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate>
           delegate) override;
   void Connect(::std::string device_id, ConnectCallback callback) override;
+  void Forget(::std::string peer_id, ForgetCallback callback) override;
 
   void RequestLowEnergyCentral(
       ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> central)
