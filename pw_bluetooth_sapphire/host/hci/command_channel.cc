@@ -624,8 +624,8 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
     }
     auto packet_bytes = packet->mutable_view()->mutable_data();
     zx_status_t read_status =
-        channel_.read(0u, packet_bytes.mutable_data(), packet_bytes.size(),
-                      &read_size, nullptr, 0, nullptr);
+        channel_.rea2(0u, packet_bytes.mutable_data(), nullptr,
+                      packet_bytes.size(), 0, &read_size, nullptr);
     if (read_status < 0) {
       bt_log(TRACE, "hci", "Failed to read event bytes: %s",
              zx_status_get_string(read_status));
