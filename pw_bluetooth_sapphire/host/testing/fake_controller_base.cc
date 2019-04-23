@@ -154,7 +154,7 @@ void FakeControllerBase::HandleCommandPacket(
     const zx_packet_signal_t* signal) {
   common::StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
-  zx_status_t status = cmd_channel_.rea2(0u, buffer.mutable_data(), nullptr,
+  zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), nullptr,
                                          hci::kMaxCommandPacketPayloadSize,
                                          0, &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
@@ -196,7 +196,7 @@ void FakeControllerBase::HandleACLPacket(
       buffer;
   uint32_t read_size;
   zx_status_t status =
-      acl_channel_.rea2(0u, buffer.mutable_data(), nullptr, buffer.size(), 0,
+      acl_channel_.read(0u, buffer.mutable_data(), nullptr, buffer.size(), 0,
                         &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
