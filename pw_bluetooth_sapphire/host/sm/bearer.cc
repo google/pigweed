@@ -19,6 +19,7 @@ namespace bt {
 using common::ByteBuffer;
 using common::DeviceAddress;
 using common::HostError;
+using common::UInt128;
 
 namespace sm {
 namespace {
@@ -202,6 +203,46 @@ bool Bearer::SendEncryptionKey(const hci::LinkKey& link_key) {
   return true;
 }
 
+bool Bearer::SendIdentityInfo(const IdentityInfo& id_info) {
+  if (!pairing_started()) {
+    bt_log(TRACE, "sm", "not pairing!");
+    return false;
+  }
+
+  if (!id_info.address.IsStaticRandom() && !id_info.address.IsPublic()) {
+    bt_log(TRACE, "sm", "identity address must be public or static random!");
+    return false;
+  }
+
+  auto id_info_pdu = NewPDU(sizeof(UInt128));
+  auto id_addr_info_pdu = NewPDU(sizeof(IdentityAddressInformationParams));
+  if (!id_info_pdu || !id_addr_info_pdu) {
+    bt_log(ERROR, "sm", "out of memory!");
+    Abort(ErrorCode::kUnspecifiedReason);
+    return false;
+  }
+
+  // Send IRK
+  {
+    PacketWriter writer(kIdentityInformation, id_info_pdu.get());
+    *writer.mutable_payload<UInt128>() = id_info.irk;
+    chan_->Send(std::move(id_info_pdu));
+  }
+
+  // Send identity address
+  {
+    PacketWriter writer(kIdentityAddressInformation, id_addr_info_pdu.get());
+    auto* params = writer.mutable_payload<IdentityAddressInformationParams>();
+    params->type = (id_info.address.IsStaticRandom())
+                       ? AddressType::kStaticRandom
+                       : AddressType::kPublic;
+    params->bd_addr = id_info.address.value();
+    chan_->Send(std::move(id_addr_info_pdu));
+  }
+
+  return true;
+}
+
 void Bearer::StopTimer() {
   if (timeout_task_.is_pending()) {
     zx_status_t status = timeout_task_.Cancel();
@@ -338,10 +379,13 @@ void Bearer::BuildPairingParameters(PairingRequestParams* params,
       oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
 
   // We always request identity information from the remote.
-  // TODO(armansito): Support sending local identity info when we support local
-  // RPAs.
-  *out_local_keys = 0;
   *out_remote_keys = KeyDistGen::kIdKey;
+  *out_local_keys = 0;
+
+  ZX_DEBUG_ASSERT(listener_);
+  if (listener_->HasIdentityInformation()) {
+    *out_local_keys |= KeyDistGen::kIdKey;
+  }
 
   // When we are the master, we request that the peer send us encryption
   // information as it is required to do so (Vol 3, Part H, 2.4.2.3). Otherwise

@@ -345,11 +345,9 @@ void PairingState::EndLegacyPairingPhase2() {
       return;
     }
 
-    // TODO(armansito): Add a test case for distributing the local keys here as
-    // the initiator. We currently only distribute the LTK and we only do so
-    // when we are the responder.
-    if (!legacy_state_->LocalKeysSent()) {
-      SendLocalKeys();
+    if (!legacy_state_->LocalKeysSent() && !SendLocalKeys()) {
+      AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
+      return;
     }
   }
 
@@ -361,7 +359,7 @@ void PairingState::EndLegacyPairingPhase2() {
   }
 }
 
-void PairingState::SendLocalKeys() {
+bool PairingState::SendLocalKeys() {
   ZX_DEBUG_ASSERT(legacy_state_);
   ZX_DEBUG_ASSERT(legacy_state_->InPhase3());
   ZX_DEBUG_ASSERT(!legacy_state_->LocalKeysSent());
@@ -378,7 +376,21 @@ void PairingState::SendLocalKeys() {
     le_smp_->SendEncryptionKey(key);
   }
 
+  if (legacy_state_->ShouldSendIdentity()) {
+    ZX_DEBUG_ASSERT(delegate_);
+    auto id_info = delegate_->OnIdentityInformationRequest();
+    if (!id_info) {
+      bt_log(TRACE, "sm",
+             "local identity information required but no longer "
+             "available; abort pairing");
+      return false;
+    }
+
+    le_smp_->SendIdentityInfo(*id_info);
+  }
+
   legacy_state_->sent_local_keys = true;
+  return true;
 }
 
 void PairingState::CompleteLegacyPairing() {
@@ -848,6 +860,14 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
     bt_log(TRACE, "sm", "security request resolved - %s %s",
            status.ToString().c_str(), security.ToString().c_str());
   });
+}
+
+bool PairingState::HasIdentityInformation() {
+  // This is called by the bearer to determine if we have local identity
+  // information to distribute during a feature exchange. We ask the delegate to
+  // see if it currently has this data to determine whether to continue.
+  ZX_DEBUG_ASSERT(delegate_);
+  return static_cast<bool>(delegate_->OnIdentityInformationRequest());
 }
 
 void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {

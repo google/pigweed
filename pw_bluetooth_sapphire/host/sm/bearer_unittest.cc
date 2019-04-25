@@ -110,6 +110,9 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
     security_request_auth_req_ = auth_req;
   }
 
+  // Bearer::Listener override:
+  bool HasIdentityInformation() override { return has_identity_info_; }
+
   Bearer* bearer() const { return bearer_.get(); }
   l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
 
@@ -140,6 +143,8 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
     return security_request_auth_req_;
   }
 
+  void set_has_identity_info(bool value) { has_identity_info_ = value; }
+
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<Bearer> bearer_;
@@ -166,6 +171,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
   UInt128 irk_;
   DeviceAddress identity_addr_;
   AuthReqField security_request_auth_req_ = 0u;
+  bool has_identity_info_ = false;
 
   fxl::WeakPtrFactory<SMP_BearerTest> weak_ptr_factory_;
 
@@ -248,6 +254,41 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
       0b00001101,  // AuthReq: Bonding, SC, MITM
       0x10,        // encr. key size: 16 (default max)
       0x00,        // initiator keys: none
+      0x03         // responder keys: enc key and identity info
+  );
+  // clang-format on
+
+  int tx_count = 0;
+  fake_chan()->SetSendCallback(
+      [&](auto pdu) {
+        tx_count++;
+        EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
+      },
+      dispatcher());
+  EXPECT_TRUE(bearer()->InitiateFeatureExchange());
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, tx_count);
+  EXPECT_TRUE(bearer()->pairing_started());
+  EXPECT_FALSE(bearer()->InitiateFeatureExchange());
+}
+
+TEST_F(SMP_BearerTest, FeatureExchangeInitiatorWithIdentityInfo) {
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
+            true /* sc_supported */, IOCapability::kDisplayYesNo);
+  set_has_identity_info(true);
+  bearer()->set_oob_available(true);
+  bearer()->set_mitm_required(true);
+
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,        // code: "Pairing Request"
+      0x01,        // IO cap.: DisplayYesNo
+      0x01,        // OOB: present
+      0b00001101,  // AuthReq: Bonding, SC, MITM
+      0x10,        // encr. key size: 16 (default max)
+      0x02,        // initiator keys: identity info
       0x03         // responder keys: enc key and identity info
   );
   // clang-format on
@@ -652,6 +693,76 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalResponderRespectsInitiator) {
   // clang-format on
 
   NewBearer(hci::Connection::Role::kSlave);
+  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
+  EXPECT_TRUE(bearer()->pairing_started());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().initiator);
+  EXPECT_FALSE(features().local_key_distribution);
+  EXPECT_FALSE(features().remote_key_distribution);
+}
+
+// Tests that we (as the responder) request to distribute identity information
+// if available.
+TEST_F(SMP_BearerTest, FeatureExchangeResponderDistributesIdKey) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: no auth. request by default
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x02   // responder keys: identity info
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, no MITM
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x02   // responder keys: identity info
+  );
+  // clang-format on
+
+  NewBearer(hci::Connection::Role::kSlave);
+  set_has_identity_info(true);
+
+  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
+  EXPECT_TRUE(bearer()->pairing_started());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().initiator);
+  EXPECT_TRUE(features().local_key_distribution & KeyDistGen::kIdKey);
+  EXPECT_FALSE(features().remote_key_distribution);
+}
+
+// Tests that we (as the responder) do not request to distribute identity
+// information if the data is available but the initiator did not request it.
+TEST_F(SMP_BearerTest, FeatureExchangeResponderRespectsInitiatorForIdKey) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: no auth. request by default
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, no MITM
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none  // we shouldn't distribute the IdKey
+  );
+  // clang-format on
+
+  NewBearer(hci::Connection::Role::kSlave);
+  set_has_identity_info(true);
+
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
   EXPECT_TRUE(bearer()->pairing_started());
   EXPECT_EQ(1, feature_exchange_count());

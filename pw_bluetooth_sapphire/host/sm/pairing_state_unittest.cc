@@ -68,6 +68,11 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     }
   }
 
+  std::optional<IdentityInfo> OnIdentityInformationRequest() override {
+    local_id_info_callback_count_++;
+    return local_id_info_;
+  }
+
   // Called by |pairing_| when the pairing procedure ends.
   void OnPairingComplete(Status status) override {
     pairing_complete_count_++;
@@ -136,6 +141,20 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
         master_ident_count_++;
         ediv_ = le16toh(params.ediv);
         rand_ = le64toh(params.rand);
+        break;
+      }
+      case kIdentityInformation:
+        id_info_count_++;
+        id_info_ = reader.payload<UInt128>();
+        break;
+      case kIdentityAddressInformation: {
+        const auto& params = reader.payload<IdentityAddressInformationParams>();
+        id_addr_info_count_++;
+        id_addr_info_ =
+            common::DeviceAddress(params.type == AddressType::kStaticRandom
+                                      ? DeviceAddress::Type::kLERandom
+                                      : DeviceAddress::Type::kLEPublic,
+                                  params.bd_addr);
         break;
       }
       default:
@@ -269,6 +288,10 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     return auth_failure_status_;
   }
 
+  int local_id_info_callback_count() const {
+    return local_id_info_callback_count_;
+  }
+
   int new_sec_props_count() const { return new_sec_props_count_; }
   const SecurityProperties& new_sec_props() const { return new_sec_props_; }
 
@@ -285,17 +308,25 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     tk_delegate_ = std::move(delegate);
   }
 
+  void set_local_id_info(std::optional<IdentityInfo> info) {
+    local_id_info_ = info;
+  }
+
   int pairing_failed_count() const { return pairing_failed_count_; }
   int pairing_request_count() const { return pairing_request_count_; }
   int pairing_response_count() const { return pairing_response_count_; }
   int pairing_confirm_count() const { return pairing_confirm_count_; }
   int pairing_random_count() const { return pairing_random_count_; }
   int enc_info_count() const { return enc_info_count_; }
+  int id_info_count() const { return id_info_count_; }
+  int id_addr_info_count() const { return id_addr_info_count_; }
   int master_ident_count() const { return master_ident_count_; }
 
   const UInt128& pairing_confirm() const { return pairing_confirm_; }
   const UInt128& pairing_random() const { return pairing_random_; }
   const UInt128& enc_info() const { return enc_info_; }
+  const UInt128& id_info() const { return id_info_; }
+  const DeviceAddress& id_addr_info() const { return id_addr_info_; }
   uint16_t ediv() const { return ediv_; }
   uint64_t rand() const { return rand_; }
   const PairingData& pairing_data() const { return pairing_data_; }
@@ -340,6 +371,10 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
   int auth_failure_callback_count_ = 0;
   hci::Status auth_failure_status_;
 
+  // State tracking the OnIdentityInformationRequest event.
+  int local_id_info_callback_count_ = 0;
+  std::optional<IdentityInfo> local_id_info_;
+
   // Callback used to notify when a call to OnTKRequest() is received.
   // OnTKRequest() will reply with 0 if a callback is not set.
   TkDelegate tk_delegate_;
@@ -351,12 +386,16 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
   int pairing_confirm_count_ = 0;
   int pairing_random_count_ = 0;
   int enc_info_count_ = 0;
+  int id_info_count_ = 0;
+  int id_addr_info_count_ = 0;
   int master_ident_count_ = 0;
 
   // Values that have we have sent to the peer.
   UInt128 pairing_confirm_;
   UInt128 pairing_random_;
   UInt128 enc_info_;
+  UInt128 id_info_;
+  DeviceAddress id_addr_info_;
   uint16_t ediv_;
   uint64_t rand_;
 
@@ -1282,9 +1321,15 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithoutKeyExchange) {
   EXPECT_FALSE(identity());
   EXPECT_FALSE(csrk());
 
+  // Should have been called at least once to determine local identity
+  // availability.
+  EXPECT_NE(0, local_id_info_callback_count());
+
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
   EXPECT_TRUE(pairing_status());
   EXPECT_EQ(pairing_status(), pairing_complete_status());
 
@@ -1461,6 +1506,15 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
   EXPECT_EQ(16u, sec_props().enc_key_size());
   EXPECT_FALSE(sec_props().secure_connections());
 
+  // Should have been called at least once to determine local identity
+  // availability.
+  EXPECT_NE(0, local_id_info_callback_count());
+
+  // Local identity information should not have been distributed by us since it
+  // isn't available.
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
+
   // Should have notified the LTK.
   EXPECT_EQ(1, pairing_data_callback_count());
   ASSERT_TRUE(ltk());
@@ -1475,6 +1529,71 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
   // No security property update should have been sent for the LTK. This is
   // because the LTK and the STK are expected to have the same properties.
   EXPECT_EQ(1, new_sec_props_count());
+}
+
+TEST_F(SMP_InitiatorPairingTest, Phase3WithLocalIdKey) {
+  IdentityInfo local_id_info;
+  local_id_info.irk = UInt128{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
+  local_id_info.address = kLocalAddr;
+  set_local_id_info(local_id_info);
+
+  UInt128 stk;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            0,                    // remote keys
+                            KeyDistGen::kIdKey);  // local keys
+
+  // Local identity information should have been sent.
+  EXPECT_EQ(1, id_info_count());
+  EXPECT_EQ(local_id_info.irk, id_info());
+  EXPECT_EQ(1, id_addr_info_count());
+  EXPECT_EQ(local_id_info.address, id_addr_info());
+
+  // Pairing should succeed without notifying any keys.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(pairing_status());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+}
+
+// Tests that pairing results in an error if a local ID key was initially
+// negotiated but gets removed before the distribution phase.
+TEST_F(SMP_InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
+  IdentityInfo local_id_info;
+  local_id_info.irk = UInt128{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
+  local_id_info.address = kLocalAddr;
+  set_local_id_info(local_id_info);
+
+  UInt128 stk;
+  FastForwardToSTK(&stk, SecurityLevel::kEncrypted,
+                   0,                    // remote keys
+                   KeyDistGen::kIdKey);  // local keys
+
+  // Local identity information should not have been sent yet.
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
+
+  // Pairing still in progress.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(0, pairing_callback_count());
+  EXPECT_EQ(0, pairing_complete_count());
+
+  // Remove the local identity information.
+  set_local_id_info(std::nullopt);
+
+  // Encrypt with the STK to finish phase 2.
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
+                                               true /* enabled */);
+  RunLoopUntilIdle();
+
+  // Pairing should have been aborted.
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_FALSE(pairing_status());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
 }
 
 TEST_F(SMP_InitiatorPairingTest, Phase3IRKReceivedTwice) {
@@ -2000,6 +2119,10 @@ TEST_F(SMP_ResponderPairingTest,
   EXPECT_EQ(ediv(), fake_link()->ltk()->ediv());
   EXPECT_EQ(rand(), fake_link()->ltk()->rand());
 
+  // No local identity information should have been sent.
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
+
   // This LTK should be stored with the pairing data but the pairing callback
   // shouldn't be called because pairing wasn't initiated by UpgradeSecurity().
   EXPECT_EQ(0, pairing_failed_count());
@@ -2027,6 +2150,51 @@ TEST_F(SMP_ResponderPairingTest,
   // Nonetheless the link should have been assigned the LTK.
   ASSERT_TRUE(pairing_data().ltk);
   EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+}
+
+TEST_F(SMP_ResponderPairingTest,
+       LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
+  IdentityInfo local_id_info;
+  local_id_info.irk = UInt128{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
+  local_id_info.address = kLocalAddr;
+  set_local_id_info(local_id_info);
+
+  EXPECT_EQ(0, enc_info_count());
+  EXPECT_EQ(0, master_ident_count());
+
+  UInt128 stk;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            KeyDistGen::kIdKey,   // remote keys
+                            KeyDistGen::kIdKey);  // local keys
+
+  // No local LTK, EDiv, and Rand should be sent to the peer.
+  EXPECT_EQ(0, enc_info_count());
+  EXPECT_EQ(0, master_ident_count());
+
+  // Local identity information should have been sent.
+  EXPECT_EQ(1, id_info_count());
+  EXPECT_EQ(local_id_info.irk, id_info());
+  EXPECT_EQ(1, id_addr_info_count());
+  EXPECT_EQ(local_id_info.address, id_addr_info());
+
+  // Still waiting for master's keys.
+  EXPECT_EQ(0, pairing_data_callback_count());
+
+  const auto kIrk = common::RandomUInt128();
+  ReceiveIdentityResolvingKey(kIrk);
+  ReceiveIdentityAddress(kPeerAddr);
+  RunLoopUntilIdle();
+
+  // Pairing is considered complete when all keys have been distributed even if
+  // we're still encrypted with the STK. This is because the master may not
+  // always re-encrypt the link with the LTK until a reconnection.
+  EXPECT_EQ(1, pairing_data_callback_count());
+
+  // The peer should have sent us its identity information.
+  ASSERT_TRUE(pairing_data().irk);
+  EXPECT_EQ(kIrk, pairing_data().irk->value());
+  ASSERT_TRUE(pairing_data().identity_address);
+  EXPECT_EQ(kPeerAddr, *pairing_data().identity_address);
 }
 
 TEST_F(SMP_ResponderPairingTest, AssignLongTermKeyFailsDuringPairing) {

@@ -155,6 +155,12 @@ struct PairingData final {
   }
 };
 
+// Container for identity information for distribution.
+struct IdentityInfo {
+  common::UInt128 irk;
+  common::DeviceAddress address;
+};
+
 }  // namespace sm
 }  // namespace bt
 

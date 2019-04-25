@@ -52,6 +52,12 @@ class PairingState final : public Bearer::Listener {
     virtual void OnTemporaryKeyRequest(PairingMethod method,
                                        TkResponse response) = 0;
 
+    // Called to obtain the local identity information to distribute to the
+    // peer. The delegate should return std::nullopt if there is no identity
+    // information to share. Otherwise, the delegate should return the IRK and
+    // the identity address to distribute.
+    virtual std::optional<IdentityInfo> OnIdentityInformationRequest() = 0;
+
     // Called when an ongoing pairing is completed with the given |status|.
     virtual void OnPairingComplete(Status status) = 0;
 
@@ -124,8 +130,6 @@ class PairingState final : public Bearer::Listener {
 
   // Abort all ongoing pairing procedures and notify pairing callbacks with an
   // error.
-  // TODO(armansito): Add a "pairing canceled" callback to notify the pairing
-  // delegate so that it can dismiss any user challenge.
   void Abort();
 
  private:
@@ -257,8 +261,9 @@ class PairingState final : public Bearer::Listener {
   // Pairing Phase 2.
   void EndLegacyPairingPhase2();
 
-  // Called to send all agreed upon keys to the peer during Phase 3.
-  void SendLocalKeys();
+  // Called to send all agreed upon keys to the peer during Phase 3. Returns
+  // false if an error occurs and pairing should be aborted.
+  bool SendLocalKeys();
 
   // Completes the legacy pairing process by cleaning up pairing state, updates
   // the current security level, and notifies parties that have requested
@@ -282,6 +287,7 @@ class PairingState final : public Bearer::Listener {
   void OnIdentityResolvingKey(const common::UInt128& irk) override;
   void OnIdentityAddress(const common::DeviceAddress& address) override;
   void OnSecurityRequest(AuthReqField auth_req) override;
+  bool HasIdentityInformation() override;
 
   // Called when the encryption state of the LE link changes.
   void OnEncryptionChange(hci::Status status, bool enabled);

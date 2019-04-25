@@ -238,6 +238,11 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
   }
 
   // sm::PairingState::Delegate override:
+  std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override {
+    return std::nullopt;  // TODO(BT-243): Provide local identity information.
+  }
+
+  // sm::PairingState::Delegate override:
   void OnTemporaryKeyRequest(
       sm::PairingMethod method,
       sm::PairingState::Delegate::TkResponse responder) override {

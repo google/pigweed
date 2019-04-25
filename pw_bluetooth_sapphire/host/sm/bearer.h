@@ -97,6 +97,11 @@ class Bearer final {
     // Part H, 2.4.6) (Note: A device in the link layer master role is not
     // allowed to send this request).
     virtual void OnSecurityRequest(AuthReqField auth_req) = 0;
+
+    // Delegate method to determine whether identity information is available to
+    // send to the peer. This is used to build the pairing parameters during a
+    // local or remote initiated feature exchange.
+    virtual bool HasIdentityInformation() = 0;
   };
 
   // Initializes this Bearer with the following parameters:
@@ -148,6 +153,10 @@ class Bearer final {
   // Sends the encryption information during the key distribution phase
   // (Phase 3) of legacy pairing. Returns false if the command cannot be sent.
   bool SendEncryptionKey(const hci::LinkKey& link_key);
+
+  // Sends the identity information during the key distribution phase (Phase 3)
+  // of pairing. Returns false if the command cannot be sent.
+  bool SendIdentityInfo(const IdentityInfo& id_info);
 
   // Stops the pairing timer. The pairing timer is started when a Pairing
   // Request or Security Request is sent or received and must be explicitly
