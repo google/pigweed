@@ -16,6 +16,8 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
   FakeLocalAddressDelegate() = default;
   ~FakeLocalAddressDelegate() override = default;
 
+  std::optional<common::UInt128> irk() const override { return std::nullopt; }
+  common::DeviceAddress identity_address() const override { return {}; }
   void EnsureLocalAddress(AddressCallback callback) override;
 
   // If set to true EnsureLocalAddress runs its callback asynchronously.

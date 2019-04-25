@@ -7,7 +7,10 @@
 
 #include <lib/fit/function.h>
 
+#include <optional>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
 namespace bt {
 namespace hci {
@@ -15,6 +18,12 @@ namespace hci {
 class LocalAddressDelegate {
  public:
   virtual ~LocalAddressDelegate() = default;
+
+  // Returns the currently assigned IRK, if any.
+  virtual std::optional<common::UInt128> irk() const = 0;
+
+  // Returns the identity address.
+  virtual common::DeviceAddress identity_address() const = 0;
 
   // Asynchronously returns the local LE controller address used by all LE link
   // layer procedures with the exception of 5.0 advertising sets. These include:

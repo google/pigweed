@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
@@ -239,7 +240,17 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
   // sm::PairingState::Delegate override:
   std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override {
-    return std::nullopt;  // TODO(BT-243): Provide local identity information.
+    if (!conn_mgr_->local_address_delegate()->irk()) {
+      bt_log(SPEW, "gap-le", "no local identity information to exchange");
+      return std::nullopt;
+    }
+
+    bt_log(TRACE, "gap-le", "will distribute local identity information");
+    sm::IdentityInfo id_info;
+    id_info.irk = *conn_mgr_->local_address_delegate()->irk();
+    id_info.address = conn_mgr_->local_address_delegate()->identity_address();
+
+    return id_info;
   }
 
   // sm::PairingState::Delegate override:
@@ -380,9 +391,9 @@ void LowEnergyConnectionManager::PendingRequestData::NotifyCallbacks(
 }
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
-    fxl::RefPtr<hci::Transport> hci, hci::LowEnergyConnector* connector,
-    RemoteDeviceCache* device_cache, fbl::RefPtr<data::Domain> data_domain,
-    fbl::RefPtr<gatt::GATT> gatt)
+    fxl::RefPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
+    hci::LowEnergyConnector* connector, RemoteDeviceCache* device_cache,
+    fbl::RefPtr<data::Domain> data_domain, fbl::RefPtr<gatt::GATT> gatt)
     : hci_(hci),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
@@ -390,6 +401,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       data_domain_(data_domain),
       gatt_(gatt),
       connector_(connector),
+      local_address_delegate_(addr_delegate),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(device_cache_);
@@ -397,6 +409,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
   ZX_DEBUG_ASSERT(gatt_);
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(connector_);
+  ZX_DEBUG_ASSERT(local_address_delegate_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 

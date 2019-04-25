@@ -7,6 +7,13 @@
 #include <endian.h>
 #include <unistd.h>
 
+#include "bredr_connection_manager.h"
+#include "bredr_discovery_manager.h"
+#include "low_energy_address_manager.h"
+#include "low_energy_advertising_manager.h"
+#include "low_energy_connection_manager.h"
+#include "low_energy_discovery_manager.h"
+#include "remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -17,14 +24,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
-
-#include "bredr_connection_manager.h"
-#include "bredr_discovery_manager.h"
-#include "low_energy_address_manager.h"
-#include "low_energy_advertising_manager.h"
-#include "low_energy_connection_manager.h"
-#include "low_energy_discovery_manager.h"
-#include "remote_device.h"
 
 namespace bt {
 namespace gap {
@@ -241,7 +240,7 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
 }
 
 void Adapter::SetDeviceClass(common::DeviceClass dev_class,
-                               hci::StatusCallback callback) {
+                             hci::StatusCallback callback) {
   auto write_dev_class = hci::CommandPacket::New(
       hci::kWriteClassOfDevice, sizeof(hci::WriteClassOfDeviceCommandParams));
   write_dev_class->mutable_view()
@@ -553,7 +552,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   le_discovery_manager_->set_directed_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_, hci_le_connector_.get(), &device_cache_, data_domain_, gatt_);
+      hci_, le_address_manager_.get(), hci_le_connector_.get(), &device_cache_,
+      data_domain_, gatt_);
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
 

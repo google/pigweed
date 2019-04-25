@@ -91,10 +91,9 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // used.
   void EnablePrivacy(bool enabled);
 
-  // Returns the local address that should be used by the next LE procedure
-  // after refreshing the local random address. |callback| is run to report the
-  // address and may run either synchronously or asynchronously.
-  // LocalAddressDelegate override:
+  // LocalAddressDelegate overrides:
+  std::optional<common::UInt128> irk() const override { return irk_; }
+  common::DeviceAddress identity_address() const override { return public_; }
   void EnsureLocalAddress(AddressCallback callback) override;
 
  private:

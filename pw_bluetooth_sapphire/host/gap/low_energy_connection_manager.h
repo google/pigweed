@@ -27,6 +27,7 @@
 namespace bt {
 
 namespace hci {
+class LocalAddressDelegate;
 class Transport;
 }  // namespace hci
 
@@ -87,7 +88,20 @@ using LowEnergyConnectionRefPtr = std::unique_ptr<LowEnergyConnectionRef>;
 
 class LowEnergyConnectionManager final {
  public:
+  // |hci|: The HCI transport used to track link layer connection events from
+  //        the controller.
+  // |addr_delegate|: Used to obtain local identity information during pairing
+  //                  procedures.
+  // |connector|: Adapter object for initiating link layer connections. This
+  //              object abstracts the legacy and extended HCI command sets.
+  // |device_cache|: The cache that stores peer device data. The connection
+  //                 manager stores and retrieves pairing data and connection
+  //                 parameters to/from the cache. It also updates the
+  //                 connection and bonding state of a device via the cache.
+  // |data_domain|: Used to interact with the L2CAP layer.
+  // |gatt|: Used to interact with the GATT profile layer.
   LowEnergyConnectionManager(fxl::RefPtr<hci::Transport> hci,
+                             hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector,
                              RemoteDeviceCache* device_cache,
                              fbl::RefPtr<data::Domain> data_domain,
@@ -119,6 +133,9 @@ class LowEnergyConnectionManager final {
   bool Connect(DeviceId device_id, ConnectionResultCallback callback);
 
   RemoteDeviceCache* device_cache() { return device_cache_; }
+  hci::LocalAddressDelegate* local_address_delegate() const {
+    return local_address_delegate_;
+  }
 
   // Disconnects any existing LE connection to |device_id|, invalidating
   // all active LowEnergyConnectionRefs. Returns false if |device_id| is
@@ -355,6 +372,10 @@ class LowEnergyConnectionManager final {
   // Performs the Direct Connection Establishment procedure. |connector_| must
   // out-live this connection manager.
   hci::LowEnergyConnector* connector_;  // weak
+
+  // Address manager is used to obtain local identity information during pairing
+  // procedures. Expected to outlive this instance.
+  hci::LocalAddressDelegate* local_address_delegate_;  // weak
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -68,8 +69,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
             this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport(), connector_.get(), dev_cache_.get(), l2cap_,
-        gatt::testing::FakeLayer::Create());
+        transport(), &addr_delegate_, connector_.get(), dev_cache_.get(),
+        l2cap_, gatt::testing::FakeLayer::Create());
 
     test_device()->SetConnectionStateCallback(
         fit::bind_member(
@@ -144,6 +145,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
   fbl::RefPtr<data::testing::FakeDomain> l2cap_;
 
+  hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<RemoteDeviceCache> dev_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;

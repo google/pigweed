@@ -39,6 +39,8 @@ class GAP_LowEnergyAddressManagerTest : public TestingBase {
     addr_mgr_ = std::make_unique<LowEnergyAddressManager>(
         kPublic, [this] { return IsRandomAddressChangeAllowed(); },
         transport());
+    ASSERT_EQ(kPublic, addr_mgr()->identity_address());
+    ASSERT_FALSE(addr_mgr()->irk());
     StartTestDevice();
   }
 
@@ -107,6 +109,8 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
       dispatcher());
 
   addr_mgr()->set_irk(kIrk);
+  ASSERT_TRUE(addr_mgr()->irk());
+  EXPECT_EQ(kIrk, *addr_mgr()->irk());
   addr_mgr()->EnablePrivacy(true);
 
   // Privacy is now considered enabled. Further requests to enable should not
@@ -126,6 +130,8 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
   // Re-enable privacy with a new IRK. The latest IRK should be used.
   const UInt128 kIrk2{{15, 14, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
   addr_mgr()->set_irk(kIrk2);
+  ASSERT_TRUE(addr_mgr()->irk());
+  EXPECT_EQ(kIrk2, *addr_mgr()->irk());
 
   // Returns the same address.
   EXPECT_EQ(addr, EnsureLocalAddress());
