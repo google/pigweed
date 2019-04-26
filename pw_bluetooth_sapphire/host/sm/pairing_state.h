@@ -175,10 +175,6 @@ class PairingState final : public Bearer::Listener {
     bool ShouldSendLTK() const;          // True if we should send the LTK
     bool ShouldSendIdentity() const;     // True if we should send identity info
 
-    // True if LTK will be exchanged and the link is yet to be encrypted with
-    // the LTK.
-    bool WaitingForEncryptionWithLTK() const;
-
     // A unique token for this pairing state.
     uint64_t id;
 
@@ -189,11 +185,6 @@ class PairingState final : public Bearer::Listener {
     // True if the link has been encrypted with the STK. This means that we're
     // in Phase 3. Otherwise we're in Phase 1 or 2.
     bool stk_encrypted;
-
-    // True if the link has been encrypted with the LTK. If the LTK should be
-    // exchanged, then pairing is considered complete when the link is
-    // encrypted with the LTK.
-    bool ltk_encrypted;
 
     // The remote keys that have been obtained so far.
     KeyDistGenField obtained_remote_keys;

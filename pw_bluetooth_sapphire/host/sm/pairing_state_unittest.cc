@@ -1407,64 +1407,27 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
   EXPECT_EQ(0, pairing_callback_count());
   EXPECT_EQ(0, pairing_data_callback_count());
 
+  constexpr uint16_t kEdiv = 1;
+  constexpr uint64_t kRand = 2;
+  constexpr uint16_t kDupEdiv = 3;
+  constexpr uint64_t kDupRand = 4;
+
+  // Send duplicate master identification. Pairing should complete with the
+  // first set of information. The second set should get ignored.
   ReceiveEncryptionInformation(UInt128());
-  ReceiveMasterIdentification(1, 2);
-  ReceiveMasterIdentification(1, 2);
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(1, pairing_failed_count());
-  EXPECT_EQ(1, pairing_callback_count());
-  EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(pairing_status(), pairing_complete_status());
-}
-
-// Initiator starts encryption with LTK after receiving LTK, ediv, and rand.
-// TODO(armansito): Test that the link isn't encrypted with the LTK until all
-// keys are received if the remote key distribution has more than just "enc key"
-// set.
-TEST_F(SMP_InitiatorPairingTest, Phase3EncryptionWithLTKFails) {
-  UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
-
-  UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
-  uint64_t kRand = 5;
-  uint16_t kEDiv = 20;
-
-  ReceiveEncryptionInformation(kLTK);
-  ReceiveMasterIdentification(kRand, kEDiv);
+  ReceiveMasterIdentification(kRand, kEdiv);
+  ReceiveMasterIdentification(kDupRand, kDupEdiv);
   RunLoopUntilIdle();
 
   EXPECT_EQ(0, pairing_failed_count());
-  EXPECT_EQ(0, pairing_callback_count());
-
-  ASSERT_TRUE(fake_link()->ltk());
-  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
-  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
-  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
-  EXPECT_EQ(2, fake_link()->start_encryption_count());
-
-  // Encryption fails.
-  fake_link()->TriggerEncryptionChangeCallback(
-      hci::Status(hci::StatusCode::kPinOrKeyMissing), false /* enabled */);
-  RunLoopUntilIdle();
-
+  EXPECT_EQ(1, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
-  EXPECT_EQ(1, auth_failure_callback_count());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
+  EXPECT_EQ(1, pairing_data_callback_count());
+  EXPECT_TRUE(pairing_status().is_success());
   EXPECT_EQ(pairing_status(), pairing_complete_status());
-  EXPECT_EQ(hci::StatusCode::kPinOrKeyMissing,
-            auth_failure_status().protocol_error());
-
-  // Security properties should have been notified twice (once for the STK and
-  // LTK each).
-  EXPECT_EQ(2, new_sec_props_count());
-
-  // The link is not secure since encryption failed.
-  EXPECT_EQ(SecurityProperties(), pairing()->security());
+  ASSERT_TRUE(pairing_data().ltk);
+  EXPECT_EQ(kEdiv, pairing_data().ltk->key().ediv());
+  EXPECT_EQ(kRand, pairing_data().ltk->key().rand());
 }
 
 // Pairing completes after obtaining encryption information only.
@@ -1481,26 +1444,22 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
   ReceiveMasterIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
-  EXPECT_EQ(0, pairing_failed_count());
-  EXPECT_EQ(0, pairing_callback_count());
-
-  ASSERT_TRUE(fake_link()->ltk());
-  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
-  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
-  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
-  EXPECT_EQ(2, fake_link()->start_encryption_count());
-
-  // Encryption succeeds.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
-  RunLoopUntilIdle();
-
-  // Pairing should succeed without notifying any keys.
+  // Pairing should have succeeded.
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_TRUE(pairing_status());
   EXPECT_EQ(pairing_status(), pairing_complete_status());
+
+  // LTK should have been assigned to the link.
+  ASSERT_TRUE(fake_link()->ltk());
+  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
+  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
+  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
+
+  // We don't re-encrypt with the LTK while the link is already authenticated
+  // with the STK.
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   EXPECT_EQ(16u, sec_props().enc_key_size());
@@ -1748,27 +1707,22 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   ReceiveIdentityAddress(kPeerAddr);
   RunLoopUntilIdle();
 
-  // Pairing still pending. Encryption request with LTK should have been made.
-  EXPECT_EQ(0, pairing_failed_count());
-  EXPECT_EQ(0, pairing_callback_count());
-  EXPECT_EQ(0, pairing_complete_count());
-  ASSERT_TRUE(fake_link()->ltk());
-  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
-  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
-  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
-  EXPECT_EQ(2, fake_link()->start_encryption_count());
-
-  // Encryption succeeds.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
-  RunLoopUntilIdle();
-
-  // Pairing should succeed without notifying any keys.
+  // Pairing should have succeeded
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_TRUE(pairing_status());
   EXPECT_EQ(pairing_status(), pairing_complete_status());
+
+  // LTK should have been assigned to the link.
+  ASSERT_TRUE(fake_link()->ltk());
+  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
+  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
+  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
+
+  // We don't re-encrypt with the LTK while the link is already authenticated
+  // with the STK.
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   EXPECT_EQ(16u, sec_props().enc_key_size());
@@ -1853,14 +1807,16 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   ASSERT_TRUE(pairing_status());
   ASSERT_TRUE(ltk());
   ASSERT_EQ(SecurityLevel::kEncrypted, sec_props().level());
-  ASSERT_EQ(2, fake_link()->start_encryption_count());  // Twice for STK & LTK
+  ASSERT_EQ(1, fake_link()->start_encryption_count());  // Once for the STK
   ASSERT_EQ(1, pairing_request_count());
 
   // Receive a security request with the no MITM requirement. This should
   // trigger an encryption key refresh and no pairing request.
   ReceiveSecurityRequest();
   EXPECT_EQ(1, pairing_request_count());
-  ASSERT_EQ(3, fake_link()->start_encryption_count());  // Twice for STK & LTK
+
+  // Once for the STK and once again due to the locally initiated key refresh.
+  ASSERT_EQ(2, fake_link()->start_encryption_count());
 
   // Receive a security request with a higher security requirement. This should
   // trigger a pairing request.

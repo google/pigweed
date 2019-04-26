@@ -34,7 +34,6 @@ SecurityProperties FeaturesToProperties(const PairingFeatures& features) {
 PairingState::LegacyState::LegacyState(uint64_t id)
     : id(id),
       stk_encrypted(false),
-      ltk_encrypted(false),
       obtained_remote_keys(0u),
       sent_local_keys(false),
       has_tk(false),
@@ -58,8 +57,7 @@ bool PairingState::LegacyState::InPhase3() const {
 }
 
 bool PairingState::LegacyState::IsComplete() const {
-  return features && stk_encrypted && KeyExchangeComplete() &&
-         !WaitingForEncryptionWithLTK();
+  return features && stk_encrypted && KeyExchangeComplete();
 }
 
 bool PairingState::LegacyState::WaitingForTK() const {
@@ -99,15 +97,6 @@ bool PairingState::LegacyState::ShouldSendLTK() const {
 bool PairingState::LegacyState::ShouldSendIdentity() const {
   ZX_DEBUG_ASSERT(features);
   return (features->local_key_distribution & KeyDistGen::kIdKey);
-}
-
-bool PairingState::LegacyState::WaitingForEncryptionWithLTK() const {
-  // When we are the responder we consider the pairing to be done after all keys
-  // have been exchanged and do not wait for the master to encrypt with the LTK.
-  // This is because some LE central implementations leave the link encrypted
-  // with the STK until a re-connection.
-  return features->initiator && (ShouldReceiveLTK() || ShouldSendLTK()) &&
-         !ltk_encrypted;
 }
 
 PairingState::PendingRequest::PendingRequest(SecurityLevel level,
@@ -909,22 +898,11 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (legacy_state_->InPhase2()) {
     bt_log(TRACE, "sm", "link encrypted with STK");
     EndLegacyPairingPhase2();
-    return;
-  }
-
-  // If encryption was enabled after Phase 3 then this completes the pairing
-  // procedure.
-  if (legacy_state_->RequestedKeysObtained() &&
-      legacy_state_->WaitingForEncryptionWithLTK()) {
-    bt_log(TRACE, "sm", "link encrypted with LTK");
-    legacy_state_->ltk_encrypted = true;
-    CompleteLegacyPairing();
   }
 }
 
 void PairingState::OnExpectedKeyReceived() {
   ZX_DEBUG_ASSERT(legacy_state_);
-  ZX_DEBUG_ASSERT(!legacy_state_->ltk_encrypted);
   ZX_DEBUG_ASSERT(legacy_state_->stk_encrypted);
 
   if (!legacy_state_->RequestedKeysObtained()) {
