@@ -66,6 +66,10 @@ TEST_F(ATT_BearerTest, CreateFailsToActivate) {
   EXPECT_FALSE(Bearer::Create(std::move(fake_chan)));
 }
 
+TEST_F(ATT_BearerTest, CreateUsesLEMaxMTUAsPreferredMTU) {
+  EXPECT_EQ(kLEMaxMTU, bearer()->preferred_mtu());
+}
+
 TEST_F(ATT_BearerTest, ShutDown) {
   ASSERT_TRUE(bearer()->is_open());
   ASSERT_FALSE(fake_att_chan()->link_error());

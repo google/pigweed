@@ -7,6 +7,7 @@
 #include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -87,7 +88,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestInvalidPDU) {
 }
 
 TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
-  const uint16_t kServerMTU = l2cap::kDefaultMTU;
+  const uint16_t kServerMTU = att::kLEMaxMTU;
   constexpr uint16_t kClientMTU = 1;
 
   // clang-format off
@@ -98,7 +99,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
 
   const auto kExpected = common::CreateStaticByteBuffer(
     0x03,       // opcode: exchange MTU response
-    0xA0, 0x02  // server rx mtu: |kServerMTU|
+    0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
   // clang-format on
 
@@ -111,7 +112,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
 }
 
 TEST_F(GATT_ServerTest, ExchangeMTURequest) {
-  constexpr uint16_t kServerMTU = l2cap::kDefaultMTU;
+  constexpr uint16_t kServerMTU = att::kLEMaxMTU;
   constexpr uint16_t kClientMTU = 0x64;
 
   // clang-format off
@@ -122,7 +123,7 @@ TEST_F(GATT_ServerTest, ExchangeMTURequest) {
 
   const auto kExpected = common::CreateStaticByteBuffer(
     0x03,       // opcode: exchange MTU response
-    0xA0, 0x02  // server rx mtu: |kServerMTU|
+    0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
   // clang-format on
 

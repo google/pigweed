@@ -277,8 +277,8 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
   }
 
   mtu_ = min_mtu();
-  preferred_mtu_ =
-      std::max(min_mtu(), std::min(chan_->tx_mtu(), chan_->rx_mtu()));
+  // TODO (BT-854): Dynamically configure preferred MTU value.
+  preferred_mtu_ = kLEMaxMTU;
 }
 
 Bearer::~Bearer() {

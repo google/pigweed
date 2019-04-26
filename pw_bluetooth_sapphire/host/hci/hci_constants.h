@@ -1147,6 +1147,10 @@ constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
 // command packets.
 constexpr size_t kMaxLEExtendedAdvertisingDataLength = 251;
 
+// The maximum length of LE data packets when the LE Data Packet Length Extension
+// feature is supported. See v5.0, Vol 6, Part B, 4.5.10, Table 4.3.
+constexpr size_t kMaxLEExtendedDataLength = 251;
+
 // Maximum value of the Advertising SID subfield in the ADI field of the PDU
 constexpr uint8_t kLEAdvertsingSIDMax = 0xEF;
 
