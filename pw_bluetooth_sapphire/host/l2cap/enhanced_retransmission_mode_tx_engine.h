@@ -35,6 +35,10 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   void UpdateAckSeq(uint8_t new_seq);
 
+  // Updates the Engine's knowledge of the next frame we expect to receive from
+  // our peer.
+  void UpdateReqSeq(uint8_t new_seq);
+
  private:
   // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume
   // there is no flush timeout on the underlying logical link.
@@ -74,6 +78,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // cases, the sequence number is a 6-bit counter that wraps on overflow. See
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t next_seqnum_;  // (AKA NextTxSeq)
+
+  // The sequence number we expect for the next packet sent _to_ us.
+  //
+  // We assume that the Extended Window Size option is _not_ enabled. In such
+  // cases, the sequence number is a 6-bit counter that wraps on overflow. See
+  // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
+  uint8_t req_seqnum_;
 
   async::Task receiver_ready_poll_task_;
   fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine>

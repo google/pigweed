@@ -235,6 +235,27 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       ReceiverReadyPollIncludesRequestSequenceNumber) {
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  tx_engine.UpdateReqSeq(1);
+  RunLoopUntilIdle();
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  last_pdu = nullptr;
+
+  SCOPED_TRACE("");
+  EXPECT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_NO_FATAL_FAILURE(VerifyIsReceiverReadyPollFrame(last_pdu.get()));
+  EXPECT_EQ(1u, last_pdu->As<SimpleSupervisoryFrame>().request_seq_num());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        AckOfOnlyOutstandingFrameCancelsReceiverReadyPollTimeout) {
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };

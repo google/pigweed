@@ -22,6 +22,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
     : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
       ack_seqnum_(0),
       next_seqnum_(0),
+      req_seqnum_(0),
       weak_factory_(this) {
   receiver_ready_poll_task_.set_handler(
       [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task,
@@ -63,6 +64,8 @@ void Engine::UpdateAckSeq(uint8_t new_seq) {
   }
 }
 
+void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
+
 void Engine::StartReceiverReadyPollTimer() {
   receiver_ready_poll_task_.Cancel();
   receiver_ready_poll_task_.PostDelayed(async_get_default_dispatcher(),
@@ -71,6 +74,7 @@ void Engine::StartReceiverReadyPollTimer() {
 
 void Engine::SendReceiverReadyPoll() {
   SimpleReceiverReadyFrame frame;
+  frame.set_request_seq_num(req_seqnum_);
   frame.set_is_poll_request();
   send_basic_frame_callback_(std::make_unique<common::DynamicByteBuffer>(
       common::BufferView(&frame, sizeof(frame))));
