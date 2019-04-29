@@ -20,6 +20,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
     ChannelId channel_id, uint16_t tx_mtu,
     SendBasicFrameCallback send_basic_frame_callback)
     : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
+      ack_seqnum_(0),
       next_seqnum_(0),
       weak_factory_(this) {
   receiver_ready_poll_task_.set_handler(
@@ -50,6 +51,16 @@ bool Engine::QueueSdu(common::ByteBufferPtr sdu) {
   StartReceiverReadyPollTimer();
   send_basic_frame_callback_(std::move(frame));
   return true;
+}
+
+void Engine::UpdateAckSeq(uint8_t new_seq) {
+  // TODO(quiche): Add a sanity check on the new value. E.g., the new sequence
+  // number should probably be within (old value, old value + TxWindow).
+
+  ack_seqnum_ = new_seq;
+  if (ack_seqnum_ == next_seqnum_) {
+    receiver_ready_poll_task_.Cancel();
+  }
 }
 
 void Engine::StartReceiverReadyPollTimer() {

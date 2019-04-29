@@ -234,6 +234,100 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       AckOfOnlyOutstandingFrameCancelsReceiverReadyPollTimeout) {
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(1);
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(RunLoopFor(zx::sec(2)));  // No tasks were run.
+  EXPECT_FALSE(last_pdu);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       AckOfAllOutstandingFramesCancelsReceiverReadyPollTimeout) {
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(3);
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(RunLoopFor(zx::sec(2)));  // No tasks were run.
+  EXPECT_FALSE(last_pdu);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       PartialAckDoesNotCancelReceiverReadyPollTimeout) {
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(1);
+  RunLoopUntilIdle();
+
+  // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.5.6, under heading
+  // Process-ReqSeq. We should only Stop-RetransTimer if UnackedFrames is 0.
+  SCOPED_TRACE("");
+  EXPECT_TRUE(RunLoopFor(zx::sec(2)));
+  VerifyIsReceiverReadyPollFrame(last_pdu.get());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       NewTransmissionAfterAckedFrameReArmsReceiverReadyPollTimeout) {
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, tx_callback);
+
+  // Send a frame, and get the ACK.
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  tx_engine.UpdateAckSeq(1);
+  RunLoopUntilIdle();
+
+  // Send a new frame.
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  last_pdu = nullptr;
+
+  // Having earlier received an ACK for the previous frame should not have left
+  // around any state that would prevent us from sending a receiver-ready poll
+  // for the second frame.
+  SCOPED_TRACE("");
+  EXPECT_TRUE(RunLoopFor(zx::sec(2)));
+  VerifyIsReceiverReadyPollFrame(last_pdu.get());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
