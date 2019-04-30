@@ -50,6 +50,10 @@ class FakeController : public FakeControllerBase,
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
 
+    // The time elapsed from the receipt of a LE Create Connection command until
+    // the resulting LE Connection Complete event.
+    zx::duration le_connection_delay;
+
     // HCI settings.
     hci::HCIVersion hci_version;      // Default: HCIVersion::k5_0.
     uint8_t num_hci_command_packets;  // Default: 1
@@ -109,6 +113,14 @@ class FakeController : public FakeControllerBase,
     uint8_t scan_rsp_data[hci::kMaxLEAdvertisingDataLength];
   };
 
+  // The parameters of the most recent low energy connection initiation request
+  struct LEConnectParams final {
+    LEConnectParams() = default;
+
+    hci::LEOwnAddressType own_address_type;
+    common::DeviceAddress peer_address;
+  };
+
   // Constructor initializes the controller with the minimal default settings
   // (equivalent to calling Settings::ApplyDefaults()).
   FakeController();
@@ -128,6 +140,11 @@ class FakeController : public FakeControllerBase,
   // Returns the current LE advertising state.
   const LEAdvertisingState& le_advertising_state() const {
     return le_adv_state_;
+  }
+
+  // Returns the most recent LE connection request parameters.
+  const std::optional<LEConnectParams>& le_connect_params() const {
+    return le_connect_params_;
   }
 
   const std::optional<common::DeviceAddress>& le_random_address() const {
@@ -294,7 +311,7 @@ class FakeController : public FakeControllerBase,
   // HCI_LE_Create_Connection/HCI_LE_Create_Connection_Cancel.
   uint16_t next_conn_handle_;
   fxl::CancelableClosure pending_le_connect_rsp_;
-  common::DeviceAddress pending_le_connect_addr_;
+  std::optional<LEConnectParams> le_connect_params_;
   bool le_connect_pending_;
 
   // Variables used for

@@ -540,7 +540,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   // Initialize the HCI adapters.
   hci_le_advertiser_ = std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   hci_le_connector_ = std::make_unique<hci::LowEnergyConnector>(
-      hci_, adapter_identity, dispatcher_,
+      hci_, le_address_manager_.get(), dispatcher_,
       fit::bind_member(hci_le_advertiser_.get(),
                        &hci::LowEnergyAdvertiser::OnIncomingConnection));
   hci_le_scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
@@ -710,9 +710,9 @@ void Adapter::OnLeAutoConnectRequest(DeviceId device_id) {
 }
 
 bool Adapter::IsLeRandomAddressChangeAllowed() {
-  // TODO(BT-611): Query scan and connection states here as well.
   return hci_le_advertiser_->AllowsRandomAddressChange() &&
-         hci_le_scanner_->AllowsRandomAddressChange();
+         hci_le_scanner_->AllowsRandomAddressChange() &&
+         hci_le_connector_->AllowsRandomAddressChange();
 }
 
 }  // namespace gap

@@ -1288,6 +1288,20 @@ TEST_F(GAP_RemoteDeviceCacheExpirationTest,
 }
 
 TEST_F(GAP_RemoteDeviceCacheExpirationTest,
+       LeDeviceBecomesNonTemporaryWhenConnecting) {
+  ASSERT_TRUE(IsDefaultDevicePresent());
+  ASSERT_EQ(kAddrLeAlias, GetDefaultDevice()->address());
+  ASSERT_TRUE(GetDefaultDevice()->temporary());
+
+  GetDefaultDevice()->MutLe().SetConnectionState(
+      RemoteDevice::ConnectionState::kInitializing);
+  EXPECT_FALSE(GetDefaultDevice()->temporary());
+
+  RunLoopFor(kCacheTimeout);
+  ASSERT_TRUE(IsDefaultDevicePresent());
+}
+
+TEST_F(GAP_RemoteDeviceCacheExpirationTest,
        LEPublicDeviceRemainsNonTemporaryOnDisconnect) {
   ASSERT_TRUE(IsDefaultDevicePresent());
   ASSERT_EQ(kAddrLeAlias, GetDefaultDevice()->address());

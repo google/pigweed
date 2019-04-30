@@ -719,7 +719,12 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
 
   le_connect_pending_ = true;
-  pending_le_connect_addr_ = peer_address;
+  if (!le_connect_params_) {
+    le_connect_params_ = LEConnectParams();
+  }
+
+  le_connect_params_->own_address_type = params.own_address_type;
+  le_connect_params_->peer_address = peer_address;
 
   // The procedure was initiated successfully but the device cannot be connected
   // because it either doesn't exist or isn't connectable.
@@ -782,8 +787,9 @@ void FakeController::OnLECreateConnectionCommandReceived(
     SendLEMetaEvent(hci::kLEConnectionCompleteSubeventCode,
                     BufferView(&response, sizeof(response)));
   });
-  async::PostTask(dispatcher(),
-                  [cb = pending_le_connect_rsp_.callback()] { cb(); });
+  async::PostDelayedTask(
+      dispatcher(), [cb = pending_le_connect_rsp_.callback()] { cb(); },
+      settings_.le_connection_delay);
 }
 
 void FakeController::OnLEConnectionUpdateCommandReceived(
@@ -1171,16 +1177,17 @@ void FakeController::OnCommandPacketReceived(
 
       le_connect_pending_ = false;
       pending_le_connect_rsp_.Cancel();
+      ZX_DEBUG_ASSERT(le_connect_params_);
 
-      NotifyConnectionState(pending_le_connect_addr_, false, true);
+      NotifyConnectionState(le_connect_params_->peer_address, false, true);
 
       hci::LEConnectionCompleteSubeventParams response;
       std::memset(&response, 0, sizeof(response));
 
       response.status = hci::StatusCode::kUnknownConnectionId;
-      response.peer_address = pending_le_connect_addr_.value();
+      response.peer_address = le_connect_params_->peer_address.value();
       response.peer_address_type =
-          ToPeerAddrType(pending_le_connect_addr_.type());
+          ToPeerAddrType(le_connect_params_->peer_address.type());
 
       RespondWithCommandComplete(hci::kLECreateConnectionCancel,
                                  BufferView(&params, sizeof(params)));

@@ -22,9 +22,16 @@ namespace bt {
 namespace gap {
 namespace {
 
-using bt::testing::FakeController;
-using bt::testing::FakePeer;
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using common::DeviceAddress;
+using common::HostError;
+using testing::FakeController;
+using testing::FakePeer;
+using TestingBase = testing::FakeControllerTest<FakeController>;
+
+const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic,
+                              "00:00:00:00:00:01");
+const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic,
+                               "00:00:00:00:00:02");
 
 class AdapterTest : public TestingBase {
  public:
@@ -277,8 +284,6 @@ TEST_F(GAP_AdapterTest, RemoteDeviceCacheReturnsNonNull) {
 TEST_F(GAP_AdapterTest, LeAutoConnect) {
   constexpr zx::duration kTestScanPeriod = zx::sec(10);
   constexpr DeviceId kDeviceId(1234);
-  const common::DeviceAddress kAddress(common::DeviceAddress::Type::kLEPublic,
-                                       "00:00:00:00:00:01");
 
   FakeController::Settings settings;
   settings.ApplyLEOnlyDefaults();
@@ -287,7 +292,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   InitializeAdapter([](bool) {});
   adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  auto fake_peer = std::make_unique<FakePeer>(kAddress, true, false);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -305,7 +310,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   // Mark the device as bonded and advance the scan period.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  adapter()->remote_device_cache()->AddBondedDevice(kDeviceId, kAddress, pdata,
+  adapter()->remote_device_cache()->AddBondedDevice(kDeviceId, kTestAddr, pdata,
                                                     {});
   EXPECT_EQ(1u, adapter()->remote_device_cache()->count());
   RunLoopFor(kTestScanPeriod);
@@ -457,6 +462,163 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic,
             test_device()->le_scan_state().own_address_type);
+}
+
+TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  // Set-up a device for testing.
+  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto connect_cb = [&](auto status, auto c) {
+    ASSERT_TRUE(status);
+    conn_ref = std::move(c);
+  };
+
+  // A connection request should use the public address by default.
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+
+  // Enable privacy. The random address should not get configured while a
+  // connection attempt is in progress.
+  adapter()->le_address_manager()->EnablePrivacy(true);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_random_address());
+  ASSERT_TRUE(conn_ref);
+  ASSERT_TRUE(test_device()->le_connect_params());
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
+
+  // Create a new connection. The second attempt should use a random address.
+  conn_ref = nullptr;
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_random_address());
+  ASSERT_TRUE(conn_ref);
+  ASSERT_TRUE(test_device()->le_connect_params());
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_connect_params()->own_address_type);
+
+  // Disable privacy. The next connection attempt should use a public address.
+  adapter()->le_address_manager()->EnablePrivacy(false);
+  conn_ref = nullptr;
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
+}
+
+// Tests the deferral of random address configuration while a connection request
+// is outstanding.
+TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  // Add a device to the cache but not the fake controller. This will cause the
+  // connection request to hang.
+  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+
+  constexpr auto kTestDelay = zx::sec(5);
+  constexpr auto kTestTimeout = kPrivateAddressTimeout + kTestDelay;
+
+  // Some of the behavior below stems from the fact that kTestTimeout is longer
+  // than kCacheTimeout. This assertion is here to catch regressions in this
+  // test if the values ever change.
+  // TODO(BT-825): Configuring the cache expiration timeout explicitly would
+  // remove some of the unnecessary invariants from this test case.
+  static_assert(kTestTimeout > kCacheTimeout,
+                "expected a shorter device cache timeout");
+
+  adapter()->le_connection_manager()->set_request_timeout_for_testing(
+      kTestTimeout);
+
+  // The connection request should use a public address.
+  hci::Status status;
+  auto connect_cb = [&](auto s, auto conn_ref) {
+    status = s;
+    ASSERT_FALSE(conn_ref);
+  };
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(test_device()->le_connect_params());
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic,
+            test_device()->le_connect_params()->own_address_type);
+
+  // Enable privacy. The random address should not get configured while a
+  // connection request is outstanding.
+  adapter()->le_address_manager()->EnablePrivacy(true);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_random_address());
+
+  // Let the connection request timeout.
+  RunLoopFor(kTestTimeout);
+  EXPECT_EQ(HostError::kTimedOut, status.error());
+
+  // The peer should not have expired.
+  ASSERT_EQ(peer,
+            adapter()->remote_device_cache()->FindDeviceByAddress(kTestAddr));
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(test_device()->le_random_address());
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_connect_params()->own_address_type);
+
+  // Advance the time to cause the random address to refresh. The update should
+  // be deferred while a connection request is outstanding.
+  auto last_random_addr = *test_device()->le_random_address();
+  RunLoopFor(kPrivateAddressTimeout);
+  EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
+
+  ASSERT_EQ(peer,
+            adapter()->remote_device_cache()->FindDeviceByAddress(kTestAddr));
+
+  // The address should refresh after the next connection attempt.
+  RunLoopFor(kTestDelay);
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  EXPECT_NE(last_random_addr, *test_device()->le_random_address());
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_connect_params()->own_address_type);
+}
+
+// Tests that existing connections don't prevent an address change.
+TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  adapter()->le_address_manager()->EnablePrivacy(true);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto connect_cb = [&](auto status, auto c) {
+    ASSERT_TRUE(status);
+    ASSERT_TRUE(c);
+    conn_ref = std::move(c);
+  };
+
+  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  test_device()->AddPeer(std::move(fake_peer));
+  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  RunLoopUntilIdle();
+  EXPECT_EQ(hci::LEOwnAddressType::kRandom,
+            test_device()->le_connect_params()->own_address_type);
+
+  // Expire the private address. The address should refresh without interference
+  // from the ongoing connection.
+  ASSERT_TRUE(test_device()->le_random_address());
+  auto last_random_addr = *test_device()->le_random_address();
+  RunLoopFor(kPrivateAddressTimeout);
+  ASSERT_TRUE(test_device()->le_random_address());
+  EXPECT_NE(last_random_addr, *test_device()->le_random_address());
 }
 
 }  // namespace

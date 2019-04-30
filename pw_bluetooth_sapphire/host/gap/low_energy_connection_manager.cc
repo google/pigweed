@@ -669,9 +669,7 @@ void LowEnergyConnectionManager::RequestCreateConnection(RemoteDevice* peer) {
 
   // We set the scan window and interval to the same value for continuous
   // scanning.
-  // TODO(armansito): Use one of the resolvable address types here.
-  connector_->CreateConnection(hci::LEOwnAddressType::kPublic,
-                               false /* use_whitelist */, peer->address(),
+  connector_->CreateConnection(false /* use_whitelist */, peer->address(),
                                kLEScanFastInterval, kLEScanFastInterval,
                                initial_params, status_cb, request_timeout_);
 }

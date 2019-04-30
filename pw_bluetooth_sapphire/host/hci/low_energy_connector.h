@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -25,6 +26,7 @@
 namespace bt {
 namespace hci {
 
+class LocalAddressDelegate;
 class Transport;
 
 // A LowEnergyConnector abstracts over the HCI commands and events involved in
@@ -37,13 +39,13 @@ class Transport;
 // Instances of this class are expected to each exist as a singleton on a
 // per-transport basis as multiple instances cannot accurately reflect the state
 // of the controller while allowing simultaneous operations.
-class LowEnergyConnector {
+class LowEnergyConnector : public LocalAddressClient {
  public:
   // The constructor expects the following arguments:
   //   - |hci|: The HCI transport this should operate on.
   //
-  //   - |local_address|: The public device address that is used for locally
-  //     initiated connections.
+  //   - |local_addr_delegate|: The delegate used to obtain the current public
+  //     or random device address to use in locally initiated requests.
   //
   //   - |dispatcher|: The dispatcher that will be used to run all
   //     asynchronous operations. This must be bound to the thread on which the
@@ -56,7 +58,7 @@ class LowEnergyConnector {
                          const common::DeviceAddress& peer_address,
                          const LEConnectionParameters& conn_params)>;
   LowEnergyConnector(fxl::RefPtr<Transport> hci,
-                     const common::DeviceAddress& local_address,
+                     LocalAddressDelegate* local_addr_delegate,
                      async_dispatcher_t* dispatcher,
                      IncomingConnectionDelegate delegate);
 
@@ -66,9 +68,6 @@ class LowEnergyConnector {
   // Creates a LE link layer connection to the remote device identified by
   // |peer_address| with initial connection parameters |initial_parameters|.
   // Returns false, if a create connection request is currently pending.
-  //
-  // |own_address_type| indicates which local Bluetooth address will be used
-  // during the request.
   //
   // If |use_whitelist| is true, then the controller white list is used to
   // determine which advertiser to connect to. Otherwise, the controller will
@@ -82,9 +81,8 @@ class LowEnergyConnector {
   // called with a null |link| and a |status| with error Host::Error::kTimedOut.
   using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
   bool CreateConnection(
-      LEOwnAddressType own_address_type, bool use_whitelist,
-      const common::DeviceAddress& peer_address, uint16_t scan_interval,
-      uint16_t scan_window,
+      bool use_whitelist, const common::DeviceAddress& peer_address,
+      uint16_t scan_interval, uint16_t scan_window,
       const LEPreferredConnectionParameters& initial_parameters,
       StatusCallback status_callback, zx::duration timeout);
 
@@ -98,17 +96,33 @@ class LowEnergyConnector {
   // was not posted or was canceled. This is intended for unit tests.
   bool timeout_posted() const { return request_timeout_task_.is_pending(); }
 
+  // LocalAddressClient override:
+  bool AllowsRandomAddressChange() const override {
+    return !pending_request_ || !pending_request_->initiating;
+  }
+
  private:
   struct PendingRequest {
     PendingRequest() = default;
     PendingRequest(const common::DeviceAddress& peer_address,
                    StatusCallback status_callback);
 
-    bool canceled;
-    bool timed_out;
+    bool initiating = false;  // True if the HCI command has been sent.
+    bool canceled = false;
+    bool timed_out = false;
+    common::DeviceAddress local_address;
     common::DeviceAddress peer_address;
     StatusCallback status_callback;
   };
+
+  // Called by CreateConnection() after the local device address has been
+  // obtained.
+  void CreateConnectionInternal(
+      const common::DeviceAddress& local_address, bool use_whitelist,
+      const common::DeviceAddress& peer_address, uint16_t scan_interval,
+      uint16_t scan_window,
+      const LEPreferredConnectionParameters& initial_parameters,
+      StatusCallback status_callback, zx::duration timeout);
 
   // Called by Cancel() and by OnCreateConnectionTimeout().
   void CancelInternal(bool timed_out = false);
@@ -128,11 +142,8 @@ class LowEnergyConnector {
   // The HCI transport.
   fxl::RefPtr<Transport> hci_;
 
-  // Local address used during locally initiated connections.
-  // TODO(armansito): This is currently incorrectly being assigned to remote
-  // initiated connections because the advertised random device address is not
-  // available (NET-1045).
-  common::DeviceAddress local_address_;
+  // Used to obtain the local device address type to use during initiation.
+  LocalAddressDelegate* local_addr_delegate_;  // weak
 
   // The delegate that gets notified when a new link layer connection gets
   // created.

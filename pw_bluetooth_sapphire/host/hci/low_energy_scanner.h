@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
@@ -51,7 +52,7 @@ struct LowEnergyScanResult {
 // Instances of this class are expected to each as a singleton on a
 // per-transport basis as multiple instances cannot accurately reflect the state
 // of the controller while allowing simultaneous scan operations.
-class LowEnergyScanner {
+class LowEnergyScanner : public LocalAddressClient {
  public:
   // Value that can be passed to StartScan() to scan indefinitely.
   static constexpr zx::duration kPeriodInfinite = zx::duration::infinite();
@@ -99,9 +100,8 @@ class LowEnergyScanner {
   bool IsScanning() const { return IsActiveScanning() || IsPassiveScanning(); }
   bool IsInitiating() const { return state() == State::kInitiating; }
 
-  // Returns true if configuring the controller random address is allowed by
-  // this scanner.
-  bool AllowsRandomAddressChange() const {
+  // LocalAddressClient override:
+  bool AllowsRandomAddressChange() const override {
     return !IsScanning() && hci_cmd_runner()->IsReady();
   }
 

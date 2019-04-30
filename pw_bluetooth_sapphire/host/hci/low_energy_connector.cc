@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/time/time_delta.h"
@@ -22,24 +23,20 @@ using common::HostError;
 
 LowEnergyConnector::PendingRequest::PendingRequest(
     const DeviceAddress& peer_address, StatusCallback status_callback)
-    : canceled(false),
-      timed_out(false),
-      peer_address(peer_address),
-      status_callback(std::move(status_callback)) {}
+    : peer_address(peer_address), status_callback(std::move(status_callback)) {}
 
-LowEnergyConnector::LowEnergyConnector(fxl::RefPtr<Transport> hci,
-                                       const DeviceAddress& local_address,
-                                       async_dispatcher_t* dispatcher,
-                                       IncomingConnectionDelegate delegate)
+LowEnergyConnector::LowEnergyConnector(
+    fxl::RefPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
+    async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate)
     : dispatcher_(dispatcher),
       hci_(hci),
-      local_address_(local_address),
+      local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(hci_);
+  ZX_DEBUG_ASSERT(local_addr_delegate_);
   ZX_DEBUG_ASSERT(delegate_);
-  ZX_DEBUG_ASSERT(local_address_.type() == DeviceAddress::Type::kLEPublic);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
@@ -58,9 +55,8 @@ LowEnergyConnector::~LowEnergyConnector() {
 }
 
 bool LowEnergyConnector::CreateConnection(
-    LEOwnAddressType own_address_type, bool use_whitelist,
-    const DeviceAddress& peer_address, uint16_t scan_interval,
-    uint16_t scan_window,
+    bool use_whitelist, const DeviceAddress& peer_address,
+    uint16_t scan_interval, uint16_t scan_window,
     const LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback, zx::duration timeout) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -74,6 +70,37 @@ bool LowEnergyConnector::CreateConnection(
   ZX_DEBUG_ASSERT(!request_timeout_task_.is_pending());
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
+  local_addr_delegate_->EnsureLocalAddress(
+      [this, use_whitelist, peer_address, scan_interval, scan_window,
+       initial_parameters, callback = std::move(status_callback),
+       timeout](const auto& address) mutable {
+        CreateConnectionInternal(address, use_whitelist, peer_address,
+                                 scan_interval, scan_window, initial_parameters,
+                                 std::move(callback), timeout);
+      });
+
+  return true;
+}
+
+void LowEnergyConnector::CreateConnectionInternal(
+    const DeviceAddress& local_address, bool use_whitelist,
+    const DeviceAddress& peer_address, uint16_t scan_interval,
+    uint16_t scan_window,
+    const LEPreferredConnectionParameters& initial_parameters,
+    StatusCallback status_callback, zx::duration timeout) {
+  // Check if the connection request was canceled via Cancel().
+  if (!pending_request_ || pending_request_->canceled) {
+    bt_log(TRACE, "hci-le",
+           "connection request was canceled while obtaining local address");
+    pending_request_.reset();
+    return;
+  }
+
+  ZX_DEBUG_ASSERT(!pending_request_->initiating);
+
+  pending_request_->initiating = true;
+  pending_request_->local_address = local_address;
+
   auto request = CommandPacket::New(kLECreateConnection,
                                     sizeof(LECreateConnectionCommandParams));
   auto params = request->mutable_view()
@@ -86,12 +113,13 @@ bool LowEnergyConnector::CreateConnection(
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =
-      (peer_address.type() == DeviceAddress::Type::kLEPublic)
-          ? LEAddressType::kPublic
-          : LEAddressType::kRandom;
-
+      peer_address.IsPublic() ? LEAddressType::kPublic : LEAddressType::kRandom;
   params->peer_address = peer_address.value();
-  params->own_address_type = own_address_type;
+
+  params->own_address_type = local_address.IsPublic()
+                                 ? LEOwnAddressType::kPublic
+                                 : LEOwnAddressType::kRandom;
+
   params->conn_interval_min = htole16(initial_parameters.min_interval());
   params->conn_interval_max = htole16(initial_parameters.max_interval());
   params->conn_latency = htole16(initial_parameters.max_latency());
@@ -124,8 +152,6 @@ bool LowEnergyConnector::CreateConnection(
 
   hci_->command_channel()->SendCommand(std::move(request), dispatcher_,
                                        complete_cb, kCommandStatusEventCode);
-
-  return true;
 }
 
 void LowEnergyConnector::Cancel() { CancelInternal(false); }
@@ -148,12 +174,24 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 
   request_timeout_task_.Cancel();
 
-  auto complete_cb = [](auto id, const EventPacket& event) {
-    hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");
-  };
-  auto cancel = CommandPacket::New(kLECreateConnectionCancel);
-  hci_->command_channel()->SendCommand(std::move(cancel), dispatcher_,
-                                       complete_cb);
+  // Tell the controller to cancel the connection initiation attempt if a
+  // request is outstanding. Otherwise there is no need to talk to the
+  // controller.
+  if (pending_request_->initiating) {
+    bt_log(TRACE, "hci-le",
+           "telling controller to cancel LE connection attempt");
+    auto complete_cb = [](auto id, const EventPacket& event) {
+      hci_is_error(event, WARN, "hci-le",
+                   "failed to cancel connection request");
+    };
+    auto cancel = CommandPacket::New(kLECreateConnectionCancel);
+    hci_->command_channel()->SendCommand(std::move(cancel), dispatcher_,
+                                         complete_cb);
+    return;
+  }
+
+  bt_log(TRACE, "hci-le", "connection initiation aborted");
+  OnCreateConnectionComplete(Status(HostError::kCanceled), nullptr);
 }
 
 void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
@@ -207,8 +245,9 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
 
   // A new link layer connection was created. Create an object to track this
   // connection. Destroying this object will disconnect the link.
-  auto connection = Connection::CreateLE(handle, role, local_address_,
-                                         peer_address, connection_params, hci_);
+  auto connection =
+      Connection::CreateLE(handle, role, pending_request_->local_address,
+                           peer_address, connection_params, hci_);
 
   if (pending_request_->timed_out) {
     status = Status(HostError::kTimedOut);

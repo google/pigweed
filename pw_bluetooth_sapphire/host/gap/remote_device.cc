@@ -101,9 +101,10 @@ void RemoteDevice::LowEnergyData::SetConnectionState(ConnectionState state) {
 
   conn_state_ = state;
 
-  // Become non-temporary if connected. Otherwise, become temporary again if the
-  // identity is unknown.
-  if (state == ConnectionState::kConnected) {
+  // Become non-temporary if connected or a connection attempt is in progress.
+  // Otherwise, become temporary again if the identity is unknown.
+  if (state == ConnectionState::kInitializing ||
+      state == ConnectionState::kConnected) {
     dev_->TryMakeNonTemporary();
   } else if (state == ConnectionState::kNotConnected &&
              !dev_->identity_known()) {

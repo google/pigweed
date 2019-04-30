@@ -36,7 +36,7 @@ using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
                               "00:00:00:00:00:01");
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
-const DeviceAddress kAddress1(DeviceAddress::Type::kLEPublic,
+const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
                               "00:00:00:00:00:02");
 const DeviceAddress kAddress2(DeviceAddress::Type::kBREDR, "00:00:00:00:00:03");
 
@@ -62,9 +62,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     l2cap_ = data::testing::FakeDomain::Create();
     l2cap_->Initialize();
 
-    // TODO(armansito): Pass a fake connector here.
     connector_ = std::make_unique<hci::LowEnergyConnector>(
-        transport(), kAddress0, dispatcher(),
+        transport(), &addr_delegate_, dispatcher(),
         fit::bind_member(
             this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
@@ -260,6 +259,88 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSingleDeviceTimeout) {
   EXPECT_EQ(common::HostError::kTimedOut, status.error()) << status.ToString();
   EXPECT_EQ(RemoteDevice::ConnectionState::kNotConnected,
             dev->le()->connection_state());
+}
+
+// Tests that an entry in the cache does not expire while a connection attempt
+// is pending.
+TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
+  // Set a connection timeout that is longer than the RemoteDeviceCache expiry
+  // timeout.
+  // TODO(BT-825): Consider configuring the cache timeout explicitly rather than
+  // relying on the kCacheTimeout constant.
+  constexpr zx::duration kTestRequestTimeout = kCacheTimeout + zx::sec(1);
+  conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);
+
+  // Note: Use a random address so that the peer becomes temporary upon failure.
+  auto* dev = dev_cache()->NewDevice(kAddress1, true);
+  EXPECT_TRUE(dev->temporary());
+
+  hci::Status status;
+  auto callback = [&status](auto cb_status, auto conn_ref) {
+    EXPECT_FALSE(conn_ref);
+    status = cb_status;
+  };
+  EXPECT_TRUE(conn_mgr()->Connect(dev->identifier(), callback));
+  ASSERT_TRUE(dev->le());
+  EXPECT_EQ(RemoteDevice::ConnectionState::kInitializing,
+            dev->le()->connection_state());
+  EXPECT_FALSE(dev->temporary());
+
+  RunLoopFor(kTestRequestTimeout);
+  EXPECT_EQ(common::HostError::kTimedOut, status.error()) << status.ToString();
+  EXPECT_EQ(dev, dev_cache()->FindDeviceByAddress(kAddress1));
+  EXPECT_EQ(RemoteDevice::ConnectionState::kNotConnected,
+            dev->le()->connection_state());
+  EXPECT_TRUE(dev->temporary());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       PeerDoesNotExpireDuringDelayedConnect) {
+  // Make the connection resolve after a delay that is longer than the cache
+  // timeout.
+  constexpr zx::duration kConnectionDelay = kCacheTimeout + zx::sec(1);
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  settings.le_connection_delay = kConnectionDelay;
+  test_device()->set_settings(settings);
+
+  auto* dev = dev_cache()->NewDevice(kAddress0, true);
+  auto id = dev->identifier();
+  EXPECT_TRUE(dev->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Make sure the connection request doesn't time out while waiting for a
+  // response.
+  conn_mgr()->set_request_timeout_for_testing(kConnectionDelay + zx::sec(1));
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(common::HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+
+    ASSERT_TRUE(status);
+    ASSERT_TRUE(conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+  EXPECT_TRUE(conn_mgr()->Connect(id, callback));
+  ASSERT_TRUE(dev->le());
+  EXPECT_EQ(RemoteDevice::ConnectionState::kInitializing,
+            dev->le()->connection_state());
+
+  RunLoopFor(kConnectionDelay);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(status);
+
+  // The device should not have expired during this time.
+  dev = dev_cache()->FindDeviceByAddress(kAddress0);
+  ASSERT_TRUE(dev);
+  EXPECT_EQ(id, dev->identifier());
+  EXPECT_TRUE(dev->connected());
+  EXPECT_FALSE(dev->temporary());
 }
 
 // Successful connection to single device

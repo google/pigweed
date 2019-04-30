@@ -5,19 +5,20 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_ADVERTISER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_ADVERTISER_H_
 
-#include <memory>
-
 #include <lib/fit/function.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
 namespace bt {
 namespace hci {
 
-class LowEnergyAdvertiser {
+class LowEnergyAdvertiser : public LocalAddressClient {
  public:
   virtual ~LowEnergyAdvertiser() = default;
 
@@ -28,11 +29,6 @@ class LowEnergyAdvertiser {
   // currently enabled ones.  This can change when the state of advertising
   // changes.  It should be checked before trying to add an advertisement.
   virtual size_t GetMaxAdvertisements() const = 0;
-
-  // Returns true if configuring the controller random address is allowed by
-  // this advertiser. This method should always return true for an advertiser
-  // that uses extended advertising.
-  virtual bool AllowsRandomAddressChange() const = 0;
 
   // TODO(armansito): The |address| parameter of this function doesn't always
   // correspond to the advertised device address as the local address for an

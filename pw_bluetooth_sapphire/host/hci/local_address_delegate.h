@@ -15,6 +15,8 @@
 namespace bt {
 namespace hci {
 
+// Delegate interface for obtaining the host-maintained local address and
+// identity information for the system.
 class LocalAddressDelegate {
  public:
   virtual ~LocalAddressDelegate() = default;
@@ -41,6 +43,17 @@ class LocalAddressDelegate {
   // synchronously or asynchronously.
   using AddressCallback = fit::function<void(const common::DeviceAddress&)>;
   virtual void EnsureLocalAddress(AddressCallback callback) = 0;
+};
+
+// Interface to be implemented by all objects that are interested in and/or can
+// prevent the configuration of a local private address.
+class LocalAddressClient {
+ public:
+  virtual ~LocalAddressClient() = default;
+
+  // Returns true if the procedures managed by this client do not currently
+  // prevent the reconfiguration of the controller LE random address.
+  virtual bool AllowsRandomAddressChange() const = 0;
 };
 
 }  // namespace hci
