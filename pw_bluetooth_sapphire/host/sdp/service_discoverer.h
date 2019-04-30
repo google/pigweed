@@ -5,14 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
 
+#include <fbl/ref_ptr.h>
+#include <lib/async/cpp/task.h>
+#include <lib/fit/function.h>
+
 #include <map>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
-
-#include <fbl/ref_ptr.h>
-#include <lib/async/cpp/task.h>
-#include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
@@ -66,6 +66,10 @@ class ServiceDiscoverer final {
   // Returns true if discovery was started, and false otherwise.
   bool StartServiceDiscovery(common::DeviceId peer_id,
                              std::unique_ptr<Client> client);
+
+  // Returns the number of searches that will be performed on a
+  // StartServiceDiscovery.
+  size_t search_count() const;
 
  private:
   // A registered search.

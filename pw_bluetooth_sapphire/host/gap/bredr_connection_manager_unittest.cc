@@ -138,12 +138,12 @@ const auto kConnectionComplete = common::CreateStaticByteBuffer(
 
 const auto kConnectionCompleteError = common::CreateStaticByteBuffer(
     hci::kConnectionCompleteEventCode,
-    0x0B,                                               // parameter_total_size (11 byte payload)
+    0x0B,  // parameter_total_size (11 byte payload)
     hci::StatusCode::kConnectionFailedToBeEstablished,  // status
     0x00, 0x00,                                         // connection_handle
     TEST_DEV_ADDR_BYTES_LE,                             // peer address
     0x01,                                               // link_type (ACL)
-    0x00                                                // encryption not enabled
+    0x00  // encryption not enabled
 );
 
 const auto kConnectionCompleteCanceled = common::CreateStaticByteBuffer(
@@ -158,14 +158,14 @@ const auto kConnectionCompleteCanceled = common::CreateStaticByteBuffer(
 
 const auto kCreateConnection = common::CreateStaticByteBuffer(
     LowerBits(hci::kCreateConnection), UpperBits(hci::kCreateConnection),
-    0x0d,                                  // parameter_total_size (13 bytes)
-    TEST_DEV_ADDR_BYTES_LE,                // peer address
+    0x0d,                                   // parameter_total_size (13 bytes)
+    TEST_DEV_ADDR_BYTES_LE,                 // peer address
     LowerBits(hci::kEnableAllPacketTypes),  // allowable packet types
     UpperBits(hci::kEnableAllPacketTypes),  // allowable packet types
-    0x02,                                  // page_scan_repetition_mode (R2)
-    0x00,                                  // reserved
-    0x00, 0x00,                            // clock_offset
-    0x00                                   // allow_role_switch (don't)
+    0x02,                                   // page_scan_repetition_mode (R2)
+    0x00,                                   // reserved
+    0x00, 0x00,                             // clock_offset
+    0x00                                    // allow_role_switch (don't)
 );
 
 const auto kCreateConnectionRsp =
@@ -374,7 +374,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   }
 
   void QueueSuccessfulCreateConnection(RemoteDevice* peer,
-                                 hci::ConnectionHandle conn) const {
+                                       hci::ConnectionHandle conn) const {
     const DynamicByteBuffer complete_packet =
         testing::ConnectionCompletePacket(peer->address(), conn);
     test_device()->QueueCommandTransaction(
@@ -382,7 +382,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
                            {&kCreateConnectionRsp, &complete_packet}));
   }
   void QueueSuccessfulInterrogation(DeviceAddress addr,
-                                hci::ConnectionHandle conn) const {
+                                    hci::ConnectionHandle conn) const {
     const DynamicByteBuffer remote_name_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
     const DynamicByteBuffer remote_version_complete_packet =
@@ -409,8 +409,6 @@ class BrEdrConnectionManagerTest : public TestingBase {
     test_device()->QueueCommandTransaction(CommandTransaction(
         testing::ReadRemoteExtended2Packet(conn),
         {&kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet}));
-
-    data_domain()->ExpectOutboundL2capChannel(conn, l2cap::kSDP, 0x40, 0x41);
   }
 
   void QueueDisconnection(hci::ConnectionHandle conn) const {
@@ -525,10 +523,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
       {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
-
-  // We expect to complete the connection, which will cause a SDP connection
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP,
-                                            0x40, 0x41);
 
   RunLoopUntilIdle();
 
@@ -1106,6 +1100,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
       });
 
   QueueSuccessfulIncomingConn();
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP,
+                                            0x40, 0x41);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1136,7 +1132,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   EXPECT_TRUE(connmgr()->RemoveServiceSearch(search_id));
   EXPECT_FALSE(connmgr()->RemoveServiceSearch(search_id));
 
-  // Second connection is shortened because we have already interrogated.
+  // Second connection is shortened because we have already interrogated,
+  // and we don't search for SDP services because none are registered
   test_device()->QueueCommandTransaction(
       CommandTransaction(kAcceptConnectionRequest,
                          {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
@@ -1146,8 +1143,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   test_device()->QueueCommandTransaction(CommandTransaction(
       kReadRemoteExtended2,
       {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended2Complete}));
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP,
-                                            0x40, 0x41);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -1238,6 +1233,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
       });
 
   QueueSuccessfulIncomingConn();
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP,
+                                            0x40, 0x41);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1274,43 +1271,47 @@ std::string FormatConnectionState(RemoteDevice::ConnectionState s) {
 }
 
 ::testing::AssertionResult IsInitializing(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kInitializing != dev->bredr()->connection_state()) {
+  if (RemoteDevice::ConnectionState::kInitializing !=
+      dev->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-      << "Expected device connection_state: kInitializing, found "
-      << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected device connection_state: kInitializing, found "
+           << FormatConnectionState(dev->bredr()->connection_state());
   }
   return ::testing::AssertionSuccess();
 }
 ::testing::AssertionResult IsConnected(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kConnected != dev->bredr()->connection_state()) {
+  if (RemoteDevice::ConnectionState::kConnected !=
+      dev->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-      << "Expected device connection_state: kConnected, found "
-      << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected device connection_state: kConnected, found "
+           << FormatConnectionState(dev->bredr()->connection_state());
   }
   if (dev->temporary()) {
     return ::testing::AssertionFailure()
-      << "Expected device to be non-temporary, but found temporary";
+           << "Expected device to be non-temporary, but found temporary";
   }
   return ::testing::AssertionSuccess();
 }
 ::testing::AssertionResult NotConnected(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kNotConnected != dev->bredr()->connection_state()) {
+  if (RemoteDevice::ConnectionState::kNotConnected !=
+      dev->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-      << "Expected device connection_state: kNotConnected, found "
-      << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected device connection_state: kNotConnected, found "
+           << FormatConnectionState(dev->bredr()->connection_state());
   }
   return ::testing::AssertionSuccess();
 }
 
-::testing::AssertionResult HasConnectionTo(RemoteDevice* dev, BrEdrConnection* conn) {
+::testing::AssertionResult HasConnectionTo(RemoteDevice* dev,
+                                           BrEdrConnection* conn) {
   if (!conn) {
     return ::testing::AssertionFailure()
-      << "Expected BrEdrConnection, but found nullptr";
+           << "Expected BrEdrConnection, but found nullptr";
   }
   if (dev->identifier() != conn->peer_id()) {
     return ::testing::AssertionFailure()
-      << "Expected connection peer_id " << bt_str(dev->identifier())
-      << " but found " << bt_str(conn->peer_id());
+           << "Expected connection peer_id " << bt_str(dev->identifier())
+           << " but found " << bt_str(conn->peer_id());
   }
   return ::testing::AssertionSuccess();
 }

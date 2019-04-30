@@ -295,10 +295,9 @@ BrEdrConnectionManager::FindConnectionById(DeviceId peer_id) {
     return std::nullopt;
   }
 
-  auto it = std::find_if(connections_.begin(), connections_.end(),
-                      [peer_id](const auto& c) {
-                        return c.second.peer_id() == peer_id;
-                      });
+  auto it = std::find_if(
+      connections_.begin(), connections_.end(),
+      [peer_id](const auto& c) { return c.second.peer_id() == peer_id; });
 
   // If we're connected, we must have an ID.
   ZX_ASSERT_MSG(it != connections_.end(), "couldn't find handle for peer %s",
@@ -461,23 +460,24 @@ void BrEdrConnectionManager::EstablishConnection(
 
   auto handle = connection->handle();
 
-  auto conn = connections_
-                  .try_emplace(handle,
-                      device->identifier(),
-                      std::move(connection))
-                  .first;
+  auto conn =
+      connections_
+          .try_emplace(handle, device->identifier(), std::move(connection))
+          .first;
   device->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 
-  self->data_domain_->OpenL2capChannel(
-      handle, l2cap::kSDP,
-      [self, peer_id = device->identifier()](auto channel) {
-        if (!self)
-          return;
-        auto client = sdp::Client::Create(std::move(channel));
+  if (discoverer_.search_count()) {
+    data_domain_->OpenL2capChannel(
+        handle, l2cap::kSDP,
+        [self, peer_id = device->identifier()](auto channel) {
+          if (!self)
+            return;
+          auto client = sdp::Client::Create(std::move(channel));
 
-        self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
-      },
-      self->dispatcher_);
+          self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
+        },
+        dispatcher_);
+  }
 
   auto request = connection_requests_.extract(device->identifier());
   if (request) {
@@ -517,16 +517,13 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
          bt_str(device->identifier()), bt_str(event.ToStatus()), handle,
          params.reason);
 
-  CleanupConnection(handle,
-      connections_.extract(handle).mapped(),
-      true);
+  CleanupConnection(handle, connections_.extract(handle).mapped(), true);
 }
 
 void BrEdrConnectionManager::CleanupConnection(hci::ConnectionHandle handle,
                                                BrEdrConnection& conn,
                                                bool link_already_closed) {
-  auto* device =
-      cache_->FindDeviceByAddress(conn.link().peer_address());
+  auto* device = cache_->FindDeviceByAddress(conn.link().peer_address());
   ZX_DEBUG_ASSERT_MSG(device, "Couldn't find RemoteDevice for handle: %#.4x",
                       handle);
   device->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
@@ -726,7 +723,8 @@ bool BrEdrConnectionManager::Connect(
   }
   // If we are not already connected or pending, initiate a new connection
   peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-  connection_requests_.try_emplace(peer_id, peer->address(), std::move(on_connection_result));
+  connection_requests_.try_emplace(peer_id, peer->address(),
+                                   std::move(on_connection_result));
 
   TryCreateNextConnection();
 
@@ -753,10 +751,13 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto on_failure = [self](hci::Status status, auto peer_id) {
-        if (self && !status)
-          self->OnConnectFailure(status, peer_id);
-      };
-  auto on_timeout = [self]{ if (self) self->OnRequestTimeout(); };
+    if (self && !status)
+      self->OnConnectFailure(status, peer_id);
+  };
+  auto on_timeout = [self] {
+    if (self)
+      self->OnRequestTimeout();
+  };
 
   if (peer) {
     pending_request_.emplace(peer->identifier(), peer->address(), on_timeout);
@@ -774,10 +775,9 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
       auto address = request->second.address();
 
       pending_request_.emplace(identifier, address, on_timeout);
-      pending_request_->CreateConnection(
-          hci_->command_channel(), dispatcher_, std::nullopt,
-          std::nullopt, request_timeout_,
-          on_failure);
+      pending_request_->CreateConnection(hci_->command_channel(), dispatcher_,
+                                         std::nullopt, std::nullopt,
+                                         request_timeout_, on_failure);
     }
   }
 }

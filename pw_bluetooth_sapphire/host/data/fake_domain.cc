@@ -184,6 +184,16 @@ void FakeDomain::UnregisterService(l2cap::PSM psm) {
   inbound_conn_cbs_.erase(psm);
 }
 
+FakeDomain::~FakeDomain() {
+  for (auto& link_it : links_) {
+    for (auto& psm_it : link_it.second.expected_outbound_conns) {
+      ZX_DEBUG_ASSERT_MSG(psm_it.second.empty(),
+                          "didn't receive expected connection on PSM %#.4x",
+                          psm_it.first);
+    }
+  }
+}
+
 FakeDomain::LinkData* FakeDomain::RegisterInternal(
     hci::ConnectionHandle handle, hci::Connection::Role role,
     hci::Connection::LinkType link_type, l2cap::LinkErrorCallback link_error_cb,

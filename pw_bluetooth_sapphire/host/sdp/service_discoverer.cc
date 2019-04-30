@@ -76,6 +76,8 @@ bool ServiceDiscoverer::StartServiceDiscovery(common::DeviceId peer_id,
   return true;
 }
 
+size_t ServiceDiscoverer::search_count() const { return searches_.size(); }
+
 void ServiceDiscoverer::FinishPeerSearch(common::DeviceId peer_id,
                                          SearchId search_id) {
   auto it = sessions_.find(peer_id);

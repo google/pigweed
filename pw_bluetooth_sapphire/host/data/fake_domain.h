@@ -116,7 +116,7 @@ class FakeDomain final : public Domain {
   };
 
   FakeDomain() = default;
-  ~FakeDomain() override = default;
+  ~FakeDomain() override;
 
   LinkData* RegisterInternal(hci::ConnectionHandle handle,
                              hci::Connection::Role role,

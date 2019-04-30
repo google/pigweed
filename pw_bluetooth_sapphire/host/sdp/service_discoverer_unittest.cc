@@ -7,7 +7,6 @@
 #include <lib/async/default.h>
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -88,6 +87,7 @@ class SDP_ServiceDiscovererTest : public TestingBase {
 // When there are no searches registered, it just disconnects the client.
 TEST_F(SDP_ServiceDiscovererTest, NoSearches) {
   ServiceDiscoverer discoverer;
+  EXPECT_EQ(0u, discoverer.search_count());
 
   discoverer.StartServiceDiscovery(kDeviceOne, GetFakeClient());
 
@@ -109,6 +109,7 @@ TEST_F(SDP_ServiceDiscovererTest, NoResults) {
       {kServiceId, kProtocolDescriptorList, kBluetoothProfileDescriptorList},
       std::move(result_cb));
   ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, id);
+  EXPECT_EQ(1u, discoverer.search_count());
 
   auto client = GetFakeClient();
 
@@ -158,11 +159,13 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
       {kServiceId, kProtocolDescriptorList, kBluetoothProfileDescriptorList},
       result_cb.share());
   ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, one);
+  EXPECT_EQ(1u, discoverer.search_count());
   ServiceDiscoverer::SearchId two = discoverer.AddSearch(
       profile::kAudioSink,
       {kProtocolDescriptorList, kBluetoothProfileDescriptorList},
       result_cb.share());
   ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, two);
+  EXPECT_EQ(2u, discoverer.search_count());
 
   auto client = GetFakeClient();
 
@@ -240,6 +243,8 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
   searches.clear();
 
   ASSERT_TRUE(discoverer.RemoveSearch(one));
+  ASSERT_FALSE(discoverer.RemoveSearch(one));
+  EXPECT_EQ(1u, discoverer.search_count());
 
   client = GetFakeClient();
 
@@ -295,6 +300,7 @@ TEST_F(SDP_ServiceDiscovererTest, Disconnected) {
       {kServiceId, kProtocolDescriptorList, kBluetoothProfileDescriptorList},
       std::move(result_cb));
   ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, id);
+  EXPECT_EQ(1u, discoverer.search_count());
 
   auto client = GetFakeClient();
 
@@ -354,6 +360,7 @@ TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
       {kProtocolDescriptorList, kBluetoothProfileDescriptorList},
       one_result_cb.share());
   ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, id);
+  EXPECT_EQ(1u, discoverer.search_count());
 
   auto client = GetFakeClient();
 
@@ -402,6 +409,7 @@ TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
   ASSERT_EQ(1u, *value);
 
   ASSERT_EQ(1u, clients_destroyed());
+  EXPECT_EQ(0u, discoverer.search_count());
 }
 
 }  // namespace
