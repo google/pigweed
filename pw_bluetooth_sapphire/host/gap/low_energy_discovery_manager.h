@@ -236,6 +236,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   inline void StartActiveScan() { StartScan(true); }
   inline void StartPassiveScan() { StartScan(false); }
 
+  // Used by destructor to handle all sessions
+  void DeactivateAndNotifySessions();
+
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;
 

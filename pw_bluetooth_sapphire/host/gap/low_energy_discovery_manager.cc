@@ -82,7 +82,8 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
 
 LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
   scanner_->set_delegate(nullptr);
-  // TODO(armansito): Invalidate all known session objects here.
+
+  DeactivateAndNotifySessions();
 }
 
 void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
@@ -239,11 +240,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(
     case hci::LowEnergyScanner::ScanStatus::kFailed: {
       bt_log(ERROR, "gap-le", "failed to initiate scan!");
 
-      // Clear all sessions.
-      auto sessions = std::move(sessions_);
-      for (auto& s : sessions) {
-        s->NotifyError();
-      }
+      DeactivateAndNotifySessions();
 
       // Report failure on all currently pending requests. If any of the
       // callbacks issue a retry the new requests will get re-queued and
@@ -355,6 +352,22 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   // tests).
   scanner_->StartScan(active, interval, window, true /* filter_duplicates */,
                       hci::LEScanFilterPolicy::kNoWhiteList, scan_period_, cb);
+}
+
+void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
+  // If there are any active sessions we invalidate by notifying of an error.
+
+  // We move the initial set and notify those, if any error callbacks create
+  // additional sessions they will be added to pending_
+  auto sessions = std::move(sessions_);
+  for (const auto& session : sessions) {
+    if (session->active()) { session->NotifyError(); }
+  }
+
+  // Due to the move, sessions_ should be empty before the loop and any
+  // callbacks will add sessions to pending_ so it should be empty
+  // afterwards as well.
+  ZX_DEBUG_ASSERT(sessions_.empty());
 }
 
 }  // namespace gap

@@ -72,7 +72,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   }
 
   void TearDown() override {
-    discovery_manager_ = nullptr;
+    if (discovery_manager_) {
+      discovery_manager_ = nullptr;
+    }
     test_device()->Stop();
     TestingBase::TearDown();
   }
@@ -81,6 +83,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   LowEnergyDiscoveryManager* discovery_manager() const {
     return discovery_manager_.get();
   }
+
+  // Deletes |discovery_manager_|.
+  void DeleteDiscoveryManager() { discovery_manager_ = nullptr; }
 
   RemoteDeviceCache* device_cache() { return &device_cache_; }
 
@@ -251,6 +256,31 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
 
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
+  // Start discovery with a session, delete the manager and ensure that the
+  // session is inactive with the error callback called.
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery(
+      [this, &session](auto cb_session) { session = std::move(cb_session); });
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(scan_enabled());
+
+  ASSERT_TRUE(session);
+  EXPECT_TRUE(session->active());
+
+  size_t num_errors = 0u;
+  session->set_error_callback([&num_errors](){
+    num_errors++;
+  });
+
+  EXPECT_EQ(0u, num_errors);
+  DeleteDiscoveryManager();
+  EXPECT_EQ(1u, num_errors);
+  EXPECT_FALSE(session->active());
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
