@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/lib/fxl/strings/string_printf.h"
@@ -16,48 +17,6 @@
 
 namespace bt {
 namespace gatt {
-namespace {
-
-att::ErrorCode CheckSecurity(const att::AccessRequirements& reqs,
-                             const sm::SecurityProperties& security,
-                             bool read_or_write) {
-  if (!reqs.allowed()) {
-    return read_or_write ? att::ErrorCode::kReadNotPermitted
-                         : att::ErrorCode::kWriteNotPermitted;
-  }
-
-  if (reqs.encryption_required() &&
-      security.level() < sm::SecurityLevel::kEncrypted) {
-    // If the peer is bonded but the link is not encrypted the "Insufficient
-    // Encryption" error should be sent. Our GAP layer always keeps the link
-    // encrypted so the authentication procedure needs to fail during
-    // connection. We don't distinguish this from the un-paired state.
-    // (NOTE: It is possible for the link to be authenticated without encryption
-    // in LE Security Mode 2, which we do not support).
-    return att::ErrorCode::kInsufficientAuthentication;
-  }
-
-  if ((reqs.authentication_required() || reqs.authorization_required()) &&
-      security.level() < sm::SecurityLevel::kAuthenticated) {
-    return att::ErrorCode::kInsufficientAuthentication;
-  }
-
-  // TODO(armansito): Handle kInsufficientEncryptionKeySize.
-
-  return att::ErrorCode::kNoError;
-}
-
-att::ErrorCode CheckReadPermissions(const att::AccessRequirements& reqs,
-                                    const sm::SecurityProperties& security) {
-  return CheckSecurity(reqs, security, true);
-}
-
-att::ErrorCode CheckWritePermissions(const att::AccessRequirements& reqs,
-                                     const sm::SecurityProperties& security) {
-  return CheckSecurity(reqs, security, false);
-}
-
-}  // namespace
 
 Server::Server(DeviceId peer_id, fxl::RefPtr<att::Database> database,
                fxl::RefPtr<att::Bearer> bearer)
@@ -517,7 +476,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
   }
 
   att::ErrorCode ecode =
-      CheckReadPermissions(attr->read_reqs(), att_->security());
+      att::CheckReadPermissions(attr->read_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -583,7 +542,7 @@ void Server::OnReadRequest(att::Bearer::TransactionId tid,
   }
 
   att::ErrorCode ecode =
-      CheckReadPermissions(attr->read_reqs(), att_->security());
+      att::CheckReadPermissions(attr->read_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -641,7 +600,7 @@ void Server::OnWriteCommand(att::Bearer::TransactionId tid,
   }
 
   att::ErrorCode ecode =
-      CheckWritePermissions(attr->write_reqs(), att_->security());
+      att::CheckWritePermissions(attr->write_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     return;
   }
@@ -679,7 +638,7 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
   }
 
   att::ErrorCode ecode =
-      CheckWritePermissions(attr->write_reqs(), att_->security());
+      att::CheckWritePermissions(attr->write_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -744,8 +703,8 @@ att::ErrorCode Server::ReadByTypeHelper(
     const auto* attr = iter.get();
     ZX_DEBUG_ASSERT(attr);
 
-    att::ErrorCode security_result = CheckSecurity(
-        attr->read_reqs(), att_->security(), true /* read_or_write */);
+    att::ErrorCode security_result =
+        att::CheckReadPermissions(attr->read_reqs(), att_->security());
     if (security_result != att::ErrorCode::kNoError) {
       // Return error only if this is the first result that matched. We simply
       // stop the search otherwise.
