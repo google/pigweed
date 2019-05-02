@@ -4,15 +4,21 @@
 
 #include "database.h"
 
-#include <algorithm>
-
 #include <zircon/assert.h>
 
+#include <algorithm>
+
+#include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
 namespace att {
 namespace {
+
+using common::ByteBuffer;
+using common::DeviceId;
+using common::DynamicByteBuffer;
+using common::UUID;
 
 bool StartLessThan(const AttributeGrouping& grp, const Handle handle) {
   return grp.start_handle() < handle;
@@ -24,11 +30,12 @@ bool EndLessThan(const AttributeGrouping& grp, const Handle handle) {
 
 }  // namespace
 
-Database::Iterator::Iterator(GroupingList* list,
-                             Handle start,
-                             Handle end,
-                             const common::UUID* type,
-                             bool groups_only)
+QueuedWrite::QueuedWrite(Handle handle, uint16_t offset,
+                         const ByteBuffer& value)
+    : handle_(handle), offset_(offset), value_(value) {}
+
+Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end,
+                             const UUID* type, bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {
   ZX_DEBUG_ASSERT(list);
   grp_end_ = list->end();
@@ -139,10 +146,8 @@ Database::Database(Handle range_start, Handle range_end)
   ZX_DEBUG_ASSERT(range_end_ <= kHandleMax);
 }
 
-Database::Iterator Database::GetIterator(Handle start,
-                                         Handle end,
-                                         const common::UUID* type,
-                                         bool groups_only) {
+Database::Iterator Database::GetIterator(Handle start, Handle end,
+                                         const UUID* type, bool groups_only) {
   ZX_DEBUG_ASSERT(start >= range_start_);
   ZX_DEBUG_ASSERT(end <= range_end_);
   ZX_DEBUG_ASSERT(start <= end);
@@ -150,9 +155,9 @@ Database::Iterator Database::GetIterator(Handle start,
   return Iterator(&groupings_, start, end, type, groups_only);
 }
 
-AttributeGrouping* Database::NewGrouping(const common::UUID& group_type,
+AttributeGrouping* Database::NewGrouping(const UUID& group_type,
                                          size_t attr_count,
-                                         const common::ByteBuffer& decl_value) {
+                                         const ByteBuffer& decl_value) {
   // This method looks for a |pos| before which to insert the new grouping.
   Handle start_handle;
   decltype(groupings_)::iterator pos;
@@ -229,6 +234,73 @@ const Attribute* Database::FindAttribute(Handle handle) {
   ZX_DEBUG_ASSERT(index < iter->attributes().size());
 
   return &iter->attributes()[index];
+}
+
+void Database::ExecuteWriteQueue(DeviceId peer_id,
+                                 PrepareWriteQueue write_queue,
+                                 const sm::SecurityProperties& security,
+                                 WriteCallback callback) {
+  ZX_DEBUG_ASSERT(callback);
+
+  // Send a response without writing to any attributes if the queue is empty
+  // (see Vol 3, Part F, 3.4.6.3).
+  if (write_queue.empty()) {
+    callback(kInvalidHandle, ErrorCode::kNoError);
+    return;
+  }
+
+  // Continuation that keeps track of all outstanding write requests. |callback|
+  // is called once |count| reaches 0 or an error is received.
+  WriteCallback f = [cb = std::move(callback), count = write_queue.size()](
+                        Handle handle, ErrorCode ecode) mutable {
+    bt_log(TRACE, "att", "execute write result - handle: %#.4x, error: %#.2hhx",
+           handle, ecode);
+    if (!cb) {
+      bt_log(SPEW, "att", "ignore execute write result - already responded");
+      return;
+    }
+
+    ZX_DEBUG_ASSERT(count > 0);
+    count--;
+    if (count == 0 || ecode != ErrorCode::kNoError) {
+      auto f = std::move(cb);
+      f(handle, ecode);
+    }
+  };
+
+  while (!write_queue.empty()) {
+    auto next = std::move(write_queue.front());
+    write_queue.pop();
+
+    const auto* attr = FindAttribute(next.handle());
+    if (!attr) {
+      // The attribute is no longer valid, so we can respond with an error and
+      // abort the rest of the queue.
+      f(next.handle(), ErrorCode::kInvalidHandle);
+      break;
+    }
+
+    if (next.value().size() > kMaxAttributeValueLength) {
+      f(next.handle(), ErrorCode::kInvalidAttributeValueLength);
+      break;
+    }
+
+    ErrorCode ecode = CheckWritePermissions(attr->write_reqs(), security);
+    if (ecode != ErrorCode::kNoError) {
+      f(next.handle(), ecode);
+      break;
+    }
+
+    // TODO(armansito): Consider removing the boolean return value in favor of
+    // always reporting errors using the callback. That would simplify the
+    // pattern here.
+    if (!attr->WriteAsync(peer_id, next.offset(), next.value(),
+                          [handle = next.handle(), f = f.share()](
+                              ErrorCode ecode) { f(handle, ecode); })) {
+      f(next.handle(), ErrorCode::kWriteNotPermitted);
+      break;
+    }
+  }
 }
 
 }  // namespace att

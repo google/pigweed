@@ -7,6 +7,8 @@
 namespace bt {
 namespace att {
 
+using common::DeviceId;
+
 AccessRequirements::AccessRequirements() : value_(0u) {}
 
 AccessRequirements::AccessRequirements(bool encryption, bool authentication,

@@ -9,15 +9,45 @@
 
 #include <list>
 #include <memory>
+#include <queue>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bt {
 namespace att {
+
+// Represents a singe write operation queued for atomic submission by an ATT
+// protocol write method.
+class QueuedWrite {
+ public:
+  QueuedWrite() = default;
+  ~QueuedWrite() = default;
+
+  // Constructs a write request by copying the contents of |value|.
+  QueuedWrite(Handle handle, uint16_t offset, const common::ByteBuffer& value);
+
+  // Allow move operations.
+  QueuedWrite(QueuedWrite&&) = default;
+  QueuedWrite& operator=(QueuedWrite&&) = default;
+
+  Handle handle() const { return handle_; }
+  uint16_t offset() const { return offset_; }
+  const common::ByteBuffer& value() const { return value_; }
+
+ private:
+  Handle handle_;
+  uint16_t offset_;
+  common::DynamicByteBuffer value_;
+};
+
+// Represents a prepare queue used to handle the ATT Prepare Write and Execute
+// Write requests.
+using PrepareWriteQueue = std::queue<QueuedWrite>;
 
 // This class provides a simple attribute database abstraction. Attributes can
 // be populated directly and queried to fulfill ATT protocol requests.
@@ -126,6 +156,35 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // the attribute cannot be found or is part of a grouping that is inactive
   // or incomplete.
   const Attribute* FindAttribute(Handle handle);
+
+  // Applies all write requests in |write_queue| and reports the result in
+  // |callback|. All requests will be delivered to the attribute write handlers
+  // at once, in order, without waiting for a response on individual writes.
+  //
+  // If one or more requests result in an application protocol error,
+  // |callback| will be invoked with the value of the first error received and
+  // all subsequent results will be ignored. Otherwise, |callback| will be
+  // called with a success status once a reply has been received for all
+  // requests in the queue.
+  //
+  // This function performs any security checks even though these are expected
+  // to be done during the "prepare" phase. This is because the attribute
+  // database can change from the time writes are queued until they are
+  // committed. |security| should match the security properties of the link
+  // under which the execute write request was initiatied.
+  //
+  // Attribute value validation (such as offset and length checks) are expected
+  // to be done by the application that has set up the attribute. This function
+  // does check for the validity of a given attribute handle and whether the
+  // attribute supports writes.
+  //
+  // The Handle argument of |callback| is undefined if ErrorCode is
+  // ErrorCode::kNoError and should be ignored.
+  using WriteCallback = fit::function<void(Handle, ErrorCode)>;
+  void ExecuteWriteQueue(common::DeviceId peer_id,
+                         PrepareWriteQueue write_queue,
+                         const sm::SecurityProperties& security,
+                         WriteCallback callback);
 
  private:
   FRIEND_REF_COUNTED_THREAD_SAFE(Database);

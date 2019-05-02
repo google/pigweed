@@ -11,6 +11,8 @@ namespace bt {
 namespace att {
 namespace {
 
+using common::DeviceId;
+
 constexpr DeviceId kTestDeviceId(1);
 constexpr Handle kTestHandle = 0x0001;
 constexpr common::UUID kTestType1((uint16_t)0x0001);

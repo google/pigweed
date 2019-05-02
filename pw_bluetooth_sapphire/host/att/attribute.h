@@ -20,9 +20,6 @@
 namespace bt {
 namespace att {
 
-// Identifier type used to identify a peer device.
-using DeviceId = common::DeviceId;
-
 // Defines the read or write access permissions for an attribute.
 class AccessRequirements final {
  public:
@@ -120,8 +117,8 @@ class Attribute final {
   using ReadResultCallback =
       fit::function<void(ErrorCode status, const common::ByteBuffer& value)>;
   using ReadHandler =
-      fit::function<void(DeviceId peer_id, Handle handle, uint16_t offset,
-                         ReadResultCallback result_callback)>;
+      fit::function<void(common::DeviceId peer_id, Handle handle,
+                         uint16_t offset, ReadResultCallback result_callback)>;
   void set_read_handler(ReadHandler read_handler) {
     read_handler_ = std::move(read_handler);
   }
@@ -130,7 +127,7 @@ class Attribute final {
   // a null |result_callback|
   using WriteResultCallback = fit::function<void(ErrorCode status)>;
   using WriteHandler = fit::function<void(
-      DeviceId peer_id, Handle handle, uint16_t offset,
+      common::DeviceId peer_id, Handle handle, uint16_t offset,
       const common::ByteBuffer& value, WriteResultCallback result_callback)>;
   void set_write_handler(WriteHandler write_handler) {
     write_handler_ = std::move(write_handler);
@@ -138,12 +135,12 @@ class Attribute final {
 
   // Initiates an asynchronous read of the attribute value. Returns false if
   // this attribute is not dynamic.
-  bool ReadAsync(DeviceId peer_id, uint16_t offset,
+  bool ReadAsync(common::DeviceId peer_id, uint16_t offset,
                  ReadResultCallback result_callback) const;
 
   // Initiates an asynchronous write of the attribute value. Returns false if
   // this attribute is not dynamic.
-  bool WriteAsync(DeviceId peer_id, uint16_t offset,
+  bool WriteAsync(common::DeviceId peer_id, uint16_t offset,
                   const common::ByteBuffer& value,
                   WriteResultCallback result_callback) const;
 

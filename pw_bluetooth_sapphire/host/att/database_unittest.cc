@@ -7,10 +7,17 @@
 #include <zircon/assert.h>
 
 #include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace att {
 namespace {
+
+using common::BufferView;
+using common::ByteBuffer;
+using common::ContainersEqual;
+using common::DeviceId;
+using common::DynamicByteBuffer;
 
 constexpr Handle kTestRangeStart = 1;
 constexpr Handle kTestRangeEnd = 10;
@@ -18,6 +25,10 @@ constexpr Handle kTestRangeEnd = 10;
 constexpr common::UUID kTestType1((uint16_t)1);
 constexpr common::UUID kTestType2((uint16_t)2);
 constexpr common::UUID kTestType3((uint16_t)3);
+
+const AccessRequirements kAllowed(false, false, false);
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
+                                         false);
 
 // Values with different lengths
 const auto kTestValue1 = common::CreateStaticByteBuffer('x', 'x');
@@ -419,7 +430,7 @@ class ATT_DatabaseIteratorManyTest : public ::testing::Test {
  private:
   fxl::RefPtr<Database> db_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ATT_DatabaseIteratorManyTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseIteratorManyTest);
 };
 
 // static
@@ -518,6 +529,338 @@ TEST_F(ATT_DatabaseIteratorManyTest, Range) {
 
   for (size_t i = 0; i < handles.size(); i++) {
     EXPECT_EQ(kExpected[i], handles[i]);
+  }
+}
+
+class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
+ public:
+  ATT_DatabaseExecuteWriteQueueTest() = default;
+  ~ATT_DatabaseExecuteWriteQueueTest() = default;
+
+ protected:
+  struct PendingWrite {
+    DeviceId peer_id;
+    Handle handle;
+    uint16_t offset;
+    DynamicByteBuffer value;
+    Attribute::WriteResultCallback result_callback;
+  };
+
+  void SetUp() override {
+    db_ = Database::Create(kTestRangeStart, kTestRangeEnd);
+  }
+
+  void ExecuteWriteQueue(DeviceId peer_id, PrepareWriteQueue wq,
+                         const sm::SecurityProperties& security = kNoSecurity) {
+    db_->ExecuteWriteQueue(peer_id, std::move(wq), security,
+                           [this](Handle h, ErrorCode e) {
+                             callback_count_++;
+                             ecode_ = e;
+                             handle_in_error_ = h;
+                           });
+  }
+
+  // Sets up an attribute grouping with 4 attributes.
+  void SetUpAttributes() {
+    auto* grp = db()->NewGrouping(kTestType1, 3, kTestValue1);  // handle: 1
+    group_decl_handle_ = grp->start_handle();
+
+    auto* attr =
+        grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
+    attr->set_write_handler(fit::bind_member(
+        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    test_handle1_ = attr->handle();
+
+    attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 3
+    attr->set_write_handler(fit::bind_member(
+        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    test_handle2_ = attr->handle();
+
+    attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 4
+    attr->set_write_handler(fit::bind_member(
+        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    test_handle3_ = attr->handle();
+
+    grp->set_active(true);
+  }
+
+  void ResolveNextPendingWrite(ErrorCode ecode) {
+    ASSERT_FALSE(pending_writes_.empty());
+    auto pw = std::move(pending_writes_.front());
+    pending_writes_.pop();
+
+    pw.result_callback(ecode);
+  }
+
+  ErrorCode ecode() const { return ecode_; }
+  Handle handle_in_error() const { return handle_in_error_; }
+  int callback_count() const { return callback_count_; }
+
+  Handle group_decl_handle() const { return group_decl_handle_; }
+  Handle test_handle1() const { return test_handle1_; }
+  Handle test_handle2() const { return test_handle2_; }
+  Handle test_handle3() const { return test_handle3_; }
+
+  const std::queue<PendingWrite>& pending_writes() const {
+    return pending_writes_;
+  }
+
+  Database* db() { return db_.get(); }
+
+ private:
+  void WriteHandler(DeviceId peer_id, Handle handle, uint16_t offset,
+                    const ByteBuffer& value,
+                    Attribute::WriteResultCallback result_callback) {
+    PendingWrite pw;
+    pw.peer_id = peer_id;
+    pw.handle = handle;
+    pw.offset = offset;
+    pw.value = DynamicByteBuffer(value);
+    pw.result_callback = std::move(result_callback);
+
+    pending_writes_.push(std::move(pw));
+  }
+
+  ErrorCode ecode_ = ErrorCode::kNoError;
+  Handle handle_in_error_ = kInvalidHandle;
+  int callback_count_ = 0;
+  fxl::RefPtr<Database> db_;
+  std::queue<PendingWrite> pending_writes_;
+
+  // Handles of the test attributes.
+  Handle group_decl_handle_ = kInvalidHandle;
+  Handle test_handle1_ = kInvalidHandle;
+  Handle test_handle2_ = kInvalidHandle;
+  Handle test_handle3_ = kInvalidHandle;
+
+  DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseExecuteWriteQueueTest);
+};
+
+constexpr DeviceId kPeerId(1);
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, EmptyQueueSucceedsImmediately) {
+  ExecuteWriteQueue(kPeerId, {});
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kNoError, ecode());
+  EXPECT_EQ(kInvalidHandle, handle_in_error());
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, InvalidHandle) {
+  constexpr Handle kHandle = 1;
+  PrepareWriteQueue wq;
+  wq.push(QueuedWrite(kHandle, 0, BufferView()));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kInvalidHandle, ecode());
+  EXPECT_EQ(kHandle, handle_in_error());
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, ValueLength) {
+  auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
+  auto* attr = grp->AddAttribute(kTestType2);
+  grp->set_active(true);
+
+  PrepareWriteQueue wq;
+  wq.push(QueuedWrite(attr->handle(), 0,
+                      DynamicByteBuffer(kMaxAttributeValueLength + 1)));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kInvalidAttributeValueLength, ecode());
+  EXPECT_EQ(attr->handle(), handle_in_error());
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, WritingStaticValueNotPermitted) {
+  auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
+  auto* attr = grp->AddAttribute(kTestType2);  // read/write not permitted
+  grp->set_active(true);
+
+  PrepareWriteQueue wq;
+  wq.push(QueuedWrite(attr->handle(), 0, kTestValue1));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted, ecode());
+  EXPECT_EQ(attr->handle(), handle_in_error());
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
+  auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
+  auto* attr =
+      grp->AddAttribute(kTestType2, att::AccessRequirements(),
+                        att::AccessRequirements(
+                            true, false, false));  // write requires encryption
+  grp->set_active(true);
+
+  PrepareWriteQueue wq;
+  wq.push(QueuedWrite(attr->handle(), 0, kTestValue1));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq), kNoSecurity);
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kInsufficientAuthentication, ecode());
+  EXPECT_EQ(attr->handle(), handle_in_error());
+
+  // Request should succeed with an encrypted link.
+  ExecuteWriteQueue(
+      kPeerId, std::move(wq),
+      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  EXPECT_EQ(2, callback_count());
+  EXPECT_EQ(ErrorCode::kNoError, ecode());
+}
+
+// If an error is caught before delivering the request to the delegate then we
+// expect subsequent entries to not be delivered.
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, UndelegatedWriteErrorAborts) {
+  SetUpAttributes();
+  PrepareWriteQueue wq;
+
+  // Queue a request to one of the delegated handles. This won't generate a
+  // result until we explicitly send a reply via ResolveNextPendingWrite().
+  wq.push(QueuedWrite(test_handle1(), 0, kTestValue1));
+
+  // Queue a write to the group declaration handle. This should get rejected
+  // right away since it's not writable. Since the database catches this error
+  // internally, we expect the following queued writes to get aborted.
+  wq.push(QueuedWrite(group_decl_handle(), 0, kTestValue1));
+
+  // Queue more writes.
+  wq.push(QueuedWrite(test_handle2(), 1, kTestValue2));
+  wq.push(QueuedWrite(test_handle3(), 2, kTestValue1));
+  wq.push(QueuedWrite(test_handle1(), 3, kTestValue2));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+
+  // The database should have generated an error response.
+  EXPECT_EQ(1, callback_count());
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted, ecode());
+  EXPECT_EQ(group_decl_handle(), handle_in_error());
+
+  // Only the first write should have been delivered.
+  ASSERT_EQ(1u, pending_writes().size());
+  EXPECT_EQ(test_handle1(), pending_writes().front().handle);
+  EXPECT_EQ(0, pending_writes().front().offset);
+  EXPECT_TRUE(ContainersEqual(kTestValue1, pending_writes().front().value));
+
+  // Resolving the request should have no effect.
+  ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+  EXPECT_EQ(1, callback_count());  // still 1
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, ErrorInMultipleQueuedWrites) {
+  SetUpAttributes();
+  PrepareWriteQueue wq;
+
+  // Queue writes to the writable handles in arbitrary order. We expect all of
+  // them to be delivered to the delegate.
+  wq.push(QueuedWrite(test_handle1(), 0, kTestValue1));
+  wq.push(QueuedWrite(test_handle2(), 1, kTestValue2));
+  wq.push(QueuedWrite(test_handle3(), 2, kTestValue1));
+  wq.push(QueuedWrite(test_handle1(), 3, kTestValue2));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+
+  // The execute write request should be pending.
+  EXPECT_EQ(0, callback_count());
+
+  // All 4 requests should have been delivered.
+  ASSERT_EQ(4u, pending_writes().size());
+
+  // Resolve the first request with success. The execute write request should
+  // remain pending.
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle1(), next.handle);
+    EXPECT_EQ(0, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kNoError);
+    EXPECT_EQ(0, callback_count());
+  }
+
+  // Resolve the second request with an error.
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle2(), next.handle);
+    EXPECT_EQ(1, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+    EXPECT_EQ(1, callback_count());
+    EXPECT_EQ(ErrorCode::kUnlikelyError, ecode());
+    EXPECT_EQ(test_handle2(), handle_in_error());
+  }
+
+  // Resolving the remaining writes should have no effect.
+  ResolveNextPendingWrite(ErrorCode::kNoError);
+  ResolveNextPendingWrite(ErrorCode::kUnlikelyError);
+  EXPECT_EQ(1, callback_count());
+}
+
+TEST_F(ATT_DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
+  SetUpAttributes();
+  PrepareWriteQueue wq;
+
+  // Queue writes to the writable handles in arbitrary order. We expect all of
+  // them to be delivered to the delegate.
+  wq.push(QueuedWrite(test_handle1(), 0, kTestValue1));
+  wq.push(QueuedWrite(test_handle2(), 1, kTestValue2));
+  wq.push(QueuedWrite(test_handle3(), 2, kTestValue1));
+  wq.push(QueuedWrite(test_handle1(), 3, kTestValue2));
+
+  ExecuteWriteQueue(kPeerId, std::move(wq));
+
+  // The execute write request should be pending.
+  EXPECT_EQ(0, callback_count());
+
+  // All 4 requests should have been delivered.
+  ASSERT_EQ(4u, pending_writes().size());
+
+  // Resolve all requests with success.
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle1(), next.handle);
+    EXPECT_EQ(0, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kNoError);
+    EXPECT_EQ(0, callback_count());
+  }
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle2(), next.handle);
+    EXPECT_EQ(1, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kNoError);
+    EXPECT_EQ(0, callback_count());
+  }
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle3(), next.handle);
+    EXPECT_EQ(2, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue1, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kNoError);
+    EXPECT_EQ(0, callback_count());
+  }
+
+  // Resolving the last request should complete the execute write request.
+  {
+    const auto& next = pending_writes().front();
+    EXPECT_EQ(kPeerId, next.peer_id);
+    EXPECT_EQ(test_handle1(), next.handle);
+    EXPECT_EQ(3, next.offset);
+    EXPECT_TRUE(ContainersEqual(kTestValue2, next.value));
+
+    ResolveNextPendingWrite(ErrorCode::kNoError);
+    EXPECT_EQ(1, callback_count());
+    EXPECT_EQ(ErrorCode::kNoError, ecode());
   }
 }
 
