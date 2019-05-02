@@ -18,6 +18,8 @@
 namespace bt {
 namespace gatt {
 
+using common::DynamicByteBuffer;
+
 Server::Server(DeviceId peer_id, fxl::RefPtr<att::Database> database,
                fxl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
@@ -43,12 +45,21 @@ Server::Server(DeviceId peer_id, fxl::RefPtr<att::Database> database,
   read_blob_req_id_ =
       att_->RegisterHandler(att::kReadBlobRequest,
                             fit::bind_member(this, &Server::OnReadBlobRequest));
-  find_by_type_value_ = att_->RegisterHandler(
+  find_by_type_value_id_ = att_->RegisterHandler(
       att::kFindByTypeValueRequest,
       fit::bind_member(this, &Server::OnFindByTypeValueRequest));
+  prepare_write_id_ = att_->RegisterHandler(
+      att::kPrepareWriteRequest,
+      fit::bind_member(this, &Server::OnPrepareWriteRequest));
+  exec_write_id_ = att_->RegisterHandler(
+      att::kExecuteWriteRequest,
+      fit::bind_member(this, &Server::OnExecuteWriteRequest));
 }
 
 Server::~Server() {
+  att_->UnregisterHandler(exec_write_id_);
+  att_->UnregisterHandler(prepare_write_id_);
+  att_->UnregisterHandler(find_by_type_value_id_);
   att_->UnregisterHandler(read_blob_req_id_);
   att_->UnregisterHandler(write_cmd_id_);
   att_->UnregisterHandler(write_req_id_);
@@ -750,6 +761,94 @@ att::ErrorCode Server::ReadByTypeHelper(
 
   *out_results = std::move(results);
   return att::ErrorCode::kNoError;
+}
+
+void Server::OnPrepareWriteRequest(att::Bearer::TransactionId tid,
+                                   const att::PacketReader& packet) {
+  ZX_DEBUG_ASSERT(packet.opcode() == att::kPrepareWriteRequest);
+
+  if (packet.payload_size() < sizeof(att::PrepareWriteRequestParams)) {
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+    return;
+  }
+
+  const auto& params = packet.payload<att::PrepareWriteRequestParams>();
+  att::Handle handle = le16toh(params.handle);
+  uint16_t offset = le16toh(params.offset);
+  auto value_view =
+      packet.payload_data().view(sizeof(params.handle) + sizeof(params.offset));
+
+  if (prepare_queue_.size() >= att::kPrepareQueueMaxCapacity) {
+    att_->ReplyWithError(tid, handle, att::ErrorCode::kPrepareQueueFull);
+    return;
+  }
+
+  // Validate attribute handle and perform security checks (see Vol 3, Part F,
+  // 3.4.6.1 for required checks)
+  const auto* attr = db_->FindAttribute(handle);
+  if (!attr) {
+    att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidHandle);
+    return;
+  }
+
+  att::ErrorCode ecode =
+      att::CheckWritePermissions(attr->write_reqs(), att_->security());
+  if (ecode != att::ErrorCode::kNoError) {
+    att_->ReplyWithError(tid, handle, ecode);
+    return;
+  }
+
+  prepare_queue_.push(att::QueuedWrite(handle, offset, value_view));
+
+  // Reply back with the request payload.
+  auto buffer = std::make_unique<DynamicByteBuffer>(packet.size());
+  att::PacketWriter writer(att::kPrepareWriteResponse, buffer.get());
+  writer.mutable_payload_data().Write(packet.payload_data());
+
+  att_->Reply(tid, std::move(buffer));
+}
+
+void Server::OnExecuteWriteRequest(att::Bearer::TransactionId tid,
+                                   const att::PacketReader& packet) {
+  ZX_DEBUG_ASSERT(packet.opcode() == att::kExecuteWriteRequest);
+
+  if (packet.payload_size() != sizeof(att::ExecuteWriteRequestParams)) {
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+    return;
+  }
+
+  const auto& params = packet.payload<att::ExecuteWriteRequestParams>();
+  if (params.flags == att::ExecuteWriteFlag::kCancelAll) {
+    prepare_queue_ = {};
+
+    auto buffer = std::make_unique<DynamicByteBuffer>(1);
+    att::PacketWriter writer(att::kExecuteWriteResponse, buffer.get());
+    att_->Reply(tid, std::move(buffer));
+    return;
+  }
+
+  if (params.flags != att::ExecuteWriteFlag::kWritePending) {
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
+    return;
+  }
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto result_cb = [self, tid](att::Handle handle,
+                               att::ErrorCode ecode) mutable {
+    if (!self)
+      return;
+
+    if (ecode != att::ErrorCode::kNoError) {
+      self->att_->ReplyWithError(tid, handle, ecode);
+      return;
+    }
+
+    auto rsp = std::make_unique<DynamicByteBuffer>(1);
+    att::PacketWriter writer(att::kExecuteWriteResponse, rsp.get());
+    self->att_->Reply(tid, std::move(rsp));
+  };
+  db_->ExecuteWriteQueue(peer_id_, std::move(prepare_queue_), att_->security(),
+                         std::move(result_cb));
 }
 
 }  // namespace gatt

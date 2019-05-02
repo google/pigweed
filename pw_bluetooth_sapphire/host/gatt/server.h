@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_SERVER_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
@@ -63,6 +64,11 @@ class Server final {
                          const att::PacketReader& packet);
   void OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
                                 const att::PacketReader& packet);
+  void OnPrepareWriteRequest(att::Bearer::TransactionId tid,
+                             const att::PacketReader& packet);
+  void OnExecuteWriteRequest(att::Bearer::TransactionId tid,
+                             const att::PacketReader& packet);
+
   // Helper function to serve the Read By Type and Read By Group Type requests.
   // This searches |db| for attributes with the given |type| and adds as many
   // attributes as it can fit within the given |max_data_list_size|. The
@@ -84,7 +90,13 @@ class Server final {
   fxl::RefPtr<att::Database> db_;
   fxl::RefPtr<att::Bearer> att_;
 
+  // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).
+  att::PrepareWriteQueue prepare_queue_;
+
   // ATT protocol request handler IDs
+  // TODO(armansito): Storing all these IDs here feels wasteful. Provide a way
+  // to unregister GATT server callbacks collectively from an att::Bearer, given
+  // that it's server-role functionalities are uniquely handled by this class.
   att::Bearer::HandlerId exchange_mtu_id_;
   att::Bearer::HandlerId find_information_id_;
   att::Bearer::HandlerId read_by_group_type_id_;
@@ -93,7 +105,9 @@ class Server final {
   att::Bearer::HandlerId write_req_id_;
   att::Bearer::HandlerId write_cmd_id_;
   att::Bearer::HandlerId read_blob_req_id_;
-  att::Bearer::HandlerId find_by_type_value_;
+  att::Bearer::HandlerId find_by_type_value_id_;
+  att::Bearer::HandlerId prepare_write_id_;
+  att::Bearer::HandlerId exec_write_id_;
 
   fxl::WeakPtrFactory<Server> weak_ptr_factory_;
 

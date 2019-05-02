@@ -1903,6 +1903,421 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
 
+TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidPDU) {
+  // Payload is one byte too short.
+  // clang-format off
+  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+      0x16,        // opcode: prepare write request
+      0x01, 0x00,  // handle: 0x0001
+      0x01         // offset (should be 2 bytes).
+  );
+  const auto kExpected = common::CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x16,        // request: prepare write request
+      0x00, 0x00,  // handle: 0
+      0x04         // error: Invalid PDU
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+}
+
+TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidHandle) {
+  // clang-format off
+  const auto kRequest = common::CreateStaticByteBuffer(
+      0x16,              // opcode: prepare write request
+      0x01, 0x00,         // handle: 0x0001
+      0x00, 0x00,         // offset: 0
+      't', 'e', 's', 't'  // value: "test"
+  );
+  const auto kResponse = common::CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x16,        // request: prepare write request
+      0x01, 0x00,  // handle: 0x0001
+      0x01         // error: invalid handle
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
+}
+
+TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
+  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
+
+  // No security requirement
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                                 att::AccessRequirements(false, false, false));
+  grp->set_active(true);
+
+  int write_count = 0;
+  attr->set_write_handler([&](DeviceId, att::Handle, uint16_t, const auto&,
+                              const auto&) { write_count++; });
+
+  ASSERT_EQ(0x0002, attr->handle());
+
+  // clang-format off
+  const auto kRequest = common::CreateStaticByteBuffer(
+      0x16,              // opcode: prepare write request
+      0x02, 0x00,         // handle: 0x0002
+      0x00, 0x00,         // offset: 0
+      't', 'e', 's', 't'  // value: "test"
+  );
+  const auto kResponse = common::CreateStaticByteBuffer(
+      0x17,              // opcode: prepare write response
+      0x02, 0x00,         // handle: 0x0002
+      0x00, 0x00,         // offset: 0
+      't', 'e', 's', 't'  // value: "test"
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kRequest, kResponse));
+
+  // The attribute should not have been written yet.
+  EXPECT_EQ(0, write_count);
+}
+
+TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
+  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
+
+  // No security requirement
+  const auto* attr =
+      grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                        att::AccessRequirements(false, false, false));
+  grp->set_active(true);
+
+  ASSERT_EQ(0x0002, attr->handle());
+
+  // clang-format off
+  const auto kRequest = common::CreateStaticByteBuffer(
+      0x16,              // opcode: prepare write request
+      0x02, 0x00,         // handle: 0x0002
+      0x00, 0x00,         // offset: 0
+      't', 'e', 's', 't'  // value: "test"
+  );
+  const auto kSuccessResponse = common::CreateStaticByteBuffer(
+      0x17,              // opcode: prepare write response
+      0x02, 0x00,         // handle: 0x0002
+      0x00, 0x00,         // offset: 0
+      't', 'e', 's', 't'  // value: "test"
+  );
+  const auto kErrorResponse = common::CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x16,        // request: prepare write request
+      0x02, 0x00,  // handle: 0x0002
+      0x09         // error: prepare queue full
+  );
+  // clang-format on
+
+  // Write requests should succeed until capacity is filled.
+  for (unsigned i = 0; i < att::kPrepareQueueMaxCapacity; i++) {
+    ASSERT_TRUE(ReceiveAndExpect(kRequest, kSuccessResponse))
+        << "Unexpected failure at attempt: " << i;
+  }
+
+  // The next request should fail with a capacity error.
+  EXPECT_TRUE(ReceiveAndExpect(kRequest, kErrorResponse));
+}
+
+TEST_F(GATT_ServerTest, ExecuteWriteMalformedPayload) {
+  // Payload is one byte too short.
+  // clang-format off
+  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+      0x18  // opcode: execute write request
+  );
+  const auto kExpected = common::CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x18,        // request: execute write request
+      0x00, 0x00,  // handle: 0
+      0x04         // error: Invalid PDU
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+}
+
+TEST_F(GATT_ServerTest, ExecuteWriteInvalidFlag) {
+  // Payload is one byte too short.
+  // clang-format off
+  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+      0x18,  // opcode: execute write request
+      0xFF   // flag: invalid
+  );
+  const auto kExpected = common::CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x18,        // request: execute write request
+      0x00, 0x00,  // handle: 0
+      0x04         // error: Invalid PDU
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kInvalidPDU, kExpected));
+}
+
+// Tests that an "execute write request" without any prepared writes returns
+// success without writing to any attributes.
+TEST_F(GATT_ServerTest, ExecuteWriteQueueEmpty) {
+  // clang-format off
+  const auto kExecute = common::CreateStaticByteBuffer(
+    0x18,  // opcode: execute write request
+    0x01   // flag: "write pending"
+  );
+  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+    0x19  // opcode: execute write response
+  );
+  // clang-format on
+
+  // |buffer| should contain the partial writes.
+  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+}
+
+TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
+  auto buffer = common::CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+
+  auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                                 AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
+                              uint16_t offset, const auto& value,
+                              const auto& result_cb) {
+    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+
+    // Write the contents into |buffer|.
+    buffer.Write(value, offset);
+    result_cb(att::ErrorCode::kNoError);
+  });
+  grp->set_active(true);
+
+  // Prepare two partial writes of the string "hello!".
+  // clang-format off
+  const auto kPrepare1 = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'h', 'e', 'l', 'l'  // value: "hell"
+  );
+  const auto kPrepareResponse1 = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'h', 'e', 'l', 'l'  // value: "hell"
+  );
+  const auto kPrepare2 = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x04, 0x00,         // offset: 4
+    'o', '!'            // value: "o!"
+  );
+  const auto kPrepareResponse2 = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x04, 0x00,         // offset: 4
+    'o', '!'            // value: "o!"
+  );
+
+  // Add an overlapping write that partial overwrites data from previous
+  // payloads.
+  const auto kPrepare3 = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x02, 0x00,         // offset: 2
+    'r', 'p', '?'       // value: "rp?"
+  );
+  const auto kPrepareResponse3 = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x02, 0x00,         // offset: 2
+    'r', 'p', '?'       // value: "rp?"
+  );
+
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kPrepare1, kPrepareResponse1));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepare2, kPrepareResponse2));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepare3, kPrepareResponse3));
+
+  // The writes should not be committed yet.
+  EXPECT_EQ("xxxxxx", buffer.AsString());
+
+  // clang-format off
+  const auto kExecute = common::CreateStaticByteBuffer(
+    0x18,  // opcode: execute write request
+    0x01   // flag: "write pending"
+  );
+  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+    0x19  // opcode: execute write response
+  );
+  // clang-format on
+
+  // |buffer| should contain the partial writes.
+  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+  EXPECT_EQ("herp?!", buffer.AsString());
+}
+
+// Tests that the rest of the queue is dropped if a prepared write fails.
+TEST_F(GATT_ServerTest, ExecuteWriteError) {
+  auto buffer = common::CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+
+  auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                                 AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
+                              uint16_t offset, const auto& value,
+                              const auto& result_cb) {
+    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+
+    // Make the write to non-zero offsets fail (this corresponds to the second
+    // partial write we prepare below.
+    if (offset) {
+      result_cb(att::ErrorCode::kUnlikelyError);
+    } else {
+      buffer.Write(value);
+      result_cb(att::ErrorCode::kNoError);
+    }
+  });
+  grp->set_active(true);
+
+  // Prepare two partial writes of the string "hello!".
+  // clang-format off
+  const auto kPrepare1 = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'h', 'e', 'l', 'l'  // value: "hell"
+  );
+  const auto kPrepareResponse1 = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'h', 'e', 'l', 'l'  // value: "hell"
+  );
+  const auto kPrepare2 = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x04, 0x00,         // offset: 4
+    'o', '!'            // value: "o!"
+  );
+  const auto kPrepareResponse2 = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x04, 0x00,         // offset: 4
+    'o', '!'            // value: "o!"
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kPrepare1, kPrepareResponse1));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepare2, kPrepareResponse2));
+
+  // The writes should not be committed yet.
+  EXPECT_EQ("xxxxxx", buffer.AsString());
+
+  // clang-format off
+  const auto kExecute = common::CreateStaticByteBuffer(
+    0x18,  // opcode: execute write request
+    0x01   // flag: "write pending"
+  );
+  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+    0x01,        // opcode: error response
+    0x18,        // request: execute write request
+    0x02, 0x00,  // handle: 2 (the attribute in error)
+    0x0E         // error: Unlikely Error (returned by callback above).
+  );
+  // clang-format on
+
+  // Only the first partial write should have gone through as the second one
+  // is expected to fail.
+  EXPECT_TRUE(ReceiveAndExpect(kExecute, kExecuteResponse));
+  EXPECT_EQ("hellxx", buffer.AsString());
+}
+
+TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
+  auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
+  // |attr| has handle "2".
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                                 AllowedNoSecurity());
+
+  int write_count = 0;
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
+                              uint16_t offset, const auto& value,
+                              const auto& result_cb) {
+    write_count++;
+
+    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(attr->handle(), handle);
+    EXPECT_EQ(0u, offset);
+    EXPECT_TRUE(common::ContainersEqual(
+        common::CreateStaticByteBuffer('l', 'o', 'l'), value));
+    result_cb(att::ErrorCode::kNoError);
+  });
+  grp->set_active(true);
+
+  // clang-format off
+  const auto kPrepareToAbort = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    't', 'e', 's', 't'  // value: "test"
+  );
+  const auto kPrepareToAbortResponse = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    't', 'e', 's', 't'  // value: "test"
+  );
+  // clang-format on
+
+  // Prepare writes. These should get committed right away.
+  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
+  EXPECT_TRUE(ReceiveAndExpect(kPrepareToAbort, kPrepareToAbortResponse));
+  EXPECT_EQ(0, write_count);
+
+  // Abort the writes. They should get dropped.
+  // clang-format off
+  const auto kAbort = common::CreateStaticByteBuffer(
+    0x18,  // opcode: execute write request
+    0x00   // flag: "cancel all"
+  );
+  const auto kAbortResponse = common::CreateStaticByteBuffer(
+    0x19  // opcode: execute write response
+  );
+  // clang-format on
+  EXPECT_TRUE(ReceiveAndExpect(kAbort, kAbortResponse));
+  EXPECT_EQ(0, write_count);
+
+  // Prepare and commit a new write request. This one should take effect without
+  // involving the previously aborted writes.
+  // clang-format off
+  const auto kPrepareToCommit = common::CreateStaticByteBuffer(
+    0x016,              // opcode: prepare write request
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'l', 'o', 'l'       // value: "lol"
+  );
+  const auto kPrepareToCommitResponse = common::CreateStaticByteBuffer(
+    0x017,              // opcode: prepare write response
+    0x02, 0x00,         // handle: 0x0002
+    0x00, 0x00,         // offset: 0
+    'l', 'o', 'l'       // value: "lol"
+  );
+  const auto kCommit = common::CreateStaticByteBuffer(
+    0x18,  // opcode: execute write request
+    0x01   // flag: "write pending"
+  );
+  const auto kCommitResponse = common::CreateStaticByteBuffer(
+    0x19  // opcode: execute write response
+  );
+  // clang-format on
+
+  EXPECT_TRUE(ReceiveAndExpect(kPrepareToCommit, kPrepareToCommitResponse));
+  EXPECT_TRUE(ReceiveAndExpect(kCommit, kCommitResponse));
+  EXPECT_EQ(1, write_count);
+}
+
 TEST_F(GATT_ServerTest, SendNotificationEmpty) {
   constexpr att::Handle kHandle = 0x1234;
   const common::BufferView kTestValue;
@@ -2119,6 +2534,26 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
     }
   }
 
+  bool EmulatePrepareWriteRequest(att::Handle handle,
+                                  att::ErrorCode expected_ecode) {
+    fake_chan()->Receive(common::CreateStaticByteBuffer(
+        0x16,                                  // opcode: prepare write request
+        LowerBits(handle), UpperBits(handle),  // handle
+        0x00, 0x00,                            // offset: 0
+        't', 'e', 's', 't'                     // value: "test"
+        ));
+    if (expected_ecode == att::ErrorCode::kNoError) {
+      return Expect(common::CreateStaticByteBuffer(
+          0x17,                                  // prepare write response
+          LowerBits(handle), UpperBits(handle),  // handle
+          0x00, 0x00,                            // offset: 0
+          't', 'e', 's', 't'                     // value: "test"
+          ));
+    } else {
+      return ExpectAttError(0x16, handle, expected_ecode);
+    }
+  }
+
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
   bool EmulateWriteCommand(att::Handle handle, att::ErrorCode) {
@@ -2191,6 +2626,9 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   void RunWriteRequestTest() {
     RunTest<&GATT_ServerTest_Security::EmulateWriteRequest, true>();
   }
+  void RunPrepareWriteRequestTest() {
+    RunTest<&GATT_ServerTest_Security::EmulatePrepareWriteRequest, true>();
+  }
   void RunWriteCommandTest() {
     RunTest<&GATT_ServerTest_Security::EmulateWriteCommand, true>();
   }
@@ -2249,6 +2687,15 @@ TEST_F(GATT_ServerTest_Security, WriteCommandErrorSecurity) {
 
   // Only 4 writes should have gone through.
   EXPECT_EQ(4u, write_count());
+}
+
+TEST_F(GATT_ServerTest_Security, PrepareWriteRequestSecurity) {
+  InitializeAttributesForWriting();
+  RunPrepareWriteRequestTest();
+
+  // None of the write handlers should have been called since no execute write
+  // request has been sent.
+  EXPECT_EQ(0u, write_count());
 }
 
 }  // namespace

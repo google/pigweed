@@ -61,6 +61,10 @@ constexpr OpCode kCommandFlag = (1 << 6);
 // The length of an authentication signature used in a signed PDU.
 constexpr size_t kAuthenticationSignatureLength = 12;
 
+// The maximum number of write requests that can be queued for submission in a
+// ATT Prepare Write Request.
+constexpr uint8_t kPrepareQueueMaxCapacity = 20;
+
 enum class MethodType {
   kInvalid,
   kRequest,
