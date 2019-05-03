@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 
 #include "lib/async/cpp/task.h"
+#include "lib/fit/function.h"
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -25,9 +26,19 @@ namespace internal {
 //   for the entire lifetime of an object.
 class EnhancedRetransmissionModeTxEngine final : public TxEngine {
  public:
+  using ConnectionFailureCallback = fit::function<void()>;
+
+  // Create a transmit engine.
+  //
+  // The engine will invoke |send_basic_frame_callback| when a PDU is ready for
+  // transmission; see tx_engine.h for further detail.
+  //
+  // The engine will invoke |connection_failure_callback| when a fatal error
+  // occurs on this connection. This callback will never occur synchronously.
   EnhancedRetransmissionModeTxEngine(
       ChannelId channel_id, uint16_t tx_mtu,
-      SendBasicFrameCallback send_basic_frame_callback);
+      SendBasicFrameCallback send_basic_frame_callback,
+      ConnectionFailureCallback connection_failure_callback);
   ~EnhancedRetransmissionModeTxEngine() override = default;
 
   bool QueueSdu(common::ByteBufferPtr sdu) override;
@@ -83,6 +94,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   // Return and consume the next sequence number.
   uint8_t GetNextSeqnum();
+
+  // Invoked when the connection encounters a fatal error.
+  const ConnectionFailureCallback connection_failure_callback_;
 
   // The sequence number we expect in the next acknowledgement from our peer.
   //
