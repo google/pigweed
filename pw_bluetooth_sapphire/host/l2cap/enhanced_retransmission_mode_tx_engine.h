@@ -33,7 +33,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   bool QueueSdu(common::ByteBufferPtr sdu) override;
 
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
-  void UpdateAckSeq(uint8_t new_seq);
+  // The value of |is_final| should reflect the 'F' bit in header of the frame
+  // which led to this call.
+  void UpdateAckSeq(uint8_t new_seq, bool is_final);
 
   // Updates the Engine's knowledge of the next frame we expect to receive from
   // our peer.
@@ -48,8 +50,18 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Sec 5.4.
   static constexpr auto kReceiverReadyPollTimerDuration = zx::sec(2);
 
-  // Starts the receiver ready poll if the timer. If already running, the
-  // existing timer is cancelled, and a new timer is started.
+  // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume
+  // there is no flush timeout on the underlying logical link. If the link
+  // _does_ have a flush timeout, then our implementation will be slower to
+  // trigger the monitor timeout than the specification recommends.
+  //
+  // TODO(quiche): This value should be dynamic, and based on the parameters
+  // from the L2CAP configuration process. See Core Spec v5.0, Volume 3, Part A,
+  // Sec 5.4.
+  static constexpr auto kMonitorTimerDuration = zx::sec(12);
+
+  // Starts the receiver ready poll timer. If already running, the existing
+  // timer is cancelled, and a new timer is started.
   // Notes:
   // * The specification refers to this as the "retransmission timer". However,
   //   the expiry of this timer doesn't immediately trigger
@@ -59,6 +71,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // * Replacing the existing timer is required per Core Spec v5.0, Volume 3,
   //   Part A, Section 8.6.5.6, "Start-RetransTimer".
   void StartReceiverReadyPollTimer();
+
+  // Starts the monitor timer. If already running, the existing timer is
+  // cancelled, and a new timer is started.
+  //
+  // Note that replacing the existing timer is required per Core Spec v5.0,
+  // Volume 3, Part A, Section 8.6.5.6, "Start-MonitorTimer".
+  void StartMonitorTimer();
 
   void SendReceiverReadyPoll();
 
@@ -87,6 +106,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   uint8_t req_seqnum_;
 
   async::Task receiver_ready_poll_task_;
+  async::Task monitor_task_;
   fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine>
       weak_factory_;  // Keep last
 
