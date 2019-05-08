@@ -26,6 +26,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
       ack_seqnum_(0),
       next_seqnum_(0),
       req_seqnum_(0),
+      n_receiver_ready_polls_sent_(0),
       weak_factory_(this) {
   receiver_ready_poll_task_.set_handler(
       [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task,
@@ -35,20 +36,21 @@ Engine::EnhancedRetransmissionModeTxEngine(
           weak_self->StartMonitorTimer();
         }
       });
-  monitor_task_.set_handler(
-      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task,
-                                               zx_status_t status) {
-        if (status == ZX_OK && weak_self) {
-          // Note: This task handler re-posts the task unconditionally. This
-          // means, in effect, that we use a MaxTransmit of 0 (zero means
-          // infinity).
-          //
-          // TODO(quiche): Respect the MaxTransmit value from the configuration
-          // process. See Core Spec v5.0, Volume 3, Part A, Sec 5.4.
-          weak_self->SendReceiverReadyPoll();
-          weak_self->StartMonitorTimer();
-        }
-      });
+  monitor_task_.set_handler([weak_self = weak_factory_.GetWeakPtr()](
+                                auto dispatcher, auto task,
+                                zx_status_t status) {
+    if (status == ZX_OK && weak_self) {
+      if (weak_self->max_transmissions_ == 0 ||
+          weak_self->n_receiver_ready_polls_sent_ <
+              weak_self->max_transmissions_) {
+        weak_self->SendReceiverReadyPoll();
+        weak_self->StartMonitorTimer();
+      } else {
+        weak_self
+            ->connection_failure_callback_();  // May invalidate |weak_self|.
+      }
+    }
+  });
 }
 
 bool Engine::QueueSdu(common::ByteBufferPtr sdu) {
@@ -90,6 +92,7 @@ void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
 
 void Engine::StartReceiverReadyPollTimer() {
   ZX_DEBUG_ASSERT(!monitor_task_.is_pending());
+  n_receiver_ready_polls_sent_ = 0;
   receiver_ready_poll_task_.Cancel();
   receiver_ready_poll_task_.PostDelayed(async_get_default_dispatcher(),
                                         kReceiverReadyPollTimerDuration);
@@ -106,6 +109,12 @@ void Engine::SendReceiverReadyPoll() {
   SimpleReceiverReadyFrame frame;
   frame.set_request_seq_num(req_seqnum_);
   frame.set_is_poll_request();
+  ++n_receiver_ready_polls_sent_;
+  ZX_ASSERT_MSG(max_transmissions_ == 0 ||
+                    n_receiver_ready_polls_sent_ <= max_transmissions_,
+                "(n_receiver_ready_polls_sent_ = %u, "
+                "max_transmissions = %u)",
+                n_receiver_ready_polls_sent_, max_transmissions_);
   send_basic_frame_callback_(std::make_unique<common::DynamicByteBuffer>(
       common::BufferView(&frame, sizeof(frame))));
 }

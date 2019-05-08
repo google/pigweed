@@ -83,7 +83,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   //   Part A, Section 8.6.5.6, "Start-RetransTimer".
   void StartReceiverReadyPollTimer();
 
-  // Starts the monitor timer. If already running, the existing timer is
+  // Starts the monitor timer.  If already running, the existing timer is
   // cancelled, and a new timer is started.
   //
   // Note that replacing the existing timer is required per Core Spec v5.0,
@@ -95,9 +95,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Return and consume the next sequence number.
   uint8_t GetNextSeqnum();
 
-  // TODO(quiche): Remove |maybe_unused| attribute once we add logic for
-  // invoking connection_failure_callback_.
-  [[maybe_unused]] const uint8_t max_transmissions_;
+  const uint8_t max_transmissions_;
 
   // Invoked when the connection encounters a fatal error.
   const ConnectionFailureCallback connection_failure_callback_;
@@ -122,6 +120,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // cases, the sequence number is a 6-bit counter that wraps on overflow. See
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t req_seqnum_;
+
+  uint8_t n_receiver_ready_polls_sent_;
 
   async::Task receiver_ready_poll_task_;
   async::Task monitor_task_;

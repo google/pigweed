@@ -372,9 +372,10 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMonitorTimeout) {
+  constexpr size_t kMaxTransmissions = 2;  // Allow retransmission
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
-  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
                      tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -391,17 +392,39 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-// TODO(quiche): This test will change when we honor the MaxTransmit value from
-// the configuration process. See Core Spec v5.0, Volume 3, Part A, Sec 5.4.
-//
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineDoesNotRetransmitReceiverReadyPollAfterMonitorTimeoutWhenRetransmissionsAreDisabled) {
+  constexpr size_t kMaxTransmissions = 1;
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
+                     tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // First the receiver_ready_poll_task_ fires.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  // Run the event loop long enough for the monitor task to fire again. Because
+  // kMaxTransmissions == 1, the ReceiverReadyPoll should not be retransmitted.
+  RunLoopFor(zx::sec(13));
+  EXPECT_FALSE(last_pdu);
+}
+
 // See Core Spec v5.0, Volume 3, Part A, Sec 5.4, Table 8.6.5.8, for the row
 // with "Recv ReqSeqAndFbit" and "F = 1".
 TEST_F(
     L2CAP_EnhancedRetransmissionModeTxEngineTest,
     EngineStopsPollingReceiverReadyFromMonitorTaskAfterReceivingFinalUpdateForAckSeq) {
+  constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, [](auto) {},
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
       NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -414,17 +437,15 @@ TEST_F(
   EXPECT_FALSE(RunLoopFor(zx::sec(13)));  // No other tasks.
 }
 
-// TODO(quiche): This test will change when we honor the MaxTransmit value from
-// the configuration process. See Core Spec v5.0, Volume 3, Part A, Sec 5.4.
-//
 // See Core Spec v5.0, Volume 3, Part A, Sec 5.4, Table 8.6.5.8, for the row
 // with "Recv ReqSeqAndFbit" and "F = 0".
 TEST_F(
     L2CAP_EnhancedRetransmissionModeTxEngineTest,
     EngineContinuesPollingReceiverReadyFromMonitorTaskAfterReceivingNonFinalUpdateForAckSeq) {
+  constexpr size_t kMaxTransmissions = 2;  // Allow retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+      kTestChannelId, kDefaultMTU, kMaxTransmissions,
       [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -438,13 +459,12 @@ TEST_F(
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
 }
 
-// TODO(quiche): This test will change when we honor the MaxTransmit value from
-// the configuration process. See Core Spec v5.0, Volume 3, Part A, Sec 5.4.
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsReceiverReadyPollAfterMultipleMonitorTimeouts) {
+  constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+      kTestChannelId, kDefaultMTU, kMaxTransmissions,
       [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -454,8 +474,100 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
   ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
   ASSERT_FALSE(RunLoopFor(zx::sec(2)));  // RR-poll task does _not_ fire
+  last_pdu = nullptr;
+
   EXPECT_TRUE(RunLoopFor(zx::sec(10)));  // monitor_task_ again
   VerifyIsReceiverReadyPollFrame(last_pdu.get());
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineRetransmitsReceiverReadyPollIndefinitelyAfterMonitorTimeoutWhenMaxTransmitsIsZero) {
+  constexpr size_t kMaxTransmissions = 0;
+  common::ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
+                     tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // First the receiver_ready_poll_task_ fires.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  EXPECT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  // Then the monitor_task_ fires.
+  EXPECT_TRUE(RunLoopFor(zx::sec(12)));
+  EXPECT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  // And the monitor_task_ fires again.
+  EXPECT_TRUE(RunLoopFor(zx::sec(12)));
+  EXPECT_TRUE(last_pdu);
+  last_pdu = nullptr;
+
+  // And the monitor_task_ fires yet again.
+  EXPECT_TRUE(RunLoopFor(zx::sec(12)));
+  EXPECT_TRUE(last_pdu);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineStopsTransmittingReceiverReadyPollAfterMaxTransmits) {
+  constexpr size_t kMaxTransmissions = 2;
+  common::ByteBufferPtr last_pdu;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions,
+      [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
+  last_pdu = nullptr;
+
+  EXPECT_FALSE(RunLoopFor(zx::sec(13)));
+  EXPECT_FALSE(last_pdu);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineClosesChannelAfterMaxTransmitsOfReceiverReadyPoll) {
+  constexpr size_t kMaxTransmissions = 2;
+  bool connection_failed = false;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
+      [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
+  EXPECT_TRUE(connection_failed);
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineClosesChannelAfterMaxTransmitsOfReceiverReadyPollEvenIfRetransmissionsAreDisabled) {
+  constexpr size_t kMaxTransmissions = 1;
+  bool connection_failed = false;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
+      [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(
+      std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));   // receiver_ready_poll_task_
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));  // monitor_task_
+  EXPECT_TRUE(connection_failed);
 }
 
 }  // namespace
