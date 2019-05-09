@@ -18,10 +18,12 @@ using Engine = EnhancedRetransmissionModeTxEngine;
 
 Engine::EnhancedRetransmissionModeTxEngine(
     ChannelId channel_id, uint16_t tx_mtu, uint8_t max_transmissions,
+    uint8_t n_frames_in_tx_window,
     SendBasicFrameCallback send_basic_frame_callback,
     ConnectionFailureCallback connection_failure_callback)
     : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
       max_transmissions_(max_transmissions),
+      n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
       ack_seqnum_(0),
       next_seqnum_(0),

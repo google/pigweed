@@ -37,6 +37,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // occurs on this connection. This callback will never occur synchronously.
   EnhancedRetransmissionModeTxEngine(
       ChannelId channel_id, uint16_t tx_mtu, uint8_t max_transmissions,
+      uint8_t n_frames_in_tx_window,
       SendBasicFrameCallback send_basic_frame_callback,
       ConnectionFailureCallback connection_failure_callback);
   ~EnhancedRetransmissionModeTxEngine() override = default;
@@ -96,6 +97,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   uint8_t GetNextSeqnum();
 
   const uint8_t max_transmissions_;
+
+  // TODO(quiche): Remove |maybe_unused| after adding transmit window logic.
+  [[maybe_unused]] const uint8_t n_frames_in_tx_window_;
 
   // Invoked when the connection encounters a fatal error.
   const ConnectionFailureCallback connection_failure_callback_;

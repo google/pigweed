@@ -32,6 +32,7 @@ class L2CAP_EnhancedRetransmissionModeTxEngineTest
   // values.
   static constexpr auto kDefaultMTU = bt::l2cap::kDefaultMTU;
   static constexpr size_t kDefaultMaxTransmissions = 1;
+  static constexpr size_t kDefaultTxWindow = 63;
 
   const common::StaticByteBuffer<5> kDefaultPayload;
 
@@ -58,8 +59,8 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
   constexpr size_t kMtu = 10;
   const auto payload = common::CreateStaticByteBuffer(1);
-  TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, tx_callback,
-           NoOpFailureCallback)
+  TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow,
+           tx_callback, NoOpFailureCallback)
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
@@ -83,8 +84,8 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
   constexpr size_t kMtu = 1;
   const auto payload = common::CreateStaticByteBuffer(1);
-  TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, tx_callback,
-           NoOpFailureCallback)
+  TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow,
+           tx_callback, NoOpFailureCallback)
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>(payload));
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
@@ -102,8 +103,8 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   // TODO(BT-440): Update this test when we add support for segmentation.
   constexpr size_t kMtu = 1;
   TxEngine(
-      kTestChannelId, kMtu, kDefaultMaxTransmissions, [](auto pdu) {},
-      NoOpFailureCallback)
+      kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto pdu) {}, NoOpFailureCallback)
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>(
           common::CreateStaticByteBuffer(1, 2)));
 }
@@ -111,8 +112,8 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        QueueSduSurvivesZeroByteSdu) {
   TxEngine(
-      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, [](auto pdu) {},
-      NoOpFailureCallback)
+      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto pdu) {}, NoOpFailureCallback)
       .QueueSdu(std::make_unique<common::DynamicByteBuffer>());
 }
 
@@ -122,7 +123,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   {
     // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
@@ -165,7 +166,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
@@ -188,7 +189,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -206,7 +207,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -230,7 +231,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -255,7 +256,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -277,7 +278,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -297,7 +298,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -321,7 +322,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -348,7 +349,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   // Send a frame, and get the ACK.
   tx_engine.QueueSdu(
@@ -376,7 +377,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -399,7 +400,7 @@ TEST_F(
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -424,8 +425,8 @@ TEST_F(
   constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
-      NoOpFailureCallback);
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -445,7 +446,7 @@ TEST_F(
   constexpr size_t kMaxTransmissions = 2;  // Allow retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions,
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
       [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -464,7 +465,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 3;  // Allow multiple retransmissions
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions,
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
       [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -487,7 +488,7 @@ TEST_F(
   common::ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
-                     tx_callback, NoOpFailureCallback);
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -518,7 +519,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   common::ByteBufferPtr last_pdu;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions,
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
       [&](auto pdu) { last_pdu = std::move(pdu); }, NoOpFailureCallback);
 
   tx_engine.QueueSdu(
@@ -539,8 +540,8 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxTransmissions = 2;
   bool connection_failed = false;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
-      [&] { connection_failed = true; });
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, [&] { connection_failed = true; });
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
@@ -558,8 +559,8 @@ TEST_F(
   constexpr size_t kMaxTransmissions = 1;
   bool connection_failed = false;
   TxEngine tx_engine(
-      kTestChannelId, kDefaultMTU, kMaxTransmissions, [](auto) {},
-      [&] { connection_failed = true; });
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, [&] { connection_failed = true; });
 
   tx_engine.QueueSdu(
       std::make_unique<common::DynamicByteBuffer>(kDefaultPayload));
