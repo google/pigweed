@@ -14,8 +14,8 @@ namespace bt {
 namespace gap {
 namespace {
 
-bool MatchUuids(const std::vector<common::UUID>& uuids,
-                const common::BufferView& data, size_t uuid_size) {
+bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data,
+                size_t uuid_size) {
   if (data.size() % uuid_size) {
     bt_log(WARN, "gap", "malformed service UUIDs list");
     return false;
@@ -23,7 +23,7 @@ bool MatchUuids(const std::vector<common::UUID>& uuids,
 
   size_t uuid_count = data.size() / uuid_size;
   for (size_t i = 0; i < uuid_count; i++) {
-    const common::BufferView uuid_bytes(data.data() + i * uuid_size, uuid_size);
+    const BufferView uuid_bytes(data.data() + i * uuid_size, uuid_size);
     for (const auto& uuid : uuids) {
       if (uuid.CompareBytes(uuid_bytes))
         return true;
@@ -40,9 +40,9 @@ void DiscoveryFilter::SetGeneralDiscoveryFlags() {
             static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
 }
 
-bool DiscoveryFilter::MatchLowEnergyResult(
-    const common::ByteBuffer& advertising_data, bool connectable,
-    int8_t rssi) const {
+bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data,
+                                           bool connectable,
+                                           int8_t rssi) const {
   // No need to iterate over |advertising_data| for the |connectable_| filter.
   if (connectable_ && *connectable_ != connectable)
     return false;
@@ -67,7 +67,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     return false;
 
   DataType type;
-  common::BufferView data;
+  BufferView data;
   while (reader.GetNextField(&type, &data)) {
     switch (type) {
       case DataType::kFlags: {

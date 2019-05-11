@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_
 
-#include <unordered_map>
-
 #include <lib/fit/function.h>
+
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
@@ -39,7 +39,7 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
   void OnRxConnReq(PSM psm, ChannelId remote_cid,
                    BrEdrCommandHandler::ConnectionResponder* responder);
   void OnRxConfigReq(ChannelId local_cid, uint16_t flags,
-                     const common::ByteBuffer& options,
+                     const ByteBuffer& options,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(ChannelId local_cid, ChannelId remote_cid,
                      BrEdrCommandHandler::DisconnectionResponder* responder);
@@ -92,7 +92,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   // Inbound request handlers. Request must have a destination channel ID that
   // matches this instance's |local_cid|.
-  void OnRxConfigReq(uint16_t flags, const common::ByteBuffer& options,
+  void OnRxConfigReq(uint16_t flags, const ByteBuffer& options,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(BrEdrCommandHandler::DisconnectionResponder* responder);
 

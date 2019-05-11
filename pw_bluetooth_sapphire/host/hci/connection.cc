@@ -19,9 +19,8 @@ namespace hci {
 class ConnectionImpl final : public Connection {
  public:
   ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
-                 const common::DeviceAddress& local_address,
-                 const common::DeviceAddress& peer_address,
-                 fxl::RefPtr<Transport> hci);
+                 const DeviceAddress& local_address,
+                 const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci);
   ~ConnectionImpl() override;
 
   // Connection overrides:
@@ -101,12 +100,11 @@ CommandChannel::EventCallback BindEventHandler(
 
 // static
 std::unique_ptr<Connection> Connection::CreateLE(
-    ConnectionHandle handle, Role role,
-    const common::DeviceAddress& local_address,
-    const common::DeviceAddress& peer_address,
-    const LEConnectionParameters& params, fxl::RefPtr<Transport> hci) {
-  ZX_DEBUG_ASSERT(local_address.type() != common::DeviceAddress::Type::kBREDR);
-  ZX_DEBUG_ASSERT(peer_address.type() != common::DeviceAddress::Type::kBREDR);
+    ConnectionHandle handle, Role role, const DeviceAddress& local_address,
+    const DeviceAddress& peer_address, const LEConnectionParameters& params,
+    fxl::RefPtr<Transport> hci) {
+  ZX_DEBUG_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
   auto conn = std::make_unique<ConnectionImpl>(
       handle, LinkType::kLE, role, local_address, peer_address, hci);
   conn->set_low_energy_parameters(params);
@@ -115,19 +113,18 @@ std::unique_ptr<Connection> Connection::CreateLE(
 
 // static
 std::unique_ptr<Connection> Connection::CreateACL(
-    ConnectionHandle handle, Role role,
-    const common::DeviceAddress& local_address,
-    const common::DeviceAddress& peer_address, fxl::RefPtr<Transport> hci) {
-  ZX_DEBUG_ASSERT(local_address.type() == common::DeviceAddress::Type::kBREDR);
-  ZX_DEBUG_ASSERT(peer_address.type() == common::DeviceAddress::Type::kBREDR);
+    ConnectionHandle handle, Role role, const DeviceAddress& local_address,
+    const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci) {
+  ZX_DEBUG_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   auto conn = std::make_unique<ConnectionImpl>(
       handle, LinkType::kACL, role, local_address, peer_address, hci);
   return conn;
 }
 
 Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
-                       const common::DeviceAddress& local_address,
-                       const common::DeviceAddress& peer_address)
+                       const DeviceAddress& local_address,
+                       const DeviceAddress& peer_address)
     : ll_type_(ll_type),
       handle_(handle),
       role_(role),
@@ -151,9 +148,8 @@ std::string Connection::ToString() const {
 // ====== ConnectionImpl member methods ======
 
 ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type,
-                               Role role,
-                               const common::DeviceAddress& local_address,
-                               const common::DeviceAddress& peer_address,
+                               Role role, const DeviceAddress& local_address,
+                               const DeviceAddress& peer_address,
                                fxl::RefPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
       hci_(hci),
@@ -354,7 +350,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(
       if (key_size < hci::kMinEncryptionKeySize) {
         bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient",
                self->handle(), key_size);
-        status = Status(common::HostError::kInsufficientSecurity);
+        status = Status(HostError::kInsufficientSecurity);
       }
     }
     valid_cb(status);

@@ -4,8 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace l2cap {
@@ -19,7 +19,7 @@ namespace {
 // request handlers have to be tested for multiple responses to each request.
 class Expecter : public SignalingChannel::Responder {
  public:
-  void Send(const common::ByteBuffer& rsp_payload) override {
+  void Send(const ByteBuffer& rsp_payload) override {
     ADD_FAILURE() << "Unexpected local response " << rsp_payload.AsString();
   }
 
@@ -46,16 +46,16 @@ class Expecter : public SignalingChannel::Responder {
 
 class ResponseExpecter : public Expecter {
  public:
-  explicit ResponseExpecter(const common::ByteBuffer& expected_rsp)
+  explicit ResponseExpecter(const ByteBuffer& expected_rsp)
       : expected_rsp_(expected_rsp) {}
 
-  void Send(const common::ByteBuffer& rsp_payload) override {
+  void Send(const ByteBuffer& rsp_payload) override {
     set_called(true);
-    EXPECT_TRUE(common::ContainersEqual(expected_rsp_, rsp_payload));
+    EXPECT_TRUE(ContainersEqual(expected_rsp_, rsp_payload));
   }
 
  private:
-  const common::ByteBuffer& expected_rsp_;
+  const ByteBuffer& expected_rsp_;
 };
 
 class RejectNotUnderstoodExpecter : public Expecter {
@@ -97,7 +97,7 @@ FakeSignalingChannel::~FakeSignalingChannel() {
 }
 
 bool FakeSignalingChannel::SendRequest(CommandCode req_code,
-                                       const common::ByteBuffer& payload,
+                                       const ByteBuffer& payload,
                                        SignalingChannel::ResponseHandler cb) {
   if (expected_transaction_index_ >= transactions_.size()) {
     ADD_FAILURE() << "Received unexpected outbound command after handling "
@@ -109,7 +109,7 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
   ::testing::ScopedTrace trace(transaction.file, transaction.line,
                                "Outbound request expected here");
   EXPECT_EQ(transaction.request_code, req_code);
-  EXPECT_TRUE(common::ContainersEqual(transaction.req_payload, payload));
+  EXPECT_TRUE(ContainersEqual(transaction.req_payload, payload));
   EXPECT_TRUE(cb);
   transaction.response_callback = std::move(cb);
 
@@ -149,8 +149,7 @@ void FakeSignalingChannel::ServeRequest(CommandCode req_code,
 }
 
 FakeSignalingChannel::TransactionId FakeSignalingChannel::AddOutbound(
-    const char* file, int line, CommandCode req_code,
-    common::BufferView req_payload,
+    const char* file, int line, CommandCode req_code, BufferView req_payload,
     std::vector<FakeSignalingChannel::Response> responses) {
   transactions_.push_back(Transaction{file, line, req_code,
                                       std::move(req_payload),
@@ -158,22 +157,22 @@ FakeSignalingChannel::TransactionId FakeSignalingChannel::AddOutbound(
   return transactions_.size() - 1;
 }
 
-void FakeSignalingChannel::ReceiveExpect(
-    CommandCode req_code, const common::ByteBuffer& req_payload,
-    const common::ByteBuffer& rsp_payload) {
+void FakeSignalingChannel::ReceiveExpect(CommandCode req_code,
+                                         const ByteBuffer& req_payload,
+                                         const ByteBuffer& rsp_payload) {
   ResponseExpecter expecter(rsp_payload);
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
 
 void FakeSignalingChannel::ReceiveExpectRejectNotUnderstood(
-    CommandCode req_code, const common::ByteBuffer& req_payload) {
+    CommandCode req_code, const ByteBuffer& req_payload) {
   RejectNotUnderstoodExpecter expecter;
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
 
 void FakeSignalingChannel::ReceiveExpectRejectInvalidChannelId(
-    CommandCode req_code, const common::ByteBuffer& req_payload,
-    ChannelId local_cid, ChannelId remote_cid) {
+    CommandCode req_code, const ByteBuffer& req_payload, ChannelId local_cid,
+    ChannelId remote_cid) {
   RejectInvalidChannelIdExpecter expecter(local_cid, remote_cid);
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
@@ -201,9 +200,9 @@ size_t FakeSignalingChannel::TriggerResponses(
 }
 
 // Test evaluator for inbound requests with type-erased, bound expected requests
-void FakeSignalingChannel::ReceiveExpectInternal(
-    CommandCode req_code, const common::ByteBuffer& req_payload,
-    Responder* fake_responder) {
+void FakeSignalingChannel::ReceiveExpectInternal(CommandCode req_code,
+                                                 const ByteBuffer& req_payload,
+                                                 Responder* fake_responder) {
   auto iter = request_handlers_.find(req_code);
   ASSERT_NE(request_handlers_.end(), iter);
 

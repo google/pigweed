@@ -20,9 +20,7 @@
 
 namespace bt {
 
-namespace common {
 class ByteBuffer;
-}  // namespace common
 
 namespace hci {
 struct LowEnergyScanResult;
@@ -46,7 +44,7 @@ class PeerCache final {
   //
   // Returns nullptr if an entry matching |address| already exists in the cache,
   // including as a public identity of a peer with a different technology.
-  Peer* NewPeer(const common::DeviceAddress& address, bool connectable);
+  Peer* NewPeer(const DeviceAddress& address, bool connectable);
 
   // Iterates over all current peers in the map, running |f| on each entry
   // synchronously. This is intended for IPC methods that request a list of
@@ -71,7 +69,7 @@ class PeerCache final {
   // should be instead updated with new bond information to create a dual-mode
   // peer.
   //
-  bool AddBondedPeer(PeerId identifier, const common::DeviceAddress& address,
+  bool AddBondedPeer(PeerId identifier, const DeviceAddress& address,
                      const sm::PairingData& bond_data,
                      const std::optional<sm::LTK>& link_key);
 
@@ -92,8 +90,7 @@ class PeerCache final {
   // The peer will be considered "bonded" and the bonded callback notified. If
   // the peer is already bonded then the link key will be updated. Returns
   // false if the address does not match that of a known peer.
-  bool StoreBrEdrBond(const common::DeviceAddress& address,
-                      const sm::LTK& link_key);
+  bool StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key);
 
   // Resets a peer |peer_id| to an unbonded state by removing secrets for its
   // transports. The peer will become temporary and may expire. This does not
@@ -112,7 +109,7 @@ class PeerCache final {
   // returns nullptr otherwise. Tries to resolve |address| if it is resolvable.
   // If |address| is of type kBREDR or kLEPublic, then this searches for peers
   // that have either type of address.
-  Peer* FindByAddress(const common::DeviceAddress& address) const;
+  Peer* FindByAddress(const DeviceAddress& address) const;
 
   // When set, |callback| will be invoked whenever a peer is added or updated.
   void set_peer_updated_callback(PeerCallback callback) {
@@ -165,8 +162,7 @@ class PeerCache final {
   // |address|, and connectability (|connectable|). Returns a pointer to the
   // inserted peer or nullptr if |identifier| or |address| already exists in
   // the cache.
-  Peer* InsertPeerRecord(PeerId identifier,
-                         const common::DeviceAddress& address,
+  Peer* InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
                          bool connectable);
 
   // Notifies interested parties that |peer| has bonded
@@ -195,8 +191,7 @@ class PeerCache final {
   // technologies if it is a public address. |address| should be already
   // resolved, if it is resolvable. If found, returns a valid peer ID;
   // otherwise returns std::nullopt.
-  std::optional<PeerId> FindIdByAddress(
-      const common::DeviceAddress& address) const;
+  std::optional<PeerId> FindIdByAddress(const DeviceAddress& address) const;
 
   // Mapping from unique peer IDs to PeerRecords.
   // Owns the corresponding Peers.
@@ -209,7 +204,7 @@ class PeerCache final {
   //
   // Dual-mode peers shall have identity addresses of both technologies
   // mapped to the same ID, if the addresses have the same value.
-  std::unordered_map<common::DeviceAddress, PeerId> address_map_;
+  std::unordered_map<DeviceAddress, PeerId> address_map_;
 
   // The LE identity resolving list used to resolve RPAs.
   IdentityResolvingList le_resolving_list_;

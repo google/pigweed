@@ -30,32 +30,32 @@ class Request {
 
   // Gets a buffer containing the PDU representation of this request.
   // Returns nullptr if the request is not valid.
-  virtual common::ByteBufferPtr GetPDU(TransactionId tid) const = 0;
+  virtual ByteBufferPtr GetPDU(TransactionId tid) const = 0;
 
   // Returns a view with the current continuation state.
   // In a response packet with more than one packet, this contains the most
   // recent continuaton state (so it can be read to request a continuation).
-  const common::BufferView ContinuationState() const {
+  const BufferView ContinuationState() const {
     return cont_state_.view(1, cont_info_size());
   }
 
   // Sets the continuation state for this request.
-  void SetContinuationState(const common::ByteBuffer& buf);
+  void SetContinuationState(const ByteBuffer& buf);
 
  protected:
   // Parses the continuation state portion of a packet, which is in |buf|.
   // Returns true if the parsing succeeded.
-  bool ParseContinuationState(const common::ByteBuffer& buf);
+  bool ParseContinuationState(const ByteBuffer& buf);
 
   // Writes the continuation state to |buf|, which must have at least
   // cont_info_size() + 1 bytes avaiable.
-  size_t WriteContinuationState(common::MutableByteBuffer* buf) const;
+  size_t WriteContinuationState(MutableByteBuffer* buf) const;
 
   uint8_t cont_info_size() const { return cont_state_.data()[0]; }
 
  private:
   // Continuation information, including the length.
-  common::StaticByteBuffer<kMaxContStateLength> cont_state_;
+  StaticByteBuffer<kMaxContStateLength> cont_state_;
 };
 
 // SDP Response objects are used in two places:
@@ -70,7 +70,7 @@ class Response {
   // Returns the continuation state from a partial response, used to
   // make an additional request.  Returns an empty view if this packet
   // is complete.
-  virtual const common::BufferView ContinuationState() const = 0;
+  virtual const BufferView ContinuationState() const = 0;
 
   // Parses parameters from a PDU response, storing a partial result if
   // necessary.
@@ -79,7 +79,7 @@ class Response {
   //  - kNotReady if this response is already complete.
   //  - kPacketMalformed: if the parameters couldn't be parsed.
   //  - kOutOfMemory: if memory isn't available to store a partial response.
-  virtual Status Parse(const common::ByteBuffer& buf) = 0;
+  virtual Status Parse(const ByteBuffer& buf) = 0;
 
   // Returns a buffer containing the PDU representation of this response,
   // including the header.
@@ -93,9 +93,8 @@ class Response {
   // last valid packet representing a response.
   // If that continuation state is passed to this function with the same
   // |max_size| argument it will produce the next parameters of response.
-  virtual common::MutableByteBufferPtr GetPDU(
-      uint16_t max, TransactionId tid,
-      const common::ByteBuffer& cont_state) const = 0;
+  virtual MutableByteBufferPtr GetPDU(uint16_t max, TransactionId tid,
+                                      const ByteBuffer& cont_state) const = 0;
 };
 
 // Error Response PDU, generated when the SDP server can't respond to a PDU
@@ -107,18 +106,17 @@ class ErrorResponse : public Response {
   // Response overrides.
   bool complete() const override { return error_code_ != ErrorCode::kReserved; }
 
-  const common::BufferView ContinuationState() const override {
+  const BufferView ContinuationState() const override {
     // ErrorResponses never have continuation state.
-    return common::BufferView();
+    return BufferView();
   }
 
-  Status Parse(const common::ByteBuffer& buf) override;
+  Status Parse(const ByteBuffer& buf) override;
 
   // Note: |max_size| and |cont_state| are ignored.
   // Error Responses do not have a valid continuation.
-  common::MutableByteBufferPtr GetPDU(
-      uint16_t max, TransactionId tid,
-      const common::ByteBuffer& cont_state) const override;
+  MutableByteBufferPtr GetPDU(uint16_t max, TransactionId tid,
+                              const ByteBuffer& cont_state) const override;
 
   ErrorCode error_code() const { return error_code_; }
   void set_error_code(ErrorCode code) { error_code_ = code; }
@@ -135,21 +133,21 @@ class ServiceSearchRequest : public Request {
   // Create an empty search request.
   ServiceSearchRequest();
   // Parse the parameters given in |params| to initialize this request.
-  explicit ServiceSearchRequest(const common::ByteBuffer& params);
+  explicit ServiceSearchRequest(const ByteBuffer& params);
 
   // Request overrides
   bool valid() const override;
-  common::ByteBufferPtr GetPDU(TransactionId tid) const override;
+  ByteBufferPtr GetPDU(TransactionId tid) const override;
 
   // A service search pattern matches if every UUID in the pattern is contained
   // within one of the services' attribute values.  They don't need to be in any
   // specific attribute or in any particular order, and extraneous UUIDs are
   // allowed to exist in the attribute value.
   // See v5.0, Volume 3, Part B, Sec 2.5.2
-  void set_search_pattern(std::unordered_set<common::UUID> pattern) {
+  void set_search_pattern(std::unordered_set<UUID> pattern) {
     service_search_pattern_ = pattern;
   }
-  const std::unordered_set<common::UUID>& service_search_pattern() const {
+  const std::unordered_set<UUID>& service_search_pattern() const {
     return service_search_pattern_;
   }
 
@@ -163,7 +161,7 @@ class ServiceSearchRequest : public Request {
   }
 
  private:
-  std::unordered_set<common::UUID> service_search_pattern_;
+  std::unordered_set<UUID> service_search_pattern_;
   uint16_t max_service_record_count_;
 };
 
@@ -175,11 +173,10 @@ class ServiceSearchResponse : public Response {
 
   // Response overrides
   bool complete() const override;
-  const common::BufferView ContinuationState() const override;
-  Status Parse(const common::ByteBuffer& buf) override;
-  common::MutableByteBufferPtr GetPDU(
-      uint16_t max, TransactionId tid,
-      const common::ByteBuffer& cont_state) const override;
+  const BufferView ContinuationState() const override;
+  Status Parse(const ByteBuffer& buf) override;
+  MutableByteBufferPtr GetPDU(uint16_t max, TransactionId tid,
+                              const ByteBuffer& cont_state) const override;
 
   // The ServiceRecordHandleList contains as list of service record handles.
   // This should be set to the list of handles that match the request.
@@ -199,7 +196,7 @@ class ServiceSearchResponse : public Response {
   // The total number of service records in the full response.
   uint16_t total_service_record_count_;
 
-  common::ByteBufferPtr continuation_state_;
+  ByteBufferPtr continuation_state_;
 };
 
 // Represents a range of attributes, inclusive of |start| and |end|.
@@ -220,11 +217,11 @@ class ServiceAttributeRequest : public Request {
   ServiceAttributeRequest();
   // Parse the parameters in |params| to initialize this request.
   // valid() will be false if |params| don't represent valid a valid request.
-  explicit ServiceAttributeRequest(const common::ByteBuffer& params);
+  explicit ServiceAttributeRequest(const ByteBuffer& params);
 
   // Request overrides
   bool valid() const override;
-  common::ByteBufferPtr GetPDU(TransactionId tid) const override;
+  ByteBufferPtr GetPDU(TransactionId tid) const override;
 
   void set_service_record_handle(ServiceHandle handle) {
     service_record_handle_ = handle;
@@ -279,12 +276,11 @@ class ServiceAttributeResponse : public Response {
   ServiceAttributeResponse();
 
   // Response overrides
-  const common::BufferView ContinuationState() const override;
+  const BufferView ContinuationState() const override;
   bool complete() const override;
-  Status Parse(const common::ByteBuffer& buf) override;
-  common::MutableByteBufferPtr GetPDU(
-      uint16_t max, TransactionId tid,
-      const common::ByteBuffer& cont_state) const override;
+  Status Parse(const ByteBuffer& buf) override;
+  MutableByteBufferPtr GetPDU(uint16_t max, TransactionId tid,
+                              const ByteBuffer& cont_state) const override;
 
   void set_attribute(AttributeId id, DataElement value) {
     attributes_.emplace(id, std::move(value));
@@ -305,9 +301,9 @@ class ServiceAttributeResponse : public Response {
   //
   // This contains the partial attribute list response if there is continuation
   // state.
-  common::MutableByteBufferPtr partial_response_;
+  MutableByteBufferPtr partial_response_;
 
-  common::MutableByteBufferPtr continuation_state_;
+  MutableByteBufferPtr continuation_state_;
 };
 
 // Combines the capabilities of ServiceSearchRequest and ServiceAttributeRequest
@@ -319,21 +315,21 @@ class ServiceSearchAttributeRequest : public Request {
   // Create an empty service search attribute request.
   ServiceSearchAttributeRequest();
   // Parse the parameters in |params| to initialize this request.
-  explicit ServiceSearchAttributeRequest(const common::ByteBuffer& params);
+  explicit ServiceSearchAttributeRequest(const ByteBuffer& params);
 
   // Request overrides
   bool valid() const override;
-  common::ByteBufferPtr GetPDU(TransactionId tid) const override;
+  ByteBufferPtr GetPDU(TransactionId tid) const override;
 
   // A service search pattern matches if every UUID in the pattern is contained
   // within one of the services' attribute values.  They don't need to be in any
   // specific attribute or in any particular order, and extraneous UUIDs are
   // allowed to exist in the attribute value.
   // See v5.0, Volume 3, Part B, Sec 2.5.2.
-  void set_search_pattern(std::unordered_set<common::UUID> pattern) {
+  void set_search_pattern(std::unordered_set<UUID> pattern) {
     service_search_pattern_ = pattern;
   }
-  const std::unordered_set<common::UUID>& service_search_pattern() const {
+  const std::unordered_set<UUID>& service_search_pattern() const {
     return service_search_pattern_;
   }
 
@@ -359,7 +355,7 @@ class ServiceSearchAttributeRequest : public Request {
 
  private:
   // The service search pattern to match services.
-  std::unordered_set<common::UUID> service_search_pattern_;
+  std::unordered_set<UUID> service_search_pattern_;
 
   // Maximum number of bytes of attribute data to be returned in the response.
   // If the attributes don't fit, the server decides how to segment them.
@@ -379,12 +375,11 @@ class ServiceSearchAttributeResponse : public Response {
   ServiceSearchAttributeResponse();
 
   // Response overrides
-  const common::BufferView ContinuationState() const override;
+  const BufferView ContinuationState() const override;
   bool complete() const override;
-  Status Parse(const common::ByteBuffer& buf) override;
-  common::MutableByteBufferPtr GetPDU(
-      uint16_t max, TransactionId tid,
-      const common::ByteBuffer& cont_state) const override;
+  Status Parse(const ByteBuffer& buf) override;
+  MutableByteBufferPtr GetPDU(uint16_t max, TransactionId tid,
+                              const ByteBuffer& cont_state) const override;
 
   // Set an attribute to be included in the response.
   // |idx| is used to group attributes and does not need to be contiguous for
@@ -414,9 +409,9 @@ class ServiceSearchAttributeResponse : public Response {
   //
   // This contains the partial attribute list response if there is continuation
   // state.
-  common::MutableByteBufferPtr partial_response_;
+  MutableByteBufferPtr partial_response_;
 
-  common::MutableByteBufferPtr continuation_state_;
+  MutableByteBufferPtr continuation_state_;
 };
 
 }  // namespace sdp

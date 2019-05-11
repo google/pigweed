@@ -104,8 +104,7 @@ void FakeClient::ReadBlobRequest(att::Handle handle, uint16_t offset,
   }
 }
 
-void FakeClient::WriteRequest(att::Handle handle,
-                              const common::ByteBuffer& value,
+void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
                               StatusCallback callback) {
   if (write_request_callback_) {
     write_request_callback_(handle, value, std::move(callback));
@@ -113,14 +112,14 @@ void FakeClient::WriteRequest(att::Handle handle,
 }
 
 void FakeClient::WriteWithoutResponse(att::Handle handle,
-                                      const common::ByteBuffer& value) {
+                                      const ByteBuffer& value) {
   if (write_without_rsp_callback_) {
     write_without_rsp_callback_(handle, value);
   }
 }
 
 void FakeClient::SendNotification(bool indicate, att::Handle handle,
-                                  const common::ByteBuffer& value) {
+                                  const ByteBuffer& value) {
   if (notification_callback_) {
     notification_callback_(indicate, handle, value);
   }

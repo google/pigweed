@@ -14,8 +14,6 @@
 
 namespace bt {
 
-using common::ByteBuffer;
-
 namespace testing {
 namespace {
 
@@ -32,8 +30,8 @@ void WriteRandomRSSI(int8_t* out_mem) {
 
 }  // namespace
 
-FakePeer::FakePeer(const common::DeviceAddress& address, bool connectable,
-                       bool scannable)
+FakePeer::FakePeer(const DeviceAddress& address, bool connectable,
+                   bool scannable)
     : ctrl_(nullptr),
       address_(address),
       connected_(false),
@@ -47,22 +45,22 @@ FakePeer::FakePeer(const common::DeviceAddress& address, bool connectable,
       should_batch_reports_(false),
       gatt_server_(this) {}
 
-void FakePeer::SetAdvertisingData(const common::ByteBuffer& data) {
+void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= hci::kMaxLEAdvertisingDataLength);
-  adv_data_ = common::DynamicByteBuffer(data);
+  adv_data_ = DynamicByteBuffer(data);
 }
 
 void FakePeer::SetScanResponse(bool should_batch_reports,
-                                 const common::ByteBuffer& data) {
+                               const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(scannable_);
   ZX_DEBUG_ASSERT(data.size() <= hci::kMaxLEAdvertisingDataLength);
-  scan_rsp_ = common::DynamicByteBuffer(data);
+  scan_rsp_ = DynamicByteBuffer(data);
   should_batch_reports_ = should_batch_reports;
 }
 
-common::DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
+DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
     hci::InquiryMode mode) const {
-  ZX_DEBUG_ASSERT(address_.type() == common::DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(address_.type() == DeviceAddress::Type::kBREDR);
 
   size_t param_size;
   if (mode == hci::InquiryMode::kStandard) {
@@ -73,8 +71,8 @@ common::DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
                  sizeof(hci::InquiryResultRSSI);
   }
 
-  common::DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
-  common::MutablePacketView<hci::EventHeader> event(&buffer, param_size);
+  DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
+  MutablePacketView<hci::EventHeader> event(&buffer, param_size);
   event.mutable_header()->parameter_total_size = param_size;
 
   // TODO(jamuraa): simultate clock offset and RSSI
@@ -106,7 +104,7 @@ common::DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
   return buffer;
 }
 
-common::DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
+DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
     bool include_scan_rsp) const {
   size_t param_size = sizeof(hci::LEMetaEventParams) +
                       sizeof(hci::LEAdvertisingReportSubeventParams) +
@@ -118,8 +116,8 @@ common::DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
                   sizeof(int8_t);
   }
 
-  common::DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
-  common::MutablePacketView<hci::EventHeader> event(&buffer, param_size);
+  DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
+  MutablePacketView<hci::EventHeader> event(&buffer, param_size);
   event.mutable_header()->event_code = hci::kLEMetaEventCode;
   event.mutable_header()->parameter_total_size = param_size;
 
@@ -142,7 +140,7 @@ common::DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
   } else {
     report->event_type = hci::LEAdvertisingEventType::kAdvNonConnInd;
   }
-  if (address_.type() == common::DeviceAddress::Type::kLERandom) {
+  if (address_.type() == DeviceAddress::Type::kLERandom) {
     report->address_type = address_resolved_
                                ? hci::LEAddressType::kRandomIdentity
                                : hci::LEAddressType::kRandom;
@@ -166,15 +164,15 @@ common::DynamicByteBuffer FakePeer::CreateAdvertisingReportEvent(
   return buffer;
 }
 
-common::DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
+DynamicByteBuffer FakePeer::CreateScanResponseReportEvent() const {
   ZX_DEBUG_ASSERT(scannable_);
   size_t param_size = sizeof(hci::LEMetaEventParams) +
                       sizeof(hci::LEAdvertisingReportSubeventParams) +
                       sizeof(hci::LEAdvertisingReportData) + scan_rsp_.size() +
                       sizeof(int8_t);
 
-  common::DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
-  common::MutablePacketView<hci::EventHeader> event(&buffer, param_size);
+  DynamicByteBuffer buffer(sizeof(hci::EventHeader) + param_size);
+  MutablePacketView<hci::EventHeader> event(&buffer, param_size);
   event.mutable_header()->event_code = hci::kLEMetaEventCode;
   event.mutable_header()->parameter_total_size = param_size;
 
@@ -221,10 +219,9 @@ void FakePeer::WriteScanResponseReport(
     hci::LEAdvertisingReportData* report) const {
   ZX_DEBUG_ASSERT(scannable_);
   report->event_type = hci::LEAdvertisingEventType::kScanRsp;
-  report->address_type =
-      (address_.type() == common::DeviceAddress::Type::kLERandom)
-          ? hci::LEAddressType::kRandom
-          : hci::LEAddressType::kPublic;
+  report->address_type = (address_.type() == DeviceAddress::Type::kLERandom)
+                             ? hci::LEAddressType::kRandom
+                             : hci::LEAddressType::kPublic;
   report->address = address_.value();
   report->length_data = scan_rsp_.size();
   std::memcpy(report->data, scan_rsp_.data(), scan_rsp_.size());
@@ -233,8 +230,7 @@ void FakePeer::WriteScanResponseReport(
       reinterpret_cast<int8_t*>(report->data + report->length_data));
 }
 
-void FakePeer::OnRxL2CAP(hci::ConnectionHandle conn,
-                           const common::ByteBuffer& pdu) {
+void FakePeer::OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   if (pdu.size() < sizeof(l2cap::BasicHeader)) {
     bt_log(WARN, "fake-hci", "malformed L2CAP packet!");
     return;

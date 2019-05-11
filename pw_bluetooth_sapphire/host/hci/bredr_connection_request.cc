@@ -15,10 +15,6 @@
 namespace bt {
 namespace hci {
 
-using common::DeviceAddress;
-using common::HostError;
-using common::PeerId;
-
 std::unique_ptr<CommandPacket> CreateConnectionPacket(
     DeviceAddress address,
     std::optional<PageScanRepetitionMode> page_scan_repetition_mode,

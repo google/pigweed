@@ -6,20 +6,15 @@
 
 #include <fbl/function.h>
 
+#include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
-
-#include "gap.h"
 
 namespace bt {
 namespace gap {
 namespace {
 
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::DeviceAddressBytes;
-using common::UInt128;
 using testing::CommandTransaction;
 using testing::TestController;
 

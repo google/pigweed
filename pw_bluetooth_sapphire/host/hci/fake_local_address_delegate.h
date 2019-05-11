@@ -16,21 +16,19 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
   FakeLocalAddressDelegate() = default;
   ~FakeLocalAddressDelegate() override = default;
 
-  std::optional<common::UInt128> irk() const override { return std::nullopt; }
-  common::DeviceAddress identity_address() const override { return {}; }
+  std::optional<UInt128> irk() const override { return std::nullopt; }
+  DeviceAddress identity_address() const override { return {}; }
   void EnsureLocalAddress(AddressCallback callback) override;
 
   // If set to true EnsureLocalAddress runs its callback asynchronously.
   void set_async(bool value) { async_ = value; }
 
-  void set_local_address(const common::DeviceAddress& value) {
-    local_address_ = value;
-  }
+  void set_local_address(const DeviceAddress& value) { local_address_ = value; }
 
  private:
   bool async_ = false;
-  common::DeviceAddress local_address_ = common::DeviceAddress(
-      common::DeviceAddress::Type::kLEPublic, "00:00:00:00:00:00");
+  DeviceAddress local_address_ =
+      DeviceAddress(DeviceAddress::Type::kLEPublic, "00:00:00:00:00:00");
 };
 
 }  // namespace hci

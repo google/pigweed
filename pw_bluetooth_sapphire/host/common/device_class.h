@@ -11,7 +11,6 @@
 #include <unordered_set>
 
 namespace bt {
-namespace common {
 
 // Represents a 24-bit "Class of Device/Service" field.
 // This data structure can be directly serialized into HCI command payloads.
@@ -84,7 +83,6 @@ class DeviceClass {
 static_assert(sizeof(DeviceClass) == 3,
               "DeviceClass must take up exactly 3 bytes");
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_CLASS_H_

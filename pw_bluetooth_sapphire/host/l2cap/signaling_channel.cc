@@ -8,10 +8,9 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
+#include "channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-
-#include "channel.h"
 
 namespace bt {
 namespace l2cap {
@@ -32,7 +31,7 @@ SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan,
   // called on the L2CAP thread.
   auto self = weak_ptr_factory_.GetWeakPtr();
   chan_->Activate(
-      [self](common::ByteBufferPtr sdu) {
+      [self](ByteBufferPtr sdu) {
         if (self)
           self->OnRxBFrame(std::move(sdu));
       },
@@ -53,14 +52,12 @@ SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig,
   ZX_DEBUG_ASSERT(sig_);
 }
 
-void SignalingChannel::ResponderImpl::Send(
-    const common::ByteBuffer& rsp_payload) {
+void SignalingChannel::ResponderImpl::Send(const ByteBuffer& rsp_payload) {
   sig()->SendPacket(code_, id_, rsp_payload);
 }
 
 void SignalingChannel::ResponderImpl::RejectNotUnderstood() {
-  sig()->SendCommandReject(id_, RejectReason::kNotUnderstood,
-                           common::BufferView());
+  sig()->SendCommandReject(id_, RejectReason::kNotUnderstood, BufferView());
 }
 
 void SignalingChannel::ResponderImpl::RejectInvalidChannelId(
@@ -69,16 +66,16 @@ void SignalingChannel::ResponderImpl::RejectInvalidChannelId(
   ids[0] = htole16(local_cid);
   ids[1] = htole16(remote_cid);
   sig()->SendCommandReject(id_, RejectReason::kInvalidCID,
-                           common::BufferView(ids, sizeof(ids)));
+                           BufferView(ids, sizeof(ids)));
 }
 
 bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier,
-                                  const common::ByteBuffer& data) {
+                                  const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
   return Send(BuildPacket(code, identifier, data));
 }
 
-bool SignalingChannel::Send(common::ByteBufferPtr packet) {
+bool SignalingChannel::Send(ByteBufferPtr packet) {
   ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(packet);
   ZX_DEBUG_ASSERT(packet->size() >= sizeof(CommandHeader));
@@ -99,11 +96,12 @@ bool SignalingChannel::Send(common::ByteBufferPtr packet) {
   return chan_->Send(std::move(packet));
 }
 
-common::ByteBufferPtr SignalingChannel::BuildPacket(
-    CommandCode code, uint8_t identifier, const common::ByteBuffer& data) {
+ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
+                                            uint8_t identifier,
+                                            const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
 
-  auto buffer = common::NewSlabBuffer(sizeof(CommandHeader) + data.size());
+  auto buffer = NewSlabBuffer(sizeof(CommandHeader) + data.size());
   ZX_ASSERT(buffer);
 
   MutableSignalingPacket packet(buffer.get(), data.size());
@@ -117,14 +115,14 @@ common::ByteBufferPtr SignalingChannel::BuildPacket(
 
 bool SignalingChannel::SendCommandReject(uint8_t identifier,
                                          RejectReason reason,
-                                         const common::ByteBuffer& data) {
+                                         const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
 
   constexpr size_t kMaxPayloadLength =
       sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
-  common::StaticByteBuffer<kMaxPayloadLength> rej_buf;
+  StaticByteBuffer<kMaxPayloadLength> rej_buf;
 
-  common::MutablePacketView<CommandRejectPayload> reject(&rej_buf, data.size());
+  MutablePacketView<CommandRejectPayload> reject(&rej_buf, data.size());
   reject.mutable_header()->reason = htole16(reason);
   reject.mutable_payload_data().Write(data);
 
@@ -149,7 +147,7 @@ void SignalingChannel::OnChannelClosed() {
   is_open_ = false;
 }
 
-void SignalingChannel::OnRxBFrame(common::ByteBufferPtr sdu) {
+void SignalingChannel::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
 
   if (!is_open())
@@ -164,7 +162,7 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
   if (packet.size() > mtu()) {
     // Respond with our signaling MTU.
     uint16_t rsp_mtu = htole16(mtu());
-    common::BufferView rej_data(&rsp_mtu, sizeof(rsp_mtu));
+    BufferView rej_data(&rsp_mtu, sizeof(rsp_mtu));
     SendCommandReject(packet.header().id, RejectReason::kSignalingMTUExceeded,
                       rej_data);
   } else if (!packet.header().id) {
@@ -172,10 +170,10 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
     // used in any command" (v5.0, Vol 3, Part A, Section 4).
     bt_log(TRACE, "l2cap", "illegal signaling cmd ID: 0x00; reject");
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
   } else if (!HandlePacket(packet)) {
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
   }
 }
 

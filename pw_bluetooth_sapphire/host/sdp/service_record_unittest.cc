@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 
 namespace bt {
 namespace sdp {
@@ -38,9 +37,9 @@ TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
   // This isn't a valid service class ID list:
   //  - ServiceDiscoveryServerServiceClassID
   //  - BrowseGroupDesciptorServiceClassID
-  common::UUID sdp_id(uint16_t(0x1000));
-  common::UUID group_id(uint16_t(0x1001));
-  std::vector<common::UUID> service_class;
+  UUID sdp_id(uint16_t(0x1000));
+  UUID group_id(uint16_t(0x1001));
+  std::vector<UUID> service_class;
   service_class.push_back(sdp_id);
   service_class.emplace_back(group_id);
 
@@ -57,8 +56,8 @@ TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
 
   EXPECT_TRUE(vec);
   EXPECT_EQ(2u, vec->size());
-  EXPECT_EQ(sdp_id, *(vec->at(0).Get<common::UUID>()));
-  EXPECT_EQ(group_id, *(vec->at(1).Get<common::UUID>()));
+  EXPECT_EQ(sdp_id, *(vec->at(0).Get<UUID>()));
+  EXPECT_EQ(group_id, *(vec->at(1).Get<UUID>()));
 
   record.RemoveAttribute(kServiceId);
 
@@ -99,23 +98,23 @@ TEST_F(SDP_ServiceRecordTest, FindUUID) {
   ServiceRecord record;
 
   DataElement elem;
-  elem.Set(common::UUID(uint16_t(0xfeaa)));
+  elem.Set(UUID(uint16_t(0xfeaa)));
   record.SetAttribute(0xb001, std::move(elem));
-  elem.Set(common::UUID(uint16_t(0xfeed)));
+  elem.Set(UUID(uint16_t(0xfeed)));
   record.SetAttribute(0xb002, std::move(elem));
-  elem.Set(common::UUID(uint16_t(0xfeec)));
+  elem.Set(UUID(uint16_t(0xfeec)));
   record.SetAttribute(0xb003, std::move(elem));
 
-  std::unordered_set<common::UUID> search_pattern;
-  search_pattern.insert(common::UUID(uint16_t(0xfeaa)));
+  std::unordered_set<UUID> search_pattern;
+  search_pattern.insert(UUID(uint16_t(0xfeaa)));
 
   EXPECT_TRUE(record.FindUUID(search_pattern));
 
-  search_pattern.insert(common::UUID(uint16_t(0xfeec)));
+  search_pattern.insert(UUID(uint16_t(0xfeec)));
 
   EXPECT_TRUE(record.FindUUID(search_pattern));
 
-  search_pattern.insert(common::UUID(uint16_t(0xfeeb)));
+  search_pattern.insert(UUID(uint16_t(0xfeeb)));
 
   EXPECT_FALSE(record.FindUUID(search_pattern));
 }
@@ -132,7 +131,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
                                protocol::kL2CAP, std::move(psm));
 
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       0x35, 0x08, // Data Element Sequence (8 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -145,7 +144,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_TRUE(record.HasAttribute(kProtocolDescriptorList));
 
   const DataElement& val = record.GetAttribute(kProtocolDescriptorList);
-  common::DynamicByteBuffer block(val.WriteSize());
+  DynamicByteBuffer block(val.WriteSize());
   val.Write(&block);
 
   EXPECT_EQ(expected.size(), block.size());
@@ -157,7 +156,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_TRUE(record.HasAttribute(kProtocolDescriptorList));
 
   // clang-format off
-  auto expected_sdp = common::CreateStaticByteBuffer(
+  auto expected_sdp = CreateStaticByteBuffer(
       0x35, 0x0D, // Data Element Sequence (13 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -171,7 +170,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
   // clang-format on
 
   const DataElement& pdl = record.GetAttribute(kProtocolDescriptorList);
-  common::DynamicByteBuffer block_sdp(pdl.WriteSize());
+  DynamicByteBuffer block_sdp(pdl.WriteSize());
   pdl.Write(&block_sdp);
 
   EXPECT_EQ(expected_sdp.size(), block_sdp.size());
@@ -182,7 +181,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
   EXPECT_TRUE(record.HasAttribute(kAdditionalProtocolDescriptorList));
 
   // clang-format off
-  auto expected_addl = common::CreateStaticByteBuffer(
+  auto expected_addl = CreateStaticByteBuffer(
       0x35, 0x07, // Data Element Sequence (AdditionalProtocolDescriptorLists)
       0x35, 0x05, // Data Element Sequence (ProtocolDescriptorList 1)
       0x35, 0x03, // Data Element Sequence Protocol List 1 Descriptor 0
@@ -193,7 +192,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
 
   const DataElement& apdl =
       record.GetAttribute(kAdditionalProtocolDescriptorList);
-  common::DynamicByteBuffer block_addl(apdl.WriteSize());
+  DynamicByteBuffer block_addl(apdl.WriteSize());
   apdl.Write(&block_addl);
 
   EXPECT_EQ(expected_addl.size(), block_addl.size());
@@ -213,7 +212,7 @@ TEST_F(SDP_ServiceRecordTest, AddProfile) {
   EXPECT_TRUE(record.HasAttribute(kBluetoothProfileDescriptorList));
 
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       0x35, 0x08, // Data Element Sequence (8 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -224,7 +223,7 @@ TEST_F(SDP_ServiceRecordTest, AddProfile) {
   // clang-format on
 
   const DataElement& val = record.GetAttribute(kBluetoothProfileDescriptorList);
-  common::DynamicByteBuffer block(val.WriteSize());
+  DynamicByteBuffer block(val.WriteSize());
   val.Write(&block);
 
   EXPECT_EQ(expected.size(), block.size());
@@ -233,7 +232,7 @@ TEST_F(SDP_ServiceRecordTest, AddProfile) {
   record.AddProfile(profile::kDialupNetworking, 4, 5);
 
   // clang-format off
-  auto expected_dun = common::CreateStaticByteBuffer(
+  auto expected_dun = CreateStaticByteBuffer(
       0x35, 0x10, // Data Element Sequence (16 bytes)
       0x35, 0x06, // Data Element Sequence (6 bytes)
       0x19, // UUID (16 bits)
@@ -250,7 +249,7 @@ TEST_F(SDP_ServiceRecordTest, AddProfile) {
 
   const DataElement& val_dun =
       record.GetAttribute(kBluetoothProfileDescriptorList);
-  common::DynamicByteBuffer block_dun(val_dun.WriteSize());
+  DynamicByteBuffer block_dun(val_dun.WriteSize());
   val_dun.Write(&block_dun);
 
   EXPECT_EQ(expected_dun.size(), block_dun.size());

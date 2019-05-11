@@ -56,10 +56,10 @@ class ServiceRecord {
   // Returns true if any value of the attributes in this service contain all
   // of the |uuids| given.  The uuids need not be in any specific attribute
   // value.
-  bool FindUUID(const std::unordered_set<common::UUID>& uuids) const;
+  bool FindUUID(const std::unordered_set<UUID>& uuids) const;
 
   // Convenience function to set the service class id list attribute.
-  void SetServiceClassUUIDs(const std::vector<common::UUID>& classes);
+  void SetServiceClassUUIDs(const std::vector<UUID>& classes);
 
   using ProtocolListId = uint8_t;
 
@@ -75,13 +75,13 @@ class ServiceRecord {
   //   - a single DataElement parameter
   // kPrimaryProtocolList is presented as the primary protocol.
   // Other protocol will be added to the addiitonal protocol lists,
-  void AddProtocolDescriptor(const ProtocolListId id, const common::UUID& uuid,
+  void AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid,
                              DataElement params);
 
   // Adds a profile to the bluetooth profile descrpitor list attribute.
   // |uuid| is the UUID of the profile. |major| and |minor| are the major and
   // minor versions of the profile supported.
-  void AddProfile(const common::UUID& uuid, uint8_t major, uint8_t minor);
+  void AddProfile(const UUID& uuid, uint8_t major, uint8_t minor);
 
   // Adds a set of language attributes.
   // |language| is required (and must be two characters long)

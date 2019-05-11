@@ -22,10 +22,10 @@ class LocalAddressDelegate {
   virtual ~LocalAddressDelegate() = default;
 
   // Returns the currently assigned IRK, if any.
-  virtual std::optional<common::UInt128> irk() const = 0;
+  virtual std::optional<UInt128> irk() const = 0;
 
   // Returns the identity address.
-  virtual common::DeviceAddress identity_address() const = 0;
+  virtual DeviceAddress identity_address() const = 0;
 
   // Asynchronously returns the local LE controller address used by all LE link
   // layer procedures with the exception of 5.0 advertising sets. These include:
@@ -41,7 +41,7 @@ class LocalAddressDelegate {
   //
   // This method runs |callback| when the procedure ends. |callback| may run
   // synchronously or asynchronously.
-  using AddressCallback = fit::function<void(const common::DeviceAddress&)>;
+  using AddressCallback = fit::function<void(const DeviceAddress&)>;
   virtual void EnsureLocalAddress(AddressCallback callback) = 0;
 };
 

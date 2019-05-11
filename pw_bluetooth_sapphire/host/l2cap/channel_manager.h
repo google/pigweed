@@ -160,8 +160,7 @@ class ChannelManager final {
   // Stores packets received on a connection handle before a link for it has
   // been created.
   using PendingPacketMap =
-      std::unordered_map<hci::ConnectionHandle,
-                         common::LinkedList<hci::ACLDataPacket>>;
+      std::unordered_map<hci::ConnectionHandle, LinkedList<hci::ACLDataPacket>>;
   PendingPacketMap pending_packets_;
 
   // Store information required to create and forward channels for locally-

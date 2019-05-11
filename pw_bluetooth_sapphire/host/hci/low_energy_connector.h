@@ -55,7 +55,7 @@ class LowEnergyConnector : public LocalAddressClient {
   //     is established due to an incoming request (remote initiated).
   using IncomingConnectionDelegate =
       fit::function<void(ConnectionHandle handle, Connection::Role role,
-                         const common::DeviceAddress& peer_address,
+                         const DeviceAddress& peer_address,
                          const LEConnectionParameters& conn_params)>;
   LowEnergyConnector(fxl::RefPtr<Transport> hci,
                      LocalAddressDelegate* local_addr_delegate,
@@ -81,7 +81,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // called with a null |link| and a |status| with error Host::Error::kTimedOut.
   using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
   bool CreateConnection(
-      bool use_whitelist, const common::DeviceAddress& peer_address,
+      bool use_whitelist, const DeviceAddress& peer_address,
       uint16_t scan_interval, uint16_t scan_window,
       const LEPreferredConnectionParameters& initial_parameters,
       StatusCallback status_callback, zx::duration timeout);
@@ -104,22 +104,22 @@ class LowEnergyConnector : public LocalAddressClient {
  private:
   struct PendingRequest {
     PendingRequest() = default;
-    PendingRequest(const common::DeviceAddress& peer_address,
+    PendingRequest(const DeviceAddress& peer_address,
                    StatusCallback status_callback);
 
     bool initiating = false;  // True if the HCI command has been sent.
     bool canceled = false;
     bool timed_out = false;
-    common::DeviceAddress local_address;
-    common::DeviceAddress peer_address;
+    DeviceAddress local_address;
+    DeviceAddress peer_address;
     StatusCallback status_callback;
   };
 
   // Called by CreateConnection() after the local device address has been
   // obtained.
   void CreateConnectionInternal(
-      const common::DeviceAddress& local_address, bool use_whitelist,
-      const common::DeviceAddress& peer_address, uint16_t scan_interval,
+      const DeviceAddress& local_address, bool use_whitelist,
+      const DeviceAddress& peer_address, uint16_t scan_interval,
       uint16_t scan_window,
       const LEPreferredConnectionParameters& initial_parameters,
       StatusCallback status_callback, zx::duration timeout);

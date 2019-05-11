@@ -13,11 +13,6 @@
 
 namespace bt {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::DynamicByteBuffer;
-
 namespace gap {
 namespace {
 
@@ -45,7 +40,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
 }
 
 void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi,
-                                             const common::ByteBuffer& adv) {
+                                             const ByteBuffer& adv) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
@@ -216,9 +211,9 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
 }
 
 void Peer::BrEdrData::SetInquiryData(
-    common::DeviceClass device_class, uint16_t clock_offset,
+    DeviceClass device_class, uint16_t clock_offset,
     hci::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
-    const common::BufferView& eir_data) {
+    const BufferView& eir_data) {
   peer_->UpdateExpiry();
 
   bool notify_listeners = false;
@@ -245,7 +240,7 @@ void Peer::BrEdrData::SetInquiryData(
   }
 }
 
-bool Peer::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
+bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
   ZX_DEBUG_ASSERT(eir.size());
 
   // TODO(armansito): Validate that the EIR data is not malformed?
@@ -258,7 +253,7 @@ bool Peer::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
   // TODO(jamuraa): maybe rename this class?
   AdvertisingDataReader reader(eir);
   gap::DataType type;
-  common::BufferView data;
+  BufferView data;
   bool changed = false;
   while (reader.GetNextField(&type, &data)) {
     if (type == gap::DataType::kCompleteLocalName) {

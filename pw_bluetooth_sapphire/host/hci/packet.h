@@ -38,12 +38,12 @@ namespace hci {
 //     class FixedBufferPacket : public Packet<HeaderType> {
 //      public:
 //       void Init(size_t payload_size) {
-//         this->init_view(common::MutablePacketView<HeaderType>(&buffer_,
+//         this->init_view(MutablePacketView<HeaderType>(&buffer_,
 //         payload_size));
 //       }
 //
 //      private:
-//       common::StaticByteBuffer<BufferSize> buffer_;
+//       StaticByteBuffer<BufferSize> buffer_;
 //     };
 //
 //     std::unique_ptr<Packet<MyHeaderType>> packet =
@@ -93,26 +93,26 @@ namespace hci {
 // linked-listability. Intended to be inherited by the Packet template and all
 // of its specializations.
 template <typename HeaderType, typename T>
-class PacketBase : public common::LinkedListable<T> {
+class PacketBase : public LinkedListable<T> {
  public:
   virtual ~PacketBase() = default;
 
-  const common::PacketView<HeaderType>& view() const { return view_; }
-  common::MutablePacketView<HeaderType>* mutable_view() { return &view_; }
+  const PacketView<HeaderType>& view() const { return view_; }
+  MutablePacketView<HeaderType>* mutable_view() { return &view_; }
 
  protected:
   PacketBase() = default;
 
   // Called by derived classes to initialize |view_| after initializing the
   // corresponding buffer.
-  void init_view(const common::MutablePacketView<HeaderType>& view) {
+  void init_view(const MutablePacketView<HeaderType>& view) {
     ZX_DEBUG_ASSERT(!view_.is_valid());
     ZX_DEBUG_ASSERT(view.is_valid());
     view_ = view;
   }
 
  private:
-  common::MutablePacketView<HeaderType> view_;
+  MutablePacketView<HeaderType> view_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PacketBase);
 };

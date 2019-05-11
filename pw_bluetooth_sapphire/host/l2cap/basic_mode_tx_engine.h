@@ -26,7 +26,7 @@ class BasicModeTxEngine final : public TxEngine {
 
   // Queues |sdu| for transmission, returning true on success. This may fail,
   // e.g., if the |sdu| is larger than |tx_mtu_|.
-  bool QueueSdu(common::ByteBufferPtr sdu) override;
+  bool QueueSdu(ByteBufferPtr sdu) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);

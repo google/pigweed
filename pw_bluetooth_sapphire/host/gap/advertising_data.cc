@@ -23,7 +23,7 @@
 template <typename T>
 struct fidl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
   static fidl::VectorPtr<unsigned char> Convert(const T& input) {
-    static_assert(std::is_base_of<bt::common::ByteBuffer, T>::value, "");
+    static_assert(std::is_base_of<bt::ByteBuffer, T>::value, "");
 
     fidl::VectorPtr<unsigned char> result =
         fidl::VectorPtr<unsigned char>::New(input.size());
@@ -36,12 +36,6 @@ namespace ble = fuchsia::bluetooth::le;
 
 namespace bt {
 namespace gap {
-
-using common::BufferView;
-using common::ByteBuffer;
-using common::DynamicByteBuffer;
-using common::MutableByteBuffer;
-using common::UUID;
 
 namespace {
 

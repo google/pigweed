@@ -10,7 +10,6 @@
 #include "slab_buffer.h"
 
 namespace bt {
-namespace common {
 
 using SmallBufferTraits =
     SlabBufferTraits<kSmallBufferSize, kSlabSize / kSmallBufferSize>;
@@ -20,9 +19,9 @@ using LargeBufferTraits =
 using SmallAllocator = fbl::SlabAllocator<SmallBufferTraits>;
 using LargeAllocator = fbl::SlabAllocator<LargeBufferTraits>;
 
-common::MutableByteBufferPtr NewSlabBuffer(size_t size) {
+MutableByteBufferPtr NewSlabBuffer(size_t size) {
   if (size == 0)
-    return std::make_unique<common::DynamicByteBuffer>();
+    return std::make_unique<DynamicByteBuffer>();
   if (size <= kSmallBufferSize) {
     auto buffer = SmallAllocator::New(size);
     if (buffer)
@@ -32,10 +31,9 @@ common::MutableByteBufferPtr NewSlabBuffer(size_t size) {
   return LargeAllocator::New(size);
 }
 
-}  // namespace common
 }  // namespace bt
 
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::common::LargeBufferTraits,
-                                      bt::common::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::common::SmallBufferTraits,
-                                      bt::common::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::LargeBufferTraits, bt::kMaxNumSlabs,
+                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::SmallBufferTraits, bt::kMaxNumSlabs,
+                                      true);

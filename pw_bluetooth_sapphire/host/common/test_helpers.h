@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <iostream>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 // Run |statement| and return if a fatal test error occurred. Include the file
@@ -38,7 +38,6 @@
   } while (false)
 
 namespace bt {
-namespace common {
 
 template <class InputIt>
 void PrintByteContainer(InputIt begin, InputIt end) {
@@ -84,8 +83,8 @@ bool ContainersEqual(const Container1& expected, const uint8_t* actual_bytes,
 
 // Returns a managed pointer to a heap allocated MutableByteBuffer.
 template <typename... T>
-common::MutableByteBufferPtr NewBuffer(T... bytes) {
-  return std::make_unique<common::StaticByteBuffer<sizeof...(T)>>(
+MutableByteBufferPtr NewBuffer(T... bytes) {
+  return std::make_unique<StaticByteBuffer<sizeof...(T)>>(
       std::forward<T>(bytes)...);
 }
 
@@ -93,7 +92,6 @@ common::MutableByteBufferPtr NewBuffer(T... bytes) {
 constexpr uint8_t UpperBits(const uint16_t x) { return x >> 8; }
 constexpr uint8_t LowerBits(const uint16_t x) { return x & 0x00FF; }
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TEST_HELPERS_H_

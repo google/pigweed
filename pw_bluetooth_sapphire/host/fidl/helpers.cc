@@ -64,29 +64,29 @@ fhost::SecurityProperties SecurityPropsToFidl(
   return result;
 }
 
-bt::common::DeviceAddress::Type BondingAddrTypeFromFidl(
+bt::DeviceAddress::Type BondingAddrTypeFromFidl(
     const fhost::AddressType& type) {
   switch (type) {
     case fhost::AddressType::LE_RANDOM:
-      return bt::common::DeviceAddress::Type::kLERandom;
+      return bt::DeviceAddress::Type::kLERandom;
     case fhost::AddressType::LE_PUBLIC:
-      return bt::common::DeviceAddress::Type::kLEPublic;
+      return bt::DeviceAddress::Type::kLEPublic;
     case fhost::AddressType::BREDR:
-      return bt::common::DeviceAddress::Type::kBREDR;
+      return bt::DeviceAddress::Type::kBREDR;
     default:
       ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
       break;
   }
-  return bt::common::DeviceAddress::Type::kBREDR;
+  return bt::DeviceAddress::Type::kBREDR;
 }
 
-fhost::AddressType BondingAddrTypeToFidl(bt::common::DeviceAddress::Type type) {
+fhost::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
   switch (type) {
-    case bt::common::DeviceAddress::Type::kLERandom:
+    case bt::DeviceAddress::Type::kLERandom:
       return fhost::AddressType::LE_RANDOM;
-    case bt::common::DeviceAddress::Type::kLEPublic:
+    case bt::DeviceAddress::Type::kLEPublic:
       return fhost::AddressType::LE_PUBLIC;
-    case bt::common::DeviceAddress::Type::kBREDR:
+    case bt::DeviceAddress::Type::kBREDR:
       return fhost::AddressType::BREDR;
     default:
       // Anonymous is not a valid address type to use for bonding, so we treat
@@ -129,32 +129,32 @@ fhost::RemoteKey KeyToFidl(const bt::sm::Key& key) {
 
 }  // namespace
 
-std::optional<bt::common::PeerId> PeerIdFromString(const std::string& id) {
+std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
   uint64_t value;
   if (!fxl::StringToNumberWithError<decltype(value)>(id, &value,
                                                      fxl::Base::k16)) {
     return std::nullopt;
   }
-  return bt::common::PeerId(value);
+  return bt::PeerId(value);
 }
 
-ErrorCode HostErrorToFidl(bt::common::HostError host_error) {
+ErrorCode HostErrorToFidl(bt::HostError host_error) {
   switch (host_error) {
-    case bt::common::HostError::kFailed:
+    case bt::HostError::kFailed:
       return ErrorCode::FAILED;
-    case bt::common::HostError::kTimedOut:
+    case bt::HostError::kTimedOut:
       return ErrorCode::TIMED_OUT;
-    case bt::common::HostError::kInvalidParameters:
+    case bt::HostError::kInvalidParameters:
       return ErrorCode::INVALID_ARGUMENTS;
-    case bt::common::HostError::kCanceled:
+    case bt::HostError::kCanceled:
       return ErrorCode::CANCELED;
-    case bt::common::HostError::kInProgress:
+    case bt::HostError::kInProgress:
       return ErrorCode::IN_PROGRESS;
-    case bt::common::HostError::kNotSupported:
+    case bt::HostError::kNotSupported:
       return ErrorCode::NOT_SUPPORTED;
-    case bt::common::HostError::kNotFound:
+    case bt::HostError::kNotFound:
       return ErrorCode::NOT_FOUND;
-    case bt::common::HostError::kProtocolError:
+    case bt::HostError::kProtocolError:
       return ErrorCode::PROTOCOL_ERROR;
     default:
       break;
@@ -194,7 +194,7 @@ bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
 
 bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
   bt::sm::PairingData result;
-  result.identity_address = bt::common::DeviceAddress(
+  result.identity_address = bt::DeviceAddress(
       BondingAddrTypeFromFidl(data.address_type), data.address);
   if (data.ltk) {
     result.ltk = LtkFromFidl(*data.ltk);
@@ -208,9 +208,7 @@ bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
   return result;
 }
 
-bt::common::UInt128 LocalKeyFromFidl(const fhost::LocalKey& key) {
-  return key.value;
-}
+bt::UInt128 LocalKeyFromFidl(const fhost::LocalKey& key) { return key.value; }
 
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fhost::BREDRData& data) {
   if (data.link_key) {
@@ -388,7 +386,7 @@ bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
     return true;
 
   for (const auto& uuid_str : *fidl_filter.service_uuids) {
-    if (!bt::common::IsStringValidUuid(uuid_str))
+    if (!bt::IsStringValidUuid(uuid_str))
       return false;
   }
 
@@ -400,10 +398,10 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
   ZX_DEBUG_ASSERT(out_filter);
 
   if (fidl_filter.service_uuids) {
-    std::vector<bt::common::UUID> uuids;
+    std::vector<bt::UUID> uuids;
     for (const auto& uuid_str : *fidl_filter.service_uuids) {
-      bt::common::UUID uuid;
-      if (!bt::common::StringToUuid(uuid_str, &uuid)) {
+      bt::UUID uuid;
+      if (!bt::StringToUuid(uuid_str, &uuid)) {
         bt_log(TRACE, "bt-host", "invalid parameters given to scan filter");
         return false;
       }
@@ -439,10 +437,10 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 
 // static
 fidl::VectorPtr<uint8_t>
-fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer>::Convert(
-    const bt::common::ByteBuffer& from) {
+fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer>::Convert(
+    const bt::ByteBuffer& from) {
   auto to = fidl::VectorPtr<uint8_t>::New(from.size());
-  bt::common::MutableBufferView view(to->data(), to->size());
+  bt::MutableBufferView view(to->data(), to->size());
   view.Write(from);
   return to;
 }

@@ -14,17 +14,17 @@ namespace att {
 
 // Utilities for processing ATT protocol Packets.
 
-class PacketReader : public common::PacketView<Header> {
+class PacketReader : public PacketView<Header> {
  public:
-  explicit PacketReader(const common::ByteBuffer* buffer);
+  explicit PacketReader(const ByteBuffer* buffer);
 
   inline OpCode opcode() const { return header().opcode; }
 };
 
-class PacketWriter : public common::MutablePacketView<Header> {
+class PacketWriter : public MutablePacketView<Header> {
  public:
   // Constructor writes |opcode| into |buffer|.
-  PacketWriter(OpCode opcode, common::MutableByteBuffer* buffer);
+  PacketWriter(OpCode opcode, MutableByteBuffer* buffer);
 };
 
 }  // namespace att

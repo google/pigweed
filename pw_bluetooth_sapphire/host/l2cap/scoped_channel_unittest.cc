@@ -4,9 +4,8 @@
 
 #include "scoped_channel.h"
 
-#include "gtest/gtest.h"
-
 #include "fake_channel.h"
+#include "gtest/gtest.h"
 
 namespace bt {
 namespace l2cap {
@@ -14,7 +13,7 @@ namespace testing {
 namespace {
 
 void DoNothing() {}
-void NopRxCallback(common::ByteBufferPtr) {}
+void NopRxCallback(ByteBufferPtr) {}
 
 }  // namespace
 

@@ -6,18 +6,15 @@
 
 #include <zircon/assert.h>
 
+#include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-#include "logical_link.h"
-
 namespace bt {
 namespace l2cap {
-
-using common::RunOrPost;
 
 Channel::Channel(ChannelId id, ChannelId remote_id,
                  hci::Connection::LinkType link_type,
@@ -56,7 +53,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
           })) {
   ZX_DEBUG_ASSERT(link_);
   for (const auto& pdu : buffered_pdus) {
-    auto sdu = std::make_unique<common::DynamicByteBuffer>(pdu.length());
+    auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
     pdu.Copy(sdu.get());
     pending_rx_sdus_.push(std::move(sdu));
   }
@@ -154,7 +151,7 @@ void ChannelImpl::SignalLinkError() {
   });
 }
 
-bool ChannelImpl::Send(common::ByteBufferPtr sdu) {
+bool ChannelImpl::Send(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
 
   std::lock_guard<std::mutex> lock(mtx_);
@@ -224,7 +221,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     ZX_DEBUG_ASSERT(link_);
     ZX_DEBUG_ASSERT(rx_engine_);
 
-    common::ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
+    ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
     if (!sdu) {
       // The PDU may have been invalid, out-of-sequence, or part of a segmented
       // SDU.

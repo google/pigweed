@@ -7,7 +7,6 @@
 #include "random.h"
 
 namespace bt {
-namespace common {
 
 PeerId RandomPeerId() {
   PeerId id = kInvalidPeerId;
@@ -21,5 +20,4 @@ PeerId RandomPeerId() {
   return id;
 }
 
-}  // namespace common
 }  // namespace bt

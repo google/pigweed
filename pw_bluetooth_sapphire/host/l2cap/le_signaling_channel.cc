@@ -4,10 +4,9 @@
 
 #include "le_signaling_channel.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "channel.h"
 #include "logical_link.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
 namespace l2cap {
@@ -20,7 +19,7 @@ LESignalingChannel::LESignalingChannel(fbl::RefPtr<Channel> chan,
 }
 
 bool LESignalingChannel::SendRequest(CommandCode req_code,
-                                     const common::ByteBuffer& payload,
+                                     const ByteBuffer& payload,
                                      ResponseHandler cb) {
   // TODO(NET-1093): Reuse BrEdrSignalingChannel's implementation.
   bt_log(WARN, "l2cap-le", "sig: SendRequest not implemented yet");
@@ -41,7 +40,7 @@ void LESignalingChannel::OnConnParamUpdateReceived(
     bt_log(TRACE, "l2cap-le",
            "sig: rejecting conn. param. update request from master");
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
     return;
   }
 
@@ -49,7 +48,7 @@ void LESignalingChannel::OnConnParamUpdateReceived(
       sizeof(ConnectionParameterUpdateRequestPayload)) {
     bt_log(TRACE, "l2cap-le", "sig: malformed request received");
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
     return;
   }
 
@@ -97,7 +96,7 @@ void LESignalingChannel::OnConnParamUpdateReceived(
   ConnectionParameterUpdateResponsePayload rsp;
   rsp.result = static_cast<ConnectionParameterUpdateResult>(htole16(result));
   SendPacket(kConnectionParameterUpdateResponse, packet.header().id,
-             common::BufferView(&rsp, sizeof(rsp)));
+             BufferView(&rsp, sizeof(rsp)));
 
   if (!reject && dispatcher_) {
     async::PostTask(dispatcher_, [cb = conn_param_update_cb_.share(),
@@ -107,7 +106,7 @@ void LESignalingChannel::OnConnParamUpdateReceived(
   }
 }
 
-void LESignalingChannel::DecodeRxUnit(common::ByteBufferPtr sdu,
+void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
                                       const SignalingPacketHandler& cb) {
   // "[O]nly one command per C-frame shall be sent over [the LE] Fixed Channel"
   // (v5.0, Vol 3, Part A, Section 4).
@@ -124,7 +123,7 @@ void LESignalingChannel::DecodeRxUnit(common::ByteBufferPtr sdu,
            "sig: packet size mismatch (expected: %u, recv: %zu); drop",
            expected_payload_length, sdu->size() - sizeof(CommandHeader));
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
     return;
   }
 

@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
 namespace bt {
-namespace common {
 
 // Represents a 128-bit Bluetooth UUID. This class allows UUID values to be
 // constructed in the official Bluetooth 16-bit, 32-bit, and 128-bit formats and
@@ -22,7 +21,7 @@ class UUID final {
   // Constructs a UUID from |bytes|. |bytes| should contain a 16-, 32-, or
   // 128-bit UUID in little-endian byte order. Returns false if |bytes| contains
   // an unsupported size.
-  static bool FromBytes(const common::ByteBuffer& bytes, UUID* out_uuid);
+  static bool FromBytes(const ByteBuffer& bytes, UUID* out_uuid);
 
   constexpr explicit UUID(const UInt128& uuid128)
       : type_(Type::k128Bit), value_(uuid128) {
@@ -61,7 +60,7 @@ class UUID final {
   // over PDUs. Returns false if |bytes| has an unaccepted size; the only
   // accepted sizes for are 2, 4, and 16 for 16-bit, 32-bit, and 128-bit
   // formats, respectively.
-  bool CompareBytes(const common::ByteBuffer& bytes) const;
+  bool CompareBytes(const ByteBuffer& bytes) const;
 
   // Returns a string representation of this UUID in the following format:
   //
@@ -79,8 +78,7 @@ class UUID final {
   // Writes a little-endian representation of this UUID to |buffer|.  Returns
   // the number of bytes used. there must be enough space in |buffer| to store
   // |CompactSize()| bytes.
-  size_t ToBytes(common::MutableByteBuffer* buffer,
-                 bool allow_32bit = true) const;
+  size_t ToBytes(MutableByteBuffer* buffer, bool allow_32bit = true) const;
 
   // Returns the most compact representation of this UUID. If |allow_32bit| is
   // false, then a 32-bit UUIDs will default to 128-bit. The contents will be in
@@ -215,15 +213,14 @@ inline bool operator!=(const UInt128& lhs, const UUID& rhs) {
   return rhs != lhs;
 }
 
-}  // namespace common
 }  // namespace bt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
 namespace std {
 
 template <>
-struct hash<bt::common::UUID> {
-  size_t operator()(const bt::common::UUID& k) const { return k.Hash(); }
+struct hash<bt::UUID> {
+  size_t operator()(const bt::UUID& k) const { return k.Hash(); }
 };
 
 }  // namespace std

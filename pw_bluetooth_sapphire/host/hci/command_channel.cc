@@ -5,19 +5,18 @@
 #include "command_channel.h"
 
 #include <endian.h>
-
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
-#include "src/lib/fxl/strings/string_printf.h"
-#include "src/lib/fxl/time/time_delta.h"
+#include "slab_allocators.h"
+#include "transport.h"
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
-
-#include "slab_allocators.h"
-#include "transport.h"
+#include "src/lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/time/time_delta.h"
 
 namespace bt {
 namespace hci {
@@ -139,7 +138,7 @@ void CommandChannel::Initialize() {
   };
 
   io_dispatcher_ = transport_->io_dispatcher();
-  common::RunTaskSync(setup_handler_task, io_dispatcher_);
+  RunTaskSync(setup_handler_task, io_dispatcher_);
 
   if (channel_wait_.object() == ZX_HANDLE_INVALID)
     return;
@@ -156,7 +155,7 @@ void CommandChannel::ShutDown() {
 
   bt_log(INFO, "hci", "shutting down");
 
-  common::RunTaskSync([this] { ShutDownInternal(); }, io_dispatcher_);
+  RunTaskSync([this] { ShutDownInternal(); }, io_dispatcher_);
   io_dispatcher_ = nullptr;
 }
 
@@ -586,16 +585,15 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   auto it = pending_callbacks.begin();
   for (; it != pending_callbacks.end() - 1; ++it) {
     auto event_copy = EventPacket::New(event->view().payload_size());
-    common::MutableBufferView buf = event_copy->mutable_view()->mutable_data();
+    MutableBufferView buf = event_copy->mutable_view()->mutable_data();
     event->view().data().Copy(&buf);
-    common::RunOrPost(
+    RunOrPost(
         [ev = std::move(event_copy), cb = std::move(it->first)]() { cb(*ev); },
         it->second);
   }
   // Don't copy for the last callback.
-  common::RunOrPost(
-      [ev = std::move(event), cb = std::move(it->first)]() { cb(*ev); },
-      it->second);
+  RunOrPost([ev = std::move(event), cb = std::move(it->first)]() { cb(*ev); },
+            it->second);
 }
 
 void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,

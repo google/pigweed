@@ -3,19 +3,15 @@
 // found in the LICENSE file.
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
 namespace bt {
 namespace sdp {
 namespace {
-
-using common::LowerBits;
-using common::UpperBits;
 
 using SDP_DataElementTest = ::testing::Test;
 
@@ -25,8 +21,8 @@ TEST_F(SDP_DataElementTest, CreateIsNull) {
   EXPECT_TRUE(elem.Get<std::nullptr_t>());
   EXPECT_EQ(nullptr, *elem.Get<std::nullptr_t>());
 
-  auto expected = common::CreateStaticByteBuffer(0x00);
-  common::DynamicByteBuffer buf(1);
+  auto expected = CreateStaticByteBuffer(0x00);
+  DynamicByteBuffer buf(1);
   EXPECT_EQ(1u, elem.Write(&buf));
   EXPECT_TRUE(ContainersEqual(expected, buf));
 }
@@ -48,7 +44,7 @@ TEST_F(SDP_DataElementTest, SetAndGet) {
 }
 
 TEST_F(SDP_DataElementTest, Read) {
-  auto buf = common::CreateStaticByteBuffer(
+  auto buf = CreateStaticByteBuffer(
       0x25,  // Type (4: String) & Size (5: in an additional byte) = 0b00100 101
       0x0B,  // Bytes
       'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96,  // String
@@ -70,7 +66,7 @@ TEST_F(SDP_DataElementTest, Read) {
 }
 
 TEST_F(SDP_DataElementTest, ReadUUID) {
-  auto buf = common::CreateStaticByteBuffer(
+  auto buf = CreateStaticByteBuffer(
       0x19,       // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
       0x01, 0x00  // L2CAP
   );
@@ -78,24 +74,24 @@ TEST_F(SDP_DataElementTest, ReadUUID) {
   DataElement elem;
   EXPECT_EQ(3u, DataElement::Read(&elem, buf));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
-  EXPECT_EQ(common::UUID(uint16_t(0x0100)), *elem.Get<common::UUID>());
+  EXPECT_EQ(UUID(uint16_t(0x0100)), *elem.Get<UUID>());
 
-  auto buf2 = common::CreateStaticByteBuffer(
+  auto buf2 = CreateStaticByteBuffer(
       0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
       0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(5u, DataElement::Read(&elem, buf2));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
-  EXPECT_EQ(common::UUID(uint32_t(0x01020304)), *elem.Get<common::UUID>());
+  EXPECT_EQ(UUID(uint32_t(0x01020304)), *elem.Get<UUID>());
 
-  auto buf3 = common::CreateStaticByteBuffer(
+  auto buf3 = CreateStaticByteBuffer(
       0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
       0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04,
       0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(0u, DataElement::Read(&elem, buf3));
 
-  auto buf4 = common::CreateStaticByteBuffer(
+  auto buf4 = CreateStaticByteBuffer(
       0x1C,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 100
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
       0x0D, 0x0E, 0x0F, 0x10);
@@ -103,9 +99,9 @@ TEST_F(SDP_DataElementTest, ReadUUID) {
   EXPECT_EQ(17u, DataElement::Read(&elem, buf4));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   // UInt128 in UUID is little-endian
-  EXPECT_EQ(common::UUID({0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08,
-                          0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01}),
-            *elem.Get<common::UUID>());
+  EXPECT_EQ(UUID({0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07,
+                  0x06, 0x05, 0x04, 0x03, 0x02, 0x01}),
+            *elem.Get<UUID>());
 }
 
 TEST_F(SDP_DataElementTest, Write) {
@@ -115,7 +111,7 @@ TEST_F(SDP_DataElementTest, Write) {
 
   // SerialPort from Assigned Numbers
   std::vector<DataElement> service_class_list;
-  service_class_list.emplace_back(DataElement(common::UUID(uint16_t(0x1101))));
+  service_class_list.emplace_back(DataElement(UUID(uint16_t(0x1101))));
   DataElement service_class_value(std::move(service_class_list));
   attribute_list.emplace_back(DataElement(kServiceClassIdList));
   attribute_list.emplace_back(std::move(service_class_value));
@@ -144,7 +140,7 @@ TEST_F(SDP_DataElementTest, Write) {
   // Bluetooth Profile Descriptor List
   std::vector<DataElement> profile_sequence_list;
   std::vector<DataElement> spp_sequence;
-  spp_sequence.push_back(DataElement(common::UUID(uint16_t(0x1101))));
+  spp_sequence.push_back(DataElement(UUID(uint16_t(0x1101))));
   spp_sequence.push_back(DataElement(uint16_t(0x0102)));
 
   profile_sequence_list.emplace_back(std::move(spp_sequence));
@@ -155,7 +151,7 @@ TEST_F(SDP_DataElementTest, Write) {
   DataElement attribute_lists_elem(std::move(attribute_list));
 
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       0x35, 0x29,  // Sequence uint8 41 bytes
       0x09,        // uint16_t type
       UpperBits(kServiceClassIdList), LowerBits(kServiceClassIdList),
@@ -187,7 +183,7 @@ TEST_F(SDP_DataElementTest, Write) {
   );
   // clang-format on
 
-  common::DynamicByteBuffer block(43);
+  DynamicByteBuffer block(43);
 
   size_t written = attribute_lists_elem.Write(&block);
 
@@ -198,7 +194,7 @@ TEST_F(SDP_DataElementTest, Write) {
 
 TEST_F(SDP_DataElementTest, ReadSequence) {
   // clang-format off
-  auto buf = common::CreateStaticByteBuffer(
+  auto buf = CreateStaticByteBuffer(
       0x35, 0x08, // Sequence with 1 byte length (8)
       0x09, 0x00, 0x01,  // uint16_t: 1
       0x0A, 0x00, 0x00, 0x00, 0x02   // uint32_t: 2
@@ -208,7 +204,7 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
   DataElement elem;
   EXPECT_EQ(buf.size(), DataElement::Read(&elem, buf));
   EXPECT_EQ(DataElement::Type::kSequence, elem.type());
-  auto* it = elem.At(0);
+  auto *it = elem.At(0);
   EXPECT_EQ(DataElement::Type::kUnsignedInt, it->type());
   EXPECT_EQ(1u, *it->Get<uint16_t>());
 
@@ -218,7 +214,7 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
 }
 
 TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
-  auto buf = common::CreateStaticByteBuffer(
+  auto buf = CreateStaticByteBuffer(
       0x35, 0x1C,  // Sequence uint8 28 bytes
       // Sequence 0
       0x35, 0x08,                    // Sequence uint8 8 bytes

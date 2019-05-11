@@ -5,13 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
 
-#include <cstdint>
-
 #include <zircon/compiler.h>
 
+#include <cstdint>
+
+#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "lib/zx/time.h"
 
 // This file defines constants that are used by the Security Manager Protocol
 // (SMP) that operates over the L2CAP SMP channel.
@@ -222,12 +222,12 @@ using PairingResponseParams = PairingRequestParams;
 // ======================================
 // Pairing Confirm (Vol 3, Part H, 3.5.3)
 constexpr Code kPairingConfirm = 0x03;
-using PairingConfirmValue = common::UInt128;
+using PairingConfirmValue = UInt128;
 
 // =====================================
 // Pairing Random (Vol 3, Part H, 3.5.4)
 constexpr Code kPairingRandom = 0x04;
-using PairingRandomValue = common::UInt128;
+using PairingRandomValue = UInt128;
 
 // =====================================
 // Pairing Failed (Vol 3, Part H, 3.5.5)
@@ -237,7 +237,7 @@ using PairingFailedParams = ErrorCode;
 // =============================================
 // Encryption Information (LE Legacy Pairing only; Vol 3, Part H, 3.6.2)
 constexpr Code kEncryptionInformation = 0x06;
-using EncryptionInformationParams = common::UInt128;
+using EncryptionInformationParams = UInt128;
 
 // ====================================================================
 // Master Identification (LE Legacy Pairing only; Vol 3, Part H, 3.6.3)
@@ -250,20 +250,20 @@ struct MasterIdentificationParams {
 // ===========================================
 // Identity Information (Vol 3, Part H, 3.6.4)
 constexpr Code kIdentityInformation = 0x08;
-using IRK = common::UInt128;
+using IRK = UInt128;
 
 // ===================================================
 // Identity Address Information (Vol 3, Part H, 3.6.5)
 constexpr Code kIdentityAddressInformation = 0x09;
 struct IdentityAddressInformationParams {
   AddressType type;
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // ==========================================
 // Signing Information (Vol 3, Part H, 3.6.6)
 constexpr Code kSigningInformation = 0x0A;
-using CSRK = common::UInt128;
+using CSRK = UInt128;
 
 // =======================================
 // Security Request (Vol 3, Part H, 3.6.7)
@@ -282,7 +282,7 @@ struct PairingPublicKeyParams {
 // ======================================================================
 // Pairing DHKey Check (LE Secure Connections only; Vol 3, Part H, 3.5.7)
 constexpr Code kPairingDHKeyCheck = 0x0D;
-using PairingDHKeyCheckValueE = common::UInt128;
+using PairingDHKeyCheckValueE = UInt128;
 
 // ============================================
 // Keypress Notification (Vol 3, Part H, 3.5.8)

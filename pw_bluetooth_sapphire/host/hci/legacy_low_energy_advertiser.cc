@@ -29,8 +29,7 @@ std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) {
   return packet;
 }
 
-std::unique_ptr<CommandPacket> BuildSetAdvertisingData(
-    const common::ByteBuffer& data) {
+std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const ByteBuffer& data) {
   auto packet = CommandPacket::New(kLESetAdvertisingData,
                                    sizeof(LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
@@ -39,14 +38,14 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingData(
                     ->mutable_payload<LESetAdvertisingDataCommandParams>();
   params->adv_data_length = data.size();
 
-  common::MutableBufferView adv_view(params->adv_data, params->adv_data_length);
+  MutableBufferView adv_view(params->adv_data, params->adv_data_length);
   data.Copy(&adv_view);
 
   return packet;
 }
 
 std::unique_ptr<CommandPacket> BuildSetScanResponse(
-    const common::ByteBuffer& scan_rsp) {
+    const ByteBuffer& scan_rsp) {
   auto packet = CommandPacket::New(kLESetScanResponseData,
                                    sizeof(LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
@@ -55,8 +54,8 @@ std::unique_ptr<CommandPacket> BuildSetScanResponse(
                     ->mutable_payload<LESetScanResponseDataCommandParams>();
   params->scan_rsp_data_length = scan_rsp.size();
 
-  common::MutableBufferView scan_data_view(params->scan_rsp_data,
-                                           sizeof(params->scan_rsp_data));
+  MutableBufferView scan_data_view(params->scan_rsp_data,
+                                   sizeof(params->scan_rsp_data));
   scan_rsp.Copy(&scan_data_view);
 
   return packet;
@@ -132,22 +131,22 @@ bool LegacyLowEnergyAdvertiser::AllowsRandomAddressChange() const {
 }
 
 void LegacyLowEnergyAdvertiser::StartAdvertising(
-    const common::DeviceAddress& address, const common::ByteBuffer& data,
-    const common::ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
+    const DeviceAddress& address, const ByteBuffer& data,
+    const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
     zx::duration interval, bool anonymous, AdvertisingStatusCallback callback) {
   ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(address.type() != common::DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (anonymous) {
     bt_log(TRACE, "hci-le", "anonymous advertising not supported");
-    callback(zx::duration(), Status(common::HostError::kNotSupported));
+    callback(zx::duration(), Status(HostError::kNotSupported));
     return;
   }
 
   if (advertising()) {
     if (address != advertised_) {
       bt_log(TRACE, "hci-le", "already advertising");
-      callback(zx::duration(), Status(common::HostError::kNotSupported));
+      callback(zx::duration(), Status(HostError::kNotSupported));
       return;
     }
     bt_log(TRACE, "hci-le", "updating existing advertisement");
@@ -155,20 +154,20 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   if (data.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "advertising data too large");
-    callback(zx::duration(), Status(common::HostError::kInvalidParameters));
+    callback(zx::duration(), Status(HostError::kInvalidParameters));
     return;
   }
 
   if (scan_rsp.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "scan response too large");
-    callback(zx::duration(), Status(common::HostError::kInvalidParameters));
+    callback(zx::duration(), Status(HostError::kInvalidParameters));
     return;
   }
 
   if (!hci_cmd_runner_->IsReady()) {
     if (starting_) {
       bt_log(TRACE, "hci-le", "already starting");
-      callback(zx::duration(), Status(common::HostError::kInProgress));
+      callback(zx::duration(), Status(HostError::kInProgress));
       return;
     }
 
@@ -202,7 +201,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   }
 
   LEOwnAddressType own_addr_type;
-  if (address.type() == common::DeviceAddress::Type::kLEPublic) {
+  if (address.type() == DeviceAddress::Type::kLEPublic) {
     own_addr_type = LEOwnAddressType::kPublic;
   } else {
     own_addr_type = LEOwnAddressType::kRandom;
@@ -237,8 +236,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       });
 }
 
-bool LegacyLowEnergyAdvertiser::StopAdvertising(
-    const common::DeviceAddress& address) {
+bool LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
   if (advertised_ != address) {
     // not advertising, or not on this address.
     return false;
@@ -293,7 +291,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
     ConnectionHandle handle, Connection::Role role,
-    const common::DeviceAddress& peer_address,
+    const DeviceAddress& peer_address,
     const LEConnectionParameters& conn_params) {
   if (!advertising()) {
     bt_log(TRACE, "hci-le", "connection received without advertising!");

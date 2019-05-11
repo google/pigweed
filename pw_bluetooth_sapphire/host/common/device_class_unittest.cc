@@ -7,7 +7,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 struct TestPayload {
@@ -86,5 +85,4 @@ TEST(DeviceClassTest, Comparison) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

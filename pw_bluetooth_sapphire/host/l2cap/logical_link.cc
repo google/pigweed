@@ -4,18 +4,17 @@
 
 #include "logical_link.h"
 
-#include <functional>
-
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-#include "src/lib/fxl/strings/string_printf.h"
+#include <functional>
 
 #include "bredr_dynamic_channel.h"
 #include "bredr_signaling_channel.h"
 #include "channel.h"
 #include "le_signaling_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace l2cap {
@@ -272,8 +271,7 @@ void LogicalLink::AssignSecurityProperties(
   security_ = security;
 }
 
-void LogicalLink::SendBasicFrame(ChannelId id,
-                                 const common::ByteBuffer& payload) {
+void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {

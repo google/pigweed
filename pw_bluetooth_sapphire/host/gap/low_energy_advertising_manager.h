@@ -24,7 +24,7 @@ class Transport;
 
 namespace gap {
 
-using AdvertisementId = common::Identifier<uint64_t>;
+using AdvertisementId = Identifier<uint64_t>;
 constexpr AdvertisementId kInvalidAdvertisementId(0u);
 
 class LowEnergyAdvertisingManager {
@@ -49,11 +49,11 @@ class LowEnergyAdvertisingManager {
   //  - an |advertisement_id|, which can be used to stop advertising
   //    or disambiguate calls to |callback|, and a success |status|.
   //  - kInvalidAdvertisementId and an error indication in |status|:
-  //    * common::HostError::kInvalidParameters if the advertising parameters
+  //    * HostError::kInvalidParameters if the advertising parameters
   //      are invalid (e.g. |data| is too large).
-  //    * common::HostError::kNotSupported if another set cannot be advertised
+  //    * HostError::kNotSupported if another set cannot be advertised
   //      or if the requested parameters are not supported by the hardware.
-  //    * common::HostError::kProtocolError with a HCI error reported from
+  //    * HostError::kProtocolError with a HCI error reported from
   //      the controller, otherwise.
   using ConnectionCallback = fit::function<void(
       AdvertisementId advertisement_id, std::unique_ptr<hci::Connection> link)>;

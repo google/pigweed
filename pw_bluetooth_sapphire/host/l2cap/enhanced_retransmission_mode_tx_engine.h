@@ -42,7 +42,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
       ConnectionFailureCallback connection_failure_callback);
   ~EnhancedRetransmissionModeTxEngine() override = default;
 
-  bool QueueSdu(common::ByteBufferPtr sdu) override;
+  bool QueueSdu(ByteBufferPtr sdu) override;
 
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   // The value of |is_final| should reflect the 'F' bit in header of the frame

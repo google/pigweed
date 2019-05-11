@@ -15,7 +15,7 @@ namespace hci {
 // Default implementations do nothing.
 
 void LowEnergyScanner::Delegate::OnPeerFound(const LowEnergyScanResult& result,
-                                             const common::ByteBuffer& data) {}
+                                             const ByteBuffer& data) {}
 
 void LowEnergyScanner::Delegate::OnDirectedAdvertisement(
     const LowEnergyScanResult& result) {}
@@ -23,7 +23,7 @@ void LowEnergyScanner::Delegate::OnDirectedAdvertisement(
 LowEnergyScanResult::LowEnergyScanResult()
     : resolved(false), connectable(false), rssi(hci::kRSSIInvalid) {}
 
-LowEnergyScanResult::LowEnergyScanResult(const common::DeviceAddress& address,
+LowEnergyScanResult::LowEnergyScanResult(const DeviceAddress& address,
                                          bool resolved, bool connectable,
                                          int8_t rssi)
     : address(address),

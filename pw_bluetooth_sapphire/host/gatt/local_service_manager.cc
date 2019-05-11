@@ -48,7 +48,7 @@ att::Handle InsertCharacteristicAttributes(
   // 1 octet: properties
   // 2 octets: value handle
   // 2 or 16 octets: UUID
-  common::DynamicByteBuffer decl_value(3 + uuid_size);
+  DynamicByteBuffer decl_value(3 + uuid_size);
   decl_value[0] = chrc.properties();
   decl_value[1] = static_cast<uint8_t>(value_attr->handle());
   decl_value[2] = static_cast<uint8_t>(value_attr->handle() >> 8);
@@ -62,7 +62,7 @@ att::Handle InsertCharacteristicAttributes(
 
 // Adds a characteristic descriptor declaration to |grouping| for |desc|.
 void InsertDescriptorAttribute(att::AttributeGrouping* grouping,
-                               const common::UUID& type,
+                               const UUID& type,
                                const att::AccessRequirements& read_reqs,
                                const att::AccessRequirements& write_reqs,
                                att::Attribute::ReadHandler read_handler,
@@ -247,16 +247,15 @@ class LocalServiceManager::ServiceData final {
     }
 
     value = htole16(value);
-    result_cb(att::ErrorCode::kNoError,
-              common::BufferView(reinterpret_cast<const uint8_t*>(&value),
-                                 sizeof(value)));
+    result_cb(
+        att::ErrorCode::kNoError,
+        BufferView(reinterpret_cast<const uint8_t*>(&value), sizeof(value)));
   }
 
   // Called when a write request is performed on a CCC descriptor belonging to
   // the characteristic identified by |chrc_id|.
   void OnWriteCCC(IdType chrc_id, uint8_t chrc_props, PeerId peer_id,
-                  att::Handle handle, uint16_t offset,
-                  const common::ByteBuffer& value,
+                  att::Handle handle, uint16_t offset, const ByteBuffer& value,
                   const WriteResponder& result_cb) {
     if (offset != 0u) {
       result_cb(att::ErrorCode::kInvalidOffset);
@@ -314,7 +313,7 @@ class LocalServiceManager::ServiceData final {
                                           att::Handle handle, uint16_t offset,
                                           auto result_cb) {
       if (!self) {
-        result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
         return;
       }
 
@@ -322,7 +321,7 @@ class LocalServiceManager::ServiceData final {
       // characteristic property.
       if (!(props & Property::kRead)) {
         // TODO(armansito): Return kRequestNotSupported?
-        result_cb(att::ErrorCode::kReadNotPermitted, common::BufferView());
+        result_cb(att::ErrorCode::kReadNotPermitted, BufferView());
         return;
       }
 
@@ -365,7 +364,7 @@ class LocalServiceManager::ServiceData final {
           att::AccessRequirements(false, false, false),  // read (no security)
           att::AccessRequirements());                    // write (not allowed)
       ZX_DEBUG_ASSERT(decl_attr);
-      decl_attr->SetValue(common::CreateStaticByteBuffer(
+      decl_attr->SetValue(CreateStaticByteBuffer(
           (uint8_t)(ext_props & 0x00FF), (uint8_t)((ext_props & 0xFF00) >> 8)));
     }
 
@@ -392,7 +391,7 @@ class LocalServiceManager::ServiceData final {
                             const auto& peer_id, att::Handle handle,
                             uint16_t offset, auto result_cb) {
       if (!self) {
-        result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
         return;
       }
 
@@ -438,7 +437,7 @@ class LocalServiceManager::ServiceData final {
                             const auto& peer_id, att::Handle handle,
                             uint16_t offset, auto result_cb) {
       if (!self) {
-        result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
         return;
       }
 
@@ -508,7 +507,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service,
     return kInvalidId;
 
   // GATT does not support 32-bit UUIDs.
-  const common::BufferView service_decl_value =
+  const BufferView service_decl_value =
       service->type().CompactView(false /* allow_32bit */);
 
   // TODO(armansito): Cluster services with 16-bit and 128-bit together inside

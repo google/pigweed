@@ -43,7 +43,7 @@ class LowEnergyAdvertisingManager;
 class LowEnergyDiscoveryManager;
 
 // TODO(BT-734): Consider removing this identifier from the bt-host layer.
-class AdapterId : public common::Identifier<uint64_t> {
+class AdapterId : public Identifier<uint64_t> {
  public:
   constexpr explicit AdapterId(uint64_t value) : Identifier<uint64_t>(value) {}
   AdapterId() = default;
@@ -152,7 +152,7 @@ class Adapter final {
 
   // Add a previously bonded device to the peer cache and set it up for
   // auto-connect procedures.
-  bool AddBondedPeer(PeerId identifier, const common::DeviceAddress& address,
+  bool AddBondedPeer(PeerId identifier, const DeviceAddress& address,
                      const sm::PairingData& le_bond_data,
                      const std::optional<sm::LTK>& link_key);
 
@@ -170,8 +170,7 @@ class Adapter final {
   void SetLocalName(std::string name, hci::StatusCallback callback);
 
   // Sets the Device Class of this adapter.
-  void SetDeviceClass(common::DeviceClass dev_class,
-                      hci::StatusCallback callback);
+  void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback);
 
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,

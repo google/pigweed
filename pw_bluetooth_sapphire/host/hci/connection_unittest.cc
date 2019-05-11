@@ -12,11 +12,6 @@ namespace bt {
 namespace hci {
 namespace {
 
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::HostError;
-using common::UInt128;
-
 constexpr ConnectionHandle kTestHandle = 0x0001;
 const LEConnectionParameters kTestParams(1, 1, 1);
 const DeviceAddress kLEAddress1(DeviceAddress::Type::kLEPublic,

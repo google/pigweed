@@ -13,26 +13,20 @@ namespace bt {
 namespace att {
 namespace {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::ContainersEqual;
-using common::DynamicByteBuffer;
-using common::PeerId;
-
 constexpr Handle kTestRangeStart = 1;
 constexpr Handle kTestRangeEnd = 10;
 
-constexpr common::UUID kTestType1((uint16_t)1);
-constexpr common::UUID kTestType2((uint16_t)2);
-constexpr common::UUID kTestType3((uint16_t)3);
+constexpr UUID kTestType1((uint16_t)1);
+constexpr UUID kTestType2((uint16_t)2);
+constexpr UUID kTestType3((uint16_t)3);
 
 const AccessRequirements kAllowed(false, false, false);
 const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
                                          false);
 
 // Values with different lengths
-const auto kTestValue1 = common::CreateStaticByteBuffer('x', 'x');
-const auto kTestValue2 = common::CreateStaticByteBuffer('x', 'x', 'x');
+const auto kTestValue1 = CreateStaticByteBuffer('x', 'x');
+const auto kTestValue2 = CreateStaticByteBuffer('x', 'x', 'x');
 
 // Returns the handles of each attribute visited by advancing |iter| until the
 // end.

@@ -5,11 +5,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 TEST(ByteBufferTest, StaticByteBuffer) {
@@ -155,7 +153,7 @@ TEST(ByteBufferTest, MutableBufferViewTest) {
 }
 
 TEST(ByteBufferTest, Copy) {
-  auto buffer = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
   BufferView empty_buffer;
 
   // Create a large enough buffer.
@@ -196,7 +194,7 @@ TEST(ByteBufferTest, Copy) {
 }
 
 TEST(ByteBufferTest, View) {
-  auto buffer = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
   BufferView empty_buffer;
 
   BufferView view = empty_buffer.view();
@@ -222,7 +220,7 @@ TEST(ByteBufferTest, View) {
 }
 
 TEST(ByteBufferTest, MutableView) {
-  auto buffer = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
   MutableBufferView empty_buffer;
 
   MutableBufferView view;
@@ -254,31 +252,29 @@ TEST(ByteBufferTest, MutableView) {
 }
 
 TEST(ByteBufferTest, ByteBufferEqualityFail) {
-  const auto kData0 = common::CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = common::CreateStaticByteBuffer('F', 'o', 'o');
+  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
+  const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');
   EXPECT_FALSE(kData0 == kData1);
 }
 
 TEST(ByteBufferTest, ByteBufferEqualitySuccess) {
-  const auto kData0 = common::CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
+  const auto kData1 = CreateStaticByteBuffer('T', 'e', 's', 't');
   EXPECT_TRUE(kData0 == kData1);
 }
 
 TEST(ByteBufferTest, MutableByteBufferWrite) {
-  const auto kData0 = common::CreateStaticByteBuffer('T', 'e', 's', 't');
-  const auto kData1 = common::CreateStaticByteBuffer('F', 'o', 'o');
+  const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
+  const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');
 
-  auto buffer =
-      common::CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  auto buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
 
   buffer.Write(kData0);
   EXPECT_EQ("TestXXXX", buffer.AsString());
 
   // Write from raw pointer.
-  buffer =
-      common::CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   buffer.Write(kData0.data(), kData0.size());
   EXPECT_EQ("TestXXXX", buffer.AsString());
 
@@ -291,8 +287,7 @@ TEST(ByteBufferTest, MutableByteBufferWrite) {
   EXPECT_EQ("TFoFooXX", buffer.AsString());
 
   // Writing zero bytes should have no effect.
-  buffer =
-      common::CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
+  buffer = CreateStaticByteBuffer('X', 'X', 'X', 'X', 'X', 'X', 'X', 'X');
   buffer.Write(kData1.data(), 0u);
   buffer.Write(nullptr, 0u);  // Passing nullptr is OK when size is 0
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
@@ -304,7 +299,7 @@ TEST(ByteBufferTest, MutableByteBufferWrite) {
 }
 
 TEST(ByteBufferTest, AsString) {
-  auto buffer = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto buffer = CreateStaticByteBuffer('T', 'e', 's', 't');
   EXPECT_EQ("Test", buffer.AsString());
 }
 
@@ -315,5 +310,4 @@ TEST(ByteBufferTest, Fill) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

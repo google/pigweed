@@ -10,14 +10,6 @@
 namespace bt {
 namespace testing {
 
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::DynamicByteBuffer;
-using common::LowerBits;
-using common::MutableByteBufferPtr;
-using common::StaticByteBuffer;
-using common::UpperBits;
-
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
@@ -26,10 +18,10 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
       LowerBits(hci::kEnableAllPacketTypes),  // allowable packet types
       UpperBits(hci::kEnableAllPacketTypes),  // allowable packet types
-      0x02,                                  // page_scan_repetition_mode (R2)
-      0x00,                                  // reserved
-      0x00, 0x00,                            // clock_offset
-      0x00                                   // allow_role_switch (don't)
+      0x02,                                   // page_scan_repetition_mode (R2)
+      0x00,                                   // reserved
+      0x00, 0x00,                             // clock_offset
+      0x00                                    // allow_role_switch (don't)
       ));
 }
 

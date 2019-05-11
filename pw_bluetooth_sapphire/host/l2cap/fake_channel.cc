@@ -27,11 +27,11 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id,
   ZX_DEBUG_ASSERT(handle_);
 }
 
-void FakeChannel::Receive(const common::ByteBuffer& data) {
+void FakeChannel::Receive(const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(!!rx_cb_ == !!dispatcher_);
 
   auto pdu = fragmenter_.BuildBasicFrame(id(), data);
-  auto sdu = std::make_unique<common::DynamicByteBuffer>(pdu.length());
+  auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   if (dispatcher_) {
     async::PostTask(dispatcher_,
@@ -109,7 +109,7 @@ void FakeChannel::SignalLinkError() {
   }
 }
 
-bool FakeChannel::Send(common::ByteBufferPtr sdu) {
+bool FakeChannel::Send(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
 
   if (!send_cb_)

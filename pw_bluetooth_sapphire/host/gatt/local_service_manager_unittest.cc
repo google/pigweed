@@ -16,8 +16,8 @@ namespace {
 
 constexpr PeerId kTestPeerId(1);
 constexpr PeerId kTestPeerId2(2);
-constexpr common::UUID kTestType16((uint16_t)0xdead);
-constexpr common::UUID kTestType32((uint32_t)0xdeadbeef);
+constexpr UUID kTestType16((uint16_t)0xdead);
+constexpr UUID kTestType32((uint32_t)0xdeadbeef);
 
 // The first characteristic value attribute of the first service has handle
 // number 3.
@@ -32,7 +32,7 @@ inline att::AccessRequirements AllowedNoSecurity() {
 }
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const common::ByteBuffer&,
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
                      const WriteResponder&) {}
 void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id,
                    bool notify, bool indicate) {}
@@ -69,8 +69,8 @@ TEST(GATT_LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0001, iter->start_handle());
   EXPECT_EQ(0x0001, iter->end_handle());
   EXPECT_EQ(types::kPrimaryService, iter->group_type());
-  EXPECT_TRUE(common::ContainersEqual(
-      common::CreateStaticByteBuffer(0xad, 0xde), iter->decl_value()));
+  EXPECT_TRUE(
+      ContainersEqual(CreateStaticByteBuffer(0xad, 0xde), iter->decl_value()));
 
   iter++;
 
@@ -80,10 +80,9 @@ TEST(GATT_LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0002, iter->start_handle());
   EXPECT_EQ(0x0002, iter->end_handle());
   EXPECT_EQ(types::kSecondaryService, iter->group_type());
-  EXPECT_TRUE(common::ContainersEqual(
-      common::CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00,
-                                     0x80, 0x00, 0x10, 0x00, 0x00, 0xef, 0xbe,
-                                     0xad, 0xde),
+  EXPECT_TRUE(ContainersEqual(
+      CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde),
       iter->decl_value()));
 }
 
@@ -111,7 +110,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic) {
 
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  constexpr common::UUID kTestChrcType((uint16_t)0xabcd);
+  constexpr UUID kTestChrcType((uint16_t)0xabcd);
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
@@ -140,13 +139,13 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic) {
   EXPECT_TRUE(attrs[1].value());
 
   // clang-format off
-  const auto kDeclValue = common::CreateStaticByteBuffer(
+  const auto kDeclValue = CreateStaticByteBuffer(
       0x02,        // properties
       0x03, 0x00,  // value handle
       0xcd, 0xab   // UUID
   );
   // clang-format on
-  EXPECT_TRUE(common::ContainersEqual(kDeclValue, *attrs[1].value()));
+  EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
   EXPECT_EQ(srvc_handle + 2, attrs[2].handle());
@@ -163,7 +162,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
 
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  constexpr common::UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
@@ -191,14 +190,14 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue = common::CreateStaticByteBuffer(
-      0x02,        // properties
-      0x03, 0x00,  // value handle
+  const auto kDeclValue =
+      CreateStaticByteBuffer(0x02,        // properties
+                             0x03, 0x00,  // value handle
 
-      // The 32-bit UUID will be stored as 128-bit
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-      0xef, 0xbe, 0xad, 0xde);
-  EXPECT_TRUE(common::ContainersEqual(kDeclValue, *attrs[1].value()));
+                             // The 32-bit UUID will be stored as 128-bit
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde);
+  EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
   EXPECT_EQ(srvc_handle + 2, attrs[2].handle());
@@ -215,9 +214,9 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
 
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  common::UUID kTestChrcType;
-  EXPECT_TRUE(common::StringToUuid("00112233-4455-6677-8899-AABBCCDDEEFF",
-                                   &kTestChrcType));
+  UUID kTestChrcType;
+  EXPECT_TRUE(
+      StringToUuid("00112233-4455-6677-8899-AABBCCDDEEFF", &kTestChrcType));
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
@@ -245,14 +244,14 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue = common::CreateStaticByteBuffer(
-      0x02,        // properties
-      0x03, 0x00,  // value handle
+  const auto kDeclValue =
+      CreateStaticByteBuffer(0x02,        // properties
+                             0x03, 0x00,  // value handle
 
-      // 128-bit UUID
-      0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44,
-      0x33, 0x22, 0x11, 0x00);
-  EXPECT_TRUE(common::ContainersEqual(kDeclValue, *attrs[1].value()));
+                             // 128-bit UUID
+                             0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
+                             0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
+  EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
   EXPECT_EQ(srvc_handle + 2, attrs[2].handle());
@@ -267,7 +266,7 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
 TEST(GATT_LocalServiceManagerTest, ExtPropSetSuccess) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
@@ -285,8 +284,8 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetSuccess) {
   const auto& attrs = grouping.attributes();
   ASSERT_EQ(4u, attrs.size());
   EXPECT_EQ(types::kCharacteristicExtProperties, attrs[3].type());
-  EXPECT_TRUE(common::ContainersEqual(  // Reliable Write property
-      common::CreateStaticByteBuffer(0x01, 0x00), *attrs[3].value()));
+  EXPECT_TRUE(ContainersEqual(  // Reliable Write property
+      CreateStaticByteBuffer(0x01, 0x00), *attrs[3].value()));
 }
 
 // tests that the extended properties descriptor cannot be set externally
@@ -294,8 +293,8 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetFailure) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x2900);  // UUID for Ext Prop
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x2900);  // UUID for Ext Prop
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
   auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
@@ -311,8 +310,8 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristicSorted) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kType16((uint16_t)0xbeef);
-  constexpr common::UUID kType128((uint32_t)0xdeadbeef);
+  constexpr UUID kType16((uint16_t)0xbeef);
+  constexpr UUID kType128((uint32_t)0xdeadbeef);
 
   constexpr IdType kChrcId0 = 0;
   constexpr uint8_t kChrcProps0 = 0;
@@ -358,8 +357,8 @@ TEST(GATT_LocalServiceManagerTest, RegisterDescriptor) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
   auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
@@ -385,7 +384,7 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
@@ -402,8 +401,8 @@ TEST(GATT_LocalServiceManagerTest, DuplicateDescIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
@@ -423,8 +422,8 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcAndDescIds) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
 
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
@@ -441,7 +440,7 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcAndDescIds) {
 TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
@@ -470,7 +469,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
 
 TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
 
   // Characteristic is readable but doesn't have the "read" property.
@@ -502,11 +501,11 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
 
 TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
@@ -536,7 +535,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
   att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
   auto result_cb = [&ecode, &kTestValue](auto code, const auto& value) {
     ecode = code;
-    EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
+    EXPECT_TRUE(ContainersEqual(kTestValue, value));
   };
 
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
@@ -548,9 +547,9 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
 TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
-  const common::BufferView kTestValue;
+  const BufferView kTestValue;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
   service->AddCharacteristic(
@@ -578,9 +577,9 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
 
 TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
-  const common::BufferView kTestValue;
+  const BufferView kTestValue;
 
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
@@ -612,11 +611,11 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
 
 TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
   constexpr IdType kChrcId = 5;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
@@ -634,7 +633,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kChrcId, id);
     EXPECT_EQ(kOffset, offset);
-    EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
+    EXPECT_TRUE(ContainersEqual(kTestValue, value));
     responder(att::ErrorCode::kNoError);
   };
 
@@ -659,8 +658,8 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
 TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
   constexpr IdType kChrcId = 0;
   constexpr IdType kDescId = 1;
 
@@ -692,13 +691,13 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
 
 TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
   constexpr IdType kChrcId = 0;
   constexpr IdType kDescId = 1;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   auto kReadReqs = AllowedNoSecurity();
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
@@ -731,7 +730,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
   att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
   auto result_cb = [&ecode, &kTestValue](auto code, const auto& value) {
     ecode = code;
-    EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
+    EXPECT_TRUE(ContainersEqual(kTestValue, value));
   };
 
   EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
@@ -743,11 +742,11 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
 TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   LocalServiceManager mgr;
   const att::AccessRequirements kReadReqs, kWriteReqs, kUpdateReqs;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
   constexpr IdType kChrcId = 0;
   constexpr IdType kDescId = 1;
-  const common::BufferView kTestValue;
+  const BufferView kTestValue;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
   auto chrc = std::make_unique<Characteristic>(
@@ -776,13 +775,13 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
 
 TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
   LocalServiceManager mgr;
-  constexpr common::UUID kChrcType16((uint16_t)0x1234);
-  constexpr common::UUID kDescType16((uint16_t)0x5678);
+  constexpr UUID kChrcType16((uint16_t)0x1234);
+  constexpr UUID kDescType16((uint16_t)0x5678);
   constexpr IdType kChrcId = 0;
   constexpr IdType kDescId = 1;
   constexpr uint16_t kOffset = 10;
 
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   const att::AccessRequirements kReadReqs, kUpdateReqs;
   auto kWriteReqs = AllowedNoSecurity();
@@ -802,7 +801,7 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
     EXPECT_EQ(kOffset, offset);
-    EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
+    EXPECT_TRUE(ContainersEqual(kTestValue, value));
     responder(att::ErrorCode::kNoError);
   };
 
@@ -854,7 +853,7 @@ TEST(GATT_LocalServiceManagerTest, ServiceChanged) {
 
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  constexpr common::UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   service->AddCharacteristic(
@@ -955,8 +954,8 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
     auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
     uint16_t value = htole16(ccc_value);
-    return attr->WriteAsync(
-        peer_id, 0u, common::BufferView(&value, sizeof(value)), result_cb);
+    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)),
+                            result_cb);
   }
 };
 

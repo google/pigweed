@@ -17,7 +17,6 @@
 #include "src/lib/fxl/strings/string_view.h"
 
 namespace bt {
-namespace common {
 
 class BufferView;
 class MutableBufferView;
@@ -213,7 +212,7 @@ class StaticByteBuffer : public MutableByteBuffer {
 // way one can construct a StaticByteBuffer without hard-coding the size of the
 // buffer like so:
 //
-//   auto buffer = common::CreateStaticByteBuffer(0x01, 0x02, 0x03);
+//   auto buffer = CreateStaticByteBuffer(0x01, 0x02, 0x03);
 //
 template <typename... T>
 StaticByteBuffer<sizeof...(T)> CreateStaticByteBuffer(T... bytes) {
@@ -326,7 +325,6 @@ class MutableBufferView final : public MutableByteBuffer {
   uint8_t* bytes_;
 };
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_

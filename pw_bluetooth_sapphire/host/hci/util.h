@@ -22,21 +22,20 @@ std::string HCIVersionToString(hci::HCIVersion version);
 // Returns a user-friendly string representation of |status|.
 std::string StatusCodeToString(hci::StatusCode code);
 
-// Constructs a common::DeviceAddress structure from the contents of the given
+// Constructs a DeviceAddress structure from the contents of the given
 // advertising report. Returns false if the report contain an invalid value.
 // The address will be returned in the |out_address| parameter. The value of
 // |out_resolved| will indicate whether or not this address corresponds to a
 // resolved RPA (Vol 2, Part E, 7.7.65.2).
 bool DeviceAddressFromAdvReport(const hci::LEAdvertisingReportData& report,
-                                common::DeviceAddress* out_address,
-                                bool* out_resolved);
+                                DeviceAddress* out_address, bool* out_resolved);
 
 // Convert HCI LE device address type to our stack type.
-common::DeviceAddress::Type AddressTypeFromHCI(LEAddressType type);
-common::DeviceAddress::Type AddressTypeFromHCI(LEPeerAddressType type);
+DeviceAddress::Type AddressTypeFromHCI(LEAddressType type);
+DeviceAddress::Type AddressTypeFromHCI(LEPeerAddressType type);
 
 // Convert our stack LE address type to HCI type. |type| cannot be kBREDR.
-LEAddressType AddressTypeToHCI(common::DeviceAddress::Type type);
+LEAddressType AddressTypeToHCI(DeviceAddress::Type type);
 
 }  // namespace hci
 }  // namespace bt

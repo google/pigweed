@@ -89,8 +89,7 @@ class Client {
   //
   // Reports the status of the procedure and the resulting value in |callback|.
   // Returns an empty buffer if the status is an error.
-  using ReadCallback =
-      fit::function<void(att::Status, const common::ByteBuffer&)>;
+  using ReadCallback = fit::function<void(att::Status, const ByteBuffer&)>;
   virtual void ReadRequest(att::Handle handle, ReadCallback callback) = 0;
 
   // Sends an ATT Read Blob request with the requested attribute |handle| and
@@ -107,19 +106,19 @@ class Client {
   // Reports the status of the procedure in |callback|.
   // HostError::kPacketMalformed is returned if |value| is too large to write in
   // a single ATT request.
-  virtual void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
+  virtual void WriteRequest(att::Handle handle, const ByteBuffer& value,
                             att::StatusCallback callback) = 0;
 
   // Sends an ATT Write Command with the requested |handle| and |value|. This
   // should only be used with characteristics that support the "Write Without
   // Response" property.
   virtual void WriteWithoutResponse(att::Handle handle,
-                                    const common::ByteBuffer& value) = 0;
+                                    const ByteBuffer& value) = 0;
 
   // Assigns a callback that will be called when a notification or indication
   // PDU is received.
   using NotificationCallback = fit::function<void(
-      bool indication, att::Handle handle, const common::ByteBuffer& value)>;
+      bool indication, att::Handle handle, const ByteBuffer& value)>;
   virtual void SetNotificationHandler(NotificationCallback handler) = 0;
 };
 

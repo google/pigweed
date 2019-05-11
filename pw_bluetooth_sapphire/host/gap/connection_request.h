@@ -24,7 +24,7 @@ class ConnectionRequest final {
   using OnComplete = fit::function<void(hci::Status, ConnectionRef)>;
   using RefFactory = fit::function<ConnectionRef()>;
 
-  ConnectionRequest(const common::DeviceAddress& addr, OnComplete&& callback)
+  ConnectionRequest(const DeviceAddress& addr, OnComplete&& callback)
       : address_(addr) {
     callbacks_.push_back(std::move(callback));
   }
@@ -40,10 +40,10 @@ class ConnectionRequest final {
       callback(status, generate_ref());
   }
 
-  common::DeviceAddress address() const { return address_; }
+  DeviceAddress address() const { return address_; }
 
  private:
-  common::DeviceAddress address_;
+  DeviceAddress address_;
   std::list<OnComplete> callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ConnectionRequest);

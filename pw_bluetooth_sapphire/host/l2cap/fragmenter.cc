@@ -48,8 +48,7 @@ Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle,
 //     2. channel -> fragmenter ->(move) HCI layer ->(move) bt-hci driver
 //     if buffering is needed:
 //       3. bt-hci driver -> transport driver
-PDU Fragmenter::BuildBasicFrame(ChannelId channel_id,
-                                const common::ByteBuffer& data,
+PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
                                 bool flushable) {
   ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
   ZX_DEBUG_ASSERT(channel_id);

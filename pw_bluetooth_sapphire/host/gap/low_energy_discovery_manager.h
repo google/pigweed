@@ -85,10 +85,10 @@ class PeerCache;
 //
 //       // Only scan for peers advertising the "Heart Rate" GATT Service.
 //       uint16_t uuid = 0x180d;
-//       session->filter()->set_service_uuids({bt::common::UUID(uuid)});
+//       session->filter()->set_service_uuids({bt::UUID(uuid)});
 //       session->SetResultCallback([](const
 //       bt::hci::LowEnergyScanResult& result,
-//                                     const bt::common::ByteBuffer&
+//                                     const bt::ByteBuffer&
 //                                     advertising_data) {
 //         // Do stuff with |result| and |advertising_data|. (|advertising_data|
 //         // contains any received Scan Response data as well).
@@ -224,7 +224,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // hci::LowEnergyScanner::Delegate override:
   void OnPeerFound(const hci::LowEnergyScanResult& result,
-                   const common::ByteBuffer& data) override;
+                   const ByteBuffer& data) override;
   void OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) override;
 
   // Called by hci::LowEnergyScanner

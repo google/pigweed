@@ -8,7 +8,6 @@
 #include <zircon/assert.h>
 
 namespace bt {
-namespace common {
 
 void RunOrPost(fit::closure task, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(task);
@@ -21,5 +20,4 @@ void RunOrPost(fit::closure task, async_dispatcher_t* dispatcher) {
   async::PostTask(dispatcher, std::move(task));
 }
 
-}  // namespace common
 }  // namespace bt

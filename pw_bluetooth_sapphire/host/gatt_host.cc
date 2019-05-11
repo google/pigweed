@@ -18,7 +18,7 @@ fbl::RefPtr<GattHost> GattHost::Create(std::string thrd_name) {
 }
 
 GattHost::GattHost(std::string thrd_name)
-    : bt::common::TaskDomain<GattHost>(this, std::move(thrd_name)),
+    : bt::TaskDomain<GattHost>(this, std::move(thrd_name)),
       weak_ptr_factory_(this) {
   // Initialize the profile to operate on our task runner.
   gatt_ = gatt::GATT::Create(dispatcher());
@@ -54,7 +54,7 @@ void GattHost::ShutDown() {
     remote_service_watcher_ = {};
   }
 
-  bt::common::TaskDomain<GattHost>::ScheduleCleanUp();
+  bt::TaskDomain<GattHost>::ScheduleCleanUp();
 }
 
 void GattHost::CleanUp() {

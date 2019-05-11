@@ -85,7 +85,7 @@ std::string SecurityProperties::ToString() const {
 LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)
     : security_(security), key_(key) {}
 
-Key::Key(const SecurityProperties& security, const common::UInt128& value)
+Key::Key(const SecurityProperties& security, const UInt128& value)
     : security_(security), value_(value) {}
 
 }  // namespace sm

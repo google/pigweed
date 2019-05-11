@@ -13,9 +13,6 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-using common::BufferView;
-using common::ByteBuffer;
-
 bool BrEdrCommandHandler::Response::ParseReject(
     const ByteBuffer& rej_payload_buf) {
   auto& rej_payload = rej_payload_buf.As<CommandRejectPayload>();
@@ -47,8 +44,8 @@ void BrEdrCommandHandler::ConnectionResponse::Decode(
 
 void BrEdrCommandHandler::ConfigurationResponse::Decode(
     const ByteBuffer& payload_buf) {
-  common::PacketView<PayloadT> config_rsp(
-      &payload_buf, payload_buf.size() - sizeof(PayloadT));
+  PacketView<PayloadT> config_rsp(&payload_buf,
+                                  payload_buf.size() - sizeof(PayloadT));
   local_cid_ = letoh16(config_rsp.header().src_cid);
   flags_ = letoh16(config_rsp.header().flags);
   result_ =
@@ -104,10 +101,10 @@ BrEdrCommandHandler::ConfigurationResponder::ConfigurationResponder(
 void BrEdrCommandHandler::ConfigurationResponder::Send(
     ChannelId remote_cid, uint16_t flags, ConfigurationResult result,
     const ByteBuffer& data) {
-  common::DynamicByteBuffer config_rsp_buf(
-      sizeof(ConfigurationResponsePayload) + data.size());
-  common::MutablePacketView<ConfigurationResponsePayload> config_rsp(
-      &config_rsp_buf, data.size());
+  DynamicByteBuffer config_rsp_buf(sizeof(ConfigurationResponsePayload) +
+                                   data.size());
+  MutablePacketView<ConfigurationResponsePayload> config_rsp(&config_rsp_buf,
+                                                             data.size());
   config_rsp.mutable_header()->src_cid = htole16(remote_cid);
   config_rsp.mutable_header()->flags = htole16(flags);
   config_rsp.mutable_header()->result =
@@ -159,9 +156,9 @@ void BrEdrCommandHandler::InformationResponder::Send(InformationResult result,
                                                      const ByteBuffer& data) {
   constexpr size_t kMaxPayloadLength =
       sizeof(InformationResponsePayload) + sizeof(uint64_t);
-  common::StaticByteBuffer<kMaxPayloadLength> info_rsp_buf;
-  common::MutablePacketView<InformationResponsePayload> info_rsp_view(
-      &info_rsp_buf, data.size());
+  StaticByteBuffer<kMaxPayloadLength> info_rsp_buf;
+  MutablePacketView<InformationResponsePayload> info_rsp_view(&info_rsp_buf,
+                                                              data.size());
 
   info_rsp_view.mutable_header()->type =
       static_cast<InformationType>(htole16(type_));
@@ -193,10 +190,10 @@ bool BrEdrCommandHandler::SendConfigurationRequest(
   auto on_config_rsp =
       BuildResponseHandler<ConfigurationResponse>(std::move(cb));
 
-  common::DynamicByteBuffer config_req_buf(sizeof(ConfigurationRequestPayload) +
-                                           options.size());
-  common::MutablePacketView<ConfigurationRequestPayload> config_req(
-      &config_req_buf, options.size());
+  DynamicByteBuffer config_req_buf(sizeof(ConfigurationRequestPayload) +
+                                   options.size());
+  MutablePacketView<ConfigurationRequestPayload> config_req(&config_req_buf,
+                                                            options.size());
   config_req.mutable_header()->dst_cid = htole16(remote_cid);
   config_req.mutable_header()->flags = htole16(flags);
   config_req.mutable_payload_data().Write(options);
@@ -282,7 +279,7 @@ void BrEdrCommandHandler::ServeConfigurationRequest(
       return;
     }
 
-    common::PacketView<ConfigurationRequestPayload> config_req(
+    PacketView<ConfigurationRequestPayload> config_req(
         &request_payload,
         request_payload.size() - sizeof(ConfigurationRequestPayload));
     const auto local_cid =

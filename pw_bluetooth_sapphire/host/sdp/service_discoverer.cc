@@ -12,7 +12,7 @@ namespace sdp {
 ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
 
 ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(
-    const common::UUID& uuid, std::unordered_set<AttributeId> attributes,
+    const UUID& uuid, std::unordered_set<AttributeId> attributes,
     ResultCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   Search s;
@@ -40,7 +40,7 @@ bool ServiceDiscoverer::RemoveSearch(SearchId id) {
   return searches_.erase(id);
 }
 
-bool ServiceDiscoverer::StartServiceDiscovery(common::PeerId peer_id,
+bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id,
                                               std::unique_ptr<Client> client) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   // If discovery is already happening on this peer, then we can't start it
@@ -78,8 +78,7 @@ bool ServiceDiscoverer::StartServiceDiscovery(common::PeerId peer_id,
 
 size_t ServiceDiscoverer::search_count() const { return searches_.size(); }
 
-void ServiceDiscoverer::FinishPeerSearch(common::PeerId peer_id,
-                                         SearchId search_id) {
+void ServiceDiscoverer::FinishPeerSearch(PeerId peer_id, SearchId search_id) {
   auto it = sessions_.find(peer_id);
   if (it == sessions_.end()) {
     bt_log(INFO, "sdp", "Couldn't find session to finish search");

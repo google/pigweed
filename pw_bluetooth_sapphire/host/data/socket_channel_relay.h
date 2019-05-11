@@ -103,7 +103,7 @@ class SocketChannelRelay final {
   void OnSocketClosed(zx_status_t status);
 
   // Callbacks for ChannelT events.
-  void OnChannelDataReceived(common::ByteBufferPtr sdu);
+  void OnChannelDataReceived(ByteBufferPtr sdu);
   void OnChannelClosed();
 
   // Copies any data currently available on |socket_| to |channel_|. Does not
@@ -147,9 +147,9 @@ class SocketChannelRelay final {
   // SDU). This comes, however, at the cost of higher memory usage when the
   // number of SDUs is small. (libc++ uses a minimum of 4KB per deque.)
   //
-  // TODO(NET-1478): Switch to common::LinkedList.
+  // TODO(NET-1478): Switch to LinkedList.
   // TODO(NET-1476): We should set an upper bound on the size of this queue.
-  std::deque<common::ByteBufferPtr> socket_write_queue_;
+  std::deque<ByteBufferPtr> socket_write_queue_;
 
   const fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<SocketChannelRelay> weak_ptr_factory_;  // Keep last.

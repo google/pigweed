@@ -64,7 +64,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl,
       if (!fidl.data.is_uuid()) {
         return false;
       }
-      bt::common::UUID uuid;
+      bt::UUID uuid;
       bool success = StringToUuid(fidl.data.uuid(), &uuid);
       if (!success) {
         return false;
@@ -154,7 +154,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
     }
     case bt::sdp::DataElement::Type::kUuid: {
       elem->type = DataElementType::UUID;
-      auto uuid = in->Get<bt::common::UUID>();
+      auto uuid = in->Get<bt::UUID>();
       ZX_DEBUG_ASSERT(uuid);
       elem->data.uuid() = uuid->ToString();
       return elem;
@@ -202,7 +202,7 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(
   if (in->type() != bt::sdp::DataElement::Type::kSequence) {
     return nullptr;
   }
-  const auto protocol_uuid = in->At(0)->Get<bt::common::UUID>();
+  const auto protocol_uuid = in->At(0)->Get<bt::UUID>();
   if (!protocol_uuid) {
     return nullptr;
   }
@@ -227,7 +227,7 @@ fidlbredr::ProfileDescriptorPtr DataElementToProfileDescriptor(
   if (!profile_elem) {
     return nullptr;
   }
-  const auto profile_uuid = profile_elem->Get<bt::common::UUID>();
+  const auto profile_uuid = profile_elem->Get<bt::UUID>();
   if (!profile_uuid) {
     return nullptr;
   }
@@ -271,7 +271,7 @@ void AddProtocolDescriptorList(
            fidl::ToUnderlying(descriptor.protocol),
            protocol_params.ToString().c_str());
     rec->AddProtocolDescriptor(
-        id, bt::common::UUID(static_cast<uint16_t>(descriptor.protocol)),
+        id, bt::UUID(static_cast<uint16_t>(descriptor.protocol)),
         std::move(protocol_params));
   }
 }
@@ -304,12 +304,12 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   ZX_DEBUG_ASSERT(sdp);
 
   bt::sdp::ServiceRecord rec;
-  std::vector<bt::common::UUID> classes;
+  std::vector<bt::UUID> classes;
   for (auto& uuid_str : definition.service_class_uuids) {
-    bt::common::UUID uuid;
+    bt::UUID uuid;
     bt_log(SPEW, "profile_server", "Setting Service Class UUID %s",
            uuid_str.c_str());
-    bool success = bt::common::StringToUuid(uuid_str, &uuid);
+    bool success = bt::StringToUuid(uuid_str, &uuid);
     ZX_DEBUG_ASSERT(success);
     classes.emplace_back(std::move(uuid));
   }
@@ -329,7 +329,7 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   for (const auto& profile : definition.profile_descriptors) {
     bt_log(SPEW, "profile_server", "Adding Profile %#x v%d.%d",
            profile.profile_id, profile.major_version, profile.minor_version);
-    rec.AddProfile(bt::common::UUID(uint16_t(profile.profile_id)),
+    rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)),
                    profile.major_version, profile.minor_version);
   }
 
@@ -386,7 +386,7 @@ void ProfileServer::RemoveService(uint64_t service_id) {
 void ProfileServer::AddSearch(
     fidlbredr::ServiceClassProfileIdentifier service_uuid,
     std::vector<uint16_t> attr_ids) {
-  bt::common::UUID search_uuid(static_cast<uint32_t>(service_uuid));
+  bt::UUID search_uuid(static_cast<uint32_t>(service_uuid));
   std::unordered_set<bt::sdp::AttributeId> attributes(attr_ids.begin(),
                                                       attr_ids.end());
   if (!attr_ids.empty()) {
@@ -451,7 +451,7 @@ void ProfileServer::OnChannelConnected(
 }
 
 void ProfileServer::OnServiceFound(
-    bt::common::PeerId peer_id,
+    bt::PeerId peer_id,
     const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes) {
   // Convert ProfileDescriptor Attribute
   auto it = attributes.find(bt::sdp::kBluetoothProfileDescriptorList);

@@ -4,12 +4,12 @@
 
 #include "basic_mode_rx_engine.h"
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
-#include "gtest/gtest.h"
 
 namespace bt {
 namespace l2cap {
@@ -20,18 +20,18 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(L2CAP_BasicModeRxEngineTest, ProcessPduReturnsSdu) {
-  const auto payload = common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto payload = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto sdu = BasicModeRxEngine().ProcessPdu(
       Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload));
   ASSERT_TRUE(sdu);
-  EXPECT_TRUE(common::ContainersEqual(payload, *sdu));
+  EXPECT_TRUE(ContainersEqual(payload, *sdu));
 }
 
 TEST(L2CAP_BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
-  const auto byte_buf = common::CreateStaticByteBuffer(
-      0x01, 0x00, 0x04, 0x00,  // ACL data header
-      0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
-  );
+  const auto byte_buf =
+      CreateStaticByteBuffer(0x01, 0x00, 0x04, 0x00,  // ACL data header
+                             0x00, 0x00, 0xFF, 0xFF   // Basic L2CAP header
+      );
   auto hci_packet =
       hci::ACLDataPacket::New(byte_buf.size() - sizeof(hci::ACLDataHeader));
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);
@@ -46,8 +46,7 @@ TEST(L2CAP_BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   ASSERT_EQ(1u, pdu.fragment_count());
   ASSERT_EQ(0u, pdu.length());
 
-  const common::ByteBufferPtr sdu =
-      BasicModeRxEngine().ProcessPdu(std::move(pdu));
+  const ByteBufferPtr sdu = BasicModeRxEngine().ProcessPdu(std::move(pdu));
   ASSERT_TRUE(sdu);
   EXPECT_EQ(0u, sdu->size());
 }

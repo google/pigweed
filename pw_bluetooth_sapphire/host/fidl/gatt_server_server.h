@@ -51,7 +51,7 @@ class GattServerServer
 
   // Called when a remote device issues a write request to one of our services.
   void OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
-                      uint16_t offset, const bt::common::ByteBuffer& value,
+                      uint16_t offset, const bt::ByteBuffer& value,
                       bt::gatt::WriteResponder responder);
 
   // Called when a remote device has configured notifications or indications on

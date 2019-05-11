@@ -25,11 +25,11 @@ using CharacteristicPtr = std::unique_ptr<Characteristic>;
 // characteristics, includes, etc and is not intended to carry service state.
 class Service final {
  public:
-  Service(bool primary, const common::UUID& type);
+  Service(bool primary, const UUID& type);
   ~Service() = default;
 
   bool primary() const { return primary_; }
-  const common::UUID& type() const { return type_; }
+  const UUID& type() const { return type_; }
 
   // The list of characteristics that have been added to this service.
   const std::vector<CharacteristicPtr>& characteristics() const {
@@ -50,7 +50,7 @@ class Service final {
 
  private:
   bool primary_;
-  common::UUID type_;
+  UUID type_;
   std::vector<CharacteristicPtr> characteristics_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Service);
@@ -65,7 +65,7 @@ using DescriptorPtr = std::unique_ptr<Descriptor>;
 // composition/structure of a characteristic and is not intended to carry state.
 class Characteristic final {
  public:
-  Characteristic(IdType id, const common::UUID& type, uint8_t properties,
+  Characteristic(IdType id, const UUID& type, uint8_t properties,
                  uint16_t extended_properties,
                  const att::AccessRequirements& read_permissions,
                  const att::AccessRequirements& write_permissions,
@@ -73,7 +73,7 @@ class Characteristic final {
   ~Characteristic() = default;
 
   IdType id() const { return id_; }
-  const common::UUID& type() const { return type_; }
+  const UUID& type() const { return type_; }
   uint8_t properties() const { return properties_; }
   uint16_t extended_properties() const { return extended_properties_; }
 
@@ -102,7 +102,7 @@ class Characteristic final {
 
  private:
   IdType id_;
-  common::UUID type_;
+  UUID type_;
   uint8_t properties_;
   uint16_t extended_properties_;
   att::AccessRequirements read_permissions_;
@@ -118,13 +118,13 @@ class Characteristic final {
 // to carry state.
 class Descriptor final {
  public:
-  Descriptor(IdType id, const common::UUID& type,
+  Descriptor(IdType id, const UUID& type,
              const att::AccessRequirements& read_permissions,
              const att::AccessRequirements& write_permissions);
   ~Descriptor() = default;
 
   IdType id() const { return id_; }
-  const common::UUID& type() const { return type_; }
+  const UUID& type() const { return type_; }
 
   const att::AccessRequirements& read_permissions() const {
     return read_permissions_;
@@ -136,7 +136,7 @@ class Descriptor final {
 
  private:
   IdType id_;
-  common::UUID type_;
+  UUID type_;
   att::AccessRequirements read_permissions_;
   att::AccessRequirements write_permissions_;
 

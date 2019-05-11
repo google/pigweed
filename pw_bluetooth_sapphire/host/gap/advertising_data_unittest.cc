@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
@@ -25,7 +24,7 @@ constexpr char kId3AsString[] = "12341234-0000-1000-8000-00805f9b34fb";
 constexpr size_t kRandomDataSize = 100;
 
 TEST(GAP_AdvertisingDataTest, ReaderEmptyData) {
-  common::BufferView empty;
+  BufferView empty;
   AdvertisingDataReader reader(empty);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
@@ -41,11 +40,11 @@ TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
   data.AddURI("https://abc.xyz");
 
-  auto bytes = common::CreateStaticByteBuffer(0x0B, 0x24, 0x17, '/', '/', 'a',
-                                              'b', 'c', '.', 'x', 'y', 'z');
+  auto bytes = CreateStaticByteBuffer(0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c',
+                                      '.', 'x', 'y', 'z');
 
   EXPECT_EQ(bytes.size(), data.CalculateBlockSize());
-  common::DynamicByteBuffer block(data.CalculateBlockSize());
+  DynamicByteBuffer block(data.CalculateBlockSize());
   data.WriteBlock(&block);
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
@@ -54,36 +53,35 @@ TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
   AdvertisingData data;
   data.AddURI("flubs:xyz");
 
-  auto bytes = common::CreateStaticByteBuffer(0x0B, 0x24, 0x01, 'f', 'l', 'u',
-                                              'b', 's', ':', 'x', 'y', 'z');
+  auto bytes = CreateStaticByteBuffer(0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's',
+                                      ':', 'x', 'y', 'z');
 
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
-  common::DynamicByteBuffer block(block_size);
+  DynamicByteBuffer block(block_size);
   data.WriteBlock(&block);
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
 TEST(GAP_AdvertisingDataTest, CompressServiceUUIDs) {
   AdvertisingData data;
-  data.AddServiceUuid(common::UUID(kId1As16));
-  data.AddServiceUuid(common::UUID(kId2As16));
+  data.AddServiceUuid(UUID(kId1As16));
+  data.AddServiceUuid(UUID(kId2As16));
 
   EXPECT_EQ(1 + 1 + (sizeof(uint16_t) * 2), data.CalculateBlockSize());
 
-  auto bytes =
-      common::CreateStaticByteBuffer(0x05, 0x02, 0x12, 0x02, 0x22, 0x11);
+  auto bytes = CreateStaticByteBuffer(0x05, 0x02, 0x12, 0x02, 0x22, 0x11);
 
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
-  common::DynamicByteBuffer block(block_size);
+  DynamicByteBuffer block(block_size);
   data.WriteBlock(&block);
 
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
 TEST(GAP_AdvertisingDataTest, ParseBlock) {
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs
       0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
       // Incomplete list of 32-bit UUIDs
@@ -129,7 +127,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDL) {
   ASSERT_EQ(2u, data.service_uuids().size());
   EXPECT_EQ("Test💖", *(data.local_name()));
 
-  common::UUID uuid1(kId1As16);
+  UUID uuid1(kId1As16);
   EXPECT_EQ(1u, data.service_data_uuids().size());
   EXPECT_EQ(4u, data.service_data(uuid1).size());
 
@@ -159,7 +157,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedServiceDataUuid) {
 }
 
 TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs
       0x05, 0x03, 0x12, 0x02, 0x22, 0x11,
       // Manufacturer Data with no data
@@ -178,7 +176,7 @@ TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
 TEST(GAP_AdvertisingDataTest, ServiceData) {
   // A typical Eddystone-URL beacon advertisement
   // to "https://fuchsia.cl"
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs, 0xFEAA
       0x03, 0x03, 0xAA, 0xFE,
       // Eddystone Service (0xFEAA) Data:
@@ -189,7 +187,7 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
       'f', 'u', 'c', 'h', 's', 'i', 'a', '.', 'c', 'l');
 
   AdvertisingData data;
-  common::UUID eddystone((uint16_t)0xFEAA);
+  UUID eddystone((uint16_t)0xFEAA);
 
   EXPECT_EQ(0u, data.service_data_uuids().size());
 
@@ -204,8 +202,8 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
 TEST(GAP_AdvertisingDataTest, Equality) {
   AdvertisingData one, two;
 
-  common::UUID gatt(kGattUuid);
-  common::UUID eddy(kEddystoneUuid);
+  UUID gatt(kGattUuid);
+  UUID eddy(kEddystoneUuid);
 
   // Service UUIDs
   EXPECT_EQ(two, one);
@@ -215,8 +213,8 @@ TEST(GAP_AdvertisingDataTest, Equality) {
   EXPECT_EQ(two, one);
 
   // Even when the bytes are the same but from different places
-  auto bytes = common::CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
-  auto same = common::CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
+  auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
+  auto same = CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
   two.SetManufacturerData(0x0123, bytes.view());
   EXPECT_NE(two, one);
   one.SetManufacturerData(0x0123, same.view());
@@ -242,9 +240,9 @@ TEST(GAP_AdvertisingDataTest, Equality) {
 }
 
 TEST(GAP_AdvertisingDataTest, Copy) {
-  common::UUID gatt(kGattUuid);
-  common::UUID eddy(kEddystoneUuid);
-  common::StaticByteBuffer<kRandomDataSize> rand_data;
+  UUID gatt(kGattUuid);
+  UUID eddy(kEddystoneUuid);
+  StaticByteBuffer<kRandomDataSize> rand_data;
   rand_data.FillWithRandomBytes();
 
   AdvertisingData source;
@@ -263,16 +261,15 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   source.SetLocalName("fuchsia");
   EXPECT_FALSE(dest.local_name());
 
-  auto bytes = common::CreateStaticByteBuffer(0x01, 0x02, 0x03);
+  auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
   source.SetManufacturerData(0x0123, bytes.view());
-  EXPECT_TRUE(
-      common::ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
+  EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
 }
 
 TEST(GAP_AdvertisingDataTest, Move) {
-  common::UUID gatt(kGattUuid);
-  common::UUID eddy(kEddystoneUuid);
-  common::StaticByteBuffer<kRandomDataSize> rand_data;
+  UUID gatt(kGattUuid);
+  UUID eddy(kEddystoneUuid);
+  StaticByteBuffer<kRandomDataSize> rand_data;
   rand_data.FillWithRandomBytes();
 
   AdvertisingData source;
@@ -293,12 +290,11 @@ TEST(GAP_AdvertisingDataTest, Move) {
       dest.uris());
   EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
 
-  EXPECT_EQ(std::unordered_set<common::UUID>({gatt, eddy}),
-            dest.service_uuids());
+  EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
 }
 
 TEST(GAP_AdvertisingDataTest, Uris) {
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       // Uri: "https://abc.xyz"
       0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z',
       // Uri: "flubs:abc"
@@ -316,34 +312,34 @@ TEST(GAP_AdvertisingDataTest, Uris) {
 
 TEST(GAP_AdvertisingDataTest, ReaderMalformedData) {
   // TLV length exceeds the size of the payload
-  auto bytes0 = common::CreateStaticByteBuffer(0x01);
+  auto bytes0 = CreateStaticByteBuffer(0x01);
   AdvertisingDataReader reader(bytes0);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
 
-  auto bytes = common::CreateStaticByteBuffer(0x05, 0x00, 0x00, 0x00, 0x00);
+  auto bytes = CreateStaticByteBuffer(0x05, 0x00, 0x00, 0x00, 0x00);
   reader = AdvertisingDataReader(bytes);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
 
   // TLV length is 0. This is not considered malformed. Data should be valid but
   // should not return more data.
-  bytes = common::CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00, 0x00);
+  bytes = CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00, 0x00);
   reader = AdvertisingDataReader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
 
   // First field is valid, second field is not.
   DataType type;
-  common::BufferView data;
-  bytes = common::CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x02, 0x00);
+  BufferView data;
+  bytes = CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x02, 0x00);
   reader = AdvertisingDataReader(bytes);
   EXPECT_FALSE(reader.is_valid());
   EXPECT_FALSE(reader.HasMoreData());
   EXPECT_FALSE(reader.GetNextField(&type, &data));
 
   // First field is valid, second field has length 0.
-  bytes = common::CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x00, 0x00);
+  bytes = CreateStaticByteBuffer(0x02, 0x00, 0x00, 0x00, 0x00);
   reader = AdvertisingDataReader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_TRUE(reader.HasMoreData());
@@ -353,25 +349,24 @@ TEST(GAP_AdvertisingDataTest, ReaderMalformedData) {
 }
 
 TEST(GAP_AdvertisingDataTest, ReaderParseFields) {
-  auto bytes = common::CreateStaticByteBuffer(0x02, 0x01, 0x00, 0x05, 0x09, 'T',
-                                              'e', 's', 't');
+  auto bytes =
+      CreateStaticByteBuffer(0x02, 0x01, 0x00, 0x05, 0x09, 'T', 'e', 's', 't');
   AdvertisingDataReader reader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_TRUE(reader.HasMoreData());
 
   DataType type;
-  common::BufferView data;
+  BufferView data;
   EXPECT_TRUE(reader.GetNextField(&type, &data));
   EXPECT_EQ(DataType::kFlags, type);
   EXPECT_EQ(1u, data.size());
-  EXPECT_TRUE(
-      common::ContainersEqual(common::CreateStaticByteBuffer(0x00), data));
+  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(0x00), data));
 
   EXPECT_TRUE(reader.HasMoreData());
   EXPECT_TRUE(reader.GetNextField(&type, &data));
   EXPECT_EQ(DataType::kCompleteLocalName, type);
   EXPECT_EQ(4u, data.size());
-  EXPECT_TRUE(common::ContainersEqual(std::string("Test"), data));
+  EXPECT_TRUE(ContainersEqual(std::string("Test"), data));
 
   EXPECT_FALSE(reader.HasMoreData());
   EXPECT_FALSE(reader.GetNextField(&type, &data));
@@ -394,35 +389,35 @@ TEST(GAP_AdvertisingDataTest, WriteField) {
   // for each TLV field).
   constexpr char kBufferSize =
       StringSize(kValue0) + StringSize(kValue1) + StringSize(kValue2) + 6;
-  common::StaticByteBuffer<kBufferSize> buffer;
+  StaticByteBuffer<kBufferSize> buffer;
 
   AdvertisingDataWriter writer(&buffer);
   EXPECT_EQ(0u, writer.bytes_written());
 
   // We write malformed values here for testing purposes.
-  EXPECT_TRUE(writer.WriteField(DataType::kFlags, common::BufferView(kValue0)));
+  EXPECT_TRUE(writer.WriteField(DataType::kFlags, BufferView(kValue0)));
   EXPECT_EQ(StringSize(kValue0) + 2, writer.bytes_written());
 
-  EXPECT_TRUE(writer.WriteField(DataType::kShortenedLocalName,
-                                common::BufferView(kValue1)));
+  EXPECT_TRUE(
+      writer.WriteField(DataType::kShortenedLocalName, BufferView(kValue1)));
   EXPECT_EQ(StringSize(kValue0) + 2 + StringSize(kValue1) + 2,
             writer.bytes_written());
 
   // Trying to write kValue3 should fail because there isn't enough room left in
   // the buffer.
-  EXPECT_FALSE(writer.WriteField(DataType::kCompleteLocalName,
-                                 common::BufferView(kValue3)));
+  EXPECT_FALSE(
+      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
 
   // Writing kValue2 should fill up the buffer.
-  EXPECT_TRUE(writer.WriteField(DataType::kCompleteLocalName,
-                                common::BufferView(kValue2)));
-  EXPECT_FALSE(writer.WriteField(DataType::kCompleteLocalName,
-                                 common::BufferView(kValue3)));
+  EXPECT_TRUE(
+      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue2)));
+  EXPECT_FALSE(
+      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
   EXPECT_EQ(buffer.size(), writer.bytes_written());
 
   // Verify the contents.
   DataType type;
-  common::BufferView value;
+  BufferView value;
   AdvertisingDataReader reader(buffer);
   EXPECT_TRUE(reader.is_valid());
 

@@ -5,14 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_
 
-#include <cstdint>
-
 #include <zircon/assert.h>
+
+#include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
-namespace common {
 
 // Base class-template for generic packets that contain a header and a payload.
 // A PacketView is a light-weight object that operates over a previously
@@ -99,9 +98,7 @@ class PacketView {
 
   // A PacketView that contains no backing buffer is considered invalid. A
   // PacketView that was initialized with a buffer that is too small is invalid.
-  bool is_valid() const {
-    return buffer_ && size_ >= sizeof(HeaderType);
-  }
+  bool is_valid() const { return buffer_ && size_ >= sizeof(HeaderType); }
 
   // Adjusts the size of this PacketView to match the given |payload_size|. This
   // is useful when the exact packet size is not known during construction.
@@ -171,7 +168,6 @@ class MutablePacketView : public PacketView<HeaderType> {
   }
 };
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_PACKET_VIEW_H_

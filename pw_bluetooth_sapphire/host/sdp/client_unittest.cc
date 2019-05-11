@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -17,10 +16,6 @@ namespace {
 
 using TestingBase = bt::l2cap::testing::FakeChannelTest;
 constexpr l2cap::ChannelId kTestChannelId = 0x0041;
-
-using common::CreateStaticByteBuffer;
-using common::LowerBits;
-using common::UpperBits;
 
 class SDP_ClientTest : public TestingBase {
  public:
@@ -59,7 +54,7 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
       cb_count++;
       if (cb_count == 3) {
         EXPECT_FALSE(status);
-        EXPECT_EQ(common::HostError::kNotFound, status.error());
+        EXPECT_EQ(HostError::kNotFound, status.error());
         return true;
       }
       // All results should have the ServiceClassIdList.
@@ -76,7 +71,7 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
       return true;
     };
 
-    const auto kSearchExpectedParams = common::CreateStaticByteBuffer(
+    const auto kSearchExpectedParams = CreateStaticByteBuffer(
         // ServiceSearchPattern
         0x35, 0x03,        // Sequence uint8 3 bytes
         0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -135,8 +130,8 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
     rsp.SetAttribute(1, kBluetoothProfileDescriptorList,
                      rec.GetAttribute(kBluetoothProfileDescriptorList).Clone());
 
-    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid,
-                              common::BufferView());
+    auto rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -162,7 +157,7 @@ TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
     cb_count++;
     if (cb_count == 3) {
       EXPECT_FALSE(status);
-      EXPECT_EQ(common::HostError::kNotFound, status.error());
+      EXPECT_EQ(HostError::kNotFound, status.error());
       return true;
     }
     // All results should have the ServiceClassIdList.
@@ -171,7 +166,7 @@ TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
     return true;
   };
 
-  const auto kSearchExpectedParams = common::CreateStaticByteBuffer(
+  const auto kSearchExpectedParams = CreateStaticByteBuffer(
       // ServiceSearchPattern
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x11, 0x0B,  // UUID (kAudioSink)
@@ -243,7 +238,7 @@ TEST_F(SDP_ClientTest, NoResults) {
                        const std::map<AttributeId, DataElement> &attrs) {
     cb_count++;
     EXPECT_FALSE(status);
-    EXPECT_EQ(common::HostError::kNotFound, status.error());
+    EXPECT_EQ(HostError::kNotFound, status.error());
     return true;
   };
 
@@ -285,8 +280,8 @@ TEST_F(SDP_ClientTest, NoResults) {
 
   // Receive an empty response
   ServiceSearchAttributeResponse rsp;
-  auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid,
-                            common::BufferView());
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
   fake_chan()->Receive(*rsp_ptr);
 
   RunLoopUntilIdle();
@@ -306,7 +301,7 @@ TEST_F(SDP_ClientTest, Disconnected) {
                        const std::map<AttributeId, DataElement> &attrs) {
     cb_count++;
     EXPECT_FALSE(status);
-    EXPECT_EQ(common::HostError::kLinkDisconnected, status.error());
+    EXPECT_EQ(HostError::kLinkDisconnected, status.error());
     return true;
   };
 
@@ -365,7 +360,7 @@ TEST_F(SDP_ClientTest, InvalidResponse) {
                        const std::map<AttributeId, DataElement> &attrs) {
     cb_count++;
     EXPECT_FALSE(status);
-    EXPECT_EQ(common::HostError::kPacketMalformed, status.error());
+    EXPECT_EQ(HostError::kPacketMalformed, status.error());
     return true;
   };
 
@@ -426,7 +421,7 @@ TEST_F(SDP_ClientTest, Timeout) {
                        const std::map<AttributeId, DataElement> &attrs) {
     cb_count++;
     EXPECT_FALSE(status);
-    EXPECT_EQ(common::HostError::kTimedOut, status.error());
+    EXPECT_EQ(HostError::kTimedOut, status.error());
     return true;
   };
 

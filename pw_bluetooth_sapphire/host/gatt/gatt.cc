@@ -22,8 +22,8 @@ namespace bt {
 namespace gatt {
 namespace {
 
-class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
-  using TaskDomainBase = common::TaskDomain<Impl, GATT>;
+class Impl final : public GATT, TaskDomain<Impl, GATT> {
+  using TaskDomainBase = TaskDomain<Impl, GATT>;
 
  public:
   explicit Impl(async_dispatcher_t* gatt_dispatcher)
@@ -42,7 +42,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
 
       // Forwards Service Changed payloads to clients.
       auto send_indication_callback = [this](PeerId peer_id, att::Handle handle,
-                                             const common::ByteBuffer& value) {
+                                             const ByteBuffer& value) {
         auto iter = connections_.find(peer_id);
         if (iter == connections_.end()) {
           bt_log(WARN, "gatt", "peer not registered: %s", bt_str(peer_id));
@@ -176,8 +176,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
       }
 
       iter->second.server()->SendNotification(
-          config.handle, common::BufferView(value.data(), value.size()),
-          indicate);
+          config.handle, BufferView(value.data(), value.size()), indicate);
     });
   }
 
@@ -207,7 +206,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
         });
   }
 
-  void ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
+  void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                     ServiceListCallback callback) override {
     ZX_DEBUG_ASSERT(callback);
     PostMessage([this, peer_id, callback = std::move(callback),
@@ -215,7 +214,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
       auto iter = connections_.find(peer_id);
       if (iter == connections_.end()) {
         // Connection not found.
-        callback(att::Status(common::HostError::kNotFound), ServiceList());
+        callback(att::Status(HostError::kNotFound), ServiceList());
         return;
       }
       iter->second.remote_service_manager()->ListServices(uuids,

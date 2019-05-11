@@ -11,18 +11,15 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 
 namespace bt {
-namespace common {
 
 template <>
 struct ProtocolErrorTraits<att::ErrorCode> {
   static std::string ToString(att::ErrorCode ecode);
 };
 
-}  // namespace common
-
 namespace att {
 
-using Status = common::Status<ErrorCode>;
+using Status = bt::Status<ErrorCode>;
 
 // Copyable callback for reporting a Status.
 using StatusCallback = fit::function<void(att::Status)>;

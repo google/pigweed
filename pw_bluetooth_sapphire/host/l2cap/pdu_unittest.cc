@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 #include "pdu.h"
+
 #include "fragmenter.h"
-#include "recombiner.h"
-
 #include "gtest/gtest.h"
-
+#include "recombiner.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
@@ -15,8 +14,6 @@
 namespace bt {
 namespace l2cap {
 namespace {
-
-using common::CreateStaticByteBuffer;
 
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
@@ -54,7 +51,7 @@ TEST(L2CAP_PduTest, CanCopyEmptyBody) {
   ASSERT_EQ(1u, pdu.fragment_count());
   ASSERT_EQ(0u, pdu.length());
 
-  common::DynamicByteBuffer buf(0);
+  DynamicByteBuffer buf(0);
   EXPECT_EQ(0u, pdu.Copy(&buf));
 }
 
@@ -80,7 +77,7 @@ TEST(L2CAP_PduTest, Move) {
   EXPECT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
-  common::StaticByteBuffer<4> pdu_data;
+  StaticByteBuffer<4> pdu_data;
 
   // Read the entire PDU.
   EXPECT_EQ(4u, pdu.Copy(&pdu_data));
@@ -143,8 +140,7 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
   EXPECT_EQ(1u, count);
 
   // Check that the fragment we got out is identical to the one we fed in.
-  EXPECT_TRUE(
-      common::ContainersEqual(common::CreateStaticByteBuffer(
+  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(
                                   // ACL data header
                                   0x01, 0x00, 0x08, 0x00,
 
@@ -174,7 +170,7 @@ TEST(L2CAP_PduTest, ReadSingleFragment) {
   EXPECT_TRUE(recombiner.Release(&pdu));
   EXPECT_TRUE(pdu.is_valid());
 
-  common::StaticByteBuffer<4> pdu_data;
+  StaticByteBuffer<4> pdu_data;
 
   // Read the entire PDU.
   EXPECT_EQ(4u, pdu.Copy(&pdu_data));
@@ -247,7 +243,7 @@ TEST(L2CAP_PduTest, ReadMultipleFragments) {
   EXPECT_TRUE(pdu.is_valid());
   EXPECT_EQ(4u, pdu.fragment_count());
 
-  common::StaticByteBuffer<15> pdu_data;
+  StaticByteBuffer<15> pdu_data;
 
   // Read the entire PDU.
   EXPECT_EQ(15u, pdu.Copy(&pdu_data));

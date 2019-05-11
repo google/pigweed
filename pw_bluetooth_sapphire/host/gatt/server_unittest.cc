@@ -17,20 +17,17 @@ namespace bt {
 namespace gatt {
 namespace {
 
-using common::LowerBits;
-using common::UpperBits;
-
 constexpr PeerId kTestPeerId(1);
-constexpr common::UUID kTestType16((uint16_t)0xBEEF);
-constexpr common::UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                                     13, 14, 15});
+constexpr UUID kTestType16((uint16_t)0xBEEF);
+constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                             15});
 
-const auto kTestValue1 = common::CreateStaticByteBuffer('f', 'o', 'o');
-const auto kTestValue2 = common::CreateStaticByteBuffer('b', 'a', 'r');
-const auto kTestValue3 = common::CreateStaticByteBuffer('b', 'a', 'z');
-const auto kTestValue4 = common::CreateStaticByteBuffer('l', 'o', 'l');
+const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+const auto kTestValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+const auto kTestValue3 = CreateStaticByteBuffer('b', 'a', 'z');
+const auto kTestValue4 = CreateStaticByteBuffer('l', 'o', 'l');
 
-const auto kTestValueLong = common::CreateStaticByteBuffer('l', 'o', 'n', 'g');
+const auto kTestValueLong = CreateStaticByteBuffer('l', 'o', 'n', 'g');
 
 inline att::AccessRequirements AllowedNoSecurity() {
   return att::AccessRequirements(false, false, false);
@@ -75,8 +72,8 @@ class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
 TEST_F(GATT_ServerTest, ExchangeMTURequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x02);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x02);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x02,        // request: exchange MTU
       0x00, 0x00,  // handle: 0
@@ -92,12 +89,12 @@ TEST_F(GATT_ServerTest, ExchangeMTURequestValueTooSmall) {
   constexpr uint16_t kClientMTU = 1;
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
     0x02,             // opcode: exchange MTU
     kClientMTU, 0x00  // client rx mtu: |kClientMTU|
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x03,       // opcode: exchange MTU response
     0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
@@ -116,12 +113,12 @@ TEST_F(GATT_ServerTest, ExchangeMTURequest) {
   constexpr uint16_t kClientMTU = 0x64;
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
     0x02,             // opcode: exchange MTU
     kClientMTU, 0x00  // client rx mtu: |kClientMTU|
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x03,       // opcode: exchange MTU response
     0xF7, 0x00  // server rx mtu: |kServerMTU|
   );
@@ -137,8 +134,8 @@ TEST_F(GATT_ServerTest, ExchangeMTURequest) {
 TEST_F(GATT_ServerTest, FindInformationInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x04);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x04);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x00, 0x00,  // handle: 0
@@ -152,13 +149,13 @@ TEST_F(GATT_ServerTest, FindInformationInvalidPDU) {
 TEST_F(GATT_ServerTest, FindInformationInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidStartHandle = CreateStaticByteBuffer(
       0x04,        // opcode: find information
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -166,13 +163,13 @@ TEST_F(GATT_ServerTest, FindInformationInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidEndHandle = CreateStaticByteBuffer(
       0x04,        // opcode: find information
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00   // end: 0x0001
   );
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -186,13 +183,13 @@ TEST_F(GATT_ServerTest, FindInformationInvalidHandle) {
 
 TEST_F(GATT_ServerTest, FindInformationAttributeNotFound) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -210,13 +207,13 @@ TEST_F(GATT_ServerTest, FindInformation16) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x01, 0x00,  // handle: 0x0001
@@ -236,13 +233,13 @@ TEST_F(GATT_ServerTest, FindInformation128) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x02,        // format: 128-bit
       0x01, 0x00,  // handle: 0x0001
@@ -266,7 +263,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueSuccess) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -274,7 +271,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueSuccess) {
       'f', 'o', 'o'  // value: foo
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x07,        // opcode: find by type value response
       0x01, 0x00,  // handle: 0x0001
       0x01, 0x00,  // group handle: 0x0001
@@ -291,7 +288,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueFail) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -299,7 +296,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueFail) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -312,7 +309,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueFail) {
 
 TEST_F(GATT_ServerTest, FindByTypeValueEmptyDB) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
@@ -320,7 +317,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueEmptyDB) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -333,7 +330,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueEmptyDB) {
 
 TEST_F(GATT_ServerTest, FindByTypeValueInvalidHandle) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x02, 0x00,    // start: 0x0002
       0x01, 0x00,    // end: 0x0001
@@ -341,7 +338,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueInvalidHandle) {
       'n', 'o'       // value: no
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -357,9 +354,9 @@ TEST_F(GATT_ServerTest, FindByTypeValueInvalidPDUError) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x06);
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x06);
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -375,14 +372,14 @@ TEST_F(GATT_ServerTest, FindByTypeValueZeroLengthValueError) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0xFF, 0xFF,    // end: 0xFFFF
       0x00, 0x28     // uuid: primary service group type
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -405,7 +402,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueOutsideRangeError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x06,          // opcode: find by type value request
       0x01, 0x00,    // start: 0x0001
       0x02, 0x00,    // end: 0xFFFF
@@ -413,7 +410,7 @@ TEST_F(GATT_ServerTest, FindByTypeValueOutsideRangeError) {
       'f', 'o', 'o'  // value: foo
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,          // Error
       0x06,          // opcode: find by type value
       0x00, 0x00,    // group handle: 0x0000
@@ -437,13 +434,13 @@ TEST_F(GATT_ServerTest, FindInfomationInactive) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF   // end: 0xFFFF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x01, 0x00,  // handle: 0x0001
@@ -466,13 +463,13 @@ TEST_F(GATT_ServerTest, FindInfomationRange) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x04,        // opcode: find information request
       0x02, 0x00,  // start: 0x0002
       0x02, 0x00   // end: 0x0002
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit
       0x02, 0x00,  // handle: 0x0001
@@ -486,8 +483,8 @@ TEST_F(GATT_ServerTest, FindInfomationRange) {
 TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x10);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x10);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x00, 0x00,  // handle: 0
@@ -501,7 +498,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidPDU) {
 TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   // 16-bit UUID
   // clang-format off
-  const auto kUsing16BitType = common::CreateStaticByteBuffer(
+  const auto kUsing16BitType = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -509,7 +506,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
   );
 
   // 128-bit UUID
-  const auto kUsing128BitType = common::CreateStaticByteBuffer(
+  const auto kUsing128BitType = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -518,7 +515,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
       0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
       0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -533,14 +530,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeUnsupportedGroupType) {
 TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidStartHandle = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -548,14 +545,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidEndHandle = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00,  // end: 0x0001
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -569,14 +566,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeInvalidHandle) {
 
 TEST_F(GATT_ServerTest, ReadByGroupTypeAttributeNotFound) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -593,23 +590,23 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeAttributeNotFound) {
 }
 
 TEST_F(GATT_ServerTest, ReadByGroupTypeSingle) {
-  const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(common::UUID(), att::AccessRequirements(),
+  grp->AddAttribute(UUID(), att::AccessRequirements(),
                     att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("test") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -622,16 +619,16 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle) {
 }
 
 TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
-  const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(common::UUID(), att::AccessRequirements(),
+  grp->AddAttribute(UUID(), att::AccessRequirements(),
                     att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -640,7 +637,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
       0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
       0x00, 0x10, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00);
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("test") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -653,21 +650,21 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
 }
 
 TEST_F(GATT_ServerTest, ReadByGroupTypeSingleTruncated) {
-  const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   // Start: 1, end: 1
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x06,        // length: 6 (strlen("te") + 4)
       0x01, 0x00,  // start: 0x0001
@@ -701,14 +698,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue4)->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = common::CreateStaticByteBuffer(
+  const auto kRequest1 = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x01, 0x00,     // start: 0x0001
@@ -732,14 +729,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleSameValueSize) {
   // Search a narrower range. Only two groups should be returned even with room
   // in MTU.
   // clang-format off
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x02, 0x00,  // start: 0x0002
       0x04, 0x00,  // end: 0x0004
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x02, 0x00,     // start: 0x0002
@@ -755,7 +752,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleSameValueSize) {
 
   // Make the second group inactive. It should get omitted.
   // clang-format off
-  const auto kExpected3 = common::CreateStaticByteBuffer(
+  const auto kExpected3 = CreateStaticByteBuffer(
       0x11,           // opcode: read by group type response
       0x07,           // length: 7 (strlen("foo") + 4)
       0x04, 0x00,     // start: 0x0004
@@ -780,14 +777,14 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // clang-format off
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x10,        // opcode: read by group type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x11,               // opcode: read by group type response
       0x08,               // length: 8 (strlen("long") + 4)
       0x01, 0x00,         // start: 0x0001
@@ -800,8 +797,8 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
 TEST_F(GATT_ServerTest, ReadByTypeInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x08);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x08);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x00, 0x00,  // handle: 0
@@ -815,14 +812,14 @@ TEST_F(GATT_ServerTest, ReadByTypeInvalidPDU) {
 TEST_F(GATT_ServerTest, ReadByTypeInvalidHandle) {
   // Start handle is 0
   // clang-format off
-  const auto kInvalidStartHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidStartHandle = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x00, 0x00,  // start: 0x0000
       0xFF, 0xFF,  // end: 0xFFFF
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x00, 0x00,  // handle: 0x0000 (start handle in request)
@@ -830,14 +827,14 @@ TEST_F(GATT_ServerTest, ReadByTypeInvalidHandle) {
   );
 
   // End handle is smaller than start handle
-  const auto kInvalidEndHandle = common::CreateStaticByteBuffer(
+  const auto kInvalidEndHandle = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x02, 0x00,  // start: 0x0002
       0x01, 0x00,  // end: 0x0001
       0x00, 0x28   // group type: 0x2800 (primary service)
   );
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (start handle in request)
@@ -851,14 +848,14 @@ TEST_F(GATT_ServerTest, ReadByTypeInvalidHandle) {
 
 TEST_F(GATT_ServerTest, ReadByTypeAttributeNotFound) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x01, 0x00,  // handle: 0x0001 (start handle in request)
@@ -875,7 +872,7 @@ TEST_F(GATT_ServerTest, ReadByTypeAttributeNotFound) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
-  const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(),
@@ -883,14 +880,14 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -909,7 +906,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     result_cb(att::ErrorCode::kNoError,
-              common::CreateStaticByteBuffer('f', 'o', 'r', 'k'));
+              CreateStaticByteBuffer('f', 'o', 'r', 'k'));
   });
 
   // Add a second dynamic attribute, which should be omitted.
@@ -917,14 +914,14 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("fork") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -941,26 +938,26 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
-  const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
   attr->set_read_handler(
       [](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
-        result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
       });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -972,8 +969,8 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeSingle) {
-  const auto kTestValue1 = common::CreateStaticByteBuffer('f', 'o', 'o');
-  const auto kTestValue2 = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements())
@@ -981,14 +978,14 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("test") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -1001,8 +998,8 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
-  const auto kTestValue1 = common::CreateStaticByteBuffer('f', 'o', 'o');
-  const auto kTestValue2 = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+  const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType128, AllowedNoSecurity(),
@@ -1011,7 +1008,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
@@ -1020,7 +1017,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
       0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("test") + 2)
       0x02, 0x00,         // handle: 0x0002
@@ -1032,7 +1029,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeSingleTruncated) {
-  const auto kVeryLongValue = common::CreateStaticByteBuffer(
+  const auto kVeryLongValue = CreateStaticByteBuffer(
       't', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
@@ -1041,14 +1038,14 @@ TEST_F(GATT_ServerTest, ReadByTypeSingleTruncated) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("tes") + 2)
       0x02, 0x00,    // handle: 0x0002
@@ -1075,13 +1072,13 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
@@ -1114,14 +1111,14 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = common::CreateStaticByteBuffer(
+  const auto kRequest1 = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("foo") + 2)
       0x02, 0x00,     // handle: 0x0002
@@ -1139,7 +1136,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
   att()->set_mtu(kExpected1.size() - 1);
 
   // clang-format off
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("foo") + 2)
       0x02, 0x00,     // handle: 0x0002
@@ -1153,14 +1150,14 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
 
   // Try a different range.
   // clang-format off
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x03, 0x00,  // start: 0x0003
       0x05, 0x00,  // end: 0x0005
       0xEF, 0xBE   // type: 0xBEEF
   );
 
-  const auto kExpected3 = common::CreateStaticByteBuffer(
+  const auto kExpected3 = CreateStaticByteBuffer(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("bar") + 2)
       0x03, 0x00,     // handle: 0x0003
@@ -1176,7 +1173,7 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleSameValueSize) {
   grp->set_active(false);
 
   // clang-format off
-  const auto kExpected4 = common::CreateStaticByteBuffer(
+  const auto kExpected4 = CreateStaticByteBuffer(
       0x09,           // opcode: read by type response
       0x05,           // length: 5 (strlen("bar") + 2)
       0x03, 0x00,     // handle: 0x0003
@@ -1205,37 +1202,37 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleVaryingLengths) {
   // sizes.
 
   // clang-format off
-  const auto kRequest1 = common::CreateStaticByteBuffer(
+  const auto kRequest1 = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
       'f', 'o', 'o'  // value: "foo"
   );
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x02, 0x00,  // start: 0x0002
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x09,               // opcode: read by type response
       0x06,               // length: 6 (strlen("long") + 2)
       0x02, 0x00,         // handle: 0x0002
       'l', 'o', 'n', 'g'  // value: "long"
   );
-  const auto kRequest3 = common::CreateStaticByteBuffer(
+  const auto kRequest3 = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x03, 0x00,  // start: 0x0003
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected3 = common::CreateStaticByteBuffer(
+  const auto kExpected3 = CreateStaticByteBuffer(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x03, 0x00,    // handle: 0x0003
@@ -1259,13 +1256,13 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x08,        // opcode: read by type
       0x01, 0x00,  // start: 0x0001
       0xFF, 0xFF,  // end: 0xFFFF
       0xEF, 0xBE   // type: 0xBEEF
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x09,          // opcode: read by type response
       0x05,          // length: 5 (strlen("foo") + 2)
       0x01, 0x00,    // handle: 0x0001
@@ -1279,8 +1276,8 @@ TEST_F(GATT_ServerTest, ReadByTypeMultipleExcludeFirstDynamic) {
 TEST_F(GATT_ServerTest, WriteRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x12);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x12);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x00, 0x00,  // handle: 0
@@ -1293,14 +1290,14 @@ TEST_F(GATT_ServerTest, WriteRequestInvalidPDU) {
 
 TEST_F(GATT_ServerTest, WriteRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x01, 0x00,  // handle: 0x0001
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x01, 0x00,  // handle: 0x0001
@@ -1312,7 +1309,7 @@ TEST_F(GATT_ServerTest, WriteRequestInvalidHandle) {
 }
 
 TEST_F(GATT_ServerTest, WriteRequestSecurity) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
@@ -1325,27 +1322,27 @@ TEST_F(GATT_ServerTest, WriteRequestSecurity) {
   //   2. 0x0002: writable but requires encryption
   //
   // clang-format off
-  const auto kRequest1 = common::CreateStaticByteBuffer(
+  const auto kRequest1 = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x01, 0x00,  // handle: 0x0001
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x01, 0x00,  // handle: 0x0001
       0x03         // error: write not permitted
   );
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1358,7 +1355,7 @@ TEST_F(GATT_ServerTest, WriteRequestSecurity) {
 }
 
 TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   grp->AddAttribute(kTestType16, att::AccessRequirements(),
@@ -1366,14 +1363,14 @@ TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1385,7 +1382,7 @@ TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
 }
 
 TEST_F(GATT_ServerTest, WriteRequestError) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
@@ -1396,22 +1393,22 @@ TEST_F(GATT_ServerTest, WriteRequestError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(
+        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
     result_cb(att::ErrorCode::kUnlikelyError);
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
       // value: "test"
       't', 'e', 's', 't');
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x02, 0x00,  // handle: 0x0002
@@ -1423,7 +1420,7 @@ TEST_F(GATT_ServerTest, WriteRequestError) {
 }
 
 TEST_F(GATT_ServerTest, WriteRequestSuccess) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
@@ -1434,15 +1431,15 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(
+        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
     result_cb(att::ErrorCode::kNoError);
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x12,        // opcode: write request
       0x02, 0x00,  // handle: 0x0002
 
@@ -1451,7 +1448,7 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
   // clang-format on
 
   // opcode: write response
-  const auto kExpected = common::CreateStaticByteBuffer(0x13);
+  const auto kExpected = CreateStaticByteBuffer(0x13);
 
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kExpected));
 }
@@ -1460,7 +1457,7 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
 // Command (NET-387)
 
 TEST_F(GATT_ServerTest, WriteCommandSuccess) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
@@ -1471,13 +1468,13 @@ TEST_F(GATT_ServerTest, WriteCommandSuccess) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(
+        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kCmd = common::CreateStaticByteBuffer(
+  const auto kCmd = CreateStaticByteBuffer(
       0x52,        // opcode: write command
       0x02, 0x00,  // handle: 0x0002
       't', 'e', 's', 't');
@@ -1490,8 +1487,8 @@ TEST_F(GATT_ServerTest, WriteCommandSuccess) {
 TEST_F(GATT_ServerTest, ReadRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x0A);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x0A);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x00, 0x00,  // handle: 0
@@ -1504,12 +1501,12 @@ TEST_F(GATT_ServerTest, ReadRequestInvalidPDU) {
 
 TEST_F(GATT_ServerTest, ReadRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x01, 0x00  // handle: 0x0001
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x01, 0x00,  // handle: 0x0001
@@ -1521,7 +1518,7 @@ TEST_F(GATT_ServerTest, ReadRequestInvalidHandle) {
 }
 
 TEST_F(GATT_ServerTest, ReadRequestSecurity) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // Requires encryption
@@ -1530,11 +1527,11 @@ TEST_F(GATT_ServerTest, ReadRequestSecurity) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1546,8 +1543,8 @@ TEST_F(GATT_ServerTest, ReadRequestSecurity) {
 }
 
 TEST_F(GATT_ServerTest, ReadRequestCached) {
-  const auto kDeclValue = common::CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kDeclValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
@@ -1555,19 +1552,19 @@ TEST_F(GATT_ServerTest, ReadRequestCached) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest1 = common::CreateStaticByteBuffer(
+  const auto kRequest1 = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x01, 0x00  // handle: 0x0001
   );
-  const auto kExpected1 = common::CreateStaticByteBuffer(
+  const auto kExpected1 = CreateStaticByteBuffer(
       0x0B,               // opcode: read response
       'd', 'e', 'c', 'l'  // value: kDeclValue
   );
-  const auto kRequest2 = common::CreateStaticByteBuffer(
+  const auto kRequest2 = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected2 = common::CreateStaticByteBuffer(
+  const auto kExpected2 = CreateStaticByteBuffer(
       0x0B,          // opcode: read response
       'f', 'o', 'o'  // value: kTestValue
   );
@@ -1578,7 +1575,7 @@ TEST_F(GATT_ServerTest, ReadRequestCached) {
 }
 
 TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   grp->AddAttribute(kTestType16, AllowedNoSecurity(),
@@ -1586,12 +1583,12 @@ TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1603,7 +1600,7 @@ TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
 }
 
 TEST_F(GATT_ServerTest, ReadRequestError) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
@@ -1613,17 +1610,17 @@ TEST_F(GATT_ServerTest, ReadRequestError) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
 
-    result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
 
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x02, 0x00,  // handle: 0x0002
@@ -1637,8 +1634,8 @@ TEST_F(GATT_ServerTest, ReadRequestError) {
 TEST_F(GATT_ServerTest, ReadBlobRequestInvalidPDU) {
   // Just opcode
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(0x0C);
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(0x0C);
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read blob request
       0x00, 0x00,  // handle: 0
@@ -1650,8 +1647,8 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidPDU) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
-  const auto kDeclValue = common::CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1667,19 +1664,19 @@ TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(22u, offset);
     result_cb(att::ErrorCode::kNoError,
-              common::CreateStaticByteBuffer(
-                  'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o',
-                  'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
+              CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
+                                     'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+                                     't', 't', 'r', 'i', 'b', 'u'));
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x0D,          // opcode: read blob response
       // Read Request response
       'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
@@ -1691,7 +1688,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1704,17 +1701,17 @@ TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1726,7 +1723,7 @@ TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1736,12 +1733,12 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x01, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x0D,          // opcode: read blob response
       // Read Request response
       'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L',
@@ -1754,18 +1751,18 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
 
 TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
   const auto kTestValue =
-      common::CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
+      CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x01, 0x00, // handle: 0x0001
       0x16, 0x10  // offset: 0x1016
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,       // Error
       0x0C,       // opcode
       0x01, 0x00, // handle: 0x0001
@@ -1777,7 +1774,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1786,12 +1783,12 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x02, 0x30, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read blob request
       0x02, 0x30,  // handle: 0x0001
@@ -1803,7 +1800,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1816,17 +1813,17 @@ TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x00  // offset: 0x0016
       );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1838,7 +1835,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
-  const auto kTestValue = common::CreateStaticByteBuffer(
+  const auto kTestValue = CreateStaticByteBuffer(
       'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
       'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
       'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
@@ -1852,17 +1849,17 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kInvalidOffset, common::BufferView());
+    result_cb(att::ErrorCode::kInvalidOffset, BufferView());
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0C,       // opcode: read blob request
       0x02, 0x00, // handle: 0x0002
       0x16, 0x40  // offset: 0x4016
       );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read by type
       0x02, 0x00,  // handle: 0x0002 (the attribute causing the error)
@@ -1874,8 +1871,8 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
 }
 
 TEST_F(GATT_ServerTest, ReadRequestSuccess) {
-  const auto kDeclValue = common::CreateStaticByteBuffer('d', 'e', 'c', 'l');
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
@@ -1890,11 +1887,11 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
   grp->set_active(true);
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x0A,       // opcode: read request
       0x02, 0x00  // handle: 0x0002
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x0B,          // opcode: read response
       'f', 'o', 'o'  // value: kTestValue
   );
@@ -1906,12 +1903,12 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
 TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidPDU) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(
       0x16,        // opcode: prepare write request
       0x01, 0x00,  // handle: 0x0001
       0x01         // offset (should be 2 bytes).
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x00, 0x00,  // handle: 0
@@ -1924,13 +1921,13 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidPDU) {
 
 TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidHandle) {
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x16,              // opcode: prepare write request
       0x01, 0x00,         // handle: 0x0001
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kResponse = common::CreateStaticByteBuffer(
+  const auto kResponse = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x01, 0x00,  // handle: 0x0001
@@ -1942,7 +1939,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestInvalidHandle) {
 }
 
 TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
@@ -1957,13 +1954,13 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
   ASSERT_EQ(0x0002, attr->handle());
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x16,              // opcode: prepare write request
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kResponse = common::CreateStaticByteBuffer(
+  const auto kResponse = CreateStaticByteBuffer(
       0x17,              // opcode: prepare write response
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
@@ -1978,7 +1975,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
 }
 
 TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
@@ -1990,19 +1987,19 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
   ASSERT_EQ(0x0002, attr->handle());
 
   // clang-format off
-  const auto kRequest = common::CreateStaticByteBuffer(
+  const auto kRequest = CreateStaticByteBuffer(
       0x16,              // opcode: prepare write request
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kSuccessResponse = common::CreateStaticByteBuffer(
+  const auto kSuccessResponse = CreateStaticByteBuffer(
       0x17,              // opcode: prepare write response
       0x02, 0x00,         // handle: 0x0002
       0x00, 0x00,         // offset: 0
       't', 'e', 's', 't'  // value: "test"
   );
-  const auto kErrorResponse = common::CreateStaticByteBuffer(
+  const auto kErrorResponse = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x16,        // request: prepare write request
       0x02, 0x00,  // handle: 0x0002
@@ -2023,10 +2020,10 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
 TEST_F(GATT_ServerTest, ExecuteWriteMalformedPayload) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(
       0x18  // opcode: execute write request
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x18,        // request: execute write request
       0x00, 0x00,  // handle: 0
@@ -2040,11 +2037,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteMalformedPayload) {
 TEST_F(GATT_ServerTest, ExecuteWriteInvalidFlag) {
   // Payload is one byte too short.
   // clang-format off
-  const auto kInvalidPDU = common::CreateStaticByteBuffer(
+  const auto kInvalidPDU = CreateStaticByteBuffer(
       0x18,  // opcode: execute write request
       0xFF   // flag: invalid
   );
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x18,        // request: execute write request
       0x00, 0x00,  // handle: 0
@@ -2059,11 +2056,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteInvalidFlag) {
 // success without writing to any attributes.
 TEST_F(GATT_ServerTest, ExecuteWriteQueueEmpty) {
   // clang-format off
-  const auto kExecute = common::CreateStaticByteBuffer(
+  const auto kExecute = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+  const auto kExecuteResponse = CreateStaticByteBuffer(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2073,7 +2070,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteQueueEmpty) {
 }
 
 TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
-  auto buffer = common::CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+  auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
@@ -2092,25 +2089,25 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
 
   // Prepare two partial writes of the string "hello!".
   // clang-format off
-  const auto kPrepare1 = common::CreateStaticByteBuffer(
+  const auto kPrepare1 = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepareResponse1 = common::CreateStaticByteBuffer(
+  const auto kPrepareResponse1 = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepare2 = common::CreateStaticByteBuffer(
+  const auto kPrepare2 = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
     'o', '!'            // value: "o!"
   );
-  const auto kPrepareResponse2 = common::CreateStaticByteBuffer(
+  const auto kPrepareResponse2 = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
@@ -2119,13 +2116,13 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
 
   // Add an overlapping write that partial overwrites data from previous
   // payloads.
-  const auto kPrepare3 = common::CreateStaticByteBuffer(
+  const auto kPrepare3 = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x02, 0x00,         // offset: 2
     'r', 'p', '?'       // value: "rp?"
   );
-  const auto kPrepareResponse3 = common::CreateStaticByteBuffer(
+  const auto kPrepareResponse3 = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x02, 0x00,         // offset: 2
@@ -2142,11 +2139,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
   EXPECT_EQ("xxxxxx", buffer.AsString());
 
   // clang-format off
-  const auto kExecute = common::CreateStaticByteBuffer(
+  const auto kExecute = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+  const auto kExecuteResponse = CreateStaticByteBuffer(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2158,7 +2155,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
 
 // Tests that the rest of the queue is dropped if a prepared write fails.
 TEST_F(GATT_ServerTest, ExecuteWriteError) {
-  auto buffer = common::CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
+  auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
@@ -2182,25 +2179,25 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
 
   // Prepare two partial writes of the string "hello!".
   // clang-format off
-  const auto kPrepare1 = common::CreateStaticByteBuffer(
+  const auto kPrepare1 = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepareResponse1 = common::CreateStaticByteBuffer(
+  const auto kPrepareResponse1 = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'h', 'e', 'l', 'l'  // value: "hell"
   );
-  const auto kPrepare2 = common::CreateStaticByteBuffer(
+  const auto kPrepare2 = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
     'o', '!'            // value: "o!"
   );
-  const auto kPrepareResponse2 = common::CreateStaticByteBuffer(
+  const auto kPrepareResponse2 = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x04, 0x00,         // offset: 4
@@ -2215,11 +2212,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
   EXPECT_EQ("xxxxxx", buffer.AsString());
 
   // clang-format off
-  const auto kExecute = common::CreateStaticByteBuffer(
+  const auto kExecute = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kExecuteResponse = common::CreateStaticByteBuffer(
+  const auto kExecuteResponse = CreateStaticByteBuffer(
     0x01,        // opcode: error response
     0x18,        // request: execute write request
     0x02, 0x00,  // handle: 2 (the attribute in error)
@@ -2248,20 +2245,19 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('l', 'o', 'l'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('l', 'o', 'l'), value));
     result_cb(att::ErrorCode::kNoError);
   });
   grp->set_active(true);
 
   // clang-format off
-  const auto kPrepareToAbort = common::CreateStaticByteBuffer(
+  const auto kPrepareToAbort = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     't', 'e', 's', 't'  // value: "test"
   );
-  const auto kPrepareToAbortResponse = common::CreateStaticByteBuffer(
+  const auto kPrepareToAbortResponse = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
@@ -2278,11 +2274,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
 
   // Abort the writes. They should get dropped.
   // clang-format off
-  const auto kAbort = common::CreateStaticByteBuffer(
+  const auto kAbort = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
     0x00   // flag: "cancel all"
   );
-  const auto kAbortResponse = common::CreateStaticByteBuffer(
+  const auto kAbortResponse = CreateStaticByteBuffer(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2292,23 +2288,23 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
   // Prepare and commit a new write request. This one should take effect without
   // involving the previously aborted writes.
   // clang-format off
-  const auto kPrepareToCommit = common::CreateStaticByteBuffer(
+  const auto kPrepareToCommit = CreateStaticByteBuffer(
     0x016,              // opcode: prepare write request
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'l', 'o', 'l'       // value: "lol"
   );
-  const auto kPrepareToCommitResponse = common::CreateStaticByteBuffer(
+  const auto kPrepareToCommitResponse = CreateStaticByteBuffer(
     0x017,              // opcode: prepare write response
     0x02, 0x00,         // handle: 0x0002
     0x00, 0x00,         // offset: 0
     'l', 'o', 'l'       // value: "lol"
   );
-  const auto kCommit = common::CreateStaticByteBuffer(
+  const auto kCommit = CreateStaticByteBuffer(
     0x18,  // opcode: execute write request
     0x01   // flag: "write pending"
   );
-  const auto kCommitResponse = common::CreateStaticByteBuffer(
+  const auto kCommitResponse = CreateStaticByteBuffer(
     0x19  // opcode: execute write response
   );
   // clang-format on
@@ -2320,10 +2316,10 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
 
 TEST_F(GATT_ServerTest, SendNotificationEmpty) {
   constexpr att::Handle kHandle = 0x1234;
-  const common::BufferView kTestValue;
+  const BufferView kTestValue;
 
   // clang-format off
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x1B,         // opcode: notification
     0x34, 0x12    // handle: |kHandle|
   );
@@ -2338,10 +2334,10 @@ TEST_F(GATT_ServerTest, SendNotificationEmpty) {
 
 TEST_F(GATT_ServerTest, SendNotification) {
   constexpr att::Handle kHandle = 0x1234;
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   // clang-format off
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x1B,          // opcode: notification
     0x34, 0x12,    // handle: |kHandle|
     'f', 'o', 'o'  // value: |kTestValue|
@@ -2357,10 +2353,10 @@ TEST_F(GATT_ServerTest, SendNotification) {
 
 TEST_F(GATT_ServerTest, SendIndicationEmpty) {
   constexpr att::Handle kHandle = 0x1234;
-  const common::BufferView kTestValue;
+  const BufferView kTestValue;
 
   // clang-format off
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x1D,         // opcode: indication
     0x34, 0x12    // handle: |kHandle|
   );
@@ -2375,10 +2371,10 @@ TEST_F(GATT_ServerTest, SendIndicationEmpty) {
 
 TEST_F(GATT_ServerTest, SendIndication) {
   constexpr att::Handle kHandle = 0x1234;
-  const auto kTestValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
 
   // clang-format off
-  const auto kExpected = common::CreateStaticByteBuffer(
+  const auto kExpected = CreateStaticByteBuffer(
     0x1D,          // opcode: indication
     0x34, 0x12,    // handle: |kHandle|
     'f', 'o', 'o'  // value: |kTestValue|
@@ -2457,12 +2453,14 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   // received from the fake channel (i.e. received FROM the ATT bearer).
   bool ExpectAttError(att::OpCode request, att::Handle handle,
                       att::ErrorCode ecode) {
-    return Expect(common::CreateStaticByteBuffer(
-        0x01,                                  // opcode: error response
-        request,                               // request opcode
-        LowerBits(handle), UpperBits(handle),  // handle
-        ecode                                  // error code
+    // clang-format off
+    return Expect(CreateStaticByteBuffer(
+        0x01,                                 // opcode: error response
+        request,                              // request opcode
+        LowerBits(handle), UpperBits(handle), // handle
+        ecode                                 // error code
         ));
+    // clang-format on
   }
 
   // Helpers for emulating the receipt of an ATT read/write request PDU and
@@ -2470,14 +2468,14 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   // |expected_ecode| is att::ErrorCode::kNoError.
   bool EmulateReadByTypeRequest(att::Handle handle,
                                 att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
+    fake_chan()->Receive(CreateStaticByteBuffer(
         0x08,                                  // opcode: read by type
         LowerBits(handle), UpperBits(handle),  // start handle
         LowerBits(handle), UpperBits(handle),  // end handle
         0xEF, 0xBE                             // type: 0xBEEF, i.e. kTestType16
         ));
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(common::CreateStaticByteBuffer(
+      return Expect(CreateStaticByteBuffer(
           0x09,  // opcode: read by type response
           0x05,  // length: 5 (strlen("foo") + 2)
           LowerBits(handle), UpperBits(handle),  // handle
@@ -2490,13 +2488,15 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
 
   bool EmulateReadBlobRequest(att::Handle handle,
                               att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
+    // clang-format off
+    fake_chan()->Receive(CreateStaticByteBuffer(
         0x0C,                                  // opcode: read blob
         LowerBits(handle), UpperBits(handle),  // handle
         0x00, 0x00                             // offset: 0
         ));
+    // clang-format on
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(common::CreateStaticByteBuffer(
+      return Expect(CreateStaticByteBuffer(
           0x0D,          // opcode: read blob response
           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
           ));
@@ -2506,12 +2506,14 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   }
 
   bool EmulateReadRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
-        0x0A,                                 // opcode: read request
+    // clang-format off
+    fake_chan()->Receive(CreateStaticByteBuffer(
+        0x0A,  // opcode: read request
         LowerBits(handle), UpperBits(handle)  // handle
         ));
+    // clang-format on
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(common::CreateStaticByteBuffer(
+      return Expect(CreateStaticByteBuffer(
           0x0B,          // opcode: read response
           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
           ));
@@ -2521,14 +2523,14 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   }
 
   bool EmulateWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
+    fake_chan()->Receive(CreateStaticByteBuffer(
         0x12,                                  // opcode: write request
         LowerBits(handle), UpperBits(handle),  // handle
         't', 'e', 's', 't'                     // value: "test"
         ));
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(common::CreateStaticByteBuffer(0x13  // write response
-                                                   ));
+      return Expect(CreateStaticByteBuffer(0x13  // write response
+                                           ));
     } else {
       return ExpectAttError(0x12, handle, expected_ecode);
     }
@@ -2536,19 +2538,21 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
 
   bool EmulatePrepareWriteRequest(att::Handle handle,
                                   att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
+    fake_chan()->Receive(CreateStaticByteBuffer(
         0x16,                                  // opcode: prepare write request
         LowerBits(handle), UpperBits(handle),  // handle
         0x00, 0x00,                            // offset: 0
         't', 'e', 's', 't'                     // value: "test"
         ));
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(common::CreateStaticByteBuffer(
-          0x17,                                  // prepare write response
-          LowerBits(handle), UpperBits(handle),  // handle
-          0x00, 0x00,                            // offset: 0
-          't', 'e', 's', 't'                     // value: "test"
+      // clang-format off
+      return Expect(CreateStaticByteBuffer(
+          0x17,                                 // prepare write response
+          LowerBits(handle), UpperBits(handle), // handle
+          0x00, 0x00,                           // offset: 0
+          't', 'e', 's', 't'                    // value: "test"
           ));
+      // clang-format on
     } else {
       return ExpectAttError(0x16, handle, expected_ecode);
     }
@@ -2557,7 +2561,7 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
   bool EmulateWriteCommand(att::Handle handle, att::ErrorCode) {
-    fake_chan()->Receive(common::CreateStaticByteBuffer(
+    fake_chan()->Receive(CreateStaticByteBuffer(
         0x52,                                  // opcode: write command
         LowerBits(handle), UpperBits(handle),  // handle
         't', 'e', 's', 't'                     // value: "test"

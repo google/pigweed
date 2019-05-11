@@ -90,7 +90,7 @@ class DataElement {
   // Reads a DataElement from |buffer|, replacing any data that was in |elem|.
   // Returns the amount of space occupied on |buffer| by the data element, or
   // zero if no element could be read.
-  static size_t Read(DataElement* elem, const common::ByteBuffer& buffer);
+  static size_t Read(DataElement* elem, const ByteBuffer& buffer);
 
   // The type of this element.
   Type type() const { return type_; }
@@ -104,7 +104,7 @@ class DataElement {
   // std::nullptr_t          - kNull
   // uint8_t, .., uint64_t   - kUnsignedInt
   // int8_t .. int64_t       - kSignedInt
-  // const common::UUID&     - kUuid
+  // const UUID&     - kUuid
   // const std::string&      - kString
   // bool                    - kBoolean
   // std::vector<DataElemnt> - kSequence
@@ -132,7 +132,7 @@ class DataElement {
 
   // Writes this DataElement to |buffer|.
   // Returns the number of bytes used for writing this element.
-  size_t Write(common::MutableByteBuffer* buffer) const;
+  size_t Write(MutableByteBuffer* buffer) const;
 
   // Debug representation of this element (including it's type and size) in a
   // string, i.e. UnsignedInt:4(15) or Sequence { UUID(1567), UUID(2502) }
@@ -152,7 +152,7 @@ class DataElement {
   // set correctly.
   int64_t int_value_;
   uint64_t uint_value_;
-  common::UUID uuid_;
+  UUID uuid_;
   std::string string_;
   std::vector<DataElement> aggregate_;
 };

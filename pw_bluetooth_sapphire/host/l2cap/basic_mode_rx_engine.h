@@ -18,7 +18,7 @@ class BasicModeRxEngine final : public RxEngine {
   BasicModeRxEngine() = default;
   virtual ~BasicModeRxEngine() = default;
 
-  common::ByteBufferPtr ProcessPdu(PDU) override;
+  ByteBufferPtr ProcessPdu(PDU) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeRxEngine);

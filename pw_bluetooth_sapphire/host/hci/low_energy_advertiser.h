@@ -75,16 +75,16 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   using AdvertisingStatusCallback =
       fit::function<void(zx::duration interval, Status status)>;
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
-  virtual void StartAdvertising(const common::DeviceAddress& address,
-                                const common::ByteBuffer& data,
-                                const common::ByteBuffer& scan_rsp,
+  virtual void StartAdvertising(const DeviceAddress& address,
+                                const ByteBuffer& data,
+                                const ByteBuffer& scan_rsp,
                                 ConnectionCallback connect_callback,
                                 zx::duration interval, bool anonymous,
                                 AdvertisingStatusCallback callback) = 0;
 
   // Stops any advertisement currently active on |address|. Idempotent and
   // asynchronous. Returns true if advertising will be stopped, false otherwise.
-  virtual bool StopAdvertising(const common::DeviceAddress& address) = 0;
+  virtual bool StopAdvertising(const DeviceAddress& address) = 0;
 
   // Callback for an incoming LE connection. This function should be called
   // in reaction to any connection that was not initiated locally. This object
@@ -93,7 +93,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // TODO(armansito): Require advertising handle.
   virtual void OnIncomingConnection(
       ConnectionHandle handle, Connection::Role role,
-      const common::DeviceAddress& peer_address,
+      const DeviceAddress& peer_address,
       const LEConnectionParameters& conn_params) = 0;
 };
 

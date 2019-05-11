@@ -4,10 +4,9 @@
 
 #include "frames.h"
 
+#include "rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-
-#include "rfcomm.h"
 
 namespace bt {
 namespace rfcomm {
@@ -41,7 +40,7 @@ const uint8_t crctable[] = {
     0xBD, 0x2C, 0x5E, 0xCF};
 
 // FCS calculation function from GSM B.3.3.
-uint8_t CalculateFCS(const common::ByteBuffer& p) {
+uint8_t CalculateFCS(const ByteBuffer& p) {
   uint8_t fcs = 0xFF;
   size_t offset = 0;
   size_t len = p.size();
@@ -53,7 +52,7 @@ uint8_t CalculateFCS(const common::ByteBuffer& p) {
 }
 
 // FCS checking function from GSM B.3.4.
-bool CheckFCS(uint8_t received_fcs, const common::ByteBuffer& p) {
+bool CheckFCS(uint8_t received_fcs, const ByteBuffer& p) {
   uint8_t fcs = 0xFF;
   size_t offset = 0;
   size_t len = p.size();
@@ -112,7 +111,7 @@ Frame::Frame(Role role, CommandResponse command_response, DLCI dlci,
 // functions for each Frame subclass, as Frame::Parse will already parse all of
 // the needed information.
 std::unique_ptr<Frame> Frame::Parse(bool credit_based_flow, Role role,
-                                    const common::ByteBuffer& buffer) {
+                                    const ByteBuffer& buffer) {
   if (buffer.size() < kMinimumFrameSize) {
     bt_log(TRACE, "rfcomm",
            "buffer size of %zu is less than minimum frame size (%zu)",
@@ -222,9 +221,9 @@ std::unique_ptr<Frame> Frame::Parse(bool credit_based_flow, Role role,
       mux_command_frame->set_credits(credits);
       return mux_command_frame;
     } else if (IsUserDLCI(dlci)) {
-      common::MutableByteBufferPtr information;
+      MutableByteBufferPtr information;
       if (length > 0) {
-        information = common::NewSlabBuffer(length);
+        information = NewSlabBuffer(length);
         buffer.Copy(information.get(), header_size, length);
       }
       auto user_data_frame = std::make_unique<UserDataFrame>(
@@ -244,7 +243,7 @@ std::unique_ptr<Frame> Frame::Parse(bool credit_based_flow, Role role,
 }
 
 // Write this RFCOMM frame into a buffer.
-void Frame::Write(common::MutableBufferView buffer) const {
+void Frame::Write(MutableBufferView buffer) const {
   ZX_DEBUG_ASSERT(buffer.size() >= header_size());
 
   // Writes address, control, and length octets.
@@ -262,7 +261,7 @@ void Frame::Write(common::MutableBufferView buffer) const {
   buffer[offset] = fcs;
 }
 
-void Frame::WriteHeader(common::MutableBufferView buffer) const {
+void Frame::WriteHeader(MutableBufferView buffer) const {
   ZX_DEBUG_ASSERT(buffer.size() >= header_size());
 
   size_t offset = 0;
@@ -413,7 +412,7 @@ size_t UnnumberedInfoHeaderCheckFrame::header_size() const {
 }
 
 void UnnumberedInfoHeaderCheckFrame::WriteHeader(
-    common::MutableBufferView buffer) const {
+    MutableBufferView buffer) const {
   ZX_DEBUG_ASSERT(buffer.size() >= header_size());
 
   // Write address, control, length
@@ -427,11 +426,11 @@ void UnnumberedInfoHeaderCheckFrame::WriteHeader(
 }
 
 UserDataFrame::UserDataFrame(Role role, bool credit_based_flow, DLCI dlci,
-                             common::ByteBufferPtr information)
+                             ByteBufferPtr information)
     : UnnumberedInfoHeaderCheckFrame(role, credit_based_flow, dlci),
       information_(std::move(information)) {}
 
-void UserDataFrame::Write(common::MutableBufferView buffer) const {
+void UserDataFrame::Write(MutableBufferView buffer) const {
   ZX_DEBUG_ASSERT(buffer.size() >= written_size());
 
   WriteHeader(buffer);
@@ -452,7 +451,7 @@ size_t UserDataFrame::written_size() const {
          + sizeof(uint8_t);  // FCS
 }
 
-common::ByteBufferPtr UserDataFrame::TakeInformation() {
+ByteBufferPtr UserDataFrame::TakeInformation() {
   return std::move(information_);
 }
 
@@ -461,7 +460,7 @@ MuxCommandFrame::MuxCommandFrame(Role role, bool credit_based_flow,
     : UnnumberedInfoHeaderCheckFrame(role, credit_based_flow, kMuxControlDLCI),
       mux_command_(std::move(mux_command)) {}
 
-void MuxCommandFrame::Write(common::MutableBufferView buffer) const {
+void MuxCommandFrame::Write(MutableBufferView buffer) const {
   ZX_DEBUG_ASSERT(buffer.size() >= written_size());
 
   WriteHeader(buffer);

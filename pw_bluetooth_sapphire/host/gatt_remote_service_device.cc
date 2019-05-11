@@ -17,7 +17,7 @@ namespace bthost {
 
 namespace {
 
-void CopyUUIDBytes(bt_gatt_uuid_t* dest, const common::UUID source) {
+void CopyUUIDBytes(bt_gatt_uuid_t* dest, const UUID source) {
   memcpy(dest->bytes, source.value().data(), sizeof(dest->bytes));
 }
 
@@ -65,25 +65,25 @@ bt_gatt_err_t AttErrorToDdkError(bt::att::ErrorCode error) {
   return BT_GATT_ERR_NO_ERROR;
 }
 
-zx_status_t HostErrorToZxError(bt::common::HostError error) {
+zx_status_t HostErrorToZxError(bt::HostError error) {
   switch (error) {
-    case bt::common::HostError::kNoError:
+    case bt::HostError::kNoError:
       return ZX_OK;
-    case bt::common::HostError::kNotFound:
+    case bt::HostError::kNotFound:
       return ZX_ERR_NOT_FOUND;
-    case bt::common::HostError::kNotReady:
+    case bt::HostError::kNotReady:
       return ZX_ERR_SHOULD_WAIT;
-    case bt::common::HostError::kTimedOut:
+    case bt::HostError::kTimedOut:
       return ZX_ERR_TIMED_OUT;
-    case bt::common::HostError::kInvalidParameters:
+    case bt::HostError::kInvalidParameters:
       return ZX_ERR_INVALID_ARGS;
-    case bt::common::HostError::kCanceled:
+    case bt::HostError::kCanceled:
       return ZX_ERR_CANCELED;
-    case bt::common::HostError::kNotSupported:
+    case bt::HostError::kNotSupported:
       return ZX_ERR_NOT_SUPPORTED;
-    case bt::common::HostError::kLinkDisconnected:
+    case bt::HostError::kLinkDisconnected:
       return ZX_ERR_CONNECTION_ABORTED;
-    case bt::common::HostError::kOutOfMemory:
+    case bt::HostError::kOutOfMemory:
       return ZX_ERR_NO_MEMORY;
     default:
       return ZX_ERR_INTERNAL;
@@ -138,7 +138,7 @@ zx_status_t GattRemoteServiceDevice::Bind() {
   // The bind program of an attaching device driver can either bind using to the
   // well known short 16 bit UUID of the service if available or the full 128
   // bit UUID (split across 4 32 bit values).
-  const common::UUID& uuid = service_->uuid();
+  const UUID& uuid = service_->uuid();
   uint32_t uuid16 = 0;
 
   if (uuid.CompactSize() == 2) {
@@ -147,7 +147,7 @@ zx_status_t GattRemoteServiceDevice::Bind() {
   }
 
   uint32_t uuid01, uuid02, uuid03, uuid04 = 0;
-  common::UInt128 uuid_bytes = uuid.value();
+  UInt128 uuid_bytes = uuid.value();
 
   uuid01 = le32toh(*reinterpret_cast<uint32_t*>(&uuid_bytes[0]));
   uuid02 = le32toh(*reinterpret_cast<uint32_t*>(&uuid_bytes[4]));
@@ -268,7 +268,7 @@ void GattRemoteServiceDevice::ReadCharacteristic(
     bt_gatt_id_t id, bt_gatt_svc_read_characteristic_callback read_cb,
     void* cookie) {
   auto read_callback = [id, cookie, read_cb](att::Status status,
-                                             const common::ByteBuffer& buff) {
+                                             const ByteBuffer& buff) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
@@ -282,7 +282,7 @@ void GattRemoteServiceDevice::ReadLongCharacteristic(
     bt_gatt_id_t id, uint16_t offset, size_t max_bytes,
     bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
   auto read_callback = [id, cookie, read_cb](att::Status status,
-                                             const common::ByteBuffer& buff) {
+                                             const ByteBuffer& buff) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
@@ -318,7 +318,7 @@ void GattRemoteServiceDevice::EnableNotifications(
     bt_gatt_id_t id, const bt_gatt_notification_value_t* value,
     bt_gatt_svc_enable_notifications_callback status_cb, void* cookie) {
   auto value_cb = *value;
-  auto notif_callback = [cookie, id, value_cb](const common::ByteBuffer& buff) {
+  auto notif_callback = [cookie, id, value_cb](const ByteBuffer& buff) {
     value_cb.callback(value_cb.ctx, id, buff.data(), buff.size());
   };
 

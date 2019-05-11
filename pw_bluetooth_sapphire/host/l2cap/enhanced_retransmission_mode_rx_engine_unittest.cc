@@ -4,9 +4,9 @@
 
 #include "enhanced_retransmission_mode_rx_engine.h"
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
-#include "gtest/gtest.h"
 
 namespace bt {
 namespace l2cap {
@@ -18,27 +18,26 @@ constexpr ChannelId kTestChannelId = 0x0001;
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
-void NopTxCallback(common::ByteBufferPtr) {}
+void NopTxCallback(ByteBufferPtr) {}
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload =
-      common::CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
-  const common::ByteBufferPtr sdu =
+  const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const ByteBufferPtr sdu =
       Engine(NopTxCallback)
           .ProcessPdu(
               Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload));
   ASSERT_TRUE(sdu);
-  EXPECT_TRUE(common::ContainersEqual(
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'), *sdu));
+  EXPECT_TRUE(
+      ContainersEqual(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'), *sdu));
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCanHandleZeroBytePayload) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = common::CreateStaticByteBuffer(0, 0);
-  const common::ByteBufferPtr sdu =
+  const auto payload = CreateStaticByteBuffer(0, 0);
+  const ByteBufferPtr sdu =
       Engine(NopTxCallback)
           .ProcessPdu(
               Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload));
@@ -49,9 +48,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload = common::CreateStaticByteBuffer(  //
-      1 << 1,                                           // TxSeq = 1, R=0
-      0,                                                // SAR and ReqSeq
+  const auto payload = CreateStaticByteBuffer(  //
+      1 << 1,                                   // TxSeq = 1, R=0
+      0,                                        // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   EXPECT_FALSE(Engine(NopTxCallback)
                    .ProcessPdu(Fragmenter(kTestHandle)
@@ -64,9 +63,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
   // Send with sequence 0.
   {
-    const auto payload = common::CreateStaticByteBuffer(  //
-        0 << 1,                                           // TxSeq=0, R=0
-        0,                                                // SAR and ReqSeq
+    const auto payload = CreateStaticByteBuffer(  //
+        0 << 1,                                   // TxSeq=0, R=0
+        0,                                        // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload)));
@@ -74,9 +73,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
   // Send with sequence 1.
   {
-    const auto payload = common::CreateStaticByteBuffer(  //
-        1 << 1,                                           // TxSeq=1, R=0
-        0,                                                // SAR and ReqSeq
+    const auto payload = CreateStaticByteBuffer(  //
+        1 << 1,                                   // TxSeq=1, R=0
+        0,                                        // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload)));
@@ -84,9 +83,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
   // Send with sequence 2.
   {
-    const auto payload = common::CreateStaticByteBuffer(  //
-        2 << 1,                                           // TxSeq=2, R=0
-        0,                                                // SAR and ReqSeq
+    const auto payload = CreateStaticByteBuffer(  //
+        2 << 1,                                   // TxSeq=2, R=0
+        0,                                        // SAR and ReqSeq
         'h', 'e', 'l', 'l', 'o');
     EXPECT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload)));
@@ -96,9 +95,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduRollsOverSequenceNumber) {
   Engine rx_engine(NopTxCallback);
-  auto payload = common::CreateStaticByteBuffer(  //
-      0 << 1,                                     // TxSeq=0, R=0
-      0,                                          // SAR and ReqSeq
+  auto payload = CreateStaticByteBuffer(  //
+      0 << 1,                             // TxSeq=0, R=0
+      0,                                  // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   for (size_t i = 0; i < 64; ++i) {
     payload[0] = i << 1;  // Set TxSeq
@@ -117,16 +116,16 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotAdvanceSequenceNumberForOutOfSequencePdu) {
   Engine rx_engine(NopTxCallback);
-  const auto out_of_seq = common::CreateStaticByteBuffer(  //
-      1 << 1,                                              // TxSeq=1, R=0
-      0,                                                   // SAR and ReqSeq
+  const auto out_of_seq = CreateStaticByteBuffer(  //
+      1 << 1,                                      // TxSeq=1, R=0
+      0,                                           // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   ASSERT_FALSE(rx_engine.ProcessPdu(
       Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, out_of_seq)));
 
-  const auto in_seq = common::CreateStaticByteBuffer(  //
-      0 << 1,                                          // TxSeq=0, R=0
-      0,                                               // SAR and ReqSeq
+  const auto in_seq = CreateStaticByteBuffer(  //
+      0 << 1,                                  // TxSeq=0, R=0
+      0,                                       // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
   EXPECT_TRUE(rx_engine.ProcessPdu(
       Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, in_seq)));
@@ -135,15 +134,14 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduImmediatelyAcksUnsegmentedSdu) {
   size_t n_acks = 0;
-  common::ByteBufferPtr outbound_ack;
+  ByteBufferPtr outbound_ack;
   auto tx_callback = [&](auto pdu) {
     outbound_ack = std::move(pdu);
     ++n_acks;
   };
 
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload =
-      common::CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(Engine(tx_callback)
                   .ProcessPdu(Fragmenter(kTestHandle)
                                   .BuildBasicFrame(kTestChannelId, payload)));
@@ -160,7 +158,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduSendsCorrectReqSeqOnRollover) {
   size_t n_acks = 0;
-  common::ByteBufferPtr last_ack;
+  ByteBufferPtr last_ack;
   auto tx_callback = [&](auto pdu) {
     last_ack = std::move(pdu);
     ++n_acks;
@@ -170,7 +168,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   for (size_t i = 0; i < 64; ++i) {
     const auto payload =
-        common::CreateStaticByteBuffer(i << 1, 0, 'h', 'e', 'l', 'l', 'o');
+        CreateStaticByteBuffer(i << 1, 0, 'h', 'e', 'l', 'l', 'o');
     ASSERT_TRUE(rx_engine.ProcessPdu(
         Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, payload)))
         << " (i=" << i << ")";
@@ -188,15 +186,14 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotAckOutOfSequenceFrame) {
   size_t n_acks = 0;
-  common::ByteBufferPtr outbound_ack;
+  ByteBufferPtr outbound_ack;
   auto tx_callback = [&](auto pdu) {
     outbound_ack = std::move(pdu);
     ++n_acks;
   };
 
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto payload =
-      common::CreateStaticByteBuffer(1, 0, 'h', 'e', 'l', 'l', 'o');
+  const auto payload = CreateStaticByteBuffer(1, 0, 'h', 'e', 'l', 'l', 'o');
 
   // Per Core Spec, v5, Vol 3, Part A, Sec 8.4.7.1, receipt of an
   // out-of-sequence frame should cause us to transmit a Reject frame. We assume
@@ -212,7 +209,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduRespondsToReceiverReadyPollRequest) {
   size_t n_outbound_frames = 0;
-  common::ByteBufferPtr last_outbound_frame;
+  ByteBufferPtr last_outbound_frame;
   auto tx_callback = [&](auto pdu) {
     last_outbound_frame = std::move(pdu);
     ++n_outbound_frames;
@@ -221,16 +218,14 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   Engine rx_engine(tx_callback);
   // Send an I-frame to advance the receiver's sequence number.
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
-  const auto info_frame =
-      common::CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  const auto info_frame = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
   rx_engine.ProcessPdu(
       Fragmenter(kTestHandle).BuildBasicFrame(kTestChannelId, info_frame));
   ASSERT_EQ(1u, n_outbound_frames);
 
   // Now send a ReceiverReady poll request. See Core Spec, v5, Vol 3, Part A,
   // Table 3.2 and Table 3.5 for frame format.
-  const auto receiver_ready_poll_request =
-      common::CreateStaticByteBuffer(0b1'0001, 0);
+  const auto receiver_ready_poll_request = CreateStaticByteBuffer(0b1'0001, 0);
   auto local_sdu = rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildBasicFrame(kTestChannelId, receiver_ready_poll_request));

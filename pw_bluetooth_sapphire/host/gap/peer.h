@@ -59,7 +59,7 @@ class Peer final {
 
     // Advertising (and optionally scan response) data obtained during
     // discovery.
-    const common::BufferView advertising_data() const {
+    const BufferView advertising_data() const {
       return adv_data_buffer_.view(0, adv_data_len_);
     }
 
@@ -87,7 +87,7 @@ class Peer final {
     // |rssi| corresponds to the most recent advertisement RSSI.
     // |advertising_data| should include any scan response data if obtained
     // during an active scan.
-    void SetAdvertisingData(int8_t rssi, const common::ByteBuffer& data);
+    void SetAdvertisingData(int8_t rssi, const ByteBuffer& data);
 
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
@@ -115,7 +115,7 @@ class Peer final {
 
     ConnectionState conn_state_;
     size_t adv_data_len_;
-    common::DynamicByteBuffer adv_data_buffer_;
+    DynamicByteBuffer adv_data_buffer_;
     std::optional<hci::LEConnectionParameters> conn_params_;
     std::optional<hci::LEPreferredConnectionParameters> preferred_conn_params_;
 
@@ -138,10 +138,10 @@ class Peer final {
     bool bonded() const { return link_key_.has_value(); }
 
     // Returns the peer's BD_ADDR.
-    const common::DeviceAddress& address() const { return address_; }
+    const DeviceAddress& address() const { return address_; }
 
     // Returns the device class reported by the peer, if it is known.
-    const std::optional<common::DeviceClass>& device_class() const {
+    const std::optional<DeviceClass>& device_class() const {
       return device_class_;
     }
 
@@ -158,7 +158,7 @@ class Peer final {
     const std::optional<uint16_t>& clock_offset() const {
       return clock_offset_;
     }
-    const common::BufferView extended_inquiry_response() const {
+    const BufferView extended_inquiry_response() const {
       return eir_buffer_.view(0, eir_len_);
     }
 
@@ -192,24 +192,23 @@ class Peer final {
    private:
     // All multi-byte fields must be in little-endian byte order as they were
     // received from the controller.
-    void SetInquiryData(
-        common::DeviceClass device_class, uint16_t clock_offset,
-        hci::PageScanRepetitionMode page_scan_rep_mode,
-        int8_t rssi = hci::kRSSIInvalid,
-        const common::BufferView& eir_data = common::BufferView());
+    void SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
+                        hci::PageScanRepetitionMode page_scan_rep_mode,
+                        int8_t rssi = hci::kRSSIInvalid,
+                        const BufferView& eir_data = BufferView());
 
     // Updates the EIR data field and returns true if any properties changed.
-    bool SetEirData(const common::ByteBuffer& data);
+    bool SetEirData(const ByteBuffer& data);
 
     Peer* peer_;  // weak
     ConnectionState conn_state_;
-    common::DeviceAddress address_;
-    std::optional<common::DeviceClass> device_class_;
+    DeviceAddress address_;
+    std::optional<DeviceClass> device_class_;
     std::optional<hci::PageScanRepetitionMode> page_scan_rep_mode_;
     std::optional<uint16_t> clock_offset_;
     // TODO(jamuraa): Parse more of the Extended Inquiry Response fields
     size_t eir_len_;
-    common::DynamicByteBuffer eir_buffer_;
+    DynamicByteBuffer eir_buffer_;
     std::optional<sm::LTK> link_key_;
 
     // TODO(armansito): Store traditional service UUIDs.
@@ -243,7 +242,7 @@ class Peer final {
   //     If a BR/EDR/LE device uses an identity address that is different from
   //     its BD_ADDR, then there will be two separate Peer entries for
   //     it.
-  const common::DeviceAddress& address() const { return address_; }
+  const DeviceAddress& address() const { return address_; }
   bool identity_known() const { return identity_known_; }
 
   // The LMP version of this device obtained doing discovery.
@@ -341,8 +340,7 @@ class Peer final {
   // (do the callbacks outlive |this|?).
   Peer(DeviceCallback notify_listeners_callback,
        DeviceCallback update_expiry_callback, DeviceCallback dual_mode_callback,
-       PeerId identifier, const common::DeviceAddress& address,
-       bool connectable);
+       PeerId identifier, const DeviceAddress& address, bool connectable);
 
   // Marks this device's identity as known. Called by PeerCache when
   // initializing a bonded device and by LowEnergyData when setting bond data
@@ -351,7 +349,7 @@ class Peer final {
 
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
-  void set_address(const common::DeviceAddress& address) { address_ = address; }
+  void set_address(const DeviceAddress& address) { address_ = address; }
 
   // Updates the RSSI and returns true if it changed.
   bool SetRssiInternal(int8_t rssi);
@@ -388,7 +386,7 @@ class Peer final {
   PeerId identifier_;
   TechnologyType technology_;
 
-  common::DeviceAddress address_;
+  DeviceAddress address_;
   bool identity_known_;
 
   std::optional<std::string> name_;

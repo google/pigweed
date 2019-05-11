@@ -7,12 +7,11 @@
 namespace bt {
 namespace sm {
 
-PacketReader::PacketReader(const common::ByteBuffer* buffer)
-    : common::PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}
+PacketReader::PacketReader(const ByteBuffer* buffer)
+    : PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}
 
-PacketWriter::PacketWriter(Code code, common::MutableByteBuffer* buffer)
-    : common::MutablePacketView<Header>(buffer,
-                                        buffer->size() - sizeof(Header)) {
+PacketWriter::PacketWriter(Code code, MutableByteBuffer* buffer)
+    : MutablePacketView<Header>(buffer, buffer->size() - sizeof(Header)) {
   mutable_header()->code = code;
 }
 

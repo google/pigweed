@@ -18,11 +18,10 @@ namespace {
 
 // Adds all UUIDs that it finds in |elem| to |out|, recursing through
 // sequences and alternatives if necessary.
-void AddAllUUIDs(const DataElement& elem,
-                 std::unordered_set<common::UUID>* out) {
+void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
   DataElement::Type type = elem.type();
   if (type == DataElement::Type::kUuid) {
-    out->emplace(*elem.Get<common::UUID>());
+    out->emplace(*elem.Get<UUID>());
   } else if (type == DataElement::Type::kSequence ||
              type == DataElement::Type::kAlternative) {
     const DataElement* it;
@@ -35,8 +34,8 @@ void AddAllUUIDs(const DataElement& elem,
 }  // namespace
 
 ServiceRecord::ServiceRecord() {
-  common::UUID service_uuid;
-  common::StringToUuid(uuid::Generate(), &service_uuid);
+  UUID service_uuid;
+  StringToUuid(uuid::Generate(), &service_uuid);
   SetAttribute(kServiceId, DataElement(service_uuid));
 }
 
@@ -76,13 +75,12 @@ std::set<AttributeId> ServiceRecord::GetAttributesInRange(
   return attrs;
 }
 
-bool ServiceRecord::FindUUID(
-    const std::unordered_set<common::UUID>& uuids) const {
+bool ServiceRecord::FindUUID(const std::unordered_set<UUID>& uuids) const {
   if (uuids.size() == 0) {
     return true;
   }
   // Gather all the UUIDs in the attributes
-  std::unordered_set<common::UUID> attribute_uuids;
+  std::unordered_set<UUID> attribute_uuids;
   for (const auto& it : attributes_) {
     AddAllUUIDs(it.second, &attribute_uuids);
   }
@@ -94,8 +92,7 @@ bool ServiceRecord::FindUUID(
   return true;
 }
 
-void ServiceRecord::SetServiceClassUUIDs(
-    const std::vector<common::UUID>& classes) {
+void ServiceRecord::SetServiceClassUUIDs(const std::vector<UUID>& classes) {
   std::vector<DataElement> class_uuids;
   for (const auto& uuid : classes) {
     class_uuids.emplace_back(DataElement(uuid));
@@ -105,7 +102,7 @@ void ServiceRecord::SetServiceClassUUIDs(
 }
 
 void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
-                                          const common::UUID& uuid,
+                                          const UUID& uuid,
                                           DataElement params) {
   std::vector<DataElement> seq;
   if (id == kPrimaryProtocolList) {
@@ -148,8 +145,7 @@ void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
   }
 }
 
-void ServiceRecord::AddProfile(const common::UUID& uuid, uint8_t major,
-                               uint8_t minor) {
+void ServiceRecord::AddProfile(const UUID& uuid, uint8_t major, uint8_t minor) {
   std::vector<DataElement> seq;
   auto list_it = attributes_.find(kBluetoothProfileDescriptorList);
   if (list_it != attributes_.end()) {

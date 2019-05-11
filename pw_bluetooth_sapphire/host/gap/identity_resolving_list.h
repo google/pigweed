@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
 
+#include <fbl/macros.h>
+
 #include <optional>
 #include <unordered_map>
-
-#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -28,19 +28,19 @@ class IdentityResolvingList final {
 
   // Associate the given |irk| with |identity|. If |identity| is already in the
   // list, the existing entry is updated with the new IRK.
-  void Add(common::DeviceAddress identity, const common::UInt128& irk);
+  void Add(DeviceAddress identity, const UInt128& irk);
 
   // Delete |identity| and associated IRK, if present.
-  void Remove(common::DeviceAddress identity);
+  void Remove(DeviceAddress identity);
 
   // Tries to resolve the given RPA against the identities in the registry.
   // Returns std::nullopt if the address is not a RPA or cannot be resolved.
   // Otherwise, returns a value containing the identity address.
-  std::optional<common::DeviceAddress> Resolve(common::DeviceAddress rpa) const;
+  std::optional<DeviceAddress> Resolve(DeviceAddress rpa) const;
 
  private:
   // Maps identity addresses to IRKs.
-  std::unordered_map<common::DeviceAddress, common::UInt128> registry_;
+  std::unordered_map<DeviceAddress, UInt128> registry_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(IdentityResolvingList);
 };

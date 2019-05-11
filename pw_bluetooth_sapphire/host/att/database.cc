@@ -15,11 +15,6 @@ namespace bt {
 namespace att {
 namespace {
 
-using common::ByteBuffer;
-using common::DynamicByteBuffer;
-using common::PeerId;
-using common::UUID;
-
 bool StartLessThan(const AttributeGrouping& grp, const Handle handle) {
   return grp.start_handle() < handle;
 }

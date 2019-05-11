@@ -53,7 +53,7 @@ class Client;
 // MUST call ShutDown() on the GATT thread to ensure safe clean up.
 class RemoteCharacteristic final {
  public:
-  using ValueCallback = fit::function<void(const common::ByteBuffer&)>;
+  using ValueCallback = fit::function<void(const ByteBuffer&)>;
   using NotifyStatusCallback =
       fit::function<void(att::Status, IdType handler_id)>;
 
@@ -128,7 +128,7 @@ class RemoteCharacteristic final {
   void ResolvePendingNotifyRequests(att::Status status);
 
   // Called when a notification is received for this characteristic.
-  void HandleNotification(const common::ByteBuffer& value);
+  void HandleNotification(const ByteBuffer& value);
 
   fxl::ThreadChecker thread_checker_;
   IdType id_;

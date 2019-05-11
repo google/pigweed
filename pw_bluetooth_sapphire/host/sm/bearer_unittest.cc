@@ -13,16 +13,6 @@ namespace bt {
 namespace sm {
 namespace {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::ContainersEqual;
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::DynamicByteBuffer;
-using common::HostError;
-using common::StaticByteBuffer;
-using common::UInt128;
-
 class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
                        public Bearer::Listener {
  public:

@@ -80,12 +80,12 @@ class Frame {
   //
   // For UIH frames, this function will copy from |buffer|.
   static std::unique_ptr<Frame> Parse(bool credit_based_flow, Role role,
-                                      const common::ByteBuffer& buffer);
+                                      const ByteBuffer& buffer);
 
   // Write this into a buffer. The base implementation of Write() will simply
   // write the address, control, length(=0), and FCS octets into a buffer. This
   // is adequate for non-UIH frames.
-  virtual void Write(common::MutableBufferView buffer) const;
+  virtual void Write(MutableBufferView buffer) const;
 
   // The amount of space this frame takes up when written. Used to allocate the
   // correct size for Write().
@@ -151,7 +151,7 @@ class Frame {
   virtual size_t header_size() const;
 
   // Write the header of this frame into a buffer.
-  virtual void WriteHeader(common::MutableBufferView buffer) const;
+  virtual void WriteHeader(MutableBufferView buffer) const;
 
   // RFCOMM session parameters.
   Role role_;
@@ -209,7 +209,7 @@ class UnnumberedInfoHeaderCheckFrame : public Frame {
   virtual ~UnnumberedInfoHeaderCheckFrame() = default;
 
   // Frame overrides
-  virtual void Write(common::MutableBufferView buffer) const override = 0;
+  virtual void Write(MutableBufferView buffer) const override = 0;
   virtual size_t written_size() const override = 0;
   virtual InformationLength length() const override = 0;
 
@@ -236,7 +236,7 @@ class UnnumberedInfoHeaderCheckFrame : public Frame {
   virtual size_t header_size() const override;
 
   // Write the header of this frame, including the optional credits octet.
-  virtual void WriteHeader(common::MutableBufferView buffer) const override;
+  virtual void WriteHeader(MutableBufferView buffer) const override;
 
   bool credit_based_flow_;
   uint8_t credits_;
@@ -247,10 +247,10 @@ class UserDataFrame : public UnnumberedInfoHeaderCheckFrame {
   // |information| is the payload; "information" is RFCOMM/GSM's term for the
   // payload of a frame. Frame takes ownership of |information|.
   UserDataFrame(Role role, bool credit_based_flow, DLCI dlci,
-                common::ByteBufferPtr information);
+                ByteBufferPtr information);
 
   // UnnumberedInfoHeaderCheckFrame overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
   inline InformationLength length() const override {
     return information_ ? information_->size() : 0;
@@ -259,10 +259,10 @@ class UserDataFrame : public UnnumberedInfoHeaderCheckFrame {
   // Transfers ownership of the information field (aka the payload) from this
   // Frame to the caller. Future calls to TakeInformation() will return nullptr.
   // It is expected that the Frame will be destructed soon after this call.
-  common::ByteBufferPtr TakeInformation();
+  ByteBufferPtr TakeInformation();
 
  private:
-  common::ByteBufferPtr information_;
+  ByteBufferPtr information_;
 };
 
 // Represents a UIH frame encapsulating a multiplexer control channel command.
@@ -273,7 +273,7 @@ class MuxCommandFrame : public UnnumberedInfoHeaderCheckFrame {
                   std::unique_ptr<MuxCommand> mux_command);
 
   // UnnumberedInfoHeaderCheckFrame overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
   inline InformationLength length() const override {
     return mux_command_->written_size();

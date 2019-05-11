@@ -7,7 +7,6 @@
 #include <zircon/assert.h>
 
 namespace bt {
-namespace common {
 
 namespace {
 
@@ -141,5 +140,4 @@ std::string DeviceClass::ToString() const {
   return "(unknown)";
 }
 
-}  // namespace common
 }  // namespace bt

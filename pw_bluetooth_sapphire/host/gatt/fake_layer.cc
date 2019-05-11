@@ -51,7 +51,7 @@ void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
   // TODO: implement
 }
 
-void FakeLayer::ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
+void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
                              ServiceListCallback callback) {
   // TODO: implement
 }

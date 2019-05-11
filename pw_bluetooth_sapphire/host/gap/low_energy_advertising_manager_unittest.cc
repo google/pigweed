@@ -20,8 +20,6 @@ namespace bt {
 namespace gap {
 namespace {
 
-using common::DeviceAddress;
-
 constexpr size_t kDefaultMaxAds = 1;
 constexpr size_t kDefaultMaxAdSize = 23;
 constexpr size_t kDefaultFakeAdSize = 20;
@@ -46,7 +44,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
   FakeLowEnergyAdvertiser(
       size_t max_ads, size_t max_ad_size,
-      std::map<common::DeviceAddress, AdvertisementStatus>* ad_store)
+      std::map<DeviceAddress, AdvertisementStatus>* ad_store)
       : max_ads_(max_ads), max_ad_size_(max_ad_size), ads_(ad_store) {
     ZX_ASSERT(ads_);
   }
@@ -59,9 +57,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   bool AllowsRandomAddressChange() const override { return true; }
 
-  void StartAdvertising(const common::DeviceAddress& address,
-                        const common::ByteBuffer& data,
-                        const common::ByteBuffer& scan_rsp,
+  void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
+                        const ByteBuffer& scan_rsp,
                         ConnectionCallback connect_callback,
                         zx::duration interval, bool anonymous,
                         AdvertisingStatusCallback callback) override {
@@ -71,13 +68,11 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
       return;
     }
     if (data.size() > max_ad_size_) {
-      callback(zx::duration(),
-               hci::Status(common::HostError::kInvalidParameters));
+      callback(zx::duration(), hci::Status(HostError::kInvalidParameters));
       return;
     }
     if (scan_rsp.size() > max_ad_size_) {
-      callback(zx::duration(),
-               hci::Status(common::HostError::kInvalidParameters));
+      callback(zx::duration(), hci::Status(HostError::kInvalidParameters));
       return;
     }
     AdvertisementStatus new_status;
@@ -90,14 +85,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     callback(interval, hci::Status());
   }
 
-  bool StopAdvertising(const common::DeviceAddress& address) override {
+  bool StopAdvertising(const DeviceAddress& address) override {
     ads_->erase(address);
     return true;
   }
 
   void OnIncomingConnection(
       hci::ConnectionHandle handle, hci::Connection::Role role,
-      const common::DeviceAddress& peer_address,
+      const DeviceAddress& peer_address,
       const hci::LEConnectionParameters& conn_params) override {
     // Right now, we call the first callback, because we can't call any other
     // ones.
@@ -117,7 +112,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
  private:
   size_t max_ads_, max_ad_size_;
-  std::map<common::DeviceAddress, AdvertisementStatus>* ads_;
+  std::map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Status pending_error_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
@@ -146,8 +141,8 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   AdvertisingData CreateFakeAdvertisingData(
       size_t packed_size = kDefaultFakeAdSize) {
     AdvertisingData result;
-    auto buffer = common::CreateStaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04,
-                                                 0x05, 0x06, 0x07, 0x08);
+    auto buffer = CreateStaticByteBuffer(0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
+                                         0x06, 0x07, 0x08);
     size_t bytes_left = packed_size;
     while (bytes_left > 0) {
       // Each field to take 10 bytes total, unless the next header (4 bytes)
@@ -189,7 +184,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
   }
 
   LowEnergyAdvertisingManager* adv_mgr() const { return adv_mgr_.get(); }
-  const std::map<common::DeviceAddress, AdvertisementStatus>& ad_store() {
+  const std::map<DeviceAddress, AdvertisementStatus>& ad_store() {
     return ad_store_;
   }
   AdvertisementId last_ad_id() const { return last_ad_id_; }
@@ -205,7 +200,7 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
  private:
   hci::FakeLocalAddressDelegate fake_address_delegate_;
 
-  std::map<common::DeviceAddress, AdvertisementStatus> ad_store_;
+  std::map<DeviceAddress, AdvertisementStatus> ad_store_;
   AdvertisementId last_ad_id_;
   std::optional<hci::Status> last_status_;
   std::unique_ptr<FakeLowEnergyAdvertiser> advertiser_;

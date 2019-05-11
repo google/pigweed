@@ -54,7 +54,7 @@ class BrEdrConnection final {
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
-                         common::DeviceAddress local_address,
+                         DeviceAddress local_address,
                          fbl::RefPtr<data::Domain> data_domain,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
@@ -69,7 +69,7 @@ class BrEdrConnectionManager final {
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
 
   // Retrieves the peer id that is connected to the connection |handle|.
-  // Returns common::kInvalidPeerId if no such peer exists.
+  // Returns kInvalidPeerId if no such peer exists.
   PeerId GetPeerId(hci::ConnectionHandle handle) const;
 
   // Opens a new L2CAP channel to service |psm| on |peer_id|. Returns false if
@@ -89,7 +89,7 @@ class BrEdrConnectionManager final {
   // TODO(BT-785): Make identifcal searches just search once
   using SearchCallback = sdp::ServiceDiscoverer::ResultCallback;
   using SearchId = sdp::ServiceDiscoverer::SearchId;
-  SearchId AddServiceSearch(const common::UUID& uuid,
+  SearchId AddServiceSearch(const UUID& uuid,
                             std::unordered_set<sdp::AttributeId> attributes,
                             SearchCallback callback);
 
@@ -109,14 +109,14 @@ class BrEdrConnectionManager final {
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
   // Intialize a GAP-level ACL connection from the hci connection_handle
-  void InitializeConnection(common::DeviceAddress addr,
+  void InitializeConnection(DeviceAddress addr,
                             hci::ConnectionHandle connection_handle);
 
   // Called when an outgoing connection fails to establish
-  void OnConnectFailure(hci::Status status, common::PeerId peer_id);
+  void OnConnectFailure(hci::Status status, PeerId peer_id);
 
   // Called to cancel an outgoing connection request
-  void SendCreateConnectionCancelCommand(common::DeviceAddress addr);
+  void SendCreateConnectionCancelCommand(DeviceAddress addr);
 
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
   // |peer_id| is not a recognized BR/EDR peer or the corresponding peer is
@@ -156,7 +156,7 @@ class BrEdrConnectionManager final {
   void EstablishConnection(Peer* peer, hci::Status status,
                            std::unique_ptr<hci::Connection> conn_ptr);
 
-  Peer* FindOrInitPeer(common::DeviceAddress addr);
+  Peer* FindOrInitPeer(DeviceAddress addr);
 
   // Called when we complete a pending request. Initiates a new connection
   // attempt for the next peer in the pending list, if any.
@@ -183,7 +183,7 @@ class BrEdrConnectionManager final {
   // This object must outlive this instance.
   PeerCache* cache_;
 
-  const common::DeviceAddress local_address_;
+  const DeviceAddress local_address_;
 
   fbl::RefPtr<data::Domain> data_domain_;
 

@@ -16,8 +16,6 @@
 namespace bt {
 namespace gap {
 
-using common::DeviceAddress;
-using common::HostError;
 using std::unique_ptr;
 using ConnectionState = Peer::ConnectionState;
 
@@ -148,7 +146,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable,
                            self->page_scan_interval_ = 0;
                            self->page_scan_window_ = 0;
                          } else if (status) {
-                           cb(hci::Status(common::HostError::kFailed));
+                           cb(hci::Status(HostError::kFailed));
                            return;
                          }
                          cb(status);
@@ -165,7 +163,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable,
           return;
         }
         if (!self) {
-          cb(hci::Status(common::HostError::kFailed));
+          cb(hci::Status(HostError::kFailed));
           return;
         }
         SetPageScanEnabled(true, self->hci_, self->dispatcher_, std::move(cb));
@@ -180,7 +178,7 @@ void BrEdrConnectionManager::SetPairingDelegate(
 PeerId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    return common::kInvalidPeerId;
+    return kInvalidPeerId;
   }
 
   auto* peer = cache_->FindByAddress(it->second.link().peer_address());
@@ -204,7 +202,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
 }
 
 BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
-    const common::UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
+    const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
     BrEdrConnectionManager::SearchCallback callback) {
   return discoverer_.AddSearch(uuid, std::move(attributes),
                                std::move(callback));
@@ -237,7 +235,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
   if (!hci_cmd_runner_->IsReady()) {
     // TODO(jamuraa): could run the three "settings" commands in parallel and
     // remove the sequence runner.
-    cb(hci::Status(common::HostError::kInProgress));
+    cb(hci::Status(HostError::kInProgress));
     return;
   }
 
@@ -538,8 +536,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLinkKeyRequestEventCode);
   const auto& params = event.view().payload<hci::LinkKeyRequestParams>();
 
-  common::DeviceAddress addr(common::DeviceAddress::Type::kBREDR,
-                             params.bd_addr);
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
   auto* peer = cache_->FindByAddress(addr);
   if (!peer || !peer->bredr()->bonded()) {
@@ -587,8 +584,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   const auto& params =
       event.view().payload<hci::LinkKeyNotificationEventParams>();
 
-  common::DeviceAddress addr(common::DeviceAddress::Type::kBREDR,
-                             params.bd_addr);
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
   bt_log(TRACE, "gap-bredr", "got link key (type %u) for address %s",
          params.key_type, addr.ToString().c_str());
@@ -624,7 +620,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
     return;
   }
 
-  common::UInt128 key_value;
+  UInt128 key_value;
   std::copy(params.link_key, &params.link_key[key_value.size()],
             key_value.begin());
   sm::LTK key(sec_props, hci::LinkKey(key_value, 0, 0));

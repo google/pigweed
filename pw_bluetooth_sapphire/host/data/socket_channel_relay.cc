@@ -4,10 +4,10 @@
 
 #include "socket_channel_relay.h"
 
-#include <utility>
-
 #include <lib/async/default.h>
 #include <zircon/assert.h>
+
+#include <utility>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -74,7 +74,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
   const auto self = weak_ptr_factory_.GetWeakPtr();
   const auto channel_id = channel_->id();
   const bool activate_success = channel_->Activate(
-      [self, channel_id](common::ByteBufferPtr rx_data) {
+      [self, channel_id](ByteBufferPtr rx_data) {
         // Note: this lambda _may_ be invoked synchronously.
         if (self) {
           self->OnChannelDataReceived(std::move(rx_data));
@@ -166,7 +166,7 @@ void SocketChannelRelay<ChannelT>::OnSocketClosed(zx_status_t status) {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
-    common::ByteBufferPtr rx_data) {
+    ByteBufferPtr rx_data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
@@ -252,9 +252,8 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
 
     // TODO(NET-1391): For low latency and low jitter, IWBN to avoid allocating
     // dynamic memory on every read.
-    bool write_success =
-        channel_->Send(std::make_unique<common::DynamicByteBuffer>(
-            common::BufferView(read_buf, n_bytes_read)));
+    bool write_success = channel_->Send(std::make_unique<DynamicByteBuffer>(
+        BufferView(read_buf, n_bytes_read)));
     if (!write_success) {
       bt_log(DEBUG, "l2cap", "Failed to write %zu bytes to channel %u",
              n_bytes_read, channel_->id());
@@ -277,7 +276,7 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
     ZX_DEBUG_ASSERT(socket_write_queue_.front());
     ZX_DEBUG_ASSERT(socket_write_queue_.front()->size());
 
-    const common::ByteBuffer& rx_data = *socket_write_queue_.front();
+    const ByteBuffer& rx_data = *socket_write_queue_.front();
     size_t n_bytes_written = 0;
     write_res =
         socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);

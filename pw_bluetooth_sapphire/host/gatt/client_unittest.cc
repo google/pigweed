@@ -11,20 +11,13 @@ namespace bt {
 namespace gatt {
 namespace {
 
-using common::ByteBuffer;
-using common::ContainersEqual;
-using common::CreateStaticByteBuffer;
-using common::HostError;
-using common::LowerBits;
-using common::UpperBits;
-
-constexpr common::UUID kTestUuid1((uint16_t)0xDEAD);
-constexpr common::UUID kTestUuid2((uint16_t)0xBEEF);
-constexpr common::UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-                                   14, 15});
+constexpr UUID kTestUuid1((uint16_t)0xDEAD);
+constexpr UUID kTestUuid2((uint16_t)0xBEEF);
+constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                           15});
 
 // clang-format off
-const auto kDiscoverAllPrimaryRequest = common::CreateStaticByteBuffer(
+const auto kDiscoverAllPrimaryRequest = CreateStaticByteBuffer(
     0x10,        // opcode: read by group type request
     0x01, 0x00,  // start handle: 0x0001
     0xFF, 0xFF,  // end handle: 0xFFFF
@@ -71,7 +64,7 @@ class GATT_ClientTest : public l2cap::testing::FakeChannelTest {
   // given handles
   bool ExpectFindInformation(att::Handle range_start = 0x0001,
                              att::Handle range_end = 0xFFFF) {
-    return Expect(common::CreateStaticByteBuffer(
+    return Expect(CreateStaticByteBuffer(
         0x04,                                            // opcode
         LowerBits(range_start), UpperBits(range_start),  // start handle
         LowerBits(range_end), UpperBits(range_end)       // end hanle
@@ -92,7 +85,7 @@ class GATT_ClientTest : public l2cap::testing::FakeChannelTest {
 
 TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
   constexpr uint16_t kPreferredMTU = 100;
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -116,7 +109,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
 
   // Respond back with a malformed PDU. This should cause a link error and the
   // MTU request should fail.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x03,  // opcode: exchange MTU response
       30     // server rx mtu is one octet too short
       ));
@@ -132,7 +125,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
 TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kInitialMTU = 50;
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -157,7 +150,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
 
   // Respond with "Request Not Supported". This will cause us to switch to the
   // default MTU.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x02,        // request: exchange MTU
       0x00, 0x00,  // handle: 0
@@ -174,7 +167,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
 
 TEST_F(GATT_ClientTest, ExchangeMTUErrorOther) {
   constexpr uint16_t kPreferredMTU = 100;
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -196,12 +189,11 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorOther) {
   ASSERT_TRUE(Expect(kExpectedRequest));
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
-      0x01,        // opcode: error response
-      0x02,        // request: exchange MTU
-      0x00, 0x00,  // handle: 0
-      0x0E         // error: Unlikely Error
-      ));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x01,  // opcode: error response
+                                              0x02,  // request: exchange MTU
+                                              0x00, 0x00,  // handle: 0
+                                              0x0E  // error: Unlikely Error
+                                              ));
 
   RunLoopUntilIdle();
 
@@ -215,7 +207,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectLocal) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = kPreferredMTU + 1;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -237,7 +229,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectLocal) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x03,               // opcode: exchange MTU response
       kServerRxMTU, 0x00  // server rx mtu
       ));
@@ -254,7 +246,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectRemote) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = kPreferredMTU - 1;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -276,7 +268,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectRemote) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x03,               // opcode: exchange MTU response
       kServerRxMTU, 0x00  // server rx mtu
       ));
@@ -293,7 +285,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
   constexpr uint16_t kPreferredMTU = 100;
   constexpr uint16_t kServerRxMTU = 5;  // Smaller than the LE default MTU
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
+  const auto kExpectedRequest = CreateStaticByteBuffer(
       0x02,                // opcode: exchange MTU
       kPreferredMTU, 0x00  // client rx mtu: kPreferredMTU
   );
@@ -315,7 +307,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
   ASSERT_EQ(att::kLEMinMTU, att()->mtu());
 
   // Respond with an error. The MTU should remain unchanged.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x03,               // opcode: exchange MTU response
       kServerRxMTU, 0x00  // server rx mtu
       ));
@@ -339,7 +331,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryResponseTooShort) {
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   // Respond back with a malformed payload.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(0x11));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x11));
 
   RunLoopUntilIdle();
 
@@ -360,7 +352,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedDataLength) {
   // Respond back with an unexpected data length. This is 6 for services with a
   // 16-bit UUID (start (2) + end (2) + uuid (2)) and 20 for 128-bit
   // (start (2) + end (2) + uuid (16)).
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,                // opcode: read by group type response
       7,                   // data length: 7 (not 6 or 20)
       0, 1, 2, 3, 4, 5, 6  // one entry of length 7, which will be ignored
@@ -382,7 +374,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedAttrDataList) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,              // opcode: read by group type response
       6,                 // data length: 6 (16-bit UUIDs)
       0, 1, 2, 3, 4, 5,  // entry 1: correct size
@@ -408,7 +400,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryEmptyDataList) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,  // opcode: read by group type response
       6      // data length: 6 (16-bit UUIDs)
              // data list is empty
@@ -430,7 +422,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryAttributeNotFound) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001
@@ -455,7 +447,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryError) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x01, 0x00,  // handle: 0x0001
@@ -480,7 +472,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedServiceRange) {
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   // Return a service where start > end.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x06,        // data length: 6 (16-bit UUIDs)
       0x02, 0x00,  // svc 1 start: 0x0002
@@ -511,7 +503,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimary16BitResultsSingleRequest) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x06,        // data length: 6 (16-bit UUIDs)
       0x01, 0x00,  // svc 1 start: 0x0001
@@ -552,7 +544,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimary128BitResultSingleRequest) {
 
   ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x14,        // data length: 20 (128-bit UUIDs)
       0x01, 0x00,  // svc 1 start: 0x0008
@@ -573,24 +565,24 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimary128BitResultSingleRequest) {
 }
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
-  const auto kExpectedRequest1 = common::CreateStaticByteBuffer(
-      0x10,        // opcode: read by group type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x00, 0x28   // type: primary service (0x2800)
-  );
-  const auto kExpectedRequest2 = common::CreateStaticByteBuffer(
-      0x10,        // opcode: read by group type request
-      0x08, 0x00,  // start handle: 0x0008
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x00, 0x28   // type: primary service (0x2800)
-  );
-  const auto kExpectedRequest3 = common::CreateStaticByteBuffer(
-      0x10,        // opcode: read by group type request
-      0x0A, 0x00,  // start handle: 0x000A
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x00, 0x28   // type: primary service (0x2800)
-  );
+  const auto kExpectedRequest1 =
+      CreateStaticByteBuffer(0x10,        // opcode: read by group type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28   // type: primary service (0x2800)
+      );
+  const auto kExpectedRequest2 =
+      CreateStaticByteBuffer(0x10,        // opcode: read by group type request
+                             0x08, 0x00,  // start handle: 0x0008
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28   // type: primary service (0x2800)
+      );
+  const auto kExpectedRequest3 =
+      CreateStaticByteBuffer(0x10,        // opcode: read by group type request
+                             0x0A, 0x00,  // start handle: 0x000A
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28   // type: primary service (0x2800)
+      );
 
   att::Status status(HostError::kFailed);
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -607,7 +599,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
   ASSERT_TRUE(Expect(kExpectedRequest1));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x06,        // data length: 6 (16-bit UUIDs)
       0x01, 0x00,  // svc 1 start: 0x0001
@@ -624,7 +616,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
 
   // Respond with one 128-bit service UUID.
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x11,        // opcode: read by group type response
       0x14,        // data length: 20 (128-bit UUIDs)
       0x08, 0x00,  // svc 1 start: 0x0008
@@ -638,7 +630,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
   ASSERT_TRUE(Expect(kExpectedRequest3));
 
   // Terminate the procedure with an error response.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x10,        // request: read by group type
       0x0A, 0x00,  // handle: 0x000A
@@ -681,12 +673,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResponseTooShort) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -699,7 +691,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResponseTooShort) {
   ASSERT_TRUE(Expect(kExpectedRequest));
 
   // Respond back with a malformed payload.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(0x09));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x09));
 
   RunLoopUntilIdle();
 
@@ -710,12 +702,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedDataLength) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -730,7 +722,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedDataLength) {
   // Respond back with an unexpected data length. This is 7 for characteristics
   // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
   // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,                   // opcode: read by type response
       8,                      // data length: 8 (not 7 or 21)
       0, 1, 2, 3, 4, 5, 6, 7  // one entry of length 8, which will be ignored
@@ -745,12 +737,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -765,7 +757,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
   // Respond back with an unexpected data length. This is 7 for characteristics
   // with a 16-bit UUID (handle (2) + props (1) + value handle (2) + uuid (2))
   // and 21 for 128-bit (handle (2) + props (1) + value handle (2) + uuid (16)).
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,                 // opcode: read by type response
       7,                    // data length: 7 (16-bit UUIDs)
       0, 1, 2, 3, 4, 5, 6,  // entry 1: correct size
@@ -781,12 +773,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -798,7 +790,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,  // opcode: read by type response
       7      // data length: 7 (16-bit UUIDs)
              // data list empty
@@ -813,12 +805,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -830,7 +822,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x01, 0x00,  // handle: 0x0001
@@ -847,12 +839,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryError) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -864,7 +856,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryError) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x01, 0x00,  // handle: 0x0001
@@ -881,12 +873,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -903,7 +895,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x03, 0x00,  // chrc 1 handle
@@ -934,12 +926,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -956,7 +948,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x15,        // data length: 21 (128-bit UUIDs)
       0x05, 0x00,  // chrc handle
@@ -980,24 +972,24 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest1 = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x01, 0x00,  // start handle: 0x0001
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const auto kExpectedRequest2 = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x06, 0x00,  // start handle: 0x0006
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
-  const auto kExpectedRequest3 = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x08, 0x00,  // start handle: 0x0008
-      0xFF, 0xFF,  // end handle: 0xFFFF
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest1 =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
+  const auto kExpectedRequest2 =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x06, 0x00,  // start handle: 0x0006
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
+  const auto kExpectedRequest3 =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x08, 0x00,  // start handle: 0x0008
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -1014,7 +1006,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
 
   ASSERT_TRUE(Expect(kExpectedRequest1));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x03, 0x00,  // chrc 1 handle
@@ -1033,7 +1025,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
 
   // Respond with one characteristic with a 128-bit UUID
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x15,        // data length: 21 (128-bit UUIDs)
       0x07, 0x00,  // chrc handle
@@ -1048,7 +1040,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
   ASSERT_TRUE(Expect(kExpectedRequest3));
 
   // Terminate the procedure with an error response.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x0A, 0x00,  // handle: 0x000A
@@ -1082,12 +1074,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x02, 0x00,  // start handle: 0x0002
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x02, 0x00,  // start handle: 0x0002
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -1104,7 +1096,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x01, 0x00,  // chrc 1 handle (handle is before the range)
@@ -1125,12 +1117,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x02, 0x00,  // start handle: 0x0002
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x02, 0x00,  // start handle: 0x0002
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -1147,7 +1139,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x06, 0x00,  // chrc 1 handle (handle is beyond the range)
@@ -1168,12 +1160,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryValueNotContiguous) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x02, 0x00,  // start handle: 0x0002
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x02, 0x00,  // start handle: 0x0002
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -1190,7 +1182,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryValueNotContiguous) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x02, 0x00,  // chrc 1 handle
@@ -1209,12 +1201,12 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
   constexpr att::Handle kStart = 0x0002;
   constexpr att::Handle kEnd = 0x0005;
 
-  const auto kExpectedRequest = common::CreateStaticByteBuffer(
-      0x08,        // opcode: read by type request
-      0x02, 0x00,  // start handle: 0x0002
-      0x05, 0x00,  // end handle: 0x0005
-      0x03, 0x28   // type: characteristic decl. (0x2803)
-  );
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x08,        // opcode: read by type request
+                             0x02, 0x00,  // start handle: 0x0002
+                             0x05, 0x00,  // end handle: 0x0005
+                             0x03, 0x28   // type: characteristic decl. (0x2803)
+      );
 
   att::Status status;
   auto res_cb = [this, &status](att::Status val) { status = val; };
@@ -1231,7 +1223,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x09,        // opcode: read by type response
       0x07,        // data length: 7 (16-bit UUIDs)
       0x02, 0x00,  // chrc 1 handle
@@ -1268,7 +1260,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResponseTooShort) {
   ASSERT_TRUE(ExpectFindInformation());
 
   // Respond back with a malformed payload.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(0x05));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x05));
 
   RunLoopUntilIdle();
 
@@ -1280,7 +1272,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedDataLength) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,  // opcode: find information response
       0x03   // format (must be 1 or 2)
       ));
@@ -1295,10 +1287,10 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList16) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
-      0x05,  // opcode: find information response
-      0x01,  // format: 16-bit. Data length must be 4
-      1, 2, 3, 4, 5));
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x05,  // opcode: find information response
+                             0x01,  // format: 16-bit. Data length must be 4
+                             1, 2, 3, 4, 5));
 
   RunLoopUntilIdle();
 
@@ -1310,7 +1302,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMalformedAttrDataList128) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,  // opcode: find information response
       0x02,  // format: 128-bit. Data length must be 18
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));
@@ -1325,7 +1317,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryEmptyDataList) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,  // opcode: find information response
       0x01   // format: 16-bit.
              // data list empty
@@ -1341,7 +1333,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryAttributeNotFound) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x01, 0x00,  // handle: 0x0001
@@ -1358,7 +1350,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryError) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x04,        // request: find information
       0x01, 0x00,  // handle: 0x0001
@@ -1384,7 +1376,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   SendDiscoverDescriptors(&status, std::move(desc_cb), kStart, kEnd);
   ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit. Data length must be 4
       0x01, 0x00,  // desc 1 handle
@@ -1421,7 +1413,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
 
   att()->set_mtu(512);
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x02,        // format: 128-bit. Data length must be 18
       0x01, 0x00,  // desc 1 handle
@@ -1459,7 +1451,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
   // Batch 1
   ASSERT_TRUE(ExpectFindInformation(kStart1, kEnd));
   return;
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit. Data length must be 4
       0x01, 0x00,  // desc 1 handle
@@ -1471,7 +1463,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
 
   // Batch 2
   ASSERT_TRUE(ExpectFindInformation(kStart2, kEnd));
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x02,        // format: 128-bit. Data length must be 18
       0x03, 0x00,  // desc 3 handle
@@ -1482,7 +1474,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
 
   // Batch 3
   ASSERT_TRUE(ExpectFindInformation(kStart3, kEnd));
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x08,        // request: read by type
       0x04, 0x00,  // handle: kStart3 (0x0004)
@@ -1507,7 +1499,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeforeRange) {
   SendDiscoverDescriptors(&status, NopDescCallback, kStart);
   ASSERT_TRUE(ExpectFindInformation(kStart));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit.
       0x01, 0x00,  // handle is before the range
@@ -1527,7 +1519,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeyondRange) {
   SendDiscoverDescriptors(&status, NopDescCallback, kStart, kEnd);
   ASSERT_TRUE(ExpectFindInformation(kStart, kEnd));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit.
       0x03, 0x00,  // handle is beyond the range
@@ -1544,7 +1536,7 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
   SendDiscoverDescriptors(&status, NopDescCallback);
   ASSERT_TRUE(ExpectFindInformation());
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x05,        // opcode: find information response
       0x01,        // format: 16-bit.
       0x01, 0x00,  // handle: 0x0001
@@ -1559,12 +1551,12 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryHandlesNotIncreasing) {
 }
 
 TEST_F(GATT_ClientTest, WriteRequestMalformedResponse) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x12,          // opcode: write request
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x12,          // opcode: write request
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
 
   att::Status status;
@@ -1579,7 +1571,7 @@ TEST_F(GATT_ClientTest, WriteRequestMalformedResponse) {
   ASSERT_FALSE(fake_chan()->link_error());
 
   // Respond back with a malformed PDU. This should result in a link error.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x013,  // opcode: write response
       0       // One byte payload. The write request has no parameters.
       ));
@@ -1591,13 +1583,13 @@ TEST_F(GATT_ClientTest, WriteRequestMalformedResponse) {
 }
 
 TEST_F(GATT_ClientTest, WriteRequestExceedsMtu) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x12,          // opcode: write request
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x12,          // opcode: write request
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
@@ -1614,12 +1606,12 @@ TEST_F(GATT_ClientTest, WriteRequestExceedsMtu) {
 }
 
 TEST_F(GATT_ClientTest, WriteRequestError) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x12,          // opcode: write request
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x12,          // opcode: write request
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
 
   att::Status status;
@@ -1631,7 +1623,7 @@ TEST_F(GATT_ClientTest, WriteRequestError) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x12,        // request: write request
       0x01, 0x00,  // handle: 0x0001
@@ -1645,12 +1637,12 @@ TEST_F(GATT_ClientTest, WriteRequestError) {
 }
 
 TEST_F(GATT_ClientTest, WriteRequestSuccess) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x12,          // opcode: write request
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x12,          // opcode: write request
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
 
   att::Status status;
@@ -1662,9 +1654,8 @@ TEST_F(GATT_ClientTest, WriteRequestSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(
-      common::CreateStaticByteBuffer(0x13  // opcode: write response
-                                     ));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x13  // opcode: write response
+                                              ));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1672,13 +1663,13 @@ TEST_F(GATT_ClientTest, WriteRequestSuccess) {
 }
 
 TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;
   constexpr size_t kMtu = 5;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x52,          // opcode: write command
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x52,          // opcode: write command
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
   ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
 
@@ -1695,12 +1686,12 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
 }
 
 TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
-  const auto kValue = common::CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   const auto kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x52,          // opcode: write request
-                                     0x01, 0x00,    // handle: 0x0001
-                                     'f', 'o', 'o'  // value: "foo"
+      CreateStaticByteBuffer(0x52,          // opcode: write request
+                             0x01, 0x00,    // handle: 0x0001
+                             'f', 'o', 'o'  // value: "foo"
       );
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -1713,8 +1704,8 @@ TEST_F(GATT_ClientTest, WriteWithoutResponseSuccess) {
 TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x0A,       // opcode: read request
-                                     0x01, 0x00  // handle: 0x0001
+      CreateStaticByteBuffer(0x0A,       // opcode: read request
+                             0x01, 0x00  // handle: 0x0001
       );
 
   att::Status status(HostError::kFailed);
@@ -1732,7 +1723,7 @@ TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
   ASSERT_TRUE(Expect(kExpectedRequest));
 
   // ATT Read Response with no payload.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(0x0B));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x0B));
 
   RunLoopUntilIdle();
 
@@ -1743,19 +1734,19 @@ TEST_F(GATT_ClientTest, ReadRequestEmptyResponse) {
 TEST_F(GATT_ClientTest, ReadRequestSuccess) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x0A,       // opcode: read request
-                                     0x01, 0x00  // handle: 0x0001
+      CreateStaticByteBuffer(0x0A,       // opcode: read request
+                             0x01, 0x00  // handle: 0x0001
       );
 
   const auto kExpectedResponse =
-      common::CreateStaticByteBuffer(0x0B,  // opcode: read response
-                                     't', 'e', 's', 't'  // value: "test"
+      CreateStaticByteBuffer(0x0B,               // opcode: read response
+                             't', 'e', 's', 't'  // value: "test"
       );
 
   att::Status status(HostError::kFailed);
   auto cb = [&](att::Status cb_status, const ByteBuffer& value) {
     status = cb_status;
-    EXPECT_TRUE(common::ContainersEqual(kExpectedResponse.view(1), value));
+    EXPECT_TRUE(ContainersEqual(kExpectedResponse.view(1), value));
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -1775,8 +1766,8 @@ TEST_F(GATT_ClientTest, ReadRequestSuccess) {
 TEST_F(GATT_ClientTest, ReadRequestError) {
   constexpr att::Handle kHandle = 0x0001;
   const auto kExpectedRequest =
-      common::CreateStaticByteBuffer(0x0A,       // opcode: read request
-                                     0x01, 0x00  // handle: 0x0001
+      CreateStaticByteBuffer(0x0A,       // opcode: read request
+                             0x01, 0x00  // handle: 0x0001
       );
 
   att::Status status;
@@ -1793,7 +1784,7 @@ TEST_F(GATT_ClientTest, ReadRequestError) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0A,        // request: read request
       0x01, 0x00,  // handle: 0x0001
@@ -1832,7 +1823,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestEmptyResponse) {
   ASSERT_TRUE(Expect(kExpectedRequest));
 
   // ATT Read Blob Response with no payload.
-  fake_chan()->Receive(common::CreateStaticByteBuffer(0x0D));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x0D));
 
   RunLoopUntilIdle();
 
@@ -1898,7 +1889,7 @@ TEST_F(GATT_ClientTest, ReadBlobRequestError) {
 
   ASSERT_TRUE(Expect(kExpectedRequest));
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x01,        // opcode: error response
       0x0C,        // request: read blob request
       0x01, 0x00,  // handle: 0x0001
@@ -1924,10 +1915,12 @@ TEST_F(GATT_ClientTest, EmptyNotification) {
         EXPECT_EQ(0u, value.size());
       });
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  // clang-format off
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x1B,       // opcode: notification
       0x01, 0x00  // handle: 1
       ));
+  // clang-format on
 
   RunLoopUntilIdle();
   EXPECT_TRUE(called);
@@ -1945,11 +1938,13 @@ TEST_F(GATT_ClientTest, Notification) {
         EXPECT_EQ("test", value.AsString());
       });
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  // clang-format off
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x1B,               // opcode: notification
       0x01, 0x00,         // handle: 1
       't', 'e', 's', 't'  // value: "test"
-      ));
+  ));
+  // clang-format on
 
   RunLoopUntilIdle();
   EXPECT_TRUE(called);
@@ -1967,14 +1962,16 @@ TEST_F(GATT_ClientTest, Indication) {
         EXPECT_EQ("test", value.AsString());
       });
 
-  fake_chan()->Receive(common::CreateStaticByteBuffer(
+  // clang-format off
+  fake_chan()->Receive(CreateStaticByteBuffer(
       0x1D,               // opcode: indication
       0x01, 0x00,         // handle: 1
       't', 'e', 's', 't'  // value: "test"
-      ));
+  ));
+  // clang-format on
 
   // Wait until a confirmation gets sent.
-  EXPECT_TRUE(Expect(common::CreateStaticByteBuffer(0x1E)));
+  EXPECT_TRUE(Expect(CreateStaticByteBuffer(0x1E)));
   EXPECT_TRUE(called);
 }
 

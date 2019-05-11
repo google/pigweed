@@ -110,7 +110,7 @@ bool CreditsCandidate(Frame* frame) {
 
 }  // namespace
 
-void Session::SendUserData(DLCI dlci, common::ByteBufferPtr data) {
+void Session::SendUserData(DLCI dlci, ByteBufferPtr data) {
   ZX_DEBUG_ASSERT(!data || data->size() <= GetMaximumUserDataLength());
   bool sent = SendFrame(std::make_unique<UserDataFrame>(
       role_, credit_based_flow_, dlci, std::move(data)));
@@ -233,7 +233,7 @@ void Session::OpenRemoteChannel(ServerChannel server_channel,
       });
 }
 
-void Session::RxCallback(common::ByteBufferPtr sdu) {
+void Session::RxCallback(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   auto frame = Frame::Parse(credit_based_flow_, OppositeRole(role_), *sdu);
   if (!frame) {
@@ -404,7 +404,7 @@ bool Session::SendFrame(std::unique_ptr<Frame> frame, fit::closure sent_cb) {
   }
 
   // Allocate and write the buffer.
-  auto buffer = common::NewSlabBuffer(frame->written_size());
+  auto buffer = NewSlabBuffer(frame->written_size());
   if (!buffer) {
     bt_log(WARN, "rfcomm", "couldn't allocate frame buffer (%zu)",
            frame->written_size());

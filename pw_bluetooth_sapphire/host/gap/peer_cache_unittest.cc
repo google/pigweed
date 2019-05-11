@@ -18,11 +18,6 @@ namespace bt {
 namespace gap {
 namespace {
 
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::MutableBufferView;
-using common::StaticByteBuffer;
-
 // All fields are initialized to zero as they are unused in these tests.
 const hci::LEConnectionParameters kTestParams;
 
@@ -60,7 +55,7 @@ const bt::sm::Key kKey{};
 const bt::sm::LTK kBrEdrKey;
 
 // Phone (Networking)
-const common::DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
+const DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
 
 class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
  public:
@@ -122,13 +117,11 @@ TEST_F(GAP_PeerCacheTest, LookUp) {
   EXPECT_FALSE(cache()->NewPeer(kAddrLePublic, true));
 
   peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData1);
-  EXPECT_TRUE(
-      common::ContainersEqual(kAdvData1, peer->le()->advertising_data()));
+  EXPECT_TRUE(ContainersEqual(kAdvData1, peer->le()->advertising_data()));
   EXPECT_EQ(kTestRSSI, peer->rssi());
 
   peer->MutLe().SetAdvertisingData(kTestRSSI, kAdvData0);
-  EXPECT_TRUE(
-      common::ContainersEqual(kAdvData0, peer->le()->advertising_data()));
+  EXPECT_TRUE(ContainersEqual(kAdvData0, peer->le()->advertising_data()));
   EXPECT_EQ(kTestRSSI, peer->rssi());
 }
 
@@ -470,7 +463,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
        AddBondedPeerWithIrkIsAddedToResolvingList) {
   sm::PairingData data;
   data.ltk = kLTK;
-  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
 
   EXPECT_TRUE(cache()->AddBondedPeer(kId, kAddrLeRandom, data, {}));
   auto* peer = cache()->FindByAddress(kAddrLeRandom);
@@ -604,7 +597,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
   sm::PairingData data;
   data.ltk = kLTK;
   data.identity_address = kAddrLeRandom;
-  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
 
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
   ASSERT_TRUE(peer()->le()->bonded());
@@ -709,7 +702,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, ForgetLowEnergyPeerWithIrk) {
   sm::PairingData data;
   data.ltk = kLTK;
   data.identity_address = kAddrLeAlias;
-  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
   DeviceAddress rpa = sm::util::GenerateRpa(data.irk->value());
 
   ASSERT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
@@ -745,7 +738,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
   sm::PairingData data;
   data.ltk = kLTK;
   data.identity_address = kAddrLeAlias;
-  data.irk = sm::Key(sm::SecurityProperties(), common::RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
 
   ASSERT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
   peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
@@ -883,8 +876,8 @@ TEST_F(GAP_PeerCacheTest_LowEnergyUpdateCallbackTest,
   ASSERT_NE(peer()->rssi(), kTestRSSI);
   cache()->set_peer_updated_callback([&](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.le());
-    EXPECT_TRUE(common::ContainersEqual(kAdvData,
-                                        updated_peer.le()->advertising_data()));
+    EXPECT_TRUE(
+        ContainersEqual(kAdvData, updated_peer.le()->advertising_data()));
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
   });
   peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
@@ -949,7 +942,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest,
   cache()->set_peer_updated_callback([](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.bredr());
     ASSERT_TRUE(updated_peer.bredr()->device_class());
-    EXPECT_EQ(common::DeviceClass::MajorClass(0x02),
+    EXPECT_EQ(DeviceClass::MajorClass(0x02),
               updated_peer.bredr()->device_class()->major_class());
   });
   peer()->MutBrEdr().SetInquiryData(ir());
@@ -981,7 +974,7 @@ TEST_F(
   irr().class_of_device = kTestDeviceClass;
   cache()->set_peer_updated_callback([](const auto& updated_peer) {
     ASSERT_TRUE(updated_peer.bredr()->device_class());
-    EXPECT_EQ(common::DeviceClass::MajorClass(0x02),
+    EXPECT_EQ(DeviceClass::MajorClass(0x02),
               updated_peer.bredr()->device_class()->major_class());
   });
   peer()->MutBrEdr().SetInquiryData(irr());
@@ -1053,7 +1046,7 @@ TEST_F(
     EXPECT_EQ(*data->clock_offset(), 0x8001);
     EXPECT_EQ(*data->page_scan_repetition_mode(),
               hci::PageScanRepetitionMode::kR1);
-    EXPECT_EQ(common::DeviceClass::MajorClass(0x02),
+    EXPECT_EQ(DeviceClass::MajorClass(0x02),
               updated_peer.bredr()->device_class()->major_class());
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
     EXPECT_EQ(*updated_peer.name(), "Test");
@@ -1177,15 +1170,15 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
     return cache_.FindByAddress(peer_addr_alias_);
   }
   bool IsDefaultPeerPresent() { return GetDefaultPeer(); }
-  Peer* NewPeer(const common::DeviceAddress& address, bool connectable) {
+  Peer* NewPeer(const DeviceAddress& address, bool connectable) {
     return cache_.NewPeer(address, connectable);
   }
   int peers_removed() const { return peers_removed_; }
 
  private:
   PeerCache cache_;
-  common::DeviceAddress peer_addr_;
-  common::DeviceAddress peer_addr_alias_;
+  DeviceAddress peer_addr_;
+  DeviceAddress peer_addr_alias_;
   PeerId peer_id_;
   int peers_removed_;
 };

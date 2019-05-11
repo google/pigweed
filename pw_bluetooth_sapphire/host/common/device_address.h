@@ -5,16 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
 
+#include <fbl/string_piece.h>
+
 #include <array>
 #include <initializer_list>
 #include <string>
 
-#include <fbl/string_piece.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
-namespace common {
 
 const size_t kDeviceAddressSize = 6;
 
@@ -27,7 +26,7 @@ class DeviceAddressBytes {
 
   // Initializes the contents from |bytes|.
   explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
-  explicit DeviceAddressBytes(const common::ByteBuffer& bytes);
+  explicit DeviceAddressBytes(const ByteBuffer& bytes);
 
   // Initializes the contents from a string of the form XX:XX:XX:XX:XX:XX where
   // each "XX" is an ASCII encoded two-digit hexadecimal integer.
@@ -153,7 +152,6 @@ class DeviceAddress {
 static_assert(sizeof(DeviceAddress) == 8,
               "DeviceAddress must take up exactly 8 bytes");
 
-}  // namespace common
 }  // namespace bt
 
 // Custom specialization of std::hash to support unordered associative
@@ -161,8 +159,8 @@ static_assert(sizeof(DeviceAddress) == 8,
 namespace std {
 
 template <>
-struct hash<bt::common::DeviceAddress> {
-  using argument_type = bt::common::DeviceAddress;
+struct hash<bt::DeviceAddress> {
+  using argument_type = bt::DeviceAddress;
   using result_type = std::size_t;
 
   result_type operator()(argument_type const& value) const;

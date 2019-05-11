@@ -31,10 +31,6 @@ enum class Mode {
   kExtended,
 };
 
-// Opaque identifier type. This is used by the GAP library to identify remote
-// Bluetooth devices.
-using PeerId = common::PeerId;
-
 // EIR Data Type, Advertising Data Type (AD Type), OOB Data Type definitions.
 // clang-format off
 enum class DataType : uint8_t {

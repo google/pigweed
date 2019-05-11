@@ -7,7 +7,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 enum class TestError : uint8_t {
@@ -44,5 +43,4 @@ TEST(StatusTest, ProtocolErrorAsInt) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

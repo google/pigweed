@@ -81,24 +81,23 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // bt::gap::PairingDelegate overrides:
   bt::sm::IOCapability io_capability() const override;
-  void CompletePairing(bt::gap::PeerId id, bt::sm::Status status) override;
-  void ConfirmPairing(bt::gap::PeerId id, ConfirmCallback confirm) override;
-  void DisplayPasskey(bt::gap::PeerId id, uint32_t passkey,
+  void CompletePairing(bt::PeerId id, bt::sm::Status status) override;
+  void ConfirmPairing(bt::PeerId id, ConfirmCallback confirm) override;
+  void DisplayPasskey(bt::PeerId id, uint32_t passkey,
                       ConfirmCallback confirm) override;
-  void RequestPasskey(bt::gap::PeerId id,
-                      PasskeyResponseCallback respond) override;
+  void RequestPasskey(bt::PeerId id, PasskeyResponseCallback respond) override;
 
   // Called by |adapter()->peer_cache()| when a peer is updated.
   void OnPeerUpdated(const bt::gap::Peer& peer);
 
   // Called by |adapter()->peer_cache()| when a peer is removed.
-  void OnPeerRemoved(bt::gap::PeerId identifier);
+  void OnPeerRemoved(bt::PeerId identifier);
 
   // Called by |adapter()->peer_cache()| when a peer is bonded.
   void OnPeerBonded(const bt::gap::Peer& peer);
 
-  void ConnectLowEnergy(bt::gap::PeerId id, ConnectCallback callback);
-  void ConnectBrEdr(bt::gap::PeerId peer_id, ConnectCallback callback);
+  void ConnectLowEnergy(bt::PeerId id, ConnectCallback callback);
+  void ConnectBrEdr(bt::PeerId peer_id, ConnectCallback callback);
 
   // Called when a connection is established to a peer, either when initiated
   // by a user via a client of Host.fidl, or automatically by the GAP adapter
@@ -152,7 +151,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // auto-connected by the system.
   // TODO(armansito): Consider storing auto-connected references separately from
   // directly connected references.
-  std::unordered_map<bt::gap::PeerId, bt::gap::LowEnergyConnectionRefPtr>
+  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr>
       le_connections_;
 
   // Keep this as the last member to make sure that all weak pointers are

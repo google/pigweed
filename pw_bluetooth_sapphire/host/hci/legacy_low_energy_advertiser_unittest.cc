@@ -17,7 +17,6 @@
 
 namespace bt {
 
-using common::BufferView;
 using testing::FakeController;
 
 namespace hci {
@@ -27,10 +26,10 @@ using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 constexpr ConnectionHandle kHandle = 0x0001;
 
-const common::DeviceAddress kPublicAddress(
-    common::DeviceAddress::Type::kLEPublic, "00:00:00:00:00:01");
-const common::DeviceAddress kRandomAddress(
-    common::DeviceAddress::Type::kLERandom, "00:00:00:00:00:02");
+const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic,
+                                   "00:00:00:00:00:01");
+const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom,
+                                   "00:00:00:00:00:02");
 
 constexpr size_t kDefaultAdSize = 20;
 constexpr zx::duration kTestInterval = zx::sec(1);
@@ -90,8 +89,8 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
   std::optional<Status> MoveLastStatus() { return std::move(last_status_); }
 
   // Makes some fake advertising data of a specific |packed_size|
-  common::DynamicByteBuffer GetExampleData(size_t size = kDefaultAdSize) {
-    common::DynamicByteBuffer result(size);
+  DynamicByteBuffer GetExampleData(size_t size = kDefaultAdSize) {
+    DynamicByteBuffer result(size);
     // Count backwards.
     for (size_t i = 0; i < size; i++) {
       result[i] = (uint8_t)((size - i) % 255);
@@ -112,15 +111,15 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
 // - Error when the advertisement data is too large
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisementSizeTest) {
   // 4 bytes long (adv length: 7 bytes)
-  auto reasonable_data = common::CreateStaticByteBuffer(0x20, 0x06, 0xaa, 0xfe,
-                                                        'T', 'e', 's', 't');
+  auto reasonable_data =
+      CreateStaticByteBuffer(0x20, 0x06, 0xaa, 0xfe, 'T', 'e', 's', 't');
   // 30 bytes long (adv length: 33 bytes)
-  auto oversize_data = common::CreateStaticByteBuffer(
+  auto oversize_data = CreateStaticByteBuffer(
       0x20, 0x20, 0xaa, 0xfe, 'T', 'h', 'e', 'q', 'u', 'i', 'c', 'k', 'b', 'r',
       'o', 'w', 'n', 'f', 'o', 'x', 'w', 'a', 'g', 'g', 'e', 'd', 'i', 't', 's',
       't', 'a', 'i', 'l', '.');
 
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer scan_data;
 
   // Should accept ads that are of reasonable size
   advertiser()->StartAdvertising(kPublicAddress, reasonable_data, scan_data,
@@ -145,8 +144,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisementSizeTest) {
 // - Checks that advertising state is cleaned up.
 // - Checks that it is possible to restart advertising.
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   ConnectionPtr link;
   auto conn_cb = [&link](auto cb_link) { link = std::move(cb_link); };
@@ -192,8 +191,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
 
 // Tests that advertising can be restarted right away in a connection callback.
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   ConnectionPtr link;
   auto conn_cb = [&, this](auto cb_link) {
@@ -234,8 +233,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
 // Tests starting and stopping an advertisement.
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartAndStop) {
   constexpr zx::duration kInterval = zx::msec(500);
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, nullptr,
                                  kInterval, false, GetSuccessCallback());
@@ -280,9 +279,9 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingParameters) {
 }
 
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStarting) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
-  common::DeviceAddress addr = kRandomAddress;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
+  DeviceAddress addr = kRandomAddress;
 
   advertiser()->StartAdvertising(addr, ad, scan_data, nullptr, kTestInterval,
                                  false, [](auto, auto) {});
@@ -293,13 +292,13 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStarting) {
   EXPECT_FALSE(test_device()->le_advertising_state().enabled);
   auto status = MoveLastStatus();
   ASSERT_TRUE(status);
-  EXPECT_EQ(common::HostError::kInProgress, status->error());
+  EXPECT_EQ(HostError::kInProgress, status->error());
 }
 
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
-  common::DeviceAddress addr = kRandomAddress;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
+  DeviceAddress addr = kRandomAddress;
 
   // Get to a started state.
   advertiser()->StartAdvertising(addr, ad, scan_data, nullptr, kTestInterval,
@@ -337,8 +336,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
 // - Sets the advertisement data to null when stopped to prevent data leakage
 //   (re-enable advertising without changing data, intercept)
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StopAdvertisingConditions) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, nullptr,
                                  kTestInterval, false, GetSuccessCallback());
@@ -367,8 +366,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StopAdvertisingConditions) {
 
 // - Rejects StartAdvertising for a different address when Advertising already
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, nullptr,
                                  kTestInterval, false, GetSuccessCallback());
@@ -399,8 +398,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
 
 // - Updates data and params for the same address when advertising already
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertiseUpdate) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, nullptr,
                                  kTestInterval, false, GetSuccessCallback());
@@ -426,8 +425,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertiseUpdate) {
 
 // - Rejects anonymous advertisement (unsupported)
 TEST_F(HCI_LegacyLowEnergyAdvertiserTest, NoAnonymous) {
-  common::DynamicByteBuffer ad = GetExampleData();
-  common::DynamicByteBuffer scan_data;
+  DynamicByteBuffer ad = GetExampleData();
+  DynamicByteBuffer scan_data;
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, nullptr,
                                  kTestInterval, true, GetErrorCallback());

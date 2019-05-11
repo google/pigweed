@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 
-#include <unordered_map>
-
 #include <fbl/ref_ptr.h>
 #include <lib/async/cpp/task.h>
+
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
@@ -37,11 +37,11 @@ class Client {
   //     the attributes requested. As long as true is returned, it can still
   //     be called.
   //   - when no more services remain, the result_cb status will be
-  //     common::HostError::kNotFound. The return value is ignored.
+  //     HostError::kNotFound. The return value is ignored.
   using SearchResultCallback = fit::function<bool(
       sdp::Status, const std::map<AttributeId, DataElement>&)>;
   virtual void ServiceSearchAttributes(
-      std::unordered_set<common::UUID> search_pattern,
+      std::unordered_set<UUID> search_pattern,
       const std::unordered_set<AttributeId>& req_attributes,
       SearchResultCallback result_cb, async_dispatcher_t* cb_dispatcher) = 0;
 };

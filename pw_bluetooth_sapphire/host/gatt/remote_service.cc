@@ -15,23 +15,15 @@ namespace gatt {
 
 using att::Status;
 using att::StatusCallback;
-using common::BufferView;
-using common::ByteBuffer;
-using common::HostError;
-using common::MutableByteBufferPtr;
-using common::NewSlabBuffer;
-using common::RunOrPost;
 
 namespace {
 
-void ReportStatus(Status status,
-                  StatusCallback callback,
+void ReportStatus(Status status, StatusCallback callback,
                   async_dispatcher_t* dispatcher) {
   RunOrPost([status, cb = std::move(callback)] { cb(status); }, dispatcher);
 }
 
-void ReportValue(att::Status status,
-                 const common::ByteBuffer& value,
+void ReportValue(att::Status status, const ByteBuffer& value,
                  RemoteService::ReadValueCallback callback,
                  async_dispatcher_t* dispatcher) {
   if (!dispatcher) {
@@ -42,7 +34,7 @@ void ReportValue(att::Status status,
   // TODO(armansito): Consider making att::Bearer return the ATT PDU buffer
   // directly which would remove the need for a copy.
 
-  auto buffer = common::NewSlabBuffer(value.size());
+  auto buffer = NewSlabBuffer(value.size());
   value.Copy(buffer.get());
 
   async::PostTask(dispatcher,
@@ -175,8 +167,7 @@ bool RemoteService::IsDiscovered() const {
   return HasCharacteristics();
 }
 
-void RemoteService::ReadCharacteristic(IdType id,
-                                       ReadValueCallback cb,
+void RemoteService::ReadCharacteristic(IdType id, ReadValueCallback cb,
                                        async_dispatcher_t* dispatcher) {
   RunGattTask([this, id, cb = std::move(cb), dispatcher]() mutable {
     RemoteCharacteristic* chrc;
@@ -189,7 +180,8 @@ void RemoteService::ReadCharacteristic(IdType id,
 
     if (!(chrc->info().properties & Property::kRead)) {
       bt_log(TRACE, "gatt", "characteristic does not support \"read\"");
-      ReportValue(att::Status(HostError::kNotSupported), BufferView(), std::move(cb), dispatcher);
+      ReportValue(att::Status(HostError::kNotSupported), BufferView(),
+                  std::move(cb), dispatcher);
       return;
     }
 
@@ -239,8 +231,7 @@ void RemoteService::ReadLongCharacteristic(IdType id, uint16_t offset,
       });
 }
 
-void RemoteService::WriteCharacteristic(IdType id,
-                                        std::vector<uint8_t> value,
+void RemoteService::WriteCharacteristic(IdType id, std::vector<uint8_t> value,
                                         StatusCallback cb,
                                         async_dispatcher_t* dispatcher) {
   RunGattTask([this, id, value = std::move(value), cb = std::move(cb),
@@ -462,7 +453,8 @@ bool RemoteService::IsOnGattThread() const {
   return async_get_default_dispatcher() == gatt_dispatcher_;
 }
 
-HostError RemoteService::GetCharacteristic(IdType id, RemoteCharacteristic** out_char) {
+HostError RemoteService::GetCharacteristic(IdType id,
+                                           RemoteCharacteristic** out_char) {
   ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(out_char);
 
@@ -616,7 +608,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
 }
 
 void RemoteService::HandleNotification(att::Handle value_handle,
-                                       const common::ByteBuffer& value) {
+                                       const ByteBuffer& value) {
   ZX_DEBUG_ASSERT(IsOnGattThread());
 
   if (shut_down_)

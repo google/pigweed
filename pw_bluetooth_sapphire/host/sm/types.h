@@ -121,10 +121,10 @@ class LTK final {
 class Key final {
  public:
   Key() = default;
-  Key(const SecurityProperties& security, const common::UInt128& value);
+  Key(const SecurityProperties& security, const UInt128& value);
 
   const SecurityProperties& security() const { return security_; }
-  const common::UInt128& value() const { return value_; }
+  const UInt128& value() const { return value_; }
 
   bool operator==(const Key& other) const {
     return security() == other.security() && value() == other.value();
@@ -132,13 +132,13 @@ class Key final {
 
  private:
   SecurityProperties security_;
-  common::UInt128 value_;
+  UInt128 value_;
 };
 
 // Container for LE pairing data.
 struct PairingData final {
   // The identity address.
-  std::optional<common::DeviceAddress> identity_address;
+  std::optional<DeviceAddress> identity_address;
 
   // The long term key used for link encryption.
   std::optional<sm::LTK> ltk;
@@ -157,8 +157,8 @@ struct PairingData final {
 
 // Container for identity information for distribution.
 struct IdentityInfo {
-  common::UInt128 irk;
-  common::DeviceAddress address;
+  UInt128 irk;
+  DeviceAddress address;
 };
 
 }  // namespace sm

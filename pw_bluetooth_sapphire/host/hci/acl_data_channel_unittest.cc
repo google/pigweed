@@ -80,11 +80,11 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
   int handle1_packet_count = 0;
 
   // Callback invoked by TestDevice when it receive a data packet from us.
-  auto data_callback = [&](const common::ByteBuffer& bytes) {
+  auto data_callback = [&](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
 
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     ConnectionHandle connection_handle =
         le16toh(packet.header().handle_and_flags) & 0xFFF;
 
@@ -118,7 +118,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = common::CreateStaticByteBuffer(
+  auto event_buffer = CreateStaticByteBuffer(
       0x13, 0x09,              // Event header
       0x02,                    // Number of handles
       0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
@@ -154,11 +154,11 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
-  auto data_callback = [&](const common::ByteBuffer& bytes) {
+  auto data_callback = [&](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
 
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     ConnectionHandle connection_handle =
         le16toh(packet.header().handle_and_flags) & 0xFFF;
 
@@ -200,10 +200,10 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
   EXPECT_EQ(0u, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = common::CreateStaticByteBuffer(
-      0x13, 0x05,             // Event header
-      0x01,                   // Number of handles
-      0x01, 0x00, 0x03, 0x00  // 3 packets on handle 0x0001
+  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,  // Event header
+                                             0x01,        // Number of handles
+                                             0x01, 0x00, 0x03,
+                                             0x00  // 3 packets on handle 0x0001
   );
   test_device()->SendCommandChannelPacket(event_buffer);
 
@@ -235,11 +235,11 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
-  auto data_callback = [&](const common::ByteBuffer& bytes) {
+  auto data_callback = [&](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
 
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     ConnectionHandle connection_handle =
         le16toh(packet.header().handle_and_flags) & 0xFFF;
 
@@ -273,7 +273,7 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = common::CreateStaticByteBuffer(
+  auto event_buffer = CreateStaticByteBuffer(
       0x13, 0x09,              // Event header
       0x02,                    // Number of handles
       0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
@@ -309,11 +309,11 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
-  auto data_callback = [&](const common::ByteBuffer& bytes) {
+  auto data_callback = [&](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
 
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     ConnectionHandle connection_handle =
         le16toh(packet.header().handle_and_flags) & 0xFFF;
 
@@ -347,7 +347,7 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   EXPECT_EQ(2, handle1_packet_count);
 
   // Notify the processed packets with a Number Of Completed Packet HCI event.
-  auto event_buffer = common::CreateStaticByteBuffer(
+  auto event_buffer = CreateStaticByteBuffer(
       0x13, 0x09,              // Event header
       0x02,                    // Number of handles
       0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
@@ -380,11 +380,11 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketFromMultipleThreads) {
   int handle1_processed_count = 0;
   int handle2_processed_count = 0;
   int total_packet_count = 0;
-  auto data_cb = [&](const common::ByteBuffer& bytes) {
+  auto data_cb = [&](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
 
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     ConnectionHandle connection_handle =
         le16toh(packet.header().handle_and_flags) & 0xFFF;
 
@@ -405,7 +405,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketFromMultipleThreads) {
     if ((total_packet_count % kLEMaxNumPackets) == 0) {
       // NOTE(armansito): Here we include handles even when the processed-count
       // is 0. This is OK; ACLDataChannel should ignore those.
-      auto event_buffer = common::CreateStaticByteBuffer(
+      auto event_buffer = CreateStaticByteBuffer(
           0x13, 0x0D,  // Event header
           0x03,        // Number of handles
 
@@ -463,11 +463,11 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
   // Empty packet list.
-  EXPECT_FALSE(acl_data_channel()->SendPackets(
-      common::LinkedList<ACLDataPacket>(), Connection::LinkType::kACL));
+  EXPECT_FALSE(acl_data_channel()->SendPackets(LinkedList<ACLDataPacket>(),
+                                               Connection::LinkType::kACL));
 
   // Packet exceeds MTU
-  common::LinkedList<ACLDataPacket> packets;
+  LinkedList<ACLDataPacket> packets;
   packets.push_back(
       ACLDataPacket::New(0x0001, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1));
@@ -482,10 +482,10 @@ TEST_F(HCI_ACLDataChannelTest, SendPackets) {
 
   bool pass = true;
   int seq_no = 0;
-  auto data_cb = [&pass, &seq_no](const common::ByteBuffer& bytes) {
+  auto data_cb = [&pass, &seq_no](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
-    common::PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(ACLDataHeader));
+    PacketView<hci::ACLDataHeader> packet(&bytes,
+                                          bytes.size() - sizeof(ACLDataHeader));
     EXPECT_EQ(1u, packet.payload_size());
 
     int cur_no = packet.payload_bytes()[0];
@@ -498,7 +498,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPackets) {
   };
   test_device()->SetDataCallback(data_cb, dispatcher());
 
-  common::LinkedList<ACLDataPacket> packets;
+  LinkedList<ACLDataPacket> packets;
   for (int i = 1; i <= kExpectedPacketCount; ++i) {
     auto packet =
         ACLDataPacket::New(1, ACLPacketBoundaryFlag::kFirstNonFlushable,
@@ -524,16 +524,16 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsAtomically) {
 
   InitializeACLDataChannel(DataBufferInfo(1024, 100), DataBufferInfo());
 
-  std::vector<std::unique_ptr<common::ByteBuffer>> received;
-  auto data_cb = [&received](const common::ByteBuffer& bytes) {
+  std::vector<std::unique_ptr<ByteBuffer>> received;
+  auto data_cb = [&received](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
-    received.push_back(std::make_unique<common::DynamicByteBuffer>(bytes));
+    received.push_back(std::make_unique<DynamicByteBuffer>(bytes));
   };
   test_device()->SetDataCallback(data_cb, dispatcher());
 
   // Each thread will send a sequence of kPacketsPerThread packets. The payload
   // of each packet encodes an integer
-  common::LinkedList<ACLDataPacket> packets[kThreadCount];
+  LinkedList<ACLDataPacket> packets[kThreadCount];
   for (size_t i = 0; i < kThreadCount; ++i) {
     for (size_t j = 1; j <= kPacketsPerThread; ++j) {
       auto packet =
@@ -569,7 +569,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsAtomically) {
 
   // Verify that the contents of |received| are in the correct sequence.
   for (size_t i = 0; i < kExpectedPacketCount; ++i) {
-    common::PacketView<hci::ACLDataHeader> packet(
+    PacketView<hci::ACLDataHeader> packet(
         received[i].get(), received[i]->size() - sizeof(ACLDataHeader));
     EXPECT_EQ(1u, packet.payload_size());
     EXPECT_EQ((i % kPacketsPerThread) + 1, packet.payload_bytes()[0]);
@@ -640,17 +640,17 @@ TEST_F(HCI_ACLDataChannelTest, ReceiveData) {
   set_data_received_callback(std::move(data_rx_cb));
 
   // Malformed packet: smaller than the ACL header.
-  auto invalid0 = common::CreateStaticByteBuffer(0x01, 0x00, 0x00);
+  auto invalid0 = CreateStaticByteBuffer(0x01, 0x00, 0x00);
 
   // Malformed packet: the payload size given in the header doesn't match the
   // actual payload size.
-  auto invalid1 = common::CreateStaticByteBuffer(0x01, 0x00, 0x02, 0x00, 0x00);
+  auto invalid1 = CreateStaticByteBuffer(0x01, 0x00, 0x02, 0x00, 0x00);
 
   // Valid packet on handle 1.
-  auto valid0 = common::CreateStaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x00);
+  auto valid0 = CreateStaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x00);
 
   // Valid packet on handle 2.
-  auto valid1 = common::CreateStaticByteBuffer(0x02, 0x00, 0x01, 0x00, 0x00);
+  auto valid1 = CreateStaticByteBuffer(0x02, 0x00, 0x01, 0x00, 0x00);
 
   async::PostTask(dispatcher(), [&, this] {
     test_device()->SendACLDataChannelPacket(invalid0);

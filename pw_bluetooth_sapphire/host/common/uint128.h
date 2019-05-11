@@ -9,7 +9,6 @@
 #include <cstdint>
 
 namespace bt {
-namespace common {
 
 // Represents a 128-bit (16-octet) unsigned integer. This is commonly used for
 // encryption keys and UUID values.
@@ -21,7 +20,6 @@ static_assert(sizeof(UInt128) == 16, "UInt128 must take up exactly 16 bytes");
 // TODO(armansito): Remove this in favor of using Random<UInt128>() directly.
 UInt128 RandomUInt128();
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_UINT128_H_

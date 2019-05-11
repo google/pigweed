@@ -7,19 +7,14 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
+#include "fake_controller.h"
+#include "fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-#include "fake_controller.h"
-#include "fake_peer.h"
-
 namespace bt {
 namespace testing {
-
-using common::ByteBuffer;
-using common::CreateStaticByteBuffer;
-using common::StaticByteBuffer;
 
 FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
   ZX_DEBUG_ASSERT(dev_);

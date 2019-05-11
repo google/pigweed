@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-// This file provides a common::Status template specialization for hci::Status
+// This file provides a Status template specialization for hci::Status
 //
 // EXAMPLES:
 //
@@ -18,7 +18,7 @@
 //   hci::Status status;
 //
 //   // 2. Status containing a host-internal error:
-//   hci::Status status(common::HostError::kTimedOut);
+//   hci::Status status(HostError::kTimedOut);
 //
 //   // 3. Status containing HCI status code:
 //   hci::Status status(hci::Status::kHardwareFailure);
@@ -29,20 +29,17 @@
 //   status.is_protocol_error() -> false
 
 namespace bt {
-namespace common {
 
 template <>
 struct ProtocolErrorTraits<hci::StatusCode> {
   static std::string ToString(hci::StatusCode ecode);
 };
 
-}  // namespace common
-
 namespace hci {
 
-class Status : public common::Status<StatusCode> {
+class Status : public bt::Status<StatusCode> {
  public:
-  explicit Status(common::HostError ecode = common::HostError::kNoError);
+  explicit Status(HostError ecode = HostError::kNoError);
   explicit Status(hci::StatusCode proto_code);
 };
 

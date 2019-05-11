@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
 
 #include <fbl/macros.h>
 
@@ -29,10 +29,10 @@ class FakePeer {
   // false. This is OK since we use |scannable| to drive the receipt of Scan
   // Response PDUs: we use this to test the condition in which the advertisement
   // is scannable but the host never receives a scan response.
-  explicit FakePeer(const common::DeviceAddress& address,
-                      bool connectable = true, bool scannable = true);
+  explicit FakePeer(const DeviceAddress& address, bool connectable = true,
+                    bool scannable = true);
 
-  void SetAdvertisingData(const common::ByteBuffer& data);
+  void SetAdvertisingData(const ByteBuffer& data);
 
   // Mark this device for directed advertising. CreateAdvertisingReportEvent
   // will return directed advertisements only.
@@ -47,32 +47,29 @@ class FakePeer {
 
   bool has_inquiry_response() {
     // All BR/EDR devices have inquiry responses.
-    return address().type() == common::DeviceAddress::Type::kBREDR;
+    return address().type() == DeviceAddress::Type::kBREDR;
   }
 
   // |should_batch_reports| indicates to the FakeController that the SCAN_IND
   // report should be included in the same HCI LE Advertising Report Event
   // payload that includes the original advertising data (see comments for
   // should_batch_reports()).
-  void SetScanResponse(bool should_batch_reports,
-                       const common::ByteBuffer& data);
+  void SetScanResponse(bool should_batch_reports, const ByteBuffer& data);
 
   // Generates and returns a LE Advertising Report Event payload. If
   // |include_scan_rsp| is true, then the returned PDU will contain two reports
   // including the SCAN_IND report.
-  common::DynamicByteBuffer CreateAdvertisingReportEvent(
-      bool include_scan_rsp) const;
+  DynamicByteBuffer CreateAdvertisingReportEvent(bool include_scan_rsp) const;
 
   // Generates a LE Advertising Report Event payload containing the scan
   // response.
-  common::DynamicByteBuffer CreateScanResponseReportEvent() const;
+  DynamicByteBuffer CreateScanResponseReportEvent() const;
 
   // Generates a Inquiry Response Event payload containing a inquiry result
   // response.
-  common::DynamicByteBuffer CreateInquiryResponseEvent(
-      hci::InquiryMode mode) const;
+  DynamicByteBuffer CreateInquiryResponseEvent(hci::InquiryMode mode) const;
 
-  const common::DeviceAddress& address() const { return address_; }
+  const DeviceAddress& address() const { return address_; }
 
   // Indicates whether or not this device should include the scan response and
   // the advertising data in the same HCI LE Advertising Report Event. This is
@@ -94,7 +91,7 @@ class FakePeer {
   bool connected() const { return connected_; }
   void set_connected(bool connected) { connected_ = connected; }
 
-  void set_class_of_device(common::DeviceClass class_of_device) {
+  void set_class_of_device(DeviceClass class_of_device) {
     class_of_device_ = class_of_device;
   }
 
@@ -141,12 +138,12 @@ class FakePeer {
 
   void WriteScanResponseReport(hci::LEAdvertisingReportData* report) const;
 
-  void OnRxL2CAP(hci::ConnectionHandle conn, const common::ByteBuffer& pdu);
+  void OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
   // The FakeController that this FakePeer has been assigned to.
   FakeController* ctrl_;  // weak
 
-  common::DeviceAddress address_;
+  DeviceAddress address_;
   bool connected_;
   bool connectable_;
   bool scannable_;
@@ -160,14 +157,14 @@ class FakePeer {
   hci::LEConnectionParameters le_params_;
 
   bool should_batch_reports_;
-  common::DynamicByteBuffer adv_data_;
-  common::DynamicByteBuffer scan_rsp_;
+  DynamicByteBuffer adv_data_;
+  DynamicByteBuffer scan_rsp_;
 
   // Open connection handles.
   HandleSet logical_links_;
 
   // Class of device
-  common::DeviceClass class_of_device_;
+  DeviceClass class_of_device_;
 
   FakeGattServer gatt_server_;
 
@@ -177,4 +174,4 @@ class FakePeer {
 }  // namespace testing
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DEVICE_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_

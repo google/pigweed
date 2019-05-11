@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/mux_commands.h"
+
 #include "gtest/gtest.h"
 
 namespace bt {
@@ -27,17 +28,15 @@ class RFCOMM_MuxCommandTest : public ::testing::Test {};
 //
 // Length field is one octet long; the octet is EA ++ length, or 1 ++ 1110000.
 TEST_F(RFCOMM_MuxCommandTest, TestCommand) {
-  auto test_pattern =
-      common::CreateStaticByteBuffer('f', 'u', 'c', 'h', 's', 'i', 'a');
+  auto test_pattern = CreateStaticByteBuffer('f', 'u', 'c', 'h', 's', 'i', 'a');
   TestCommand command(CommandResponse::kCommand, test_pattern);
   ASSERT_EQ(command.written_size(), 1ul                          // Type
                                         + 1ul                    // Length
                                         + test_pattern.size());  // Payload
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer,
-            common::CreateStaticByteBuffer(0b00100011, 0b00001111, 'f', 'u',
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b00100011, 0b00001111, 'f', 'u',
                                            'c', 'h', 's', 'i', 'a'));
 
   auto read_command = MuxCommand::Parse(buffer);
@@ -67,9 +66,9 @@ TEST_F(RFCOMM_MuxCommandTest, FconCommand) {
   ASSERT_EQ(command.written_size(), 1ul          // Type
                                         + 1ul);  // Length
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, common::CreateStaticByteBuffer(0b10100001, 0b00000001));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b10100001, 0b00000001));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);
@@ -96,9 +95,9 @@ TEST_F(RFCOMM_MuxCommandTest, FcoffCommand) {
   ASSERT_EQ(command.written_size(), 1ul          // Type
                                         + 1ul);  // Length
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, common::CreateStaticByteBuffer(0b01100011, 0b00000001));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b01100011, 0b00000001));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
@@ -137,10 +136,9 @@ TEST_F(RFCOMM_MuxCommandTest, ModemStatusCommand) {
                              break_value);
   ASSERT_EQ(command.written_size(), 5ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer,
-            common::CreateStaticByteBuffer(0b11100011, 0b00000111, 0b10001111,
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b11100011, 0b00000111, 0b10001111,
                                            0b10001010, 0b10100011));
 
   auto read_command = MuxCommand::Parse(buffer);
@@ -187,10 +185,9 @@ TEST_F(RFCOMM_MuxCommandTest, RemotePortNegotiationCommand8Octets) {
                                        mask);
   EXPECT_EQ(command.written_size(), 10ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  EXPECT_EQ(buffer,
-            common::CreateStaticByteBuffer(0b10010011, 0b00010001, 0b11110111,
+  EXPECT_EQ(buffer, CreateStaticByteBuffer(0b10010011, 0b00010001, 0b11110111,
                                            0b00000111, 0b00001101, 0b00010101,
                                            0x23, 0xDA, 0b01010101, 0b00011011));
 
@@ -215,10 +212,9 @@ TEST_F(RFCOMM_MuxCommandTest, RemotePortNegotiationCommand1Octet) {
   RemotePortNegotiationCommand command(CommandResponse::kCommand, 61);
   ASSERT_EQ(command.written_size(), 3ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer,
-            common::CreateStaticByteBuffer(0b10010011, 0b00000011, 0b11110111));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b10010011, 0b00000011, 0b11110111));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
@@ -234,10 +230,10 @@ TEST_F(RFCOMM_MuxCommandTest, RemoteLineStatusCommand) {
                                   LineError::kFramingError);
   ASSERT_EQ(command.written_size(), 4ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, common::CreateStaticByteBuffer(0b01010011, 0b00000101,
-                                                   0b11110111, 0b00001001));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b01010011, 0b00000101, 0b11110111,
+                                           0b00001001));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
@@ -254,10 +250,9 @@ TEST_F(RFCOMM_MuxCommandTest, NonSupportedCommandResponse) {
   NonSupportedCommandResponse command(CommandResponse::kResponse, 0b00101001);
   ASSERT_EQ(command.written_size(), 3ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer,
-            common::CreateStaticByteBuffer(0b00010001, 0b00000011, 0b10100101));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b00010001, 0b00000011, 0b10100101));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);
@@ -282,11 +277,11 @@ TEST_F(RFCOMM_MuxCommandTest, DLCParameterNegotiationCommand) {
   DLCParameterNegotiationCommand command(CommandResponse::kResponse, params);
   ASSERT_EQ(command.written_size(), 10ul);
 
-  common::DynamicByteBuffer buffer(command.written_size());
+  DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, common::CreateStaticByteBuffer(
-                        0b10000001, 0b00010001, 0b00111101, 0xE0, kMaxPriority,
-                        0, 0x34, 0x12, 0, kMaxInitialCredits));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b10000001, 0b00010001, 0b00111101,
+                                           0xE0, kMaxPriority, 0, 0x34, 0x12, 0,
+                                           kMaxInitialCredits));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);

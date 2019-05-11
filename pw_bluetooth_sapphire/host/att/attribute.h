@@ -90,16 +90,14 @@ class Attribute final {
   bool is_initialized() const { return handle_ != kInvalidHandle; }
 
   Handle handle() const { return handle_; }
-  const common::UUID& type() const { return type_; }
+  const UUID& type() const { return type_; }
 
   // The grouping that this attribute belongs to.
   const AttributeGrouping& group() const { return *group_; }
 
   // Returns the current attribute value. Returns nullptr if the attribute has a
   // dynamic value.
-  const common::ByteBuffer* value() const {
-    return value_.size() ? &value_ : nullptr;
-  }
+  const ByteBuffer* value() const { return value_.size() ? &value_ : nullptr; }
 
   // The read/write permissions of this attribute.
   const AccessRequirements& read_reqs() const { return read_reqs_; }
@@ -109,15 +107,15 @@ class Attribute final {
   // cannot be overwritten. A static value cannot be assigned to an attribute
   // that permits writes as attribute writes need to propagate to the service
   // layer.
-  void SetValue(const common::ByteBuffer& value);
+  void SetValue(const ByteBuffer& value);
 
   // Handlers for reading and writing and attribute value asynchronously. A
   // handler must call the provided the |result_callback| to signal the end of
   // the operation.
   using ReadResultCallback =
-      fit::function<void(ErrorCode status, const common::ByteBuffer& value)>;
+      fit::function<void(ErrorCode status, const ByteBuffer& value)>;
   using ReadHandler =
-      fit::function<void(common::PeerId peer_id, Handle handle, uint16_t offset,
+      fit::function<void(PeerId peer_id, Handle handle, uint16_t offset,
                          ReadResultCallback result_callback)>;
   void set_read_handler(ReadHandler read_handler) {
     read_handler_ = std::move(read_handler);
@@ -127,21 +125,20 @@ class Attribute final {
   // a null |result_callback|
   using WriteResultCallback = fit::function<void(ErrorCode status)>;
   using WriteHandler = fit::function<void(
-      common::PeerId peer_id, Handle handle, uint16_t offset,
-      const common::ByteBuffer& value, WriteResultCallback result_callback)>;
+      PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
+      WriteResultCallback result_callback)>;
   void set_write_handler(WriteHandler write_handler) {
     write_handler_ = std::move(write_handler);
   }
 
   // Initiates an asynchronous read of the attribute value. Returns false if
   // this attribute is not dynamic.
-  bool ReadAsync(common::PeerId peer_id, uint16_t offset,
+  bool ReadAsync(PeerId peer_id, uint16_t offset,
                  ReadResultCallback result_callback) const;
 
   // Initiates an asynchronous write of the attribute value. Returns false if
   // this attribute is not dynamic.
-  bool WriteAsync(common::PeerId peer_id, uint16_t offset,
-                  const common::ByteBuffer& value,
+  bool WriteAsync(PeerId peer_id, uint16_t offset, const ByteBuffer& value,
                   WriteResultCallback result_callback) const;
 
  private:
@@ -151,20 +148,20 @@ class Attribute final {
   // The default constructor will construct this attribute as uninitialized.
   // This is intended for STL containers.
   Attribute();
-  Attribute(AttributeGrouping* group, Handle handle, const common::UUID& type,
+  Attribute(AttributeGrouping* group, Handle handle, const UUID& type,
             const AccessRequirements& read_reqs,
             const AccessRequirements& write_reqs);
 
   AttributeGrouping* group_;  // The group that owns this Attribute.
   Handle handle_;
-  common::UUID type_;
+  UUID type_;
   AccessRequirements read_reqs_;
   AccessRequirements write_reqs_;
 
   ReadHandler read_handler_;
   WriteHandler write_handler_;
 
-  common::DynamicByteBuffer value_;
+  DynamicByteBuffer value_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Attribute);
 };
@@ -186,8 +183,8 @@ class AttributeGrouping final {
   //
   // Note: |attr_count| should not cause the group end handle to exceed
   // att::kHandleMax.
-  AttributeGrouping(const common::UUID& group_type, Handle start_handle,
-                    size_t attr_count, const common::ByteBuffer& decl_value);
+  AttributeGrouping(const UUID& group_type, Handle start_handle,
+                    size_t attr_count, const ByteBuffer& decl_value);
 
   // Inserts a new attribute into this grouping using the given parameters and
   // returns a pointer to it. Returns nullptr if the grouping is out of handles
@@ -196,7 +193,7 @@ class AttributeGrouping final {
   // The caller should not hold on to the returned pointer as the Attribute
   // object is owned and managed by this AttributeGrouping.
   Attribute* AddAttribute(
-      const common::UUID& type,
+      const UUID& type,
       const AccessRequirements& read_reqs = AccessRequirements(),
       const AccessRequirements& write_reqs = AccessRequirements());
 
@@ -205,13 +202,13 @@ class AttributeGrouping final {
     return attributes_.size() == (end_handle_ - start_handle_ + 1);
   }
 
-  const common::UUID& group_type() const {
+  const UUID& group_type() const {
     ZX_DEBUG_ASSERT(!attributes_.empty());
     return attributes_[0].type();
   }
 
   // Value of the group declaration attribute.
-  const common::BufferView decl_value() const {
+  const BufferView decl_value() const {
     ZX_DEBUG_ASSERT(!attributes_.empty());
     ZX_DEBUG_ASSERT(attributes_[0].value());
     return attributes_[0].value()->view();

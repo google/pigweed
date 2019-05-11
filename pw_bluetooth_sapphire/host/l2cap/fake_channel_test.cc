@@ -19,7 +19,7 @@ fbl::RefPtr<FakeChannel> FakeChannelTest::CreateFakeChannel(
   return fake_chan;
 }
 
-bool FakeChannelTest::Expect(const common::ByteBuffer& expected) {
+bool FakeChannelTest::Expect(const ByteBuffer& expected) {
   if (!fake_chan()) {
     bt_log(ERROR, "testing", "no channel, failing!");
     return false;
@@ -27,7 +27,7 @@ bool FakeChannelTest::Expect(const common::ByteBuffer& expected) {
 
   bool success = false;
   auto cb = [&expected, &success, this](auto cb_packet) {
-    success = common::ContainersEqual(expected, *cb_packet);
+    success = ContainersEqual(expected, *cb_packet);
   };
 
   fake_chan()->SetSendCallback(cb, dispatcher());
@@ -36,9 +36,8 @@ bool FakeChannelTest::Expect(const common::ByteBuffer& expected) {
   return success;
 }
 
-bool FakeChannelTest::ReceiveAndExpect(
-    const common::ByteBuffer& packet,
-    const common::ByteBuffer& expected_response) {
+bool FakeChannelTest::ReceiveAndExpect(const ByteBuffer& packet,
+                                       const ByteBuffer& expected_response) {
   if (!fake_chan()) {
     bt_log(ERROR, "testing", "no channel, failing!");
     return false;

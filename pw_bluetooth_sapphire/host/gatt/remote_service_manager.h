@@ -54,7 +54,7 @@ class RemoteServiceManager final {
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.
   //
   // If called while uninitialized, |callback| will be run after initialization.
-  void ListServices(const std::vector<common::UUID>& uuids,
+  void ListServices(const std::vector<UUID>& uuids,
                     ServiceListCallback callback);
 
   // Returns the RemoteService with the requested range start |handle| or
@@ -69,7 +69,7 @@ class RemoteServiceManager final {
   class ServiceListRequest {
    public:
     ServiceListRequest(ServiceListCallback callback,
-                       const std::vector<common::UUID>& uuids);
+                       const std::vector<UUID>& uuids);
 
     ServiceListRequest() = default;
     ServiceListRequest(ServiceListRequest&&) = default;
@@ -80,7 +80,7 @@ class RemoteServiceManager final {
 
    private:
     ServiceListCallback callback_;
-    std::vector<common::UUID> uuids_;
+    std::vector<UUID> uuids_;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
@@ -90,7 +90,7 @@ class RemoteServiceManager final {
 
   // Called by |client_| when a notification or indication is received.
   void OnNotification(bool ind, att::Handle value_handle,
-                      const common::ByteBuffer& value);
+                      const ByteBuffer& value);
 
   async_dispatcher_t* gatt_dispatcher_;
   std::unique_ptr<Client> client_;

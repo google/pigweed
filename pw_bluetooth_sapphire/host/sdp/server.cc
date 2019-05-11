@@ -13,9 +13,6 @@
 namespace bt {
 namespace sdp {
 
-using common::BufferView;
-using common::UUID;
-
 namespace {
 
 // The VersionNumberList value. (5.0, Vol 3, Part B, 5.2.3)
@@ -140,7 +137,7 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel->Activate(
-      [self, handle](common::ByteBufferPtr sdu) {
+      [self, handle](ByteBufferPtr sdu) {
         if (self) {
           self->OnRxBFrame(handle, std::move(sdu));
         }
@@ -369,7 +366,7 @@ void Server::OnChannelClosed(const hci::ConnectionHandle& handle) {
 }
 
 void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
-                        common::ByteBufferPtr sdu) {
+                        ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
@@ -384,7 +381,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
   }
 
   l2cap::Channel* chan = it->second.get();
-  common::PacketView<Header> packet(sdu.get());
+  PacketView<Header> packet(sdu.get());
   TransactionId tid = betoh16(packet.header().tid);
   uint16_t param_length = betoh16(packet.header().param_length);
 

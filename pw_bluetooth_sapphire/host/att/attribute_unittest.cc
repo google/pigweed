@@ -11,16 +11,14 @@ namespace bt {
 namespace att {
 namespace {
 
-using common::PeerId;
-
 constexpr PeerId kTestPeerId(1);
 constexpr Handle kTestHandle = 0x0001;
-constexpr common::UUID kTestType1((uint16_t)0x0001);
-constexpr common::UUID kTestType2((uint16_t)0x0002);
-constexpr common::UUID kTestType3((uint16_t)0x0003);
-constexpr common::UUID kTestType4((uint16_t)0x0004);
+constexpr UUID kTestType1((uint16_t)0x0001);
+constexpr UUID kTestType2((uint16_t)0x0002);
+constexpr UUID kTestType3((uint16_t)0x0003);
+constexpr UUID kTestType4((uint16_t)0x0004);
 
-const auto kTestValue = common::CreateStaticByteBuffer('t', 'e', 's', 't');
+const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
 TEST(ATT_AttributeTest, AccessRequirementsDefault) {
   AccessRequirements reqs;
@@ -76,7 +74,7 @@ TEST(ATT_AttributeTest, GroupingDeclAttr) {
   EXPECT_EQ(kTestHandle, decl_attr.handle());
   EXPECT_EQ(kTestType1, decl_attr.type());
   ASSERT_TRUE(decl_attr.value());
-  EXPECT_TRUE(common::ContainersEqual(kTestValue, *decl_attr.value()));
+  EXPECT_TRUE(ContainersEqual(kTestValue, *decl_attr.value()));
   EXPECT_TRUE(decl_attr.read_reqs().allowed());
   EXPECT_FALSE(decl_attr.read_reqs().encryption_required());
   EXPECT_FALSE(decl_attr.read_reqs().authentication_required());
@@ -104,7 +102,7 @@ TEST(ATT_AttributeTest, GroupingAddAttribute) {
   EXPECT_FALSE(attr->value());
   attr->SetValue(kTestValue);
   ASSERT_TRUE(attr->value());
-  EXPECT_TRUE(common::ContainersEqual(kTestValue, *attr->value()));
+  EXPECT_TRUE(ContainersEqual(kTestValue, *attr->value()));
 
   // The group is not complete until |kAttrCount| attributes have been added.
   EXPECT_FALSE(group.complete());
@@ -152,8 +150,7 @@ TEST(ATT_AttributeTest, ReadAsync) {
   bool callback_called = false;
   auto callback = [&](ErrorCode status, const auto& value) {
     EXPECT_EQ(kTestStatus, status);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('h', 'i'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
     callback_called = true;
   };
 
@@ -164,7 +161,7 @@ TEST(ATT_AttributeTest, ReadAsync) {
     EXPECT_EQ(kTestOffset, offset);
     EXPECT_TRUE(result_cb);
 
-    result_cb(kTestStatus, common::CreateStaticByteBuffer('h', 'i'));
+    result_cb(kTestStatus, CreateStaticByteBuffer('h', 'i'));
   };
 
   attr->set_read_handler(handler);
@@ -176,8 +173,7 @@ TEST(ATT_AttributeTest, WriteAsyncWriteNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
   Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(),
                                        AccessRequirements());
-  EXPECT_FALSE(
-      attr->WriteAsync(kTestPeerId, 0, common::BufferView(), [](auto) {}));
+  EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
 TEST(ATT_AttributeTest, WriteAsyncWriteNoHandler) {
@@ -186,8 +182,7 @@ TEST(ATT_AttributeTest, WriteAsyncWriteNoHandler) {
       kTestType2,
       AccessRequirements(),                      // read not allowed
       AccessRequirements(false, false, false));  // write no security
-  EXPECT_FALSE(
-      attr->WriteAsync(kTestPeerId, 0, common::BufferView(), [](auto) {}));
+  EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
 TEST(ATT_AttributeTest, WriteAsync) {
@@ -211,8 +206,7 @@ TEST(ATT_AttributeTest, WriteAsync) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
-    EXPECT_TRUE(common::ContainersEqual(
-        common::CreateStaticByteBuffer('h', 'i'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('h', 'i'), value));
     EXPECT_TRUE(result_cb);
 
     result_cb(kTestStatus);
@@ -220,8 +214,7 @@ TEST(ATT_AttributeTest, WriteAsync) {
 
   attr->set_write_handler(handler);
   EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kTestOffset,
-                               common::CreateStaticByteBuffer('h', 'i'),
-                               callback));
+                               CreateStaticByteBuffer('h', 'i'), callback));
   EXPECT_TRUE(callback_called);
 }
 

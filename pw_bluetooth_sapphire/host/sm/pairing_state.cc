@@ -6,16 +6,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-
 #include "util.h"
 
 namespace bt {
-
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::HostError;
-using common::MutableBufferView;
-using common::UInt128;
 
 namespace sm {
 
@@ -279,7 +272,7 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq,
     // We have TK so we can generate the confirm value now.
     const DeviceAddress *ia, *ra;
     self->LEPairingAddresses(&ia, &ra);
-    state->local_rand = common::RandomUInt128();
+    state->local_rand = RandomUInt128();
     util::C1(state->tk, state->local_rand, state->preq, state->pres, *ia, *ra,
              &state->local_confirm);
 
@@ -355,8 +348,7 @@ bool PairingState::SendLocalKeys() {
 
   if (legacy_state_->ShouldSendLTK()) {
     // Generate completely random values for LTK, EDiv, and Rand.
-    hci::LinkKey key(common::RandomUInt128(), common::Random<uint64_t>(),
-                     common::Random<uint16_t>());
+    hci::LinkKey key(RandomUInt128(), Random<uint64_t>(), Random<uint16_t>());
 
     // Assign the link key to make it available when the master initiates
     // encryption. The security properties of the LTK are based on the current
@@ -655,7 +647,7 @@ void PairingState::OnPairingRandom(const UInt128& random) {
   }
 }
 
-void PairingState::OnLongTermKey(const common::UInt128& ltk) {
+void PairingState::OnLongTermKey(const UInt128& ltk) {
   if (!legacy_state_) {
     bt_log(TRACE, "sm", "ignoring LTK received while not in legacy pairing");
     return;
@@ -736,7 +728,7 @@ void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
   OnExpectedKeyReceived();
 }
 
-void PairingState::OnIdentityResolvingKey(const common::UInt128& irk) {
+void PairingState::OnIdentityResolvingKey(const UInt128& irk) {
   if (!legacy_state_) {
     bt_log(TRACE, "sm", "ignoring IRK received while not in legacy pairing!");
     return;
@@ -770,8 +762,7 @@ void PairingState::OnIdentityResolvingKey(const common::UInt128& irk) {
   // Wait to receive identity address
 }
 
-void PairingState::OnIdentityAddress(
-    const common::DeviceAddress& identity_address) {
+void PairingState::OnIdentityAddress(const DeviceAddress& identity_address) {
   if (!legacy_state_) {
     bt_log(TRACE, "sm",
            "ignoring identity address received while not in legacy pairing");

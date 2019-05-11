@@ -23,11 +23,6 @@ namespace {
 using bt::testing::TestController;
 using TestingBase = bt::testing::FakeControllerTest<TestController>;
 
-using common::CreateStaticByteBuffer;
-using common::LowerBits;
-using common::StaticByteBuffer;
-using common::UpperBits;
-
 class DATA_DomainTest : public TestingBase {
  public:
   DATA_DomainTest() = default;

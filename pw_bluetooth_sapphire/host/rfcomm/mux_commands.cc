@@ -118,8 +118,8 @@ size_t NumLengthOctetsNeeded(size_t length) {
 // most of the time), so this isn't a problem. However, the Test command takes a
 // user-supplied pattern of octets. There is no restriction in the spec on how
 // long this pattern can be.
-common::DynamicByteBuffer CreateLengthFieldOctets(size_t length) {
-  common::DynamicByteBuffer octets(NumLengthOctetsNeeded(length));
+DynamicByteBuffer CreateLengthFieldOctets(size_t length) {
+  DynamicByteBuffer octets(NumLengthOctetsNeeded(length));
 
   for (size_t i = 0; i < octets.size(); i++) {
     // There should still be meaningful data left in length.
@@ -169,8 +169,7 @@ MuxCommand::MuxCommand(MuxCommandType command_type,
                        CommandResponse command_response)
     : command_type_(command_type), command_response_(command_response) {}
 
-std::unique_ptr<MuxCommand> MuxCommand::Parse(
-    const common::ByteBuffer& buffer) {
+std::unique_ptr<MuxCommand> MuxCommand::Parse(const ByteBuffer& buffer) {
   ZX_DEBUG_ASSERT_MSG(buffer.size() >= kMinHeaderSize,
                       "buffer must contain at least a type and length octet");
 
@@ -244,20 +243,19 @@ std::unique_ptr<MuxCommand> MuxCommand::Parse(
 }
 
 TestCommand::TestCommand(CommandResponse command_response,
-                         const common::ByteBuffer& test_pattern)
+                         const ByteBuffer& test_pattern)
     : MuxCommand(MuxCommandType::kTestCommand, command_response) {
-  test_pattern_ = common::DynamicByteBuffer(test_pattern.size());
+  test_pattern_ = DynamicByteBuffer(test_pattern.size());
   test_pattern.Copy(&test_pattern_, 0, test_pattern.size());
 }
 
 std::unique_ptr<TestCommand> TestCommand::Parse(
-    CommandResponse command_response, size_t length,
-    const common::ByteBuffer& buffer) {
+    CommandResponse command_response, size_t length, const ByteBuffer& buffer) {
   return std::make_unique<TestCommand>(command_response,
                                        buffer.view(2, length));
 }
 
-void TestCommand::Write(common::MutableBufferView buffer) const {
+void TestCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
 
   size_t idx = 0;
@@ -293,7 +291,7 @@ std::unique_ptr<FlowControlOnCommand> FlowControlOnCommand::Parse(
   return std::make_unique<FlowControlOnCommand>(command_response);
 }
 
-void FlowControlOnCommand::Write(common::MutableBufferView buffer) const {
+void FlowControlOnCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // Length = 0, EA bit = 1.
@@ -307,7 +305,7 @@ std::unique_ptr<FlowControlOffCommand> FlowControlOffCommand::Parse(
   return std::make_unique<FlowControlOffCommand>(command_response);
 }
 
-void FlowControlOffCommand::Write(common::MutableBufferView buffer) const {
+void FlowControlOffCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // Length = 0, EA bit = 1.
@@ -329,8 +327,7 @@ ModemStatusCommand::ModemStatusCommand(CommandResponse command_response,
       break_value_(break_value) {}
 
 std::unique_ptr<ModemStatusCommand> ModemStatusCommand::Parse(
-    CommandResponse command_response, size_t length,
-    const common::ByteBuffer& buffer) {
+    CommandResponse command_response, size_t length, const ByteBuffer& buffer) {
   DLCI dlci = buffer[2] >> kMSCDLCIShift;
   ModemStatusCommandSignals signals;
   BreakValue break_value = kDefaultInvalidBreakValue;
@@ -354,7 +351,7 @@ std::unique_ptr<ModemStatusCommand> ModemStatusCommand::Parse(
                                               break_value);
 }
 
-void ModemStatusCommand::Write(common::MutableBufferView buffer) const {
+void ModemStatusCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
@@ -405,8 +402,7 @@ RemotePortNegotiationCommand::RemotePortNegotiationCommand(
 
 std::unique_ptr<RemotePortNegotiationCommand>
 RemotePortNegotiationCommand::Parse(CommandResponse command_response,
-                                    size_t length,
-                                    const common::ByteBuffer& buffer) {
+                                    size_t length, const ByteBuffer& buffer) {
   DLCI dlci = buffer[2] >> kRPNDLCIShift;
 
   if (length == kRPNShortLength) {
@@ -434,8 +430,7 @@ RemotePortNegotiationCommand::Parse(CommandResponse command_response,
       command_response, dlci, std::move(params), std::move(mask));
 }
 
-void RemotePortNegotiationCommand::Write(
-    common::MutableBufferView buffer) const {
+void RemotePortNegotiationCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
@@ -476,7 +471,7 @@ RemoteLineStatusCommand::RemoteLineStatusCommand(
       error_(error) {}
 
 std::unique_ptr<RemoteLineStatusCommand> RemoteLineStatusCommand::Parse(
-    CommandResponse command_response, const common::ByteBuffer& buffer) {
+    CommandResponse command_response, const ByteBuffer& buffer) {
   DLCI dlci = buffer[2] >> kRLSDLCIShift;
   bool error_occurred = buffer[3] & kRLSErrorOccurredMask;
   // TODO(gusss)
@@ -487,7 +482,7 @@ std::unique_ptr<RemoteLineStatusCommand> RemoteLineStatusCommand::Parse(
                                                    error_occurred, error);
 }
 
-void RemoteLineStatusCommand::Write(common::MutableBufferView buffer) const {
+void RemoteLineStatusCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
@@ -511,7 +506,7 @@ NonSupportedCommandResponse::NonSupportedCommandResponse(
       incoming_non_supported_command_(incoming_non_supported_command) {}
 
 std::unique_ptr<NonSupportedCommandResponse> NonSupportedCommandResponse::Parse(
-    CommandResponse command_response, const common::ByteBuffer& buffer) {
+    CommandResponse command_response, const ByteBuffer& buffer) {
   CommandResponse incoming_command_response = buffer[2] & kCRMask
                                                   ? CommandResponse::kCommand
                                                   : CommandResponse::kResponse;
@@ -522,8 +517,7 @@ std::unique_ptr<NonSupportedCommandResponse> NonSupportedCommandResponse::Parse(
       incoming_command_response, incoming_non_supported_command);
 }
 
-void NonSupportedCommandResponse::Write(
-    common::MutableBufferView buffer) const {
+void NonSupportedCommandResponse::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
@@ -545,7 +539,7 @@ DLCParameterNegotiationCommand::DLCParameterNegotiationCommand(
 
 std::unique_ptr<DLCParameterNegotiationCommand>
 DLCParameterNegotiationCommand::Parse(CommandResponse command_response,
-                                      const common::ByteBuffer& buffer) {
+                                      const ByteBuffer& buffer) {
   ParameterNegotiationParams params;
 
   params.dlci = buffer[2];
@@ -559,8 +553,7 @@ DLCParameterNegotiationCommand::Parse(CommandResponse command_response,
                                                           params);
 }
 
-void DLCParameterNegotiationCommand::Write(
-    common::MutableBufferView buffer) const {
+void DLCParameterNegotiationCommand::Write(MutableBufferView buffer) const {
   ZX_ASSERT(buffer.size() >= written_size());
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.

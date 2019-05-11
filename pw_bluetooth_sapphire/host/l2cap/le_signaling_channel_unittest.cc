@@ -51,7 +51,7 @@ TEST_F(L2CAP_LESignalingChannelTest, IgnoreEmptyFrame) {
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-  fake_chan()->Receive(common::BufferView());
+  fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();
   EXPECT_FALSE(send_cb_called);
@@ -60,7 +60,7 @@ TEST_F(L2CAP_LESignalingChannelTest, IgnoreEmptyFrame) {
 TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooLarge) {
   // Command Reject packet.
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -69,7 +69,7 @@ TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooLarge) {
 
   // Header-encoded length is less than the otherwise-valid Connection Parameter
   // Update packet's payload size.
-  auto cmd_with_oversize_payload = common::CreateStaticByteBuffer(
+  auto cmd_with_oversize_payload = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x07, 0x00,
 
       // Valid connection parameters
@@ -85,7 +85,7 @@ TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooLarge) {
 TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooSmall) {
   // Command Reject packet.
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -94,7 +94,7 @@ TEST_F(L2CAP_LESignalingChannelTest, RejectMalformedTooSmall) {
 
   // Header-encoded length is more than the otherwise-valid Connection Parameter
   // Update packet's payload size.
-  auto cmd_with_undersize_payload = common::CreateStaticByteBuffer(
+  auto cmd_with_undersize_payload = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x09, 0x00,
 
       // Valid connection parameters
@@ -112,7 +112,7 @@ TEST_F(L2CAP_LESignalingChannelTest, DefaultMTU) {
 
   // The channel should start out with the minimum MTU as the default (23
   // octets).
-  common::StaticByteBuffer<kCommandSize> cmd;
+  StaticByteBuffer<kCommandSize> cmd;
 
   // Make sure that the packet is well formed (the command code does not
   // matter).
@@ -122,7 +122,7 @@ TEST_F(L2CAP_LESignalingChannelTest, DefaultMTU) {
 
   // Command Reject packet.
   // clang-format off
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x04, 0x00,
 
@@ -146,11 +146,11 @@ TEST_F(L2CAP_LESignalingChannelTest, UnknownCommand) {
       continue;
 
     // Use command code as ID.
-    auto cmd = common::CreateStaticByteBuffer(code, code, 0x00, 0x00);
+    auto cmd = CreateStaticByteBuffer(code, code, 0x00, 0x00);
 
     // Expected
     // clang-format off
-    auto expected = common::CreateStaticByteBuffer(
+    auto expected = CreateStaticByteBuffer(
         // Command header
         0x01, code, 0x02, 0x00,
 
@@ -165,7 +165,7 @@ TEST_F(L2CAP_LESignalingChannelTest, UnknownCommand) {
 TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooLarge) {
   // Packet size larger than conn. param. update payload.
   // clang-format off
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x09, 0x00,
 
       // Valid conn. param. values:
@@ -177,7 +177,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooLarge) {
       // Extra byte
       0x00);
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -191,7 +191,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooLarge) {
 TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooSmall) {
   // Packet size larger than conn. param. update payload.
   // clang-format off
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x07, 0x00,
 
       // Valid conn. param. values:
@@ -200,7 +200,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooSmall) {
       0xF3, 0x01,
       0x0A/*0x00 // Missing a byte */);
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -213,43 +213,43 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateMalformedPayloadTooSmall) {
 
 TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateReject) {
   // clang-format off
-  common::StaticByteBuffer<12> commands[] = {
-      common::CreateStaticByteBuffer(
+  StaticByteBuffer<12> commands[] = {
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x07, 0x00,  // interval min larger than max (both within range)
           0x06, 0x00,
           0xF3, 0x01,
           0x0A, 0x00),
-      common::CreateStaticByteBuffer(
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x05, 0x00,  // interval min too small
           0x80, 0x0C,
           0xF3, 0x01,
           0x0A, 0x00),
-      common::CreateStaticByteBuffer(
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x06, 0x00,
           0x81, 0x0C,  // interval max too large
           0xF3, 0x01,
           0x0A, 0x00),
-      common::CreateStaticByteBuffer(
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x06, 0x00,
           0x80, 0x0C,
           0xF4, 0x01,  // Latency too large
           0x0A, 0x00),
-      common::CreateStaticByteBuffer(
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x06, 0x00,
           0x80, 0x0C,
           0xF3, 0x01,
           0x09, 0x00), // Supv. timeout too small
-      common::CreateStaticByteBuffer(
+      CreateStaticByteBuffer(
           0x12, kTestCmdId, 0x08, 0x00,
 
           0x06, 0x00,
@@ -262,7 +262,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateReject) {
   for (size_t i = 0; i < arraysize(commands); ++i) {
     // Conn. param. update response
     // clang-format off
-    auto expected = common::CreateStaticByteBuffer(
+    auto expected = CreateStaticByteBuffer(
         // Command header
         0x13, kTestCmdId, 0x02, 0x00,
 
@@ -276,7 +276,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateReject) {
 
 TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateAccept) {
   // clang-format off
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x08, 0x00,
 
       // Valid connection parameters
@@ -286,7 +286,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateAccept) {
       0x80, 0x0C);
 
   // Conn. param. update response
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x13, kTestCmdId, 0x02, 0x00,
 
@@ -296,7 +296,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateAccept) {
 
   bool fake_chan_cb_called = false;
   auto fake_chan_cb = [&expected, &fake_chan_cb_called, this](auto packet) {
-    EXPECT_TRUE(common::ContainersEqual(expected, *packet));
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
     fake_chan_cb_called = true;
   };
 
@@ -322,7 +322,7 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateAccept) {
 
 TEST_F(L2CAP_LESignalingChannelSlaveTest, ConnParamUpdateReject) {
   // clang-format off
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       0x12, kTestCmdId, 0x08, 0x00,
 
       // Valid connection parameters
@@ -332,7 +332,7 @@ TEST_F(L2CAP_LESignalingChannelSlaveTest, ConnParamUpdateReject) {
       0x80, 0x0C);
 
   // Command rejected
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -342,7 +342,7 @@ TEST_F(L2CAP_LESignalingChannelSlaveTest, ConnParamUpdateReject) {
 
   bool cb_called = false;
   auto cb = [&expected, &cb_called, this](auto packet) {
-    EXPECT_TRUE(common::ContainersEqual(expected, *packet));
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
     cb_called = true;
   };
 

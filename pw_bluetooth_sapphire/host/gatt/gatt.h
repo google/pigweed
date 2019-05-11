@@ -148,7 +148,7 @@ class GATT : public fbl::RefCounted<GATT> {
   // discovered. If the connection is removed without discovery services,
   // |callback| will be called with an error status. |callback| will always run
   // on the GATT loop.
-  virtual void ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
+  virtual void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                             ServiceListCallback callback) = 0;
 
   // Connects the RemoteService with the given identifier found on the

@@ -20,7 +20,7 @@ BrEdrInterrogator::Interrogation::Interrogation(hci::ConnectionPtr conn,
 }
 
 BrEdrInterrogator::Interrogation::~Interrogation() {
-  Finish(hci::Status(common::HostError::kFailed));
+  Finish(hci::Status(HostError::kFailed));
 }
 
 void BrEdrInterrogator::Interrogation::Finish(hci::Status status) {
@@ -64,7 +64,7 @@ void BrEdrInterrogator::Start(PeerId device_id, hci::ConnectionPtr conn_ptr,
 
   Peer* device = cache_->FindById(device_id);
   if (!device) {
-    Complete(device_id, hci::Status(common::HostError::kFailed));
+    Complete(device_id, hci::Status(HostError::kFailed));
     return;
   }
 
@@ -96,7 +96,7 @@ void BrEdrInterrogator::Cancel(PeerId device_id) {
       return;
     }
 
-    it->second->Finish(hci::Status(common::HostError::kCanceled));
+    it->second->Finish(hci::Status(HostError::kCanceled));
     self->pending_.erase(it);
   });
 }
@@ -104,7 +104,7 @@ void BrEdrInterrogator::Cancel(PeerId device_id) {
 void BrEdrInterrogator::MaybeComplete(PeerId device_id) {
   Peer* device = cache_->FindById(device_id);
   if (!device) {
-    Complete(device_id, hci::Status(common::HostError::kFailed));
+    Complete(device_id, hci::Status(HostError::kFailed));
     return;
   }
   if (!device->name()) {
@@ -140,7 +140,7 @@ void BrEdrInterrogator::Complete(PeerId device_id, hci::Status status) {
 void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
   Peer* device = cache_->FindById(device_id);
   if (!device) {
-    Complete(device_id, hci::Status(common::HostError::kFailed));
+    Complete(device_id, hci::Status(HostError::kFailed));
     return;
   }
   ZX_DEBUG_ASSERT(device->bredr());
@@ -189,7 +189,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
     }
     Peer* device = self->cache_->FindById(device_id);
     if (!device) {
-      self->Complete(device_id, hci::Status(common::HostError::kFailed));
+      self->Complete(device_id, hci::Status(HostError::kFailed));
       return;
     }
     device->SetName(std::string(params.remote_name, params.remote_name + len));
@@ -238,7 +238,7 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
 
     Peer* device = self->cache_->FindById(device_id);
     if (!device) {
-      self->Complete(device_id, hci::Status(common::HostError::kFailed));
+      self->Complete(device_id, hci::Status(HostError::kFailed));
       return;
     }
     device->set_version(params.lmp_version, params.manufacturer_name,
@@ -288,7 +288,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(PeerId device_id,
 
         Peer* device = self->cache_->FindById(device_id);
         if (!device) {
-          self->Complete(device_id, hci::Status(common::HostError::kFailed));
+          self->Complete(device_id, hci::Status(HostError::kFailed));
           return;
         }
         device->SetFeaturePage(0, le64toh(params.lmp_features));
@@ -345,7 +345,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId device_id,
 
     Peer* device = self->cache_->FindById(device_id);
     if (!device) {
-      self->Complete(device_id, hci::Status(common::HostError::kFailed));
+      self->Complete(device_id, hci::Status(HostError::kFailed));
       return;
     }
     device->SetFeaturePage(params.page_number, le64toh(params.lmp_features));

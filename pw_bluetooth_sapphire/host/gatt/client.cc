@@ -10,19 +10,17 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-using bt::common::HostError;
+using bt::HostError;
 
 namespace bt {
 
 using att::StatusCallback;
-using common::BufferView;
-using common::HostError;
 
 namespace gatt {
 namespace {
 
-common::MutableByteBufferPtr NewPDU(size_t param_size) {
-  auto pdu = common::NewSlabBuffer(sizeof(att::Header) + param_size);
+MutableByteBufferPtr NewPDU(size_t param_size) {
+  auto pdu = NewSlabBuffer(sizeof(att::Header) + param_size);
   if (!pdu) {
     bt_log(TRACE, "att", "out of memory");
   }
@@ -65,7 +63,7 @@ bool ProcessDescriptorDiscoveryResponse(
     }
 
     last_handle = desc.handle;
-    desc.type = common::UUID(entry.uuid);
+    desc.type = UUID(entry.uuid);
 
     // Notify the handler.
     desc_callback(desc);
@@ -279,7 +277,7 @@ class Impl final : public Client {
         BufferView value(entry.value, entry_length - (2 * sizeof(att::Handle)));
 
         // This must succeed as we have performed the appropriate checks above.
-        __UNUSED bool result = common::UUID::FromBytes(value, &service.type);
+        __UNUSED bool result = UUID::FromBytes(value, &service.type);
         ZX_DEBUG_ASSERT(result);
 
         // Notify the handler.
@@ -431,8 +429,7 @@ class Impl final : public Client {
 
             // This must succeed as we have performed the necessary checks
             // above.
-            __UNUSED bool result =
-                common::UUID::FromBytes(value.view(3), &chrc.type);
+            __UNUSED bool result = UUID::FromBytes(value.view(3), &chrc.type);
             ZX_DEBUG_ASSERT(result);
 
             // Notify the handler.
@@ -622,7 +619,7 @@ class Impl final : public Client {
     }
   }
 
-  void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
+  void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     StatusCallback callback) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
@@ -673,7 +670,7 @@ class Impl final : public Client {
   }
 
   void WriteWithoutResponse(att::Handle handle,
-                            const common::ByteBuffer& value) override {
+                            const ByteBuffer& value) override {
     const size_t payload_size = sizeof(att::WriteRequestParams) + value.size();
     if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
       bt_log(SPEW, "gatt", "write request payload exceeds MTU");

@@ -14,9 +14,6 @@
 
 namespace bt {
 
-using common::MutableByteBuffer;
-using common::UUID;
-
 namespace sdp {
 
 namespace {
@@ -330,7 +327,7 @@ void DataElement::SetVariableSize(size_t length) {
   }
 }
 
-size_t DataElement::Read(DataElement* elem, const common::ByteBuffer& buffer) {
+size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
   if (buffer.size() == 0) {
     return 0;
   }
@@ -338,7 +335,7 @@ size_t DataElement::Read(DataElement* elem, const common::ByteBuffer& buffer) {
   Size size_desc = Size(buffer[0] & kDataElementSizeTypeMask);
   size_t data_bytes = 0;
   size_t bytes_read = 1;
-  common::BufferView cursor = buffer.view(bytes_read);
+  BufferView cursor = buffer.view(bytes_read);
   switch (size_desc) {
     case DataElement::Size::kOneByte:
     case DataElement::Size::kTwoBytes:
@@ -433,7 +430,7 @@ size_t DataElement::Read(DataElement* elem, const common::ByteBuffer& buffer) {
       } else if (size_desc == Size::kFourBytes) {
         elem->Set(UUID(betoh32(cursor.As<uint32_t>())));
       } else if (size_desc == Size::kSixteenBytes) {
-        common::StaticByteBuffer<16> uuid_bytes;
+        StaticByteBuffer<16> uuid_bytes;
         // UUID expects these to be in little-endian order.
         cursor.Copy(&uuid_bytes, 0, 16);
         std::reverse(uuid_bytes.mutable_data(), uuid_bytes.mutable_data() + 16);
@@ -458,7 +455,7 @@ size_t DataElement::Read(DataElement* elem, const common::ByteBuffer& buffer) {
       if (static_cast<uint8_t>(size_desc) < 5) {
         return 0;
       }
-      common::BufferView sequence_buf = cursor.view(0, data_bytes);
+      BufferView sequence_buf = cursor.view(0, data_bytes);
       size_t remaining = data_bytes;
       ZX_DEBUG_ASSERT(sequence_buf.size() == data_bytes);
 
@@ -524,7 +521,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
   buffer->Write(&type_and_size, 1);
   size_t pos = 1;
 
-  common::MutableBufferView cursor = buffer->mutable_view(pos);
+  MutableBufferView cursor = buffer->mutable_view(pos);
 
   switch (type_) {
     case Type::kNull: {

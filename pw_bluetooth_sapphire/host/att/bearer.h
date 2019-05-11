@@ -116,7 +116,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   // correspond to a request or indication.
   using TransactionCallback = fit::function<void(const PacketReader& packet)>;
   using ErrorCallback = fit::function<void(Status, Handle attr_in_error)>;
-  bool StartTransaction(common::ByteBufferPtr pdu, TransactionCallback callback,
+  bool StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
                         ErrorCallback error_callback);
 
   // Sends |pdu| without initiating a transaction. Used for command and
@@ -124,7 +124,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   //
   // Returns false if the packet is malformed or does not correspond to a
   // command or notification.
-  bool SendWithoutResponse(common::ByteBufferPtr pdu);
+  bool SendWithoutResponse(ByteBufferPtr pdu);
 
   // A Handler is a function that gets invoked when the Bearer receives a PDU
   // that is not tied to a locally initiated transaction (see
@@ -153,7 +153,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   // Ends a currently pending transaction with the given response or
   // confirmation |pdu|. Returns false if |pdu| is malformed or if |id| and
   // |pdu| do not match a pending transaction.
-  bool Reply(TransactionId tid, common::ByteBufferPtr pdu);
+  bool Reply(TransactionId tid, ByteBufferPtr pdu);
 
   // Ends a request transaction with an error response.
   bool ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code);
@@ -168,9 +168,9 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   bool Activate();
 
   // Represents a locally initiated pending request or indication transaction.
-  struct PendingTransaction : common::LinkedListable<PendingTransaction> {
+  struct PendingTransaction : LinkedListable<PendingTransaction> {
     PendingTransaction(OpCode opcode, TransactionCallback callback,
-                       ErrorCallback error_callback, common::ByteBufferPtr pdu);
+                       ErrorCallback error_callback, ByteBufferPtr pdu);
 
     // Required fields
     OpCode opcode;
@@ -180,7 +180,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
     ErrorCallback error_callback;
 
     // Holds the pdu while the transaction is in the send queue.
-    common::ByteBufferPtr pdu;
+    ByteBufferPtr pdu;
 
     // Contains the most recently requested security upgrade level under which
     // this transaction has been retried following an ATT security error. The
@@ -238,19 +238,19 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
     void InvokeErrorAll(Status status);
 
    private:
-    common::LinkedList<PendingTransaction> queue_;
+    LinkedList<PendingTransaction> queue_;
     PendingTransactionPtr current_;
     async::Task timeout_task_;
   };
 
-  bool SendInternal(common::ByteBufferPtr pdu, TransactionCallback callback,
+  bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
                     ErrorCallback error_callback);
 
   // Shuts down the link.
   void ShutDownInternal(bool due_to_timeout);
 
   // Returns false if |pdu| is malformed.
-  bool IsPacketValid(const common::ByteBuffer& pdu);
+  bool IsPacketValid(const ByteBuffer& pdu);
 
   // Tries to initiate the next transaction from the given |queue|.
   void TryStartNextTransaction(TransactionQueue* tq);
@@ -285,7 +285,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
 
   // l2cap::Channel callbacks:
   void OnChannelClosed();
-  void OnRxBFrame(common::ByteBufferPtr sdu);
+  void OnRxBFrame(ByteBufferPtr sdu);
 
   l2cap::ScopedChannel chan_;
   uint16_t mtu_;
@@ -293,7 +293,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   uint16_t min_mtu_;
 
   // Callback passed to l2cap::Channel::OnRxBFrame().
-  fxl::CancelableCallback<void(common::ByteBufferPtr sdu)> rx_task_;
+  fxl::CancelableCallback<void(ByteBufferPtr sdu)> rx_task_;
 
   // Callback that wraps our internal OnChannelClosed handler.
   fxl::CancelableClosure chan_closed_cb_;

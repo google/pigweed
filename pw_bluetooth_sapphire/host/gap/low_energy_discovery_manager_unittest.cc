@@ -25,8 +25,6 @@ namespace {
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
-using common::DeviceAddress;
-
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
@@ -138,7 +136,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   //   - Not discoverable;
   void AddFakePeers() {
     // Peer 0
-    const auto kAdvData0 = common::CreateStaticByteBuffer(
+    const auto kAdvData0 = CreateStaticByteBuffer(
         // Flags
         0x02, 0x01, 0x02,
 
@@ -152,7 +150,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 1
-    const auto kAdvData1 = common::CreateStaticByteBuffer(
+    const auto kAdvData1 = CreateStaticByteBuffer(
         // Flags
         0x02, 0x01, 0x01,
 
@@ -163,7 +161,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 2
-    const auto kAdvData2 = common::CreateStaticByteBuffer(
+    const auto kAdvData2 = CreateStaticByteBuffer(
         // Flags
         0x02, 0x01, 0x02,
 
@@ -174,7 +172,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     test_device()->AddPeer(std::move(fake_peer));
 
     // Peer 3
-    const auto kAdvData3 = common::CreateStaticByteBuffer(
+    const auto kAdvData3 = CreateStaticByteBuffer(
         // Flags
         0x02, 0x01, 0x00,
 
@@ -621,7 +619,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   discovery_manager()->set_scan_period(zx::msec(200));
 
   // Session 0 is interested in performing general discovery.
-  std::unordered_set<common::DeviceAddress> peers_session0;
+  std::unordered_set<DeviceAddress> peers_session0;
   LowEnergyDiscoverySession::PeerFoundCallback result_cb =
       [&peers_session0](const auto& peer) {
         peers_session0.insert(peer.address());
@@ -631,7 +629,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[0]->SetResultCallback(std::move(result_cb));
 
   // Session 1 is interested in performing limited discovery.
-  std::unordered_set<common::DeviceAddress> peers_session1;
+  std::unordered_set<DeviceAddress> peers_session1;
   result_cb = [&peers_session1](const auto& peer) {
     peers_session1.insert(peer.address());
   };
@@ -641,18 +639,18 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
-  std::unordered_set<common::DeviceAddress> peers_session2;
+  std::unordered_set<DeviceAddress> peers_session2;
   result_cb = [&peers_session2](const auto& peer) {
     peers_session2.insert(peer.address());
   };
   sessions.push_back(StartDiscoverySession());
 
   uint16_t uuid = 0x180d;
-  sessions[2]->filter()->set_service_uuids({common::UUID(uuid)});
+  sessions[2]->filter()->set_service_uuids({UUID(uuid)});
   sessions[2]->SetResultCallback(std::move(result_cb));
 
   // Session 3 is interested in peers whose names contain "Device".
-  std::unordered_set<common::DeviceAddress> peers_session3;
+  std::unordered_set<DeviceAddress> peers_session3;
   result_cb = [&peers_session3](const auto& peer) {
     peers_session3.insert(peer.address());
   };
@@ -661,7 +659,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
-  std::unordered_set<common::DeviceAddress> peers_session4;
+  std::unordered_set<DeviceAddress> peers_session4;
   result_cb = [&peers_session4](const auto& peer) {
     peers_session4.insert(peer.address());
   };
@@ -718,7 +716,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   discovery_manager()->set_scan_period(zx::sec(20));
 
   // Session 0 is interested in performing general discovery.
-  std::unordered_set<common::DeviceAddress> peers_session0;
+  std::unordered_set<DeviceAddress> peers_session0;
   LowEnergyDiscoverySession::PeerFoundCallback result_cb =
       [this, &peers_session0](const auto& peer) {
         peers_session0.insert(peer.address());
@@ -731,7 +729,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   ASSERT_EQ(3u, peers_session0.size());
 
   // Session 1 is interested in performing limited discovery.
-  std::unordered_set<common::DeviceAddress> peers_session1;
+  std::unordered_set<DeviceAddress> peers_session1;
   result_cb = [&peers_session1](const auto& peer) {
     peers_session1.insert(peer.address());
   };
@@ -741,18 +739,18 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
-  std::unordered_set<common::DeviceAddress> peers_session2;
+  std::unordered_set<DeviceAddress> peers_session2;
   result_cb = [&peers_session2](const auto& peer) {
     peers_session2.insert(peer.address());
   };
   sessions.push_back(StartDiscoverySession());
 
   uint16_t uuid = 0x180d;
-  sessions[2]->filter()->set_service_uuids({common::UUID(uuid)});
+  sessions[2]->filter()->set_service_uuids({UUID(uuid)});
   sessions[2]->SetResultCallback(std::move(result_cb));
 
   // Session 3 is interested in peers whose names contain "Device".
-  std::unordered_set<common::DeviceAddress> peers_session3;
+  std::unordered_set<DeviceAddress> peers_session3;
   result_cb = [&peers_session3](const auto& peer) {
     peers_session3.insert(peer.address());
   };
@@ -761,7 +759,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
-  std::unordered_set<common::DeviceAddress> peers_session4;
+  std::unordered_set<DeviceAddress> peers_session4;
   result_cb = [&peers_session4](const auto& peer) {
     peers_session4.insert(peer.address());
   };
@@ -847,7 +845,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  std::unordered_set<common::DeviceAddress> addresses_found;
+  std::unordered_set<DeviceAddress> addresses_found;
   LowEnergyDiscoverySession::PeerFoundCallback result_cb =
       [&addresses_found](const auto& peer) {
         addresses_found.insert(peer.address());

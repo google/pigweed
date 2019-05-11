@@ -25,11 +25,11 @@ class Transport;
 // Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
   LowEnergyScanResult();
-  LowEnergyScanResult(const common::DeviceAddress& address, bool resolved,
+  LowEnergyScanResult(const DeviceAddress& address, bool resolved,
                       bool connectable, int8_t rssi);
 
   // The device address of the remote peer.
-  common::DeviceAddress address;
+  DeviceAddress address;
 
   // True if |address| is a static or random identity address resolved by the
   // controller.
@@ -82,7 +82,7 @@ class LowEnergyScanner : public LocalAddressClient {
     // Called when a peer is found. |data| contains the advertising data, as
     // well as any scan response data that was received during an active scan.
     virtual void OnPeerFound(const LowEnergyScanResult& result,
-                             const common::ByteBuffer& data);
+                             const ByteBuffer& data);
 
     // Called when a directed advertising report is received from the peer
     // with the given address.

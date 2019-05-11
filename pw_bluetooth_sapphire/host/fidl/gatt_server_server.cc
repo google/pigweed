@@ -77,8 +77,8 @@ DescriptorResult NewDescriptor(const Descriptor& fidl_desc) {
   auto read_reqs = ParseSecurityRequirements(fidl_desc.permissions->read);
   auto write_reqs = ParseSecurityRequirements(fidl_desc.permissions->write);
 
-  bt::common::UUID type;
-  if (!bt::common::StringToUuid(fidl_desc.type, &type)) {
+  bt::UUID type;
+  if (!bt::StringToUuid(fidl_desc.type, &type)) {
     return DescriptorResult("Invalid descriptor UUID");
   }
 
@@ -107,8 +107,8 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
   auto write_reqs = ParseSecurityRequirements(fidl_chrc.permissions->write);
   auto update_reqs = ParseSecurityRequirements(fidl_chrc.permissions->update);
 
-  bt::common::UUID type;
-  if (!bt::common::StringToUuid(fidl_chrc.type, &type)) {
+  bt::UUID type;
+  if (!bt::StringToUuid(fidl_chrc.type, &type)) {
     return CharacteristicResult("Invalid characteristic UUID");
   }
 
@@ -229,8 +229,8 @@ void GattServerServer::PublishService(
     return;
   }
 
-  bt::common::UUID service_type;
-  if (!bt::common::StringToUuid(service_info.type, &service_type)) {
+  bt::UUID service_type;
+  if (!bt::StringToUuid(service_info.type, &service_type)) {
     auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                             "Invalid service UUID");
     callback(std::move(error));
@@ -262,7 +262,7 @@ void GattServerServer::PublishService(
     if (self) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
-      responder(bt::att::ErrorCode::kUnlikelyError, bt::common::BufferView());
+      responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     }
   };
   auto write_handler = [self](auto svc_id, auto id, auto offset,
@@ -325,14 +325,14 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
                                      bt::gatt::ReadResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
-    responder(bt::att::ErrorCode::kUnlikelyError, bt::common::BufferView());
+    responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     return;
   }
 
   auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> value,
                                                auto error_code) {
     responder(GattErrorCodeFromFidl(error_code, true /* is_read */),
-              bt::common::BufferView(value->data(), value->size()));
+              bt::BufferView(value->data(), value->size()));
   };
 
   auto* delegate = iter->second->delegate();
@@ -342,7 +342,7 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
 
 void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
                                       bt::gatt::IdType id, uint16_t offset,
-                                      const bt::common::ByteBuffer& value,
+                                      const bt::ByteBuffer& value,
                                       bt::gatt::WriteResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {

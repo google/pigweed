@@ -2,18 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "gtest/gtest.h"
-
 #include <ddk/driver.h>
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "src/lib/fxl/command_line.h"
 #include "src/lib/fxl/log_settings_command_line.h"
 
 BT_DECLARE_FAKE_DRIVER();
 
-using bt::common::LogSeverity;
+using bt::LogSeverity;
 
 namespace {
 
@@ -50,7 +48,7 @@ int main(int argc, char** argv) {
   }
 
   // Set all library log messages to use printf instead ddk logging.
-  bt::common::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
+  bt::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
 
   testing::InitGoogleTest(&argc, argv);
 

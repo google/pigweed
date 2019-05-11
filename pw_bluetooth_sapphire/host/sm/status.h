@@ -11,18 +11,15 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt {
-namespace common {
 
 template <>
 struct ProtocolErrorTraits<sm::ErrorCode> {
   static std::string ToString(sm::ErrorCode ecode);
 };
 
-}  // namespace common
-
 namespace sm {
 
-using Status = common::Status<ErrorCode>;
+using Status = Status<ErrorCode>;
 
 using StatusCallback = fit::function<void(Status)>;
 

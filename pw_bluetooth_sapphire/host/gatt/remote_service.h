@@ -56,7 +56,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   att::Handle handle() const { return service_data_.range_start; }
 
   // Returns the service UUID.
-  const common::UUID& uuid() const { return service_data_.type; }
+  const UUID& uuid() const { return service_data_.type; }
 
   // Adds a handler which will be called when this service gets removed.
   // Returns false if the service was already shut down. |callback| will be
@@ -82,8 +82,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // if characteristics have not been discovered.
   //
   // NOTE: Providing a |dispatcher| results in a copy of the resulting value.
-  using ReadValueCallback =
-      fit::function<void(att::Status, const common::ByteBuffer&)>;
+  using ReadValueCallback = fit::function<void(att::Status, const ByteBuffer&)>;
   void ReadCharacteristic(IdType id, ReadValueCallback callback,
                           async_dispatcher_t* dispatcher = nullptr);
 
@@ -196,13 +195,12 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
 
   // Returns a pointer to the characteristic with |id|. Returns nullptr if not
   // found.
-  common::HostError GetCharacteristic(IdType id,
-                                      RemoteCharacteristic** out_char);
+  HostError GetCharacteristic(IdType id, RemoteCharacteristic** out_char);
 
   // Returns a pointer to the characteristic descriptor with |id|. Returns
   // nullptr if not found.
-  common::HostError GetDescriptor(
-      IdType id, const RemoteCharacteristic::Descriptor** out_desc);
+  HostError GetDescriptor(IdType id,
+                          const RemoteCharacteristic::Descriptor** out_desc);
 
   // Called immediately after characteristic discovery to initiate descriptor
   // discovery.
@@ -231,13 +229,13 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Sends an ATT_Write_Request and reports the result via |cb| on |dispatcher|.
   // |cb| executes on the GATT dispatcher if the provided |dispatcher| is
   // nullptr.
-  void SendWriteRequest(att::Handle handle, const common::ByteBuffer& value,
+  void SendWriteRequest(att::Handle handle, const ByteBuffer& value,
                         att::StatusCallback cb, async_dispatcher_t* dispatcher);
 
   // Helper function that drives the recursive "Read Long Characteristic Values"
   // procedure. Called by ReadLongCharacteristic().
   void ReadLongHelper(att::Handle value_handle, uint16_t offset,
-                      common::MutableByteBufferPtr buffer, size_t bytes_read,
+                      MutableByteBufferPtr buffer, size_t bytes_read,
                       ReadValueCallback callback,
                       async_dispatcher_t* dispatcher);
 
@@ -250,8 +248,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
 
   // Called by RemoteServiceManager when a notification is received for one of
   // this service's characteristics.
-  void HandleNotification(att::Handle value_handle,
-                          const common::ByteBuffer& value);
+  void HandleNotification(att::Handle value_handle, const ByteBuffer& value);
 
   ServiceData service_data_;
 

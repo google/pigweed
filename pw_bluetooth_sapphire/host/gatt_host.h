@@ -37,7 +37,7 @@ class GattServerServer;
 // at least once to properly clean up this object before destruction (this is
 // asserted).
 class GattHost final : public fbl::RefCounted<GattHost>,
-                       public bt::common::TaskDomain<GattHost> {
+                       public bt::TaskDomain<GattHost> {
  public:
   // Type that can be used as a token in some of the functions below. Pointers
   // are allowed to be used as tokens.

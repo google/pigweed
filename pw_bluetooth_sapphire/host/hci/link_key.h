@@ -16,10 +16,10 @@ namespace hci {
 class LinkKey final {
  public:
   LinkKey();
-  LinkKey(const common::UInt128& value, uint64_t rand, uint16_t ediv);
+  LinkKey(const UInt128& value, uint64_t rand, uint16_t ediv);
 
   // 128-bit BR/EDR link key, LE Long Term Key, or LE Short Term key.
-  const common::UInt128& value() const { return value_; }
+  const UInt128& value() const { return value_; }
 
   // Encrypted diversifier and random values used to identify the LTK. These
   // values are set to 0 for the LE Legacy STK, LE Secure Connections LTK, and
@@ -33,7 +33,7 @@ class LinkKey final {
   }
 
  private:
-  common::UInt128 value_;
+  UInt128 value_;
   uint64_t rand_;
   uint16_t ediv_;
 };

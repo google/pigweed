@@ -5,8 +5,8 @@
 #include "fake_controller_base.h"
 
 #include <lib/async/default.h>
-#include <zircon/status.h>
 #include <zircon/device/bt-hci.h>
+#include <zircon/status.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
@@ -74,7 +74,7 @@ void FakeControllerBase::Stop() {
 }
 
 zx_status_t FakeControllerBase::SendCommandChannelPacket(
-    const common::ByteBuffer& packet) {
+    const ByteBuffer& packet) {
   zx_status_t status =
       cmd_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
@@ -89,7 +89,7 @@ zx_status_t FakeControllerBase::SendCommandChannelPacket(
 }
 
 zx_status_t FakeControllerBase::SendACLDataChannelPacket(
-    const common::ByteBuffer& packet) {
+    const ByteBuffer& packet) {
   zx_status_t status =
       acl_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
@@ -103,11 +103,9 @@ zx_status_t FakeControllerBase::SendACLDataChannelPacket(
   return ZX_OK;
 }
 
-void FakeControllerBase::SendSnoopChannelPacket(
-    const common::ByteBuffer& packet,
-    bt_hci_snoop_type_t packet_type,
-    bool is_received) {
-
+void FakeControllerBase::SendSnoopChannelPacket(const ByteBuffer& packet,
+                                                bt_hci_snoop_type_t packet_type,
+                                                bool is_received) {
   if (snoop_channel_.is_valid()) {
     uint8_t snoop_buffer[packet.size() + 1];
     uint8_t flags = bt_hci_snoop_flags(packet_type, is_received);
@@ -117,12 +115,12 @@ void FakeControllerBase::SendSnoopChannelPacket(
     zx_status_t status =
         snoop_channel_.write(0, snoop_buffer, packet.size() + 1, nullptr, 0);
     if (status != ZX_OK) {
-      bt_log(WARN, "fake-hci", "cleaning up snoop channel after failed write: %s",
+      bt_log(WARN, "fake-hci",
+             "cleaning up snoop channel after failed write: %s",
              zx_status_get_string(status));
       CloseSnoopChannel();
     }
   }
-
 }
 
 void FakeControllerBase::CloseCommandChannel() {
@@ -147,16 +145,15 @@ void FakeControllerBase::CloseSnoopChannel() {
   }
 }
 
-void FakeControllerBase::HandleCommandPacket(
-    async_dispatcher_t* dispatcher,
-    async::WaitBase* wait,
-    zx_status_t wait_status,
-    const zx_packet_signal_t* signal) {
-  common::StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
+void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
+                                             async::WaitBase* wait,
+                                             zx_status_t wait_status,
+                                             const zx_packet_signal_t* signal) {
+  StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
   zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), nullptr,
-                                         hci::kMaxCommandPacketPayloadSize,
-                                         0, &read_size, nullptr);
+                                         hci::kMaxCommandPacketPayloadSize, 0,
+                                         &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
@@ -172,8 +169,8 @@ void FakeControllerBase::HandleCommandPacket(
   if (read_size < sizeof(hci::CommandHeader)) {
     bt_log(ERROR, "fake-hci", "malformed command packet received");
   } else {
-    common::MutableBufferView view(buffer.mutable_data(), read_size);
-    common::PacketView<hci::CommandHeader> packet(
+    MutableBufferView view(buffer.mutable_data(), read_size);
+    PacketView<hci::CommandHeader> packet(
         &view, read_size - sizeof(hci::CommandHeader));
     SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, false);
     OnCommandPacketReceived(packet);
@@ -187,17 +184,14 @@ void FakeControllerBase::HandleCommandPacket(
   }
 }
 
-void FakeControllerBase::HandleACLPacket(
-    async_dispatcher_t* dispatcher,
-    async::WaitBase* wait,
-    zx_status_t wait_status,
-    const zx_packet_signal_t* signal) {
-  common::StaticByteBuffer<hci::kMaxACLPayloadSize + sizeof(hci::ACLDataHeader)>
-      buffer;
+void FakeControllerBase::HandleACLPacket(async_dispatcher_t* dispatcher,
+                                         async::WaitBase* wait,
+                                         zx_status_t wait_status,
+                                         const zx_packet_signal_t* signal) {
+  StaticByteBuffer<hci::kMaxACLPayloadSize + sizeof(hci::ACLDataHeader)> buffer;
   uint32_t read_size;
-  zx_status_t status =
-      acl_channel_.read(0u, buffer.mutable_data(), nullptr, buffer.size(), 0,
-                        &read_size, nullptr);
+  zx_status_t status = acl_channel_.read(0u, buffer.mutable_data(), nullptr,
+                                         buffer.size(), 0, &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
@@ -211,7 +205,7 @@ void FakeControllerBase::HandleACLPacket(
     return;
   }
 
-  common::BufferView view(buffer.data(), read_size);
+  BufferView view(buffer.data(), read_size);
   SendSnoopChannelPacket(view, BT_HCI_SNOOP_TYPE_ACL, false);
   OnACLDataPacketReceived(view);
 

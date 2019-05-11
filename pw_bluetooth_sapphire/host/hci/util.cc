@@ -10,8 +10,6 @@
 
 namespace bt {
 
-using common::DeviceAddress;
-
 namespace hci {
 
 std::string HCIVersionToString(HCIVersion version) {

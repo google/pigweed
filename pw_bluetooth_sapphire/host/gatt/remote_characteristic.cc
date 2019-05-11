@@ -6,17 +6,13 @@
 
 #include <zircon/assert.h>
 
+#include "client.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-#include "client.h"
-
 namespace bt {
 namespace gatt {
-
-using common::HostError;
-using common::RunOrPost;
 
 namespace {
 
@@ -27,7 +23,7 @@ void ReportNotifyStatus(att::Status status, IdType id,
             dispatcher);
 }
 
-void NotifyValue(const common::ByteBuffer& value,
+void NotifyValue(const ByteBuffer& value,
                  RemoteCharacteristic::ValueCallback callback,
                  async_dispatcher_t* dispatcher) {
   if (!dispatcher) {
@@ -35,11 +31,11 @@ void NotifyValue(const common::ByteBuffer& value,
     return;
   }
 
-  auto buffer = common::NewSlabBuffer(value.size());
+  auto buffer = NewSlabBuffer(value.size());
   if (buffer) {
     value.Copy(buffer.get());
-    async::PostTask(dispatcher,
-                    [callback = std::move(callback), val = std::move(buffer)] { callback(*val); });
+    async::PostTask(dispatcher, [callback = std::move(callback),
+                                 val = std::move(buffer)] { callback(*val); });
   } else {
     bt_log(TRACE, "gatt", "out of memory!");
   }
@@ -48,7 +44,8 @@ void NotifyValue(const common::ByteBuffer& value,
 }  // namespace
 
 RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(
-    async_dispatcher_t* d, ValueCallback value_cb, NotifyStatusCallback status_cb)
+    async_dispatcher_t* d, ValueCallback value_cb,
+    NotifyStatusCallback status_cb)
     : dispatcher(d),
       value_callback(std::move(value_cb)),
       status_callback(std::move(status_cb)) {
@@ -56,7 +53,8 @@ RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(
   ZX_DEBUG_ASSERT(status_callback);
 }
 
-RemoteCharacteristic::NotifyHandler::NotifyHandler(async_dispatcher_t* d, ValueCallback cb)
+RemoteCharacteristic::NotifyHandler::NotifyHandler(async_dispatcher_t* d,
+                                                   ValueCallback cb)
     : dispatcher(d), callback(std::move(cb)) {
   ZX_DEBUG_ASSERT(callback);
 }
@@ -213,7 +211,7 @@ void RemoteCharacteristic::EnableNotifications(
   if (pending_notify_reqs_.size() > 1u)
     return;
 
-  common::StaticByteBuffer<2> ccc_value;
+  StaticByteBuffer<2> ccc_value;
   ccc_value.SetToZeros();
 
   // Enable indications if supported. Otherwise enable notifications.
@@ -261,7 +259,7 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
   }
 
   // Disable notifications.
-  common::StaticByteBuffer<2> ccc_value;
+  StaticByteBuffer<2> ccc_value;
   ccc_value.SetToZeros();
 
   auto ccc_write_cb = [](att::Status status) {
@@ -296,7 +294,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
   }
 }
 
-void RemoteCharacteristic::HandleNotification(const common::ByteBuffer& value) {
+void RemoteCharacteristic::HandleNotification(const ByteBuffer& value) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);

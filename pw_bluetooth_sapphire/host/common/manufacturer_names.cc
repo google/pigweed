@@ -9,7 +9,6 @@
 #include "src/lib/fxl/arraysize.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 // The company identifiers have been taken from the Bluetooth SIG Assigned
@@ -1212,5 +1211,4 @@ std::string GetManufacturerName(uint16_t manufacturer_id) {
   return kManufacturers[manufacturer_id];
 }
 
-}  // namespace common
 }  // namespace bt

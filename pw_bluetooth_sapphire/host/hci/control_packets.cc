@@ -13,11 +13,9 @@ namespace hci {
 namespace slab_allocators {
 
 // Slab-allocator traits for command packets.
-using LargeCommandTraits = PacketTraits<CommandHeader,
-                                        kLargeControlPacketSize,
+using LargeCommandTraits = PacketTraits<CommandHeader, kLargeControlPacketSize,
                                         kNumLargeControlPackets>;
-using SmallCommandTraits = PacketTraits<CommandHeader,
-                                        kSmallControlPacketSize,
+using SmallCommandTraits = PacketTraits<CommandHeader, kSmallControlPacketSize,
                                         kNumSmallControlPackets>;
 
 // Slab-allocator traits for event packets. Since event packets are only
@@ -67,8 +65,7 @@ bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
 // Specialization for the CommandComplete event.
 template <>
 bool StatusCodeFromEvent<CommandCompleteEventParams>(
-    const EventPacket& event,
-    hci::StatusCode* out_code) {
+    const EventPacket& event, hci::StatusCode* out_code) {
   ZX_DEBUG_ASSERT(out_code);
 
   const auto* params = event.return_params<SimpleReturnParams>();
@@ -134,7 +131,7 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
 Status EventPacket::ToStatus() const {
   StatusCode code;
   if (!ToStatusCode(&code)) {
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
   return Status(code);
 }

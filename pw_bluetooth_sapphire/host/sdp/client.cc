@@ -21,7 +21,7 @@ class Impl final : public Client {
 
  private:
   void ServiceSearchAttributes(
-      std::unordered_set<common::UUID> search_pattern,
+      std::unordered_set<UUID> search_pattern,
       const std::unordered_set<AttributeId>& req_attributes,
       SearchResultCallback result_cb,
       async_dispatcher_t* cb_dispatcher) override;
@@ -44,7 +44,7 @@ class Impl final : public Client {
   };
 
   // Callbacks for l2cap::Channel
-  void OnRxFrame(common::ByteBufferPtr sdu);
+  void OnRxFrame(ByteBufferPtr sdu);
   void OnChannelClosed();
 
   // Finishes a pending transaction on this client, completing their callbacks.
@@ -94,12 +94,12 @@ Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)
 
 Impl::~Impl() {
   while (!pending_.empty()) {
-    Cancel(pending_.begin()->first, Status(common::HostError::kCanceled));
+    Cancel(pending_.begin()->first, Status(HostError::kCanceled));
   }
 }
 
 void Impl::ServiceSearchAttributes(
-    std::unordered_set<common::UUID> search_pattern,
+    std::unordered_set<UUID> search_pattern,
     const std::unordered_set<AttributeId>& req_attributes,
     SearchResultCallback result_cb, async_dispatcher_t* cb_dispatcher) {
   ServiceSearchAttributeRequest req;
@@ -125,7 +125,7 @@ void Impl::ServiceSearchAttributes(
   auto& timeout_task = iter->second;
   // Timeouts are held in this so it is safe to use.
   timeout_task.set_handler(
-      [this, next]() { Cancel(next, Status(common::HostError::kTimedOut)); });
+      [this, next]() { Cancel(next, Status(HostError::kTimedOut)); });
   timeout_task.PostDelayed(async_get_default_dispatcher(), kTransactionTimeout);
 }
 
@@ -148,7 +148,7 @@ void Impl::Finish(TransactionId id) {
         return;
       }
     }
-    cb(Status(common::HostError::kNotFound), {});
+    cb(Status(HostError::kNotFound), {});
   });
 }
 
@@ -171,9 +171,9 @@ void Impl::Cancel(TransactionId id, Status status) {
                    status = std::move(status)] { callback(status, {}); });
 }
 
-void Impl::OnRxFrame(common::ByteBufferPtr data) {
+void Impl::OnRxFrame(ByteBufferPtr data) {
   // Each SDU in SDP is one request or one response. Core 5.0 Vol 3 Part B, 4.2
-  common::PacketView<sdp::Header> packet(data.get());
+  PacketView<sdp::Header> packet(data.get());
   size_t pkt_params_len = data->size() - sizeof(Header);
   uint16_t params_len = betoh16(packet.header().param_length);
   if (params_len != pkt_params_len) {
@@ -191,7 +191,7 @@ void Impl::OnRxFrame(common::ByteBufferPtr data) {
   auto& transaction = it->second;
   Status parse_status = transaction.response.Parse(packet.payload_data());
   if (!parse_status) {
-    if (parse_status.error() == common::HostError::kInProgress) {
+    if (parse_status.error() == HostError::kInProgress) {
       bt_log(INFO, "sdp", "Requesting continuation of id (%u)", tid);
       transaction.request.SetContinuationState(
           transaction.response.ContinuationState());
@@ -215,8 +215,7 @@ void Impl::OnChannelClosed() {
   bt_log(INFO, "sdp", "client channel closed");
   channel_ = nullptr;
   while (!pending_.empty()) {
-    Cancel(pending_.begin()->first,
-           Status(common::HostError::kLinkDisconnected));
+    Cancel(pending_.begin()->first, Status(HostError::kLinkDisconnected));
   }
 }
 

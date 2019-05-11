@@ -99,7 +99,7 @@ class BrEdrCommandHandler final {
     friend class BrEdrCommandHandler;
 
     // Fills the reject fields of |rsp|. Returns true if successful.
-    bool ParseReject(const common::ByteBuffer& rej_payload_buf);
+    bool ParseReject(const ByteBuffer& rej_payload_buf);
 
     Status status_;
     ChannelId local_cid_ = kInvalidChannelId;
@@ -113,7 +113,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Connection Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const common::ByteBuffer& payload_buf);
+    void Decode(const ByteBuffer& payload_buf);
 
     ConnectionResult result() const { return result_; }
     ConnectionStatus conn_status() const { return conn_status_; }
@@ -129,11 +129,11 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Configuration Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const common::ByteBuffer& payload_buf);
+    void Decode(const ByteBuffer& payload_buf);
 
     uint16_t flags() const { return flags_; }
     ConfigurationResult result() const { return result_; }
-    const common::ByteBuffer& options() const { return options_; }
+    const ByteBuffer& options() const { return options_; }
 
     // TODO(BT-466): Replace raw option access with abstraction over parsed
     // options.
@@ -146,7 +146,7 @@ class BrEdrCommandHandler final {
 
     // View into the raw options received from the peer. It is only valid for
     // the duration of the ConfigurationResponseCallback invocation.
-    common::BufferView options_;
+    BufferView options_;
   };
 
   class DisconnectionResponse : public Response {
@@ -155,7 +155,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Disconnection Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const common::ByteBuffer& payload_buf);
+    void Decode(const ByteBuffer& payload_buf);
   };
 
   class InformationResponse : public Response {
@@ -164,7 +164,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Information Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const common::ByteBuffer& payload_buf);
+    void Decode(const ByteBuffer& payload_buf);
 
     InformationType type() const { return type_; }
     InformationResult result() const { return result_; }
@@ -193,7 +193,7 @@ class BrEdrCommandHandler final {
     // View into the payload received from the peer in host endianness. It is
     // only valid for the duration of the InformationResponseCallback
     // invocation.
-    common::BufferView data_;
+    BufferView data_;
   };
 
   using ConnectionResponseCallback =
@@ -248,7 +248,7 @@ class BrEdrCommandHandler final {
                            ChannelId local_cid);
 
     void Send(ChannelId remote_cid, uint16_t flags, ConfigurationResult result,
-              const common::ByteBuffer& data);
+              const ByteBuffer& data);
 
     // TODO(NET-1084): Add builder abstraction for configuration options
   };
@@ -275,14 +275,14 @@ class BrEdrCommandHandler final {
     void SendFixedChannelsSupported(FixedChannelsSupported channels_supported);
 
    private:
-    void Send(InformationResult result, const common::ByteBuffer& data);
+    void Send(InformationResult result, const ByteBuffer& data);
     InformationType type_;
   };
 
   using ConnectionRequestCallback = fit::function<void(
       PSM psm, ChannelId remote_cid, ConnectionResponder* responder)>;
   using ConfigurationRequestCallback = fit::function<void(
-      ChannelId local_cid, uint16_t flags, const common::ByteBuffer& options,
+      ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
       ConfigurationResponder* responder)>;
   using DisconnectionRequestCallback =
       fit::function<void(ChannelId local_cid, ChannelId remote_cid,
@@ -305,7 +305,7 @@ class BrEdrCommandHandler final {
   bool SendConnectionRequest(uint16_t psm, ChannelId local_cid,
                              ConnectionResponseCallback cb);
   bool SendConfigurationRequest(ChannelId remote_cid, uint16_t flags,
-                                const common::ByteBuffer& options,
+                                const ByteBuffer& options,
                                 ConfigurationResponseCallback cb);
   bool SendDisconnectionRequest(ChannelId remote_cid, ChannelId local_cid,
                                 DisconnectionResponseCallback cb);

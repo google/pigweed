@@ -197,7 +197,7 @@ class LowEnergyConnectionManager final {
 
   class PendingRequestData {
    public:
-    PendingRequestData(const common::DeviceAddress& address,
+    PendingRequestData(const DeviceAddress& address,
                        ConnectionResultCallback first_callback);
     PendingRequestData() = default;
     ~PendingRequestData() = default;
@@ -214,10 +214,10 @@ class LowEnergyConnectionManager final {
     using RefFunc = fit::function<LowEnergyConnectionRefPtr()>;
     void NotifyCallbacks(hci::Status status, const RefFunc& func);
 
-    const common::DeviceAddress& address() const { return address_; }
+    const DeviceAddress& address() const { return address_; }
 
    private:
-    common::DeviceAddress address_;
+    DeviceAddress address_;
     std::list<ConnectionResultCallback> callbacks_;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);

@@ -9,7 +9,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 constexpr Identifier<int> id1(1);
@@ -61,5 +60,4 @@ TEST(IdentifierTest, PeerIdIsValid) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

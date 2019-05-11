@@ -24,8 +24,6 @@
 namespace bt {
 namespace gap {
 
-using common::DeviceAddress;
-
 namespace internal {
 
 // Represents the state of an active connection. Each instance is owned
@@ -448,7 +446,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
 
   // Clear |pending_requests_| and notify failure.
   for (auto& iter : pending_requests_) {
-    iter.second.NotifyCallbacks(hci::Status(common::HostError::kFailed),
+    iter.second.NotifyCallbacks(hci::Status(HostError::kFailed),
                                 [] { return nullptr; });
   }
   pending_requests_.clear();
@@ -508,7 +506,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id,
       // Disconnect() or other circumstances).
       if (!conn_ref->active()) {
         bt_log(TRACE, "gap-le", "link disconnected, ref is inactive");
-        callback(hci::Status(common::HostError::kFailed), nullptr);
+        callback(hci::Status(HostError::kFailed), nullptr);
       } else {
         callback(hci::Status(), std::move(conn_ref));
       }

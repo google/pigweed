@@ -2,21 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include <endian.h>
+#include <zircon/compiler.h>
 
 #include <array>
 #include <cstdint>
 
-#include <endian.h>
-#include <zircon/compiler.h>
-
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 
-using bt::common::ContainersEqual;
-using bt::common::StaticByteBuffer;
+using bt::ContainersEqual;
+using bt::StaticByteBuffer;
 
 namespace bt {
 namespace hci {
@@ -41,7 +39,7 @@ TEST(HCI_PacketTest, CommandPacket) {
 
   // clang-format off
 
-  auto kExpected = common::CreateStaticByteBuffer(
+  auto kExpected = CreateStaticByteBuffer(
       0xFF, 0x07,  // opcode
       0x01,        // parameter_total_size
       0x7F         // foo
@@ -58,7 +56,7 @@ TEST(HCI_PacketTest, EventPacket) {
 
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0xFF,  // event code
       0x01,  // parameter_total_size
       0x7F   // foo
@@ -76,7 +74,7 @@ TEST(HCI_PacketTest, EventPacket) {
 TEST(HCI_PacketTest, EventPacketReturnParams) {
   // clang-format off
 
-  auto correct_size_bad_event_code = common::CreateStaticByteBuffer(
+  auto correct_size_bad_event_code = CreateStaticByteBuffer(
       // Event header
       0xFF, 0x04,  // (event_code is not CommandComplete)
 
@@ -85,13 +83,13 @@ TEST(HCI_PacketTest, EventPacketReturnParams) {
 
       // Return parameters
       0x7F);
-  auto cmd_complete_small_payload = common::CreateStaticByteBuffer(
+  auto cmd_complete_small_payload = CreateStaticByteBuffer(
       // Event header
       0x0E, 0x03,
 
       // CommandCompleteEventParams
       0x01, 0xFF, 0x07);
-  auto valid = common::CreateStaticByteBuffer(
+  auto valid = CreateStaticByteBuffer(
       // Event header
       0x0E, 0x04,
 
@@ -128,7 +126,7 @@ TEST(HCI_PacketTest, EventPacketReturnParams) {
 
 TEST(HCI_PacketTest, EventPacketStatus) {
   // clang-format off
-  auto evt = common::CreateStaticByteBuffer(
+  auto evt = CreateStaticByteBuffer(
       // Event header
       0x05, 0x04,  // (event_code is DisconnectionComplete)
 
@@ -150,7 +148,7 @@ TEST(HCI_PacketTest, EventPacketStatus) {
 
 TEST(HCI_PacketTest, CommandCompleteEventStatus) {
   // clang-format off
-  auto evt = common::CreateStaticByteBuffer(
+  auto evt = CreateStaticByteBuffer(
       // Event header
       0x0E, 0x04,  // (event code is CommandComplete)
 
@@ -172,7 +170,7 @@ TEST(HCI_PacketTest, CommandCompleteEventStatus) {
 
 TEST(HCI_PacketTest, EventPacketMalformed) {
   // clang-format off
-  auto evt = common::CreateStaticByteBuffer(
+  auto evt = CreateStaticByteBuffer(
       // Event header
       0x05, 0x03,  // (event_code is DisconnectionComplete)
 
@@ -189,13 +187,13 @@ TEST(HCI_PacketTest, EventPacketMalformed) {
 
   Status status = packet->ToStatus();
   EXPECT_FALSE(status.is_protocol_error());
-  EXPECT_EQ(common::HostError::kPacketMalformed, status.error());
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
 TEST(HCI_PacketTest, LEEventParams) {
   // clang-format off
 
-  auto correct_size_bad_event_code = common::CreateStaticByteBuffer(
+  auto correct_size_bad_event_code = CreateStaticByteBuffer(
       // Event header
       0xFF, 0x02,  // (event_code is not LEMetaEventCode)
 
@@ -204,12 +202,12 @@ TEST(HCI_PacketTest, LEEventParams) {
 
       // Subevent payload
       0x7F);
-  auto payload_too_small = common::CreateStaticByteBuffer(
+  auto payload_too_small = CreateStaticByteBuffer(
       0x3E, 0x01,
 
       // Subevent code
       0xFF);
-  auto valid = common::CreateStaticByteBuffer(
+  auto valid = CreateStaticByteBuffer(
       // Event header
       0x3E, 0x02,
 
@@ -290,7 +288,7 @@ TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
 
   // First 12-bits: 0x07F
   // Upper 4-bits: 0b0101
-  auto bytes = common::CreateStaticByteBuffer(0x7F, 0x50, 0x01, 0x00, 0x00);
+  auto bytes = CreateStaticByteBuffer(0x7F, 0x50, 0x01, 0x00, 0x00);
   auto packet = ACLDataPacket::New(kSmallDataLength);
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
@@ -303,7 +301,7 @@ TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
 
   // First 12-bits: 0xFFF
   // Upper 4-bits: 0b0111
-  bytes = common::CreateStaticByteBuffer(0xFF, 0x7F, 0x01, 0x00, 0x00);
+  bytes = CreateStaticByteBuffer(0xFF, 0x7F, 0x01, 0x00, 0x00);
   packet->mutable_view()->mutable_data().Write(bytes);
   packet->InitializeFromBuffer();
 
@@ -315,7 +313,7 @@ TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
 
   packet = ACLDataPacket::New(kLargeDataLength);
   packet->mutable_view()->mutable_data().Write(
-      common::CreateStaticByteBuffer(0xFF, 0x0F, 0x00, 0x01));
+      CreateStaticByteBuffer(0xFF, 0x0F, 0x00, 0x01));
   packet->InitializeFromBuffer();
 
   EXPECT_EQ(0x0FFF, packet->connection_handle());

@@ -104,7 +104,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // Callback invoked when a new packet is received on this channel. Any
   // previously buffered packets will be sent to |rx_cb| right away, provided
   // that |rx_cb| is not empty and the underlying logical link is active.
-  using RxCallback = fit::function<void(common::ByteBufferPtr packet)>;
+  using RxCallback = fit::function<void(ByteBufferPtr packet)>;
 
   // Activates this channel assigning |dispatcher| to execute |rx_callback| and
   // |closed_callback|.
@@ -150,7 +150,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // TxEngine's QueueSdu() method. Note: a successfully enqueued SDU may still
   // fail to reach the receiver, due to asynchronous local errors, transmission
   // failure, or remote errors.
-  virtual bool Send(common::ByteBufferPtr sdu) = 0;
+  virtual bool Send(ByteBufferPtr sdu) = 0;
 
  protected:
   friend class fbl::RefPtr<Channel>;
@@ -184,7 +184,7 @@ class ChannelImpl : public Channel {
                 async_dispatcher_t* dispatcher) override;
   void Deactivate() override;
   void SignalLinkError() override;
-  bool Send(common::ByteBufferPtr sdu) override;
+  bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level,
                        sm::StatusCallback callback) override;
 
@@ -236,8 +236,8 @@ class ChannelImpl : public Channel {
   // TODO(armansito): We should avoid STL containers for data packets as they
   // all implicitly allocate. This is a reminder to fix this elsewhere
   // (especially in the HCI layer).
-  std::queue<common::ByteBufferPtr, std::list<common::ByteBufferPtr>>
-      pending_rx_sdus_ __TA_GUARDED(mtx_);
+  std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_
+      __TA_GUARDED(mtx_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };

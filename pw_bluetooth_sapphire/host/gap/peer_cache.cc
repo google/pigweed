@@ -16,8 +16,6 @@
 namespace bt {
 namespace gap {
 
-using common::DeviceAddress;
-
 namespace {
 
 // Return an address with the same value as given, but with type kBREDR for
@@ -35,8 +33,7 @@ DeviceAddress GetAliasAddress(const DeviceAddress& address) {
 
 Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  auto* const peer =
-      InsertPeerRecord(common::RandomPeerId(), address, connectable);
+  auto* const peer = InsertPeerRecord(RandomPeerId(), address, connectable);
   if (peer) {
     UpdateExpiry(*peer);
     NotifyPeerUpdated(*peer);
@@ -169,10 +166,10 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
   return true;
 }
 
-bool PeerCache::StoreBrEdrBond(const common::DeviceAddress& address,
+bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
                                const sm::LTK& link_key) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(address.type() == common::DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
   if (!peer) {
     bt_log(TRACE, "gap-bredr", "failed to store bond for unknown peer: %s",
@@ -263,7 +260,7 @@ Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
 // Private methods below.
 
 Peer* PeerCache::InsertPeerRecord(PeerId identifier,
-                                  const common::DeviceAddress& address,
+                                  const DeviceAddress& address,
                                   bool connectable) {
   if (FindIdByAddress(address)) {
     bt_log(WARN, "gap", "tried to insert peer with existing address: %s",
@@ -367,7 +364,7 @@ void PeerCache::RemovePeer(Peer* peer) {
 }
 
 std::optional<PeerId> PeerCache::FindIdByAddress(
-    const common::DeviceAddress& address) const {
+    const DeviceAddress& address) const {
   auto iter = address_map_.find(address);
   if (iter == address_map_.end()) {
     // Search again using the other technology's address. This is necessary when

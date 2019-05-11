@@ -13,9 +13,7 @@
 
 namespace bt {
 
-namespace common {
 class ByteBuffer;
-}  // namespace common
 
 namespace gap {
 
@@ -48,7 +46,7 @@ class DiscoveryFilter final {
   //
   // Passing an empty value for |service_uuids| effectively disables this
   // filter.
-  void set_service_uuids(const std::vector<common::UUID>& service_uuids) {
+  void set_service_uuids(const std::vector<UUID>& service_uuids) {
     service_uuids_ = service_uuids;
   }
 
@@ -103,14 +101,14 @@ class DiscoveryFilter final {
   // Returns true, if the given LE scan result satisfies this filter. Otherwise
   // returns false. |advertising_data| should include scan response data, if
   // any.
-  bool MatchLowEnergyResult(const common::ByteBuffer& advertising_data,
+  bool MatchLowEnergyResult(const ByteBuffer& advertising_data,
                             bool connectable, int8_t rssi) const;
 
   // Clears all the fields of this filter.
   void Reset();
 
  private:
-  std::vector<common::UUID> service_uuids_;
+  std::vector<UUID> service_uuids_;
   std::string name_substring_;
   std::optional<uint8_t> flags_;
   bool all_flags_required_;

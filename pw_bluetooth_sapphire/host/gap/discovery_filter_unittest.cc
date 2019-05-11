@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
 namespace bt {
@@ -13,10 +12,9 @@ namespace gap {
 namespace {
 
 TEST(GAP_DiscoveryFilterTest, Flags) {
-  const common::BufferView kEmptyData;
-  const auto kInvalidFlagsData = common::CreateStaticByteBuffer(0x01, 0x01);
-  const auto kValidFlagsData =
-      common::CreateStaticByteBuffer(0x02, 0x01, 0b101);
+  const BufferView kEmptyData;
+  const auto kInvalidFlagsData = CreateStaticByteBuffer(0x01, 0x01);
+  const auto kValidFlagsData = CreateStaticByteBuffer(0x02, 0x01, 0b101);
 
   DiscoveryFilter filter;
 
@@ -114,7 +112,7 @@ TEST(GAP_DiscoveryFilterTest, Flags) {
 }
 
 TEST(GAP_DiscoveryFilterTest, Connectable) {
-  common::BufferView empty;
+  BufferView empty;
   DiscoveryFilter filter;
 
   // Empty filter should match both.
@@ -136,25 +134,25 @@ TEST(GAP_DiscoveryFilterTest, 16BitServiceUuids) {
   constexpr uint16_t kUuid0 = 0x180d;
   constexpr uint16_t kUuid1 = 0x1800;
 
-  const common::BufferView kEmptyData;
+  const BufferView kEmptyData;
 
   // Below, "Incomplete" refers to the "Incomplete Service UUIDs" field while
   // "Complete" refers to "Complete Service UUIDs".
 
-  const auto kIncompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x02);
+  const auto kIncompleteEmpty = CreateStaticByteBuffer(0x01, 0x02);
   const auto kIncompleteNoMatch =
-      common::CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x03, 0x04);
+      CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x03, 0x04);
   const auto kIncompleteMatch1 =
-      common::CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x0d, 0x18);
+      CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x0d, 0x18);
   const auto kIncompleteMatch2 =
-      common::CreateStaticByteBuffer(0x05, 0x02, 0x00, 0x18, 0x03, 0x04);
-  const auto kCompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x03);
+      CreateStaticByteBuffer(0x05, 0x02, 0x00, 0x18, 0x03, 0x04);
+  const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x03);
   const auto kCompleteNoMatch =
-      common::CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x03, 0x04);
+      CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x03, 0x04);
   const auto kCompleteMatch1 =
-      common::CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x0d, 0x18);
+      CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x0d, 0x18);
   const auto kCompleteMatch2 =
-      common::CreateStaticByteBuffer(0x05, 0x03, 0x00, 0x18, 0x03, 0x04);
+      CreateStaticByteBuffer(0x05, 0x03, 0x00, 0x18, 0x03, 0x04);
 
   DiscoveryFilter filter;
 
@@ -181,8 +179,7 @@ TEST(GAP_DiscoveryFilterTest, 16BitServiceUuids) {
       filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kUuid0), common::UUID(kUuid1)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
   EXPECT_FALSE(
       filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
   EXPECT_FALSE(
@@ -207,24 +204,24 @@ TEST(GAP_DiscoveryFilterTest, 32BitServiceUuids) {
   constexpr uint16_t kUuid0 = 0x180d;
   constexpr uint16_t kUuid1 = 0x1800;
 
-  const common::BufferView kEmptyData;
+  const BufferView kEmptyData;
 
   // Below, "Incomplete" refers to the "Incomplete Service UUIDs" field while
   // "Complete" refers to "Complete Service UUIDs".
 
-  const auto kIncompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x04);
-  const auto kIncompleteNoMatch = common::CreateStaticByteBuffer(
+  const auto kIncompleteEmpty = CreateStaticByteBuffer(0x01, 0x04);
+  const auto kIncompleteNoMatch = CreateStaticByteBuffer(
       0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-  const auto kIncompleteMatch1 = common::CreateStaticByteBuffer(
+  const auto kIncompleteMatch1 = CreateStaticByteBuffer(
       0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
-  const auto kIncompleteMatch2 = common::CreateStaticByteBuffer(
+  const auto kIncompleteMatch2 = CreateStaticByteBuffer(
       0x09, 0x04, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
-  const auto kCompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x05);
-  const auto kCompleteNoMatch = common::CreateStaticByteBuffer(
+  const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x05);
+  const auto kCompleteNoMatch = CreateStaticByteBuffer(
       0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-  const auto kCompleteMatch1 = common::CreateStaticByteBuffer(
+  const auto kCompleteMatch1 = CreateStaticByteBuffer(
       0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
-  const auto kCompleteMatch2 = common::CreateStaticByteBuffer(
+  const auto kCompleteMatch2 = CreateStaticByteBuffer(
       0x09, 0x05, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
 
   DiscoveryFilter filter;
@@ -252,8 +249,7 @@ TEST(GAP_DiscoveryFilterTest, 32BitServiceUuids) {
       filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kUuid0), common::UUID(kUuid1)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
   EXPECT_FALSE(
       filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
   EXPECT_FALSE(
@@ -278,65 +274,65 @@ TEST(GAP_DiscoveryFilterTest, 128BitServiceUuids) {
   constexpr uint16_t kUuid0 = 0x180d;
   constexpr uint16_t kUuid1 = 0x1800;
 
-  const common::BufferView kEmptyData;
+  const BufferView kEmptyData;
 
   // Below, "Incomplete" refers to the "Incomplete Service UUIDs" field while
   // "Complete" refers to "Complete Service UUIDs".
 
-  const auto kIncompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x06);
-  const auto kIncompleteNoMatch = common::CreateStaticByteBuffer(
-      0x11, 0x06,
+  const auto kIncompleteEmpty = CreateStaticByteBuffer(0x01, 0x06);
+  const auto kIncompleteNoMatch =
+      CreateStaticByteBuffer(0x11, 0x06,
 
-      // UUID
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F);
-  const auto kIncompleteMatch1 = common::CreateStaticByteBuffer(
-      0x21, 0x06,
+                             // UUID
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+  const auto kIncompleteMatch1 =
+      CreateStaticByteBuffer(0x21, 0x06,
 
-      // UUID 1
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F,
+                             // UUID 1
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
 
-      // UUID 2
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-      0x0d, 0x18, 0x00, 0x00);
-  const auto kIncompleteMatch2 = common::CreateStaticByteBuffer(
-      0x21, 0x06,
+                             // UUID 2
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+  const auto kIncompleteMatch2 =
+      CreateStaticByteBuffer(0x21, 0x06,
 
-      // UUID 1
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-      0x00, 0x18, 0x00, 0x00,
+                             // UUID 1
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
 
-      // UUID 2
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F);
-  const auto kCompleteEmpty = common::CreateStaticByteBuffer(0x01, 0x07);
-  const auto kCompleteNoMatch = common::CreateStaticByteBuffer(
-      0x11, 0x07,
+                             // UUID 2
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+  const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x07);
+  const auto kCompleteNoMatch =
+      CreateStaticByteBuffer(0x11, 0x07,
 
-      // UUID
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F);
-  const auto kCompleteMatch1 = common::CreateStaticByteBuffer(
-      0x21, 0x07,
+                             // UUID
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+  const auto kCompleteMatch1 =
+      CreateStaticByteBuffer(0x21, 0x07,
 
-      // UUID 1
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F,
+                             // UUID 1
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
 
-      // UUID 2
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-      0x0d, 0x18, 0x00, 0x00);
-  const auto kCompleteMatch2 = common::CreateStaticByteBuffer(
-      0x21, 0x07,
+                             // UUID 2
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+  const auto kCompleteMatch2 =
+      CreateStaticByteBuffer(0x21, 0x07,
 
-      // UUID 1
-      0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-      0x00, 0x18, 0x00, 0x00,
+                             // UUID 1
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                             0x00, 0x10, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
 
-      // UUID 2
-      0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-      0x0C, 0x0D, 0x0E, 0x0F);
+                             // UUID 2
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
 
   DiscoveryFilter filter;
 
@@ -363,8 +359,7 @@ TEST(GAP_DiscoveryFilterTest, 128BitServiceUuids) {
       filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kUuid0), common::UUID(kUuid1)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
   EXPECT_FALSE(
       filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
   EXPECT_FALSE(
@@ -386,12 +381,12 @@ TEST(GAP_DiscoveryFilterTest, 128BitServiceUuids) {
 }
 
 TEST(GAP_DiscoveryFilterTest, NameSubstring) {
-  const common::BufferView kEmptyData;
+  const BufferView kEmptyData;
   const auto kShortenedName =
-      common::CreateStaticByteBuffer(0x05, 0x08, 'T', 'e', 's', 't');
+      CreateStaticByteBuffer(0x05, 0x08, 'T', 'e', 's', 't');
   const auto kCompleteName =
-      common::CreateStaticByteBuffer(0x0E, 0x09, 'T', 'e', 's', 't', ' ', 'C',
-                                     'o', 'm', 'p', 'l', 'e', 't', 'e');
+      CreateStaticByteBuffer(0x0E, 0x09, 'T', 'e', 's', 't', ' ', 'C', 'o', 'm',
+                             'p', 'l', 'e', 't', 'e');
 
   DiscoveryFilter filter;
 
@@ -440,7 +435,7 @@ TEST(GAP_DiscoveryFilterTest, NameSubstring) {
 
 TEST(GAP_DiscoveryFilterTest, RSSI) {
   constexpr int8_t kRSSIThreshold = 60;
-  const common::BufferView kEmptyData;
+  const BufferView kEmptyData;
 
   DiscoveryFilter filter;
   filter.set_rssi(hci::kRSSIInvalid);
@@ -479,9 +474,8 @@ TEST(GAP_DiscoveryFilterTest, Pathloss) {
   constexpr int8_t kNotMatchingRSSI = -66;
   constexpr int8_t kTooLargeRSSI = 71;
 
-  const common::BufferView kEmptyData;
-  const auto kDataWithTxPower =
-      common::CreateStaticByteBuffer(0x02, 0x0A, kTxPower);
+  const BufferView kEmptyData;
+  const auto kDataWithTxPower = CreateStaticByteBuffer(0x02, 0x0A, kTxPower);
 
   DiscoveryFilter filter;
   filter.set_pathloss(kPathlossThreshold);
@@ -524,14 +518,12 @@ TEST(GAP_DiscoveryFilterTest, Pathloss) {
 }
 
 TEST(GAP_DiscoveryFilterTest, ManufacturerCode) {
-  const common::BufferView kEmptyData;
-  const auto kValidData0 =
-      common::CreateStaticByteBuffer(0x03, 0xFF, 0xE0, 0x00);
+  const BufferView kEmptyData;
+  const auto kValidData0 = CreateStaticByteBuffer(0x03, 0xFF, 0xE0, 0x00);
   const auto kValidData1 =
-      common::CreateStaticByteBuffer(0x06, 0xFF, 0xE0, 0x00, 0x01, 0x02, 0x03);
-  const auto kInvalidData0 = common::CreateStaticByteBuffer(0x02, 0xFF, 0xE0);
-  const auto kInvalidData1 =
-      common::CreateStaticByteBuffer(0x03, 0xFF, 0x4C, 0x00);
+      CreateStaticByteBuffer(0x06, 0xFF, 0xE0, 0x00, 0x01, 0x02, 0x03);
+  const auto kInvalidData0 = CreateStaticByteBuffer(0x02, 0xFF, 0xE0);
+  const auto kInvalidData1 = CreateStaticByteBuffer(0x03, 0xFF, 0x4C, 0x00);
 
   DiscoveryFilter filter;
 
@@ -572,7 +564,7 @@ TEST(GAP_DiscoveryFilterTest, Combined) {
   constexpr char kMatchingName[] = "test";
   constexpr char kNotMatchingName[] = "foo";
 
-  const auto kAdvertisingData = common::CreateStaticByteBuffer(
+  const auto kAdvertisingData = CreateStaticByteBuffer(
       // Flags
       0x02, 0x01, 0x01,
 
@@ -596,8 +588,7 @@ TEST(GAP_DiscoveryFilterTest, Combined) {
   // Assign all fields and make them match.
   filter.set_flags(0x01);
   filter.set_connectable(true);
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kMatchingUuid)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kMatchingUuid)});
   filter.set_name_substring(kMatchingName);
   filter.set_pathloss(kMatchingPathlossThreshold);
   filter.set_manufacturer_code(0x00E0);
@@ -613,11 +604,9 @@ TEST(GAP_DiscoveryFilterTest, Combined) {
   EXPECT_FALSE(filter.MatchLowEnergyResult(kAdvertisingData, true, kRSSI));
   filter.set_connectable(true);
 
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kNotMatchingUuid)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kNotMatchingUuid)});
   EXPECT_FALSE(filter.MatchLowEnergyResult(kAdvertisingData, true, kRSSI));
-  filter.set_service_uuids(
-      std::vector<common::UUID>{common::UUID(kMatchingUuid)});
+  filter.set_service_uuids(std::vector<UUID>{UUID(kMatchingUuid)});
 
   filter.set_name_substring(kNotMatchingName);
   EXPECT_FALSE(filter.MatchLowEnergyResult(kAdvertisingData, true, kRSSI));
@@ -635,13 +624,13 @@ TEST(GAP_DiscoveryFilterTest, Combined) {
 }
 
 TEST(GAP_DiscoveryFilterTest, GeneralDiscoveryFlags) {
-  const auto kLimitedDiscoverableData = common::CreateStaticByteBuffer(
+  const auto kLimitedDiscoverableData = CreateStaticByteBuffer(
       // Flags
       0x02, 0x01, 0x01);
-  const auto kGeneralDiscoverableData = common::CreateStaticByteBuffer(
+  const auto kGeneralDiscoverableData = CreateStaticByteBuffer(
       // Flags
       0x02, 0x01, 0x02);
-  const auto kNonDiscoverableData = common::CreateStaticByteBuffer(
+  const auto kNonDiscoverableData = CreateStaticByteBuffer(
       // Flags (all flags are set except for discoverability).
       0x02, 0x01, 0xFC);
 

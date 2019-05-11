@@ -34,7 +34,7 @@ class FakeLayer final : public GATT {
   void DiscoverServices(PeerId peer_id) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
                                     async_dispatcher_t* dispatcher) override;
-  void ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
+  void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                     ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id,
                    RemoteServiceCallback callback) override;

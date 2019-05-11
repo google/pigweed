@@ -4,15 +4,14 @@
 
 #include "socket_channel_relay.h"
 
-#include <memory>
-#include <type_traits>
-
 #include <lib/async-loop/cpp/loop.h>
 #include <zircon/assert.h>
 #include <zircon/compiler.h>
 
-#include "gtest/gtest.h"
+#include <memory>
+#include <type_traits>
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -54,7 +53,7 @@ class DATA_SocketChannelRelayTest : public ::testing::Test {
     for (const auto spam_size_bytes :
          {65536, 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32,
           16, 8, 4, 2, 1}) {
-      common::DynamicByteBuffer spam_data(spam_size_bytes);
+      DynamicByteBuffer spam_data(spam_size_bytes);
       spam_data.Fill(kSpamChar);
       do {
         size_t n_iter_bytes_written = 0;
@@ -76,7 +75,7 @@ class DATA_SocketChannelRelayTest : public ::testing::Test {
   // bytes is not known, as a pending datagram may be larger than our read
   // buffer.)
   __WARN_UNUSED_RESULT bool DiscardFromSocket(size_t n_bytes_requested) {
-    common::DynamicByteBuffer received_data(n_bytes_requested);
+    DynamicByteBuffer received_data(n_bytes_requested);
     zx_status_t read_res;
     size_t n_total_bytes_read = 0;
     while (n_total_bytes_read < n_bytes_requested) {
@@ -195,7 +194,7 @@ TEST_F(DATA_SocketChannelRelayLifetimeTest,
 TEST_F(DATA_SocketChannelRelayLifetimeTest,
        DestructionWithPendingSdusFromChannelDoesNotCrash) {
   ASSERT_TRUE(relay()->Activate());
-  channel()->Receive(common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   DestroyRelay();
   RunLoopUntilIdle();
 }
@@ -222,7 +221,7 @@ TEST_F(DATA_SocketChannelRelayLifetimeTest,
   ASSERT_TRUE(relay()->Activate());
   ASSERT_TRUE(StuffSocket());
 
-  channel()->Receive(common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   RunLoopUntilIdle();
   ASSERT_FALSE(was_deactivation_callback_invoked());
 
@@ -233,7 +232,7 @@ TEST_F(DATA_SocketChannelRelayLifetimeTest,
 
 TEST_F(DATA_SocketChannelRelayLifetimeTest, OversizedDatagramDeactivatesRelay) {
   const size_t kMessageBufSize = channel()->tx_mtu() * 5;
-  common::DynamicByteBuffer large_message(kMessageBufSize);
+  DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill('a');
   ASSERT_TRUE(relay()->Activate());
 
@@ -292,16 +291,16 @@ class DATA_SocketChannelRelayDataPathTest : public DATA_SocketChannelRelayTest {
 
  private:
   RelayT relay_;
-  std::vector<common::ByteBufferPtr> sent_to_channel_;
+  std::vector<ByteBufferPtr> sent_to_channel_;
 };
 
 // Fixture for tests which exercise the datapath from the controller.
 class DATA_SocketChannelRelayRxTest
     : public DATA_SocketChannelRelayDataPathTest {
  protected:
-  common::DynamicByteBuffer ReadDatagramFromSocket(const size_t dgram_len) {
-    common::DynamicByteBuffer socket_read_buffer(
-        dgram_len + 1);  // +1 to detect trailing garbage.
+  DynamicByteBuffer ReadDatagramFromSocket(const size_t dgram_len) {
+    DynamicByteBuffer socket_read_buffer(dgram_len +
+                                         1);  // +1 to detect trailing garbage.
     size_t n_bytes_read = 0;
     const auto read_res =
         remote_socket()->read(0, socket_read_buffer.mutable_data(),
@@ -311,15 +310,13 @@ class DATA_SocketChannelRelayRxTest
              zx_status_get_string(read_res));
       return {};
     }
-    return common::DynamicByteBuffer(
-        common::BufferView(socket_read_buffer, n_bytes_read));
+    return DynamicByteBuffer(BufferView(socket_read_buffer, n_bytes_read));
   }
 };
 
 TEST_F(DATA_SocketChannelRelayRxTest,
        MessageFromChannelIsCopiedToSocketSynchronously) {
-  const auto kExpectedMessage =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
   // Note: we dispatch one task, to get the data from the FakeChannel to
@@ -328,24 +325,24 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   // zx::socket.
   RunLoopOnce();
 
-  EXPECT_TRUE(common::ContainersEqual(
-      kExpectedMessage, ReadDatagramFromSocket(kExpectedMessage.size())));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage,
+                              ReadDatagramFromSocket(kExpectedMessage.size())));
 }
 
 TEST_F(DATA_SocketChannelRelayRxTest,
        MultipleSdusFromChannelAreCopiedToSocketPreservingSduBoundaries) {
   const auto kExpectedMessage1 =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+      CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto kExpectedMessage2 =
-      common::CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+      CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage1, ReadDatagramFromSocket(kExpectedMessage1.size())));
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
@@ -354,16 +351,15 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  const auto kExpectedMessage =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
   RunLoopUntilIdle();
 
   ASSERT_TRUE(DiscardFromSocket(n_junk_bytes));
   RunLoopUntilIdle();
-  EXPECT_TRUE(common::ContainersEqual(
-      kExpectedMessage, ReadDatagramFromSocket(kExpectedMessage.size())));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage,
+                              ReadDatagramFromSocket(kExpectedMessage.size())));
 }
 
 TEST_F(DATA_SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
@@ -371,9 +367,9 @@ TEST_F(DATA_SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
   ASSERT_TRUE(n_junk_bytes);
 
   const auto kExpectedMessage1 =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+      CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto kExpectedMessage2 =
-      common::CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+      CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
@@ -384,9 +380,9 @@ TEST_F(DATA_SocketChannelRelayRxTest, CanQueueAndWriteMultipleSDUs) {
   // one shot, rather than re-arming the async::Wait for each SDU.
   RunLoopOnce();
 
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage1, ReadDatagramFromSocket(kExpectedMessage1.size())));
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
@@ -401,7 +397,7 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   // |remote_socket()|.
   constexpr size_t kLargeSduSize = 1023;
   zx_status_t write_res = ZX_ERR_INTERNAL;
-  common::DynamicByteBuffer spam_sdu(kLargeSduSize);
+  DynamicByteBuffer spam_sdu(kLargeSduSize);
   size_t n_junk_bytes = 0;
   size_t n_junk_datagrams = 0;
   spam_sdu.Fill('s');
@@ -420,8 +416,8 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   ASSERT_NE(socket_buffer_size, n_junk_bytes)
       << "Need non-zero free space in socket buffer.";
 
-  common::DynamicByteBuffer hello_sdu(kLargeSduSize);
-  common::DynamicByteBuffer goodbye_sdu(kLargeSduSize);
+  DynamicByteBuffer hello_sdu(kLargeSduSize);
+  DynamicByteBuffer goodbye_sdu(kLargeSduSize);
   hello_sdu.Fill('h');
   goodbye_sdu.Fill('g');
   ASSERT_TRUE(relay()->Activate());
@@ -430,29 +426,29 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   RunLoopUntilIdle();
 
   // Free up space for just the first SDU.
-  ASSERT_TRUE(common::ContainersEqual(spam_sdu,
-                                      ReadDatagramFromSocket(spam_sdu.size())));
+  ASSERT_TRUE(
+      ContainersEqual(spam_sdu, ReadDatagramFromSocket(spam_sdu.size())));
   n_junk_datagrams -= 1;
   RunLoopUntilIdle();
 
   // Free up space for just the second SDU.
-  ASSERT_TRUE(common::ContainersEqual(spam_sdu,
-                                      ReadDatagramFromSocket(spam_sdu.size())));
+  ASSERT_TRUE(
+      ContainersEqual(spam_sdu, ReadDatagramFromSocket(spam_sdu.size())));
   n_junk_datagrams -= 1;
   RunLoopUntilIdle();
 
   // Discard spam.
   while (n_junk_datagrams) {
-    ASSERT_TRUE(common::ContainersEqual(
-        spam_sdu, ReadDatagramFromSocket(spam_sdu.size())));
+    ASSERT_TRUE(
+        ContainersEqual(spam_sdu, ReadDatagramFromSocket(spam_sdu.size())));
     n_junk_datagrams -= 1;
   }
 
   // Read out our expected datagrams, verifying that boundaries are preserved.
-  EXPECT_TRUE(common::ContainersEqual(
-      hello_sdu, ReadDatagramFromSocket(hello_sdu.size())));
-  EXPECT_TRUE(common::ContainersEqual(
-      goodbye_sdu, ReadDatagramFromSocket(goodbye_sdu.size())));
+  EXPECT_TRUE(
+      ContainersEqual(hello_sdu, ReadDatagramFromSocket(hello_sdu.size())));
+  EXPECT_TRUE(
+      ContainersEqual(goodbye_sdu, ReadDatagramFromSocket(goodbye_sdu.size())));
   EXPECT_EQ(0u, ReadDatagramFromSocket(1u).size())
       << "Found unexpected datagram";
 }
@@ -461,9 +457,9 @@ TEST_F(DATA_SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  const auto kSentMessage1 = common::CreateStaticByteBuffer(1);
-  const auto kSentMessage2 = common::CreateStaticByteBuffer(2);
-  const auto kSentMessage3 = common::CreateStaticByteBuffer(3);
+  const auto kSentMessage1 = CreateStaticByteBuffer(1);
+  const auto kSentMessage2 = CreateStaticByteBuffer(2);
+  const auto kSentMessage3 = CreateStaticByteBuffer(3);
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kSentMessage1);
   channel()->Receive(kSentMessage2);
@@ -473,27 +469,27 @@ TEST_F(DATA_SocketChannelRelayRxTest, OldestSDUIsDroppedOnOverflow) {
   ASSERT_TRUE(DiscardFromSocket(n_junk_bytes));
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(common::ContainersEqual(
-      kSentMessage2, ReadDatagramFromSocket(kSentMessage2.size())));
-  EXPECT_TRUE(common::ContainersEqual(
-      kSentMessage3, ReadDatagramFromSocket(kSentMessage3.size())));
+  EXPECT_TRUE(ContainersEqual(kSentMessage2,
+                              ReadDatagramFromSocket(kSentMessage2.size())));
+  EXPECT_TRUE(ContainersEqual(kSentMessage3,
+                              ReadDatagramFromSocket(kSentMessage3.size())));
 }
 
 TEST_F(DATA_SocketChannelRelayRxTest,
        SdusReceivedBeforeChannelActivationAreCopiedToSocket) {
   const auto kExpectedMessage1 =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+      CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const auto kExpectedMessage2 =
-      common::CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
+      CreateStaticByteBuffer('g', 'o', 'o', 'd', 'b', 'y', 'e');
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
   ASSERT_TRUE(relay()->Activate());
   // Note: we omit RunLoopOnce()/RunLoopUntilIdle(), as Channel activation
   // delivers the messages synchronously.
 
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage1, ReadDatagramFromSocket(kExpectedMessage1.size())));
-  EXPECT_TRUE(common::ContainersEqual(
+  EXPECT_TRUE(ContainersEqual(
       kExpectedMessage2, ReadDatagramFromSocket(kExpectedMessage2.size())));
 }
 
@@ -502,8 +498,8 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   ASSERT_TRUE(StuffSocket());
   ASSERT_TRUE(relay()->Activate());
 
-  const auto kExpectedMessage1 = common::CreateStaticByteBuffer('h');
-  const auto kExpectedMessage2 = common::CreateStaticByteBuffer('i');
+  const auto kExpectedMessage1 = CreateStaticByteBuffer('h');
+  const auto kExpectedMessage2 = CreateStaticByteBuffer('i');
   channel()->Receive(kExpectedMessage1);
   channel()->Receive(kExpectedMessage2);
   RunLoopUntilIdle();
@@ -515,16 +511,15 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   channel()->Close();
 
   // Read past all of the spam from StuffSocket().
-  common::DynamicByteBuffer dgram;
+  DynamicByteBuffer dgram;
   do {
     dgram = ReadDatagramFromSocket(1u);
   } while (dgram.size() && dgram[0] == kSpamChar);
 
   // First non-spam message should be kExpectedMessage1, and second should be
   // kExpectedMessage2.
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage1, dgram));
-  EXPECT_TRUE(
-      common::ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(1u)));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage1, dgram));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage2, ReadDatagramFromSocket(1u)));
 }
 
 TEST_F(DATA_SocketChannelRelayRxTest,
@@ -533,7 +528,7 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   // SDU synchronously to the SocketChannelRelay. Asynchronous delivery could
   // compromise the test's validity, since that would allow OnSocketClosed() to
   // be invoked before OnChannelDataReceived().
-  channel()->Receive(common::CreateStaticByteBuffer(kGoodChar));
+  channel()->Receive(CreateStaticByteBuffer(kGoodChar));
   CloseRemoteSocket();
   ASSERT_TRUE(relay()->Activate());
 }
@@ -545,7 +540,7 @@ TEST_F(
 
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
-  channel()->Receive(common::CreateStaticByteBuffer(kGoodChar));
+  channel()->Receive(CreateStaticByteBuffer(kGoodChar));
   RunLoopUntilIdle();
 
   ASSERT_TRUE(DiscardFromSocket(n_junk_bytes));
@@ -560,7 +555,7 @@ TEST_F(DATA_SocketChannelRelayRxTest,
   size_t n_junk_bytes = StuffSocket();
   ASSERT_TRUE(n_junk_bytes);
 
-  channel()->Receive(common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
+  channel()->Receive(CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o'));
   RunLoopUntilIdle();
 
   channel()->Close();  // Triggers relay deactivation.
@@ -580,8 +575,7 @@ TEST_F(DATA_SocketChannelRelayRxTest,
 using DATA_SocketChannelRelayTxTest = DATA_SocketChannelRelayDataPathTest;
 
 TEST_F(DATA_SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
-  const auto kExpectedMessage =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
   size_t n_bytes_written = 0;
@@ -596,13 +590,12 @@ TEST_F(DATA_SocketChannelRelayTxTest, SduFromSocketIsCopiedToChannel) {
   EXPECT_EQ(1u, sdus.size());
   ASSERT_TRUE(sdus[0]);
   EXPECT_EQ(kExpectedMessage.size(), sdus[0]->size());
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[0]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[0]));
 }
 
 TEST_F(DATA_SocketChannelRelayTxTest,
        MultipleSdusFromSocketAreCopiedToChannel) {
-  const auto kExpectedMessage =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
 
@@ -621,15 +614,14 @@ TEST_F(DATA_SocketChannelRelayTxTest,
   ASSERT_TRUE(sdus[0]);
   ASSERT_TRUE(sdus[1]);
   ASSERT_TRUE(sdus[2]);
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[0]));
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[1]));
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[2]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[0]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[1]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[2]));
 }
 
 TEST_F(DATA_SocketChannelRelayTxTest,
        MultipleSdusAreCopiedToChannelInOneRelayTask) {
-  const auto kExpectedMessage =
-      common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   const size_t kNumMessages = 3;
   ASSERT_TRUE(relay()->Activate());
 
@@ -650,14 +642,14 @@ TEST_F(DATA_SocketChannelRelayTxTest,
   ASSERT_TRUE(sdus[0]);
   ASSERT_TRUE(sdus[1]);
   ASSERT_TRUE(sdus[2]);
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[0]));
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[1]));
-  EXPECT_TRUE(common::ContainersEqual(kExpectedMessage, *sdus[2]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[0]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[1]));
+  EXPECT_TRUE(ContainersEqual(kExpectedMessage, *sdus[2]));
 }
 
 TEST_F(DATA_SocketChannelRelayTxTest, OversizedSduIsDropped) {
   const size_t kMessageBufSize = channel()->tx_mtu() * 5;
-  common::DynamicByteBuffer large_message(kMessageBufSize);
+  DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill(kGoodChar);
   ASSERT_TRUE(relay()->Activate());
 
@@ -673,11 +665,11 @@ TEST_F(DATA_SocketChannelRelayTxTest, OversizedSduIsDropped) {
 }
 
 TEST_F(DATA_SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
-  const auto kSentMsg = common::CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  const auto kSentMsg = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
 
   {
-    common::DynamicByteBuffer dropped_msg(channel()->tx_mtu() + 1);
+    DynamicByteBuffer dropped_msg(channel()->tx_mtu() + 1);
     size_t n_bytes_written = 0;
     zx_status_t write_res = ZX_ERR_INTERNAL;
     dropped_msg.Fill(kGoodChar);

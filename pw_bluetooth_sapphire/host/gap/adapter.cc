@@ -49,7 +49,7 @@ std::string GetHostname() {
 Adapter::Adapter(fxl::RefPtr<hci::Transport> hci,
                  fbl::RefPtr<data::Domain> data_domain,
                  fbl::RefPtr<gatt::GATT> gatt)
-    : identifier_(common::Random<AdapterId>()),
+    : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(hci),
       init_state_(State::kNotInitialized),
@@ -192,8 +192,7 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
-bool Adapter::AddBondedPeer(PeerId identifier,
-                            const common::DeviceAddress& address,
+bool Adapter::AddBondedPeer(PeerId identifier, const DeviceAddress& address,
                             const sm::PairingData& le_bond_data,
                             const std::optional<sm::LTK>& link_key) {
   return peer_cache()->AddBondedPeer(identifier, address, le_bond_data,
@@ -219,7 +218,7 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
   }
   auto write_name = hci::CommandPacket::New(
       hci::kWriteLocalName, sizeof(hci::WriteLocalNameCommandParams));
-  auto name_buf = common::MutableBufferView(
+  auto name_buf = MutableBufferView(
       write_name->mutable_view()
           ->mutable_payload<hci::WriteLocalNameCommandParams>()
           ->local_name,
@@ -239,7 +238,7 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
       });
 }
 
-void Adapter::SetDeviceClass(common::DeviceClass dev_class,
+void Adapter::SetDeviceClass(DeviceClass dev_class,
                              hci::StatusCallback callback) {
   auto write_dev_class = hci::CommandPacket::New(
       hci::kWriteClassOfDevice, sizeof(hci::WriteClassOfDeviceCommandParams));
@@ -529,8 +528,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   }
 
   // We use the public controller address as the local LE identity address.
-  common::DeviceAddress adapter_identity(common::DeviceAddress::Type::kLEPublic,
-                                         state_.controller_address());
+  DeviceAddress adapter_identity(DeviceAddress::Type::kLEPublic,
+                                 state_.controller_address());
 
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
@@ -559,8 +558,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
   // Initialize the BR/EDR manager objects if the controller supports BR/EDR.
   if (state_.IsBREDRSupported()) {
-    common::DeviceAddress local_bredr_address(
-        common::DeviceAddress::Type::kBREDR, state_.controller_address());
+    DeviceAddress local_bredr_address(DeviceAddress::Type::kBREDR,
+                                      state_.controller_address());
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, data_domain_,
@@ -592,8 +591,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
   // Set the default device class - a computer with audio.
   // TODO(BT-641): set this from a platform configuration file
-  common::DeviceClass dev_class(common::DeviceClass::MajorClass::kComputer);
-  dev_class.SetServiceClasses({common::DeviceClass::ServiceClass::kAudio});
+  DeviceClass dev_class(DeviceClass::MajorClass::kComputer);
+  dev_class.SetServiceClasses({DeviceClass::ServiceClass::kAudio});
   SetDeviceClass(dev_class, [](const auto&) {});
 
   // This completes the initialization sequence.

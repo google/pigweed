@@ -7,12 +7,10 @@
 #include <string>
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 struct TestHeader {
@@ -88,5 +86,4 @@ TEST(PacketViewTest, NonEmptyPayload) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

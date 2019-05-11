@@ -21,19 +21,19 @@ namespace internal {
 // THREAD-SAFETY: This class is not thread-safe.
 class EnhancedRetransmissionModeRxEngine final : public RxEngine {
  public:
-  using SendBasicFrameCallback = fit::function<void(common::ByteBufferPtr pdu)>;
+  using SendBasicFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
 
   EnhancedRetransmissionModeRxEngine(
       SendBasicFrameCallback send_basic_frame_callback);
   virtual ~EnhancedRetransmissionModeRxEngine() = default;
 
-  common::ByteBufferPtr ProcessPdu(PDU) override;
+  ByteBufferPtr ProcessPdu(PDU) override;
 
  private:
-  common::ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
-  common::ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
-  common::ByteBufferPtr ProcessFrame(const SimpleSupervisoryFrame, PDU);
-  common::ByteBufferPtr ProcessFrame(std::monostate, PDU);
+  ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
+  ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
+  ByteBufferPtr ProcessFrame(const SimpleSupervisoryFrame, PDU);
+  ByteBufferPtr ProcessFrame(std::monostate, PDU);
   void AdvanceSeqNum();
 
   // We assume that the Extended Window Size option is _not_ enabled. In such

@@ -45,8 +45,7 @@ class AdvertisingData {
   // error, and true otherwise. |out_ad| is not guaranteed to be in any state
   // unless we return true. Does not clear |out_ad| so this function can be used
   // to merge multiple field blocks.
-  static bool FromBytes(const common::ByteBuffer& data,
-                        AdvertisingData* out_ad);
+  static bool FromBytes(const ByteBuffer& data, AdvertisingData* out_ad);
 
   // Populate AdvertisingData |out_ad| from the corresponding FIDL object
   // |fidl_ad|. Overwrites existing contents of |out_ad|. Returns false if
@@ -62,26 +61,25 @@ class AdvertisingData {
   // Add a UUID to the set of services advertised.
   // These service UUIDs will automatically be compressed to be represented in
   // the smallest space possible.
-  void AddServiceUuid(const common::UUID& uuid);
+  void AddServiceUuid(const UUID& uuid);
 
   // Get the service UUIDs represented in this advertisement.
-  const std::unordered_set<common::UUID>& service_uuids() const;
+  const std::unordered_set<UUID>& service_uuids() const;
 
   // Set some service data for the service specified by |uuid|.
-  void SetServiceData(const common::UUID& uuid, const common::ByteBuffer& data);
+  void SetServiceData(const UUID& uuid, const ByteBuffer& data);
 
   // Get a set of which UUIDs have service data in this advertisement.
-  const std::unordered_set<common::UUID> service_data_uuids() const;
+  const std::unordered_set<UUID> service_data_uuids() const;
 
   // View the currently set service data for |uuid|.
   // This view is not stable; it should be used only ephemerally.
   // Returns an empty BufferView if no service data is set for |uuid|
-  const common::BufferView service_data(const common::UUID& uuid) const;
+  const BufferView service_data(const UUID& uuid) const;
 
   // Set some Manufacturer specific data for the company identified by
   // |company_id|
-  void SetManufacturerData(const uint16_t company_id,
-                           const common::BufferView& data);
+  void SetManufacturerData(const uint16_t company_id, const BufferView& data);
 
   // Get a set of which IDs have manufacturer data in this advertisement.
   const std::unordered_set<uint16_t> manufacturer_data_ids() const;
@@ -92,7 +90,7 @@ class AdvertisingData {
   // NOTE: it is valid to send a manufacturer data with no data. Check that one
   // exists using manufacturer_data_ids() first.
   // This view is not stable; it should be used only ephemerally.
-  const common::BufferView manufacturer_data(const uint16_t company_id) const;
+  const BufferView manufacturer_data(const uint16_t company_id) const;
 
   // Sets the local TX Power
   // TODO(jamuraa): add documentation about where to get this number from
@@ -127,7 +125,7 @@ class AdvertisingData {
   // Writes the byte representation of this to |buffer|.
   // Returns false without modifying |buffer| if there is not enough space
   // (if the buffer size is less than block_size())
-  bool WriteBlock(common::MutableByteBuffer* buffer) const;
+  bool WriteBlock(MutableByteBuffer* buffer) const;
 
   // Makes a FIDL object that holds the same data
   fuchsia::bluetooth::le::AdvertisingDataPtr AsLEAdvertisingData() const;
@@ -142,9 +140,9 @@ class AdvertisingData {
   std::optional<std::string> local_name_;
   std::optional<int8_t> tx_power_;
   std::optional<uint16_t> appearance_;
-  std::unordered_set<common::UUID> service_uuids_;
-  std::unordered_map<uint16_t, common::DynamicByteBuffer> manufacturer_data_;
-  std::unordered_map<common::UUID, common::DynamicByteBuffer> service_data_;
+  std::unordered_set<UUID> service_uuids_;
+  std::unordered_map<uint16_t, DynamicByteBuffer> manufacturer_data_;
+  std::unordered_map<UUID, DynamicByteBuffer> service_data_;
 
   std::unordered_set<std::string> uris_;
 
@@ -163,7 +161,7 @@ class AdvertisingDataReader {
  public:
   // |data| must point to a valid piece of memory for the duration in which this
   // object is to remain alive.
-  explicit AdvertisingDataReader(const common::ByteBuffer& data);
+  explicit AdvertisingDataReader(const ByteBuffer& data);
 
   // Returns false if the fields of |data| have been formatted incorrectly. For
   // example, this could happen if the length of an advertising data structure
@@ -173,7 +171,7 @@ class AdvertisingDataReader {
   // Returns the data and type fields of the next advertising data structure in
   // |out_data| and |out_type|. Returns false if there is no more data to read
   // or if the data is formatted incorrectly.
-  bool GetNextField(DataType* out_type, common::BufferView* out_data);
+  bool GetNextField(DataType* out_type, BufferView* out_data);
 
   // Returns true if there is more data to read. Returns false if the end of
   // data has been reached or if the current segment is malformed in a way that
@@ -182,7 +180,7 @@ class AdvertisingDataReader {
 
  private:
   bool is_valid_;
-  common::BufferView remaining_;
+  BufferView remaining_;
 };
 
 // Used for writing data in TLV-format as described at the beginning of the file
@@ -192,18 +190,18 @@ class AdvertisingDataWriter {
   // |buffer| is the piece of memory on which this AdvertisingDataWriter should
   // operate. The buffer must out-live this instance and must point to a valid
   // piece of memory.
-  explicit AdvertisingDataWriter(common::MutableByteBuffer* buffer);
+  explicit AdvertisingDataWriter(MutableByteBuffer* buffer);
 
   // Writes the given piece of type/tag and data into the next available segment
   // in the underlying buffer. Returns false if there isn't enough space left in
   // the buffer for writing. Returns true on success.
-  bool WriteField(DataType type, const common::ByteBuffer& data);
+  bool WriteField(DataType type, const ByteBuffer& data);
 
   // The total number of bytes that have been written into the buffer.
   size_t bytes_written() const { return bytes_written_; }
 
  private:
-  common::MutableByteBuffer* buffer_;
+  MutableByteBuffer* buffer_;
   size_t bytes_written_;
 };
 

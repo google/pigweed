@@ -70,14 +70,14 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // if scan, legacy advertising, and/or initiation procedures are in progress.
   using StateQueryDelegate = fit::function<bool()>;
 
-  LowEnergyAddressManager(const common::DeviceAddress& public_address,
+  LowEnergyAddressManager(const DeviceAddress& public_address,
                           StateQueryDelegate delegate,
                           fxl::RefPtr<hci::Transport> hci);
   ~LowEnergyAddressManager();
 
   // Assigns the IRK to generate a RPA for the next address refresh when privacy
   // is enabled.
-  void set_irk(const std::optional<common::UInt128>& irk) { irk_ = irk; }
+  void set_irk(const std::optional<UInt128>& irk) { irk_ = irk; }
 
   // Enable or disable the privacy feature. When enabled, the controller will be
   // configured to use a new random address if it is currently allowed to do so.
@@ -92,13 +92,13 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   void EnablePrivacy(bool enabled);
 
   // LocalAddressDelegate overrides:
-  std::optional<common::UInt128> irk() const override { return irk_; }
-  common::DeviceAddress identity_address() const override { return public_; }
+  std::optional<UInt128> irk() const override { return irk_; }
+  DeviceAddress identity_address() const override { return public_; }
   void EnsureLocalAddress(AddressCallback callback) override;
 
  private:
   // Return the current address.
-  const common::DeviceAddress& current_address() const {
+  const DeviceAddress& current_address() const {
     return (privacy_enabled_ && random_) ? *random_ : public_;
   }
 
@@ -120,12 +120,12 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // The public device address (i.e. BD_ADDR) that is assigned to the
   // controller.
-  const common::DeviceAddress public_;
+  const DeviceAddress public_;
 
   // The random device address assigned to the controller by the most recent
   // successful HCI_LE_Set_Random_Address command. std::nullopt if the command
   // was never run successfully.
-  std::optional<common::DeviceAddress> random_;
+  std::optional<DeviceAddress> random_;
 
   // True if the random address needs a refresh. This is the case when
   //   a. Privacy is enabled and the random device address needs to get rotated;
@@ -139,7 +139,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
 
   // The local identity resolving key. If present, it is used to generate RPAs
   // when privacy is enabled.
-  std::optional<common::UInt128> irk_;
+  std::optional<UInt128> irk_;
 
   // Callbacks waiting to be notified of the local address.
   std::queue<AddressCallback> address_callbacks_;

@@ -177,7 +177,7 @@ void LowEnergyDiscoveryManager::RemoveSession(
 }
 
 void LowEnergyDiscoveryManager::OnPeerFound(
-    const hci::LowEnergyScanResult& result, const common::ByteBuffer& data) {
+    const hci::LowEnergyScanResult& result, const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // Ignore regular scan results during a passive scan.

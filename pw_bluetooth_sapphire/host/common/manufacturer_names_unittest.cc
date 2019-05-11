@@ -7,7 +7,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 TEST(ManufacturerNamesTest, ExhaustiveLookUp) {
@@ -26,5 +25,4 @@ TEST(ManufacturerNamesTest, ExhaustiveLookUp) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

@@ -17,7 +17,6 @@
 #include <string>
 
 namespace bt {
-namespace common {
 
 // A task domain is a mixin for objects that maintain state that needs to be
 // accessed exclusively on a specific dispatcher.
@@ -46,11 +45,11 @@ namespace common {
 //    public:
 //     // Initialize by spawning a thread with a dispatcher owned by this
 //     // domain.
-//     MyObject() : common::TaskDomain<MyObject>(this, "my-thread") {}
+//     MyObject() : TaskDomain<MyObject>(this, "my-thread") {}
 //
 //     // Initialize to run on |dispatcher|.
 //     explicit MyObject(async_dispatcher_t* dispatcher)
-//        : common::TaskDomain<MyObject>(this, dispatcher) {}
+//        : TaskDomain<MyObject>(this, dispatcher) {}
 //
 //     void CleanUp()
 //
@@ -183,11 +182,10 @@ class TaskDomain {
 };
 
 #define BT_FRIEND_TASK_DOMAIN(Type) BT_FRIEND_TASK_DOMAIN_FULL(Type, Type)
-#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType)     \
-  friend class bt::common::TaskDomain<Type, RefCountedType>; \
-  friend struct bt::common::internal::has_clean_up<Type>
+#define BT_FRIEND_TASK_DOMAIN_FULL(Type, RefCountedType) \
+  friend class bt::TaskDomain<Type, RefCountedType>;     \
+  friend struct bt::internal::has_clean_up<Type>
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_

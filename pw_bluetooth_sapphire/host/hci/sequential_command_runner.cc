@@ -11,8 +11,6 @@
 namespace bt {
 namespace hci {
 
-using common::HostError;
-
 SequentialCommandRunner::SequentialCommandRunner(
     async_dispatcher_t* dispatcher, fxl::RefPtr<Transport> transport)
     : dispatcher_(dispatcher),
@@ -59,7 +57,7 @@ bool SequentialCommandRunner::IsReady() const {
 
 void SequentialCommandRunner::Cancel() {
   ZX_DEBUG_ASSERT(status_callback_);
-  status_callback_(Status(common::HostError::kCanceled));
+  status_callback_(Status(HostError::kCanceled));
   Reset();
 }
 

@@ -31,21 +31,13 @@ static bool operator==(const DescriptorData& desc1,
 namespace internal {
 namespace {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::CreateStaticByteBuffer;
-using common::HostError;
-using common::StaticByteBuffer;
-
-constexpr common::UUID kTestServiceUuid1((uint16_t)0xbeef);
-constexpr common::UUID kTestServiceUuid2((uint16_t)0xcafe);
-constexpr common::UUID kTestUuid3((uint16_t)0xfefe);
-constexpr common::UUID kTestUuid4((uint16_t)0xefef);
+constexpr UUID kTestServiceUuid1((uint16_t)0xbeef);
+constexpr UUID kTestServiceUuid2((uint16_t)0xcafe);
+constexpr UUID kTestUuid3((uint16_t)0xfefe);
+constexpr UUID kTestUuid4((uint16_t)0xefef);
 
 const auto kCCCNotifyValue = CreateStaticByteBuffer(0x01, 0x00);
 const auto kCCCIndicateValue = CreateStaticByteBuffer(0x02, 0x00);
-
-using common::HostError;
 
 void NopStatusCallback(att::Status) {}
 void NopValueCallback(const ByteBuffer&) {}
@@ -79,7 +71,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     mgr()->Initialize(NopStatusCallback);
 
     ServiceList services;
-    mgr()->ListServices(std::vector<common::UUID>(),
+    mgr()->ListServices(std::vector<UUID>(),
                         [&services](auto status, ServiceList cb_services) {
                           services = std::move(cb_services);
                         });
@@ -163,7 +155,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
   EXPECT_TRUE(status);
   EXPECT_TRUE(services.empty());
 
-  mgr()->ListServices(std::vector<common::UUID>(),
+  mgr()->ListServices(std::vector<UUID>(),
                       [&services](auto status, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
@@ -202,7 +194,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeFailure) {
       [&watcher_services](auto svc) { watcher_services.push_back(svc); });
 
   ServiceList services;
-  mgr()->ListServices(std::vector<common::UUID>(),
+  mgr()->ListServices(std::vector<UUID>(),
                       [&services](auto status, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
@@ -226,7 +218,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesBeforeInit) {
   fake_client()->set_primary_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->ListServices(std::vector<common::UUID>(),
+  mgr()->ListServices(std::vector<UUID>(),
                       [&services](auto status, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
@@ -256,7 +248,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
   ASSERT_TRUE(status);
 
   ServiceList services;
-  mgr()->ListServices(std::vector<common::UUID>(),
+  mgr()->ListServices(std::vector<UUID>(),
                       [&services](auto status, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
@@ -266,7 +258,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, ListServicesByUuid) {
-  std::vector<common::UUID> uuids{kTestServiceUuid1};
+  std::vector<UUID> uuids{kTestServiceUuid1};
 
   ServiceData svc1(1, 1, kTestServiceUuid1);
   ServiceData svc2(2, 2, kTestServiceUuid2);
@@ -722,7 +714,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequest) {
   att::Status status(HostError::kFailed);
   service->ReadCharacteristic(0, [&](att::Status cb_status, const auto& value) {
     status = cb_status;
-    EXPECT_TRUE(common::ContainersEqual(kValue, value));
+    EXPECT_TRUE(ContainersEqual(kValue, value));
   });
 
   RunLoopUntilIdle();
@@ -752,7 +744,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
       0,
       [&](att::Status cb_status, const auto& value) {
         status = cb_status;
-        EXPECT_TRUE(common::ContainersEqual(kValue, value));
+        EXPECT_TRUE(ContainersEqual(kValue, value));
       },
       dispatcher());
 
@@ -1396,7 +1388,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   service->ReadDescriptor(kDescrId,
                           [&](att::Status cb_status, const auto& value) {
                             status = cb_status;
-                            EXPECT_TRUE(common::ContainersEqual(kValue, value));
+                            EXPECT_TRUE(ContainersEqual(kValue, value));
                           });
 
   RunLoopUntilIdle();
@@ -1428,7 +1420,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
       0,
       [&](att::Status cb_status, const auto& value) {
         status = cb_status;
-        EXPECT_TRUE(common::ContainersEqual(kValue, value));
+        EXPECT_TRUE(ContainersEqual(kValue, value));
       },
       dispatcher());
 
@@ -1946,7 +1938,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
 TEST_F(GATT_RemoteServiceManagerTest, NotificationWithoutServices) {
   for (att::Handle i = 0; i < 10; ++i) {
     fake_client()->SendNotification(
-        false, i, common::CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+        false, i, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   }
   RunLoopUntilIdle();
 }
@@ -1989,10 +1981,9 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
 
   // Notify both characteristics which should get dropped.
   fake_client()->SendNotification(
-      false, 3, common::CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   fake_client()->SendNotification(
-      true, 6,
-      common::CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
 
   EnableNotifications(service, kId1, &status, &handler_id, std::move(chr1_cb));
   ASSERT_TRUE(status);
@@ -2001,14 +1992,13 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
 
   // Notify characteristic 1.
   fake_client()->SendNotification(
-      false, 3, common::CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(0, chr2_count);
 
   // Notify characteristic 2.
   fake_client()->SendNotification(
-      true, 6,
-      common::CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(1, chr2_count);
 
@@ -2022,10 +2012,9 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
 
   // Notifications for characteristic 1 should get dropped.
   fake_client()->SendNotification(
-      false, 3, common::CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   fake_client()->SendNotification(
-      true, 6,
-      common::CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(2, chr2_count);
 }

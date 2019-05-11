@@ -12,7 +12,7 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-bool BasicModeTxEngine::QueueSdu(common::ByteBufferPtr sdu) {
+bool BasicModeTxEngine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   if (sdu->size() > tx_mtu_) {
     bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)",

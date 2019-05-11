@@ -10,9 +10,9 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-common::ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
+ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
   ZX_ASSERT(pdu.is_valid());
-  auto sdu = std::make_unique<common::DynamicByteBuffer>(pdu.length());
+  auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   return sdu;
 }

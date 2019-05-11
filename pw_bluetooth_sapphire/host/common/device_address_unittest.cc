@@ -10,7 +10,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 // Initialize from string literal.
@@ -180,5 +179,4 @@ TEST(DeviceAddressTest, IsPublic) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

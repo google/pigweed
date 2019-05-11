@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "channel.h"
+
 #include <lib/async/cpp/task.h>
 
-#include "channel.h"
 #include "session.h"
 
 namespace bt {
@@ -44,14 +45,14 @@ bool ChannelImpl::Activate(RxCallback rx_callback,
   return true;
 }
 
-bool ChannelImpl::Send(common::ByteBufferPtr data) {
+bool ChannelImpl::Send(ByteBufferPtr data) {
   ZX_DEBUG_ASSERT(session_);
   ZX_DEBUG_ASSERT_MSG(rx_callback_, "must call Activate() first");
   session_->SendUserData(dlci_, std::move(data));
   return true;
 }
 
-void ChannelImpl::Receive(common::ByteBufferPtr data) {
+void ChannelImpl::Receive(ByteBufferPtr data) {
   if (rx_callback_) {
     async::PostTask(dispatcher_, [this, data_ = std::move(data)]() mutable {
       rx_callback_(std::move(data_));

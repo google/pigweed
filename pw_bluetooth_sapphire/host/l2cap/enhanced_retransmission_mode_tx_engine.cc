@@ -55,7 +55,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
   });
 }
 
-bool Engine::QueueSdu(common::ByteBufferPtr sdu) {
+bool Engine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   // TODO(BT-440): Add support for segmentation
   if (sdu->size() > tx_mtu_) {
@@ -66,7 +66,7 @@ bool Engine::QueueSdu(common::ByteBufferPtr sdu) {
 
   SimpleInformationFrameHeader header(GetNextSeqnum());
   auto frame =
-      std::make_unique<common::DynamicByteBuffer>(sizeof(header) + sdu->size());
+      std::make_unique<DynamicByteBuffer>(sizeof(header) + sdu->size());
   auto body = frame->mutable_view(sizeof(header));
   frame->WriteObj(header);
   sdu->Copy(&body);
@@ -117,8 +117,8 @@ void Engine::SendReceiverReadyPoll() {
                 "(n_receiver_ready_polls_sent_ = %u, "
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_, max_transmissions_);
-  send_basic_frame_callback_(std::make_unique<common::DynamicByteBuffer>(
-      common::BufferView(&frame, sizeof(frame))));
+  send_basic_frame_callback_(
+      std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
 uint8_t Engine::GetNextSeqnum() {

@@ -82,22 +82,22 @@ class FakeClient final : public Client {
   }
 
   // Sets a callback which will run when WriteRequest gets called.
-  using WriteRequestCallback = fit::function<void(
-      att::Handle, const common::ByteBuffer&, att::StatusCallback)>;
+  using WriteRequestCallback =
+      fit::function<void(att::Handle, const ByteBuffer&, att::StatusCallback)>;
   void set_write_request_callback(WriteRequestCallback callback) {
     write_request_callback_ = std::move(callback);
   }
 
   // Sets a callback which will run when WriteWithoutResponse gets called.
   using WriteWithoutResponseCallback =
-      fit::function<void(att::Handle, const common::ByteBuffer&)>;
+      fit::function<void(att::Handle, const ByteBuffer&)>;
   void set_write_without_rsp_callback(WriteWithoutResponseCallback callback) {
     write_without_rsp_callback_ = std::move(callback);
   }
 
   // Emulates the receipt of a notification or indication PDU.
   void SendNotification(bool indicate, att::Handle handle,
-                        const common::ByteBuffer& value);
+                        const ByteBuffer& value);
 
  private:
   // Client overrides:
@@ -115,10 +115,10 @@ class FakeClient final : public Client {
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadBlobRequest(att::Handle handle, uint16_t offset,
                        ReadCallback callback) override;
-  void WriteRequest(att::Handle handle, const common::ByteBuffer& value,
+  void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;
   void WriteWithoutResponse(att::Handle handle,
-                            const common::ByteBuffer& value) override;
+                            const ByteBuffer& value) override;
   void SetNotificationHandler(NotificationCallback callback) override;
 
   // All callbacks will be posted on this dispatcher to emulate asynchronous

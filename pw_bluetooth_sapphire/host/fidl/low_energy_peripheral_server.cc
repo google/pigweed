@@ -29,11 +29,11 @@ namespace {
 
 std::string MessageFromStatus(bt::hci::Status status) {
   switch (status.error()) {
-    case bt::common::HostError::kNoError:
+    case bt::HostError::kNoError:
       return "Success";
-    case bt::common::HostError::kNotSupported:
+    case bt::HostError::kNotSupported:
       return "Maximum advertisement amount reached";
-    case bt::common::HostError::kInvalidParameters:
+    case bt::HostError::kInvalidParameters:
       return "Advertisement exceeds maximum allowed length";
     default:
       return status.ToString();

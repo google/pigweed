@@ -24,7 +24,7 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   // SignalingChannelInterface overrides
   // TODO(NET-1093): Refactor implementation into SignalingChannel so it's
   // shared with LESignalingChannel.
-  bool SendRequest(CommandCode req_code, const common::ByteBuffer& payload,
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
                    ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
 
@@ -33,11 +33,11 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   // payload (if any) on the L2CAP thread, or with an empty buffer if the
   // remote responded with a rejection. Returns false if the request failed to
   // send.
-  bool TestLink(const common::ByteBuffer& data, DataCallback cb);
+  bool TestLink(const ByteBuffer& data, DataCallback cb);
 
  private:
   // SignalingChannel overrides
-  void DecodeRxUnit(common::ByteBufferPtr sdu,
+  void DecodeRxUnit(ByteBufferPtr sdu,
                     const SignalingPacketHandler& cb) override;
   bool HandlePacket(const SignalingPacket& packet) override;
 

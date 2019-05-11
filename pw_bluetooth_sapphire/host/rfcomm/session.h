@@ -37,7 +37,7 @@ class Session {
  public:
   // User should first use GetMaximumUserDataLength() to determine the maximum
   // amount of data they can send.
-  void SendUserData(DLCI dlci, common::ByteBufferPtr data);
+  void SendUserData(DLCI dlci, ByteBufferPtr data);
 
   // Get the maximum length of data which can be sent in a single RFCOMM frame.
   // This should only be called after initial parameter negotiation is complete.
@@ -72,7 +72,7 @@ class Session {
                          ChannelOpenedCallback channel_opened_cb);
 
   // l2cap::Channel callbacks.
-  void RxCallback(common::ByteBufferPtr sdu);
+  void RxCallback(ByteBufferPtr sdu);
   void ClosedCallback();
 
   // Send a SABM or a DISC command. When a response (UA or DM) is received,

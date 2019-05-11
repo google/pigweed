@@ -62,7 +62,7 @@ class Server final {
   // Performs a Service Search, returning any service record that contains
   // all UUID from the |search_pattern|
   ServiceSearchResponse SearchServices(
-      const std::unordered_set<common::UUID>& pattern) const;
+      const std::unordered_set<UUID>& pattern) const;
 
   // Gets Service Attributes in the |attribute_ranges| from the service record
   // with |handle|.
@@ -72,13 +72,12 @@ class Server final {
   // Retrieves Service Attributes in the |attribute_ranges|, using the pattern
   // to search for the services that contain all UUIDs from the |search_pattern|
   ServiceSearchAttributeResponse SearchAllServiceAttributes(
-      const std::unordered_set<common::UUID>& search_pattern,
+      const std::unordered_set<UUID>& search_pattern,
       const std::list<AttributeRange>& attribute_ranges) const;
 
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
-  void OnRxBFrame(const hci::ConnectionHandle& handle,
-                  common::ByteBufferPtr sdu);
+  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu);
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.

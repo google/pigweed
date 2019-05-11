@@ -4,14 +4,13 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 
-#include "gtest/gtest.h"
-
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async/cpp/task.h>
 #include <lib/zx/time.h>
 
+#include "gtest/gtest.h"
+
 namespace bt {
-namespace common {
 namespace {
 
 TEST(RunTaskSyncTest, RunTaskSync) {
@@ -38,5 +37,4 @@ TEST(RunTaskSyncTest, RunTaskSync) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

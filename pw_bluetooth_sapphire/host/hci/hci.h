@@ -23,8 +23,8 @@
 // the Bluetooth Core Specification version 5.0
 //
 // NOTE: Avoid casting raw buffer pointers to the packet payload structure types
-// below; use as template parameter to common::PacketView::payload() and
-// common::MutableBufferView::mutable_payload() instead. Take extra care when
+// below; use as template parameter to PacketView::payload() and
+// MutableBufferView::mutable_payload() instead. Take extra care when
 // accessing flexible array members.
 
 namespace bt {
@@ -150,7 +150,7 @@ constexpr OpCode kCreateConnection = LinkControlOpCode(0x0005);
 
 struct CreateConnectionCommandParams {
   // BD_ADDR of the device to be connected
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Mask of allowable packet types. See PacketTypeBits in hci_constants.h for
   // values.
@@ -205,7 +205,7 @@ constexpr OpCode kCreateConnectionCancel = LinkControlOpCode(0x0008);
 
 struct CreateConnectionCancelCommandParams {
   // BD_ADDR of the Create Connection Command Request
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 struct CreateConnectionCancelReturnParams {
@@ -213,7 +213,7 @@ struct CreateConnectionCancelReturnParams {
   StatusCode status;
 
   // BD_ADDR of the Create Connection Command Request
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // =========================================
@@ -222,7 +222,7 @@ constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
 
 struct AcceptConnectionRequestCommandParams {
   // BD_ADDR of the device to be connected
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Role. Allowable values:
   //  - kMaster - Host will become the master (Link Master will role switch)
@@ -236,7 +236,7 @@ constexpr OpCode kRejectConnectionRequest = LinkControlOpCode(0x000A);
 
 struct RejectConnectionRequestCommandParams {
   // BD_ADDR of the device to reject the connection from
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Reason.
   // Must be one of kConnectionRejected* from Status in hci_constants.h
@@ -253,7 +253,7 @@ constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
 struct LinkKeyRequestReplyCommandParams {
   // BD_ADDR of the peer device the link key is for.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Link key to use for the connection with the peer device.
   uint8_t link_key[16];
@@ -264,7 +264,7 @@ struct LinkKeyRequestReplyReturnParams {
   StatusCode status;
 
   // BD_ADDR of the device whose Link Key Request was fulfilled.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // =============================================================
@@ -273,7 +273,7 @@ constexpr OpCode kLinkKeyRequestNegativeReply = LinkControlOpCode(0x000C);
 
 struct LinkKeyRequestNegativeReplyCommandParams {
   // BD_ADDR of the peer device that the host does not have a link key for.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 struct LinkKeyRequestNegativeReplyReturnParams {
@@ -281,7 +281,7 @@ struct LinkKeyRequestNegativeReplyReturnParams {
   StatusCode status;
 
   // BD_ADDR of the device whose Link Key Request was denied.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // ============================================================
@@ -290,7 +290,7 @@ constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);
 
 struct RemoteNameRequestCommandParams {
   // Address of the device whose name is to be requested.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Page Scan Repetition Mode of the device, obtained by Inquiry.
   PageScanRepetitionMode page_scan_repetition_mode;
@@ -369,7 +369,7 @@ constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
 
 struct IOCapabilityRequestReplyCommandParams {
   // The BD_ADDR of the remote device involved in simple pairing process
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // The IOCapabilities of this device
   IOCapability io_capability;
@@ -391,7 +391,7 @@ struct IOCapabilityRequestReplyReturnParams {
   StatusCode status;
 
   // BD_ADDR of the remote device involved in simple pairing process
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // ======= Controller & Baseband Commands =======
@@ -407,7 +407,7 @@ constexpr OpCode kUserConfirmationRequestReply = LinkControlOpCode(0x002C);
 
 struct UserConfirmationRequestReplyCommandParams {
   // The BD_ADDR of the remote device involved in the simple pairing process.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // ======================================================================
@@ -417,7 +417,7 @@ constexpr OpCode kUserConfirmationRequestNegativeReply =
 
 struct UserConfirmationRequestNegativeReplyCommandParams {
   // The BD_ADDR of the remote device involved in the simple pairing process.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // =============================
@@ -558,7 +558,7 @@ struct ReadClassOfDeviceReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 } __PACKED;
 
 // =============================================
@@ -566,7 +566,7 @@ struct ReadClassOfDeviceReturnParams {
 constexpr OpCode kWriteClassOfDevice = ControllerAndBasebandOpCode(0x0024);
 
 struct WriteClassOfDeviceCommandParams {
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 } __PACKED;
 
 // ===============================================================
@@ -891,7 +891,7 @@ struct ReadBDADDRReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // =======================================================
@@ -926,7 +926,7 @@ constexpr EventCode kInquiryResultEventCode = 0x02;
 
 struct InquiryResult {
   // The address for the device which responded.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
   PageScanRepetitionMode page_scan_repetition_mode;
@@ -938,7 +938,7 @@ struct InquiryResult {
   uint8_t page_scan_mode;
 
   // Class of device
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 
   // Clock Offset
   // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
@@ -969,7 +969,7 @@ struct ConnectionCompleteEventParams {
   ConnectionHandle connection_handle;
 
   // The address of the connected device
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // See enum LinkType in hci_constants.h.
   // ExtendedSCO is not valid as a link type.
@@ -986,10 +986,10 @@ constexpr EventCode kConnectionRequestEventCode = 0x04;
 
 struct ConnectionRequestEventParams {
   // The address of the device that's requesting the connection.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // The Class of Device of the device which requests the connection.
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 
   // See enum LinkType in hci_constants.h
   LinkType link_type;
@@ -1044,7 +1044,7 @@ struct RemoteNameRequestCompleteEventParams {
   StatusCode status;
 
   // Address of the device
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Remote Name - UTF-8 encoded friendly name.
   // If the name is less than 248 characters, it is null terminated and
@@ -1162,7 +1162,7 @@ constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 
 struct LinkKeyRequestParams {
   // The address for the device that a host-stored link key is being requested.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // ========================================
@@ -1171,7 +1171,7 @@ constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
 
 struct LinkKeyNotificationEventParams {
   // The address for the device for which a new link key has been generated.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Link key for the associated address.
   uint8_t link_key[16];
@@ -1186,7 +1186,7 @@ constexpr EventCode kInquiryResultWithRSSIEventCode = 0x22;
 
 struct InquiryResultRSSI {
   // The address for the device which responded.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
   PageScanRepetitionMode page_scan_repetition_mode;
@@ -1195,7 +1195,7 @@ struct InquiryResultRSSI {
   uint8_t page_scan_period_mode;
 
   // Class of device
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 
   // Clock Offset
   // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
@@ -1253,7 +1253,7 @@ struct ExtendedInquiryResultEventParams {
   uint8_t num_responses;
 
   // BD_ADDR of the device that responded.
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
   PageScanRepetitionMode page_scan_repetition_mode;
@@ -1262,7 +1262,7 @@ struct ExtendedInquiryResultEventParams {
   uint8_t reserved;
 
   // Class of device
-  common::DeviceClass class_of_device;
+  DeviceClass class_of_device;
 
   // Clock offset
   // the 15 lower bits represent bits 16-2 of CLKNslave-CLK
@@ -1297,7 +1297,7 @@ constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 
 struct IOCapabilityRequestEventParams {
   // The address of the remote device involved in the simple pairing process
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 } __PACKED;
 
 // =============================================
@@ -1306,7 +1306,7 @@ constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
 
 struct IOCapabilityResponseEventParams {
   // The address of the remote device which the IO capabilities apply
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // IO Capabilities of the device
   IOCapability io_capability;
@@ -1328,7 +1328,7 @@ constexpr EventCode kUserConfirmationRequestEventCode = 0x33;
 
 struct UserConfirmationRequestEventParams {
   // Address of the device involved in simple pairing process
-  common::DeviceAddressBytes bd_addr;
+  DeviceAddressBytes bd_addr;
 
   // Numeric valud to be displayed.  Valid values are 0 - 999999
   uint32_t numeric_value;
@@ -1365,7 +1365,7 @@ struct LEConnectionCompleteSubeventParams {
   LEPeerAddressType peer_address_type;
 
   // Public Device Address or Random Device Address of the peer device.
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
 
   // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
   // Time: N * 1.25 ms
@@ -1400,7 +1400,7 @@ struct LEAdvertisingReportData {
 
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the advertising device.
-  common::DeviceAddressBytes address;
+  DeviceAddressBytes address;
 
   // Length of the advertising data payload.
   uint8_t length_data;
@@ -1578,10 +1578,10 @@ struct LEEnhancedConnectionCompleteSubeventParams {
 
   // Public Device Address, or Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the device to be connected.
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
 
-  common::DeviceAddressBytes local_resolvable_private_address;
-  common::DeviceAddressBytes peer_resolvable_private_address;
+  DeviceAddressBytes local_resolvable_private_address;
+  DeviceAddressBytes peer_resolvable_private_address;
 
   // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
   // Time: N * 1.25 ms
@@ -1614,12 +1614,12 @@ struct LEDirectedAdvertisingReportData {
 
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the advertising device.
-  common::DeviceAddressBytes address;
+  DeviceAddressBytes address;
 
   // By default this is set to LEAddressType::kRandom and |direct_address| will
   // contain a random device address.
   LEAddressType direct_address_type;
-  common::DeviceAddressBytes direct_address;
+  DeviceAddressBytes direct_address;
 
   // Range: -127 <= N <= +20
   // Units: dBm
@@ -1675,7 +1675,7 @@ struct LEExtendedAdvertisingReportData {
 
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the advertising device.
-  common::DeviceAddressBytes address;
+  DeviceAddressBytes address;
 
   // Indicates the PHY used to send the advertising PDU on the primary
   // advertising channel. Legacy PDUs always use LEPHY::kLE1M
@@ -1712,7 +1712,7 @@ struct LEExtendedAdvertisingReportData {
 
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the target device.
-  common::DeviceAddressBytes direct_address;
+  DeviceAddressBytes direct_address;
 
   // Length of the data field.
   uint8_t data_length;
@@ -1754,7 +1754,7 @@ struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the advertiser.
-  common::DeviceAddressBytes advertiser_address;
+  DeviceAddressBytes advertiser_address;
 
   // Advertiser_PHY.
   LEPHY advertiser_phy;
@@ -1844,7 +1844,7 @@ struct LEScanRequestReceivedSubeventParams {
 
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the scanning device.
-  common::DeviceAddressBytes scanner_address;
+  DeviceAddressBytes scanner_address;
 } __PACKED;
 
 // LE Channel Selection Algorithm Event (v5.0) (LE)
@@ -2009,7 +2009,7 @@ struct LEReadLocalSupportedFeaturesReturnParams {
 constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
 
 struct LESetRandomAddressCommandParams {
-  common::DeviceAddressBytes random_address;
+  DeviceAddressBytes random_address;
 } __PACKED;
 
 // =================================================
@@ -2039,7 +2039,7 @@ struct LESetAdvertisingParametersCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the device to be connected.
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
 
   // (See the constants kLEAdvertisingChannel* in hci_constants.h for possible
   // values).
@@ -2152,7 +2152,7 @@ struct LECreateConnectionCommandParams {
 
   GenericEnableParam initiator_filter_policy;
   LEAddressType peer_address_type;
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
   LEOwnAddressType own_address_type;
 
   // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
@@ -2209,7 +2209,7 @@ struct LEAddDeviceToWhiteListCommandParams {
 
   // Public Device Address or Random Device Address of the device to be added to
   // the White List.
-  common::DeviceAddressBytes address;
+  DeviceAddressBytes address;
 } __PACKED;
 
 // ====================================================
@@ -2224,7 +2224,7 @@ struct LERemoveDeviceFromWhiteListCommandParams {
 
   // Public Device Address or Random Device Address of the device to be removed
   // from the White List.
-  common::DeviceAddressBytes address;
+  DeviceAddressBytes address;
 } __PACKED;
 
 // ========================================
@@ -2338,7 +2338,7 @@ constexpr OpCode kLEEncrypt = LEControllerCommandOpCode(0x0017);
 
 struct LEEncryptCommandParams {
   // 128 bit key for the encryption of the data given in the command.
-  common::UInt128 key;
+  UInt128 key;
 
   // 128 bit data block that is requested to be encrypted.
   uint8_t plaintext_data[16];
@@ -2383,7 +2383,7 @@ struct LEStartEncryptionCommandParams {
   uint16_t encrypted_diversifier;
 
   // 128-bit long-term key (LTK).
-  common::UInt128 long_term_key;
+  UInt128 long_term_key;
 } __PACKED;
 
 // NOTE on Return Params: A Command Complete event is not sent by the Controller
@@ -2402,7 +2402,7 @@ struct LELongTermKeyRequestReplyCommandParams {
   ConnectionHandle connection_handle;
 
   // 128-bit long term key for the current connection.
-  common::UInt128 long_term_key;
+  UInt128 long_term_key;
 } __PACKED;
 
 struct LELongTermKeyRequestReplyReturnParams {
@@ -2654,13 +2654,13 @@ struct LEAddDeviceToResolvingListCommandParams {
   LEPeerAddressType peer_identity_address_type;
 
   // Public or Random (static) Identity address of the peer device
-  common::DeviceAddressBytes peer_identity_address;
+  DeviceAddressBytes peer_identity_address;
 
   // IRK (Identity Resolving Key) of the peer device
-  common::UInt128 peer_irk;
+  UInt128 peer_irk;
 
   // IRK (Identity Resolving Key) of the local device
-  common::UInt128 local_irk;
+  UInt128 local_irk;
 } __PACKED;
 
 // ========================================================
@@ -2673,7 +2673,7 @@ struct LERemoveDeviceFromResolvingListCommandParams {
   LEPeerAddressType peer_identity_address_type;
 
   // Public or Random (static) Identity address of the peer device
-  common::DeviceAddressBytes peer_identity_address;
+  DeviceAddressBytes peer_identity_address;
 } __PACKED;
 
 // ===========================================
@@ -2702,7 +2702,7 @@ struct LEReadPeerResolvableAddressCommandParams {
   LEPeerAddressType peer_identity_address_type;
 
   // Public or Random (static) Identity address of the peer device.
-  common::DeviceAddressBytes peer_identity_address;
+  DeviceAddressBytes peer_identity_address;
 } __PACKED;
 
 struct LEReadPeerResolvableAddressReturnParams {
@@ -2710,7 +2710,7 @@ struct LEReadPeerResolvableAddressReturnParams {
   StatusCode status;
 
   // Resolvable Private Address being used by the peer device.
-  common::DeviceAddressBytes peer_resolvable_address;
+  DeviceAddressBytes peer_resolvable_address;
 } __PACKED;
 
 // ====================================================
@@ -2723,7 +2723,7 @@ struct LEReadLocalResolvableAddressCommandParams {
   LEPeerAddressType peer_identity_address_type;
 
   // Public or Random (static) Identity address of the peer device
-  common::DeviceAddressBytes peer_identity_address;
+  DeviceAddressBytes peer_identity_address;
 } __PACKED;
 
 struct LEReadLocalResolvableAddressReturnParams {
@@ -2731,7 +2731,7 @@ struct LEReadLocalResolvableAddressReturnParams {
   StatusCode status;
 
   // Resolvable Private Address being used by the local device.
-  common::DeviceAddressBytes local_resolvable_address;
+  DeviceAddressBytes local_resolvable_address;
 } __PACKED;
 
 // ====================================================
@@ -2896,7 +2896,7 @@ struct LESetAdvertisingSetRandomAddressCommandParams {
   AdvertisingHandle adv_handle;
 
   // Random Device Address.
-  common::DeviceAddressBytes adv_random_address;
+  DeviceAddressBytes adv_random_address;
 } __PACKED;
 
 // ==========================================================
@@ -2927,7 +2927,7 @@ struct LESetExtendedAdvertisingParametersCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the device to be connected.
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
 
   LEAdvFilterPolicy adv_filter_policy;
 
@@ -3248,7 +3248,7 @@ struct LEExtendedCreateConnectionCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the device to be connected.
-  common::DeviceAddressBytes peer_address;
+  DeviceAddressBytes peer_address;
 
   // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
   // values.
@@ -3281,7 +3281,7 @@ struct LEPeriodicAdvertisingCreateSyncCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the advertiser.
-  common::DeviceAddressBytes advertiser_address;
+  DeviceAddressBytes advertiser_address;
 
   // The number of periodic advertising packets that can be skipped after a
   // successful receive.
@@ -3334,7 +3334,7 @@ struct LEAddDeviceToPeriodicAdvertiserListCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the advertiser.
-  common::DeviceAddressBytes advertiser_address;
+  DeviceAddressBytes advertiser_address;
 
   // Advertising SID subfield in the ADI field used to identify the Periodic
   // Advertising.
@@ -3353,7 +3353,7 @@ struct LERemoveDeviceFromPeriodicAdvertiserListCommandParams {
 
   // Public Device Address, Random Device Address, Public Identity Address, or
   // Random (static) Identity Address of the advertiser.
-  common::DeviceAddressBytes advertiser_address;
+  DeviceAddressBytes advertiser_address;
 
   // Advertising SID subfield in the ADI field used to identify the Periodic
   // Advertising.
@@ -3433,7 +3433,7 @@ struct LESetPrivacyModeCommandParams {
 
   // Public Identity Address or Random (static) Identity Address of the
   // advertiser.
-  common::DeviceAddressBytes peer_identity_address;
+  DeviceAddressBytes peer_identity_address;
 
   // The privacy mode to be used for the given entry on the resolving list.
   LEPrivacyMode privacy_mode;

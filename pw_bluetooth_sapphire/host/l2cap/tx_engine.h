@@ -25,7 +25,7 @@ class TxEngine {
   // Type defining the callback that a TxEngine uses to deliver a PDU to lower
   // layers. The callee may assume that the ByteBufferPtr owns an instance of a
   // DynamicByteBuffer or SlabBuffer.
-  using SendBasicFrameCallback = fit::function<void(common::ByteBufferPtr pdu)>;
+  using SendBasicFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
 
   // Creates a transmit engine, which will invoke |send_basic_frame_callback|
   // when a PDU is ready for transmission. This callback may be invoked
@@ -50,7 +50,7 @@ class TxEngine {
   //   invocation of |send_basic_frame_callback_|.
   // * It is presumed that the ByteBufferPtr owns an instance of a
   //   DynamicByteBuffer or SlabBuffer.
-  virtual bool QueueSdu(common::ByteBufferPtr) = 0;
+  virtual bool QueueSdu(ByteBufferPtr) = 0;
 
  protected:
   const ChannelId channel_id_;

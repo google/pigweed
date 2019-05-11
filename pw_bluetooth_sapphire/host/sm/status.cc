@@ -5,7 +5,6 @@
 #include "status.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 std::string ErrorToString(sm::ErrorCode ecode) {
@@ -52,5 +51,4 @@ std::string ProtocolErrorTraits<sm::ErrorCode>::ToString(sm::ErrorCode ecode) {
                            static_cast<unsigned int>(ecode));
 }
 
-}  // namespace common
 }  // namespace bt

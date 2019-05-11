@@ -5,16 +5,9 @@
 #include "util.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
-
-using common::ContainersEqual;
-using common::CreateStaticByteBuffer;
-using common::DeviceAddress;
-using common::RandomUInt128;
-using common::UInt128;
 
 namespace sm {
 namespace util {

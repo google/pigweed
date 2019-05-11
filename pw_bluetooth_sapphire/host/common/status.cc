@@ -5,7 +5,6 @@
 #include "status.h"
 
 namespace bt {
-namespace common {
 
 std::string HostErrorToString(HostError error) {
   switch (error) {
@@ -41,5 +40,4 @@ std::string HostErrorToString(HostError error) {
   return "(unknown)";
 }
 
-}  // namespace common
 }  // namespace bt

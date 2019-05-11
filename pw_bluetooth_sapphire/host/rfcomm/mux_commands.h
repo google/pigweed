@@ -7,8 +7,8 @@
 
 #include <cstddef>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "rfcomm.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
 namespace rfcomm {
@@ -55,13 +55,13 @@ class MuxCommand {
   // Parses a buffer and constructs the appropriate subclass of MuxCommand.
   // Users of Parse should read the resulting command type and cast the pointer
   // to the appropriate MuxCommand subclass.
-  static std::unique_ptr<MuxCommand> Parse(const common::ByteBuffer& buffer);
+  static std::unique_ptr<MuxCommand> Parse(const ByteBuffer& buffer);
 
   virtual ~MuxCommand() = default;
 
   // Writes this MuxCommand into |buffer|. |buffer| must be at least the size
   // indicated by written_size().
-  virtual void Write(common::MutableBufferView buffer) const = 0;
+  virtual void Write(MutableBufferView buffer) const = 0;
 
   // The amount of space this command takes up when written. This is used when
   // allocating space for an RFCOMM frame which will hold a multiplexer command.
@@ -98,25 +98,22 @@ class MuxCommand {
 // is limited by the system's max value of size_t.
 class TestCommand : public MuxCommand {
  public:
-  TestCommand(CommandResponse command_response,
-              const common::ByteBuffer& test_pattern);
+  TestCommand(CommandResponse command_response, const ByteBuffer& test_pattern);
 
   // Returns nullptr if parse fails. |command_response| and |length| are
   // parameters which have already been parsed from |buffer|.
   static std::unique_ptr<TestCommand> Parse(CommandResponse command_response,
                                             size_t length,
-                                            const common::ByteBuffer& buffer);
+                                            const ByteBuffer& buffer);
 
-  inline common::BufferView test_pattern() const {
-    return test_pattern_.view();
-  }
+  inline BufferView test_pattern() const { return test_pattern_.view(); }
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
  private:
-  common::DynamicByteBuffer test_pattern_;
+  DynamicByteBuffer test_pattern_;
 };
 
 // This command is sent when our device is able to begin receiving messages. See
@@ -131,7 +128,7 @@ class FlowControlOnCommand : public MuxCommand {
       CommandResponse command_response);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 };
 
@@ -147,7 +144,7 @@ class FlowControlOffCommand : public MuxCommand {
       CommandResponse command_response);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 };
 
@@ -178,10 +175,10 @@ class ModemStatusCommand : public MuxCommand {
   // parameters which have already been parsed from |buffer|.
   static std::unique_ptr<ModemStatusCommand> Parse(
       CommandResponse command_response, size_t length,
-      const common::ByteBuffer& buffer);
+      const ByteBuffer& buffer);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
 
   size_t written_size() const override;
 
@@ -324,10 +321,10 @@ class RemotePortNegotiationCommand : public MuxCommand {
   // parameters which have already been parsed from |buffer|.
   static std::unique_ptr<RemotePortNegotiationCommand> Parse(
       CommandResponse command_response, size_t length,
-      const common::ByteBuffer& buffer);
+      const ByteBuffer& buffer);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
   // The DLCI which this RPN command is negotiating over.
@@ -370,10 +367,10 @@ class RemoteLineStatusCommand : public MuxCommand {
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
   static std::unique_ptr<RemoteLineStatusCommand> Parse(
-      CommandResponse command_response, const common::ByteBuffer& buffer);
+      CommandResponse command_response, const ByteBuffer& buffer);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
   // The DLCI which this command pertains to.
@@ -424,10 +421,10 @@ class DLCParameterNegotiationCommand : public MuxCommand {
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
   static std::unique_ptr<DLCParameterNegotiationCommand> Parse(
-      CommandResponse command_response, const common::ByteBuffer& buffer);
+      CommandResponse command_response, const ByteBuffer& buffer);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
   inline ParameterNegotiationParams params() const { return params_; }
@@ -448,10 +445,10 @@ class NonSupportedCommandResponse : public MuxCommand {
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
   static std::unique_ptr<NonSupportedCommandResponse> Parse(
-      CommandResponse command_response, const common::ByteBuffer& buffer);
+      CommandResponse command_response, const ByteBuffer& buffer);
 
   // MuxCommand overrides
-  void Write(common::MutableBufferView buffer) const override;
+  void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
   inline CommandResponse incoming_command_response() const {

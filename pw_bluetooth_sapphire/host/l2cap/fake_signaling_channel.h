@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_SIGNALING_CHANNEL_H_
 
 #include <lib/async/cpp/task.h>
+
 #include <unordered_map>
 #include <vector>
 
@@ -31,14 +32,14 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   using TransactionId = size_t;
 
   // Simulated response's command code and payload.
-  using Response = std::pair<Status, common::BufferView>;
+  using Response = std::pair<Status, BufferView>;
 
   // |dispatcher| is the test message loop's dispatcher
   explicit FakeSignalingChannel(async_dispatcher_t* dispatcher);
   ~FakeSignalingChannel() override;
 
   // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const common::ByteBuffer& payload,
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
                    ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
 
@@ -49,7 +50,7 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   // Returns a handle that can be used to provide additional responses with
   // |ReceiveResponses|. |file| and |line| will be used to trace test failures.
   TransactionId AddOutbound(const char* file, int line, CommandCode req_code,
-                            common::BufferView req_payload,
+                            BufferView req_payload,
                             std::vector<Response> responses);
 
   // Receive additional responses to an already received request.
@@ -58,21 +59,21 @@ class FakeSignalingChannel : public SignalingChannelInterface {
 
   // Simulate reception of an inbound request with |req_code| and |req_payload|,
   // then expect a corresponding outbound response with payload |rsp_payload|.
-  void ReceiveExpect(CommandCode req_code,
-                     const common::ByteBuffer& req_payload,
-                     const common::ByteBuffer& rsp_payload);
+  void ReceiveExpect(CommandCode req_code, const ByteBuffer& req_payload,
+                     const ByteBuffer& rsp_payload);
 
   // Simulate reception of an inbound request with |req_code| and |req_payload|,
   // then expect a matching rejection with the Not Understood reason.
   void ReceiveExpectRejectNotUnderstood(CommandCode req_code,
-                                        const common::ByteBuffer& req_payload);
+                                        const ByteBuffer& req_payload);
 
   // Simulate reception of an inbound request with |req_code| and |req_payload|,
   // then expect a matching rejection with the Invalid Channel ID reason and the
   // rejected IDs |local_cid| and |remote_cid|.
-  void ReceiveExpectRejectInvalidChannelId(
-      CommandCode req_code, const common::ByteBuffer& req_payload,
-      ChannelId local_cid, ChannelId remote_cid);
+  void ReceiveExpectRejectInvalidChannelId(CommandCode req_code,
+                                           const ByteBuffer& req_payload,
+                                           ChannelId local_cid,
+                                           ChannelId remote_cid);
 
  private:
   // Expected outbound request and response(s) that this fake sends back
@@ -80,8 +81,8 @@ class FakeSignalingChannel : public SignalingChannelInterface {
     const char* const file;
     const int line;
     const CommandCode request_code;
-    const common::BufferView req_payload;
-    const std::vector<std::pair<Status, common::BufferView>> responses;
+    const BufferView req_payload;
+    const std::vector<std::pair<Status, BufferView>> responses;
 
     // Assigned when the request is actually sent
     SignalingChannel::ResponseHandler response_callback = nullptr;
@@ -102,7 +103,7 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   // expected to send and is passed to the handler-under-test. The test will
   // fail if no reply at all is sent.
   void ReceiveExpectInternal(CommandCode req_code,
-                             const common::ByteBuffer& req_payload,
+                             const ByteBuffer& req_payload,
                              Responder* fake_responder);
 
   // Test message loop dispatcher

@@ -16,30 +16,23 @@ namespace testing {
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
 
-common::DynamicByteBuffer CreateConnectionPacket(common::DeviceAddress address);
-common::DynamicByteBuffer ConnectionCompletePacket(
-    common::DeviceAddress address, hci::ConnectionHandle conn);
-common::DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
-common::DynamicByteBuffer DisconnectionCompletePacket(
+DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
+DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address,
+                                           hci::ConnectionHandle conn);
+DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
+DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address);
+DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
     hci::ConnectionHandle conn);
-common::DynamicByteBuffer RemoteNameRequestPacket(
-    common::DeviceAddress address);
-common::DynamicByteBuffer RemoteNameRequestCompletePacket(
-    common::DeviceAddress address);
-common::DynamicByteBuffer ReadRemoteVersionInfoPacket(
+DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
     hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
-    hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(
-    hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
-    hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteExtended1CompletePacket(
-    hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
-common::DynamicByteBuffer ReadRemoteExtended2CompletePacket(
-    hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
 
 }  // namespace testing
 }  // namespace bt

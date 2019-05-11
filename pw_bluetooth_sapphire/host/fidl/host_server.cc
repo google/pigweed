@@ -26,7 +26,7 @@
 
 namespace bthost {
 
-using bt::gap::PeerId;
+using bt::PeerId;
 using bt::sm::IOCapability;
 using fidl_helpers::NewFidlError;
 using fidl_helpers::PeerIdFromString;
@@ -129,7 +129,7 @@ void HostServer::SetDeviceClass(
         NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Can't Set Device Class"));
     return;
   }
-  bt::common::DeviceClass dev_class(device_class.value);
+  bt::DeviceClass dev_class(device_class.value);
   adapter()->SetDeviceClass(
       dev_class, [callback = std::move(callback)](auto status) {
         callback(fidl_helpers::StatusToFidl(status, "Can't Set Device Class"));
@@ -284,7 +284,7 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
       continue;
     }
 
-    bt::common::DeviceAddress address;
+    bt::DeviceAddress address;
     bt::sm::PairingData le_bond_data;
     if (bond.le) {
       if (bond.bredr && bond.le->address != bond.bredr->address) {
@@ -305,8 +305,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     std::optional<bt::sm::LTK> bredr_link_key;
     if (bond.bredr) {
       // Dual-mode peers will have a BR/EDR-typed address.
-      address = bt::common::DeviceAddress(
-          bt::common::DeviceAddress::Type::kBREDR, bond.bredr->address);
+      address = bt::DeviceAddress(bt::DeviceAddress::Type::kBREDR,
+                                  bond.bredr->address);
       bredr_link_key = fidl_helpers::BrEdrKeyFromFidl(*bond.bredr);
     }
 
@@ -347,7 +347,7 @@ void HostServer::RegisterLowEnergyConnection(
     bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
-  bt::gap::PeerId id = conn_ref->peer_identifier();
+  bt::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
     bt_log(WARN, "bt-host", "peer already connected; reference dropped");
@@ -755,7 +755,7 @@ void HostServer::OnPeerUpdated(const bt::gap::Peer& peer) {
   this->binding()->events().OnDeviceUpdated(std::move(*fidl_device));
 }
 
-void HostServer::OnPeerRemoved(bt::gap::PeerId identifier) {
+void HostServer::OnPeerRemoved(bt::PeerId identifier) {
   // TODO(armansito): Notify only if the peer is connectable for symmetry with
   // OnPeerUpdated?
   this->binding()->events().OnDeviceRemoved(identifier.ToString());

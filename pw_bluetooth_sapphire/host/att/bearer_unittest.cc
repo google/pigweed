@@ -11,12 +11,6 @@ namespace bt {
 namespace att {
 namespace {
 
-using common::CreateStaticByteBuffer;
-using common::HostError;
-using common::LowerBits;
-using common::NewBuffer;
-using common::UpperBits;
-
 constexpr OpCode kTestRequest = kFindInformationRequest;
 constexpr OpCode kTestResponse = kFindInformationResponse;
 constexpr OpCode kTestRequest2 = kExchangeMTURequest;
@@ -101,8 +95,8 @@ TEST_F(ATT_BearerTest, StartTransactionErrorClosed) {
 
 TEST_F(ATT_BearerTest, StartTransactionInvalidPacket) {
   // Empty
-  EXPECT_FALSE(bearer()->StartTransaction(
-      std::make_unique<common::BufferView>(), NopCallback, NopErrorCallback));
+  EXPECT_FALSE(bearer()->StartTransaction(std::make_unique<BufferView>(),
+                                          NopCallback, NopErrorCallback));
 
   // Exceeds MTU.
   bearer()->set_mtu(1);
@@ -129,7 +123,7 @@ TEST_F(ATT_BearerTest, RequestTimeout) {
       [&closed, &err_cb_called, this] { closed = true; });
 
   auto err_cb = [&closed, &err_cb_called, this](Status status, Handle handle) {
-    EXPECT_EQ(common::HostError::kTimedOut, status.error());
+    EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -164,7 +158,7 @@ TEST_F(ATT_BearerTest, RequestTimeoutMany) {
       [&err_cb_count, &closed, this] { closed = true; });
 
   auto err_cb = [&closed, &err_cb_count, this](Status status, Handle handle) {
-    EXPECT_EQ(common::HostError::kTimedOut, status.error());
+    EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
@@ -200,7 +194,7 @@ TEST_F(ATT_BearerTest, IndicationTimeout) {
       [&closed, &err_cb_called, this] { closed = true; });
 
   auto err_cb = [&closed, &err_cb_called, this](Status status, Handle handle) {
-    EXPECT_EQ(common::HostError::kTimedOut, status.error());
+    EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -236,7 +230,7 @@ TEST_F(ATT_BearerTest, IndicationTimeoutMany) {
       [&closed, &err_cb_count, this] { closed = true; });
 
   auto err_cb = [&closed, &err_cb_count, this](Status status, Handle handle) {
-    EXPECT_EQ(common::HostError::kTimedOut, status.error());
+    EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
     err_cb_count++;
@@ -266,7 +260,7 @@ TEST_F(ATT_BearerTest, ReceiveEmptyPacket) {
   bool closed = false;
   bearer()->set_closed_callback([&closed] { closed = true; });
 
-  fake_chan()->Receive(common::BufferView());
+  fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
@@ -310,7 +304,7 @@ TEST_F(ATT_BearerTest, SendRequestWrongResponse) {
   bearer()->set_closed_callback([&closed, this] { closed = true; });
 
   auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
-    EXPECT_EQ(common::HostError::kFailed, status.error());
+    EXPECT_EQ(HostError::kFailed, status.error());
     EXPECT_EQ(0, handle);
 
     err_cb_called = true;
@@ -349,7 +343,7 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseTooShort) {
 
   auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(common::HostError::kFailed, status.error());
+    EXPECT_EQ(HostError::kFailed, status.error());
 
     err_cb_called = true;
   };
@@ -387,7 +381,7 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseTooLong) {
 
   auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(common::HostError::kFailed, status.error());
+    EXPECT_EQ(HostError::kFailed, status.error());
 
     err_cb_called = true;
   };
@@ -430,7 +424,7 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseWrongOpCode) {
 
   auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
-    EXPECT_EQ(common::HostError::kFailed, status.error());
+    EXPECT_EQ(HostError::kFailed, status.error());
 
     err_cb_called = true;
   };
@@ -502,7 +496,7 @@ TEST_F(ATT_BearerTest, SendRequestSuccess) {
     ASSERT_FALSE(cb_called);
 
     cb_called = true;
-    EXPECT_TRUE(common::ContainersEqual(response, rsp_packet.data()));
+    EXPECT_TRUE(ContainersEqual(response, rsp_packet.data()));
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest), cb, NopErrorCallback);
 
@@ -583,7 +577,7 @@ TEST_F(ATT_BearerTest, SendManyRequests) {
   // corresponding request.
   auto callback1 = [&success_count, &response1](const auto& rsp_packet) {
     EXPECT_EQ(0u, success_count);
-    EXPECT_TRUE(common::ContainersEqual(response1, rsp_packet.data()));
+    EXPECT_TRUE(ContainersEqual(response1, rsp_packet.data()));
     success_count++;
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest), callback1, error_cb);
@@ -595,7 +589,7 @@ TEST_F(ATT_BearerTest, SendManyRequests) {
 
   auto callback3 = [&success_count, &response3](const auto& rsp_packet) {
     EXPECT_EQ(1u, success_count);
-    EXPECT_TRUE(common::ContainersEqual(response3, rsp_packet.data()));
+    EXPECT_TRUE(ContainersEqual(response3, rsp_packet.data()));
     success_count++;
   };
   bearer()->StartTransaction(NewBuffer(kTestRequest3), callback3, error_cb);
@@ -634,7 +628,7 @@ TEST_F(ATT_BearerTest, SendIndicationSuccess) {
     ASSERT_FALSE(cb_called);
 
     cb_called = true;
-    EXPECT_TRUE(common::ContainersEqual(conf, packet.data()));
+    EXPECT_TRUE(ContainersEqual(conf, packet.data()));
   };
   bearer()->StartTransaction(NewBuffer(kIndication), cb, NopErrorCallback);
 
@@ -655,8 +649,7 @@ TEST_F(ATT_BearerTest, SendWithoutResponseErrorClosed) {
 
 TEST_F(ATT_BearerTest, SendWithoutResponseInvalidPacket) {
   // Empty
-  EXPECT_FALSE(
-      bearer()->SendWithoutResponse(std::make_unique<common::BufferView>()));
+  EXPECT_FALSE(bearer()->SendWithoutResponse(std::make_unique<BufferView>()));
 
   // Exceeds MTU
   bearer()->set_mtu(1);
@@ -747,7 +740,7 @@ TEST_F(ATT_BearerTest, RemoteTransactionNoHandler) {
   bool received_error_rsp = false;
   auto chan_cb = [&received_error_rsp, &error_rsp](auto packet) {
     received_error_rsp = true;
-    EXPECT_TRUE(common::ContainersEqual(error_rsp, *packet));
+    EXPECT_TRUE(ContainersEqual(error_rsp, *packet));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
   fake_chan()->Receive(CreateStaticByteBuffer(kTestRequest));
@@ -814,7 +807,7 @@ TEST_F(ATT_BearerTest, RemoteIndicationSeqProtocolError) {
 
 TEST_F(ATT_BearerTest, ReplyInvalidPacket) {
   // Empty
-  EXPECT_FALSE(bearer()->Reply(0, std::make_unique<common::BufferView>()));
+  EXPECT_FALSE(bearer()->Reply(0, std::make_unique<BufferView>()));
 
   // Exceeds MTU.
   bearer()->set_mtu(1);
@@ -975,7 +968,7 @@ TEST_F(ATT_BearerTest, ReplyWithError) {
     // The error response that we send below
     auto expected = CreateStaticByteBuffer(kErrorResponse, kTestRequest, 0x00,
                                            0x00, ErrorCode::kUnlikelyError);
-    EXPECT_TRUE(common::ContainersEqual(expected, *packet));
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 

@@ -23,7 +23,7 @@ constexpr size_t kFlagsSize = 3;
 constexpr uint8_t kDefaultFlags = 0;
 
 // Write the block for the flags to the |buffer|.
-void WriteFlags(common::MutableByteBuffer* buffer, bool limited = false) {
+void WriteFlags(MutableByteBuffer* buffer, bool limited = false) {
   ZX_DEBUG_ASSERT(buffer->size() >= kFlagsSize);
   (*buffer)[0] = 2;
   (*buffer)[1] = static_cast<uint8_t>(DataType::kFlags);
@@ -41,16 +41,16 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
   // TODO(BT-270): Don't randomly generate the ID of an advertisement.
   // Instead use a counter like other internal IDs once this ID is not visible
   // outside of bt-host.
-  explicit ActiveAdvertisement(const common::DeviceAddress& address)
-      : address_(address), id_(common::RandomPeerId().value()) {}
+  explicit ActiveAdvertisement(const DeviceAddress& address)
+      : address_(address), id_(RandomPeerId().value()) {}
 
   ~ActiveAdvertisement() = default;
 
-  const common::DeviceAddress& address() const { return address_; }
+  const DeviceAddress& address() const { return address_; }
   AdvertisementId id() const { return id_; }
 
  private:
-  common::DeviceAddress address_;
+  DeviceAddress address_;
   AdvertisementId id_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ActiveAdvertisement);
@@ -81,18 +81,17 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   if (anonymous && connect_callback) {
     bt_log(TRACE, "gap-le", "can't advertise anonymously and connectable!");
     status_callback(kInvalidAdvertisementId,
-                    hci::Status(common::HostError::kInvalidParameters));
+                    hci::Status(HostError::kInvalidParameters));
     return;
   }
 
   // Serialize the data
-  auto data_bytes =
-      common::NewSlabBuffer(data.CalculateBlockSize() + kFlagsSize);
+  auto data_bytes = NewSlabBuffer(data.CalculateBlockSize() + kFlagsSize);
   WriteFlags(data_bytes.get());
   auto data_view = data_bytes->mutable_view(kFlagsSize);
   data.WriteBlock(&data_view);
 
-  auto scan_rsp_bytes = common::NewSlabBuffer(scan_rsp.CalculateBlockSize());
+  auto scan_rsp_bytes = NewSlabBuffer(scan_rsp.CalculateBlockSize());
   scan_rsp.WriteBlock(scan_rsp_bytes.get());
 
   auto self = weak_ptr_factory_.GetWeakPtr();

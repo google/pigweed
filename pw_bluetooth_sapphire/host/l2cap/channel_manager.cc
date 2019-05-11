@@ -6,10 +6,9 @@
 
 #include <zircon/assert.h>
 
+#include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/strings/string_printf.h"
-
-#include "logical_link.h"
 
 namespace bt {
 namespace l2cap {
@@ -186,8 +185,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   // If a LogicalLink does not exist, we set up a queue for its packets to be
   // delivered when the LogicalLink gets created.
   if (iter == ll_map_.end()) {
-    pp_iter = pending_packets_
-                  .emplace(handle, common::LinkedList<hci::ACLDataPacket>())
+    pp_iter = pending_packets_.emplace(handle, LinkedList<hci::ACLDataPacket>())
                   .first;
   } else {
     // A logical link exists. |pp_iter| will be valid only if the drain task has

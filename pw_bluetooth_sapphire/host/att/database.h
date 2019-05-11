@@ -29,7 +29,7 @@ class QueuedWrite {
   ~QueuedWrite() = default;
 
   // Constructs a write request by copying the contents of |value|.
-  QueuedWrite(Handle handle, uint16_t offset, const common::ByteBuffer& value);
+  QueuedWrite(Handle handle, uint16_t offset, const ByteBuffer& value);
 
   // Allow move operations.
   QueuedWrite(QueuedWrite&&) = default;
@@ -37,12 +37,12 @@ class QueuedWrite {
 
   Handle handle() const { return handle_; }
   uint16_t offset() const { return offset_; }
-  const common::ByteBuffer& value() const { return value_; }
+  const ByteBuffer& value() const { return value_; }
 
  private:
   Handle handle_;
   uint16_t offset_;
-  common::DynamicByteBuffer value_;
+  DynamicByteBuffer value_;
 };
 
 // Represents a prepare queue used to handle the ATT Prepare Write and Execute
@@ -84,7 +84,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
 
     // If set, |next()| will only return attributes with the given |type|. No
     // filter is set by default.
-    void set_type_filter(const common::UUID& type) { type_filter_ = type; }
+    void set_type_filter(const UUID& type) { type_filter_ = type; }
 
     // Returns true if the iterator cannot be advanced any further.
     inline bool AtEnd() const { return grp_iter_ == grp_end_; }
@@ -93,8 +93,8 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
     inline void MarkEnd() { grp_iter_ = grp_end_; }
 
     friend class Database;
-    Iterator(GroupingList* list, Handle start, Handle end,
-             const common::UUID* type, bool groups_only);
+    Iterator(GroupingList* list, Handle start, Handle end, const UUID* type,
+             bool groups_only);
 
     Handle start_;
     Handle end_;
@@ -102,7 +102,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
     GroupingList::iterator grp_end_;
     GroupingList::iterator grp_iter_;
     uint8_t attr_offset_;
-    std::optional<common::UUID> type_filter_;
+    std::optional<UUID> type_filter_;
   };
 
   // Initializes this database to span the attribute handle range given by
@@ -126,8 +126,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   //
   // If |type| is not a nullptr, it will be assigned as the iterator's type
   // filter.
-  Iterator GetIterator(Handle start, Handle end,
-                       const common::UUID* type = nullptr,
+  Iterator GetIterator(Handle start, Handle end, const UUID* type = nullptr,
                        bool groups_only = false);
 
   // Creates a new attribute grouping with the given |type|. The grouping will
@@ -142,9 +141,8 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // The returned pointer is owned and managed by this Database and should not
   // be retained by the caller. Removing the grouping will invalidate the
   // returned pointer.
-  AttributeGrouping* NewGrouping(const common::UUID& group_type,
-                                 size_t attr_count,
-                                 const common::ByteBuffer& decl_value);
+  AttributeGrouping* NewGrouping(const UUID& group_type, size_t attr_count,
+                                 const ByteBuffer& decl_value);
 
   // Removes the attribute grouping that has the given starting handle. Returns
   // false if no such grouping was found.
@@ -181,7 +179,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // The Handle argument of |callback| is undefined if ErrorCode is
   // ErrorCode::kNoError and should be ignored.
   using WriteCallback = fit::function<void(Handle, ErrorCode)>;
-  void ExecuteWriteQueue(common::PeerId peer_id, PrepareWriteQueue write_queue,
+  void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security,
                          WriteCallback callback);
 
@@ -199,7 +197,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // represent contiguous handle ranges as any grouping can be removed.
   //
   // Note: This uses a std::list because fbl::lower_bound doesn't work with a
-  // common::LinkedList (aka fbl::DoublyLinkedList). This is only marginally
+  // LinkedList (aka fbl::DoublyLinkedList). This is only marginally
   // less space efficient.
   GroupingList groupings_;
 

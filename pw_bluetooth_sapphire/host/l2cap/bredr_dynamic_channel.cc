@@ -5,7 +5,6 @@
 #include "bredr_dynamic_channel.h"
 
 #include <endian.h>
-
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -78,7 +77,7 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(
 }
 
 void BrEdrDynamicChannelRegistry::OnRxConfigReq(
-    ChannelId local_cid, uint16_t flags, const common::ByteBuffer& options,
+    ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
     BrEdrCommandHandler::ConfigurationResponder* responder) {
   auto channel = static_cast<BrEdrDynamicChannel*>(FindChannel(local_cid));
   if (channel == nullptr) {
@@ -243,7 +242,7 @@ bool BrEdrDynamicChannel::IsOpen() const {
 }
 
 void BrEdrDynamicChannel::OnRxConfigReq(
-    uint16_t flags, const common::ByteBuffer& options,
+    uint16_t flags, const ByteBuffer& options,
     BrEdrCommandHandler::ConfigurationResponder* responder) {
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request",
          local_cid());
@@ -265,7 +264,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(
   // TODO(NET-1084): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
   responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess,
-                  common::BufferView());
+                  BufferView());
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response",
          local_cid());
@@ -349,7 +348,7 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
   if (!cmd_handler.SendConfigurationRequest(
-          remote_cid(), 0, common::BufferView(),
+          remote_cid(), 0, BufferView(),
           [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
             if (self) {
               return self->OnRxConfigRsp(rsp);

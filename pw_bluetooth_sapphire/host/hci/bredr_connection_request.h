@@ -48,10 +48,9 @@ constexpr PacketTypeType kEnableAllPacketTypes =
 // BrEdrConnectionManager
 class BrEdrConnectionRequest final {
  public:
-  using OnCompleteDelegate = fit::function<void(Status, common::PeerId)>;
+  using OnCompleteDelegate = fit::function<void(Status, PeerId)>;
 
-  BrEdrConnectionRequest(common::PeerId id, common::DeviceAddress addr,
-                         fit::closure timeout_cb)
+  BrEdrConnectionRequest(PeerId id, DeviceAddress addr, fit::closure timeout_cb)
       : state_(RequestState::kPending),
         peer_id_(id),
         peer_address_(addr),
@@ -74,8 +73,8 @@ class BrEdrConnectionRequest final {
       std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
       zx::duration timeout, OnCompleteDelegate on_command_fail);
 
-  common::PeerId peer_id() const { return peer_id_; }
-  common::DeviceAddress peer_address() const { return peer_address_; }
+  PeerId peer_id() const { return peer_id_; }
+  DeviceAddress peer_address() const { return peer_address_; }
 
   // Complete the request, either successfully or not, and return the status
   // of the Request - In the case of Timeout or Cancellation, this will be
@@ -93,8 +92,8 @@ class BrEdrConnectionRequest final {
 
  private:
   RequestState state_;
-  common::PeerId peer_id_;
-  common::DeviceAddress peer_address_;
+  PeerId peer_id_;
+  DeviceAddress peer_address_;
 
   async::TaskClosure timeout_task_;
 

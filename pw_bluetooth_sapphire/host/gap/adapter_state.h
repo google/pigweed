@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 
-#include <cstdint>
-
 #include <zircon/assert.h>
+
+#include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -34,7 +34,7 @@ class AdapterState final {
   //     device's identity address. This value can be zero if a Public Device
   //     Address is not used.
   //   - On BR/EDR/LE this is the LE Public Device Address AND the BD_ADDR.
-  const common::DeviceAddressBytes& controller_address() const {
+  const DeviceAddressBytes& controller_address() const {
     return controller_address_;
   }
 
@@ -97,7 +97,7 @@ class AdapterState final {
   uint8_t supported_commands_[64];
 
   // BD_ADDR (for classic) and Public Device Address (for LE).
-  common::DeviceAddressBytes controller_address_;
+  DeviceAddressBytes controller_address_;
 
   // The BR/EDR ACL data buffer size. We store this here as it is needed on
   // dual-mode controllers even if the host stack is compiled for LE-only.

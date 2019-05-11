@@ -4,9 +4,8 @@
 
 #include "bredr_signaling_channel.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-
 #include "fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace l2cap {
@@ -46,15 +45,15 @@ class L2CAP_BrEdrSignalingChannelTest : public testing::FakeChannelTest {
 };
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RegisterRequestResponder) {
-  const common::ByteBuffer& remote_req = common::CreateStaticByteBuffer(
+  const ByteBuffer& remote_req = CreateStaticByteBuffer(
       // Disconnection Request.
       0x06, 0x01, 0x04, 0x00,
 
       // Payload
       0x0A, 0x00, 0x08, 0x00);
-  const common::BufferView& expected_payload = remote_req.view(4, 4);
+  const BufferView& expected_payload = remote_req.view(4, 4);
 
-  auto expected_rej = common::CreateStaticByteBuffer(
+  auto expected_rej = CreateStaticByteBuffer(
       // Command header (Command rejected, length 2)
       0x01, 0x01, 0x02, 0x00,
 
@@ -69,14 +68,14 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RegisterRequestResponder) {
   bool cb_called = false;
   sig()->ServeRequest(
       kDisconnectionRequest,
-      [&cb_called, &expected_payload](const common::ByteBuffer& req_payload,
+      [&cb_called, &expected_payload](const ByteBuffer& req_payload,
                                       SignalingChannel::Responder* responder) {
         cb_called = true;
-        EXPECT_TRUE(common::ContainersEqual(expected_payload, req_payload));
+        EXPECT_TRUE(ContainersEqual(expected_payload, req_payload));
         responder->Send(req_payload);
       });
 
-  const common::ByteBuffer& local_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& local_rsp = CreateStaticByteBuffer(
       // Disconnection Response.
       0x07, 0x01, 0x04, 0x00,
 
@@ -89,7 +88,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RegisterRequestResponder) {
 }
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RespondsToEchoRequest) {
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Request, length 1)
       0x08, kTestCmdId, 0x01, 0x00,
 
@@ -112,14 +111,14 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RespondsToEchoRequest) {
 }
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectUnsolicitedEchoResponse) {
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Response, length 1)
       0x09, kTestCmdId, 0x01, 0x00,
 
       // Payload
       0x23);
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header (Command rejected, length 2)
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -134,7 +133,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-  fake_chan()->Receive(common::BufferView());
+  fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();
   EXPECT_FALSE(send_cb_called);
@@ -146,7 +145,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
 
   // Echo Request (see other test for command support), followed by an
   // incomplete command packet
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // Command header (length 3)
       0x08, kTestId0, 0x03, 0x00,
 
@@ -157,7 +156,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
       0x08, kTestId1, 0x01, 0x00);
 
   // Echo Response packet
-  auto rsp0 = common::CreateStaticByteBuffer(
+  auto rsp0 = CreateStaticByteBuffer(
       // Command header (length 3)
       0x09, kTestId0, 0x03, 0x00,
 
@@ -165,7 +164,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
       'L', 'O', 'L');
 
   // Command Reject packet
-  auto rsp1 = common::CreateStaticByteBuffer(
+  auto rsp1 = CreateStaticByteBuffer(
       // Command header
       0x01, kTestId1, 0x02, 0x00,
 
@@ -175,9 +174,9 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectMalformedAdditionalCommand) {
   int cb_times_called = 0;
   auto send_cb = [&rsp0, &rsp1, &cb_times_called](auto packet) {
     if (cb_times_called == 0) {
-      EXPECT_TRUE(common::ContainersEqual(rsp0, *packet));
+      EXPECT_TRUE(ContainersEqual(rsp0, *packet));
     } else if (cb_times_called == 1) {
-      EXPECT_TRUE(common::ContainersEqual(rsp1, *packet));
+      EXPECT_TRUE(ContainersEqual(rsp1, *packet));
     }
 
     cb_times_called++;
@@ -195,7 +194,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
   constexpr uint8_t kTestId1 = 15;
   constexpr uint8_t kTestId2 = 16;
 
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Request)
       0x08, kTestId0, 0x04, 0x00,
 
@@ -214,21 +213,21 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
       // Additional command fragment to be dropped
       0xFF, 0x00);
 
-  auto echo_rsp0 = common::CreateStaticByteBuffer(
+  auto echo_rsp0 = CreateStaticByteBuffer(
       // Command header (Echo Response)
       0x09, kTestId0, 0x04, 0x00,
 
       // Payload data
       'L', 'O', 'L', 'Z');
 
-  auto reject_rsp1 = common::CreateStaticByteBuffer(
+  auto reject_rsp1 = CreateStaticByteBuffer(
       // Command header (Command Rejected)
       0x01, kTestId1, 0x02, 0x00,
 
       // Reason (Command not understood)
       0x00, 0x00);
 
-  auto echo_rsp2 = common::CreateStaticByteBuffer(
+  auto echo_rsp2 = CreateStaticByteBuffer(
       // Command header (Echo Response)
       0x09, kTestId2, 0x00, 0x00);
 
@@ -236,11 +235,11 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
   auto send_cb = [&echo_rsp0, &reject_rsp1, &echo_rsp2,
                   &cb_times_called](auto packet) {
     if (cb_times_called == 0) {
-      EXPECT_TRUE(common::ContainersEqual(echo_rsp0, *packet));
+      EXPECT_TRUE(ContainersEqual(echo_rsp0, *packet));
     } else if (cb_times_called == 1) {
-      EXPECT_TRUE(common::ContainersEqual(reject_rsp1, *packet));
+      EXPECT_TRUE(ContainersEqual(reject_rsp1, *packet));
     } else if (cb_times_called == 2) {
-      EXPECT_TRUE(common::ContainersEqual(echo_rsp2, *packet));
+      EXPECT_TRUE(ContainersEqual(echo_rsp2, *packet));
     }
 
     cb_times_called++;
@@ -254,34 +253,34 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
 }
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, SendAndReceiveEcho) {
-  const common::ByteBuffer& expected_req = common::CreateStaticByteBuffer(
+  const ByteBuffer& expected_req = CreateStaticByteBuffer(
       // Echo request with 3-byte payload.
       0x08, 0x01, 0x03, 0x00,
 
       // Payload
       'P', 'W', 'N');
-  const common::BufferView req_data = expected_req.view(4, 3);
+  const BufferView req_data = expected_req.view(4, 3);
 
   // Check the request sent.
   bool tx_success = false;
   fake_chan()->SetSendCallback(
       [&expected_req, &tx_success](auto cb_packet) {
-        tx_success = common::ContainersEqual(expected_req, *cb_packet);
+        tx_success = ContainersEqual(expected_req, *cb_packet);
       },
       dispatcher());
 
-  const common::ByteBuffer& expected_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& expected_rsp = CreateStaticByteBuffer(
       // Echo response with 4-byte payload.
       0x09, 0x01, 0x04, 0x00,
 
       // Payload
       'L', '3', '3', 'T');
-  const common::BufferView rsp_data = expected_rsp.view(4, 4);
+  const BufferView rsp_data = expected_rsp.view(4, 4);
 
   bool rx_success = false;
   EXPECT_TRUE(
       sig()->TestLink(req_data, [&rx_success, &rsp_data](const auto& data) {
-        rx_success = common::ContainersEqual(rsp_data, data);
+        rx_success = ContainersEqual(rsp_data, data);
       }));
 
   RunLoopUntilIdle();
@@ -298,7 +297,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, SendAndReceiveEcho) {
 }
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectUnhandledResponseCommand) {
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // Command header (Information Response, length 4)
       0x0B, kTestCmdId, 0x04, 0x00,
 
@@ -308,7 +307,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectUnhandledResponseCommand) {
       // Result (Not supported)
       0x01, 0x00);
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header (Command rejected, length 2)
       0x01, kTestCmdId, 0x02, 0x00,
 
@@ -321,13 +320,13 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectUnhandledResponseCommand) {
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseInvalidId) {
   // Remote's echo response that has a different ID to what will be in the
   // request header (see SendAndReceiveEcho).
-  const common::ByteBuffer& rsp_invalid_id = common::CreateStaticByteBuffer(
+  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
       // Echo response with 4-byte payload.
       0x09, 0x02, 0x04, 0x00,
 
       // Payload
       'L', '3', '3', 'T');
-  const common::BufferView req_data = rsp_invalid_id.view(4, 4);
+  const BufferView req_data = rsp_invalid_id.view(4, 4);
 
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
@@ -340,7 +339,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseInvalidId) {
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
 
-  const common::ByteBuffer& reject_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& reject_rsp = CreateStaticByteBuffer(
       // Command header (Command Rejected)
       0x01, 0x02, 0x02, 0x00,
 
@@ -349,7 +348,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseInvalidId) {
   bool reject_sent = false;
   fake_chan()->SetSendCallback(
       [&reject_rsp, &reject_sent](auto cb_packet) {
-        reject_sent = common::ContainersEqual(reject_rsp, *cb_packet);
+        reject_sent = ContainersEqual(reject_rsp, *cb_packet);
       },
       dispatcher());
 
@@ -362,14 +361,13 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseInvalidId) {
 
 TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseWrongType) {
   // Remote's response with the correct ID but wrong type of response.
-  const common::ByteBuffer& rsp_invalid_id = common::CreateStaticByteBuffer(
+  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
       // Disconnection Response with plausible 4-byte payload.
       0x07, 0x01, 0x04, 0x00,
 
       // Payload
       0x0A, 0x00, 0x08, 0x00);
-  const common::ByteBuffer& req_data =
-      common::CreateStaticByteBuffer('P', 'W', 'N');
+  const ByteBuffer& req_data = CreateStaticByteBuffer('P', 'W', 'N');
 
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
@@ -382,7 +380,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseWrongType) {
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
 
-  const common::ByteBuffer& reject_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& reject_rsp = CreateStaticByteBuffer(
       // Command header (Command Rejected)
       0x01, 0x01, 0x02, 0x00,
 
@@ -391,7 +389,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseWrongType) {
   bool reject_sent = false;
   fake_chan()->SetSendCallback(
       [&reject_rsp, &reject_sent](auto cb_packet) {
-        reject_sent = common::ContainersEqual(reject_rsp, *cb_packet);
+        reject_sent = ContainersEqual(reject_rsp, *cb_packet);
       },
       dispatcher());
 
@@ -418,8 +416,8 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, ReuseCommandIds) {
   };
   fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
 
-  const common::ByteBuffer& req_data =
-      common::CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
+  const ByteBuffer& req_data =
+      CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
 
   for (int i = 0; i < 255; i++) {
     EXPECT_TRUE(sig()->TestLink(req_data, [](auto&) {}));
@@ -433,7 +431,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, ReuseCommandIds) {
   EXPECT_EQ(255, req_count);
 
   // Remote finally responds to a request, but not in order requests were sent.
-  const common::ByteBuffer& echo_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& echo_rsp = CreateStaticByteBuffer(
       // Echo response with no payload.
       0x09, 0x0c, 0x00, 0x00);
   fake_chan()->Receive(echo_rsp);
@@ -449,7 +447,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, ReuseCommandIds) {
 // Ensure that the signaling channel plumbs a rejection command from remote to
 // the appropriate response handler.
 TEST_F(L2CAP_BrEdrSignalingChannelTest, EchoRemoteRejection) {
-  const common::ByteBuffer& reject_rsp = common::CreateStaticByteBuffer(
+  const ByteBuffer& reject_rsp = CreateStaticByteBuffer(
       // Command header (Command Rejected)
       0x01, 0x01, 0x02, 0x00,
 
@@ -460,13 +458,12 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, EchoRemoteRejection) {
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
                                dispatcher());
 
-  const common::ByteBuffer& req_data = common::CreateStaticByteBuffer('h', 'i');
+  const ByteBuffer& req_data = CreateStaticByteBuffer('h', 'i');
   bool rx_success = false;
-  EXPECT_TRUE(
-      sig()->TestLink(req_data, [&rx_success](const common::ByteBuffer& data) {
-        rx_success = true;
-        EXPECT_EQ(0U, data.size());
-      }));
+  EXPECT_TRUE(sig()->TestLink(req_data, [&rx_success](const ByteBuffer& data) {
+    rx_success = true;
+    EXPECT_EQ(0U, data.size());
+  }));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);

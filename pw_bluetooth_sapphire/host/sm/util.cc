@@ -11,16 +11,6 @@
 
 namespace bt {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::DeviceAddressBytes;
-using common::MutableBufferView;
-using common::StaticByteBuffer;
-using common::UInt128;
-
-using common::kDeviceAddressSize;
-
 namespace sm {
 namespace util {
 namespace {
@@ -168,8 +158,8 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob,
   return PairingMethod::kJustWorks;
 }
 
-void Encrypt(const common::UInt128& key, const common::UInt128& plaintext_data,
-             common::UInt128* out_encrypted_data) {
+void Encrypt(const UInt128& key, const UInt128& plaintext_data,
+             UInt128* out_encrypted_data) {
   // Swap the bytes since "the most significant octet of key corresponds to
   // key[0], the most significant octet of plaintextData corresponds to in[0]
   // and the most significant octet of encryptedData corresponds to out[0] using
@@ -206,7 +196,7 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq,
   // Calculate p2 = padding || ia || ra
   BufferView ia = initiator_addr.value().bytes();
   BufferView ra = responder_addr.value().bytes();
-  std::memcpy(p2.data(), ra.data(), ra.size());  // Lowest 6 bytes
+  std::memcpy(p2.data(), ra.data(), ra.size());              // Lowest 6 bytes
   std::memcpy(p2.data() + ra.size(), ia.data(), ia.size());  // Next 6 bytes
   std::memset(p2.data() + ra.size() + ia.size(), 0,
               p2.size() - ra.size() - ia.size());  // Pad 0s for the remainder

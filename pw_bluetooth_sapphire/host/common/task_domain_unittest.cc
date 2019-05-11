@@ -9,7 +9,6 @@
 #include "lib/gtest/real_loop_fixture.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 class TestObject : public fbl::RefCounted<TestObject>,
@@ -68,5 +67,4 @@ TEST_F(TaskDomainTest, PostMessageAndCleanUp) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

@@ -25,7 +25,7 @@ class RxEngine {
   // nullptr if no SDU was produced. Callers should not interpret a nullptr as
   // an error, as there are many valid conditions under which a PDU does not
   // yield an SDU.
-  virtual common::ByteBufferPtr ProcessPdu(PDU) = 0;
+  virtual ByteBufferPtr ProcessPdu(PDU) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);

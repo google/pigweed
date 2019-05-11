@@ -55,7 +55,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   //
   // NOTE: This overwrites the underlying FakeChannel's "send callback" by
   // calling FakeChannel::SetSendCallback().
-  bool Expect(const common::ByteBuffer& expected);
+  bool Expect(const ByteBuffer& expected);
 
   // Emulates the receipt of |packet| and returns true if a response that
   // matches |expected_response| is sent back over the underlying FakeChannel.
@@ -64,8 +64,8 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   //
   // NOTE: This overwrites the underlying FakeChannel's "send callback" by
   // calling FakeChannel::SetSendCallback().
-  bool ReceiveAndExpect(const common::ByteBuffer& packet,
-                        const common::ByteBuffer& expected_response);
+  bool ReceiveAndExpect(const ByteBuffer& packet,
+                        const ByteBuffer& expected_response);
 
   fxl::WeakPtr<FakeChannel> fake_chan() const { return fake_chan_; }
 

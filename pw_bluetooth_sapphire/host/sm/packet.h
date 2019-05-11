@@ -14,16 +14,16 @@ namespace sm {
 
 // Utilities for processing SMP packets.
 
-class PacketReader : public common::PacketView<Header> {
+class PacketReader : public PacketView<Header> {
  public:
-  explicit PacketReader(const common::ByteBuffer* buffer);
+  explicit PacketReader(const ByteBuffer* buffer);
   inline Code code() const { return header().code; }
 };
 
-class PacketWriter : public common::MutablePacketView<Header> {
+class PacketWriter : public MutablePacketView<Header> {
  public:
   // Constructor writes |code| into |buffer|.
-  PacketWriter(Code code, common::MutableByteBuffer* buffer);
+  PacketWriter(Code code, MutableByteBuffer* buffer);
 };
 
 }  // namespace sm

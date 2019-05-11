@@ -14,8 +14,8 @@ namespace testing {
 class FakeConnection final : public Connection {
  public:
   FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
-                 const common::DeviceAddress& local_address,
-                 const common::DeviceAddress& peer_address);
+                 const DeviceAddress& local_address,
+                 const DeviceAddress& peer_address);
 
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(Status status, bool enabled);

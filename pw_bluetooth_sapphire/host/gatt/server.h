@@ -41,7 +41,7 @@ class Server final {
   // attribute handle. If |indicate| is true, then an indication will be sent.
   // The underlying att::Bearer will disconnect the link if a confirmation is
   // not received in a timely manner.
-  void SendNotification(att::Handle handle, const common::ByteBuffer& value,
+  void SendNotification(att::Handle handle, const ByteBuffer& value,
                         bool indicate);
 
  private:
@@ -81,8 +81,8 @@ class Server final {
   // Returns att::ErrorCode::kNoError on success. On error, returns an error
   // code that can be used in a ATT Error Response.
   att::ErrorCode ReadByTypeHelper(
-      att::Handle start, att::Handle end, const common::UUID& type,
-      bool group_type, size_t max_data_list_size, size_t max_value_size,
+      att::Handle start, att::Handle end, const UUID& type, bool group_type,
+      size_t max_data_list_size, size_t max_value_size,
       size_t entry_prefix_size, size_t* out_value_size,
       std::list<const att::Attribute*>* out_results);
 

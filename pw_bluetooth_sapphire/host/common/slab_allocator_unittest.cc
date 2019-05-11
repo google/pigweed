@@ -7,7 +7,6 @@
 #include "gtest/gtest.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 TEST(SlabAllocatorTest, NewSlabBuffer) {
@@ -29,5 +28,4 @@ TEST(SlabAllocatorTest, NewSlabBuffer) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

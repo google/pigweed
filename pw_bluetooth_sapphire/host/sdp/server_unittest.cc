@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -18,9 +17,6 @@
 namespace bt {
 namespace sdp {
 namespace {
-
-using common::LowerBits;
-using common::UpperBits;
 
 using bt::testing::FakeController;
 
@@ -64,7 +60,7 @@ class SDP_ServerTest : public TestingBase {
     return channel_;
   }
 
-  bool Expect(const common::ByteBuffer& expected) {
+  bool Expect(const ByteBuffer& expected) {
     if (!fake_chan()) {
       bt_log(ERROR, "unittest", "no channel, failing!");
       return false;
@@ -72,7 +68,7 @@ class SDP_ServerTest : public TestingBase {
 
     bool success = false;
     auto cb = [&expected, &success, this](auto cb_packet) {
-      success = common::ContainersEqual(expected, *cb_packet);
+      success = ContainersEqual(expected, *cb_packet);
     };
 
     fake_chan()->SetSendCallback(cb, dispatcher());
@@ -81,8 +77,8 @@ class SDP_ServerTest : public TestingBase {
     return success;
   }
 
-  bool ReceiveAndExpect(const common::ByteBuffer& packet,
-                        const common::ByteBuffer& expected_response) {
+  bool ReceiveAndExpect(const ByteBuffer& packet,
+                        const ByteBuffer& expected_response) {
     if (!fake_chan()) {
       bt_log(ERROR, "unittest", "no channel, failing!");
       return false;
@@ -135,10 +131,10 @@ class SDP_ServerTest : public TestingBase {
 
 constexpr l2cap::ChannelId kSdpChannel = 0x0041;
 
-#define SDP_ERROR_RSP(t_id, code)                                              \
-  common::CreateStaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00, \
-                                 0x02, UpperBits(uint16_t(code)),              \
-                                 LowerBits(uint16_t(code)));
+#define SDP_ERROR_RSP(t_id, code)                                            \
+  CreateStaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00, 0x02, \
+                         UpperBits(uint16_t(code)),                          \
+                         LowerBits(uint16_t(code)));
 
 // Test:
 //  - Accepts channels and holds channel open correctly.
@@ -154,18 +150,18 @@ TEST_F(SDP_ServerTest, BasicError) {
   const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
 
   const auto kTooSmall =
-      common::CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
-                                     0x10, 0x01,  // Transaction ID (0x1001)
-                                     0x00, 0x09   // Parameter length (9 bytes)
+      CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
+                             0x10, 0x01,  // Transaction ID (0x1001)
+                             0x00, 0x09   // Parameter length (9 bytes)
       );
 
   const auto kRspTooSmall = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
 
   const auto kTooBig =
-      common::CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
-                                     0x20, 0x10,  // Transaction ID (0x2010)
-                                     0x00, 0x02,  // Parameter length (2 bytes)
-                                     0x01, 0x02, 0x03  // 3 bytes of parameters
+      CreateStaticByteBuffer(0x01,             // SDP_ServiceSearchRequest
+                             0x20, 0x10,       // Transaction ID (0x2010)
+                             0x00, 0x02,       // Parameter length (2 bytes)
+                             0x01, 0x02, 0x03  // 3 bytes of parameters
       );
 
   const auto kRspTooBig = SDP_ERROR_RSP(0x2010, ErrorCode::kInvalidSize);
@@ -294,16 +290,16 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
                                       0x0bad);
   RunLoopUntilIdle();
 
-  const auto kL2capSearch = common::CreateStaticByteBuffer(
-      0x02,        // SDP_ServiceSearchRequest
-      0x10, 0x01,  // Transaction ID (0x1001)
-      0x00, 0x08,  // Parameter length (8 bytes)
-      // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
-      0x00               // Contunuation State: none
-  );
+  const auto kL2capSearch =
+      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                             0x10, 0x01,  // Transaction ID (0x1001)
+                             0x00, 0x08,  // Parameter length (8 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
+                             0x00         // Contunuation State: none
+      );
 
   ServiceSearchRequest search_req;
   EXPECT_FALSE(search_req.valid());
@@ -316,7 +312,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
 
   EXPECT_TRUE(ContainersEqual(kL2capSearch, *pdu));
 
-  const auto kL2capSearchResponse = common::CreateStaticByteBuffer(
+  const auto kL2capSearchResponse = CreateStaticByteBuffer(
       0x03,                            // SDP_ServicesearchResponse
       0x10, 0x01,                      // Transaction ID (0x1001)
       0x00, 0x0D,                      // Parameter length (13 bytes)
@@ -332,7 +328,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
   TransactionId tid;
   auto cb = [&recv, &handles, &tid](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
-    common::PacketView<Header> packet(cb_packet.get());
+    PacketView<Header> packet(cb_packet.get());
     EXPECT_EQ(kServiceSearchResponse, packet.header().pdu_id);
     tid = betoh16(packet.header().tid);
     uint16_t len = betoh16(packet.header().param_length);
@@ -357,22 +353,22 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
   EXPECT_NE(handles.end(),
             std::find(handles.begin(), handles.end(), a2dp_handle));
 
-  const auto kInvalidNoItems = common::CreateStaticByteBuffer(
-      0x02,        // SDP_ServiceSearchRequest
-      0x10, 0xA1,  // Transaction ID (0x10A1)
-      0x00, 0x05,  // Parameter length (5 bytes)
-      // ServiceSearchPattern
-      0x35, 0x00,  // Sequence uint8 0 bytes
-      0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-      0x00         // Contunuation State: none
-  );
+  const auto kInvalidNoItems =
+      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                             0x10, 0xA1,  // Transaction ID (0x10A1)
+                             0x00, 0x05,  // Parameter length (5 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x00,  // Sequence uint8 0 bytes
+                             0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
+                             0x00         // Contunuation State: none
+      );
 
   const auto kRspErrSyntax =
       SDP_ERROR_RSP(0x10A1, ErrorCode::kInvalidRequestSyntax);
 
   EXPECT_TRUE(ReceiveAndExpect(kInvalidNoItems, kRspErrSyntax));
 
-  const auto kInvalidTooManyItems = common::CreateStaticByteBuffer(
+  const auto kInvalidTooManyItems = CreateStaticByteBuffer(
       0x02,        // SDP_ServiceSearchRequest
       0x10, 0xA1,  // Transaction ID (0x10B1)
       0x00, 0x2C,  // Parameter length (44 bytes)
@@ -404,7 +400,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
   TransactionId tid;
   auto cb = [&recv, &handles, &tid](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
-    common::PacketView<Header> packet(cb_packet.get());
+    PacketView<Header> packet(cb_packet.get());
     EXPECT_EQ(kServiceSearchResponse, packet.header().pdu_id);
     tid = betoh16(packet.header().tid);
     uint16_t len = betoh16(packet.header().param_length);
@@ -417,16 +413,16 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
     recv = true;
   };
 
-  const auto kL2capSearchOne = common::CreateStaticByteBuffer(
-      0x02,        // SDP_ServiceSearchRequest
-      0x10, 0xC1,  // Transaction ID (0x10C1)
-      0x00, 0x08,  // Parameter length (8 bytes)
-      // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0x00, 0x01,        // MaximumServiceRecordCount: 1
-      0x00               // Contunuation State: none
-  );
+  const auto kL2capSearchOne =
+      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                             0x10, 0xC1,  // Transaction ID (0x10C1)
+                             0x00, 0x08,  // Parameter length (8 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0x00, 0x01,        // MaximumServiceRecordCount: 1
+                             0x00               // Contunuation State: none
+      );
 
   handles.clear();
   recv = false;
@@ -464,7 +460,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
                                       0x0bad);
   RunLoopUntilIdle();
 
-  const auto kRequestAttr = common::CreateStaticByteBuffer(
+  const auto kRequestAttr = CreateStaticByteBuffer(
       0x04,                        // SDP_ServiceAttritbuteRequest
       0x10, 0x01,                  // Transaction ID (0x1001)
       0x00, 0x11,                  // Parameter length (17 bytes)
@@ -486,7 +482,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
 
   auto send_cb = [this, handle, &rsp, &received](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
-    common::PacketView<sdp::Header> packet(cb_packet.get());
+    PacketView<sdp::Header> packet(cb_packet.get());
     ASSERT_EQ(0x05, packet.header().pdu_id);
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 10 + 2 (byte count) + 5 (cont state)
@@ -495,11 +491,11 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
     if (received == 0) {
       // Server should have split this into more than one response.
       EXPECT_FALSE(st);
-      EXPECT_EQ(common::HostError::kInProgress, st.error());
+      EXPECT_EQ(HostError::kInProgress, st.error());
       EXPECT_FALSE(rsp.complete());
     }
     received++;
-    if (!st && (st.error() != common::HostError::kInProgress)) {
+    if (!st && (st.error() != HostError::kInProgress)) {
       // This isn't a valid packet and we shouldn't try to get
       // a continuation.
       return;
@@ -511,7 +507,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
       EXPECT_NE(0u, cont_size);
       // Make another request with the continutation data.
       size_t param_size = 17 + cont_size;
-      auto kContinuedRequestAttrStart = common::CreateStaticByteBuffer(
+      auto kContinuedRequestAttrStart = CreateStaticByteBuffer(
           0x04,  // SDP_ServiceAttributeRequest
           0x10, static_cast<uint8_t>(received + 1), UpperBits(param_size),
           LowerBits(param_size),       // Parameter length
@@ -525,8 +521,8 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
           0x30, 0x00,  // low end of range
           0xf0, 0x00   // high end of range
       );
-      common::DynamicByteBuffer req(kContinuedRequestAttrStart.size() +
-                                    sizeof(uint8_t) + cont_size);
+      DynamicByteBuffer req(kContinuedRequestAttrStart.size() +
+                            sizeof(uint8_t) + cont_size);
 
       kContinuedRequestAttrStart.Copy(&req);
       req.Write(&cont_size, sizeof(uint8_t), kContinuedRequestAttrStart.size());
@@ -547,7 +543,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
   EXPECT_NE(attrs.end(), attrs.find(kServiceClassIdList));
   EXPECT_NE(attrs.end(), attrs.find(0xf000));
 
-  const auto kInvalidRangeOrder = common::CreateStaticByteBuffer(
+  const auto kInvalidRangeOrder = CreateStaticByteBuffer(
       0x04,                        // SDP_ServiceAttritbuteRequest
       0xE0, 0x01,                  // Transaction ID (0xE001)
       0x00, 0x11,                  // Parameter length (17 bytes)
@@ -568,7 +564,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
 
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
-  const auto kInvalidMaxBytes = common::CreateStaticByteBuffer(
+  const auto kInvalidMaxBytes = CreateStaticByteBuffer(
       0x04,                        // SDP_ServiceAttritbuteRequest
       0xE0, 0x02,                  // Transaction ID (0xE001)
       0x00, 0x0C,                  // Parameter length (12 bytes)
@@ -618,7 +614,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
                                       0x0bad);
   RunLoopUntilIdle();
 
-  const auto kRequestAttr = common::CreateStaticByteBuffer(
+  const auto kRequestAttr = CreateStaticByteBuffer(
       0x06,        // SDP_ServiceAttritbuteRequest
       0x10, 0x01,  // Transaction ID (0x1001)
       0x00, 0x12,  // Parameter length (18 bytes)
@@ -642,7 +638,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
 
   auto send_cb = [this, &rsp, &received](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
-    common::PacketView<sdp::Header> packet(cb_packet.get());
+    PacketView<sdp::Header> packet(cb_packet.get());
     ASSERT_EQ(0x07, packet.header().pdu_id);
     uint16_t len = betoh16(packet.header().param_length);
     EXPECT_LE(len, 0x11);  // 2 (byte count) + 10 (max len) + 5 (cont state)
@@ -651,11 +647,11 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
     if (received == 0) {
       // Server should have split this into more than one response.
       EXPECT_FALSE(st);
-      EXPECT_EQ(common::HostError::kInProgress, st.error());
+      EXPECT_EQ(HostError::kInProgress, st.error());
       EXPECT_FALSE(rsp.complete());
     }
     received++;
-    if (!st && (st.error() != common::HostError::kInProgress)) {
+    if (!st && (st.error() != HostError::kInProgress)) {
       // This isn't a valid packet and we shouldn't try to get
       // a continuation.
       return;
@@ -667,7 +663,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
       EXPECT_NE(0u, cont_size);
       // Make another request with the continutation data.
       size_t param_size = 18 + cont_size;
-      auto kContinuedRequestAttrStart = common::CreateStaticByteBuffer(
+      auto kContinuedRequestAttrStart = CreateStaticByteBuffer(
           0x06,  // SDP_ServiceAttributeRequest
           0x10, static_cast<uint8_t>(received + 1),      // Transaction ID
           UpperBits(param_size), LowerBits(param_size),  // Parameter length
@@ -682,8 +678,8 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
           0x30, 0x00,  // low end of range
           0xf0, 0x00   // high end of range
       );
-      common::DynamicByteBuffer req(kContinuedRequestAttrStart.size() +
-                                    sizeof(uint8_t) + cont_size);
+      DynamicByteBuffer req(kContinuedRequestAttrStart.size() +
+                            sizeof(uint8_t) + cont_size);
 
       kContinuedRequestAttrStart.Copy(&req);
       req.Write(&cont_size, sizeof(uint8_t), kContinuedRequestAttrStart.size());
@@ -714,7 +710,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
     }
   }
 
-  const auto kInvalidRangeOrder = common::CreateStaticByteBuffer(
+  const auto kInvalidRangeOrder = CreateStaticByteBuffer(
       0x06,                          // SDP_ServiceAttritbuteRequest
       0xE0, 0x01,                    // Transaction ID (0xE001)
       0x00, 0x12,                    // Parameter length (18 bytes)
@@ -735,7 +731,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
 
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
-  const auto kInvalidMaxBytes = common::CreateStaticByteBuffer(
+  const auto kInvalidMaxBytes = CreateStaticByteBuffer(
       0x04,                          // SDP_ServiceAttritbuteRequest
       0xE0, 0x02,                    // Transaction ID (0xE002)
       0x00, 0x0D,                    // Parameter length (13 bytes)
@@ -798,25 +794,25 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
                                       0x0bad);
   RunLoopUntilIdle();
 
-  const auto kRequestAttr = common::CreateStaticByteBuffer(
-      0x06,        // SDP_ServiceAttritbuteRequest
-      0x10, 0x01,  // Transaction ID (0x1001)
-      0x00, 0x0D,  // Parameter length (12 bytes)
-      // ServiceSearchPattern
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0xFF, 0xFF,        // MaximumAttributeByteCount (no max)
-      // AttributeIDList
-      0x35, 0x03,  // Sequence uint8 3 bytes
-      0x09,        // uint16_t, single attribute
-      0x00, 0x05,  // BrowseGroupList
-      0x00         // Contunuation State: none
-  );
+  const auto kRequestAttr =
+      CreateStaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+                             0x10, 0x01,  // Transaction ID (0x1001)
+                             0x00, 0x0D,  // Parameter length (12 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xFF, 0xFF,  // MaximumAttributeByteCount (no max)
+                             // AttributeIDList
+                             0x35, 0x03,  // Sequence uint8 3 bytes
+                             0x09,        // uint16_t, single attribute
+                             0x00, 0x05,  // BrowseGroupList
+                             0x00         // Contunuation State: none
+      );
 
   ServiceSearchAttributeResponse rsp;
   auto send_cb = [this, &rsp](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
-    common::PacketView<sdp::Header> packet(cb_packet.get());
+    PacketView<sdp::Header> packet(cb_packet.get());
     ASSERT_EQ(0x07, packet.header().pdu_id);
     uint16_t len = betoh16(packet.header().param_length);
     packet.Resize(len);
@@ -834,8 +830,7 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
   ASSERT_EQ(DataElement::Type::kSequence, group_attr_it->second.type());
   ASSERT_EQ(DataElement::Type::kUuid, group_attr_it->second.At(0)->type());
   EXPECT_NE(attributes.end(), group_attr_it);
-  EXPECT_EQ(kPublicBrowseRootUuid,
-            *group_attr_it->second.At(0)->Get<common::UUID>());
+  EXPECT_EQ(kPublicBrowseRootUuid, *group_attr_it->second.At(0)->Get<UUID>());
 }
 
 #undef SDP_ERROR_RSP

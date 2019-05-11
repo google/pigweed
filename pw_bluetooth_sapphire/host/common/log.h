@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 
-#include <cstddef>
-
 #include <ddk/driver.h>
+
+#include <cstddef>
 
 #include "src/lib/fxl/compiler_specific.h"
 
@@ -54,7 +54,7 @@
 // enable this mode, call the UsePrintf() function at process start-up:
 //
 //    int main() {
-//      bt::common::UsePrintf(bt::common::LogSeverity::ERROR);
+//      bt::UsePrintf(bt::LogSeverity::ERROR);
 //
 //      ...do stuff...
 //
@@ -80,11 +80,10 @@
 //    BT_DECLARE_FAKE_DRIVER();
 //
 //    int main() {
-//      bt::common::UsePrintf(bt::common::LogSeverity::TRACE);
+//      bt::UsePrintf(bt::LogSeverity::TRACE);
 //    }
 
 namespace bt {
-namespace common {
 
 // Log severity levels used by the host library, following the convention of
 // <ddk/debug.h>
@@ -119,15 +118,13 @@ void LogMessage(const char* file, int line, LogSeverity severity,
 
 void UsePrintf(LogSeverity min_severity);
 
-}  // namespace common
 }  // namespace bt
 
-#define bt_log(flag, tag, fmt...)                                       \
-  do {                                                                  \
-    if (bt::common::IsLogLevelEnabled(bt::common::LogSeverity::flag)) { \
-      bt::common::LogMessage(__FILE__, __LINE__,                        \
-                             bt::common::LogSeverity::flag, tag, fmt);  \
-    }                                                                   \
+#define bt_log(flag, tag, fmt...)                                          \
+  do {                                                                     \
+    if (bt::IsLogLevelEnabled(bt::LogSeverity::flag)) {                    \
+      bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
+    }                                                                      \
   } while (0)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};

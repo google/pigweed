@@ -4,15 +4,14 @@
 
 #include "log.h"
 
-#include <stdarg.h>
-#include <algorithm>
-
 #include <ddk/debug.h>
+#include <stdarg.h>
+
+#include <algorithm>
 
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 std::atomic_int g_printf_min_severity(-1);
@@ -75,5 +74,4 @@ void UsePrintf(LogSeverity min_severity) {
   g_printf_min_severity = static_cast<int>(min_severity);
 }
 
-}  // namespace common
 }  // namespace bt

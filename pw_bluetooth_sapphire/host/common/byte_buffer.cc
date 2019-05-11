@@ -5,7 +5,6 @@
 #include "byte_buffer.h"
 
 namespace bt {
-namespace common {
 
 size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos,
                         size_t size) const {
@@ -174,5 +173,4 @@ uint8_t* MutableBufferView::mutable_data() { return bytes_; }
 
 void MutableBufferView::Fill(uint8_t value) { memset(bytes_, value, size_); }
 
-}  // namespace common
 }  // namespace bt

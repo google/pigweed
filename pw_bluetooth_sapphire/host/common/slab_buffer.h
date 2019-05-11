@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 
 namespace bt {
-namespace common {
 
 template <size_t BackingBufferSize>
 class SlabBuffer : public MutableByteBuffer {
@@ -39,7 +38,7 @@ class SlabBuffer : public MutableByteBuffer {
 
   // The backing backing buffer can have a different size from what was
   // requested.
-  common::StaticByteBuffer<BackingBufferSize> buffer_;
+  StaticByteBuffer<BackingBufferSize> buffer_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SlabBuffer);
 };
@@ -71,7 +70,6 @@ class SlabBufferImpl
 
 }  // namespace internal
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_SLAB_BUFFER_H_

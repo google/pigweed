@@ -11,7 +11,6 @@
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 std::string TypeToString(DeviceAddress::Type type) {
@@ -31,16 +30,14 @@ std::string TypeToString(DeviceAddress::Type type) {
 
 }  // namespace
 
-DeviceAddressBytes::DeviceAddressBytes() {
-  SetToZero();
-}
+DeviceAddressBytes::DeviceAddressBytes() { SetToZero(); }
 
 DeviceAddressBytes::DeviceAddressBytes(
     std::array<uint8_t, kDeviceAddressSize> bytes) {
   bytes_ = std::move(bytes);
 }
 
-DeviceAddressBytes::DeviceAddressBytes(const common::ByteBuffer& bytes) {
+DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
   ZX_DEBUG_ASSERT(bytes.size() == bytes_.size());
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
@@ -79,9 +76,7 @@ std::string DeviceAddressBytes::ToString() const {
                            bytes_[0]);
 }
 
-void DeviceAddressBytes::SetToZero() {
-  bytes_.fill(0);
-}
+void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }
 
 std::size_t DeviceAddressBytes::Hash() const {
   uint64_t bytes_as_int = 0;
@@ -139,13 +134,12 @@ std::string DeviceAddress::ToString() const {
   return TypeToString(type_) + value_.ToString();
 }
 
-}  // namespace common
 }  // namespace bt
 
 namespace std {
 
-hash<bt::common::DeviceAddress>::result_type hash<
-    bt::common::DeviceAddress>::operator()(argument_type const& value) const {
+hash<bt::DeviceAddress>::result_type hash<bt::DeviceAddress>::operator()(
+    argument_type const& value) const {
   return value.Hash();
 }
 

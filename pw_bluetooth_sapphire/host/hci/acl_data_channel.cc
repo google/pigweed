@@ -5,16 +5,16 @@
 #include "acl_data_channel.h"
 
 #include <endian.h>
-
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
+#include "slab_allocators.h"
+#include "transport.h"
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/lib/fxl/strings/string_printf.h"
-#include "slab_allocators.h"
-#include "transport.h"
 
 namespace bt {
 namespace hci {
@@ -73,7 +73,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
   };
 
   io_dispatcher_ = transport_->io_dispatcher();
-  common::RunTaskSync(setup_handler_task, io_dispatcher_);
+  RunTaskSync(setup_handler_task, io_dispatcher_);
 
   // TODO(jamuraa): return whether we successfully initialized?
   if (channel_wait_.object() == ZX_HANDLE_INVALID)
@@ -107,7 +107,7 @@ void ACLDataChannel::ShutDown() {
     }
   };
 
-  common::RunTaskSync(handler_cleanup_task, io_dispatcher_);
+  RunTaskSync(handler_cleanup_task, io_dispatcher_);
 
   transport_->command_channel()->RemoveEventHandler(event_handler_id_);
 
@@ -153,7 +153,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet,
   return true;
 }
 
-bool ACLDataChannel::SendPackets(common::LinkedList<ACLDataPacket> packets,
+bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets,
                                  Connection::LinkType ll_type) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
@@ -397,11 +397,9 @@ void ACLDataChannel::IncrementLETotalNumPacketsLocked(size_t count) {
   le_num_sent_packets_ += count;
 }
 
-void ACLDataChannel::OnChannelReady(
-    async_dispatcher_t* dispatcher,
-    async::WaitBase* wait,
-    zx_status_t status,
-    const zx_packet_signal_t* signal) {
+void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher,
+                                    async::WaitBase* wait, zx_status_t status,
+                                    const zx_packet_signal_t* signal) {
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
     return;
@@ -465,10 +463,10 @@ void ACLDataChannel::OnChannelReady(
 
     ZX_DEBUG_ASSERT(rx_dispatcher_);
 
-    async::PostTask(rx_dispatcher_,
-                    [cb = rx_callback_.share(), packet = std::move(packet)]() mutable {
-                      cb(std::move(packet));
-                    });
+    async::PostTask(rx_dispatcher_, [cb = rx_callback_.share(),
+                                     packet = std::move(packet)]() mutable {
+      cb(std::move(packet));
+    });
   }
 
   status = wait->Begin(dispatcher);

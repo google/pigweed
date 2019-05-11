@@ -31,10 +31,10 @@ class FakeChannel : public Channel {
 
   // Routes the given data over to the rx handler as if it were received from
   // the controller.
-  void Receive(const common::ByteBuffer& data);
+  void Receive(const ByteBuffer& data);
 
   // Sets a delegate to notify when a frame was sent over the channel.
-  using SendCallback = fit::function<void(common::ByteBufferPtr)>;
+  using SendCallback = fit::function<void(ByteBufferPtr)>;
   void SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher);
 
   // Sets a callback to emulate the result of "SignalLinkError()". In
@@ -73,7 +73,7 @@ class FakeChannel : public Channel {
                 async_dispatcher_t* dispatcher) override;
   void Deactivate() override;
   void SignalLinkError() override;
-  bool Send(common::ByteBufferPtr sdu) override;
+  bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level,
                        sm::StatusCallback callback) override;
 
@@ -100,7 +100,7 @@ class FakeChannel : public Channel {
 
   // The pending SDUs on this channel. Received PDUs are buffered if |rx_cb_| is
   // currently not set.
-  std::queue<common::ByteBufferPtr> pending_rx_sdus_;
+  std::queue<ByteBufferPtr> pending_rx_sdus_;
 
   fxl::WeakPtrFactory<FakeChannel> weak_ptr_factory_;
 

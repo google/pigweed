@@ -7,7 +7,6 @@
 #include "util.h"
 
 namespace bt {
-namespace common {
 
 // static
 std::string ProtocolErrorTraits<hci::StatusCode>::ToString(
@@ -16,13 +15,11 @@ std::string ProtocolErrorTraits<hci::StatusCode>::ToString(
                            static_cast<unsigned int>(ecode));
 }
 
-}  // namespace common
-
 namespace hci {
 
-using Base = common::Status<StatusCode>;
+using Base = bt::Status<StatusCode>;
 
-Status::Status(common::HostError ecode) : Base(ecode) {}
+Status::Status(HostError ecode) : Base(ecode) {}
 
 // HCI has a "success" status code which we specially handle while constructing
 // a success Status.

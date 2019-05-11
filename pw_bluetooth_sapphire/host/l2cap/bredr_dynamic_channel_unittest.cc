@@ -17,9 +17,6 @@ namespace l2cap {
 namespace internal {
 namespace {
 
-using common::LowerBits;
-using common::UpperBits;
-
 // TODO(NET-1093): Add integration test with FakeChannelTest and
 // BrEdrSignalingChannel using snooped connection data to verify signaling
 // channel traffic.
@@ -32,45 +29,43 @@ constexpr ChannelId kBadCId = 0x003f;  // Not a dynamic channel.
 
 // Commands Reject
 
-const common::ByteBuffer& kRejNotUnderstood = common::CreateStaticByteBuffer(
+const ByteBuffer& kRejNotUnderstood = CreateStaticByteBuffer(
     // Reject Reason (Not Understood)
     0x00, 0x00);
 
 // Connection Requests
 
-const common::ByteBuffer& kConnReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kConnReq = CreateStaticByteBuffer(
     // PSM
     LowerBits(kPsm), UpperBits(kPsm),
 
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId));
 
-const common::ByteBuffer& kInboundConnReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kInboundConnReq = CreateStaticByteBuffer(
     // PSM
     LowerBits(kPsm), UpperBits(kPsm),
 
     // Source CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
-const common::ByteBuffer& kInboundInvalidPsmConnReq =
-    common::CreateStaticByteBuffer(
-        // PSM
-        LowerBits(kInvalidPsm), UpperBits(kInvalidPsm),
+const ByteBuffer& kInboundInvalidPsmConnReq = CreateStaticByteBuffer(
+    // PSM
+    LowerBits(kInvalidPsm), UpperBits(kInvalidPsm),
 
-        // Source CID
-        LowerBits(kRemoteCId), UpperBits(kRemoteCId));
+    // Source CID
+    LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
-const common::ByteBuffer& kInboundBadCIdConnReq =
-    common::CreateStaticByteBuffer(
-        // PSM
-        LowerBits(kPsm), UpperBits(kPsm),
+const ByteBuffer& kInboundBadCIdConnReq = CreateStaticByteBuffer(
+    // PSM
+    LowerBits(kPsm), UpperBits(kPsm),
 
-        // Source CID
-        LowerBits(kBadCId), UpperBits(kBadCId));
+    // Source CID
+    LowerBits(kBadCId), UpperBits(kBadCId));
 
 // Connection Responses
 
-const common::ByteBuffer& kPendingConnRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kPendingConnRsp = CreateStaticByteBuffer(
     // Destination CID
     0x00, 0x00,
 
@@ -83,21 +78,20 @@ const common::ByteBuffer& kPendingConnRsp = common::CreateStaticByteBuffer(
     // Status (Authorization Pending)
     0x02, 0x00);
 
-const common::ByteBuffer& kPendingConnRspWithId =
-    common::CreateStaticByteBuffer(
-        // Destination CID (Wrong endianness but valid)
-        UpperBits(kRemoteCId), LowerBits(kRemoteCId),
+const ByteBuffer& kPendingConnRspWithId = CreateStaticByteBuffer(
+    // Destination CID (Wrong endianness but valid)
+    UpperBits(kRemoteCId), LowerBits(kRemoteCId),
 
-        // Source CID
-        LowerBits(kLocalCId), UpperBits(kLocalCId),
+    // Source CID
+    LowerBits(kLocalCId), UpperBits(kLocalCId),
 
-        // Result (Pending)
-        0x01, 0x00,
+    // Result (Pending)
+    0x01, 0x00,
 
-        // Status (Authorization Pending)
-        0x02, 0x00);
+    // Status (Authorization Pending)
+    0x02, 0x00);
 
-const common::ByteBuffer& kOkConnRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kOkConnRsp = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -110,7 +104,7 @@ const common::ByteBuffer& kOkConnRsp = common::CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const common::ByteBuffer& kInvalidConnRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kInvalidConnRsp = CreateStaticByteBuffer(
     // Destination CID (Not a dynamic channel ID)
     LowerBits(kBadCId), UpperBits(kBadCId),
 
@@ -123,7 +117,7 @@ const common::ByteBuffer& kInvalidConnRsp = common::CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const common::ByteBuffer& kRejectConnRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kRejectConnRsp = CreateStaticByteBuffer(
     // Destination CID (Invalid)
     LowerBits(kInvalidChannelId), UpperBits(kInvalidChannelId),
 
@@ -136,7 +130,7 @@ const common::ByteBuffer& kRejectConnRsp = common::CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const common::ByteBuffer& kInboundOkConnRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kInboundOkConnRsp = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -149,44 +143,42 @@ const common::ByteBuffer& kInboundOkConnRsp = common::CreateStaticByteBuffer(
     // Status (No further information available)
     0x00, 0x00);
 
-const common::ByteBuffer& kInboundBadPsmConnRsp =
-    common::CreateStaticByteBuffer(
-        // Destination CID (Invalid)
-        0x00, 0x00,
+const ByteBuffer& kInboundBadPsmConnRsp = CreateStaticByteBuffer(
+    // Destination CID (Invalid)
+    0x00, 0x00,
 
-        // Source CID
-        LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+    // Source CID
+    LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
-        // Result (PSM Not Supported)
-        0x02, 0x00,
+    // Result (PSM Not Supported)
+    0x02, 0x00,
 
-        // Status (No further information available)
-        0x00, 0x00);
+    // Status (No further information available)
+    0x00, 0x00);
 
-const common::ByteBuffer& kInboundBadCIdConnRsp =
-    common::CreateStaticByteBuffer(
-        // Destination CID (Invalid)
-        0x00, 0x00,
+const ByteBuffer& kInboundBadCIdConnRsp = CreateStaticByteBuffer(
+    // Destination CID (Invalid)
+    0x00, 0x00,
 
-        // Source CID
-        LowerBits(kBadCId), UpperBits(kBadCId),
+    // Source CID
+    LowerBits(kBadCId), UpperBits(kBadCId),
 
-        // Result (Invalid Source CID)
-        0x06, 0x00,
+    // Result (Invalid Source CID)
+    0x06, 0x00,
 
-        // Status (No further information available)
-        0x00, 0x00);
+    // Status (No further information available)
+    0x00, 0x00);
 
 // Disconnection Requests
 
-const common::ByteBuffer& kDisconReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kDisconReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId));
 
-const common::ByteBuffer& kInboundDisconReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kInboundDisconReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -195,20 +187,20 @@ const common::ByteBuffer& kInboundDisconReq = common::CreateStaticByteBuffer(
 
 // Disconnection Responses
 
-const common::ByteBuffer& kInboundDisconRsp = kInboundDisconReq;
+const ByteBuffer& kInboundDisconRsp = kInboundDisconReq;
 
-const common::ByteBuffer& kDisconRsp = kDisconReq;
+const ByteBuffer& kDisconRsp = kDisconReq;
 
 // Configuration Requests
 
-const common::ByteBuffer& kConfigReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kConfigReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
     // Flags
     0x00, 0x00);
 
-const common::ByteBuffer& kInboundConfigReq = common::CreateStaticByteBuffer(
+const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -217,7 +209,7 @@ const common::ByteBuffer& kInboundConfigReq = common::CreateStaticByteBuffer(
 
 // Configuration Responses
 
-const common::ByteBuffer& kOkConfigRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kOkConfigRsp = CreateStaticByteBuffer(
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
 
@@ -227,7 +219,7 @@ const common::ByteBuffer& kOkConfigRsp = common::CreateStaticByteBuffer(
     // Result (Successful)
     0x00, 0x00);
 
-const common::ByteBuffer& kUnknownIdConfigRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kUnknownIdConfigRsp = CreateStaticByteBuffer(
     // Source CID (Invalid)
     LowerBits(kBadCId), UpperBits(kBadCId),
 
@@ -237,7 +229,7 @@ const common::ByteBuffer& kUnknownIdConfigRsp = common::CreateStaticByteBuffer(
     // Result (Successful)
     0x00, 0x00);
 
-const common::ByteBuffer& kPendingConfigRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kPendingConfigRsp = CreateStaticByteBuffer(
     // Source CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 
@@ -247,7 +239,7 @@ const common::ByteBuffer& kPendingConfigRsp = common::CreateStaticByteBuffer(
     // Result (Pending)
     0x04, 0x00);
 
-const common::ByteBuffer& kInboundOkConfigRsp = common::CreateStaticByteBuffer(
+const ByteBuffer& kInboundOkConfigRsp = CreateStaticByteBuffer(
     // Source CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
 

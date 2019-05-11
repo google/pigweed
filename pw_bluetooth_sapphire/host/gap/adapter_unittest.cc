@@ -22,8 +22,6 @@ namespace bt {
 namespace gap {
 namespace {
 
-using common::DeviceAddress;
-using common::HostError;
 using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::FakeControllerTest<FakeController>;

@@ -24,26 +24,26 @@ namespace testing {
 class CommandTransaction final {
  public:
   CommandTransaction() = default;
-  CommandTransaction(const common::ByteBuffer& expected,
-                     const std::vector<const common::ByteBuffer*>& replies);
+  CommandTransaction(const ByteBuffer& expected,
+                     const std::vector<const ByteBuffer*>& replies);
 
   // Match by opcode only.
   CommandTransaction(hci::OpCode expected_opcode,
-                     const std::vector<const common::ByteBuffer*>& replies);
+                     const std::vector<const ByteBuffer*>& replies);
 
   // Move constructor and assignment operator.
   CommandTransaction(CommandTransaction&& other) = default;
   CommandTransaction& operator=(CommandTransaction&& other) = default;
 
   // Returns true if the transaction matches the given HCI command packet.
-  bool Match(const common::BufferView& cmd);
+  bool Match(const BufferView& cmd);
 
  private:
   friend class TestController;
 
   bool prefix_ = false;
-  common::DynamicByteBuffer expected_;
-  std::queue<common::DynamicByteBuffer> replies_;
+  DynamicByteBuffer expected_;
+  std::queue<DynamicByteBuffer> replies_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandTransaction);
 };
@@ -62,21 +62,20 @@ class TestController : public FakeControllerBase {
   // fatal assertion. On a match, TestController will send back the replies
   // provided in the transaction.
   void QueueCommandTransaction(CommandTransaction transaction);
-  void QueueCommandTransaction(
-      const common::ByteBuffer& expected,
-      const std::vector<const common::ByteBuffer*>& replies);
+  void QueueCommandTransaction(const ByteBuffer& expected,
+                               const std::vector<const ByteBuffer*>& replies);
 
   // Callback to invoke when a packet is received over the data channel. Care
   // should be taken to ensure that a callback with a reference to test case
   // variables is not invoked when tearing down.
-  using DataCallback = fit::function<void(const common::ByteBuffer& packet)>;
+  using DataCallback = fit::function<void(const ByteBuffer& packet)>;
   void SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher);
   void ClearDataCallback();
 
   // Callback invoked when a transaction completes. Care should be taken to
   // ensure that a callback with a reference to test case variables is not
   // invoked when tearing down.
-  using TransactionCallback = fit::function<void(const common::ByteBuffer& rx)>;
+  using TransactionCallback = fit::function<void(const ByteBuffer& rx)>;
   void SetTransactionCallback(TransactionCallback callback,
                               async_dispatcher_t* dispatcher);
   void SetTransactionCallback(fit::closure callback,
@@ -86,9 +85,8 @@ class TestController : public FakeControllerBase {
  private:
   // FakeControllerBase overrides:
   void OnCommandPacketReceived(
-      const common::PacketView<hci::CommandHeader>& command_packet) override;
-  void OnACLDataPacketReceived(
-      const common::ByteBuffer& acl_data_packet) override;
+      const PacketView<hci::CommandHeader>& command_packet) override;
+  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 
   std::queue<CommandTransaction> cmd_transactions_;
   DataCallback data_callback_;

@@ -23,10 +23,10 @@ class Channel;
 
 namespace internal {
 
-using SignalingPacket = common::PacketView<CommandHeader>;
-using MutableSignalingPacket = common::MutablePacketView<CommandHeader>;
+using SignalingPacket = PacketView<CommandHeader>;
+using MutableSignalingPacket = MutablePacketView<CommandHeader>;
 
-using DataCallback = fit::function<void(const common::ByteBuffer& data)>;
+using DataCallback = fit::function<void(const ByteBuffer& data)>;
 using SignalingPacketHandler =
     fit::function<void(const SignalingPacket& packet)>;
 
@@ -45,22 +45,21 @@ class SignalingChannelInterface {
   // is kSuccess or kReject, then |rsp_payload| will contain any payload
   // received. Return true if an additional response is expected.
   using ResponseHandler =
-      fit::function<bool(Status status, const common::ByteBuffer& rsp_payload)>;
+      fit::function<bool(Status status, const ByteBuffer& rsp_payload)>;
 
   // Initiate an outbound transaction. The signaling channel will send a request
   // then expect reception of one or more responses with a code one greater than
   // the request. Each response or rejection received invokes |cb|. When |cb|
   // returns false, it will be removed. Returns false if the request failed to
   // send.
-  virtual bool SendRequest(CommandCode req_code,
-                           const common::ByteBuffer& payload,
+  virtual bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
                            ResponseHandler cb) = 0;
 
   // Send a command packet in response to an incoming request.
   class Responder {
    public:
     // Send a response that corresponds to the request received
-    virtual void Send(const common::ByteBuffer& rsp_payload) = 0;
+    virtual void Send(const ByteBuffer& rsp_payload) = 0;
 
     // Reject invalid, malformed, or unhandled request
     virtual void RejectNotUnderstood() = 0;
@@ -77,8 +76,8 @@ class SignalingChannelInterface {
   // |req_payload| contains any payload received, without the command header.
   // The callee can use |responder| to respond or reject. Parameters passed to
   // this handler are only guaranteed to be valid while the handler is running.
-  using RequestDelegate = fit::function<void(
-      const common::ByteBuffer& req_payload, Responder* responder)>;
+  using RequestDelegate =
+      fit::function<void(const ByteBuffer& req_payload, Responder* responder)>;
 
   // Register a handler for all inbound transactions matching |req_code|, which
   // should be the code of a request. |cb| will be called with request payloads
@@ -113,7 +112,7 @@ class SignalingChannel : public SignalingChannelInterface {
   class ResponderImpl : public Responder {
    public:
     ResponderImpl(SignalingChannel* sig, CommandCode code, CommandId id);
-    void Send(const common::ByteBuffer& rsp_payload) override;
+    void Send(const ByteBuffer& rsp_payload) override;
     void RejectNotUnderstood() override;
     void RejectInvalidChannelId(ChannelId local_cid,
                                 ChannelId remote_cid) override;
@@ -127,15 +126,14 @@ class SignalingChannel : public SignalingChannelInterface {
   };
 
   // Sends out a single signaling packet using the given parameters.
-  bool SendPacket(CommandCode code, uint8_t identifier,
-                  const common::ByteBuffer& data);
+  bool SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data);
 
   // Called when a frame is received to decode into L2CAP signaling command
   // packets. The derived implementation should invoke |cb| for each packet with
   // a valid payload length, send a Command Reject packet for each packet with
   // an intact ID in its header but invalid payload length, and drop any other
   // incoming data.
-  virtual void DecodeRxUnit(common::ByteBufferPtr sdu,
+  virtual void DecodeRxUnit(ByteBufferPtr sdu,
                             const SignalingPacketHandler& cb) = 0;
 
   // Called when a new signaling packet has been received. Returns false if
@@ -147,7 +145,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Sends out a command reject packet with the given parameters.
   bool SendCommandReject(uint8_t identifier, RejectReason reason,
-                         const common::ByteBuffer& data);
+                         const ByteBuffer& data);
 
   // Returns true if called on this SignalingChannel's creation thread. Mainly
   // intended for debug assertions.
@@ -172,16 +170,16 @@ class SignalingChannel : public SignalingChannelInterface {
   //
   // TODO(armansito): This should be generalized for ACL-U to allow multiple
   // signaling commands in a single C-frame.
-  bool Send(common::ByteBufferPtr packet);
+  bool Send(ByteBufferPtr packet);
 
   // Builds a signaling packet with the given parameters and payload. The
   // backing buffer is slab allocated.
-  common::ByteBufferPtr BuildPacket(CommandCode code, uint8_t identifier,
-                                    const common::ByteBuffer& data);
+  ByteBufferPtr BuildPacket(CommandCode code, uint8_t identifier,
+                            const ByteBuffer& data);
 
   // Channel callbacks:
   void OnChannelClosed();
-  void OnRxBFrame(common::ByteBufferPtr sdu);
+  void OnRxBFrame(ByteBufferPtr sdu);
 
   // Invoke the abstract packet handler |HandlePacket| for well-formed command
   // packets and send responses for command packets that exceed this host's MTU

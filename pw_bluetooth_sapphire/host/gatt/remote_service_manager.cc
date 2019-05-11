@@ -9,21 +9,17 @@
 
 namespace bt {
 
-using common::HostError;
-
 namespace gatt {
 namespace internal {
 
 RemoteServiceManager::ServiceListRequest::ServiceListRequest(
-    ServiceListCallback callback,
-    const std::vector<common::UUID>& uuids)
+    ServiceListCallback callback, const std::vector<UUID>& uuids)
     : callback_(std::move(callback)), uuids_(uuids) {
   ZX_DEBUG_ASSERT(callback_);
 }
 
 void RemoteServiceManager::ServiceListRequest::Complete(
-    att::Status status,
-    const ServiceMap& services) {
+    att::Status status, const ServiceMap& services) {
   ServiceList result;
 
   if (!status || services.empty()) {
@@ -33,9 +29,7 @@ void RemoteServiceManager::ServiceListRequest::Complete(
 
   for (const auto& iter : services) {
     auto& svc = iter.second;
-    auto pred = [&svc](const common::UUID& uuid) {
-      return svc->uuid() == uuid;
-    };
+    auto pred = [&svc](const UUID& uuid) { return svc->uuid() == uuid; };
     if (uuids_.empty() ||
         std::find_if(uuids_.begin(), uuids_.end(), pred) != uuids_.end()) {
       result.push_back(iter.second);
@@ -65,7 +59,7 @@ RemoteServiceManager::~RemoteServiceManager() {
   ClearServices();
 
   // Resolve all pending requests with an error.
-  att::Status status(common::HostError::kFailed);
+  att::Status status(HostError::kFailed);
 
   auto pending = std::move(pending_);
   while (!pending.empty()) {
@@ -149,7 +143,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb) {
   });
 }
 
-void RemoteServiceManager::ListServices(const std::vector<common::UUID>& uuids,
+void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
                                         ServiceListCallback callback) {
   ServiceListRequest request(std::move(callback), uuids);
   if (initialized_) {
@@ -173,7 +167,7 @@ void RemoteServiceManager::ClearServices() {
 }
 
 void RemoteServiceManager::OnNotification(bool, att::Handle value_handle,
-                                          const common::ByteBuffer& value) {
+                                          const ByteBuffer& value) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (services_.empty()) {
@@ -183,7 +177,8 @@ void RemoteServiceManager::OnNotification(bool, att::Handle value_handle,
 
   // Find the service that |value_handle| belongs to.
   auto iter = services_.upper_bound(value_handle);
-  if (iter != services_.begin()) --iter;
+  if (iter != services_.begin())
+    --iter;
 
   // If |value_handle| is within the previous service then we found it.
   auto& svc = iter->second;

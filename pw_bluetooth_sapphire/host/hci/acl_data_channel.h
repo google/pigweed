@@ -122,7 +122,7 @@ class ACLDataChannel final {
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for |ll_type| or it is empty.
-  bool SendPackets(common::LinkedList<ACLDataPacket> packets,
+  bool SendPackets(LinkedList<ACLDataPacket> packets,
                    Connection::LinkType ll_type);
 
   // Cleans up all outgoing data buffering state related to the logical link
@@ -259,7 +259,7 @@ class ACLDataChannel final {
   //   * Helps address the packet-prioritization TODO above.
   //   * Also: having separate queues, which know their own
   //     Connection::LinkType, would let us replace std::list<QueuedDataPacket>
-  //     with common::LinkedList<ACLDataPacket> which has a more efficient
+  //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
   using DataPacketQueue = std::list<QueuedDataPacket>;
   DataPacketQueue send_queue_ __TA_GUARDED(send_mutex_);

@@ -12,9 +12,6 @@ namespace l2cap {
 namespace internal {
 namespace {
 
-using common::LowerBits;
-using common::UpperBits;
-
 constexpr CommandCode kUnknownCommandCode = 0x00;
 constexpr CommandCode kCommandCode = 0xFF;
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
@@ -40,14 +37,14 @@ class TestSignalingChannel : public SignalingChannel {
 
  private:
   // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const common::ByteBuffer& payload,
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
                    ResponseHandler cb) override {
     return false;
   }
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override {}
 
   // SignalingChannel overrides
-  void DecodeRxUnit(common::ByteBufferPtr sdu,
+  void DecodeRxUnit(ByteBufferPtr sdu,
                     const SignalingPacketHandler& cb) override {
     ZX_DEBUG_ASSERT(sdu);
     if (sdu->size()) {
@@ -109,7 +106,7 @@ TEST_F(L2CAP_SignalingChannelTest, IgnoreEmptyFrame) {
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };
 
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
-  fake_chan()->Receive(common::BufferView());
+  fake_chan()->Receive(BufferView());
 
   RunLoopUntilIdle();
   EXPECT_FALSE(send_cb_called);
@@ -119,7 +116,7 @@ TEST_F(L2CAP_SignalingChannelTest, Reject) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestId, 0x02, 0x00,
 
@@ -127,7 +124,7 @@ TEST_F(L2CAP_SignalingChannelTest, Reject) {
       0x00, 0x00);
 
   // A command that TestSignalingChannel does not support.
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // header
       kUnknownCommandCode, kTestId, 0x04, 0x00,
 
@@ -141,7 +138,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectCommandCodeZero) {
   constexpr uint8_t kTestId = 14;
 
   // Command Reject packet.
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestId, 0x02, 0x00,
 
@@ -149,7 +146,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectCommandCodeZero) {
       0x00, 0x00);
 
   // A command that TestSignalingChannel does not support.
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // header
       0x00, kTestId, 0x04, 0x00,
 
@@ -162,7 +159,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectCommandCodeZero) {
 TEST_F(L2CAP_SignalingChannelTest, RejectNotUnderstoodWithResponder) {
   constexpr uint8_t kTestId = 14;
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header (Command Reject, ID, length)
       0x01, kTestId, 0x02, 0x00,
 
@@ -172,7 +169,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectNotUnderstoodWithResponder) {
   bool cb_called = false;
   auto send_cb = [&expected, &cb_called](auto packet) {
     cb_called = true;
-    EXPECT_TRUE(common::ContainersEqual(expected, *packet));
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
@@ -188,7 +185,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectInvalidCIdWithResponder) {
   constexpr uint16_t kLocalCId = 0xf00d;
   constexpr uint16_t kRemoteCId = 0xcafe;
 
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header (Command Reject, ID, length)
       0x01, kTestId, 0x06, 0x00,
 
@@ -202,7 +199,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectInvalidCIdWithResponder) {
   bool cb_called = false;
   auto send_cb = [&expected, &cb_called](auto packet) {
     cb_called = true;
-    EXPECT_TRUE(common::ContainersEqual(expected, *packet));
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
   };
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
@@ -218,7 +215,7 @@ TEST_F(L2CAP_SignalingChannelTest, InvalidMTU) {
   constexpr uint16_t kTooSmallMTU = 7;
 
   // Command Reject packet.
-  auto expected = common::CreateStaticByteBuffer(
+  auto expected = CreateStaticByteBuffer(
       // Command header
       0x01, kTestId, 0x04, 0x00,
 
@@ -229,7 +226,7 @@ TEST_F(L2CAP_SignalingChannelTest, InvalidMTU) {
       static_cast<uint8_t>(kTooSmallMTU), 0x00);
 
   // A command that is one octet larger than the MTU.
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // header
       kCommandCode, kTestId, 0x04, 0x00,
 
@@ -244,7 +241,7 @@ TEST_F(L2CAP_SignalingChannelTest, HandlePacket) {
   constexpr uint8_t kTestId = 14;
 
   // A command that TestSignalingChannel supports.
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       // header
       kCommandCode, kTestId, 0x04, 0x00,
 
@@ -253,7 +250,7 @@ TEST_F(L2CAP_SignalingChannelTest, HandlePacket) {
 
   bool called = false;
   sig()->set_packet_callback([&cmd, &called, this](auto packet) {
-    EXPECT_TRUE(common::ContainersEqual(cmd, packet.data()));
+    EXPECT_TRUE(ContainersEqual(cmd, packet.data()));
     called = true;
   });
 

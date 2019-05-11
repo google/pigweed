@@ -14,11 +14,6 @@
 
 namespace bt {
 
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::StaticByteBuffer;
-using common::UInt128;
-
 namespace sm {
 namespace {
 
@@ -150,11 +145,10 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
       case kIdentityAddressInformation: {
         const auto& params = reader.payload<IdentityAddressInformationParams>();
         id_addr_info_count_++;
-        id_addr_info_ =
-            common::DeviceAddress(params.type == AddressType::kStaticRandom
-                                      ? DeviceAddress::Type::kLERandom
-                                      : DeviceAddress::Type::kLEPublic,
-                                  params.bd_addr);
+        id_addr_info_ = DeviceAddress(params.type == AddressType::kStaticRandom
+                                          ? DeviceAddress::Type::kLERandom
+                                          : DeviceAddress::Type::kLEPublic,
+                                      params.bd_addr);
         break;
       }
       default:
@@ -425,7 +419,7 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
                                         UInt128* out_random, uint32_t tk = 0) {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
-    *out_random = common::RandomUInt128();
+    *out_random = RandomUInt128();
     GenerateConfirmValue(*out_random, out_confirm, false /* peer_initiator */,
                          tk);
   }
@@ -2087,7 +2081,7 @@ TEST_F(SMP_ResponderPairingTest,
   // Still waiting for initiator's keys.
   EXPECT_EQ(0, pairing_data_callback_count());
 
-  const auto kIrk = common::RandomUInt128();
+  const auto kIrk = RandomUInt128();
   ReceiveIdentityResolvingKey(kIrk);
   ReceiveIdentityAddress(kPeerAddr);
   RunLoopUntilIdle();
@@ -2136,7 +2130,7 @@ TEST_F(SMP_ResponderPairingTest,
   // Still waiting for master's keys.
   EXPECT_EQ(0, pairing_data_callback_count());
 
-  const auto kIrk = common::RandomUInt128();
+  const auto kIrk = RandomUInt128();
   ReceiveIdentityResolvingKey(kIrk);
   ReceiveIdentityAddress(kPeerAddr);
   RunLoopUntilIdle();

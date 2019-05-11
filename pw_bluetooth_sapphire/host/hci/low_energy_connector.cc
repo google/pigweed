@@ -18,9 +18,6 @@
 namespace bt {
 namespace hci {
 
-using common::DeviceAddress;
-using common::HostError;
-
 LowEnergyConnector::PendingRequest::PendingRequest(
     const DeviceAddress& peer_address, StatusCallback status_callback)
     : peer_address(peer_address), status_callback(std::move(status_callback)) {}

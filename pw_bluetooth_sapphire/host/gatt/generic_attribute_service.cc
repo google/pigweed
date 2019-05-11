@@ -17,7 +17,7 @@ namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
 
-void NopWriteHandler(IdType, IdType, uint16_t, const common::ByteBuffer&,
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
                      const WriteResponder&) {}
 
 }  // namespace
@@ -103,7 +103,7 @@ void GenericAttributeService::OnServiceChanged(IdType service_id,
     return;
   }
 
-  common::StaticByteBuffer<2 * sizeof(uint16_t)> value;
+  StaticByteBuffer<2 * sizeof(uint16_t)> value;
 
   value[0] = static_cast<uint8_t>(start);
   value[1] = static_cast<uint8_t>(start >> 8);

@@ -9,23 +9,16 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
-
 #include "src/lib/fxl/strings/string_printf.h"
-
 #include "util.h"
 
 namespace bt {
 
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::HostError;
-using common::UInt128;
-
 namespace sm {
 namespace {
 
-common::MutableByteBufferPtr NewPDU(size_t param_size) {
-  auto pdu = common::NewSlabBuffer(sizeof(Header) + param_size);
+MutableByteBufferPtr NewPDU(size_t param_size) {
+  auto pdu = NewSlabBuffer(sizeof(Header) + param_size);
   if (!pdu) {
     bt_log(TRACE, "sm", "out of memory");
   }
@@ -115,7 +108,7 @@ bool Bearer::InitiateFeatureExchange() {
   return true;
 }
 
-bool Bearer::SendConfirmValue(const common::UInt128& confirm) {
+bool Bearer::SendConfirmValue(const UInt128& confirm) {
   if (!pairing_started()) {
     bt_log(TRACE, "sm", "not pairing!");
     return false;
@@ -140,7 +133,7 @@ bool Bearer::SendConfirmValue(const common::UInt128& confirm) {
   return true;
 }
 
-bool Bearer::SendRandomValue(const common::UInt128& random) {
+bool Bearer::SendRandomValue(const UInt128& random) {
   if (!pairing_started()) {
     bt_log(TRACE, "sm", "not pairing!");
     return false;
@@ -698,7 +691,7 @@ void Bearer::OnChannelClosed() {
   }
 }
 
-void Bearer::OnRxBFrame(common::ByteBufferPtr sdu) {
+void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   uint8_t length = sdu->size();
   if (length < sizeof(Code)) {

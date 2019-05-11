@@ -17,11 +17,6 @@
 
 namespace bt {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::DeviceAddress;
-using common::StaticByteBuffer;
-
 namespace testing {
 namespace {
 
@@ -40,14 +35,14 @@ bool CheckBit(NUM_TYPE num_type, ENUM_TYPE bit) {
   return (num_type & static_cast<NUM_TYPE>(bit));
 }
 
-hci::LEPeerAddressType ToPeerAddrType(common::DeviceAddress::Type type) {
+hci::LEPeerAddressType ToPeerAddrType(DeviceAddress::Type type) {
   hci::LEPeerAddressType result = hci::LEPeerAddressType::kAnonymous;
 
   switch (type) {
-    case common::DeviceAddress::Type::kLEPublic:
+    case DeviceAddress::Type::kLEPublic:
       result = hci::LEPeerAddressType::kPublic;
       break;
-    case common::DeviceAddress::Type::kLERandom:
+    case DeviceAddress::Type::kLERandom:
       result = hci::LEPeerAddressType::kRandom;
       break;
     default:
@@ -240,7 +235,7 @@ void FakeController::SetLEConnectionParametersCallback(
   le_conn_params_cb_dispatcher_ = dispatcher;
 }
 
-FakePeer* FakeController::FindByAddress(const common::DeviceAddress& addr) {
+FakePeer* FakeController::FindByAddress(const DeviceAddress& addr) {
   for (auto& dev : peers_) {
     if (dev->address() == addr)
       return dev.get();
@@ -263,10 +258,10 @@ uint8_t FakeController::NextL2CAPCommandId() {
 
 void FakeController::RespondWithCommandComplete(hci::OpCode opcode,
                                                 const ByteBuffer& params) {
-  common::DynamicByteBuffer buffer(sizeof(hci::CommandCompleteEventParams) +
-                                   params.size());
-  common::MutablePacketView<hci::CommandCompleteEventParams> event(
-      &buffer, params.size());
+  DynamicByteBuffer buffer(sizeof(hci::CommandCompleteEventParams) +
+                           params.size());
+  MutablePacketView<hci::CommandCompleteEventParams> event(&buffer,
+                                                           params.size());
 
   event.mutable_header()->num_hci_command_packets =
       settings_.num_hci_command_packets;
@@ -285,8 +280,8 @@ void FakeController::RespondWithSuccess(hci::OpCode opcode) {
 
 void FakeController::RespondWithCommandStatus(hci::OpCode opcode,
                                               hci::StatusCode status) {
-  common::StaticByteBuffer<sizeof(hci::CommandStatusEventParams)> buffer;
-  common::MutablePacketView<hci::CommandStatusEventParams> event(&buffer);
+  StaticByteBuffer<sizeof(hci::CommandStatusEventParams)> buffer;
+  MutablePacketView<hci::CommandStatusEventParams> event(&buffer);
 
   event.mutable_header()->status = status;
   event.mutable_header()->num_hci_command_packets =
@@ -298,8 +293,8 @@ void FakeController::RespondWithCommandStatus(hci::OpCode opcode,
 
 void FakeController::SendEvent(hci::EventCode event_code,
                                const ByteBuffer& payload) {
-  common::DynamicByteBuffer buffer(sizeof(hci::EventHeader) + payload.size());
-  common::MutablePacketView<hci::EventHeader> event(&buffer, payload.size());
+  DynamicByteBuffer buffer(sizeof(hci::EventHeader) + payload.size());
+  MutablePacketView<hci::EventHeader> event(&buffer, payload.size());
 
   event.mutable_header()->event_code = event_code;
   event.mutable_header()->parameter_total_size = payload.size();
@@ -310,8 +305,7 @@ void FakeController::SendEvent(hci::EventCode event_code,
 
 void FakeController::SendLEMetaEvent(hci::EventCode subevent_code,
                                      const ByteBuffer& payload) {
-  common::DynamicByteBuffer buffer(sizeof(hci::LEMetaEventParams) +
-                                   payload.size());
+  DynamicByteBuffer buffer(sizeof(hci::LEMetaEventParams) + payload.size());
   buffer[0] = subevent_code;
   buffer.Write(payload, 1);
 
@@ -322,8 +316,8 @@ void FakeController::SendACLPacket(hci::ConnectionHandle handle,
                                    const ByteBuffer& payload) {
   ZX_DEBUG_ASSERT(payload.size() <= hci::kMaxACLPayloadSize);
 
-  common::DynamicByteBuffer buffer(sizeof(hci::ACLDataHeader) + payload.size());
-  common::MutablePacketView<hci::ACLDataHeader> acl(&buffer, payload.size());
+  DynamicByteBuffer buffer(sizeof(hci::ACLDataHeader) + payload.size());
+  MutablePacketView<hci::ACLDataHeader> acl(&buffer, payload.size());
 
   acl.mutable_header()->handle_and_flags = htole16(handle);
   acl.mutable_header()->data_total_length =
@@ -339,8 +333,8 @@ void FakeController::SendL2CAPBFrame(hci::ConnectionHandle handle,
   ZX_DEBUG_ASSERT(payload.size() <=
                   hci::kMaxACLPayloadSize - sizeof(l2cap::BasicHeader));
 
-  common::DynamicByteBuffer buffer(sizeof(l2cap::BasicHeader) + payload.size());
-  common::MutablePacketView<l2cap::BasicHeader> bframe(&buffer, payload.size());
+  DynamicByteBuffer buffer(sizeof(l2cap::BasicHeader) + payload.size());
+  MutablePacketView<l2cap::BasicHeader> bframe(&buffer, payload.size());
 
   bframe.mutable_header()->length = htole16(payload.size());
   bframe.mutable_header()->channel_id = htole16(channel_id);
@@ -352,10 +346,8 @@ void FakeController::SendL2CAPBFrame(hci::ConnectionHandle handle,
 void FakeController::SendL2CAPCFrame(hci::ConnectionHandle handle, bool is_le,
                                      l2cap::CommandCode code, uint8_t id,
                                      const ByteBuffer& payload) {
-  common::DynamicByteBuffer buffer(sizeof(l2cap::CommandHeader) +
-                                   payload.size());
-  common::MutablePacketView<l2cap::CommandHeader> cframe(&buffer,
-                                                         payload.size());
+  DynamicByteBuffer buffer(sizeof(l2cap::CommandHeader) + payload.size());
+  MutablePacketView<l2cap::CommandHeader> cframe(&buffer, payload.size());
 
   cframe.mutable_header()->code = code;
   cframe.mutable_header()->id = id;
@@ -382,7 +374,7 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
   SendEvent(hci::kNumberOfCompletedPacketsEventCode, buffer);
 }
 
-void FakeController::ConnectLowEnergy(const common::DeviceAddress& addr,
+void FakeController::ConnectLowEnergy(const DeviceAddress& addr,
                                       hci::ConnectionRole role) {
   async::PostTask(dispatcher(), [addr, role, this] {
     FakePeer* dev = FindByAddress(addr);
@@ -431,7 +423,7 @@ void FakeController::ConnectLowEnergy(const common::DeviceAddress& addr,
 }
 
 void FakeController::L2CAPConnectionParameterUpdate(
-    const common::DeviceAddress& addr,
+    const DeviceAddress& addr,
     const hci::LEPreferredConnectionParameters& params) {
   async::PostTask(dispatcher(), [addr, params, this] {
     FakePeer* dev = FindByAddress(addr);
@@ -463,7 +455,7 @@ void FakeController::L2CAPConnectionParameterUpdate(
   });
 }
 
-void FakeController::Disconnect(const common::DeviceAddress& addr) {
+void FakeController::Disconnect(const DeviceAddress& addr) {
   async::PostTask(dispatcher(), [addr, this] {
     FakePeer* dev = FindByAddress(addr);
     if (!dev || !dev->connected()) {
@@ -559,7 +551,7 @@ void FakeController::NotifyAdvertisingState() {
                   advertising_state_cb_.share());
 }
 
-void FakeController::NotifyConnectionState(const common::DeviceAddress& addr,
+void FakeController::NotifyConnectionState(const DeviceAddress& addr,
                                            bool connected, bool canceled) {
   if (!conn_state_cb_)
     return;
@@ -572,8 +564,7 @@ void FakeController::NotifyConnectionState(const common::DeviceAddress& addr,
 }
 
 void FakeController::NotifyLEConnectionParameters(
-    const common::DeviceAddress& addr,
-    const hci::LEConnectionParameters& params) {
+    const DeviceAddress& addr, const hci::LEConnectionParameters& params) {
   if (!le_conn_params_cb_)
     return;
 
@@ -693,11 +684,11 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
   }
 
-  common::DeviceAddress::Type addr_type =
+  DeviceAddress::Type addr_type =
       hci::AddressTypeFromHCI(params.peer_address_type);
-  ZX_DEBUG_ASSERT(addr_type != common::DeviceAddress::Type::kBREDR);
+  ZX_DEBUG_ASSERT(addr_type != DeviceAddress::Type::kBREDR);
 
-  const common::DeviceAddress peer_address(addr_type, params.peer_address);
+  const DeviceAddress peer_address(addr_type, params.peer_address);
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
   // Find the peer that matches the requested address.
@@ -863,7 +854,7 @@ void FakeController::OnDisconnectCommandReceived(
 }
 
 void FakeController::OnCommandPacketReceived(
-    const common::PacketView<hci::CommandHeader>& command_packet) {
+    const PacketView<hci::CommandHeader>& command_packet) {
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
   if (MaybeRespondWithDefaultStatus(opcode))
     return;
@@ -907,8 +898,8 @@ void FakeController::OnCommandPacketReceived(
       }
       const auto& in_params =
           command_packet.payload<hci::LESetRandomAddressCommandParams>();
-      le_random_address_ = common::DeviceAddress(
-          common::DeviceAddress::Type::kLERandom, in_params.random_address);
+      le_random_address_ = DeviceAddress(DeviceAddress::Type::kLERandom,
+                                         in_params.random_address);
 
       RespondWithSuccess(opcode);
       break;
@@ -1043,8 +1034,7 @@ void FakeController::OnCommandPacketReceived(
     case hci::kReadLocalName: {
       hci::ReadLocalNameReturnParams params;
       params.status = hci::StatusCode::kSuccess;
-      auto mut_view =
-          common::MutableBufferView(params.local_name, hci::kMaxNameLength);
+      auto mut_view = MutableBufferView(params.local_name, hci::kMaxNameLength);
       mut_view.Write((uint8_t*)(local_name_.c_str()), hci::kMaxNameLength);
       RespondWithCommandComplete(hci::kReadLocalName,
                                  BufferView(&params, sizeof(params)));
@@ -1091,7 +1081,7 @@ void FakeController::OnCommandPacketReceived(
       params.status = hci::StatusCode::kSuccess;
       params.inquiry_mode = inquiry_mode_;
       RespondWithCommandComplete(hci::kReadInquiryMode,
-                                 common::BufferView(&params, sizeof(params)));
+                                 BufferView(&params, sizeof(params)));
       break;
     }
     case hci::kWriteInquiryMode: {
@@ -1129,7 +1119,7 @@ void FakeController::OnCommandPacketReceived(
       }
 
       RespondWithCommandComplete(hci::kReadSimplePairingMode,
-                                 common::BufferView(&params, sizeof(params)));
+                                 BufferView(&params, sizeof(params)));
       break;
     }
     case hci::kWriteSimplePairingMode: {
@@ -1141,7 +1131,7 @@ void FakeController::OnCommandPacketReceived(
         hci::SimpleReturnParams params;
         params.status = hci::StatusCode::kInvalidHCICommandParameters;
         RespondWithCommandComplete(hci::kWriteSimplePairingMode,
-                                   common::BufferView(&params, sizeof(params)));
+                                   BufferView(&params, sizeof(params)));
         break;
       }
 
@@ -1345,7 +1335,7 @@ void FakeController::OnCommandPacketReceived(
             hci::InquiryCompleteEventParams params;
             params.status = hci::kSuccess;
             SendEvent(hci::kInquiryCompleteEventCode,
-                      common::BufferView(&params, sizeof(params)));
+                      BufferView(&params, sizeof(params)));
           },
           zx::msec(in_params.inquiry_length * 1280));
       break;

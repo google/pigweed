@@ -14,10 +14,10 @@ namespace gatt {
 namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const common::ByteBuffer&,
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
                      const WriteResponder&) {}
 void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
-void NopSendIndication(PeerId, att::Handle, const common::ByteBuffer&) {}
+void NopSendIndication(PeerId, att::Handle, const ByteBuffer&) {}
 
 // Handles for the third attribute (Service Changed characteristic) and fourth
 // attribute (corresponding client config).
@@ -36,8 +36,8 @@ class GATT_GenericAttributeServiceTest : public ::testing::Test {
     ZX_DEBUG_ASSERT(attr);
     auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
     uint16_t value = htole16(ccc_value);
-    return attr->WriteAsync(
-        peer_id, 0u, common::BufferView(&value, sizeof(value)), result_cb);
+    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)),
+                            result_cb);
   }
 
   LocalServiceManager mgr;
@@ -75,7 +75,7 @@ TEST_F(GATT_GenericAttributeServiceTest, RegisterUnregister) {
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   int callback_count = 0;
   auto send_indication = [&](PeerId peer_id, att::Handle handle,
-                             const common::ByteBuffer& value) {
+                             const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
@@ -97,10 +97,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
   EXPECT_EQ(0, callback_count);
 
-  constexpr common::UUID kTestSvcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestSvcType((uint32_t)0xdeadbeef);
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  constexpr common::UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
@@ -118,7 +118,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   int callback_count = 0;
   auto send_indication = [&](PeerId peer_id, att::Handle handle,
-                             const common::ByteBuffer& value) {
+                             const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
@@ -135,10 +135,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   // Register the GATT service.
   GenericAttributeService gatt_service(&mgr, std::move(send_indication));
 
-  constexpr common::UUID kTestSvcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestSvcType((uint32_t)0xdeadbeef);
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kNotify;
-  constexpr common::UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
   const att::AccessRequirements kReadReqs, kWriteReqs;
   const att::AccessRequirements kUpdateReqs(true, true, true);
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);

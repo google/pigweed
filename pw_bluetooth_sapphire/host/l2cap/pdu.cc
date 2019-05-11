@@ -26,8 +26,7 @@ PDU& PDU::operator=(PDU&& other) {
   return *this;
 }
 
-size_t PDU::Copy(common::MutableByteBuffer* out_buffer, size_t pos,
-                 size_t size) const {
+size_t PDU::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
   ZX_DEBUG_ASSERT(out_buffer);
   ZX_DEBUG_ASSERT(pos <= length());
   ZX_DEBUG_ASSERT(is_valid());

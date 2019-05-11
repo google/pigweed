@@ -25,7 +25,7 @@ namespace l2cap {
 // Recombiner or Fragmenter.
 //
 // A PDU instance is light-weight (it consists of a single unique_ptr via
-// common::LinkedList and a size_t field) and can be passed around by value.
+// LinkedList and a size_t field) and can be passed around by value.
 // As the PDU uniquely owns its chain of fragments, a PDU is move-only.
 //
 // THREAD-SAFETY:
@@ -34,7 +34,7 @@ namespace l2cap {
 // instance will be accessed on multiple threads.
 class PDU final {
  public:
-  using FragmentList = common::LinkedList<hci::ACLDataPacket>;
+  using FragmentList = LinkedList<hci::ACLDataPacket>;
 
   PDU();
   ~PDU() = default;
@@ -80,7 +80,7 @@ class PDU final {
   // NOTE: Use this method wisely as it can be costly. In particular, large
   // values of |pos| will incur a cost (O(pos)) as the underlying fragments need
   // to be traversed to find the initial fragment.
-  size_t Copy(common::MutableByteBuffer* out_buffer, size_t pos = 0,
+  size_t Copy(MutableByteBuffer* out_buffer, size_t pos = 0,
               size_t size = std::numeric_limits<std::size_t>::max()) const;
 
   // Release ownership of the current fragments, moving them to the caller. Once

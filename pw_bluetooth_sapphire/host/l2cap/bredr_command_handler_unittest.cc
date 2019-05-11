@@ -19,12 +19,6 @@ namespace l2cap {
 namespace internal {
 namespace {
 
-using common::BufferView;
-using common::ByteBuffer;
-using common::CreateStaticByteBuffer;
-using common::LowerBits;
-using common::UpperBits;
-
 constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
@@ -392,7 +386,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
         EXPECT_EQ(kLocalCId, rsp.local_cid());
         EXPECT_EQ(0x0004, rsp.flags());
         EXPECT_EQ(ConfigurationResult::kPending, rsp.result());
-        EXPECT_TRUE(common::ContainersEqual(rsp_options, rsp.options()));
+        EXPECT_TRUE(ContainersEqual(rsp_options, rsp.options()));
         return false;
       };
 

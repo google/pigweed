@@ -5,12 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LINKED_LIST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LINKED_LIST_H_
 
-#include <memory>
-
 #include <fbl/intrusive_double_list.h>
 
+#include <memory>
+
 namespace bt {
-namespace common {
 
 // TODO(armansito): Use this in more places where it makes sense (see NET-176).
 
@@ -29,7 +28,6 @@ using LinkedList = fbl::DoublyLinkedList<std::unique_ptr<T>>;
 template <typename T>
 using LinkedListable = fbl::DoublyLinkedListable<std::unique_ptr<T>>;
 
-}  // namespace common
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LINKED_LIST_H_

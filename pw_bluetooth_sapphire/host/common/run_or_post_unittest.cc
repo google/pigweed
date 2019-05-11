@@ -7,7 +7,6 @@
 #include "lib/gtest/test_loop_fixture.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 using RunOrPostTest = ::gtest::TestLoopFixture;
@@ -28,5 +27,4 @@ TEST_F(RunOrPostTest, WithDispatcher) {
 }
 
 }  // namespace
-}  // namespace common
 }  // namespace bt

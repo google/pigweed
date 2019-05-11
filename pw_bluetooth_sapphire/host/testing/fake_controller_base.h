@@ -30,12 +30,12 @@ class FakeControllerBase {
 
   // Sends the given packet over this FakeController's command channel endpoint.
   // Retuns the result of the write operation on the command channel.
-  zx_status_t SendCommandChannelPacket(const common::ByteBuffer& packet);
+  zx_status_t SendCommandChannelPacket(const ByteBuffer& packet);
 
   // Sends the given packet over this FakeController's ACL data channel
   // endpoint.
   // Retuns the result of the write operation on the channel.
-  zx_status_t SendACLDataChannelPacket(const common::ByteBuffer& packet);
+  zx_status_t SendACLDataChannelPacket(const ByteBuffer& packet);
 
   // Immediately closes the command channel endpoint.
   void CloseCommandChannel();
@@ -66,11 +66,10 @@ class FakeControllerBase {
 
   // Called when there is an incoming command packet.
   virtual void OnCommandPacketReceived(
-      const common::PacketView<hci::CommandHeader>& command_packet) = 0;
+      const PacketView<hci::CommandHeader>& command_packet) = 0;
 
   // Called when there is an outgoing ACL data packet.
-  virtual void OnACLDataPacketReceived(
-      const common::ByteBuffer& acl_data_packet) = 0;
+  virtual void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) = 0;
 
  private:
   // Read and handle packets received over the channels.
@@ -84,7 +83,7 @@ class FakeControllerBase {
   // Sends the given packet over this FakeController's Snoop channel
   // endpoint.
   // Retuns the result of the write operation on the channel.
-  void SendSnoopChannelPacket(const common::ByteBuffer& packet,
+  void SendSnoopChannelPacket(const ByteBuffer& packet,
                               bt_hci_snoop_type_t packet_type,
                               bool is_received);
 

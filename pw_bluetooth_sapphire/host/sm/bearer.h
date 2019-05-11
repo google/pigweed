@@ -67,19 +67,19 @@ class Bearer final {
     // The Pairing Feature Exchange procedures will fail if no feature exchange
     // callback is assigned.
     virtual void OnFeatureExchange(const PairingFeatures& features,
-                                   const common::ByteBuffer& preq,
-                                   const common::ByteBuffer& pres) = 0;
+                                   const ByteBuffer& preq,
+                                   const ByteBuffer& pres) = 0;
 
     // Called when a "confirm value" is received from the peer during Legacy
     // Pairing Phase 2.
-    virtual void OnPairingConfirm(const common::UInt128& confirm) = 0;
+    virtual void OnPairingConfirm(const UInt128& confirm) = 0;
 
     // Called when a "random value" is received from the peer during Legacy
     // Pairing Phase 2.
-    virtual void OnPairingRandom(const common::UInt128& random) = 0;
+    virtual void OnPairingRandom(const UInt128& random) = 0;
 
     // Called when a "Long Term Key" is received from the peer.
-    virtual void OnLongTermKey(const common::UInt128& ltk) = 0;
+    virtual void OnLongTermKey(const UInt128& ltk) = 0;
 
     // Called when EDiv and Rand values are received from the peer during Legacy
     // Pairing Phase 3.
@@ -87,11 +87,11 @@ class Bearer final {
 
     // Called when the "Identity Resolving Key" is received from the peer during
     // Phase 3.
-    virtual void OnIdentityResolvingKey(const common::UInt128& irk) = 0;
+    virtual void OnIdentityResolvingKey(const UInt128& irk) = 0;
 
     // Called when the "Identity Address" is received from the peer during Phase
     // 3.
-    virtual void OnIdentityAddress(const common::DeviceAddress& address) = 0;
+    virtual void OnIdentityAddress(const DeviceAddress& address) = 0;
 
     // Called when a "Security Request" is received from the peer (see Vol 3,
     // Part H, 2.4.6) (Note: A device in the link layer master role is not
@@ -144,11 +144,11 @@ class Bearer final {
 
   // Sends a "confirm value" for Phase 2 of legacy pairing. Returns false if
   // feature exchange is in progress or pairing hasn't been started.
-  bool SendConfirmValue(const common::UInt128& confirm);
+  bool SendConfirmValue(const UInt128& confirm);
 
   // Sends a "random value" for Phase 2 of legacy pairing. Returns false if
   // feature exchange is in progress or pairing hasn't been started.
-  bool SendRandomValue(const common::UInt128& random);
+  bool SendRandomValue(const UInt128& random);
 
   // Sends the encryption information during the key distribution phase
   // (Phase 3) of legacy pairing. Returns false if the command cannot be sent.
@@ -215,7 +215,7 @@ class Bearer final {
 
   // l2cap::Channel callbacks:
   void OnChannelClosed();
-  void OnRxBFrame(common::ByteBufferPtr sdu);
+  void OnRxBFrame(ByteBufferPtr sdu);
 
   l2cap::ScopedChannel chan_;
   hci::Connection::Role role_;
@@ -230,7 +230,7 @@ class Bearer final {
   // We use this buffer to store pairing request and response PDUs as they are
   // needed to complete the feature exchange (i.e. the "preq" and "pres"
   // payloads needed for Phase 2 (see Vol 3, Part H, 2.2.3 for example).
-  common::StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)>
+  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)>
       pairing_payload_buffer_;
 
   // Task used to drive the "SMP Timeout" (Vol 3, Part H, 3.4). The timer is

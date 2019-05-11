@@ -20,13 +20,13 @@ class FakeGattServer final {
   explicit FakeGattServer(FakePeer* dev);
 
   // Handle the ATT |pdu| received over link with handle |conn|.
-  void HandlePdu(hci::ConnectionHandle conn, const common::ByteBuffer& pdu);
+  void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
  private:
   void HandleReadByGrpType(hci::ConnectionHandle conn,
-                           const common::ByteBuffer& params);
+                           const ByteBuffer& params);
 
-  void Send(hci::ConnectionHandle conn, const common::ByteBuffer& pdu);
+  void Send(hci::ConnectionHandle conn, const ByteBuffer& pdu);
   void SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode,
                     att::Handle handle, att::ErrorCode ecode);
 

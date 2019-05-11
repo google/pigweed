@@ -104,14 +104,13 @@ template <typename HeaderType, size_t BufferSize>
 class FixedSizePacket : public Packet<HeaderType> {
  public:
   explicit FixedSizePacket(size_t payload_size = 0u) : Packet<HeaderType>() {
-    this->init_view(
-        common::MutablePacketView<HeaderType>(&buffer_, payload_size));
+    this->init_view(MutablePacketView<HeaderType>(&buffer_, payload_size));
   }
 
   ~FixedSizePacket() override = default;
 
  private:
-  common::StaticByteBuffer<BufferSize> buffer_;
+  StaticByteBuffer<BufferSize> buffer_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FixedSizePacket);
 };
@@ -122,7 +121,7 @@ class SlabPacket;
 }  // namespace internal
 
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-using PacketTraits = common::SlabAllocatorTraits<
+using PacketTraits = SlabAllocatorTraits<
     internal::SlabPacket<HeaderType, BufferSize, NumBuffers>,
     sizeof(internal::FixedSizePacket<HeaderType, BufferSize>), NumBuffers>;
 

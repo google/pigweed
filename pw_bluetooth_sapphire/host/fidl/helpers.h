@@ -37,18 +37,18 @@ namespace fidl_helpers {
 // TODO(BT-305): Temporary logic for converting between the stack identifier
 // type (integer) and FIDL identifier type (string). Remove these once all FIDL
 // interfaces have been converted to use integer IDs.
-std::optional<bt::common::PeerId> PeerIdFromString(const std::string& id);
+std::optional<bt::PeerId> PeerIdFromString(const std::string& id);
 
-// Functions for generating a FIDL bluetooth::common::Status
+// Functions for generating a FIDL bluetooth::Status
 
-fuchsia::bluetooth::ErrorCode HostErrorToFidl(bt::common::HostError host_error);
+fuchsia::bluetooth::ErrorCode HostErrorToFidl(bt::HostError host_error);
 
 fuchsia::bluetooth::Status NewFidlError(
     fuchsia::bluetooth::ErrorCode error_code, std::string description);
 
 template <typename ProtocolErrorCode>
 fuchsia::bluetooth::Status StatusToFidl(
-    const bt::common::Status<ProtocolErrorCode>& status, std::string msg = "") {
+    const bt::Status<ProtocolErrorCode>& status, std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
   if (status.is_success()) {
     return fidl_status;
@@ -81,8 +81,7 @@ fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
 // Functions to convert Host FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(
     const fuchsia::bluetooth::host::LEData& data);
-bt::common::UInt128 LocalKeyFromFidl(
-    const fuchsia::bluetooth::host::LocalKey& key);
+bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::host::LocalKey& key);
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
     const fuchsia::bluetooth::host::BREDRData& data);
 fuchsia::bluetooth::host::BondingData NewBondingData(
@@ -90,7 +89,7 @@ fuchsia::bluetooth::host::BondingData NewBondingData(
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::AdvertisingDataPtr NewAdvertisingData(
-    const bt::common::ByteBuffer& advertising_data);
+    const bt::ByteBuffer& advertising_data);
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(
     const bt::gap::Peer& peer);
 
@@ -107,10 +106,10 @@ bool PopulateDiscoveryFilter(
 }  // namespace fidl_helpers
 }  // namespace bthost
 
-// fidl::TypeConverter specializations for common::ByteBuffer and friends.
+// fidl::TypeConverter specializations for ByteBuffer and friends.
 template <>
-struct fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::common::ByteBuffer> {
-  static fidl::VectorPtr<uint8_t> Convert(const bt::common::ByteBuffer& from);
+struct fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer> {
+  static fidl::VectorPtr<uint8_t> Convert(const bt::ByteBuffer& from);
 };
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_

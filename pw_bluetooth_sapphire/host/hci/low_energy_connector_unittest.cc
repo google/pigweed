@@ -24,13 +24,12 @@ using bt::testing::FakeController;
 using bt::testing::FakePeer;
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
-using common::HostError;
-const common::DeviceAddress kLocalAddress(
-    common::DeviceAddress::Type::kLEPublic, "00:00:00:00:00:FF");
-const common::DeviceAddress kRandomAddress(
-    common::DeviceAddress::Type::kLERandom, "00:00:00:00:00:FE");
-const common::DeviceAddress kTestAddress(common::DeviceAddress::Type::kLEPublic,
-                                         "00:00:00:00:00:01");
+const DeviceAddress kLocalAddress(DeviceAddress::Type::kLEPublic,
+                                  "00:00:00:00:00:FF");
+const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom,
+                                   "00:00:00:00:00:FE");
+const DeviceAddress kTestAddress(DeviceAddress::Type::kLEPublic,
+                                 "00:00:00:00:00:01");
 const LEPreferredConnectionParameters kTestParams(1, 1, 1, 1);
 constexpr zx::duration kConnectTimeout = zx::sec(10);
 
@@ -83,15 +82,15 @@ class LowEnergyConnectorTest : public TestingBase {
  private:
   void OnIncomingConnectionCreated(ConnectionHandle handle,
                                    Connection::Role role,
-                                   const common::DeviceAddress& peer_address,
+                                   const DeviceAddress& peer_address,
                                    const LEConnectionParameters& conn_params) {
     in_connections_.push_back(std::make_unique<testing::FakeConnection>(
         handle, hci::Connection::LinkType::kLE, role, kLocalAddress,
         peer_address));
   }
 
-  void OnConnectionStateChanged(const common::DeviceAddress& address,
-                                bool connected, bool canceled) {
+  void OnConnectionStateChanged(const DeviceAddress& address, bool connected,
+                                bool canceled) {
     request_canceled = canceled;
   }
 
@@ -276,7 +275,7 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnect) {
   event.connection_handle = 1;
 
   test_device()->SendLEMetaEvent(kLEConnectionCompleteSubeventCode,
-                                 common::BufferView(&event, sizeof(event)));
+                                 BufferView(&event, sizeof(event)));
 
   RunLoopUntilIdle();
 
@@ -291,8 +290,8 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnect) {
 }
 
 TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
-  const common::DeviceAddress kIncomingAddress(
-      common::DeviceAddress::Type::kLEPublic, "00:00:00:00:00:02");
+  const DeviceAddress kIncomingAddress(DeviceAddress::Type::kLEPublic,
+                                       "00:00:00:00:00:02");
 
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(connector()->request_pending());
@@ -325,7 +324,7 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
     event.connection_handle = 2;
 
     test_device()->SendLEMetaEvent(kLEConnectionCompleteSubeventCode,
-                                   common::BufferView(&event, sizeof(event)));
+                                   BufferView(&event, sizeof(event)));
   });
 
   RunLoopUntilIdle();

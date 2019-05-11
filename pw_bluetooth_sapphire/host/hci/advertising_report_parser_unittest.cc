@@ -5,7 +5,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/advertising_report_parser.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
@@ -16,7 +15,7 @@ namespace test {
 namespace {
 
 TEST(HCI_AdvertisingReportParserTest, EmptyReport) {
-  auto bytes = common::CreateStaticByteBuffer(0x3E, 0x02, 0x02, 0x00);
+  auto bytes = CreateStaticByteBuffer(0x3E, 0x02, 0x02, 0x00);
 
   auto event = EventPacket::New(bytes.size() - sizeof(EventHeader));
   event->mutable_view()->mutable_data().Write(bytes);
@@ -33,7 +32,7 @@ TEST(HCI_AdvertisingReportParserTest, EmptyReport) {
 TEST(HCI_AdvertisingReportParserTest, SingleReportMalformed) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x0B, 0x02, 0x01,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -59,7 +58,7 @@ TEST(HCI_AdvertisingReportParserTest, SingleReportMalformed) {
 TEST(HCI_AdvertisingReportParserTest, SingleReportNoData) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x0C, 0x02, 0x01,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -94,7 +93,7 @@ TEST(HCI_AdvertisingReportParserTest, SingleReportNoData) {
 TEST(HCI_AdvertisingReportParserTest, ReportsValidInvalid) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x16, 0x02, 0x02,  // HCI event header and LE Meta Event params
       0x03, 0x02,              // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -135,7 +134,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportsValidInvalid) {
 TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x28, 0x02, 0x03,              // HCI event header and LE Meta Event params
       0x03, 0x02,                          // event_type, address_type
       0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  // address
@@ -176,8 +175,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
   EXPECT_EQ(LEAddressType::kRandom, data->address_type);
   EXPECT_EQ("0C:0B:0A:09:08:07", data->address.ToString());
   EXPECT_EQ(3, data->length_data);
-  EXPECT_TRUE(
-      common::ContainersEqual(std::array<uint8_t, 3>{{0x01, 0x02, 0x03}},
+  EXPECT_TRUE(ContainersEqual(std::array<uint8_t, 3>{{0x01, 0x02, 0x03}},
                               data->data, data->length_data));
   EXPECT_EQ(15, rssi);
 
@@ -188,9 +186,9 @@ TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
   EXPECT_EQ(LEAddressType::kPublic, data->address_type);
   EXPECT_EQ("12:11:10:0F:0E:0D", data->address.ToString());
   EXPECT_EQ(5, data->length_data);
-  EXPECT_TRUE(common::ContainersEqual(
-      std::array<uint8_t, 5>{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}, data->data,
-      data->length_data));
+  EXPECT_TRUE(
+      ContainersEqual(std::array<uint8_t, 5>{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF}},
+                      data->data, data->length_data));
   EXPECT_EQ(1, rssi);
 
   // No more reports.
@@ -203,7 +201,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportsAllValid) {
 TEST(HCI_AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x28, 0x02,  // HCI event header and LE Meta Event param
       0x01,              // Event count is 1, even though packet contains 3
       0x03, 0x02,        // event_type, address_type
@@ -252,7 +250,7 @@ TEST(HCI_AdvertisingReportParserTest, ReportCountLessThanPayloadSize) {
 TEST(HCI_AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
   // clang-format off
 
-  auto bytes = common::CreateStaticByteBuffer(
+  auto bytes = CreateStaticByteBuffer(
       0x3E, 0x0C, 0x02,  // HCI event header and LE Meta Event param
       0x02,              // Event count is 2, even though packet contains 1
       0x03, 0x02,        // event_type, address_type

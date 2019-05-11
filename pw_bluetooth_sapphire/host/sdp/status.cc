@@ -5,7 +5,6 @@
 #include "status.h"
 
 namespace bt {
-namespace common {
 
 // static
 std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(
@@ -14,8 +13,6 @@ std::string ProtocolErrorTraits<sdp::ErrorCode>::ToString(
                            bt::sdp::ErrorCodeToString(ecode).c_str(),
                            static_cast<unsigned int>(ecode));
 }
-
-}  // namespace common
 
 namespace sdp {
 
@@ -41,9 +38,9 @@ std::string ErrorCodeToString(ErrorCode code) {
   return "unknown status";
 }
 
-using Base = common::Status<ErrorCode>;
+using Base = bt::Status<ErrorCode>;
 
-Status::Status(common::HostError ecode) : Base(ecode) {}
+Status::Status(HostError ecode) : Base(ecode) {}
 
 Status::Status(ErrorCode proto_code) : Base(proto_code) {}
 

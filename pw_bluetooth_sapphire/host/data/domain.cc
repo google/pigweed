@@ -14,20 +14,18 @@
 namespace bt {
 namespace data {
 
-class Impl final : public Domain, public common::TaskDomain<Impl, Domain> {
+class Impl final : public Domain, public TaskDomain<Impl, Domain> {
  public:
   Impl(fxl::RefPtr<hci::Transport> hci, std::string thread_name)
       : Domain(),
-        common::TaskDomain<Impl, Domain>(this, std::move(thread_name)),
+        TaskDomain<Impl, Domain>(this, std::move(thread_name)),
         hci_(hci) {
     ZX_DEBUG_ASSERT(hci_);
   }
 
   // Second constructor used by CreateWithDispatcher.
   Impl(fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* dispatcher)
-      : Domain(),
-        common::TaskDomain<Impl, Domain>(this, dispatcher),
-        hci_(hci) {
+      : Domain(), TaskDomain<Impl, Domain>(this, dispatcher), hci_(hci) {
     ZX_DEBUG_ASSERT(hci_);
   }
 
@@ -48,9 +46,7 @@ class Impl final : public Domain, public common::TaskDomain<Impl, Domain> {
     });
   }
 
-  void ShutDown() override {
-    common::TaskDomain<Impl, Domain>::ScheduleCleanUp();
-  }
+  void ShutDown() override { TaskDomain<Impl, Domain>::ScheduleCleanUp(); }
 
   // Called by the domain dispatcher as a result of ScheduleCleanUp().
   void CleanUp() {

@@ -10,9 +10,6 @@
 namespace bt {
 namespace gap {
 
-using common::DeviceAddress;
-using common::UInt128;
-
 void IdentityResolvingList::Add(DeviceAddress identity, const UInt128& irk) {
   registry_[identity] = irk;
 }

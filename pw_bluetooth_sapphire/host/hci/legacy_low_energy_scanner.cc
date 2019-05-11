@@ -17,9 +17,6 @@
 
 namespace bt {
 
-using common::BufferView;
-using common::DeviceAddress;
-
 namespace hci {
 namespace {
 
@@ -107,8 +104,8 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
 }
 
 void LegacyLowEnergyScanner::StartScanInternal(
-    const common::DeviceAddress& local_address, bool active,
-    uint16_t scan_interval, uint16_t scan_window, bool filter_duplicates,
+    const DeviceAddress& local_address, bool active, uint16_t scan_interval,
+    uint16_t scan_window, bool filter_duplicates,
     LEScanFilterPolicy filter_policy, zx::duration period,
     ScanStatusCallback callback) {
   // Check if the scan request was canceled by StopScan() while we were waiting
@@ -157,7 +154,7 @@ void LegacyLowEnergyScanner::StartScanInternal(
     ZX_DEBUG_ASSERT(state() == State::kInitiating);
 
     if (!status) {
-      if (status.error() == common::HostError::kCanceled) {
+      if (status.error() == HostError::kCanceled) {
         bt_log(TRACE, "hci-le", "scan canceled");
         return;
       }
@@ -303,7 +300,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
       continue;
     }
 
-    common::DeviceAddress address;
+    DeviceAddress address;
     bool resolved;
     if (!DeviceAddressFromAdvReport(*report, &address, &resolved))
       continue;
@@ -332,7 +329,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
 
 void LegacyLowEnergyScanner::HandleScanResponse(
     const LEAdvertisingReportData& report, int8_t rssi) {
-  common::DeviceAddress address;
+  DeviceAddress address;
   bool resolved;
   if (!DeviceAddressFromAdvReport(report, &address, &resolved))
     return;
@@ -363,7 +360,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(
 }
 
 void LegacyLowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result,
-                                             const common::ByteBuffer& data) {
+                                             const ByteBuffer& data) {
   delegate()->OnPeerFound(result, data);
 }
 

@@ -4,18 +4,13 @@
 
 #include "low_energy_address_manager.h"
 
+#include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-#include "gap.h"
-
 namespace bt {
 namespace gap {
-
-using common::DeviceAddress;
-using common::HostError;
-using common::UInt128;
 
 LowEnergyAddressManager::LowEnergyAddressManager(
     const DeviceAddress& public_address, StateQueryDelegate delegate,

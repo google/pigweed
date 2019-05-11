@@ -29,9 +29,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // 1. If called while a start request is pending, reports kRepeatedAttempts.
   // 2. If called while a stop request is pending, then cancels the stop request
   //    and proceeds with start.
-  void StartAdvertising(const common::DeviceAddress& address,
-                        const common::ByteBuffer& data,
-                        const common::ByteBuffer& scan_rsp,
+  void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
+                        const ByteBuffer& scan_rsp,
                         ConnectionCallback connect_callback,
                         zx::duration interval, bool anonymous,
                         AdvertisingStatusCallback callback) override;
@@ -40,12 +39,12 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // If called while a start request is pending, then cancels the start
   // request and proceeds with start.
   // Returns false if called while not advertising.
-  bool StopAdvertising(const common::DeviceAddress& address) override;
+  bool StopAdvertising(const DeviceAddress& address) override;
 
   // Clears the advertising state before passing |link| on to
   // |connect_callback_|.
   void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
-                            const common::DeviceAddress& peer_address,
+                            const DeviceAddress& peer_address,
                             const LEConnectionParameters& conn_params) override;
 
  private:
@@ -53,7 +52,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StopAdvertisingInternal();
 
   // Returns true if currently advertising.
-  bool advertising() const { return advertised_ != common::DeviceAddress(); }
+  bool advertising() const { return advertised_ != DeviceAddress(); }
 
   // The transport that's used to issue commands
   fxl::RefPtr<Transport> hci_;
@@ -64,7 +63,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
 
   // Non-zero if advertising has been enabled.
-  common::DeviceAddress advertised_;
+  DeviceAddress advertised_;
 
   // if not null, the callback for connectable advertising.
   ConnectionCallback connect_callback_;

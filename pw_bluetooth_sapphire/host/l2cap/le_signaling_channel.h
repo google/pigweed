@@ -25,7 +25,7 @@ class LESignalingChannel final : public SignalingChannel {
   ~LESignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const common::ByteBuffer& payload,
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
                    ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
 
@@ -49,7 +49,7 @@ class LESignalingChannel final : public SignalingChannel {
   void OnConnParamUpdateReceived(const SignalingPacket& packet);
 
   // SignalingChannel override
-  void DecodeRxUnit(common::ByteBufferPtr sdu,
+  void DecodeRxUnit(ByteBufferPtr sdu,
                     const SignalingPacketHandler& cb) override;
 
   bool HandlePacket(const SignalingPacket& packet) override;

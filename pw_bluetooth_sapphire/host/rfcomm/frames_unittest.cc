@@ -4,12 +4,11 @@
 
 #include "frames.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "gtest/gtest.h"
-
 #include "mux_commands.h"
 #include "rfcomm.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
 namespace bt {
 namespace rfcomm {
@@ -29,7 +28,7 @@ constexpr FrameType kEmptyFrameType = FrameType::kSetAsynchronousBalancedMode;
 constexpr DLCI kEmptyFrameDLCI = 0x02;
 constexpr bool kEmptyFramePF = true;
 constexpr bool kEmptyFrameCreditBasedFlow = false;
-const auto kEmptyFrame = common::CreateStaticByteBuffer(
+const auto kEmptyFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. C/R bit is 1 in the case of a command being sent
     // from the initiator role. DLCI is 0x02. Thus: 1 (E/A) ++ 1 (C/R) ++ 010000
@@ -57,9 +56,9 @@ constexpr FrameType kHelloFrameType = FrameType::kUnnumberedInfoHeaderCheck;
 constexpr DLCI kHelloFrameDLCI = 0x23;
 constexpr bool kHelloFramePF = false;
 constexpr bool kHelloFrameCreditBasedFlow = false;
-const auto kHelloFrameInformation = common::CreateStaticByteBuffer(
-    'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd');
-const auto kHelloFrame = common::CreateStaticByteBuffer(
+const auto kHelloFrameInformation =
+    CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd');
+const auto kHelloFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. C/R bit is 0 in the case of a command being sent
     // from the responder role. DLCI is 0x23. Thus: 1 (E/A) ++ 0 (C/R) ++ 110001
@@ -90,9 +89,9 @@ constexpr DLCI kFuchsiaFrameDLCI = 0x23;
 constexpr bool kFuchsiaFramePF = true;
 constexpr bool kFuchsiaFrameCreditBasedFlow = true;
 constexpr uint8_t kFuchsiaFrameCredits = 5;
-const auto kFuchsiaFrameInformation = common::CreateStaticByteBuffer(
+const auto kFuchsiaFrameInformation = CreateStaticByteBuffer(
     'h', 'e', 'l', 'l', 'o', 'f', 'u', 'c', 'h', 's', 'i', 'a');
-const auto kFuchsiaFrame = common::CreateStaticByteBuffer(
+const auto kFuchsiaFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. C/R bit is 0 in the case of a command being sent
     // from the responder role. DLCI is 0x23. Thus: 1 (E/A) ++ 0 (C/R) ++ 110001
@@ -122,10 +121,10 @@ constexpr uint8_t kTestCommandFrameCredits = 63;
 constexpr MuxCommandType kTestCommandFrameMuxCommandType =
     MuxCommandType::kTestCommand;
 const auto kTestCommandFrameMuxCommandPattern =
-    common::CreateStaticByteBuffer(0, 1, 2, 3);
+    CreateStaticByteBuffer(0, 1, 2, 3);
 constexpr CommandResponse kTestCommandFrameMuxCommandCR =
     CommandResponse::kCommand;
-const auto kTestCommandFrame = common::CreateStaticByteBuffer(
+const auto kTestCommandFrame = CreateStaticByteBuffer(
     // Address: E/A = 1, C/R is 1 for a command from the initiator, DLCI = 0.
     0b00000011,
     // Control: UIH is 1111p11, P/F is 1 due to presence of a credits field.
@@ -146,7 +145,7 @@ const auto kTestCommandFrame = common::CreateStaticByteBuffer(
 // Contruction of pre-multiplexer-startup SABM frame:
 //  - Role is unset
 //  - Sent to DLCI 0
-const auto kPreMuxSABMFrame = common::CreateStaticByteBuffer(
+const auto kPreMuxSABMFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. Our implementation sets C/R bit to 1 for
     // pre-mux-startup SABM frames. DLCI is 0.
@@ -164,7 +163,7 @@ const auto kPreMuxSABMFrame = common::CreateStaticByteBuffer(
 // Contruction of pre-multiplexer-startup SABM frame:
 //  - Role is unset
 //  - Sent to DLCI 0
-const auto kPreMuxUAFrame = common::CreateStaticByteBuffer(
+const auto kPreMuxUAFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. Our implementation sets C/R bit to 1 for
     // pre-mux-startup UA frames. DLCI is 0.
@@ -182,7 +181,7 @@ const auto kPreMuxUAFrame = common::CreateStaticByteBuffer(
 // Contruction of pre-multiplexer-startup DM frame:
 //  - Role is unset
 //  - Sent to DLCI 0
-const auto kPreMuxDMFrame = common::CreateStaticByteBuffer(
+const auto kPreMuxDMFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. Our implementation sets C/R bit to 1 for
     // pre-mux-startup frames. DLCI is 0.
@@ -207,7 +206,7 @@ constexpr Role kEmptyUserDataFrameRole = Role::kResponder;
 constexpr DLCI kEmptyUserDataFrameDLCI = 0x23;
 constexpr bool kEmptyUserDataFrameCreditBasedFlow = true;
 constexpr FrameCredits kEmptyUserDataFrameCredits = 11;
-const auto kEmptyUserDataFrame = common::CreateStaticByteBuffer(
+const auto kEmptyUserDataFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. C/R bit is 0 in the case of a command being sent
     // from the responder role. DLCI is 0x23. Thus: 1 (E/A) ++ 0 (C/R) ++ 110001
@@ -224,24 +223,24 @@ const auto kEmptyUserDataFrame = common::CreateStaticByteBuffer(
     // Please see GSM 5.2.1.6, GSM Annex B, and RFCOMM 5.1.1.
     0b10000001);
 
-const auto kInvalidLengthFrame = common::CreateStaticByteBuffer(0, 1, 2);
+const auto kInvalidLengthFrame = CreateStaticByteBuffer(0, 1, 2);
 
 // Same as the hellofuchsia frame, but information field is too short.
-const auto kInvalidLengthFrame2 = common::CreateStaticByteBuffer(
+const auto kInvalidLengthFrame2 = CreateStaticByteBuffer(
     0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o');
 
 // Same as the hellofuchsia frame, but with an invalid FCS.
-const auto kInvalidFCSFrame = common::CreateStaticByteBuffer(
+const auto kInvalidFCSFrame = CreateStaticByteBuffer(
     0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
     'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10000001 + 1);
 
 // Same as the hellofuchsia frame, but with an invalid DLCI (1)
-const auto kInvalidDLCIFrame = common::CreateStaticByteBuffer(
+const auto kInvalidDLCIFrame = CreateStaticByteBuffer(
     0b00000101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
     'f', 'u', 'c', 'h', 's', 'i', 'a', 0b11000011);
 
 // Same as the hellofuchsia frame, but with an invalid DLCI (62)
-const auto kInvalidDLCIFrame2 = common::CreateStaticByteBuffer(
+const auto kInvalidDLCIFrame2 = CreateStaticByteBuffer(
     0b11111001, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
     'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10011111);
 
@@ -249,30 +248,30 @@ using RFCOMM_FrameTest = ::testing::Test;
 
 TEST_F(RFCOMM_FrameTest, WriteFrame) {
   SetAsynchronousBalancedModeCommand frame(kEmptyFrameRole, kEmptyFrameDLCI);
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(4ul, frame.written_size());
   EXPECT_EQ(kEmptyFrame, buffer);
 }
 
 TEST_F(RFCOMM_FrameTest, WriteFrameWithData) {
-  auto information = common::NewSlabBuffer(kHelloFrameInformation.size());
+  auto information = NewSlabBuffer(kHelloFrameInformation.size());
   kHelloFrameInformation.Copy(information.get());
   UserDataFrame frame(kHelloFrameRole, kHelloFrameCreditBasedFlow,
                       kHelloFrameDLCI, std::move(information));
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(14ul, frame.written_size());
   EXPECT_EQ(kHelloFrame, buffer);
 }
 
 TEST_F(RFCOMM_FrameTest, WriteFrameWithDataAndCredits) {
-  auto information = common::NewSlabBuffer(kFuchsiaFrameInformation.size());
+  auto information = NewSlabBuffer(kFuchsiaFrameInformation.size());
   kFuchsiaFrameInformation.Copy(information.get());
   UserDataFrame frame(kFuchsiaFrameRole, kFuchsiaFrameCreditBasedFlow,
                       kFuchsiaFrameDLCI, std::move(information));
   frame.set_credits(kFuchsiaFrameCredits);
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(17ul, frame.written_size());
   EXPECT_EQ(kFuchsiaFrame, buffer);
@@ -285,27 +284,27 @@ TEST_F(RFCOMM_FrameTest, WriteFrameWithMuxCommandAndCredits) {
                         std::move(mux_command));
   frame.set_credits(kTestCommandFrameCredits);
   EXPECT_EQ(kTestCommandFrame.size(), frame.written_size());
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(kTestCommandFrame, buffer);
 }
 
 TEST_F(RFCOMM_FrameTest, WritePreMuxStartupSABM) {
   SetAsynchronousBalancedModeCommand frame(Role::kUnassigned, kMuxControlDLCI);
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(kPreMuxSABMFrame, buffer);
 }
 
 TEST_F(RFCOMM_FrameTest, WritePreMuxStartupUA) {
   UnnumberedAcknowledgementResponse frame(Role::kUnassigned, kMuxControlDLCI);
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(kPreMuxUAFrame, buffer);
 }
 TEST_F(RFCOMM_FrameTest, WritePreMuxStartupDM) {
   DisconnectedModeResponse frame(Role::kUnassigned, kMuxControlDLCI);
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(kPreMuxDMFrame, buffer);
 }
@@ -316,7 +315,7 @@ TEST_F(RFCOMM_FrameTest, WriteEmptyUserDataFrameWithCredits) {
                       kEmptyUserDataFrameDLCI, nullptr);
   frame.set_credits(kEmptyUserDataFrameCredits);
   EXPECT_EQ(kEmptyUserDataFrame.size(), frame.written_size());
-  common::DynamicByteBuffer buffer(frame.written_size());
+  DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(kEmptyUserDataFrame, buffer);
 }

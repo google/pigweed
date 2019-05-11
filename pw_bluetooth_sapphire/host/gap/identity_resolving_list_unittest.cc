@@ -5,16 +5,11 @@
 #include "identity_resolving_list.h"
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
 namespace bt {
 namespace gap {
 namespace {
-
-using common::DeviceAddress;
-using common::RandomUInt128;
-using common::UInt128;
 
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
                               "01:02:03:04:05:06");

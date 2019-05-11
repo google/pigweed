@@ -14,9 +14,6 @@ namespace l2cap {
 namespace internal {
 namespace {
 
-using common::BufferView;
-using common::CreateStaticByteBuffer;
-
 TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesInformationFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
   EXPECT_TRUE(CreateStaticByteBuffer(0b0000'0000, 0)

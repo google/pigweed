@@ -17,8 +17,8 @@ namespace bt {
 namespace hci {
 namespace {
 
-using bt::common::LowerBits;
-using bt::common::UpperBits;
+using bt::LowerBits;
+using bt::UpperBits;
 using bt::testing::CommandTransaction;
 
 using TestingBase =
@@ -48,12 +48,12 @@ TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
   // Set up expectations:
   // clang-format off
   // HCI_Reset
-  auto req = common::CreateStaticByteBuffer(
+  auto req = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
   // HCI_CommandComplete
-  auto rsp = common::CreateStaticByteBuffer(
+  auto rsp = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       0x01,  // num_hci_command_packets (1 can be sent)
@@ -101,7 +101,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
   // Set up expectations:
   // clang-format off
   // HCI_Inquiry (general, unlimited, 1s)
-  auto req = common::CreateStaticByteBuffer(
+  auto req = CreateStaticByteBuffer(
       LowerBits(kInquiry), UpperBits(kInquiry),  // HCI_Inquiry opcode
       0x05,                                      // parameter_total_size
       0x33, 0x8B, 0x9E,                          // General Inquiry
@@ -109,14 +109,14 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
       0x00                                       // Unlimited responses
       );
   // HCI_CommandStatus
-  auto rsp0 = common::CreateStaticByteBuffer(
+  auto rsp0 = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
       LowerBits(kInquiry), UpperBits(kInquiry)  // HCI_Inquiry opcode
       );
   // HCI_InquiryComplete
-  auto rsp1 = common::CreateStaticByteBuffer(
+  auto rsp1 = CreateStaticByteBuffer(
       kInquiryCompleteEventCode,
       0x01,  // parameter_total_size (1 byte payload)
       StatusCode::kSuccess);
@@ -159,12 +159,12 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
-  auto req = common::CreateStaticByteBuffer(
+  auto req = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
   // HCI_CommandStatus
-  auto rsp = common::CreateStaticByteBuffer(
+  auto rsp = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
@@ -204,27 +204,27 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
-  auto req1 = common::CreateStaticByteBuffer(
+  auto req1 = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp1 = common::CreateStaticByteBuffer(
+  auto rsp1 = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x03,  // parameter_total_size (4 byte payload)
       0x00,  // num_hci_command_packets (None can be sent)
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
       );
-  auto req2 = common::CreateStaticByteBuffer(
+  auto req2 = CreateStaticByteBuffer(
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel),  // HCI_InquiryCancel opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp2 = common::CreateStaticByteBuffer(
+  auto rsp2 = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x03,  // parameter_total_size (4 byte payload)
       0x01,  // num_hci_command_packets (1 can be sent)
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel)  // HCI_InquiryCancel opcode
       );
-  auto rsp_commandsavail = common::CreateStaticByteBuffer(
+  auto rsp_commandsavail = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
       StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
@@ -283,27 +283,27 @@ TEST_F(HCI_CommandChannelTest, QueuedCommands) {
   // Set up expectations
   // clang-format off
   // HCI_Reset for the sake of testing
-  auto req_reset = common::CreateStaticByteBuffer(
+  auto req_reset = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp_reset = common::CreateStaticByteBuffer(
+  auto rsp_reset = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x03,  // parameter_total_size (4 byte payload)
       0xFF,  // num_hci_command_packets (255 can be sent)
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
       );
-  auto req_inqcancel = common::CreateStaticByteBuffer(
+  auto req_inqcancel = CreateStaticByteBuffer(
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel),  // HCI_InquiryCancel opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp_inqcancel = common::CreateStaticByteBuffer(
+  auto rsp_inqcancel = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x03,  // parameter_total_size (4 byte payload)
       0xFF,  // num_hci_command_packets (255 can be sent)
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel)  // HCI_Reset opcode
       );
-  auto rsp_commandsavail = common::CreateStaticByteBuffer(
+  auto rsp_commandsavail = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
       StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
@@ -382,27 +382,27 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
   // Set up expectations
   // clang-format off
   // Using HCI_Reset for testing.
-  auto req_reset = common::CreateStaticByteBuffer(
+  auto req_reset = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp_resetstatus = common::CreateStaticByteBuffer(
+  auto rsp_resetstatus = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
       );
-  auto req_inqcancel = common::CreateStaticByteBuffer(
+  auto req_inqcancel = CreateStaticByteBuffer(
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel),  // HCI_InquiryCancel opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp_inqstatus = common::CreateStaticByteBuffer(
+  auto rsp_inqstatus = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel)  // HCI_Reset opcode
       );
-  auto rsp_bogocomplete = common::CreateStaticByteBuffer(
+  auto rsp_bogocomplete = CreateStaticByteBuffer(
       kTestEventCode0,
       0x00 // parameter_total_size (no payload)
       );
@@ -481,27 +481,27 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
   // Set up expectations
   // clang-format off
   // Using HCI_Reset for testing.
-  auto req_reset = common::CreateStaticByteBuffer(
+  auto req_reset = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
-  auto rsp_resetstatus = common::CreateStaticByteBuffer(
+  auto rsp_resetstatus = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
       );
-  auto rsp_bogocomplete = common::CreateStaticByteBuffer(
+  auto rsp_bogocomplete = CreateStaticByteBuffer(
       kTestEventCode0,
       0x00 // parameter_total_size (no payload)
       );
-  auto rsp_nocommandsavail = common::CreateStaticByteBuffer(
+  auto rsp_nocommandsavail = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
       StatusCode::kSuccess, 0x00, // status, num_hci_command_packets (none can be sent)
       0x00, 0x00 // No associated opcode.
       );
-  auto rsp_commandsavail = common::CreateStaticByteBuffer(
+  auto rsp_commandsavail = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
       StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (one can be sent)
@@ -572,12 +572,12 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
   constexpr EventCode kTestEventCode0 = 0xFE;
   constexpr EventCode kTestEventCode1 = 0xFF;
-  auto cmd_status = common::CreateStaticByteBuffer(
-      kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
-  auto cmd_complete = common::CreateStaticByteBuffer(kCommandCompleteEventCode,
-                                                     0x03, 0x01, 0x00, 0x00);
-  auto event0 = common::CreateStaticByteBuffer(kTestEventCode0, 0x00);
-  auto event1 = common::CreateStaticByteBuffer(kTestEventCode1, 0x00);
+  auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00,
+                                           0x01, 0x00, 0x00);
+  auto cmd_complete =
+      CreateStaticByteBuffer(kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
+  auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
+  auto event1 = CreateStaticByteBuffer(kTestEventCode1, 0x00);
 
   int event_count0 = 0;
   auto event_cb0 = [&event_count0, kTestEventCode0](const EventPacket& event) {
@@ -685,12 +685,12 @@ TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
 TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // clang-format off
   // HCI_Reset
-  auto req = common::CreateStaticByteBuffer(
+  auto req = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
       );
 
-  auto req_complete = common::CreateStaticByteBuffer(
+  auto req_complete = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x03,  // parameter_total_size (3 byte payload)
       0x01, // num_hci_command_packets (1 can be sent)
@@ -699,7 +699,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // clang-format on
 
   constexpr EventCode kTestEventCode = 0xFF;
-  auto event = common::CreateStaticByteBuffer(kTestEventCode, 0x01, 0x00);
+  auto event = CreateStaticByteBuffer(kTestEventCode, 0x01, 0x00);
 
   // We will send the HCI_Reset command with kTestEventCode as the completion
   // event. The event handler we register below should only get invoked once and
@@ -736,10 +736,10 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
 TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
   constexpr EventCode kTestSubeventCode0 = 0xFE;
   constexpr EventCode kTestSubeventCode1 = 0xFF;
-  auto le_meta_event_bytes0 = common::CreateStaticByteBuffer(
-      hci::kLEMetaEventCode, 0x01, kTestSubeventCode0);
-  auto le_meta_event_bytes1 = common::CreateStaticByteBuffer(
-      hci::kLEMetaEventCode, 0x01, kTestSubeventCode1);
+  auto le_meta_event_bytes0 =
+      CreateStaticByteBuffer(hci::kLEMetaEventCode, 0x01, kTestSubeventCode0);
+  auto le_meta_event_bytes1 =
+      CreateStaticByteBuffer(hci::kLEMetaEventCode, 0x01, kTestSubeventCode1);
 
   int event_count0 = 0;
   auto event_cb0 = [&event_count0, kTestSubeventCode0,
@@ -829,11 +829,11 @@ TEST_F(HCI_CommandChannelTest,
   // Set up expectations for the asynchronous command and its corresponding
   // command status event.
   // clang-format off
-  auto cmd = common::CreateStaticByteBuffer(
+  auto cmd = CreateStaticByteBuffer(
       LowerBits(kInquiry), UpperBits(kInquiry),  // HCI_Inquiry opcode
       0x00                                       // parameter_total_size
   );
-  auto cmd_status = common::CreateStaticByteBuffer(
+  auto cmd_status = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
@@ -874,11 +874,11 @@ TEST_F(HCI_CommandChannelTest,
                              std::move(async_cmd_cb), kTestEventCode);
 
   // clang-format off
-  auto event_bytes = common::CreateStaticByteBuffer(
+  auto event_bytes = CreateStaticByteBuffer(
       kTestEventCode,
       0x01,  // parameter_total_size
       StatusCode::kSuccess);
-  auto le_event_bytes = common::CreateStaticByteBuffer(
+  auto le_event_bytes = CreateStaticByteBuffer(
       kLEMetaEventCode,
       0x01,  // parameter_total_size
       kTestEventCode);
@@ -925,7 +925,7 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
 TEST_F(HCI_CommandChannelTest, CommandTimeout) {
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
-  auto req_reset = common::CreateStaticByteBuffer(
+  auto req_reset = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       0x00                                   // parameter_total_size
   );
@@ -976,27 +976,27 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
   // Set up expectations
   // clang-format off
   // Using HCI_Reset for testing.
-  auto req_reset = common::CreateStaticByteBuffer(
+  auto req_reset = CreateStaticByteBuffer(
       LowerBits(kReset), UpperBits(kReset), // HCI_Reset opcode
       0x00                                  // parameter_total_size (no payload)
       );
-  auto rsp_resetstatus = common::CreateStaticByteBuffer(
+  auto rsp_resetstatus = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
   );
-  auto req_inqcancel = common::CreateStaticByteBuffer(
+  auto req_inqcancel = CreateStaticByteBuffer(
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel), // HCI_InquiryCancel
       0x00                        // parameter_total_size (no payload)
   );
-  auto rsp_inqstatus = common::CreateStaticByteBuffer(
+  auto rsp_inqstatus = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(kInquiryCancel), UpperBits(kInquiryCancel) // HCI_InquiryCanacel
   );
-  auto rsp_bogocomplete = common::CreateStaticByteBuffer(
+  auto rsp_bogocomplete = CreateStaticByteBuffer(
       kTestEventCode0,
       0x00 // parameter_total_size (no payload)
       );
@@ -1080,39 +1080,39 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
   //  - kExclusiveTwo finishes with kExclTwoCompleteEvent
   //  - kNonExclusive can run whenever it wants.
   //  - For testing, we omit the payloads of all commands.
-  auto excl_one_cmd = common::CreateStaticByteBuffer(
+  auto excl_one_cmd = CreateStaticByteBuffer(
       LowerBits(kExclusiveOne), UpperBits(kExclusiveOne), 0x00  // (no payload)
   );
-  auto rsp_excl_one_status = common::CreateStaticByteBuffer(
+  auto rsp_excl_one_status = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(kExclusiveOne),
       UpperBits(kExclusiveOne)  // HCI opcode
   );
-  auto rsp_one_complete = common::CreateStaticByteBuffer(
+  auto rsp_one_complete = CreateStaticByteBuffer(
       kExclOneCompleteEvent, 0x00  // parameter_total_size (no payload)
   );
 
-  auto excl_two_cmd = common::CreateStaticByteBuffer(
+  auto excl_two_cmd = CreateStaticByteBuffer(
       LowerBits(kExclusiveTwo), UpperBits(kExclusiveTwo), 0x00  // (no payload)
   );
-  auto rsp_excl_two_status = common::CreateStaticByteBuffer(
+  auto rsp_excl_two_status = CreateStaticByteBuffer(
       kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
       StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(kExclusiveTwo),
       UpperBits(kExclusiveTwo)  // HCI opcode
   );
-  auto rsp_two_complete = common::CreateStaticByteBuffer(
+  auto rsp_two_complete = CreateStaticByteBuffer(
       kExclTwoCompleteEvent, 0x00  // parameter_total_size (no payload)
   );
 
-  auto nonexclusive_cmd = common::CreateStaticByteBuffer(
+  auto nonexclusive_cmd = CreateStaticByteBuffer(
       LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
       0x00  // parameter_total_size (no payload)
   );
-  auto nonexclusive_complete = common::CreateStaticByteBuffer(
+  auto nonexclusive_complete = CreateStaticByteBuffer(
       kCommandCompleteEventCode,
       0x04,  // parameter_total_size (4 byte payload)
       0xFA,  // num_hci_command_packets (250)

@@ -28,25 +28,20 @@ constexpr uint16_t kCharacteristicAggregateFormat16 = 0x2905;
 constexpr uint16_t kGenericAttributeService16 = 0x1801;
 constexpr uint16_t kServiceChangedCharacteristic16 = 0x2a05;
 
-constexpr common::UUID kPrimaryService(kPrimaryService16);
-constexpr common::UUID kSecondaryService(kSecondaryService16);
-constexpr common::UUID kIncludeDeclaration(kIncludeDeclaration16);
-constexpr common::UUID kCharacteristicDeclaration(kCharacteristicDeclaration16);
-constexpr common::UUID kCharacteristicExtProperties(
-    kCharacteristicExtProperties16);
-constexpr common::UUID kCharacteristicUserDescription(
-    kCharacteristicUserDescription16);
-constexpr common::UUID kClientCharacteristicConfig(
-    kClientCharacteristicConfig16);
-constexpr common::UUID kServerCharacteristicConfig(
-    kServerCharacteristicConfig16);
-constexpr common::UUID kCharacteristicFormat(kCharacteristicFormat16);
-constexpr common::UUID kCharacteristicAggregateFormat(
-    kCharacteristicAggregateFormat16);
+constexpr UUID kPrimaryService(kPrimaryService16);
+constexpr UUID kSecondaryService(kSecondaryService16);
+constexpr UUID kIncludeDeclaration(kIncludeDeclaration16);
+constexpr UUID kCharacteristicDeclaration(kCharacteristicDeclaration16);
+constexpr UUID kCharacteristicExtProperties(kCharacteristicExtProperties16);
+constexpr UUID kCharacteristicUserDescription(kCharacteristicUserDescription16);
+constexpr UUID kClientCharacteristicConfig(kClientCharacteristicConfig16);
+constexpr UUID kServerCharacteristicConfig(kServerCharacteristicConfig16);
+constexpr UUID kCharacteristicFormat(kCharacteristicFormat16);
+constexpr UUID kCharacteristicAggregateFormat(kCharacteristicAggregateFormat16);
 
 // Defined Generic Attribute Profile Service (Vol 3, Part G, 7)
-constexpr bt::common::UUID kGenericAttributeService(kGenericAttributeService16);
-constexpr bt::common::UUID kServiceChangedCharacteristic(
+constexpr bt::UUID kGenericAttributeService(kGenericAttributeService16);
+constexpr bt::UUID kServiceChangedCharacteristic(
     kServiceChangedCharacteristic16);
 
 }  // namespace types
@@ -77,7 +72,7 @@ using ExtendedProperties = uint16_t;
 constexpr uint16_t kCCCNotificationBit = 0x0001;
 constexpr uint16_t kCCCIndicationBit = 0x0002;
 
-using PeerId = common::PeerId;
+using PeerId = PeerId;
 
 // An identifier uniquely identifies a service, characteristic, or descriptor.
 using IdType = uint64_t;
@@ -89,30 +84,30 @@ constexpr IdType kInvalidId = 0u;
 
 struct ServiceData {
   ServiceData() = default;
-  ServiceData(att::Handle start, att::Handle end, const common::UUID& type);
+  ServiceData(att::Handle start, att::Handle end, const UUID& type);
 
   att::Handle range_start;
   att::Handle range_end;
-  common::UUID type;
+  UUID type;
 };
 
 struct CharacteristicData {
   CharacteristicData() = default;
   CharacteristicData(Properties props, att::Handle handle,
-                     att::Handle value_handle, const common::UUID& type);
+                     att::Handle value_handle, const UUID& type);
 
   Properties properties;
   att::Handle handle;
   att::Handle value_handle;
-  common::UUID type;
+  UUID type;
 };
 
 struct DescriptorData {
   DescriptorData() = default;
-  DescriptorData(att::Handle handle, const common::UUID& type);
+  DescriptorData(att::Handle handle, const UUID& type);
 
   att::Handle handle;
-  common::UUID type;
+  UUID type;
 };
 
 }  // namespace gatt

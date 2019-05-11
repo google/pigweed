@@ -40,9 +40,9 @@ using ReadHandler = fit::function<void(
 //                  if the client has initiated a "Write Without Response"
 //                  procedure, in which case a response is not required.
 using WriteResponder = att::Attribute::WriteResultCallback;
-using WriteHandler = fit::function<void(
-    IdType service_id, IdType id, uint16_t offset,
-    const common::ByteBuffer& value, WriteResponder responder)>;
+using WriteHandler =
+    fit::function<void(IdType service_id, IdType id, uint16_t offset,
+                       const ByteBuffer& value, WriteResponder responder)>;
 
 // Called when the peer device with the given |peer_id| has enabled or disabled
 // notifications/indications on the characteristic with id |chrc_id|.

@@ -16,27 +16,22 @@ namespace {
 
 using bt::testing::CommandTransaction;
 
-using common::DeviceAddress;
-using common::DeviceAddressBytes;
-using common::LowerBits;
-using common::UpperBits;
-
 using TestingBase =
     bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
-  common::CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x04, 0xF0, \
+  CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x04, 0xF0, \
                                  LowerBits((opcode)), UpperBits((opcode)),   \
                                  hci::kSuccess)
 
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
-  common::CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04, \
+  CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04, \
                                  (statuscode), 0xF0,                 \
                                  LowerBits((opcode)), UpperBits((opcode)))
 
 
-const auto kWriteInquiryActivity = common::CreateStaticByteBuffer(
+const auto kWriteInquiryActivity = CreateStaticByteBuffer(
     LowerBits(hci::kWriteInquiryScanActivity), UpperBits(hci::kWriteInquiryScanActivity),
     0x04, // Param total size
     0xE1, 0x01, // Inquiry Scan Interval
@@ -45,7 +40,7 @@ const auto kWriteInquiryActivity = common::CreateStaticByteBuffer(
 
 const auto kWriteInquiryActivityRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryScanActivity);
 
-const auto kWriteInquiryType = common::CreateStaticByteBuffer(
+const auto kWriteInquiryType = CreateStaticByteBuffer(
     LowerBits(hci::kWriteInquiryScanType), UpperBits(hci::kWriteInquiryScanType),
     0x01, // Param total size
     0x01 // Interlaced Inquiry Scan
@@ -104,7 +99,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 using GAP_BrEdrDiscoveryManagerTest = BrEdrDiscoveryManagerTest;
 
 // clang-format off
-const auto kInquiry = common::CreateStaticByteBuffer(
+const auto kInquiry = CreateStaticByteBuffer(
   LowerBits(hci::kInquiry), UpperBits(hci::kInquiry),
   0x05, // Paramreter total size
   0x33, 0x8B, 0x9E, // GIAC
@@ -116,13 +111,13 @@ const auto kInquiryRsp = COMMAND_STATUS_RSP(hci::kInquiry, hci::kSuccess);
 
 const auto kInquiryRspError = COMMAND_STATUS_RSP(hci::kInquiry, hci::kHardwareFailure);
 
-const auto kInquiryComplete = common::CreateStaticByteBuffer(
+const auto kInquiryComplete = CreateStaticByteBuffer(
   hci::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
   hci::kSuccess
 );
 
-const auto kInquiryCompleteError = common::CreateStaticByteBuffer(
+const auto kInquiryCompleteError = CreateStaticByteBuffer(
   hci::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
   hci::kHardwareFailure
@@ -141,7 +136,7 @@ const DeviceAddress kLeAliasAddress2(DeviceAddress::Type::kLEPublic,
 const DeviceAddress kDeviceAddress3(DeviceAddress::Type::kBREDR,
                                     {BD_ADDR(0x03)});
 
-const auto kInquiryResult = common::CreateStaticByteBuffer(
+const auto kInquiryResult = CreateStaticByteBuffer(
   hci::kInquiryResultEventCode,
   0x0F, // parameter_total_size (15 bytes)
   0x01, // num_responses
@@ -153,7 +148,7 @@ const auto kInquiryResult = common::CreateStaticByteBuffer(
   0x00, 0x00 // clock_offset[0]
 );
 
-const auto kRSSIInquiryResult = common::CreateStaticByteBuffer(
+const auto kRSSIInquiryResult = CreateStaticByteBuffer(
   hci::kInquiryResultWithRSSIEventCode,
   0x0F, // parameter_total_size (15 bytes)
   0x01, // num_responses
@@ -165,7 +160,7 @@ const auto kRSSIInquiryResult = common::CreateStaticByteBuffer(
   0xEC // RSSI (-20dBm)
 );
 
-#define REMOTE_NAME_REQUEST(addr1) common::CreateStaticByteBuffer( \
+#define REMOTE_NAME_REQUEST(addr1) CreateStaticByteBuffer( \
     LowerBits(hci::kRemoteNameRequest), UpperBits(hci::kRemoteNameRequest), \
     0x0a, /* parameter_total_size (10 bytes) */ \
     BD_ADDR(addr1),  /* BD_ADDR */ \
@@ -183,7 +178,7 @@ const auto kRemoteNameRequestRsp =
 
 #undef COMMAND_STATUS_RSP
 
-const auto kRemoteNameRequestComplete1 = common::CreateStaticByteBuffer(
+const auto kRemoteNameRequestComplete1 = CreateStaticByteBuffer(
     hci::kRemoteNameRequestCompleteEventCode,
     0x20,                                // parameter_total_size (32)
     hci::StatusCode::kSuccess,           // status
@@ -193,7 +188,7 @@ const auto kRemoteNameRequestComplete1 = common::CreateStaticByteBuffer(
     // remote name (Fuchsia 💖)
     // Everything after the 0x00 should be ignored.
 );
-const auto kRemoteNameRequestComplete2 = common::CreateStaticByteBuffer(
+const auto kRemoteNameRequestComplete2 = CreateStaticByteBuffer(
     hci::kRemoteNameRequestCompleteEventCode,
     0x10,                                // parameter_total_size (16)
     hci::StatusCode::kSuccess,           // status
@@ -201,7 +196,7 @@ const auto kRemoteNameRequestComplete2 = common::CreateStaticByteBuffer(
     'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e', 0x00 // remote name (Sapphire)
 );
 
-const auto kExtendedInquiryResult = common::CreateStaticByteBuffer(
+const auto kExtendedInquiryResult = CreateStaticByteBuffer(
   hci::kExtendedInquiryResultEventCode,
   0xFF, // parameter_total_size (255 bytes)
   0x01, // num_responses
@@ -236,14 +231,14 @@ const auto kExtendedInquiryResult = common::CreateStaticByteBuffer(
 
 #undef BD_ADDR
 
-const auto kInqCancel = common::CreateStaticByteBuffer(
+const auto kInqCancel = CreateStaticByteBuffer(
   LowerBits(hci::kInquiryCancel), UpperBits(hci::kInquiryCancel),  // opcode
   0x00                                   // parameter_total_size
 );
 
 const auto kInqCancelRsp = COMMAND_COMPLETE_RSP(hci::kInquiryCancel);
 
-const auto kSetExtendedMode = common::CreateStaticByteBuffer(
+const auto kSetExtendedMode = CreateStaticByteBuffer(
     LowerBits(hci::kWriteInquiryMode), UpperBits(hci::kWriteInquiryMode),
     0x01, // parameter_total_size
     0x02 // Extended Inquiry Result or Inquiry Result with RSSI
@@ -251,13 +246,13 @@ const auto kSetExtendedMode = common::CreateStaticByteBuffer(
 
 const auto kSetExtendedModeRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryMode);
 
-const auto kReadScanEnable = common::CreateStaticByteBuffer(
+const auto kReadScanEnable = CreateStaticByteBuffer(
     LowerBits(hci::kReadScanEnable), UpperBits(hci::kReadScanEnable),
     0x00  // No parameters
 );
 
 #define READ_SCAN_ENABLE_RSP(scan_enable)                                    \
-  common::CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x05, 0xF0, \
+  CreateStaticByteBuffer(hci::kCommandCompleteEventCode, 0x05, 0xF0, \
                                  LowerBits(hci::kReadScanEnable),            \
                                  UpperBits(hci::kReadScanEnable),            \
                                  hci::kSuccess, (scan_enable))
@@ -270,7 +265,7 @@ const auto kReadScanEnableRspBoth = READ_SCAN_ENABLE_RSP(0x03);
 #undef READ_SCAN_ENABLE_RSP
 
 #define WRITE_SCAN_ENABLE_CMD(scan_enable)                               \
-  common::CreateStaticByteBuffer(LowerBits(hci::kWriteScanEnable),       \
+  CreateStaticByteBuffer(LowerBits(hci::kWriteScanEnable),       \
                                  UpperBits(hci::kWriteScanEnable), 0x01, \
                                  (scan_enable))
 
@@ -527,7 +522,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
       [&session](auto status, auto cb_session) {
         EXPECT_FALSE(status);
         EXPECT_FALSE(cb_session);
-        EXPECT_EQ(common::HostError::kProtocolError, status.error());
+        EXPECT_EQ(HostError::kProtocolError, status.error());
         EXPECT_EQ(hci::kHardwareFailure, status.protocol_error());
       });
 

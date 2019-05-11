@@ -12,7 +12,6 @@
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
-namespace common {
 
 template <typename T>
 struct IdentifierTraits {
@@ -73,22 +72,21 @@ constexpr PeerId kInvalidPeerId(0u);
 // kInvalidPeerId.
 PeerId RandomPeerId();
 
-}  // namespace common
 }  // namespace bt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
 namespace std {
 
 template <typename T>
-struct hash<bt::common::Identifier<T>> {
-  size_t operator()(const bt::common::Identifier<T>& id) const {
+struct hash<bt::Identifier<T>> {
+  size_t operator()(const bt::Identifier<T>& id) const {
     return std::hash<T>()(id.value());
   }
 };
 
 template <>
-struct hash<bt::common::PeerId> {
-  size_t operator()(const bt::common::PeerId& id) const {
+struct hash<bt::PeerId> {
+  size_t operator()(const bt::PeerId& id) const {
     return std::hash<decltype(id.value())>()(id.value());
   }
 };

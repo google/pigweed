@@ -18,7 +18,7 @@ constexpr hci::ConnectionHandle kHandle1 = 1;
 void DoNothingWithChannel(fbl::RefPtr<Channel> channel,
                           ServerChannel server_channel) {}
 
-void DoNothingWithBuffer(common::ByteBufferPtr buffer) {}
+void DoNothingWithBuffer(ByteBufferPtr buffer) {}
 
 class RFCOMM_ChannelManagerTest : public l2cap::testing::FakeChannelTest {
  public:
@@ -67,8 +67,7 @@ class RFCOMM_ChannelManagerTest : public l2cap::testing::FakeChannelTest {
           if (handle_to_incoming_frames_.find(handle) ==
               handle_to_incoming_frames_.end()) {
             handle_to_incoming_frames_.emplace(
-                handle,
-                std::queue<std::unique_ptr<const common::ByteBuffer>>());
+                handle, std::queue<std::unique_ptr<const ByteBuffer>>());
           }
           handle_to_incoming_frames_[handle].push(std::move(sdu));
         },
@@ -122,7 +121,7 @@ class RFCOMM_ChannelManagerTest : public l2cap::testing::FakeChannelTest {
                     std::unique_ptr<Frame> frame) {
     auto channel = GetFakeChannel(handle);
 
-    auto buffer = common::NewSlabBuffer(frame->written_size());
+    auto buffer = NewSlabBuffer(frame->written_size());
     frame->Write(buffer->mutable_view());
     channel->Receive(buffer->view());
   }
@@ -149,7 +148,7 @@ class RFCOMM_ChannelManagerTest : public l2cap::testing::FakeChannelTest {
   std::unique_ptr<ChannelManager> channel_manager_;
 
   std::unordered_map<hci::ConnectionHandle,
-                     std::queue<std::unique_ptr<const common::ByteBuffer>>>
+                     std::queue<std::unique_ptr<const ByteBuffer>>>
       handle_to_incoming_frames_;
 
   // Maps remote peers (represented as connection handles) to the L2CAP channel
@@ -697,13 +696,13 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenOutgoingChannel) {
 
   DLCI dlci = ServerChannelToDLCI(kMinServerChannel, state.role);
 
-  common::ByteBufferPtr received_data;
+  ByteBufferPtr received_data;
   channel->Activate(
       [&received_data](auto data) { received_data = std::move(data); }, []() {},
       dispatcher());
 
-  auto pattern = common::CreateStaticByteBuffer(1, 2, 3, 4);
-  auto buffer = std::make_unique<common::DynamicByteBuffer>(pattern);
+  auto pattern = CreateStaticByteBuffer(1, 2, 3, 4);
+  auto buffer = std::make_unique<DynamicByteBuffer>(pattern);
   channel->Send(std::move(buffer));
   RunLoopUntilIdle();
 
@@ -717,7 +716,7 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenOutgoingChannel) {
   EXPECT_EQ(pattern,
             *static_cast<UserDataFrame*>(frame.get())->TakeInformation());
 
-  buffer = std::make_unique<common::DynamicByteBuffer>(pattern);
+  buffer = std::make_unique<DynamicByteBuffer>(pattern);
   ReceiveFrame(kHandle1, std::make_unique<UserDataFrame>(
                              state.role, state.credit_based_flow, dlci,
                              std::move(buffer)));
@@ -744,13 +743,13 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenIncomingChannel) {
 
   DLCI dlci = ServerChannelToDLCI(server_channel, OppositeRole(state.role));
 
-  common::ByteBufferPtr received_data;
+  ByteBufferPtr received_data;
   channel->Activate(
       [&received_data](auto data) { received_data = std::move(data); }, []() {},
       dispatcher());
 
-  auto pattern = common::CreateStaticByteBuffer(1, 2, 3, 4);
-  auto buffer = std::make_unique<common::DynamicByteBuffer>(pattern);
+  auto pattern = CreateStaticByteBuffer(1, 2, 3, 4);
+  auto buffer = std::make_unique<DynamicByteBuffer>(pattern);
   channel->Send(std::move(buffer));
   RunLoopUntilIdle();
 
@@ -764,7 +763,7 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenIncomingChannel) {
   EXPECT_EQ(pattern,
             *static_cast<UserDataFrame*>(frame.get())->TakeInformation());
 
-  buffer = std::make_unique<common::DynamicByteBuffer>(pattern);
+  buffer = std::make_unique<DynamicByteBuffer>(pattern);
   ReceiveFrame(kHandle1, std::make_unique<UserDataFrame>(
                              state.role, state.credit_based_flow, dlci,
                              std::move(buffer)));
@@ -788,13 +787,14 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Outgoing) {
       kHandle1, PeerState{true /*credit-based flow*/, Role::kUnassigned});
 
   auto channel = OpenOutgoingChannel(kHandle1, kMinServerChannel);
-  channel->Activate(&DoNothingWithBuffer, [] {}, dispatcher());
+  channel->Activate(
+      &DoNothingWithBuffer, [] {}, dispatcher());
 
   auto& queue = handle_to_incoming_frames_[kHandle1];
 
   for (uint8_t i = 0; i < kMaxInitialCredits; i++) {
     // Send UIH frame with data.
-    channel->Send(common::NewBuffer(i));
+    channel->Send(NewBuffer(i));
     RunLoopUntilIdle();
   }
 
@@ -803,7 +803,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Outgoing) {
 
   {
     // Send one more.
-    channel->Send(common::NewBuffer(7));
+    channel->Send(NewBuffer(7));
     RunLoopUntilIdle();
   }
 
@@ -824,7 +824,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Outgoing) {
   EXPECT_EQ(8ul, queue.size());
 
   for (uint8_t i = 0; i < 3; i++) {
-    channel->Send(common::NewBuffer(8 + i));
+    channel->Send(NewBuffer(8 + i));
     RunLoopUntilIdle();
   }
 
@@ -898,7 +898,8 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
 
   auto channel = OpenOutgoingChannel(kHandle1, kMinServerChannel);
   DLCI dlci = ServerChannelToDLCI(kMinServerChannel, state.role);
-  channel->Activate(&DoNothingWithBuffer, [] {}, dispatcher());
+  channel->Activate(
+      &DoNothingWithBuffer, [] {}, dispatcher());
 
   auto& queue = handle_to_incoming_frames_[kHandle1];
 
@@ -907,9 +908,9 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
 
   {
     // Send one frame.
-    ReceiveFrame(kHandle1, std::make_unique<UserDataFrame>(
-                               state.role, state.credit_based_flow, dlci,
-                               common::NewBuffer(0)));
+    ReceiveFrame(kHandle1,
+                 std::make_unique<UserDataFrame>(
+                     state.role, state.credit_based_flow, dlci, NewBuffer(0)));
     credits--;
     RunLoopUntilIdle();
   }
@@ -934,7 +935,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
   for (int i = 0; i < 2; i++) {
     ReceiveFrame(kHandle1, std::make_unique<UserDataFrame>(
                                state.role, state.credit_based_flow, dlci,
-                               common::NewBuffer(i + 1)));
+                               NewBuffer(i + 1)));
     credits--;
     RunLoopUntilIdle();
   }
@@ -944,7 +945,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
 
   {
     // Send frame to the remote, to which we should attach credits.
-    channel->Send(common::NewBuffer(3));
+    channel->Send(NewBuffer(3));
     RunLoopUntilIdle();
   }
 
@@ -952,7 +953,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
     // Send and empty frame, which shouldn't cost any credits.
     ReceiveFrame(kHandle1, std::make_unique<UserDataFrame>(
                                state.role, state.credit_based_flow, dlci,
-                               common::NewSlabBuffer(0)));
+                               NewSlabBuffer(0)));
     RunLoopUntilIdle();
   }
 

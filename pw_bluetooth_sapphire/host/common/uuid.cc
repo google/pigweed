@@ -4,17 +4,16 @@
 
 #include "uuid.h"
 
-#include <cinttypes>
-
 #include <endian.h>
 #include <zircon/assert.h>
+
+#include <cinttypes>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
-namespace common {
 namespace {
 
 // Format string that can be passed to sscanf. This allows sscanf to convert
@@ -74,7 +73,7 @@ constexpr UInt128 UUID::kBaseUuid;
 constexpr size_t UUID::kBaseOffset;
 
 // static
-bool UUID::FromBytes(const common::ByteBuffer& bytes, UUID* out_uuid) {
+bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   switch (bytes.size()) {
     case k16BitSize:
       *out_uuid =
@@ -116,7 +115,7 @@ bool UUID::operator==(const UInt128& uuid128) const {
   return value_ == uuid128;
 }
 
-bool UUID::CompareBytes(const common::ByteBuffer& bytes) const {
+bool UUID::CompareBytes(const ByteBuffer& bytes) const {
   switch (bytes.size()) {
     case k16BitSize:
       return (*this ==
@@ -155,7 +154,7 @@ size_t UUID::CompactSize(bool allow_32bit) const {
   return 0;
 }
 
-size_t UUID::ToBytes(common::MutableByteBuffer* bytes, bool allow_32bit) const {
+size_t UUID::ToBytes(MutableByteBuffer* bytes, bool allow_32bit) const {
   size_t size = CompactSize(allow_32bit);
   size_t offset = (size == k128BitSize) ? 0u : kBaseOffset;
   bytes->Write(value_.data() + offset, size);
@@ -216,5 +215,4 @@ bool StringToUuid(const std::string& uuid_string, UUID* out_uuid) {
   return true;
 }
 
-}  // namespace common
 }  // namespace bt

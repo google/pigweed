@@ -4,9 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include <zircon/compiler.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
 namespace l2cap {
@@ -19,13 +19,13 @@ BrEdrSignalingChannel::BrEdrSignalingChannel(fbl::RefPtr<Channel> chan,
 
   // Add default handler for incoming Echo Request commands.
   ServeRequest(kEchoRequest,
-               [](const common::ByteBuffer& req_payload, Responder* responder) {
+               [](const ByteBuffer& req_payload, Responder* responder) {
                  responder->Send(req_payload);
                });
 }
 
 bool BrEdrSignalingChannel::SendRequest(CommandCode req_code,
-                                        const common::ByteBuffer& payload,
+                                        const ByteBuffer& payload,
                                         ResponseHandler cb) {
   ZX_DEBUG_ASSERT(cb);
   const CommandId id = EnqueueResponse(req_code + 1, std::move(cb));
@@ -46,21 +46,20 @@ void BrEdrSignalingChannel::ServeRequest(CommandCode req_code,
 // This is implemented as v5.0 Vol 3, Part A Section 4.8: "These requests may be
 // used for testing the link or for passing vendor specific information using
 // the optional data field."
-bool BrEdrSignalingChannel::TestLink(const common::ByteBuffer& data,
-                                     DataCallback cb) {
-  return SendRequest(kEchoRequest, data,
-                     [cb = std::move(cb)](
-                         Status status, const common::ByteBuffer& rsp_payload) {
-                       if (status == Status::kSuccess) {
-                         cb(rsp_payload);
-                       } else {
-                         cb(common::BufferView());
-                       }
-                       return false;
-                     });
+bool BrEdrSignalingChannel::TestLink(const ByteBuffer& data, DataCallback cb) {
+  return SendRequest(
+      kEchoRequest, data,
+      [cb = std::move(cb)](Status status, const ByteBuffer& rsp_payload) {
+        if (status == Status::kSuccess) {
+          cb(rsp_payload);
+        } else {
+          cb(BufferView());
+        }
+        return false;
+      });
 }
 
-void BrEdrSignalingChannel::DecodeRxUnit(common::ByteBufferPtr sdu,
+void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
                                          const SignalingPacketHandler& cb) {
   // "Multiple commands may be sent in a single C-frame over Fixed Channel CID
   // 0x0001 (ACL-U) (v5.0, Vol 3, Part A, Section 4)"
@@ -82,7 +81,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(common::ByteBufferPtr sdu,
       bt_log(TRACE, "l2cap-bredr", "sig: expected more bytes (%zu < %u); drop",
              remaining_sdu_length, expected_payload_length);
       SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                        common::BufferView());
+                        BufferView());
       return;
     }
 
@@ -176,7 +175,7 @@ void BrEdrSignalingChannel::OnRxResponse(const SignalingPacket& packet) {
     bt_log(SPEW, "l2cap-bredr", "sig: ignoring unexpected response, id %#.2x",
            packet.header().id);
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
     return;
   }
 
@@ -190,7 +189,7 @@ void BrEdrSignalingChannel::OnRxResponse(const SignalingPacket& packet) {
            "sig: response (id %#.2x) has unexpected code %#.2x",
            packet.header().id, packet.header().code);
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      common::BufferView());
+                      BufferView());
     return;
   }
 

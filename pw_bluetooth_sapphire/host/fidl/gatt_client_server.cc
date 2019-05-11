@@ -31,7 +31,7 @@ GattClientServer::GattClientServer(bt::gatt::PeerId peer_id,
 void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
   // Parse the UUID list.
-  std::vector<bt::common::UUID> uuids;
+  std::vector<bt::UUID> uuids;
   if (!fidl_uuids.is_null()) {
     // Allocate all at once and convert in-place.
     uuids.resize(fidl_uuids->size());

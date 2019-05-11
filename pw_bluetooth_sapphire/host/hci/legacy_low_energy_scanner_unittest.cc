@@ -17,7 +17,6 @@ namespace bt {
 namespace hci {
 namespace {
 
-using common::DeviceAddress;
 using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::FakeControllerTest<FakeController>;
@@ -71,8 +70,8 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     TestingBase::TearDown();
   }
 
-  using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&,
-                                               const common::ByteBuffer&)>;
+  using PeerFoundCallback =
+      fit::function<void(const LowEnergyScanResult&, const ByteBuffer&)>;
   void set_peer_found_callback(PeerFoundCallback cb) {
     peer_found_cb_ = std::move(cb);
   }
@@ -92,7 +91,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
 
   // LowEnergyScanner::Observer override:
   void OnPeerFound(const LowEnergyScanResult& result,
-                   const common::ByteBuffer& data) override {
+                   const ByteBuffer& data) override {
     if (peer_found_cb_) {
       peer_found_cb_(result, data);
     }
@@ -109,9 +108,9 @@ class LegacyLowEnergyScannerTest : public TestingBase,
   void AddFakePeers() {
     // We use malformed data for testing purposes, as we don't care about
     // integrity here.
-    auto adv_data = common::CreateStaticByteBuffer('T', 'e', 's', 't');
-    auto scan_rsp = common::CreateStaticByteBuffer('D', 'a', 't', 'a');
-    auto empty_data = common::DynamicByteBuffer();
+    auto adv_data = CreateStaticByteBuffer('T', 'e', 's', 't');
+    auto scan_rsp = CreateStaticByteBuffer('D', 'a', 't', 'a');
+    auto empty_data = DynamicByteBuffer();
 
     // Generates ADV_IND, scan response is reported in a single HCI event.
     auto fake_peer = std::make_unique<FakePeer>(kPublicAddress1, true, true);

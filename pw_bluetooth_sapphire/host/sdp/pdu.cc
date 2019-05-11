@@ -4,19 +4,14 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
+#include <endian.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-#include <endian.h>
-
 namespace bt {
-
-using common::BufferView;
-using common::ByteBuffer;
-using common::HostError;
-using common::MutableByteBuffer;
 
 namespace sdp {
 
@@ -50,13 +45,13 @@ bool ValidContinuationState(const ByteBuffer& buf, BufferView* out) {
   return true;
 }
 
-common::MutableByteBufferPtr GetNewPDU(OpCode pdu_id, TransactionId tid,
-                                       uint16_t param_length) {
-  auto ptr = common::NewSlabBuffer(sizeof(Header) + param_length);
+MutableByteBufferPtr GetNewPDU(OpCode pdu_id, TransactionId tid,
+                               uint16_t param_length) {
+  auto ptr = NewSlabBuffer(sizeof(Header) + param_length);
   if (!ptr) {
     return nullptr;
   }
-  common::MutablePacketView<Header> packet(ptr.get(), param_length);
+  MutablePacketView<Header> packet(ptr.get(), param_length);
   packet.mutable_header()->pdu_id = pdu_id;
   packet.mutable_header()->tid = htobe16(tid);
   packet.mutable_header()->param_length = htobe16(param_length);
@@ -189,8 +184,8 @@ Status ErrorResponse::Parse(const ByteBuffer& buf) {
   return Status();
 }
 
-common::MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid,
-                                                   const ByteBuffer&) const {
+MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid,
+                                           const ByteBuffer&) const {
   auto ptr = GetNewPDU(kErrorResponse, tid, sizeof(ErrorCode));
   size_t written = sizeof(Header);
 
@@ -202,7 +197,7 @@ common::MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid,
 ServiceSearchRequest::ServiceSearchRequest()
     : Request(), max_service_record_count_(0xFFFF) {}
 
-ServiceSearchRequest::ServiceSearchRequest(const common::ByteBuffer& params)
+ServiceSearchRequest::ServiceSearchRequest(const ByteBuffer& params)
     : ServiceSearchRequest() {
   DataElement search_pattern;
   size_t read_size = DataElement::Read(&search_pattern, params);
@@ -226,7 +221,7 @@ ServiceSearchRequest::ServiceSearchRequest(const common::ByteBuffer& params)
       service_search_pattern_.clear();
       return;
     }
-    service_search_pattern_.emplace(*(it->Get<common::UUID>()));
+    service_search_pattern_.emplace(*(it->Get<UUID>()));
   }
   if (count == 0) {
     bt_log(SPEW, "sdp", "Search pattern invalid: no records");
@@ -247,7 +242,7 @@ bool ServiceSearchRequest::valid() const {
          max_service_record_count_ > 0;
 }
 
-common::ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
+ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
   if (!valid()) {
     return nullptr;
   }
@@ -286,14 +281,14 @@ bool ServiceSearchResponse::complete() const {
   return total_service_record_count_ == service_record_handle_list_.size();
 }
 
-const common::BufferView ServiceSearchResponse::ContinuationState() const {
+const BufferView ServiceSearchResponse::ContinuationState() const {
   if (!continuation_state_) {
-    return common::BufferView();
+    return BufferView();
   }
   return continuation_state_->view();
 }
 
-Status ServiceSearchResponse::Parse(const common::ByteBuffer& buf) {
+Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (complete() && total_service_record_count_ != 0) {
     // This response was previously complete and non-empty.
     bt_log(SPEW, "sdp", "Can't parse into a complete response");
@@ -325,7 +320,7 @@ Status ServiceSearchResponse::Parse(const common::ByteBuffer& buf) {
     service_record_handle_list_.emplace_back(betoh32(view.As<uint32_t>()));
   }
   read_size += sizeof(ServiceHandle) * record_count;
-  common::BufferView cont_state_view;
+  BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size), &cont_state_view)) {
     bt_log(SPEW, "sdp", "Failed to find continuation state");
     return Status(HostError::kPacketMalformed);
@@ -333,16 +328,14 @@ Status ServiceSearchResponse::Parse(const common::ByteBuffer& buf) {
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ =
-        std::make_unique<common::DynamicByteBuffer>(cont_state_view);
+    continuation_state_ = std::make_unique<DynamicByteBuffer>(cont_state_view);
   }
   return Status();
 }
 
 // Continuation state: Index of the start record for the continued response.
-common::MutableByteBufferPtr ServiceSearchResponse::GetPDU(
-    uint16_t max, TransactionId tid,
-    const common::ByteBuffer& cont_state) const {
+MutableByteBufferPtr ServiceSearchResponse::GetPDU(
+    uint16_t max, TransactionId tid, const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
   }
@@ -389,8 +382,7 @@ common::MutableByteBufferPtr ServiceSearchResponse::GetPDU(
 ServiceAttributeRequest::ServiceAttributeRequest()
     : service_record_handle_(0), max_attribute_byte_count_(0xFFFF) {}
 
-ServiceAttributeRequest::ServiceAttributeRequest(
-    const common::ByteBuffer& params) {
+ServiceAttributeRequest::ServiceAttributeRequest(const ByteBuffer& params) {
   if (params.size() < sizeof(uint32_t) + sizeof(uint16_t)) {
     bt_log(SPEW, "sdp", "packet too small for ServiceAttributeRequest");
     max_attribute_byte_count_ = 0;
@@ -427,7 +419,7 @@ bool ServiceAttributeRequest::valid() const {
          (attribute_ranges_.size() > 0);
 }
 
-common::ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
+ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
   if (!valid()) {
     return nullptr;
   }
@@ -483,26 +475,26 @@ void ServiceAttributeRequest::AddAttributeRange(AttributeId start,
 
 ServiceAttributeResponse::ServiceAttributeResponse() {}
 
-const common::BufferView ServiceAttributeResponse::ContinuationState() const {
+const BufferView ServiceAttributeResponse::ContinuationState() const {
   if (!continuation_state_) {
-    return common::BufferView();
+    return BufferView();
   }
   return continuation_state_->view();
 }
 
 bool ServiceAttributeResponse::complete() const { return !continuation_state_; }
 
-Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
+Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attributes_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(SPEW, "sdp", "Can't parse into a complete response");
     // partial_response_ is already empty
-    return Status(common::HostError::kNotReady);
+    return Status(HostError::kNotReady);
   }
 
   if (buf.size() < sizeof(uint16_t)) {
     bt_log(SPEW, "sdp", "Packet too small to parse");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
 
   uint16_t attribute_list_byte_count = betoh16(buf.As<uint16_t>());
@@ -510,20 +502,20 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
   if (buf.view(read_size).size() <
       attribute_list_byte_count + sizeof(uint8_t)) {
     bt_log(SPEW, "sdp", "Not enough bytes in rest of packet");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
   // Check to see if there's continuation.
-  common::BufferView cont_state_view;
+  BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_list_byte_count),
                               &cont_state_view)) {
     bt_log(SPEW, "sdp", "Continutation state is not valid");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
 
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = common::NewSlabBuffer(cont_state_view.size());
+    continuation_state_ = NewSlabBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
   }
 
@@ -534,7 +526,7 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
     if (partial_response_) {
       new_partial_size += partial_response_->size();
     }
-    auto new_partial = common::NewSlabBuffer(new_partial_size);
+    auto new_partial = NewSlabBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
       new_partial->Write(attribute_list_bytes, partial_response_->size());
@@ -545,7 +537,7 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
       bt_log(SPEW, "sdp", "Continutation state, returning in progress");
-      return Status(common::HostError::kInProgress);
+      return Status(HostError::kInProgress);
     }
     attribute_list_bytes = partial_response_->view();
   }
@@ -556,7 +548,7 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
       (attribute_list.type() != DataElement::Type::kSequence)) {
     bt_log(SPEW, "sdp",
            "Couldn't parse attribute list or it wasn't a sequence");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
 
   // Data Element sequence containing alternating attribute id and attribute
@@ -569,12 +561,12 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
     auto* val = attribute_list.At(idx + 1);
     if ((it->type() != DataElement::Type::kUnsignedInt) || (val == nullptr)) {
       attributes_.clear();
-      return Status(common::HostError::kPacketMalformed);
+      return Status(HostError::kPacketMalformed);
     }
     AttributeId id = *(it->Get<uint16_t>());
     if (id < last_id) {
       attributes_.clear();
-      return Status(common::HostError::kPacketMalformed);
+      return Status(HostError::kPacketMalformed);
     }
     attributes_.emplace(id, val->Clone());
     last_id = id;
@@ -584,9 +576,8 @@ Status ServiceAttributeResponse::Parse(const common::ByteBuffer& buf) {
 }
 
 // Continuation state: index of # of bytes into the attribute list element
-common::MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
-    uint16_t max, TransactionId tid,
-    const common::ByteBuffer& cont_state) const {
+MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
+    uint16_t max, TransactionId tid, const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
   }
@@ -634,7 +625,7 @@ common::MutableByteBufferPtr ServiceAttributeResponse::GetPDU(
   buf->WriteObj(htobe16(attribute_list_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = common::NewSlabBuffer(write_size);
+  auto attribute_list_bytes = NewSlabBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(
       attribute_list_bytes->view(bytes_skipped, attribute_list_byte_count),
@@ -657,7 +648,7 @@ ServiceSearchAttributeRequest::ServiceSearchAttributeRequest()
     : Request(), max_attribute_byte_count_(0xFFFF) {}
 
 ServiceSearchAttributeRequest::ServiceSearchAttributeRequest(
-    const common::ByteBuffer& params) {
+    const ByteBuffer& params) {
   DataElement search_pattern;
   size_t read_size = DataElement::Read(&search_pattern, params);
   if ((read_size == 0) ||
@@ -685,7 +676,7 @@ ServiceSearchAttributeRequest::ServiceSearchAttributeRequest(
       service_search_pattern_.clear();
       return;
     }
-    service_search_pattern_.emplace(*(it->Get<common::UUID>()));
+    service_search_pattern_.emplace(*(it->Get<UUID>()));
   }
   if (count == 0) {
     bt_log(SPEW, "sdp", "no elements in search pattern");
@@ -730,8 +721,7 @@ bool ServiceSearchAttributeRequest::valid() const {
          (attribute_ranges_.size() > 0);
 }
 
-common::ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(
-    TransactionId tid) const {
+ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
   if (!valid()) {
     return nullptr;
   }
@@ -758,7 +748,7 @@ common::ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(
   std::vector<DataElement> pattern(service_search_pattern_.size());
   size_t i = 0;
   for (const auto& it : service_search_pattern_) {
-    pattern.at(i).Set<common::UUID>(it);
+    pattern.at(i).Set<UUID>(it);
     i++;
   }
   DataElement search_pattern(std::move(pattern));
@@ -796,10 +786,9 @@ void ServiceSearchAttributeRequest::AddAttributeRange(AttributeId start,
 
 ServiceSearchAttributeResponse::ServiceSearchAttributeResponse() {}
 
-const common::BufferView ServiceSearchAttributeResponse::ContinuationState()
-    const {
+const BufferView ServiceSearchAttributeResponse::ContinuationState() const {
   if (!continuation_state_) {
-    return common::BufferView();
+    return BufferView();
   }
   return continuation_state_->view();
 }
@@ -808,12 +797,12 @@ bool ServiceSearchAttributeResponse::complete() const {
   return !continuation_state_;
 }
 
-Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
+Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
   if (complete() && attribute_lists_.size() != 0) {
     // This response was previously complete and non-empty
     bt_log(SPEW, "sdp", "can't parse into a complete response");
     ZX_DEBUG_ASSERT(!partial_response_);
-    return Status(common::HostError::kNotReady);
+    return Status(HostError::kNotReady);
   }
 
   // Minimum size is an AttributeListsByteCount, an empty AttributeLists
@@ -821,7 +810,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
   // of AttributeLists
   if (buf.size() < sizeof(uint16_t) + 3) {
     bt_log(SPEW, "sdp", "packet too small to parse");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
 
   uint16_t attribute_lists_byte_count = betoh16(buf.As<uint16_t>());
@@ -829,20 +818,20 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
   if (buf.view(read_size).size() <
       attribute_lists_byte_count + sizeof(uint8_t)) {
     bt_log(SPEW, "sdp", "not enough bytes in rest of packet as indicated");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
   // Check to see if there's continuation.
-  common::BufferView cont_state_view;
+  BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_lists_byte_count),
                               &cont_state_view)) {
     bt_log(SPEW, "sdp", "continutation state is not valid");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
 
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = common::NewSlabBuffer(cont_state_view.size());
+    continuation_state_ = NewSlabBuffer(cont_state_view.size());
     continuation_state_->Write(cont_state_view);
   }
 
@@ -853,7 +842,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
     if (partial_response_) {
       new_partial_size += partial_response_->size();
     }
-    auto new_partial = common::NewSlabBuffer(new_partial_size);
+    auto new_partial = NewSlabBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
       new_partial->Write(attribute_lists_bytes, partial_response_->size());
@@ -864,7 +853,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
       bt_log(SPEW, "sdp", "continutation state found, returning in progress");
-      return Status(common::HostError::kInProgress);
+      return Status(HostError::kInProgress);
     }
     attribute_lists_bytes = partial_response_->view();
   }
@@ -874,7 +863,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
   if ((elem_size == 0) ||
       (attribute_lists.type() != DataElement::Type::kSequence)) {
     bt_log(SPEW, "sdp", "couldn't parse attribute lists or wasn't a sequence");
-    return Status(common::HostError::kPacketMalformed);
+    return Status(HostError::kPacketMalformed);
   }
   bt_log(SPEW, "sdp", "parsed AttributeLists: %s",
          attribute_lists.ToString().c_str());
@@ -887,7 +876,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
        list_it = attribute_lists.At(++list_idx)) {
     if ((list_it->type() != DataElement::Type::kSequence)) {
       bt_log(SPEW, "sdp", "list %zu wasn't a sequence", list_idx);
-      return Status(common::HostError::kPacketMalformed);
+      return Status(HostError::kPacketMalformed);
     }
     attribute_lists_.emplace(list_idx, std::map<AttributeId, DataElement>());
     AttributeId last_id = 0;
@@ -897,7 +886,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
       if ((it->type() != DataElement::Type::kUnsignedInt) || (val == nullptr)) {
         attribute_lists_.clear();
         bt_log(SPEW, "sdp", "attribute isn't a ptr or doesn't exist");
-        return Status(common::HostError::kPacketMalformed);
+        return Status(HostError::kPacketMalformed);
       }
       bt_log(SPEW, "sdp", "adding %zu:%s = %s", list_idx, bt_str(*it),
              bt_str(*val));
@@ -905,7 +894,7 @@ Status ServiceSearchAttributeResponse::Parse(const common::ByteBuffer& buf) {
       if (id < last_id) {
         attribute_lists_.clear();
         bt_log(SPEW, "sdp", "attribute ids are in wrong order");
-        return Status(common::HostError::kPacketMalformed);
+        return Status(HostError::kPacketMalformed);
       }
       attribute_lists_.at(list_idx).emplace(id, val->Clone());
       last_id = id;
@@ -925,9 +914,8 @@ void ServiceSearchAttributeResponse::SetAttribute(uint32_t idx, AttributeId id,
 }
 
 // Continuation state: index of # of bytes into the attribute list element
-common::MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
-    uint16_t max, TransactionId tid,
-    const common::ByteBuffer& cont_state) const {
+MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
+    uint16_t max, TransactionId tid, const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
   }
@@ -983,7 +971,7 @@ common::MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(
   buf->WriteObj(htobe16(attribute_lists_byte_count), written);
   written += sizeof(uint16_t);
 
-  auto attribute_list_bytes = common::NewSlabBuffer(write_size);
+  auto attribute_list_bytes = NewSlabBuffer(write_size);
   list_elem.Write(attribute_list_bytes.get());
   buf->Write(
       attribute_list_bytes->view(bytes_skipped, attribute_lists_byte_count),

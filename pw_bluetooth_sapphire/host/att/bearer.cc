@@ -9,14 +9,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace att {
-
-using common::HostError;
-using common::NewSlabBuffer;
 
 // static
 constexpr Bearer::HandlerId Bearer::kInvalidHandlerId;
@@ -176,7 +172,7 @@ fxl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
 Bearer::PendingTransaction::PendingTransaction(OpCode opcode,
                                                TransactionCallback callback,
                                                ErrorCallback error_callback,
-                                               common::ByteBufferPtr pdu)
+                                               ByteBufferPtr pdu)
     : opcode(opcode),
       callback(std::move(callback)),
       error_callback(std::move(error_callback)),
@@ -336,8 +332,7 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
   ind_queue.InvokeErrorAll(status);
 }
 
-bool Bearer::StartTransaction(common::ByteBufferPtr pdu,
-                              TransactionCallback callback,
+bool Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
                               ErrorCallback error_callback) {
   ZX_DEBUG_ASSERT(pdu);
   ZX_DEBUG_ASSERT(callback);
@@ -347,13 +342,12 @@ bool Bearer::StartTransaction(common::ByteBufferPtr pdu,
                       std::move(error_callback));
 }
 
-bool Bearer::SendWithoutResponse(common::ByteBufferPtr pdu) {
+bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
   ZX_DEBUG_ASSERT(pdu);
   return SendInternal(std::move(pdu), {}, {});
 }
 
-bool Bearer::SendInternal(common::ByteBufferPtr pdu,
-                          TransactionCallback callback,
+bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
                           ErrorCallback error_callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   if (!is_open()) {
@@ -445,7 +439,7 @@ void Bearer::UnregisterHandler(HandlerId id) {
   handlers_.erase(opcode);
 }
 
-bool Bearer::Reply(TransactionId tid, common::ByteBufferPtr pdu) {
+bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(pdu);
 
@@ -505,7 +499,7 @@ bool Bearer::ReplyWithError(TransactionId id, Handle handle,
   return true;
 }
 
-bool Bearer::IsPacketValid(const common::ByteBuffer& packet) {
+bool Bearer::IsPacketValid(const ByteBuffer& packet) {
   return packet.size() != 0u && packet.size() <= mtu_;
 }
 
@@ -728,7 +722,7 @@ void Bearer::OnChannelClosed() {
   ShutDown();
 }
 
-void Bearer::OnRxBFrame(common::ByteBufferPtr sdu) {
+void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());

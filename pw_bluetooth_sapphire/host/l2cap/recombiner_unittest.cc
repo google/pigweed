@@ -3,10 +3,9 @@
 // found in the LICENSE file.
 
 #include "recombiner.h"
-#include "pdu.h"
 
 #include "gtest/gtest.h"
-
+#include "pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
@@ -16,7 +15,7 @@ namespace {
 
 template <typename... T>
 hci::ACLDataPacketPtr PacketFromBytes(T... data) {
-  auto bytes = common::CreateStaticByteBuffer(std::forward<T>(data)...);
+  auto bytes = CreateStaticByteBuffer(std::forward<T>(data)...);
   ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci::ACLDataHeader));
 
   auto packet =
@@ -178,7 +177,7 @@ TEST(L2CAP_RecombinerTest, CompleteFirstFragment) {
 
   ASSERT_EQ(4u, pdu.length());
 
-  common::StaticByteBuffer<4> pdu_data;
+  StaticByteBuffer<4> pdu_data;
   pdu.Copy(&pdu_data);
   EXPECT_EQ("Test", pdu_data.AsString());
 
@@ -284,7 +283,7 @@ TEST(L2CAP_RecombinerTest, CompleteContinuationFragment) {
 
   ASSERT_EQ(4u, pdu.length());
 
-  common::StaticByteBuffer<4> pdu_data;
+  StaticByteBuffer<4> pdu_data;
   pdu.Copy(&pdu_data);
   EXPECT_EQ("Test", pdu_data.AsString());
 
@@ -360,7 +359,7 @@ TEST(L2CAP_RecombinerTest, MultipleContinuationFragments) {
 
   ASSERT_EQ(15u, pdu.length());
 
-  common::StaticByteBuffer<15u> pdu_data;
+  StaticByteBuffer<15u> pdu_data;
   pdu.Copy(&pdu_data);
   EXPECT_EQ("This is a test!", pdu_data.AsString());
 

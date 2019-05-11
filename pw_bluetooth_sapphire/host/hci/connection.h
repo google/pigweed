@@ -71,16 +71,14 @@ class Connection {
 
   // Initializes this as a LE connection.
   static std::unique_ptr<Connection> CreateLE(
-      ConnectionHandle handle, Role role,
-      const common::DeviceAddress& local_address,
-      const common::DeviceAddress& peer_address,
-      const LEConnectionParameters& params, fxl::RefPtr<Transport> hci);
+      ConnectionHandle handle, Role role, const DeviceAddress& local_address,
+      const DeviceAddress& peer_address, const LEConnectionParameters& params,
+      fxl::RefPtr<Transport> hci);
 
   // Initializes this as a BR/EDR ACL connection.
   static std::unique_ptr<Connection> CreateACL(
-      ConnectionHandle handle, Role role,
-      const common::DeviceAddress& local_address,
-      const common::DeviceAddress& peer_address, fxl::RefPtr<Transport> hci);
+      ConnectionHandle handle, Role role, const DeviceAddress& local_address,
+      const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci);
 
   // The destructor closes this connection.
   virtual ~Connection() = default;
@@ -117,10 +115,10 @@ class Connection {
   }
 
   // The local device address used while establishing the connection.
-  const common::DeviceAddress& local_address() const { return local_address_; }
+  const DeviceAddress& local_address() const { return local_address_; }
 
   // The peer address used while establishing the connection.
-  const common::DeviceAddress& peer_address() const { return peer_address_; }
+  const DeviceAddress& peer_address() const { return peer_address_; }
 
   // Returns true if this connection is currently open.
   bool is_open() const { return is_open_; }
@@ -158,8 +156,8 @@ class Connection {
 
  protected:
   Connection(ConnectionHandle handle, LinkType ll_type, Role role,
-             const common::DeviceAddress& local_address,
-             const common::DeviceAddress& peer_address);
+             const DeviceAddress& local_address,
+             const DeviceAddress& peer_address);
 
   const EncryptionChangeCallback& encryption_change_callback() const {
     return encryption_change_callback_;
@@ -172,8 +170,8 @@ class Connection {
   bool is_open_;
 
   // Addresses used while creating the link.
-  common::DeviceAddress local_address_;
-  common::DeviceAddress peer_address_;
+  DeviceAddress local_address_;
+  DeviceAddress peer_address_;
 
   // Connection parameters for a LE link. Not nullptr if the link type is LE.
   LEConnectionParameters le_params_;

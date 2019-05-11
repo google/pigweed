@@ -8,34 +8,31 @@
 #include <zircon/status.h>
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace testing {
 
 CommandTransaction::CommandTransaction(
-    const common::ByteBuffer& expected,
-    const std::vector<const common::ByteBuffer*>& replies)
+    const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
     : prefix_(false), expected_(expected) {
   for (const auto* buffer : replies) {
-    replies_.push(common::DynamicByteBuffer(*buffer));
+    replies_.push(DynamicByteBuffer(*buffer));
   }
 }
 
 CommandTransaction::CommandTransaction(
-    hci::OpCode expected_opcode,
-    const std::vector<const common::ByteBuffer*>& replies)
+    hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies)
     : prefix_(true) {
   hci::OpCode le_opcode = htole16(expected_opcode);
-  const common::BufferView expected(&le_opcode, sizeof(expected_opcode));
-  expected_ = common::DynamicByteBuffer(expected);
+  const BufferView expected(&le_opcode, sizeof(expected_opcode));
+  expected_ = DynamicByteBuffer(expected);
   for (const auto* buffer : replies) {
-    replies_.push(common::DynamicByteBuffer(*buffer));
+    replies_.push(DynamicByteBuffer(*buffer));
   }
 }
 
-bool CommandTransaction::Match(const common::BufferView& cmd) {
+bool CommandTransaction::Match(const BufferView& cmd) {
   return ContainersEqual(expected_,
                          (prefix_ ? cmd.view(0, expected_.size()) : cmd));
 }
@@ -55,8 +52,7 @@ void TestController::QueueCommandTransaction(CommandTransaction transaction) {
 }
 
 void TestController::QueueCommandTransaction(
-    const common::ByteBuffer& expected,
-    const std::vector<const common::ByteBuffer*>& replies) {
+    const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies) {
   QueueCommandTransaction(CommandTransaction(expected, replies));
 }
 
@@ -99,7 +95,7 @@ void TestController::ClearTransactionCallback() {
 }
 
 void TestController::OnCommandPacketReceived(
-    const common::PacketView<hci::CommandHeader>& command_packet) {
+    const PacketView<hci::CommandHeader>& command_packet) {
   uint16_t opcode = command_packet.header().opcode;
   uint8_t ogf = hci::GetOGF(opcode);
   uint16_t ocf = hci::GetOCF(opcode);
@@ -123,7 +119,7 @@ void TestController::OnCommandPacketReceived(
   cmd_transactions_.pop();
 
   if (transaction_callback_) {
-    common::DynamicByteBuffer rx(command_packet.data());
+    DynamicByteBuffer rx(command_packet.data());
     async::PostTask(
         transaction_dispatcher_,
         [rx = std::move(rx), f = transaction_callback_.share()] { f(rx); });
@@ -131,11 +127,11 @@ void TestController::OnCommandPacketReceived(
 }
 
 void TestController::OnACLDataPacketReceived(
-    const common::ByteBuffer& acl_data_packet) {
+    const ByteBuffer& acl_data_packet) {
   if (!data_callback_)
     return;
 
-  common::DynamicByteBuffer packet_copy(acl_data_packet);
+  DynamicByteBuffer packet_copy(acl_data_packet);
   async::PostTask(data_dispatcher_,
                   [packet_copy = std::move(packet_copy),
                    cb = data_callback_.share()]() mutable { cb(packet_copy); });

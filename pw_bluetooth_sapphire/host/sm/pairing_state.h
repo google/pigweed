@@ -198,21 +198,21 @@ class PairingState final : public Bearer::Listener {
     bool has_peer_rand;
     bool sent_local_confirm;
     bool sent_local_rand;
-    common::UInt128 tk;
-    common::UInt128 local_confirm;
-    common::UInt128 peer_confirm;
-    common::UInt128 local_rand;
-    common::UInt128 peer_rand;
-    common::StaticByteBuffer<kPairingRequestSize> preq;
-    common::StaticByteBuffer<kPairingRequestSize> pres;
+    UInt128 tk;
+    UInt128 local_confirm;
+    UInt128 peer_confirm;
+    UInt128 local_rand;
+    UInt128 peer_rand;
+    StaticByteBuffer<kPairingRequestSize> preq;
+    StaticByteBuffer<kPairingRequestSize> pres;
 
     // Data from the peer tracked during Phase 3. Parts of LTK are received in
     // separate events.
     bool has_ltk;
     bool has_irk;
-    common::UInt128 ltk_bytes;  // LTK without ediv/rand
-    common::UInt128 irk;
-    common::DeviceAddress identity_address;
+    UInt128 ltk_bytes;  // LTK without ediv/rand
+    UInt128 irk;
+    DeviceAddress identity_address;
   };
 
   // Represents a pending request to update the security level.
@@ -243,8 +243,7 @@ class PairingState final : public Bearer::Listener {
   //    2. Generate the local confirm/rand values.
   //    3. If initiator, start the exchange, otherwise wait for the peer to send
   //    its confirm value.
-  void BeginLegacyPairingPhase2(const common::ByteBuffer& preq,
-                                const common::ByteBuffer& pres);
+  void BeginLegacyPairingPhase2(const ByteBuffer& preq, const ByteBuffer& pres);
   void LegacySendConfirmValue();
   void LegacySendRandomValue();
 
@@ -269,14 +268,14 @@ class PairingState final : public Bearer::Listener {
   // Bearer::Listener overrides:
   void OnPairingFailed(Status status) override;
   void OnFeatureExchange(const PairingFeatures& features,
-                         const common::ByteBuffer& preq,
-                         const common::ByteBuffer& pres) override;
-  void OnPairingConfirm(const common::UInt128& confirm) override;
-  void OnPairingRandom(const common::UInt128& random) override;
-  void OnLongTermKey(const common::UInt128& ltk) override;
+                         const ByteBuffer& preq,
+                         const ByteBuffer& pres) override;
+  void OnPairingConfirm(const UInt128& confirm) override;
+  void OnPairingRandom(const UInt128& random) override;
+  void OnLongTermKey(const UInt128& ltk) override;
   void OnMasterIdentification(uint16_t ediv, uint64_t random) override;
-  void OnIdentityResolvingKey(const common::UInt128& irk) override;
-  void OnIdentityAddress(const common::DeviceAddress& address) override;
+  void OnIdentityResolvingKey(const UInt128& irk) override;
+  void OnIdentityAddress(const DeviceAddress& address) override;
   void OnSecurityRequest(AuthReqField auth_req) override;
   bool HasIdentityInformation() override;
 
@@ -291,8 +290,8 @@ class PairingState final : public Bearer::Listener {
 
   // Returns pointers to the initiator and responder addresses. This can be
   // called after pairing Phase 1.
-  void LEPairingAddresses(const common::DeviceAddress** out_initiator,
-                          const common::DeviceAddress** out_responder);
+  void LEPairingAddresses(const DeviceAddress** out_initiator,
+                          const DeviceAddress** out_responder);
 
   // The ID that will be assigned to the next pairing state.
   unsigned int next_pairing_id_;

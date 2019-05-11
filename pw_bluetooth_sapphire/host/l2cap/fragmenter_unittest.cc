@@ -3,10 +3,9 @@
 // found in the LICENSE file.
 
 #include "fragmenter.h"
-#include "pdu.h"
 
 #include "gtest/gtest.h"
-
+#include "pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
@@ -18,9 +17,9 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(L2CAP_FragmenterTest, EmptyPayload) {
-  common::BufferView payload;
+  BufferView payload;
 
-  auto expected_fragment = common::CreateStaticByteBuffer(
+  auto expected_fragment = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x04, 0x00,
 
@@ -35,14 +34,14 @@ TEST(L2CAP_FragmenterTest, EmptyPayload) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment,
-                                      fragments.begin()->view().data()));
+  EXPECT_TRUE(
+      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, SingleFragment) {
-  auto payload = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto expected_fragment = common::CreateStaticByteBuffer(
+  auto expected_fragment = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
@@ -57,14 +56,14 @@ TEST(L2CAP_FragmenterTest, SingleFragment) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment,
-                                      fragments.begin()->view().data()));
+  EXPECT_TRUE(
+      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
-  auto payload = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto expected_fragment = common::CreateStaticByteBuffer(
+  auto expected_fragment = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
@@ -80,21 +79,21 @@ TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment,
-                                      fragments.begin()->view().data()));
+  EXPECT_TRUE(
+      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
-  auto payload = common::CreateStaticByteBuffer('T', 'e', 's', 't', '!');
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't', '!');
 
-  auto expected_fragment0 = common::CreateStaticByteBuffer(
+  auto expected_fragment0 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x08, 0x00,
 
       // Basic L2CAP header, contains the complete length but a partial payload
       0x05, 0x00, 0x01, 0x00, 'T', 'e', 's', 't');
 
-  auto expected_fragment1 = common::CreateStaticByteBuffer(
+  auto expected_fragment1 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x10, 0x01, 0x00,
 
@@ -111,25 +110,25 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment0,
-                                      fragments.begin()->view().data()));
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment1,
-                                      (++fragments.begin())->view().data()));
+  EXPECT_TRUE(
+      ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1,
+                              (++fragments.begin())->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
-  auto payload = common::CreateStaticByteBuffer('T', 'e', 's', 't');
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
   ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0,
                       "test payload size should be even");
 
-  auto expected_fragment0 = common::CreateStaticByteBuffer(
+  auto expected_fragment0 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x04, 0x00,
 
       // Basic L2CAP header, contains the complete length but a partial payload
       0x04, 0x00, 0x01, 0x00);
 
-  auto expected_fragment1 = common::CreateStaticByteBuffer(
+  auto expected_fragment1 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x10, 0x04, 0x00,
 
@@ -147,10 +146,10 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment0,
-                                      fragments.begin()->view().data()));
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment1,
-                                      (++fragments.begin())->view().data()));
+  EXPECT_TRUE(
+      ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1,
+                              (++fragments.begin())->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
@@ -159,31 +158,31 @@ TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
   constexpr size_t kFrameSize =
       (kExpectedFragmentCount - 1) * kMaxFragmentPayloadSize + 1;
 
-  common::StaticByteBuffer<kFrameSize - sizeof(BasicHeader)> payload;
+  StaticByteBuffer<kFrameSize - sizeof(BasicHeader)> payload;
   payload.Fill('X');
 
-  auto expected_fragment0 = common::CreateStaticByteBuffer(
+  auto expected_fragment0 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x00, 0x05, 0x00,
 
       // Basic L2CAP header contains the complete length but partial payload
       0x0C, 0x00, 0x01, 0x00, 'X');
 
-  auto expected_fragment1 = common::CreateStaticByteBuffer(
+  auto expected_fragment1 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x10, 0x05, 0x00,
 
       // Continuing payload
       'X', 'X', 'X', 'X', 'X');
 
-  auto expected_fragment2 = common::CreateStaticByteBuffer(
+  auto expected_fragment2 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x10, 0x05, 0x00,
 
       // Continuing payload
       'X', 'X', 'X', 'X', 'X');
 
-  auto expected_fragment3 = common::CreateStaticByteBuffer(
+  auto expected_fragment3 = CreateStaticByteBuffer(
       // ACL data header
       0x01, 0x10, 0x01, 0x00,
 
@@ -197,17 +196,14 @@ TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
 
   auto fragments = pdu.ReleaseFragments();
   auto iter = fragments.begin();
-  EXPECT_TRUE(
-      common::ContainersEqual(expected_fragment0, (iter++)->view().data()));
-  EXPECT_TRUE(
-      common::ContainersEqual(expected_fragment1, (iter++)->view().data()));
-  EXPECT_TRUE(
-      common::ContainersEqual(expected_fragment2, (iter++)->view().data()));
-  EXPECT_TRUE(common::ContainersEqual(expected_fragment3, iter->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, (iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment2, (iter++)->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment3, iter->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, MaximalSizedPayload) {
-  common::DynamicByteBuffer payload(65535);
+  DynamicByteBuffer payload(65535);
   Fragmenter fragmenter(kTestHandle, 1024);
   PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());

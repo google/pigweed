@@ -260,8 +260,7 @@ void LowEnergyCentralServer::NotifyScanStateChanged(bool scanning) {
   binding()->events().OnScanStateChanged(scanning);
 }
 
-void LowEnergyCentralServer::NotifyPeripheralDisconnected(
-    bt::gap::PeerId peer_id) {
+void LowEnergyCentralServer::NotifyPeripheralDisconnected(bt::PeerId peer_id) {
   binding()->events().OnPeripheralDisconnected(peer_id.ToString());
 }
 

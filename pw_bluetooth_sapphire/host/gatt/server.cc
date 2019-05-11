@@ -17,8 +17,6 @@
 namespace bt {
 namespace gatt {
 
-using common::DynamicByteBuffer;
-
 Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database,
                fxl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
@@ -69,10 +67,10 @@ Server::~Server() {
   att_->UnregisterHandler(exchange_mtu_id_);
 }
 
-void Server::SendNotification(att::Handle handle,
-                              const common::ByteBuffer& value, bool indicate) {
-  auto buffer = common::NewSlabBuffer(sizeof(att::Header) + sizeof(handle) +
-                                      value.size());
+void Server::SendNotification(att::Handle handle, const ByteBuffer& value,
+                              bool indicate) {
+  auto buffer =
+      NewSlabBuffer(sizeof(att::Header) + sizeof(handle) + value.size());
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(indicate ? att::kIndication : att::kNotification,
@@ -108,8 +106,8 @@ void Server::OnExchangeMTU(att::Bearer::TransactionId tid,
   uint16_t client_mtu = le16toh(params.client_rx_mtu);
   uint16_t server_mtu = att_->preferred_mtu();
 
-  auto buffer = common::NewSlabBuffer(sizeof(att::Header) +
-                                      sizeof(att::ExchangeMTUResponseParams));
+  auto buffer = NewSlabBuffer(sizeof(att::Header) +
+                              sizeof(att::ExchangeMTUResponseParams));
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kExchangeMTUResponse, buffer.get());
@@ -180,7 +178,7 @@ void Server::OnFindInformation(att::Bearer::TransactionId tid,
 
   size_t pdu_size = kHeaderSize + entry_size * results.size();
 
-  auto buffer = common::NewSlabBuffer(pdu_size);
+  auto buffer = NewSlabBuffer(pdu_size);
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kFindInformationResponse, buffer.get());
@@ -217,10 +215,10 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
   const auto& params = packet.payload<att::FindByTypeValueRequestParams>();
   att::Handle start = le16toh(params.start_handle);
   att::Handle end = le16toh(params.end_handle);
-  common::UUID type = common::UUID(params.type);
+  UUID type(params.type);
   constexpr size_t kParamsSize = sizeof(att::FindByTypeValueRequestParams);
 
-  common::BufferView value = packet.payload_data().view(
+  BufferView value = packet.payload_data().view(
       kParamsSize, packet.payload_size() - kParamsSize);
 
   if (start == att::kInvalidHandle || start > end) {
@@ -260,7 +258,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
 
   constexpr size_t kRspStructSize = sizeof(att::HandlesInformationList);
   size_t pdu_size = sizeof(att::Header) + kRspStructSize * results.size();
-  auto buffer = common::NewSlabBuffer(pdu_size);
+  auto buffer = NewSlabBuffer(pdu_size);
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kFindByTypeValueResponse, buffer.get());
@@ -287,19 +285,19 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByGroupTypeRequest);
 
   att::Handle start, end;
-  common::UUID group_type;
+  UUID group_type;
 
   // The group type is represented as either a 16-bit or 128-bit UUID.
   if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams16)) {
     const auto& params = packet.payload<att::ReadByTypeRequestParams16>();
     start = le16toh(params.start_handle);
     end = le16toh(params.end_handle);
-    group_type = common::UUID(le16toh(params.type));
+    group_type = UUID(le16toh(params.type));
   } else if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams128)) {
     const auto& params = packet.payload<att::ReadByTypeRequestParams128>();
     start = le16toh(params.start_handle);
     end = le16toh(params.end_handle);
-    group_type = common::UUID(params.type);
+    group_type = UUID(params.type);
   } else {
     att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
     return;
@@ -332,7 +330,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
   size_t pdu_size = kHeaderSize + entry_size * results.size();
   ZX_DEBUG_ASSERT(pdu_size <= att_->mtu());
 
-  auto buffer = common::NewSlabBuffer(pdu_size);
+  auto buffer = NewSlabBuffer(pdu_size);
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kReadByGroupTypeResponse, buffer.get());
@@ -362,19 +360,19 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByTypeRequest);
 
   att::Handle start, end;
-  common::UUID type;
+  UUID type;
 
   // The attribute type is represented as either a 16-bit or 128-bit UUID.
   if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams16)) {
     const auto& params = packet.payload<att::ReadByTypeRequestParams16>();
     start = le16toh(params.start_handle);
     end = le16toh(params.end_handle);
-    type = common::UUID(le16toh(params.type));
+    type = UUID(le16toh(params.type));
   } else if (packet.payload_size() == sizeof(att::ReadByTypeRequestParams128)) {
     const auto& params = packet.payload<att::ReadByTypeRequestParams128>();
     start = le16toh(params.start_handle);
     end = le16toh(params.end_handle);
-    type = common::UUID(params.type);
+    type = UUID(params.type);
   } else {
     att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
     return;
@@ -420,7 +418,7 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
       // Respond with just a single entry.
       size_t value_size = std::min(value.size(), kMaxValueSize);
       size_t entry_size = value_size + sizeof(att::AttributeData);
-      auto buffer = common::NewSlabBuffer(entry_size + kHeaderSize);
+      auto buffer = NewSlabBuffer(entry_size + kHeaderSize);
       att::PacketWriter writer(att::kReadByTypeResponse, buffer.get());
 
       auto params = writer.mutable_payload<att::ReadByTypeResponseParams>();
@@ -445,7 +443,7 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
   size_t pdu_size = kHeaderSize + entry_size * results.size();
   ZX_DEBUG_ASSERT(pdu_size <= att_->mtu());
 
-  auto buffer = common::NewSlabBuffer(pdu_size);
+  auto buffer = NewSlabBuffer(pdu_size);
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kReadByTypeResponse, buffer.get());
@@ -506,7 +504,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
     }
 
     size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
-    auto buffer = common::NewSlabBuffer(value_size + kHeaderSize);
+    auto buffer = NewSlabBuffer(value_size + kHeaderSize);
     ZX_ASSERT(buffer);
 
     att::PacketWriter writer(att::kReadBlobResponse, buffer.get());
@@ -571,7 +569,7 @@ void Server::OnReadRequest(att::Bearer::TransactionId tid,
     }
 
     size_t value_size = std::min(value.size(), self->att_->mtu() - kHeaderSize);
-    auto buffer = common::NewSlabBuffer(value_size + kHeaderSize);
+    auto buffer = NewSlabBuffer(value_size + kHeaderSize);
     ZX_ASSERT(buffer);
 
     att::PacketWriter writer(att::kReadResponse, buffer.get());
@@ -677,7 +675,7 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
       return;
     }
 
-    auto buffer = common::NewSlabBuffer(1);
+    auto buffer = NewSlabBuffer(1);
     (*buffer)[0] = att::kWriteResponse;
     self->att_->Reply(tid, std::move(buffer));
   };
@@ -688,10 +686,9 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
 }
 
 att::ErrorCode Server::ReadByTypeHelper(
-    att::Handle start, att::Handle end, const common::UUID& type,
-    bool group_type, size_t max_data_list_size, size_t max_value_size,
-    size_t entry_prefix_size, size_t* out_value_size,
-    std::list<const att::Attribute*>* out_results) {
+    att::Handle start, att::Handle end, const UUID& type, bool group_type,
+    size_t max_data_list_size, size_t max_value_size, size_t entry_prefix_size,
+    size_t* out_value_size, std::list<const att::Attribute*>* out_results) {
   ZX_DEBUG_ASSERT(out_results);
   ZX_DEBUG_ASSERT(out_value_size);
 
