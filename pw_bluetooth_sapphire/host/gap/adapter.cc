@@ -13,7 +13,7 @@
 #include "low_energy_advertising_manager.h"
 #include "low_energy_connection_manager.h"
 #include "low_energy_discovery_manager.h"
-#include "remote_device.h"
+#include "peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -192,12 +192,12 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
-bool Adapter::AddBondedDevice(DeviceId identifier,
-                              const common::DeviceAddress& address,
-                              const sm::PairingData& le_bond_data,
-                              const std::optional<sm::LTK>& link_key) {
-  return remote_device_cache()->AddBondedDevice(identifier, address,
-                                                le_bond_data, link_key);
+bool Adapter::AddBondedPeer(DeviceId identifier,
+                            const common::DeviceAddress& address,
+                            const sm::PairingData& le_bond_data,
+                            const std::optional<sm::LTK>& link_key) {
+  return peer_cache()->AddBondedPeer(identifier, address, le_bond_data,
+                                     link_key);
 }
 
 void Adapter::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
@@ -548,11 +548,11 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-      hci_, hci_le_scanner_.get(), &device_cache_);
+      hci_, hci_le_scanner_.get(), &peer_cache_);
   le_discovery_manager_->set_directed_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_, le_address_manager_.get(), hci_le_connector_.get(), &device_cache_,
+      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_,
       data_domain_, gatt_);
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
@@ -563,7 +563,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
         common::DeviceAddress::Type::kBREDR, state_.controller_address());
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci_, &device_cache_, local_bredr_address, data_domain_,
+        hci_, &peer_cache_, local_bredr_address, data_domain_,
         state_.features().HasBit(0, hci::LMPFeature::kInterlacedPageScan));
 
     hci::InquiryMode mode = hci::InquiryMode::kStandard;
@@ -576,7 +576,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     }
 
     bredr_discovery_manager_ =
-        std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &device_cache_);
+        std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
 
     sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
   }
@@ -688,11 +688,11 @@ void Adapter::OnTransportClosed() {
     transport_closed_cb_();
 }
 
-void Adapter::OnLeAutoConnectRequest(DeviceId device_id) {
+void Adapter::OnLeAutoConnectRequest(DeviceId peer_id) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
   auto self = weak_ptr_factory_.GetWeakPtr();
-  le_connection_manager_->Connect(device_id, [self](auto status, auto conn) {
-    DeviceId id = conn->device_identifier();
+  le_connection_manager_->Connect(peer_id, [self](auto status, auto conn) {
+    DeviceId id = conn->peer_identifier();
     if (!self) {
       bt_log(INFO, "gap", "ignoring auto-connection (adapter destroyed)");
       return;
@@ -702,7 +702,7 @@ void Adapter::OnLeAutoConnectRequest(DeviceId device_id) {
       return;
     }
 
-    bt_log(INFO, "gap", "device auto-connected (id: %s)", bt_str(id));
+    bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
     if (self->auto_conn_cb_) {
       self->auto_conn_cb_(std::move(conn));
     }

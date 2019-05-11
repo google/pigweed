@@ -22,30 +22,30 @@ namespace hci {
 
 class Transport;
 
-// Represents a discovered Bluetooth Low Energy device.
+// Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
   LowEnergyScanResult();
   LowEnergyScanResult(const common::DeviceAddress& address, bool resolved,
                       bool connectable, int8_t rssi);
 
-  // The device address of the remote device.
+  // The device address of the remote peer.
   common::DeviceAddress address;
 
   // True if |address| is a static or random identity address resolved by the
   // controller.
   bool resolved;
 
-  // True if this device accepts connections. This is the case if this device
+  // True if this peer accepts connections. This is the case if this peer
   // sent a connectable advertising PDU.
   bool connectable;
 
   // The received signal strength of the advertisement packet corresponding to
-  // this device.
+  // this peer.
   int8_t rssi;
 };
 
-// LowEnergyScanner manages Low Energy device scan procedures that are used
-// during general and limited device discovery and connection establishment
+// LowEnergyScanner manages Low Energy scan procedures that are used
+// during general and limited discovery and connection establishment
 // procedures. This is an abstract class that provides a common interface
 // over 5.0 Extended Advertising and Legacy Advertising features.
 //
@@ -74,17 +74,17 @@ class LowEnergyScanner : public LocalAddressClient {
     kPassiveScanning,
   };
 
-  // Interface for receiving events related to Low Energy device scan.
+  // Interface for receiving events related to Low Energy scan.
   class Delegate {
    public:
     virtual ~Delegate() = default;
 
-    // Called when a device is found. |data| contains the advertising data, as
+    // Called when a peer is found. |data| contains the advertising data, as
     // well as any scan response data that was received during an active scan.
-    virtual void OnDeviceFound(const LowEnergyScanResult& result,
-                               const common::ByteBuffer& data);
+    virtual void OnPeerFound(const LowEnergyScanResult& result,
+                             const common::ByteBuffer& data);
 
-    // Called when a directed advertising report is received from the device
+    // Called when a directed advertising report is received from the peer
     // with the given address.
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result);
   };
@@ -108,7 +108,7 @@ class LowEnergyScanner : public LocalAddressClient {
   // True if no scan procedure is currently enabled.
   bool IsIdle() const { return state() == State::kIdle; }
 
-  // Initiates a device scan. This is an asynchronous operation that abides by
+  // Initiates a scan. This is an asynchronous operation that abides by
   // the following rules:
   //
   //   - This method synchronously returns false if the procedure could not be
@@ -136,10 +136,10 @@ class LowEnergyScanner : public LocalAddressClient {
   // the scan period if a finite value for |period| was provided.
   //
   // If an active scan is being performed, then scannable advertising reports
-  // will NOT generate an OnDeviceFound event until a scan response is received
+  // will NOT generate an OnPeerFound event until a scan response is received
   // from the corresponding broadcaster. If a scan response from a scannable
-  // device is never received during a scan period, then an OnDeviceFound event
-  // (excluding scan response data) will be generated for that device at the end
+  // peer is never received during a scan period, then an OnPeerFound event
+  // (excluding scan response data) will be generated for that peer at the end
   // of the scan period, UNLESS the scan was explicitly stopped via StopScan().
   enum class ScanStatus {
     // Reported when the scan could not be started.
@@ -164,7 +164,7 @@ class LowEnergyScanner : public LocalAddressClient {
                          LEScanFilterPolicy filter_policy, zx::duration period,
                          ScanStatusCallback callback) = 0;
 
-  // Stops a previously started device scan. Returns false if a scan is not in
+  // Stops a previously started scan. Returns false if a scan is not in
   // progress. Otherwise, cancels any in progress scan procedure and returns
   // true.
   virtual bool StopScan() = 0;

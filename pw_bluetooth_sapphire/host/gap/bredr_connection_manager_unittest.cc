@@ -6,7 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -317,13 +317,13 @@ class BrEdrConnectionManagerTest : public TestingBase {
     TestingBase::SetUp();
     InitializeACLDataChannel();
 
-    device_cache_ = std::make_unique<RemoteDeviceCache>();
+    peer_cache_ = std::make_unique<PeerCache>();
     data_domain_ = data::testing::FakeDomain::Create();
     data_domain_->Initialize();
     auto hci = transport();
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci, device_cache_.get(), kLocalDevAddr, data_domain_, true);
+        hci, peer_cache_.get(), kLocalDevAddr, data_domain_, true);
 
     StartTestDevice();
 
@@ -345,7 +345,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     RunLoopUntilIdle();
     test_device()->Stop();
     data_domain_ = nullptr;
-    device_cache_ = nullptr;
+    peer_cache_ = nullptr;
     TestingBase::TearDown();
   }
 
@@ -357,7 +357,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     connection_manager_ = std::move(mgr);
   }
 
-  RemoteDeviceCache* device_cache() const { return device_cache_.get(); }
+  PeerCache* peer_cache() const { return peer_cache_.get(); }
 
   data::testing::FakeDomain* data_domain() const { return data_domain_.get(); }
 
@@ -373,7 +373,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   }
 
-  void QueueSuccessfulCreateConnection(RemoteDevice* peer,
+  void QueueSuccessfulCreateConnection(Peer* peer,
                                        hci::ConnectionHandle conn) const {
     const DynamicByteBuffer complete_packet =
         testing::ConnectionCompletePacket(peer->address(), conn);
@@ -421,7 +421,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
  private:
   std::unique_ptr<BrEdrConnectionManager> connection_manager_;
-  std::unique_ptr<RemoteDeviceCache> device_cache_;
+  std::unique_ptr<PeerCache> peer_cache_;
   fbl::RefPtr<data::testing::FakeDomain> data_domain_;
   int transaction_count_ = 0;
 
@@ -499,7 +499,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
 }
 
 // Test: An incoming connection request should trigger an acceptance and
-// interrogation should allow a device that only report the first Extended
+// interrogation should allow a peer that only report the first Extended
 // Features page.
 TEST_F(GAP_BrEdrConnectionManagerTest,
        IncomingConnection_BrokenExtendedPageResponse) {
@@ -556,7 +556,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
 
   RunLoopUntilIdle();
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
+  auto* dev = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(dev);
   EXPECT_EQ(dev->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
@@ -578,13 +578,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   EXPECT_EQ(kIncomingConnTransactions + 3, transaction_count());
 }
 
-// Test: An incoming connection request should upgrade a known LE device with a
-// matching address to a dual mode device.
+// Test: An incoming connection request should upgrade a known LE peer with a
+// matching address to a dual mode peer.
 TEST_F(GAP_BrEdrConnectionManagerTest,
-       IncomingConnectionUpgradesKnownLowEnergyDeviceToDualMode) {
+       IncomingConnectionUpgradesKnownLowEnergyPeerToDualMode) {
   const DeviceAddress le_alias_addr(DeviceAddress::Type::kLEPublic,
                                     kTestDevAddr.value());
-  RemoteDevice* const dev = device_cache()->NewDevice(le_alias_addr, true);
+  Peer* const dev = peer_cache()->NewPeer(le_alias_addr, true);
   ASSERT_TRUE(dev);
   ASSERT_EQ(TechnologyType::kLowEnergy, dev->technology());
 
@@ -594,7 +594,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   RunLoopUntilIdle();
 
-  ASSERT_EQ(dev, device_cache()->FindDeviceByAddress(kTestDevAddr));
+  ASSERT_EQ(dev, peer_cache()->FindByAddress(kTestDevAddr));
   EXPECT_EQ(dev->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(TechnologyType::kDualMode, dev->technology());
 
@@ -610,9 +610,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  EXPECT_EQ(dev->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
@@ -762,7 +762,7 @@ const auto kLinkKeyRequestNegativeReplyRsp =
                                    TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
-// Test: replies negative to Link Key Requests for unknown and unbonded devices
+// Test: replies negative to Link Key Requests for unknown and unbonded peers
 TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
                                          {&kLinkKeyRequestNegativeReplyRsp});
@@ -781,10 +781,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_TRUE(dev->connected());
-  ASSERT_FALSE(dev->bonded());
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
                                          {&kLinkKeyRequestNegativeReplyRsp});
@@ -829,14 +829,14 @@ const auto kLinkKeyRequestReplyRsp = common::CreateStaticByteBuffer(
     TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
-// Test: replies to Link Key Requests for bonded device
-TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedDevice) {
-  ASSERT_TRUE(device_cache()->AddBondedDevice(DeviceId(999), kTestDevAddr, {},
-                                              kLinkKey));
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_FALSE(dev->connected());
-  ASSERT_TRUE(dev->bonded());
+// Test: replies to Link Key Requests for bonded peer
+TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
+  ASSERT_TRUE(
+      peer_cache()->AddBondedPeer(DeviceId(999), kTestDevAddr, {}, kLinkKey));
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_FALSE(peer->connected());
+  ASSERT_TRUE(peer->bonded());
 
   QueueSuccessfulIncomingConn();
 
@@ -845,7 +845,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedDevice) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-  ASSERT_TRUE(dev->connected());
+  ASSERT_TRUE(peer->connected());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestReply,
                                          {&kLinkKeyRequestReplyRsp});
@@ -876,8 +876,8 @@ const auto kLinkKeyRequestReplyChanged = common::CreateStaticByteBuffer(
     0x1d, 0x0d, 0x0a, 0xd5  // link key
 );
 
-// Test: stores and recalls link key for a remote device
-TEST_F(GAP_BrEdrConnectionManagerTest, BondRemoteDevice) {
+// Test: stores and recalls link key for a remote peer
+TEST_F(GAP_BrEdrConnectionManagerTest, BondPeer) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -886,15 +886,15 @@ TEST_F(GAP_BrEdrConnectionManagerTest, BondRemoteDevice) {
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_TRUE(dev->connected());
-  ASSERT_FALSE(dev->bonded());
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
 
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(dev->bonded());
+  EXPECT_TRUE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestReply,
                                          {&kLinkKeyRequestReplyRsp});
@@ -909,7 +909,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, BondRemoteDevice) {
   test_device()->SendCommandChannelPacket(kLinkKeyNotificationChanged);
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(dev->bonded());
+  EXPECT_TRUE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestReplyChanged,
                                          {&kLinkKeyRequestReplyRsp});
@@ -918,14 +918,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, BondRemoteDevice) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(dev->bonded());
+  EXPECT_TRUE(peer->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 
   QueueDisconnection(kConnectionHandle);
 }
 
-// Test: can't change the link key of an unbonded device
-TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedDeviceChangeLinkKey) {
+// Test: can't change the link key of an unbonded peer
+TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -934,16 +934,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedDeviceChangeLinkKey) {
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_TRUE(dev->connected());
-  ASSERT_FALSE(dev->bonded());
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
 
   // Change the link key.
   test_device()->SendCommandChannelPacket(kLinkKeyNotificationChanged);
 
   RunLoopUntilIdle();
-  EXPECT_FALSE(dev->bonded());
+  EXPECT_FALSE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
                                          {&kLinkKeyRequestReplyRsp});
@@ -952,7 +952,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedDeviceChangeLinkKey) {
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(dev->bonded());
+  EXPECT_FALSE(peer->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
   QueueDisconnection(kConnectionHandle);
@@ -977,15 +977,15 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_TRUE(dev->connected());
-  ASSERT_FALSE(dev->bonded());
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
 
   test_device()->SendCommandChannelPacket(kLinkKeyNotificationLegacy);
 
   RunLoopUntilIdle();
-  EXPECT_FALSE(dev->bonded());
+  EXPECT_FALSE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
                                          {&kLinkKeyRequestReplyRsp});
@@ -994,7 +994,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(dev->bonded());
+  EXPECT_FALSE(peer->bonded());
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
   QueueDisconnection(kConnectionHandle);
@@ -1031,7 +1031,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   EXPECT_EQ(kIncomingConnTransactions + 3, transaction_count());
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedDeviceTimeout) {
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1040,9 +1040,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedDeviceTimeout) {
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
-  auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  EXPECT_TRUE(dev->connected());
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->connected());
 
   // We want to make sure the connection doesn't expire.
   RunLoopFor(zx::sec(600));
@@ -1052,19 +1052,19 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedDeviceTimeout) {
 
   RunLoopUntilIdle();
 
-  // Device should still be there, but not connected anymore
-  dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  EXPECT_FALSE(dev->connected());
+  // Peer should still be there, but not connected anymore
+  peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_FALSE(peer->connected());
   EXPECT_EQ(kInvalidDeviceId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
-    auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-    ASSERT_TRUE(dev);
-    ASSERT_EQ(id, dev->identifier());
+    auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+    ASSERT_TRUE(peer);
+    ASSERT_EQ(id, peer->identifier());
     ASSERT_EQ(1u, attributes.count(sdp::kServiceId));
     search_cb_count++;
   };
@@ -1154,13 +1154,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownDevice) {
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {
   EXPECT_FALSE(connmgr()->Connect(DeviceId(456), {}));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyDevice) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddrLe, true);
-  EXPECT_FALSE(connmgr()->Connect(dev->identifier(), {}));
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddrLe, true);
+  EXPECT_FALSE(connmgr()->Connect(peer->identifier(), {}));
 }
 
 // Test: user-initiated disconnection
@@ -1171,35 +1171,35 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
 
   RunLoopUntilIdle();
 
-  // Disconnecting an unknown device should do nothing.
+  // Disconnecting an unknown peer should do nothing.
   EXPECT_FALSE(connmgr()->Disconnect(DeviceId(999)));
 
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
-  auto* const dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  ASSERT_TRUE(dev->bredr()->connected());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
 
   QueueDisconnection(kConnectionHandle);
 
-  EXPECT_TRUE(connmgr()->Disconnect(dev->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
 
   RunLoopUntilIdle();
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-  EXPECT_FALSE(dev->bredr()->connected());
+  EXPECT_FALSE(peer->bredr()->connected());
 
   // Disconnecting a closed connection returns false.
-  EXPECT_FALSE(connmgr()->Disconnect(dev->identifier()));
+  EXPECT_FALSE(connmgr()->Disconnect(peer->identifier()));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto&) {
-    auto* dev = device_cache()->FindDeviceByAddress(kTestDevAddr);
-    ASSERT_TRUE(dev);
-    ASSERT_EQ(id, dev->identifier());
+    auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+    ASSERT_TRUE(peer);
+    ASSERT_EQ(id, peer->identifier());
     search_cb_count++;
   };
 
@@ -1258,59 +1258,57 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   QueueDisconnection(kConnectionHandle);
 }
 
-std::string FormatConnectionState(RemoteDevice::ConnectionState s) {
+std::string FormatConnectionState(Peer::ConnectionState s) {
   switch (s) {
-    case RemoteDevice::ConnectionState::kConnected:
+    case Peer::ConnectionState::kConnected:
       return "kConnected";
-    case RemoteDevice::ConnectionState::kInitializing:
+    case Peer::ConnectionState::kInitializing:
       return "kInitializing";
-    case RemoteDevice::ConnectionState::kNotConnected:
+    case Peer::ConnectionState::kNotConnected:
       return "kNotConnected";
   }
   return "<Invalid state>";
 }
 
-::testing::AssertionResult IsInitializing(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kInitializing !=
-      dev->bredr()->connection_state()) {
+::testing::AssertionResult IsInitializing(Peer* peer) {
+  if (Peer::ConnectionState::kInitializing !=
+      peer->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-           << "Expected device connection_state: kInitializing, found "
-           << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected peer connection_state: kInitializing, found "
+           << FormatConnectionState(peer->bredr()->connection_state());
   }
   return ::testing::AssertionSuccess();
 }
-::testing::AssertionResult IsConnected(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kConnected !=
-      dev->bredr()->connection_state()) {
+::testing::AssertionResult IsConnected(Peer* peer) {
+  if (Peer::ConnectionState::kConnected != peer->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-           << "Expected device connection_state: kConnected, found "
-           << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected peer connection_state: kConnected, found "
+           << FormatConnectionState(peer->bredr()->connection_state());
   }
-  if (dev->temporary()) {
+  if (peer->temporary()) {
     return ::testing::AssertionFailure()
-           << "Expected device to be non-temporary, but found temporary";
+           << "Expected peer to be non-temporary, but found temporary";
   }
   return ::testing::AssertionSuccess();
 }
-::testing::AssertionResult NotConnected(RemoteDevice* dev) {
-  if (RemoteDevice::ConnectionState::kNotConnected !=
-      dev->bredr()->connection_state()) {
+::testing::AssertionResult NotConnected(Peer* peer) {
+  if (Peer::ConnectionState::kNotConnected !=
+      peer->bredr()->connection_state()) {
     return ::testing::AssertionFailure()
-           << "Expected device connection_state: kNotConnected, found "
-           << FormatConnectionState(dev->bredr()->connection_state());
+           << "Expected peer connection_state: kNotConnected, found "
+           << FormatConnectionState(peer->bredr()->connection_state());
   }
   return ::testing::AssertionSuccess();
 }
 
-::testing::AssertionResult HasConnectionTo(RemoteDevice* dev,
-                                           BrEdrConnection* conn) {
+::testing::AssertionResult HasConnectionTo(Peer* peer, BrEdrConnection* conn) {
   if (!conn) {
     return ::testing::AssertionFailure()
            << "Expected BrEdrConnection, but found nullptr";
   }
-  if (dev->identifier() != conn->peer_id()) {
+  if (peer->identifier() != conn->peer_id()) {
     return ::testing::AssertionFailure()
-           << "Expected connection peer_id " << bt_str(dev->identifier())
+           << "Expected connection peer_id " << bt_str(peer->identifier())
            << " but found " << bt_str(conn->peer_id());
   }
   return ::testing::AssertionSuccess();
@@ -1323,25 +1321,25 @@ std::string FormatConnectionState(RemoteDevice::ConnectionState s) {
   })
 
 // An error is received via the HCI Command cb_status event
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceErrorStatus) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   test_device()->QueueCommandTransaction(
       CommandTransaction(kCreateConnection, {&kCreateConnectionRspError}));
 
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(NotConnected(dev));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(NotConnected(peer));
 
   hci::Status status;
   EXPECT_TRUE(
-      connmgr()->Connect(dev->identifier(), CALLBACK_EXPECT_FAILURE(status)));
-  EXPECT_TRUE(IsInitializing(dev));
+      connmgr()->Connect(peer->identifier(), CALLBACK_EXPECT_FAILURE(status)));
+  EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished,
             status.protocol_error());
-  EXPECT_TRUE(NotConnected(dev));
+  EXPECT_TRUE(NotConnected(peer));
 }
 
 ::testing::AssertionResult StatusEqual(hci::StatusCode expected,
@@ -1355,8 +1353,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceErrorStatus) {
 }
 
 // Connection Complete event reports error
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceFailure) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   test_device()->QueueCommandTransaction(CommandTransaction(
       kCreateConnection, {&kCreateConnectionRsp, &kConnectionCompleteError}));
@@ -1369,9 +1367,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceFailure) {
     status = cb_status;
     callback_run = true;
   };
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(IsInitializing(dev));
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
 
   RunLoopUntilIdle();
 
@@ -1380,11 +1378,11 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceFailure) {
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_TRUE(StatusEqual(hci::StatusCode::kConnectionFailedToBeEstablished,
                           status.protocol_error()));
-  EXPECT_TRUE(NotConnected(dev));
+  EXPECT_TRUE(NotConnected(peer));
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTimeout) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
   test_device()->QueueCommandTransaction(
       CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
@@ -1398,25 +1396,25 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTimeout) {
     status = cb_status;
   };
 
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(IsInitializing(dev));
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
   RunLoopFor(kBrEdrCreateConnectionTimeout);
   RunLoopFor(kBrEdrCreateConnectionTimeout);
   EXPECT_FALSE(status);
   EXPECT_EQ(common::HostError::kTimedOut, status.error()) << status.ToString();
-  EXPECT_TRUE(NotConnected(dev));
+  EXPECT_TRUE(NotConnected(peer));
 }
 
-// Successful connection to single device
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDevice) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
-  EXPECT_TRUE(dev->temporary());
+// Successful connection to single peer
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
   test_device()->QueueCommandTransaction(CommandTransaction(
       kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
-  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
@@ -1428,25 +1426,25 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDevice) {
     conn_ref = std::move(cb_conn_ref);
   };
 
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(IsInitializing(dev));
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
-  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
-  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_TRUE(IsConnected(peer));
 }
 
-// Connecting to an already connected device should complete instantly
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceAlreadyConnected) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
-  EXPECT_TRUE(dev->temporary());
+// Connecting to an already connected peer should complete instantly
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
   test_device()->QueueCommandTransaction(CommandTransaction(
       kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
-  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
@@ -1461,37 +1459,37 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceAlreadyConnected) {
     ++num_callbacks;
   };
 
-  // Connect to the device for the first time
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(IsInitializing(dev));
+  // Connect to the peer for the first time
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
-  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
-  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_TRUE(IsConnected(peer));
   EXPECT_EQ(num_callbacks, 1);
 
-  // Attempt to connect again to the already connected device
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  // Attempt to connect again to the already connected peer
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   RunLoopUntilIdle();
   EXPECT_EQ(num_callbacks, 2);
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
-  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
-  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_TRUE(IsConnected(peer));
 }
 
-// Initiating Two Connections to the same (currently unconnected) device should
+// Initiating Two Connections to the same (currently unconnected) peer should
 // successfully establish both
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTwoInFlight) {
-  auto* dev = device_cache()->NewDevice(kTestDevAddr, true);
-  EXPECT_TRUE(dev->temporary());
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
   test_device()->QueueCommandTransaction(CommandTransaction(
       kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
-  QueueSuccessfulInterrogation(dev->address(), kConnectionHandle);
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
   // Initialize as error to verify that |callback| assigns success.
@@ -1507,26 +1505,26 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSingleDeviceTwoInFlight) {
   };
 
   // Launch one request, but don't run the loop
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
-  ASSERT_TRUE(dev->bredr());
-  EXPECT_TRUE(IsInitializing(dev));
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
 
   // Launch second inflight request
-  EXPECT_TRUE(connmgr()->Connect(dev->identifier(), callback));
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
 
   // Run the loop which should complete both requests
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
-  EXPECT_TRUE(HasConnectionTo(dev, conn_ref));
-  EXPECT_TRUE(IsConnected(dev));
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_TRUE(IsConnected(peer));
   EXPECT_EQ(num_callbacks, 2);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondDeviceFirstTimesOut) {
-  auto* peer_a = device_cache()->NewDevice(kTestDevAddr, true);
-  auto* peer_b = device_cache()->NewDevice(kTestDevAddr2, true);
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
+  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
 
   // Enqueue first connection request (which will timeout and be cancelled)
   test_device()->QueueCommandTransaction(
@@ -1580,7 +1578,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondDeviceFirstTimesOut) {
   EXPECT_TRUE(IsConnected(peer_b));
 }
 
-// TODO(BT-819) Connecting a device that's being interrogated
+// TODO(BT-819) Connecting a peer that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP

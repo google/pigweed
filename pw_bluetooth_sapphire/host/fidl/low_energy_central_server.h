@@ -46,7 +46,7 @@ class LowEnergyCentralServer
                             DisconnectPeripheralCallback callback) override;
 
   // Called by |scan_session_| when a device is discovered.
-  void OnScanResult(const bt::gap::RemoteDevice& remote_device);
+  void OnScanResult(const bt::gap::Peer& peer);
 
   // Notifies the delegate that the scan state for this Central has changed.
   void NotifyScanStateChanged(bool scanning);
@@ -64,7 +64,7 @@ class LowEnergyCentralServer
   std::unique_ptr<bt::gap::LowEnergyDiscoverySession> scan_session_;
 
   // This client's connection references. A client can hold a connection to
-  // multiple peers. Each key is a remote device identifier. Each value is
+  // multiple peers. Each key is a peer identifier. Each value is
   //   a. nullptr, if a connect request to this device is currently pending.
   //   b. a valid reference if this Central is holding a connection reference to
   //   this device.

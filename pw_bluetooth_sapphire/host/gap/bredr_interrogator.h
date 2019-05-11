@@ -13,7 +13,7 @@
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
@@ -43,7 +43,7 @@ namespace gap {
 class BrEdrInterrogator {
  public:
   // |cache| must live longer than this object.
-  BrEdrInterrogator(RemoteDeviceCache* cache, fxl::RefPtr<hci::Transport> hci,
+  BrEdrInterrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci,
                     async_dispatcher_t* dispatcher);
 
   // Will cancel all uncompleted interrogations.
@@ -109,7 +109,7 @@ class BrEdrInterrogator {
   async_dispatcher_t* dispatcher_;
 
   // Cache to retrieve devices from.
-  RemoteDeviceCache* cache_;
+  PeerCache* cache_;
 
   // The current set of interrogations
   // TODO(BT-750): Store Interrogations by value.

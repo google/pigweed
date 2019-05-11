@@ -6,10 +6,9 @@
 
 #include <zircon/assert.h>
 
+#include "peer.h"
+#include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-
-#include "remote_device.h"
-#include "remote_device_cache.h"
 
 namespace bt {
 namespace gap {
@@ -26,15 +25,14 @@ LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
     Stop();
 }
 
-void LowEnergyDiscoverySession::SetResultCallback(
-    DeviceFoundCallback callback) {
-  device_found_callback_ = std::move(callback);
+void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
+  peer_found_callback_ = std::move(callback);
   if (!manager_)
     return;
-  for (DeviceId cached_device_id : manager_->cached_scan_results()) {
-    auto device = manager_->device_cache()->FindDeviceById(cached_device_id);
-    ZX_DEBUG_ASSERT(device);
-    NotifyDiscoveryResult(*device);
+  for (DeviceId cached_peer_id : manager_->cached_scan_results()) {
+    auto peer = manager_->peer_cache()->FindById(cached_peer_id);
+    ZX_DEBUG_ASSERT(peer);
+    NotifyDiscoveryResult(*peer);
   }
 }
 
@@ -47,13 +45,12 @@ void LowEnergyDiscoverySession::Stop() {
   active_ = false;
 }
 
-void LowEnergyDiscoverySession::NotifyDiscoveryResult(
-    const RemoteDevice& device) const {
-  ZX_DEBUG_ASSERT(device.le());
-  if (device_found_callback_ &&
-      filter_.MatchLowEnergyResult(device.le()->advertising_data(),
-                                   device.connectable(), device.rssi())) {
-    device_found_callback_(device);
+void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
+  ZX_DEBUG_ASSERT(peer.le());
+  if (peer_found_callback_ &&
+      filter_.MatchLowEnergyResult(peer.le()->advertising_data(),
+                                   peer.connectable(), peer.rssi())) {
+    peer_found_callback_(peer);
   }
 }
 
@@ -65,16 +62,16 @@ void LowEnergyDiscoverySession::NotifyError() {
 
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
     fxl::RefPtr<hci::Transport> hci, hci::LowEnergyScanner* scanner,
-    RemoteDeviceCache* device_cache)
+    PeerCache* peer_cache)
     : dispatcher_(async_get_default_dispatcher()),
-      device_cache_(device_cache),
+      peer_cache_(peer_cache),
       background_scan_enabled_(false),
       scanner_(scanner),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci);
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(device_cache_);
+  ZX_DEBUG_ASSERT(peer_cache_);
   ZX_DEBUG_ASSERT(scanner_);
 
   scanner_->set_delegate(this);
@@ -103,7 +100,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
     return;
   }
 
-  // If a device scan is already in progress, then the request succeeds (this
+  // If a peer scan is already in progress, then the request succeeds (this
   // includes the state in which we are stopping and restarting scan in between
   // scan periods).
   if (!sessions_.empty()) {
@@ -179,7 +176,7 @@ void LowEnergyDiscoveryManager::RemoveSession(
     scanner_->StopScan();
 }
 
-void LowEnergyDiscoveryManager::OnDeviceFound(
+void LowEnergyDiscoveryManager::OnPeerFound(
     const hci::LowEnergyScanResult& result, const common::ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
@@ -188,16 +185,16 @@ void LowEnergyDiscoveryManager::OnDeviceFound(
     return;
   }
 
-  auto device = device_cache_->FindDeviceByAddress(result.address);
-  if (!device) {
-    device = device_cache_->NewDevice(result.address, result.connectable);
+  auto peer = peer_cache_->FindByAddress(result.address);
+  if (!peer) {
+    peer = peer_cache_->NewPeer(result.address, result.connectable);
   }
-  device->MutLe().SetAdvertisingData(result.rssi, data);
+  peer->MutLe().SetAdvertisingData(result.rssi, data);
 
-  cached_scan_results_.insert(device->identifier());
+  cached_scan_results_.insert(peer->identifier());
 
   for (const auto& session : sessions_) {
-    session->NotifyDiscoveryResult(*device);
+    session->NotifyDiscoveryResult(*peer);
   }
 }
 
@@ -211,15 +208,15 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
          result.address.ToString().c_str(),
          (result.resolved ? "resolved" : "not resolved"));
 
-  auto device = device_cache_->FindDeviceByAddress(result.address);
-  if (!device) {
+  auto peer = peer_cache_->FindByAddress(result.address);
+  if (!peer) {
     bt_log(TRACE, "gap",
            "ignoring connection request from unknown peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
-  if (!device->le() || !device->le()->bonded()) {
+  if (!peer->le() || !peer->le()->bonded()) {
     bt_log(TRACE, "gap",
            "rejecting connection request from unbonded peripheral: %s",
            result.address.ToString().c_str());
@@ -228,9 +225,9 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
 
   // TODO(armansito): We shouldn't always accept connection requests from all
   // bonded peripherals (e.g. if one is explicitly disconnected). Maybe add an
-  // "auto_connect()" property to RemoteDevice?
+  // "auto_connect()" property to Peer?
   if (directed_conn_cb_) {
-    directed_conn_cb_(device->identifier());
+    directed_conn_cb_(peer->identifier());
   }
 }
 
@@ -361,7 +358,9 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   // additional sessions they will be added to pending_
   auto sessions = std::move(sessions_);
   for (const auto& session : sessions) {
-    if (session->active()) { session->NotifyError(); }
+    if (session->active()) {
+      session->NotifyError();
+    }
   }
 
   // Due to the move, sessions_ should be empty before the loop and any

@@ -225,8 +225,8 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   if (!stopped) {
     for (auto& result : pending_results_) {
       auto& pending = result.second;
-      NotifyDeviceFound(pending.result,
-                        pending.data.view(0, pending.adv_data_len));
+      NotifyPeerFound(pending.result,
+                      pending.data.view(0, pending.adv_data_len));
     }
   }
 
@@ -315,7 +315,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     }
 
     if (!needs_scan_rsp) {
-      NotifyDeviceFound(result, BufferView(report->data, report->length_data));
+      NotifyPeerFound(result, BufferView(report->data, report->length_data));
       continue;
     }
 
@@ -323,7 +323,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     auto& pending = iter->second;
 
     // We overwrite the pending result entry with the most recent report, even
-    // if one from this device was already pending.
+    // if one from this peer was already pending.
     pending.result = result;
     pending.adv_data_len = report->length_data;
     pending.data.Write(report->data, report->length_data);
@@ -357,15 +357,14 @@ void LegacyLowEnergyScanner::HandleScanResponse(
   // Append the scan response to the pending advertising data.
   pending.data.Write(report.data, report.length_data, pending.adv_data_len);
 
-  NotifyDeviceFound(
-      pending.result,
-      pending.data.view(0, pending.adv_data_len + report.length_data));
+  NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len +
+                                                           report.length_data));
   pending_results_.erase(iter);
 }
 
-void LegacyLowEnergyScanner::NotifyDeviceFound(
-    const LowEnergyScanResult& result, const common::ByteBuffer& data) {
-  delegate()->OnDeviceFound(result, data);
+void LegacyLowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result,
+                                             const common::ByteBuffer& data) {
+  delegate()->OnPeerFound(result, data);
 }
 
 void LegacyLowEnergyScanner::OnScanPeriodComplete() {

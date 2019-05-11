@@ -31,12 +31,12 @@ class Transport;
 namespace gap {
 
 class LowEnergyDiscoveryManager;
-class RemoteDevice;
-class RemoteDeviceCache;
+class Peer;
+class PeerCache;
 
-// LowEnergyDiscoveryManager implements GAP LE central/observer role device
+// LowEnergyDiscoveryManager implements GAP LE central/observer role
 // discovery procedures. This class provides mechanisms for multiple clients to
-// simultaneously scan for nearby devices filtered by adveritising data
+// simultaneously scan for nearby peers filtered by adveritising data
 // contents. This class also provides hooks for other layers to manage the
 // Adapter's scan state for other procedures that require it (e.g. connection
 // establishment, pairing procedures, and other scan and advertising
@@ -63,7 +63,7 @@ class RemoteDeviceCache;
 // PROCEDURE:
 //
 // Starting the first discovery session initiates a periodic scan procedure, in
-// which the device scan is stopped and restarted for a given scan period (10.24
+// which the scan is stopped and restarted for a given scan period (10.24
 // seconds by default). This continues until all sessions have been removed.
 //
 // By default duplicate filtering is used which means that a new advertising
@@ -83,7 +83,7 @@ class RemoteDeviceCache;
 //       // this callback returns.
 //       session = std::move(new_session);
 //
-//       // Only scan for devices advertising the "Heart Rate" GATT Service.
+//       // Only scan for peers advertising the "Heart Rate" GATT Service.
 //       uint16_t uuid = 0x180d;
 //       session->filter()->set_service_uuids({bt::common::UUID(uuid)});
 //       session->SetResultCallback([](const
@@ -99,7 +99,7 @@ class RemoteDeviceCache;
 // LowEnergyDiscoveryManager is bound to its creation thread and the associated
 // dispatcher and must be accessed and destroyed on the same thread.
 
-// Represents a LE device discovery session initiated via
+// Represents a LE discovery session initiated via
 // LowEnergyDiscoveryManager::StartDiscovery(). Instances cannot be created
 // directly; instead they are handed to callers by LowEnergyDiscoveryManager.
 //
@@ -112,7 +112,7 @@ class LowEnergyDiscoverySession final {
   // this instance.
   ~LowEnergyDiscoverySession();
 
-  // Sets a callback for receiving notifications on newly discovered devices.
+  // Sets a callback for receiving notifications on newly discovered peers.
   // |data| contains advertising and scan response data (if any) obtained during
   // discovery.
   //
@@ -120,8 +120,8 @@ class LowEnergyDiscoverySession final {
   // the cached results from the most recent scan period. If a filter was
   // assigned earlier, then the callback will only receive results that match
   // the filter.
-  using DeviceFoundCallback = fit::function<void(const RemoteDevice& device)>;
-  void SetResultCallback(DeviceFoundCallback callback);
+  using PeerFoundCallback = fit::function<void(const Peer& peer)>;
+  void SetResultCallback(PeerFoundCallback callback);
 
   // Sets a callback to get notified when the session becomes inactive due to an
   // internal error.
@@ -130,14 +130,14 @@ class LowEnergyDiscoverySession final {
   }
 
   // Returns the filter that belongs to this session. The caller may modify the
-  // filter as desired. By default no devices are filtered.
+  // filter as desired. By default no peers are filtered.
   //
   // NOTE: The client is responsible for setting up the filter's "flags" field
   // for discovery procedures.
   DiscoveryFilter* filter() { return &filter_; }
 
   // Ends this session. This instance will stop receiving notifications for
-  // devices.
+  // peers.
   void Stop();
 
   // Returns true if this session is active. A session is considered inactive
@@ -152,7 +152,7 @@ class LowEnergyDiscoverySession final {
       fxl::WeakPtr<LowEnergyDiscoveryManager> manager);
 
   // Called by LowEnergyDiscoveryManager on newly discovered scan results.
-  void NotifyDiscoveryResult(const RemoteDevice& device) const;
+  void NotifyDiscoveryResult(const Peer& peer) const;
 
   // Marks this session as inactive and notifies the error handler.
   void NotifyError();
@@ -160,7 +160,7 @@ class LowEnergyDiscoverySession final {
   bool active_;
   fxl::WeakPtr<LowEnergyDiscoveryManager> manager_;
   fit::closure error_callback_;
-  DeviceFoundCallback device_found_callback_;
+  PeerFoundCallback peer_found_callback_;
   DiscoveryFilter filter_;
   fxl::ThreadChecker thread_checker_;
 
@@ -172,10 +172,10 @@ using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
 // See comments above.
 class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  public:
-  // |device_cache| MUST out-live this LowEnergyDiscoveryManager.
+  // |peer_cache| MUST out-live this LowEnergyDiscoveryManager.
   LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
                             hci::LowEnergyScanner* scanner,
-                            RemoteDeviceCache* device_cache);
+                            PeerCache* peer_cache);
   virtual ~LowEnergyDiscoveryManager();
 
   // Starts a new discovery session and reports the result via |callback|. If a
@@ -200,7 +200,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   bool discovering() const { return !sessions_.empty(); }
 
   // Registers a callback which runs after a directed connectable advertisement
-  // is received from a bonded device with the given |id|.
+  // is received from a bonded peer with the given |id|.
   using DirectedConnectableCallback = fit::function<void(DeviceId id)>;
   void set_directed_connectable_callback(DirectedConnectableCallback callback) {
     directed_conn_cb_ = std::move(callback);
@@ -209,7 +209,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  private:
   friend class LowEnergyDiscoverySession;
 
-  const RemoteDeviceCache* device_cache() const { return device_cache_; }
+  const PeerCache* peer_cache() const { return peer_cache_; }
 
   const std::unordered_set<DeviceId>& cached_scan_results() const {
     return cached_scan_results_;
@@ -223,8 +223,8 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   void RemoveSession(LowEnergyDiscoverySession* session);
 
   // hci::LowEnergyScanner::Delegate override:
-  void OnDeviceFound(const hci::LowEnergyScanResult& result,
-                     const common::ByteBuffer& data) override;
+  void OnPeerFound(const hci::LowEnergyScanResult& result,
+                   const common::ByteBuffer& data) override;
   void OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) override;
 
   // Called by hci::LowEnergyScanner
@@ -242,9 +242,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;
 
-  // The device cache that we use for storing and looking up scan results. We
+  // The peer cache that we use for storing and looking up scan results. We
   // hold a raw pointer as we expect this to out-live us.
-  RemoteDeviceCache* const device_cache_;
+  PeerCache* const peer_cache_;
 
   // True if background scanning is enabled.
   bool background_scan_enabled_;
@@ -266,7 +266,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   std::unordered_set<LowEnergyDiscoverySession*> sessions_;
 
   // Identifiers for the cached scan results for the current scan period during
-  // device discovery. The minimum (and default) scan period is 10.24 seconds
+  // discovery. The minimum (and default) scan period is 10.24 seconds
   // when performing LE discovery. This can cause a long wait for a discovery
   // session that joined in the middle of a scan period and duplicate filtering
   // is enabled. We maintain this cache to immediately notify new sessions of

@@ -8,7 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -26,7 +26,7 @@ class Transport;
 namespace gap {
 
 class PairingDelegate;
-class RemoteDeviceCache;
+class PeerCache;
 class BrEdrConnectionManager;
 
 // Represents an established Br/Edr connection, after we have performed
@@ -49,12 +49,11 @@ class BrEdrConnection final {
 };
 
 // Manages all activity related to connections in the BR/EDR section of the
-// controller, including whether the device can be connected to, incoming
+// controller, including whether the peer can be connected to, incoming
 // connections, and initiating connections.
 class BrEdrConnectionManager final {
  public:
-  BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci,
-                         RemoteDeviceCache* device_cache,
+  BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
                          common::DeviceAddress local_address,
                          fbl::RefPtr<data::Domain> data_domain,
                          bool use_interlaced_scan);
@@ -69,18 +68,18 @@ class BrEdrConnectionManager final {
   // rejected.
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
 
-  // Retrieves the device id that is connected to the connection |handle|.
-  // Returns common::kInvalidDeviceId if no such device exists.
+  // Retrieves the peer id that is connected to the connection |handle|.
+  // Returns common::kInvalidDeviceId if no such peer exists.
   DeviceId GetPeerId(hci::ConnectionHandle handle) const;
 
   // Opens a new L2CAP channel to service |psm| on |peer_id|. Returns false if
-  // the device is not already connected.
+  // the peer is not already connected.
   using SocketCallback = fit::function<void(zx::socket)>;
   bool OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm, SocketCallback cb,
                         async_dispatcher_t* dispatcher);
 
-  // Add a service search to be performed on new connected remote devices.
-  // This search will happen on every device connection.
+  // Add a service search to be performed on new connected remote peers.
+  // This search will happen on every peer connection.
   // |callback| will be called with the |attributes| that exist in the service
   // entry on the remote SDP server.  This callback is called in the same
   // dispatcher as BrEdrConnectionManager was created.
@@ -103,7 +102,7 @@ class BrEdrConnectionManager final {
       fit::function<void(hci::Status, BrEdrConnection*)>;
 
   // Initiates an outgoing Create Connection Request to attempt to connect to
-  // the device identified by |peer_id|. Returns false if the connection
+  // the peer identified by |peer_id|. Returns false if the connection
   // request was invalid, otherwise returns true and |callback| will be called
   // with the result of the procedure, whether successful or not
   // TODO(BT-820) - implement a timeout
@@ -120,7 +119,7 @@ class BrEdrConnectionManager final {
   void SendCreateConnectionCancelCommand(common::DeviceAddress addr);
 
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
-  // |peer_id| is not a recognized BR/EDR device or the corresponding peer is
+  // |peer_id| is not a recognized BR/EDR peer or the corresponding peer is
   // not connected.
   bool Disconnect(DeviceId peer_id);
 
@@ -140,7 +139,8 @@ class BrEdrConnectionManager final {
 
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
-  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionById(DeviceId peer_id);
+  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
+  FindConnectionById(DeviceId peer_id);
 
   // Callbacks for registered events
   void OnConnectionRequest(const hci::EventPacket& event);
@@ -153,13 +153,13 @@ class BrEdrConnectionManager final {
 
   // Called once interrogation is complete to establish a BrEdrConnection and,
   // if in response to an outgoing connection request, completes the request
-  void EstablishConnection(RemoteDevice* device, hci::Status status,
+  void EstablishConnection(Peer* peer, hci::Status status,
                            std::unique_ptr<hci::Connection> conn_ptr);
 
-  RemoteDevice* FindOrInitDevice(common::DeviceAddress addr);
+  Peer* FindOrInitPeer(common::DeviceAddress addr);
 
   // Called when we complete a pending request. Initiates a new connection
-  // attempt for the next device in the pending list, if any.
+  // attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
 
   // Called when a request times out waiting for a connection complete packet,
@@ -169,8 +169,7 @@ class BrEdrConnectionManager final {
 
   // Cleanup a connection which has been deliberately disconnected, or had all
   // references to it dropped
-  void CleanupConnection(hci::ConnectionHandle handle,
-                         BrEdrConnection& conn,
+  void CleanupConnection(hci::ConnectionHandle handle, BrEdrConnection& conn,
                          bool link_already_closed);
 
   using ConnectionMap =
@@ -179,10 +178,10 @@ class BrEdrConnectionManager final {
   fxl::RefPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
 
-  // Device cache is used to look up parameters for connecting to devices and
-  // update the state of connected devices as well as introduce unknown devices.
+  // Peer cache is used to look up parameters for connecting to peers and
+  // update the state of connected peers as well as introduce unknown peers.
   // This object must outlive this instance.
-  RemoteDeviceCache* cache_;
+  PeerCache* cache_;
 
   const common::DeviceAddress local_address_;
 
@@ -215,7 +214,7 @@ class BrEdrConnectionManager final {
   hci::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
 
-  // Outstanding connection requests based on remote device ID.
+  // Outstanding connection requests based on remote peer ID.
   std::unordered_map<DeviceId, ConnectionRequest<BrEdrConnection*>>
       connection_requests_;
 

@@ -71,10 +71,10 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     TestingBase::TearDown();
   }
 
-  using DeviceFoundCallback = fit::function<void(const LowEnergyScanResult&,
-                                                 const common::ByteBuffer&)>;
-  void set_device_found_callback(DeviceFoundCallback cb) {
-    device_found_cb_ = std::move(cb);
+  using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&,
+                                               const common::ByteBuffer&)>;
+  void set_peer_found_callback(PeerFoundCallback cb) {
+    peer_found_cb_ = std::move(cb);
   }
 
   using DirectedAdvCallback = fit::function<void(const LowEnergyScanResult&)>;
@@ -91,10 +91,10 @@ class LegacyLowEnergyScannerTest : public TestingBase,
   }
 
   // LowEnergyScanner::Observer override:
-  void OnDeviceFound(const LowEnergyScanResult& result,
-                     const common::ByteBuffer& data) override {
-    if (device_found_cb_) {
-      device_found_cb_(result, data);
+  void OnPeerFound(const LowEnergyScanResult& result,
+                   const common::ByteBuffer& data) override {
+    if (peer_found_cb_) {
+      peer_found_cb_(result, data);
     }
   }
 
@@ -105,7 +105,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     }
   }
 
-  // Adds 6 fake devices using kAddress[0-5] above.
+  // Adds 6 fake peers using kAddress[0-5] above.
   void AddFakePeers() {
     // We use malformed data for testing purposes, as we don't care about
     // integrity here.
@@ -114,8 +114,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     auto empty_data = common::DynamicByteBuffer();
 
     // Generates ADV_IND, scan response is reported in a single HCI event.
-    auto fake_peer =
-        std::make_unique<FakePeer>(kPublicAddress1, true, true);
+    auto fake_peer = std::make_unique<FakePeer>(kPublicAddress1, true, true);
     fake_peer->SetAdvertisingData(adv_data);
     fake_peer->SetScanResponse(true, scan_rsp);
     test_device()->AddPeer(std::move(fake_peer));
@@ -162,7 +161,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
   }
 
  private:
-  DeviceFoundCallback device_found_cb_;
+  PeerFoundCallback peer_found_cb_;
   DirectedAdvCallback directed_adv_cb_;
   FakeLocalAddressDelegate fake_address_delegate_;
   std::unique_ptr<LegacyLowEnergyScanner> scanner_;
@@ -307,14 +306,14 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopScanWhileInitiating) {
 }
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
-  // One of the 6 fake devices is scannable but never sends scan response
-  // packets. That device doesn't get reported until the end of the scan period.
+  // One of the 6 fake peers is scannable but never sends scan response
+  // packets. That peer doesn't get reported until the end of the scan period.
   constexpr size_t kExpectedResultCount = 5u;
 
   AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
-  set_device_found_callback([&, this](const auto& result, const auto& data) {
+  set_peer_found_callback([&, this](const auto& result, const auto& data) {
     results[result.address] = std::make_pair(result, data.ToString());
   });
 
@@ -326,16 +325,16 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
 
   ASSERT_EQ(kExpectedResultCount, results.size());
 
-  // Ending the scan period should notify Fake Device #4.
+  // Ending the scan period should notify Fake Peer #4.
   scanner()->StopScanPeriodForTesting();
   RunLoopUntilIdle();
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kComplete, last_scan_status());
   ASSERT_EQ(kExpectedResultCount + 1, results.size());
 
-  // Verify the 6 results against the fake devices that were set up by
+  // Verify the 6 results against the fake peers that were set up by
   // AddFakePeers(). Since the scan period ended naturally, LowEnergyScanner
-  // should generate a device found event for all pending reports even if a scan
-  // response was not received for a scannable device (see Fake Device 4, i.e.
+  // should generate a peer found event for all pending reports even if a scan
+  // response was not received for a scannable peer (see Fake Peer 4, i.e.
   // kRandomAddress3).
 
   // Result 0
@@ -417,7 +416,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
-  set_device_found_callback(
+  set_peer_found_callback(
       [&results, this](const auto& result, const auto& data) {
         results[result.address] = std::make_pair(result, data.ToString());
       });
@@ -429,8 +428,8 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   RunLoopUntilIdle();
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
 
-  // Run the loop until we've seen an event for the last device that we
-  // added. Fake Device 4 (i.e. kRandomAddress3) is scannable but it never sends
+  // Run the loop until we've seen an event for the last peer that we
+  // added. Fake Peer 4 (i.e. kRandomAddress3) is scannable but it never sends
   // a scan response so we expect that remain in the scanner's pending reports
   // list.
   RunLoopUntilIdle();
@@ -438,7 +437,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   EXPECT_EQ(results.find(kRandomAddress3), results.end());
 
   // Stop the scan. Since we are terminating the scan period early,
-  // LowEnergyScanner should not send a report for the pending device.
+  // LowEnergyScanner should not send a report for the pending peer.
   EXPECT_TRUE(scanner()->StopScan());
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsIdle());
@@ -452,7 +451,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
   AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
-  set_device_found_callback([&, this](const auto& result, const auto& data) {
+  set_peer_found_callback([&, this](const auto& result, const auto& data) {
     results[result.address] = std::make_pair(result, data.ToString());
   });
 
@@ -466,7 +465,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kPassive, last_scan_status());
   ASSERT_EQ(kExpectedResultCount, results.size());
 
-  // Verify the 6 results against the fake devices that were set up by
+  // Verify the 6 results against the fake peers that were set up by
   // AddFakePeers(). All Scan Response PDUs should have been ignored.
 
   // Result 0

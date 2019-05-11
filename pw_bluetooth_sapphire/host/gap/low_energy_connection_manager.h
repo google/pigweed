@@ -41,8 +41,8 @@ class LowEnergyConnection;
 
 class LowEnergyConnectionManager;
 class PairingDelegate;
-class RemoteDevice;
-class RemoteDeviceCache;
+class Peer;
+class PeerCache;
 
 class LowEnergyConnectionRef final {
  public:
@@ -60,14 +60,14 @@ class LowEnergyConnectionRef final {
     closed_cb_ = std::move(callback);
   }
 
-  DeviceId device_identifier() const { return device_id_; }
+  DeviceId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
  private:
   friend class LowEnergyConnectionManager;
   friend class internal::LowEnergyConnection;
 
-  LowEnergyConnectionRef(DeviceId device_id, hci::ConnectionHandle handle,
+  LowEnergyConnectionRef(DeviceId peer_id, hci::ConnectionHandle handle,
                          fxl::WeakPtr<LowEnergyConnectionManager> manager);
 
   // Called by LowEnergyConnectionManager when the underlying connection is
@@ -75,7 +75,7 @@ class LowEnergyConnectionRef final {
   void MarkClosed();
 
   bool active_;
-  DeviceId device_id_;
+  DeviceId peer_id_;
   hci::ConnectionHandle handle_;
   fxl::WeakPtr<LowEnergyConnectionManager> manager_;
   fit::closure closed_cb_;
@@ -94,32 +94,32 @@ class LowEnergyConnectionManager final {
   //                  procedures.
   // |connector|: Adapter object for initiating link layer connections. This
   //              object abstracts the legacy and extended HCI command sets.
-  // |device_cache|: The cache that stores peer device data. The connection
+  // |peer_cache|: The cache that stores peer peer data. The connection
   //                 manager stores and retrieves pairing data and connection
   //                 parameters to/from the cache. It also updates the
-  //                 connection and bonding state of a device via the cache.
+  //                 connection and bonding state of a peer via the cache.
   // |data_domain|: Used to interact with the L2CAP layer.
   // |gatt|: Used to interact with the GATT profile layer.
   LowEnergyConnectionManager(fxl::RefPtr<hci::Transport> hci,
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector,
-                             RemoteDeviceCache* device_cache,
+                             PeerCache* peer_cache,
                              fbl::RefPtr<data::Domain> data_domain,
                              fbl::RefPtr<gatt::GATT> gatt);
   ~LowEnergyConnectionManager();
 
   // Allows a caller to claim shared ownership over a connection to the
-  // requested remote LE device identified by |device_id|. Returns
-  // false, if |device_id| is not recognized, otherwise:
+  // requested remote LE peer identified by |peer_id|. Returns
+  // false, if |peer_id| is not recognized, otherwise:
   //
-  //   * If the requested device is already connected, this method
+  //   * If the requested peer is already connected, this method
   //     asynchronously returns a LowEnergyConnectionRef without sending any
   //     requests to the controller. This is done for both local and remote
   //     initiated connections (i.e. the local adapter can either be in the LE
   //     central or peripheral roles). |callback| always succeeds.
   //
-  //   * If the requested device is NOT connected, then this method initiates a
-  //     connection to the requested device using one of the GAP central role
+  //   * If the requested peer is NOT connected, then this method initiates a
+  //     connection to the requested peer using one of the GAP central role
   //     connection establishment procedures described in Core Spec v5.0, Vol 3,
   //     Part C, Section 9.3. A LowEnergyConnectionRef is asynchronously
   //     returned to the caller once the connection has been set up.
@@ -130,17 +130,17 @@ class LowEnergyConnectionManager final {
   // |callback| is posted on the creation thread's dispatcher.
   using ConnectionResultCallback =
       fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
-  bool Connect(DeviceId device_id, ConnectionResultCallback callback);
+  bool Connect(DeviceId peer_id, ConnectionResultCallback callback);
 
-  RemoteDeviceCache* device_cache() { return device_cache_; }
+  PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const {
     return local_address_delegate_;
   }
 
-  // Disconnects any existing LE connection to |device_id|, invalidating
-  // all active LowEnergyConnectionRefs. Returns false if |device_id| is
-  // not recognized or the corresponding remote device is not connected.
-  bool Disconnect(DeviceId device_id);
+  // Disconnects any existing LE connection to |peer_id|, invalidating
+  // all active LowEnergyConnectionRefs. Returns false if |peer_id| is
+  // not recognized or the corresponding remote peer is not connected.
+  bool Disconnect(DeviceId peer_id);
 
   // Initializes a new connection over the given |link| and returns a connection
   // reference. Returns nullptr if the connection was rejected.
@@ -163,11 +163,11 @@ class LowEnergyConnectionManager final {
   // rejected.
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
 
-  // TODO(armansito): Add a RemoteDeviceCache::Observer interface and move these
+  // TODO(armansito): Add a PeerCache::Observer interface and move these
   // callbacks there.
 
   // Called when the connection parameters on a link have been updated.
-  using ConnectionParametersCallback = fit::function<void(const RemoteDevice&)>;
+  using ConnectionParametersCallback = fit::function<void(const Peer&)>;
   void SetConnectionParametersCallbackForTesting(
       ConnectionParametersCallback callback);
 
@@ -190,7 +190,7 @@ class LowEnergyConnectionManager final {
  private:
   friend class LowEnergyConnectionRef;
 
-  // Mapping from device identifiers to open LE connections.
+  // Mapping from peer identifiers to open LE connections.
   using ConnectionMap =
       std::unordered_map<DeviceId,
                          std::unique_ptr<internal::LowEnergyConnection>>;
@@ -227,27 +227,27 @@ class LowEnergyConnectionManager final {
   void ReleaseReference(LowEnergyConnectionRef* conn_ref);
 
   // Called when |connector_| completes a pending request. Initiates a new
-  // connection attempt for the next device in the pending list, if any.
+  // connection attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
 
   // Initiates a connection attempt to |peer|.
-  void RequestCreateConnection(RemoteDevice* peer);
+  void RequestCreateConnection(Peer* peer);
 
   // Initializes the connection to the peer with the given identifier and
   // returns the initial reference to it. This method is responsible for setting
   // up all data bearers.
-  LowEnergyConnectionRefPtr InitializeConnection(DeviceId device_id,
+  LowEnergyConnectionRefPtr InitializeConnection(DeviceId peer_id,
                                                  hci::ConnectionPtr link);
 
-  // Adds a new connection reference to an existing connection to the device
-  // with the ID |device_id| and returns it. Returns nullptr if
-  // |device_id| is not recognized.
-  LowEnergyConnectionRefPtr AddConnectionRef(DeviceId device_id);
+  // Adds a new connection reference to an existing connection to the peer
+  // with the ID |peer_id| and returns it. Returns nullptr if
+  // |peer_id| is not recognized.
+  LowEnergyConnectionRefPtr AddConnectionRef(DeviceId peer_id);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command
   // if |close_link| is true, and notifies any referenced
   // LowEnergyConnectionRefs of the disconnection. Marks the corresponding
-  // RemoteDeviceCache entry as disconnected and cleans up all data bearers.
+  // PeerCache entry as disconnected and cleans up all data bearers.
   //
   // |conn_state| will have been removed from the underlying map at the time of
   // a call. Its ownership is passed to the method for disposal.
@@ -261,21 +261,21 @@ class LowEnergyConnectionManager final {
   // created.
   void RegisterLocalInitiatedLink(hci::ConnectionPtr link);
 
-  // Updates |device_cache_| with the given |link| and returns the corresponding
-  // RemoteDevice.
+  // Updates |peer_cache_| with the given |link| and returns the corresponding
+  // Peer.
   //
-  // Creates a new RemoteDevice if |link| matches a peer that did not
+  // Creates a new Peer if |link| matches a peer that did not
   // previously exist in the cache. Otherwise this updates and returns an
-  // existing RemoteDevice.
+  // existing Peer.
   //
-  // The returned device is marked as non-temporary and its connection
+  // The returned peer is marked as non-temporary and its connection
   // parameters are updated.
   //
   // Called by RegisterRemoteInitiatedLink() and RegisterLocalInitiatedLink().
-  RemoteDevice* UpdateRemoteDeviceWithLink(const hci::Connection& link);
+  Peer* UpdatePeerWithLink(const hci::Connection& link);
 
   // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(DeviceId device_id, hci::Status status,
+  void OnConnectResult(DeviceId peer_id, hci::Status status,
                        hci::ConnectionPtr link);
 
   // Event handler for the HCI Disconnection Complete event.
@@ -303,10 +303,10 @@ class LowEnergyConnectionManager final {
   // discovery, as recommended by the specification in v5.0, Vol 3, Part C,
   // Section 9.3.12.1).
   //
-  // |device_id| uniquely identifies the peer. |handle| represents
+  // |peer_id| uniquely identifies the peer. |handle| represents
   // the logical link that |params| should be applied to.
   void OnNewLEConnectionParams(
-      DeviceId device_id, hci::ConnectionHandle handle,
+      DeviceId peer_id, hci::ConnectionHandle handle,
       const hci::LEPreferredConnectionParameters& params);
 
   // Tells the controller to use the given connection |params| on the given
@@ -336,10 +336,10 @@ class LowEnergyConnectionManager final {
   // The dispatcher for all asynchronous tasks.
   async_dispatcher_t* dispatcher_;
 
-  // The device cache is used to look up and persist remote device data that is
+  // The peer cache is used to look up and persist remote peer data that is
   // relevant during connection establishment (such as the address, preferred
   // connection parameters, etc). Expected to outlive this instance.
-  RemoteDeviceCache* device_cache_;  // weak
+  PeerCache* peer_cache_;  // weak
 
   // The reference to the data domain, used to interact with the L2CAP layer to
   // manage LE logical links, fixed channels, and LE-specific L2CAP signaling
@@ -363,10 +363,10 @@ class LowEnergyConnectionManager final {
   ConnectionParametersCallback test_conn_params_cb_;
   DisconnectCallback test_disconn_cb_;
 
-  // Outstanding connection requests based on remote device ID.
+  // Outstanding connection requests based on remote peer ID.
   std::unordered_map<DeviceId, PendingRequestData> pending_requests_;
 
-  // Mapping from device identifiers to currently open LE connections.
+  // Mapping from peer identifiers to currently open LE connections.
   ConnectionMap connections_;
 
   // Performs the Direct Connection Establishment procedure. |connector_| must

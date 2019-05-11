@@ -88,24 +88,20 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void RequestPasskey(bt::gap::DeviceId id,
                       PasskeyResponseCallback respond) override;
 
-  // Called by |adapter()->remote_device_cache()| when a remote device is
-  // updated.
-  void OnRemoteDeviceUpdated(const bt::gap::RemoteDevice& remote_device);
+  // Called by |adapter()->peer_cache()| when a peer is updated.
+  void OnPeerUpdated(const bt::gap::Peer& peer);
 
-  // Called by |adapter()->remote_device_cache()| when a remote device is
-  // removed.
-  void OnRemoteDeviceRemoved(bt::gap::DeviceId identifier);
+  // Called by |adapter()->peer_cache()| when a peer is removed.
+  void OnPeerRemoved(bt::gap::DeviceId identifier);
 
-  // Called by |adapter()->remote_device_cache()| when a remote device is
-  // bonded.
-  void OnRemoteDeviceBonded(const bt::gap::RemoteDevice& remote_device);
+  // Called by |adapter()->peer_cache()| when a peer is bonded.
+  void OnPeerBonded(const bt::gap::Peer& peer);
 
   void ConnectLowEnergy(bt::gap::DeviceId id, ConnectCallback callback);
   void ConnectBrEdr(bt::gap::DeviceId peer_id, ConnectCallback callback);
 
-  // Called when a connection is established to a remote device, either when
-  // initiated by a user via a client of Host.fidl, or automatically by the GAP
-  // adapter
+  // Called when a connection is established to a peer, either when initiated
+  // by a user via a client of Host.fidl, or automatically by the GAP adapter
   void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref,
                                    bool auto_connect);
 

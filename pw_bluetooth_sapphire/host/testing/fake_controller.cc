@@ -240,8 +240,7 @@ void FakeController::SetLEConnectionParametersCallback(
   le_conn_params_cb_dispatcher_ = dispatcher;
 }
 
-FakePeer* FakeController::FindDeviceByAddress(
-    const common::DeviceAddress& addr) {
+FakePeer* FakeController::FindByAddress(const common::DeviceAddress& addr) {
   for (auto& dev : peers_) {
     if (dev->address() == addr)
       return dev.get();
@@ -249,8 +248,7 @@ FakePeer* FakeController::FindDeviceByAddress(
   return nullptr;
 }
 
-FakePeer* FakeController::FindDeviceByConnHandle(
-    hci::ConnectionHandle handle) {
+FakePeer* FakeController::FindByConnHandle(hci::ConnectionHandle handle) {
   for (auto& dev : peers_) {
     if (dev->HasLink(handle))
       return dev.get();
@@ -387,17 +385,17 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
 void FakeController::ConnectLowEnergy(const common::DeviceAddress& addr,
                                       hci::ConnectionRole role) {
   async::PostTask(dispatcher(), [addr, role, this] {
-    FakePeer* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindByAddress(addr);
     if (!dev) {
-      bt_log(WARN, "fake-hci", "no device found with address: %s",
+      bt_log(WARN, "fake-hci", "no peer found with address: %s",
              addr.ToString().c_str());
       return;
     }
 
-    // TODO(armansito): Don't worry about managing multiple links per device
+    // TODO(armansito): Don't worry about managing multiple links per peer
     // until this supports Bluetooth classic.
     if (dev->connected()) {
-      bt_log(WARN, "fake-hci", "device already connected");
+      bt_log(WARN, "fake-hci", "peer already connected");
       return;
     }
 
@@ -436,15 +434,15 @@ void FakeController::L2CAPConnectionParameterUpdate(
     const common::DeviceAddress& addr,
     const hci::LEPreferredConnectionParameters& params) {
   async::PostTask(dispatcher(), [addr, params, this] {
-    FakePeer* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindByAddress(addr);
     if (!dev) {
-      bt_log(WARN, "fake-hci", "no device found with address: %s",
+      bt_log(WARN, "fake-hci", "no peer found with address: %s",
              addr.ToString().c_str());
       return;
     }
 
     if (!dev->connected()) {
-      bt_log(WARN, "fake-hci", "device not connected");
+      bt_log(WARN, "fake-hci", "peer not connected");
       return;
     }
 
@@ -467,9 +465,9 @@ void FakeController::L2CAPConnectionParameterUpdate(
 
 void FakeController::Disconnect(const common::DeviceAddress& addr) {
   async::PostTask(dispatcher(), [addr, this] {
-    FakePeer* dev = FindDeviceByAddress(addr);
+    FakePeer* dev = FindByAddress(addr);
     if (!dev || !dev->connected()) {
-      bt_log(WARN, "fake-hci", "no connected device found with address: %s",
+      bt_log(WARN, "fake-hci", "no connected peer found with address: %s",
              addr.ToString().c_str());
       return;
     }
@@ -508,12 +506,12 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
 
 void FakeController::SendInquiryResponses() {
   // TODO(jamuraa): combine some of these into a single response event
-  for (const auto& device : peers_) {
-    if (!device->has_inquiry_response()) {
+  for (const auto& peer : peers_) {
+    if (!peer->has_inquiry_response()) {
       continue;
     }
 
-    SendCommandChannelPacket(device->CreateInquiryResponseEvent(inquiry_mode_));
+    SendCommandChannelPacket(peer->CreateInquiryResponseEvent(inquiry_mode_));
     inquiry_num_responses_left_--;
     if (inquiry_num_responses_left_ == 0) {
       break;
@@ -525,26 +523,26 @@ void FakeController::SendAdvertisingReports() {
   if (!le_scan_state_.enabled || peers_.empty())
     return;
 
-  for (const auto& device : peers_) {
-    if (!device->has_advertising_reports()) {
+  for (const auto& peer : peers_) {
+    if (!peer->has_advertising_reports()) {
       continue;
     }
     // We want to send scan response packets only during an active scan and if
-    // the device is scannable.
+    // the peer is scannable.
     bool need_scan_rsp =
         (le_scan_state().scan_type == hci::LEScanType::kActive) &&
-        device->scannable();
-    SendCommandChannelPacket(device->CreateAdvertisingReportEvent(
-        need_scan_rsp && device->should_batch_reports()));
+        peer->scannable();
+    SendCommandChannelPacket(peer->CreateAdvertisingReportEvent(
+        need_scan_rsp && peer->should_batch_reports()));
 
     // If the original report did not include a scan response then we send it as
     // a separate event.
-    if (need_scan_rsp && !device->should_batch_reports()) {
-      SendCommandChannelPacket(device->CreateScanResponseReportEvent());
+    if (need_scan_rsp && !peer->should_batch_reports()) {
+      SendCommandChannelPacket(peer->CreateScanResponseReportEvent());
     }
   }
 
-  // We'll send new reports for the same devices if duplicate filtering is
+  // We'll send new reports for the same peers if duplicate filtering is
   // disabled.
   if (!le_scan_state_.filter_duplicates) {
     async::PostTask(dispatcher(), [this] { SendAdvertisingReports(); });
@@ -597,13 +595,13 @@ void FakeController::OnCreateConnectionCommandReceived(
   const DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
-  // Find the device that matches the requested address.
-  FakePeer* device = FindDeviceByAddress(peer_address);
-  if (device) {
-    if (device->connected())
+  // Find the peer that matches the requested address.
+  FakePeer* peer = FindByAddress(peer_address);
+  if (peer) {
+    if (peer->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;
     else
-      status = device->connect_status();
+      status = peer->connect_status();
   }
 
   // First send the Command Status response.
@@ -616,11 +614,11 @@ void FakeController::OnCreateConnectionCommandReceived(
   bredr_connect_pending_ = true;
   pending_bredr_connect_addr_ = peer_address;
 
-  // The procedure was initiated successfully but the device cannot be connected
+  // The procedure was initiated successfully but the peer cannot be connected
   // because it either doesn't exist or isn't connectable.
-  if (!device || !device->connectable()) {
+  if (!peer || !peer->connectable()) {
     bt_log(INFO, "fake-hci",
-           "requested device %s cannot be connected; request will time out",
+           "requested peer %s cannot be connected; request will time out",
            peer_address.ToString().c_str());
 
     pending_bredr_connect_rsp_.Reset([this, peer_address] {
@@ -648,7 +646,7 @@ void FakeController::OnCreateConnectionCommandReceived(
     // Ran out of handles
     status = hci::StatusCode::kConnectionLimitExceeded;
   } else {
-    status = device->connect_response();
+    status = peer->connect_response();
   }
 
   hci::ConnectionCompleteEventParams response = {};
@@ -666,17 +664,17 @@ void FakeController::OnCreateConnectionCommandReceived(
   // Don't send a connection event if we were asked to force the request to
   // remain pending. This is used by test cases that operate during the pending
   // state.
-  if (device->force_pending_connect())
+  if (peer->force_pending_connect())
     return;
 
-  pending_bredr_connect_rsp_.Reset([response, device, this] {
+  pending_bredr_connect_rsp_.Reset([response, peer, this] {
     bredr_connect_pending_ = false;
 
     if (response.status == hci::StatusCode::kSuccess) {
-      bool notify = !device->connected();
-      device->AddLink(le16toh(response.connection_handle));
-      if (notify && device->connected())
-        NotifyConnectionState(device->address(), true);
+      bool notify = !peer->connected();
+      peer->AddLink(le16toh(response.connection_handle));
+      if (notify && peer->connected())
+        NotifyConnectionState(peer->address(), true);
     }
 
     SendEvent(hci::kConnectionCompleteEventCode,
@@ -702,13 +700,13 @@ void FakeController::OnLECreateConnectionCommandReceived(
   const common::DeviceAddress peer_address(addr_type, params.peer_address);
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
-  // Find the device that matches the requested address.
-  FakePeer* device = FindDeviceByAddress(peer_address);
-  if (device) {
-    if (device->connected())
+  // Find the peer that matches the requested address.
+  FakePeer* peer = FindByAddress(peer_address);
+  if (peer) {
+    if (peer->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;
     else
-      status = device->connect_status();
+      status = peer->connect_status();
   }
 
   // First send the Command Status response.
@@ -726,11 +724,11 @@ void FakeController::OnLECreateConnectionCommandReceived(
   le_connect_params_->own_address_type = params.own_address_type;
   le_connect_params_->peer_address = peer_address;
 
-  // The procedure was initiated successfully but the device cannot be connected
+  // The procedure was initiated successfully but the peer cannot be connected
   // because it either doesn't exist or isn't connectable.
-  if (!device || !device->connectable()) {
+  if (!peer || !peer->connectable()) {
     bt_log(INFO, "fake-hci",
-           "requested fake device cannot be connected; request will time out");
+           "requested fake peer cannot be connected; request will time out");
     return;
   }
 
@@ -738,7 +736,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     // Ran out of handles
     status = hci::StatusCode::kConnectionLimitExceeded;
   } else {
-    status = device->connect_response();
+    status = peer->connect_response();
   }
 
   hci::LEConnectionCompleteSubeventParams response;
@@ -756,7 +754,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     hci::LEConnectionParameters conn_params(
         interval, le16toh(params.conn_latency),
         le16toh(params.supervision_timeout));
-    device->set_le_params(conn_params);
+    peer->set_le_params(conn_params);
 
     response.conn_latency = params.conn_latency;
     response.conn_interval = le16toh(interval);
@@ -771,17 +769,17 @@ void FakeController::OnLECreateConnectionCommandReceived(
   // Don't send a connection event if we were asked to force the request to
   // remain pending. This is used by test cases that operate during the pending
   // state.
-  if (device->force_pending_connect())
+  if (peer->force_pending_connect())
     return;
 
-  pending_le_connect_rsp_.Reset([response, device, this] {
+  pending_le_connect_rsp_.Reset([response, peer, this] {
     le_connect_pending_ = false;
 
     if (response.status == hci::StatusCode::kSuccess) {
-      bool notify = !device->connected();
-      device->AddLink(le16toh(response.connection_handle));
-      if (notify && device->connected())
-        NotifyConnectionState(device->address(), true);
+      bool notify = !peer->connected();
+      peer->AddLink(le16toh(response.connection_handle));
+      if (notify && peer->connected())
+        NotifyConnectionState(peer->address(), true);
     }
 
     SendLEMetaEvent(hci::kLEConnectionCompleteSubeventCode,
@@ -795,14 +793,14 @@ void FakeController::OnLECreateConnectionCommandReceived(
 void FakeController::OnLEConnectionUpdateCommandReceived(
     const hci::LEConnectionUpdateCommandParams& params) {
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
-  FakePeer* device = FindDeviceByConnHandle(handle);
-  if (!device) {
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
     RespondWithCommandStatus(hci::kLEConnectionUpdate,
                              hci::StatusCode::kUnknownConnectionId);
     return;
   }
 
-  ZX_DEBUG_ASSERT(device->connected());
+  ZX_DEBUG_ASSERT(peer->connected());
 
   uint16_t min_interval = le16toh(params.conn_interval_min);
   uint16_t max_interval = le16toh(params.conn_interval_max);
@@ -820,7 +818,7 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   hci::LEConnectionParameters conn_params(
       min_interval + ((max_interval - min_interval) / 2), max_latency,
       supv_timeout);
-  device->set_le_params(conn_params);
+  peer->set_le_params(conn_params);
 
   hci::LEConnectionUpdateCompleteSubeventParams reply;
   reply.status = hci::StatusCode::kSuccess;
@@ -832,29 +830,29 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   SendLEMetaEvent(hci::kLEConnectionUpdateCompleteSubeventCode,
                   BufferView(&reply, sizeof(reply)));
 
-  NotifyLEConnectionParameters(device->address(), conn_params);
+  NotifyLEConnectionParameters(peer->address(), conn_params);
 }
 
 void FakeController::OnDisconnectCommandReceived(
     const hci::DisconnectCommandParams& params) {
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
 
-  // Find the device that matches the disconnected handle.
-  FakePeer* device = FindDeviceByConnHandle(handle);
-  if (!device) {
+  // Find the peer that matches the disconnected handle.
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
     RespondWithCommandStatus(hci::kDisconnect,
                              hci::StatusCode::kUnknownConnectionId);
     return;
   }
 
-  ZX_DEBUG_ASSERT(device->connected());
+  ZX_DEBUG_ASSERT(peer->connected());
 
   RespondWithCommandStatus(hci::kDisconnect, hci::StatusCode::kSuccess);
 
-  bool notify = device->connected();
-  device->RemoveLink(handle);
-  if (notify && !device->connected())
-    NotifyConnectionState(device->address(), false);
+  bool notify = peer->connected();
+  peer->RemoveLink(handle);
+  if (notify && !peer->connected())
+    NotifyConnectionState(peer->address(), false);
 
   hci::DisconnectionCompleteEventParams reply;
   reply.status = hci::StatusCode::kSuccess;
@@ -1389,14 +1387,14 @@ void FakeController::OnACLDataPacketReceived(
 
   const auto& header = acl_data_packet.As<hci::ACLDataHeader>();
   hci::ConnectionHandle handle = le16toh(header.handle_and_flags) & 0x0FFFF;
-  FakePeer* dev = FindDeviceByConnHandle(handle);
-  if (!dev) {
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
     bt_log(WARN, "fake-hci", "ACL data received for unknown handle!");
     return;
   }
 
   SendNumberOfCompletedPacketsEvent(handle, 1);
-  dev->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci::ACLDataHeader)));
+  peer->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci::ACLDataHeader)));
 }
 
 }  // namespace testing

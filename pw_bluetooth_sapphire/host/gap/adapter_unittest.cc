@@ -277,8 +277,8 @@ TEST_F(GAP_AdapterTest, SetNameSuccess) {
   }
 }
 
-TEST_F(GAP_AdapterTest, RemoteDeviceCacheReturnsNonNull) {
-  EXPECT_TRUE(adapter()->remote_device_cache());
+TEST_F(GAP_AdapterTest, PeerCacheReturnsNonNull) {
+  EXPECT_TRUE(adapter()->peer_cache());
 }
 
 TEST_F(GAP_AdapterTest, LeAutoConnect) {
@@ -305,19 +305,18 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   adapter()->le_discovery_manager()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
-  EXPECT_EQ(0u, adapter()->remote_device_cache()->count());
+  EXPECT_EQ(0u, adapter()->peer_cache()->count());
 
-  // Mark the device as bonded and advance the scan period.
+  // Mark the peer as bonded and advance the scan period.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  adapter()->remote_device_cache()->AddBondedDevice(kDeviceId, kTestAddr, pdata,
-                                                    {});
-  EXPECT_EQ(1u, adapter()->remote_device_cache()->count());
+  adapter()->peer_cache()->AddBondedPeer(kDeviceId, kTestAddr, pdata, {});
+  EXPECT_EQ(1u, adapter()->peer_cache()->count());
   RunLoopFor(kTestScanPeriod);
 
-  // The device should have been auto-connected.
+  // The peer should have been auto-connected.
   ASSERT_TRUE(conn);
-  EXPECT_EQ(kDeviceId, conn->device_identifier());
+  EXPECT_EQ(kDeviceId, conn->peer_identifier());
 }
 
 // Tests the interactions between the advertising manager and the local address
@@ -471,7 +470,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   InitializeAdapter([](bool) {});
 
   // Set-up a device for testing.
-  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
 
@@ -523,7 +522,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // Add a device to the cache but not the fake controller. This will cause the
   // connection request to hang.
-  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
 
   constexpr auto kTestDelay = zx::sec(5);
   constexpr auto kTestTimeout = kPrivateAddressTimeout + kTestDelay;
@@ -562,8 +561,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   EXPECT_EQ(HostError::kTimedOut, status.error());
 
   // The peer should not have expired.
-  ASSERT_EQ(peer,
-            adapter()->remote_device_cache()->FindDeviceByAddress(kTestAddr));
+  ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_random_address());
@@ -576,8 +574,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   RunLoopFor(kPrivateAddressTimeout);
   EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
 
-  ASSERT_EQ(peer,
-            adapter()->remote_device_cache()->FindDeviceByAddress(kTestAddr));
+  ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
 
   // The address should refresh after the next connection attempt.
   RunLoopFor(kTestDelay);
@@ -604,7 +601,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
     conn_ref = std::move(c);
   };
 
-  auto* peer = adapter()->remote_device_cache()->NewDevice(kTestAddr, true);
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);

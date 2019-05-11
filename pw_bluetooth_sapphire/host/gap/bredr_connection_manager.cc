@@ -7,7 +7,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
@@ -19,7 +19,7 @@ namespace gap {
 using common::DeviceAddress;
 using common::HostError;
 using std::unique_ptr;
-using ConnectionState = RemoteDevice::ConnectionState;
+using ConnectionState = Peer::ConnectionState;
 
 namespace {
 
@@ -74,11 +74,11 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
 }
 
 BrEdrConnectionManager::BrEdrConnectionManager(
-    fxl::RefPtr<hci::Transport> hci, RemoteDeviceCache* device_cache,
+    fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
     DeviceAddress local_address, fbl::RefPtr<data::Domain> data_domain,
     bool use_interlaced_scan)
     : hci_(hci),
-      cache_(device_cache),
+      cache_(peer_cache),
       local_address_(local_address),
       data_domain_(data_domain),
       interrogator_(cache_, hci_, async_get_default_dispatcher()),
@@ -183,9 +183,9 @@ DeviceId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
     return common::kInvalidDeviceId;
   }
 
-  auto* device = cache_->FindDeviceByAddress(it->second.link().peer_address());
-  ZX_DEBUG_ASSERT_MSG(device, "Couldn't find device for handle %#.4x", handle);
-  return device->identifier();
+  auto* peer = cache_->FindByAddress(it->second.link().peer_address());
+  ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle %#.4x", handle);
+  return peer->identifier();
 }
 
 bool BrEdrConnectionManager::OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm,
@@ -290,8 +290,8 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
 
 std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
 BrEdrConnectionManager::FindConnectionById(DeviceId peer_id) {
-  auto* const device = cache_->FindDeviceById(peer_id);
-  if (!device || !device->bredr() || !device->bredr()->connected()) {
+  auto* const peer = cache_->FindById(peer_id);
+  if (!peer || !peer->bredr() || !peer->bredr()->connected()) {
     return std::nullopt;
   }
 
@@ -357,13 +357,13 @@ void BrEdrConnectionManager::OnConnectionRequest(
                                        hci::kCommandStatusEventCode);
 }
 
-RemoteDevice* BrEdrConnectionManager::FindOrInitDevice(DeviceAddress addr) {
-  RemoteDevice* device = cache_->FindDeviceByAddress(addr);
-  if (!device) {
+Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
+  Peer* peer = cache_->FindByAddress(addr);
+  if (!peer) {
     bool connectable = true;
-    device = cache_->NewDevice(addr, connectable);
+    peer = cache_->NewPeer(addr, connectable);
   }
-  return device;
+  return peer;
 }
 
 void BrEdrConnectionManager::OnConnectionComplete(
@@ -407,16 +407,16 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                          hci::Connection::Role::kMaster,
                                          local_address_, addr, hci_);
 
-  RemoteDevice* device = FindOrInitDevice(addr);
-  // In Br/Edr, we should never establish more than one link to a given device
-  ZX_DEBUG_ASSERT(!FindConnectionById(device->identifier()));
-  device->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
+  Peer* peer = FindOrInitPeer(addr);
+  // In Br/Edr, we should never establish more than one link to a given peer
+  ZX_DEBUG_ASSERT(!FindConnectionById(peer->identifier()));
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
 
-  // Interrogate this device to find out its version/capabilities.
+  // Interrogate this peer to find out its version/capabilities.
   auto self = weak_ptr_factory_.GetWeakPtr();
   interrogator_.Start(
-      device->identifier(), std::move(link),
-      [device, self](auto status, auto conn_ptr) {
+      peer->identifier(), std::move(link),
+      [peer, self](auto status, auto conn_ptr) {
         if (bt_is_error(status, WARN, "gap-bredr",
                         "interrogate failed, dropping connection"))
           return;
@@ -424,14 +424,13 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                conn_ptr->handle());
         if (!self)
           return;
-        self->EstablishConnection(device, status, std::move(conn_ptr));
+        self->EstablishConnection(peer, status, std::move(conn_ptr));
       });
 }
 
 // Establish a full BrEdrConnection for a link that has been interrogated
 void BrEdrConnectionManager::EstablishConnection(
-    RemoteDevice* device, hci::Status status,
-    unique_ptr<hci::Connection> connection) {
+    Peer* peer, hci::Status status, unique_ptr<hci::Connection> connection) {
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   auto error_handler = [self, connection = connection->WeakPtr()] {
@@ -462,14 +461,14 @@ void BrEdrConnectionManager::EstablishConnection(
 
   auto conn =
       connections_
-          .try_emplace(handle, device->identifier(), std::move(connection))
+          .try_emplace(handle, peer->identifier(), std::move(connection))
           .first;
-  device->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 
   if (discoverer_.search_count()) {
     data_domain_->OpenL2capChannel(
         handle, l2cap::kSDP,
-        [self, peer_id = device->identifier()](auto channel) {
+        [self, peer_id = peer->identifier()](auto channel) {
           if (!self)
             return;
           auto client = sdp::Client::Create(std::move(channel));
@@ -479,13 +478,13 @@ void BrEdrConnectionManager::EstablishConnection(
         dispatcher_);
   }
 
-  auto request = connection_requests_.extract(device->identifier());
+  auto request = connection_requests_.extract(peer->identifier());
   if (request) {
     auto conn_ptr = &(conn->second);
     request.mapped().NotifyCallbacks(hci::Status(),
                                      [conn_ptr] { return conn_ptr; });
     // If this was our in-flight request, close it
-    if (device->address() == pending_request_->peer_address()) {
+    if (peer->address() == pending_request_->peer_address()) {
       pending_request_.reset();
     }
     TryCreateNextConnection();
@@ -511,10 +510,10 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
     return;
   }
 
-  auto* device = cache_->FindDeviceByAddress(it->second.link().peer_address());
+  auto* peer = cache_->FindByAddress(it->second.link().peer_address());
   bt_log(INFO, "gap-bredr",
          "%s disconnected - %s, handle: %#.4x, reason: %#.2x",
-         bt_str(device->identifier()), bt_str(event.ToStatus()), handle,
+         bt_str(peer->identifier()), bt_str(event.ToStatus()), handle,
          params.reason);
 
   CleanupConnection(handle, connections_.extract(handle).mapped(), true);
@@ -523,10 +522,9 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
 void BrEdrConnectionManager::CleanupConnection(hci::ConnectionHandle handle,
                                                BrEdrConnection& conn,
                                                bool link_already_closed) {
-  auto* device = cache_->FindDeviceByAddress(conn.link().peer_address());
-  ZX_DEBUG_ASSERT_MSG(device, "Couldn't find RemoteDevice for handle: %#.4x",
-                      handle);
-  device->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
+  auto* peer = cache_->FindByAddress(conn.link().peer_address());
+  ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
 
   data_domain_->RemoveConnection(handle);
 
@@ -543,8 +541,8 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   common::DeviceAddress addr(common::DeviceAddress::Type::kBREDR,
                              params.bd_addr);
 
-  auto* device = cache_->FindDeviceByAddress(addr);
-  if (!device || !device->bredr()->bonded()) {
+  auto* peer = cache_->FindByAddress(addr);
+  if (!peer || !peer->bredr()->bonded()) {
     bt_log(INFO, "gap-bredr", "no known peer with address %s found",
            addr.ToString().c_str());
 
@@ -563,7 +561,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   }
 
   bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s",
-         bt_str(device->identifier()));
+         bt_str(peer->identifier()));
 
   auto reply = hci::CommandPacket::New(
       hci::kLinkKeyRequestReply, sizeof(hci::LinkKeyRequestReplyCommandParams));
@@ -572,7 +570,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
           ->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
-  const sm::LTK& link_key = *device->bredr()->link_key();
+  const sm::LTK& link_key = *peer->bredr()->link_key();
   ZX_DEBUG_ASSERT(link_key.security().enc_key_size() == 16);
   const auto& key_value = link_key.key().value();
   std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
@@ -595,8 +593,8 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   bt_log(TRACE, "gap-bredr", "got link key (type %u) for address %s",
          params.key_type, addr.ToString().c_str());
 
-  auto* device = cache_->FindDeviceByAddress(addr);
-  if (!device) {
+  auto* peer = cache_->FindByAddress(addr);
+  if (!peer) {
     bt_log(WARN, "gap-bredr",
            "no known peer with address %s found; link key not stored",
            addr.ToString().c_str());
@@ -606,15 +604,15 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   const auto key_type = static_cast<hci::LinkKeyType>(params.key_type);
   sm::SecurityProperties sec_props;
   if (key_type == hci::LinkKeyType::kChangedCombination) {
-    if (!device->bredr() || !device->bredr()->bonded()) {
+    if (!peer->bredr() || !peer->bredr()->bonded()) {
       bt_log(WARN, "gap-bredr", "can't update link key of unbonded peer %s",
-             bt_str(device->identifier()));
+             bt_str(peer->identifier()));
       return;
     }
 
     // Reuse current properties
-    ZX_DEBUG_ASSERT(device->bredr()->link_key());
-    sec_props = device->bredr()->link_key()->security();
+    ZX_DEBUG_ASSERT(peer->bredr()->link_key());
+    sec_props = peer->bredr()->link_key()->security();
   } else {
     sec_props = sm::SecurityProperties(key_type);
   }
@@ -622,7 +620,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
     bt_log(WARN, "gap-bredr",
            "link key for peer %s has insufficient security; not stored",
-           bt_str(device->identifier()));
+           bt_str(peer->identifier()));
     return;
   }
 
@@ -632,7 +630,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   sm::LTK key(sec_props, hci::LinkKey(key_value, 0, 0));
   if (!cache_->StoreBrEdrBond(addr, key)) {
     bt_log(ERROR, "gap-bredr", "failed to cache bonding data (id: %s)",
-           bt_str(device->identifier()));
+           bt_str(peer->identifier()));
   }
 }
 
@@ -653,7 +651,7 @@ void BrEdrConnectionManager::OnIOCapabilitiesRequest(
   // TODO(jamuraa, BT-169): ask the PairingDelegate if it's set what the IO
   // capabilities it has.
   reply_params->io_capability = hci::IOCapability::kNoInputNoOutput;
-  // TODO(BT-8): Add OOB status from RemoteDeviceCache.
+  // TODO(BT-8): Add OOB status from PeerCache.
   reply_params->oob_data_present = 0x00;  // None present.
   // TODO(BT-656): Determine this based on the service requirements.
   reply_params->auth_requirements = hci::AuthRequirements::kGeneralBonding;
@@ -687,14 +685,14 @@ void BrEdrConnectionManager::OnUserConfirmationRequest(
 
 bool BrEdrConnectionManager::Connect(
     DeviceId peer_id, ConnectResultCallback on_connection_result) {
-  RemoteDevice* peer = cache_->FindDeviceById(peer_id);
+  Peer* peer = cache_->FindById(peer_id);
   if (!peer) {
-    bt_log(WARN, "gap-bredr", "device not found (id: %s)", bt_str(peer_id));
+    bt_log(WARN, "gap-bredr", "peer not found (id: %s)", bt_str(peer_id));
     return false;
   }
 
   if (peer->technology() == TechnologyType::kLowEnergy) {
-    bt_log(ERROR, "gap-bredr", "device does not support BrEdr: %s",
+    bt_log(ERROR, "gap-bredr", "peer does not support BrEdr: %s",
            peer->ToString().c_str());
     return false;
   }
@@ -741,10 +739,10 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
     return;
   }
 
-  RemoteDevice* peer = nullptr;
+  Peer* peer = nullptr;
   for (auto& request : connection_requests_) {
-    const auto& next_device_addr = request.second.address();
-    peer = cache_->FindDeviceByAddress(next_device_addr);
+    const auto& next_peer_addr = request.second.address();
+    peer = cache_->FindByAddress(next_peer_addr);
     if (peer && peer->bredr())
       break;
   }
@@ -766,8 +764,8 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
         peer->bredr()->page_scan_repetition_mode(), request_timeout_,
         on_failure);
   } else {
-    // If there are no pending requests for devices which are in the cache, try
-    // to connect to a device which has left the cache, in case it is still
+    // If there are no pending requests for peers which are in the cache, try
+    // to connect to a peer which has left the cache, in case it is still
     // possible
     auto request = connection_requests_.begin();
     if (request != connection_requests_.end()) {
@@ -785,13 +783,12 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 void BrEdrConnectionManager::OnConnectFailure(hci::Status status,
                                               DeviceId peer_id) {
   // The request failed or timed out.
-  bt_log(ERROR, "gap-bredr", "failed to connect to device (id: %s)",
+  bt_log(ERROR, "gap-bredr", "failed to connect to peer (id: %s)",
          bt_str(peer_id));
-  RemoteDevice* dev = cache_->FindDeviceById(peer_id);
-  // The device may no longer be in the cache by the time this function is
-  // called
-  if (dev) {
-    dev->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
+  Peer* peer = cache_->FindById(peer_id);
+  // The peer may no longer be in the cache by the time this function is called
+  if (peer) {
+    peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
   }
 
   pending_request_.reset();

@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
 namespace bt {
@@ -34,7 +34,7 @@ void BrEdrInterrogator::Interrogation::Finish(hci::Status status) {
   result_cb(status, std::move(conn_ptr));
 }
 
-BrEdrInterrogator::BrEdrInterrogator(RemoteDeviceCache* cache,
+BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache,
                                      fxl::RefPtr<hci::Transport> hci,
                                      async_dispatcher_t* dispatcher)
     : hci_(hci),
@@ -62,7 +62,7 @@ void BrEdrInterrogator::Start(DeviceId device_id, hci::ConnectionPtr conn_ptr,
   pending_.emplace(device_id, std::make_unique<Interrogation>(
                                   std::move(conn_ptr), std::move(callback)));
 
-  RemoteDevice* device = cache_->FindDeviceById(device_id);
+  Peer* device = cache_->FindById(device_id);
   if (!device) {
     Complete(device_id, hci::Status(common::HostError::kFailed));
     return;
@@ -102,7 +102,7 @@ void BrEdrInterrogator::Cancel(DeviceId device_id) {
 }
 
 void BrEdrInterrogator::MaybeComplete(DeviceId device_id) {
-  RemoteDevice* device = cache_->FindDeviceById(device_id);
+  Peer* device = cache_->FindById(device_id);
   if (!device) {
     Complete(device_id, hci::Status(common::HostError::kFailed));
     return;
@@ -138,7 +138,7 @@ void BrEdrInterrogator::Complete(DeviceId device_id, hci::Status status) {
 }
 
 void BrEdrInterrogator::MakeRemoteNameRequest(DeviceId device_id) {
-  RemoteDevice* device = cache_->FindDeviceById(device_id);
+  Peer* device = cache_->FindById(device_id);
   if (!device) {
     Complete(device_id, hci::Status(common::HostError::kFailed));
     return;
@@ -187,7 +187,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(DeviceId device_id) {
         break;
       }
     }
-    RemoteDevice* device = self->cache_->FindDeviceById(device_id);
+    Peer* device = self->cache_->FindById(device_id);
     if (!device) {
       self->Complete(device_id, hci::Status(common::HostError::kFailed));
       return;
@@ -236,7 +236,7 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
         event.view()
             .template payload<hci::ReadRemoteVersionInfoCompleteEventParams>();
 
-    RemoteDevice* device = self->cache_->FindDeviceById(device_id);
+    Peer* device = self->cache_->FindById(device_id);
     if (!device) {
       self->Complete(device_id, hci::Status(common::HostError::kFailed));
       return;
@@ -286,7 +286,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(DeviceId device_id,
                 .template payload<
                     hci::ReadRemoteSupportedFeaturesCompleteEventParams>();
 
-        RemoteDevice* device = self->cache_->FindDeviceById(device_id);
+        Peer* device = self->cache_->FindById(device_id);
         if (!device) {
           self->Complete(device_id, hci::Status(common::HostError::kFailed));
           return;
@@ -343,7 +343,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(DeviceId device_id,
             .template payload<
                 hci::ReadRemoteExtendedFeaturesCompleteEventParams>();
 
-    RemoteDevice* device = self->cache_->FindDeviceById(device_id);
+    Peer* device = self->cache_->FindById(device_id);
     if (!device) {
       self->Complete(device_id, hci::Status(common::HostError::kFailed));
       return;

@@ -9,7 +9,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
@@ -19,9 +19,9 @@ namespace gap {
 namespace {
 
 template <typename EventParamType, typename ResultType>
-std::unordered_set<RemoteDevice*> ProcessInquiryResult(
-    RemoteDeviceCache* cache, const hci::EventPacket& event) {
-  std::unordered_set<RemoteDevice*> updated;
+std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache,
+                                               const hci::EventPacket& event) {
+  std::unordered_set<Peer*> updated;
   bt_log(SPEW, "gap-bredr", "inquiry result received");
 
   size_t result_size = event.view().payload_size() - sizeof(EventParamType);
@@ -35,14 +35,14 @@ std::unordered_set<RemoteDevice*> ProcessInquiryResult(
   for (int i = 0; i < result.num_responses; i++) {
     common::DeviceAddress addr(common::DeviceAddress::Type::kBREDR,
                                result.responses[i].bd_addr);
-    RemoteDevice* device = cache->FindDeviceByAddress(addr);
-    if (!device) {
-      device = cache->NewDevice(addr, true);
+    Peer* peer = cache->FindByAddress(addr);
+    if (!peer) {
+      peer = cache->NewPeer(addr, true);
     }
-    ZX_DEBUG_ASSERT(device);
+    ZX_DEBUG_ASSERT(peer);
 
-    device->MutBrEdr().SetInquiryData(result.responses[i]);
-    updated.insert(device);
+    peer->MutBrEdr().SetInquiryData(result.responses[i]);
+    updated.insert(peer);
   }
   return updated;
 }
@@ -58,10 +58,9 @@ BrEdrDiscoverySession::~BrEdrDiscoverySession() {
   manager_->RemoveDiscoverySession(this);
 }
 
-void BrEdrDiscoverySession::NotifyDiscoveryResult(
-    const RemoteDevice& device) const {
-  if (device_found_callback_) {
-    device_found_callback_(device);
+void BrEdrDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
+  if (peer_found_callback_) {
+    peer_found_callback_(peer);
   }
 }
 
@@ -82,10 +81,10 @@ BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
 
 BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
                                              hci::InquiryMode mode,
-                                             RemoteDeviceCache* device_cache)
+                                             PeerCache* peer_cache)
     : hci_(hci),
       dispatcher_(async_get_default_dispatcher()),
-      cache_(device_cache),
+      cache_(peer_cache),
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
       current_inquiry_mode_(hci::InquiryMode::kStandard),
@@ -241,25 +240,25 @@ void BrEdrDiscoveryManager::StopInquiry() {
 }
 
 void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
-  std::unordered_set<RemoteDevice*> devices;
+  std::unordered_set<Peer*> peers;
   if (event.event_code() == hci::kInquiryResultEventCode) {
-    devices =
+    peers =
         ProcessInquiryResult<hci::InquiryResultEventParams, hci::InquiryResult>(
             cache_, event);
   } else if (event.event_code() == hci::kInquiryResultWithRSSIEventCode) {
-    devices = ProcessInquiryResult<hci::InquiryResultWithRSSIEventParams,
-                                   hci::InquiryResultRSSI>(cache_, event);
+    peers = ProcessInquiryResult<hci::InquiryResultWithRSSIEventParams,
+                                 hci::InquiryResultRSSI>(cache_, event);
   } else {
     bt_log(ERROR, "gap-bredr", "unsupported inquiry result type");
     return;
   }
 
-  for (RemoteDevice* device : devices) {
-    if (!device->name()) {
-      RequestRemoteDeviceName(device->identifier());
+  for (Peer* peer : peers) {
+    if (!peer->name()) {
+      RequestPeerName(peer->identifier());
     }
     for (const auto& session : discovering_) {
-      session->NotifyDiscoveryResult(*device);
+      session->NotifyDiscoveryResult(*peer);
     }
   }
 }
@@ -280,29 +279,29 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(
 
   common::DeviceAddress addr(common::DeviceAddress::Type::kBREDR,
                              result.bd_addr);
-  RemoteDevice* device = cache_->FindDeviceByAddress(addr);
-  if (!device) {
-    device = cache_->NewDevice(addr, true);
+  Peer* peer = cache_->FindByAddress(addr);
+  if (!peer) {
+    peer = cache_->NewPeer(addr, true);
   }
-  ZX_DEBUG_ASSERT(device);
+  ZX_DEBUG_ASSERT(peer);
 
-  device->MutBrEdr().SetInquiryData(result);
+  peer->MutBrEdr().SetInquiryData(result);
 
-  if (!device->name()) {
-    RequestRemoteDeviceName(device->identifier());
+  if (!peer->name()) {
+    RequestPeerName(peer->identifier());
   }
   for (const auto& session : discovering_) {
-    session->NotifyDiscoveryResult(*device);
+    session->NotifyDiscoveryResult(*peer);
   }
 }
 
-void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
+void BrEdrDiscoveryManager::RequestPeerName(DeviceId id) {
   if (requesting_names_.count(id)) {
     bt_log(SPEW, "gap-bredr", "already requesting name for %s", bt_str(id));
     return;
   }
-  RemoteDevice* device = cache_->FindDeviceById(id);
-  if (!device) {
+  Peer* peer = cache_->FindById(id);
+  if (!peer) {
     bt_log(WARN, "gap-bredr", "cannot request name, unknown id: %s",
            bt_str(id));
     return;
@@ -312,13 +311,13 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   auto params = packet->mutable_view()
                     ->mutable_payload<hci::RemoteNameRequestCommandParams>();
-  ZX_DEBUG_ASSERT(device->bredr());
-  ZX_DEBUG_ASSERT(device->bredr()->page_scan_repetition_mode());
-  params->bd_addr = device->address().value();
+  ZX_DEBUG_ASSERT(peer->bredr());
+  ZX_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
+  params->bd_addr = peer->address().value();
   params->page_scan_repetition_mode =
-      *(device->bredr()->page_scan_repetition_mode());
-  if (device->bredr()->clock_offset()) {
-    params->clock_offset = htole16(*(device->bredr()->clock_offset()));
+      *(peer->bredr()->page_scan_repetition_mode());
+  if (peer->bredr()->clock_offset()) {
+    params->clock_offset = htole16(*(peer->bredr()->clock_offset()));
   }
 
   auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto,
@@ -344,9 +343,9 @@ void BrEdrDiscoveryManager::RequestRemoteDeviceName(DeviceId id) {
             .template payload<hci::RemoteNameRequestCompleteEventParams>();
     for (size_t len = 0; len <= hci::kMaxNameLength; len++) {
       if (params.remote_name[len] == 0 || len == hci::kMaxNameLength) {
-        RemoteDevice* device = self->cache_->FindDeviceById(id);
-        if (device) {
-          device->SetName(
+        Peer* peer = self->cache_->FindById(id);
+        if (peer) {
+          peer->SetName(
               std::string(params.remote_name, params.remote_name + len));
         }
         return;

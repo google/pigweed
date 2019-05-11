@@ -4,17 +4,17 @@
 
 #include "advertising_data.h"
 
-#include <type_traits>
-
 #include <endian.h>
 #include <zircon/assert.h>
 
+#include <type_traits>
+
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
-#include "src/lib/fxl/strings/string_printf.h"
-#include "src/lib/fxl/strings/utf_codecs.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/lib/fxl/strings/string_printf.h"
+#include "src/lib/fxl/strings/utf_codecs.h"
 
 // A partial fidl::TypeConverter template specialization for copying the
 // contents of a type that derives from ByteBuffer into a
@@ -229,7 +229,7 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data,
         break;
       }
       case DataType::kAppearance: {
-        // TODO(armansito): RemoteDevice should have a function to return the
+        // TODO(armansito): Peer should have a function to return the
         // device appearance, as it can be obtained either from advertising data
         // or via GATT.
         if (field.size() != kAppearanceSize) {

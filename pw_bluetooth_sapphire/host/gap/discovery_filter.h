@@ -19,7 +19,7 @@ class ByteBuffer;
 
 namespace gap {
 
-class RemoteDevice;
+class Peer;
 
 // A DiscoveryFilter allows clients of discovery procedures to filter results
 // based on certain parameters, such as service UUIDs that might be present in

@@ -6,14 +6,13 @@
 
 #include <zircon/assert.h>
 
+#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
-
-#include "helpers.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -76,7 +75,7 @@ void LowEnergyPeripheralServer::InstanceData::ReleaseConnection() {
   ZX_DEBUG_ASSERT(conn_ref_);
 
   owner_->binding()->events().OnCentralDisconnected(
-      conn_ref_->device_identifier().ToString());
+      conn_ref_->peer_identifier().ToString());
   conn_ref_ = nullptr;
 }
 
@@ -159,7 +158,7 @@ void LowEnergyPeripheralServer::StopAdvertising(
   auto peer_id = AdvertisementIdFromString(id);
   if (!peer_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "invalid device ID"));
+                                        "invalid peer ID"));
     return;
   }
 
@@ -219,14 +218,13 @@ void LowEnergyPeripheralServer::OnConnected(
     it->second.ReleaseConnection();
   });
 
-  // A RemoteDevice will have been created for the new connection.
-  auto* device =
-      adapter()->device_cache().FindDeviceById(conn->device_identifier());
-  ZX_DEBUG_ASSERT(device);
+  // A peer will have been created for the new connection.
+  auto* peer = adapter()->peer_cache()->FindById(conn->peer_identifier());
+  ZX_DEBUG_ASSERT(peer);
 
   bt_log(TRACE, "bt-host", "central connected");
   RemoteDevicePtr remote_device =
-      fidl_helpers::NewLERemoteDevice(std::move(*device));
+      fidl_helpers::NewLERemoteDevice(std::move(*peer));
   ZX_DEBUG_ASSERT(remote_device);
   it->second.RetainConnection(std::move(conn), std::move(*remote_device));
 }

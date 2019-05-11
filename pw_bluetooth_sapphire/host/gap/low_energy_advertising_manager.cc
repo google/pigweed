@@ -7,7 +7,7 @@
 #include <zircon/assert.h>
 
 #include "low_energy_address_manager.h"
-#include "remote_device.h"
+#include "peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"

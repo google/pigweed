@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -107,8 +107,8 @@ class Adapter final {
   // Returns a weak pointer to this adapter.
   fxl::WeakPtr<Adapter> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-  // Returns this Adapter's remote device cache.
-  const RemoteDeviceCache& device_cache() const { return device_cache_; }
+  // Returns this Adapter's peer cache.
+  const PeerCache& peer_cache() const { return peer_cache_; }
 
   // Returns this Adapter's BR/EDR connection manager.
   BrEdrConnectionManager* bredr_connection_manager() const {
@@ -147,15 +147,14 @@ class Adapter final {
     return le_advertising_manager_.get();
   }
 
-  // Returns this Adapter's remote device cache.
-  RemoteDeviceCache* remote_device_cache() { return &device_cache_; }
+  // Returns this Adapter's peer cache.
+  PeerCache* peer_cache() { return &peer_cache_; }
 
-  // Add a previously bonded device to the device cache and set it up for
+  // Add a previously bonded device to the peer cache and set it up for
   // auto-connect procedures.
-  bool AddBondedDevice(DeviceId identifier,
-                       const common::DeviceAddress& address,
-                       const sm::PairingData& le_bond_data,
-                       const std::optional<sm::LTK>& link_key);
+  bool AddBondedPeer(DeviceId identifier, const common::DeviceAddress& address,
+                     const sm::PairingData& le_bond_data,
+                     const std::optional<sm::LTK>& link_key);
 
   // Assigns a pairing delegate to this adapter. This PairingDelegate and its
   // I/O capabilities will be used for all future pairing procedures. Setting a
@@ -175,7 +174,7 @@ class Adapter final {
                       hci::StatusCallback callback);
 
   // Assign a callback to be notified when a connection is automatically
-  // established to a bonded LE device in the directed connectable mode (Vol 3,
+  // established to a bonded LE peer in the directed connectable mode (Vol 3,
   // Part C, 9.3.3).
   using AutoConnectCallback = fit::function<void(LowEnergyConnectionRefPtr)>;
   void set_auto_connect_callback(AutoConnectCallback callback) {
@@ -217,7 +216,7 @@ class Adapter final {
   // which is handled by routing the request to |le_connection_manager_| to
   // initiate a Direct Connection Establishment procedure (Vol 3, Part C,
   // 9.3.8).
-  void OnLeAutoConnectRequest(DeviceId device_id);
+  void OnLeAutoConnectRequest(DeviceId peer_id);
 
   // Called by |le_address_manager_| to query whether it is currently allowed to
   // reconfigure the LE random address.
@@ -252,7 +251,7 @@ class Adapter final {
 
   // Provides access to discovered, connected, and/or bonded remote Bluetooth
   // devices.
-  RemoteDeviceCache device_cache_;
+  PeerCache peer_cache_;
 
   // The data domain used by GAP to interact with L2CAP and RFCOMM layers.
   fbl::RefPtr<data::Domain> data_domain_;

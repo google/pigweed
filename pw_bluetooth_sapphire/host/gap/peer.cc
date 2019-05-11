@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "remote_device.h"
+#include "peer.h"
 
 #include <zircon/assert.h>
 
+#include "advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/lib/fxl/strings/string_printf.h"
-
-#include "advertising_data.h"
 
 namespace bt {
 
@@ -22,13 +21,13 @@ using common::DynamicByteBuffer;
 namespace gap {
 namespace {
 
-std::string ConnectionStateToString(RemoteDevice::ConnectionState state) {
+std::string ConnectionStateToString(Peer::ConnectionState state) {
   switch (state) {
-    case RemoteDevice::ConnectionState::kNotConnected:
+    case Peer::ConnectionState::kNotConnected:
       return "not connected";
-    case RemoteDevice::ConnectionState::kInitializing:
+    case Peer::ConnectionState::kInitializing:
       return "connecting";
-    case RemoteDevice::ConnectionState::kConnected:
+    case Peer::ConnectionState::kConnected:
       return "connected";
   }
 
@@ -38,19 +37,19 @@ std::string ConnectionStateToString(RemoteDevice::ConnectionState state) {
 
 }  // namespace
 
-RemoteDevice::LowEnergyData::LowEnergyData(RemoteDevice* owner)
-    : dev_(owner),
+Peer::LowEnergyData::LowEnergyData(Peer* owner)
+    : peer_(owner),
       conn_state_(ConnectionState::kNotConnected),
       adv_data_len_(0u) {
-  ZX_DEBUG_ASSERT(dev_);
+  ZX_DEBUG_ASSERT(peer_);
 }
 
-void RemoteDevice::LowEnergyData::SetAdvertisingData(
-    int8_t rssi, const common::ByteBuffer& adv) {
-  // Prolong this device's expiration in case it is temporary.
-  dev_->UpdateExpiry();
+void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi,
+                                             const common::ByteBuffer& adv) {
+  // Prolong this peer's expiration in case it is temporary.
+  peer_->UpdateExpiry();
 
-  bool notify_listeners = dev_->SetRssiInternal(rssi);
+  bool notify_listeners = peer_->SetRssiInternal(rssi);
 
   // Update the advertising data
   // TODO(armansito): Validate that the advertising data is not malformed?
@@ -60,7 +59,7 @@ void RemoteDevice::LowEnergyData::SetAdvertisingData(
   adv_data_len_ = adv.size();
   adv.Copy(&adv_data_buffer_);
 
-  // Walk through the advertising data and update common device fields.
+  // Walk through the advertising data and update common fields.
   AdvertisingDataReader reader(adv);
   gap::DataType type;
   BufferView data;
@@ -71,20 +70,20 @@ void RemoteDevice::LowEnergyData::SetAdvertisingData(
       // connection parameters.
       // TODO(NET-607): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
-      if (dev_->SetNameInternal(data.ToString())) {
+      if (peer_->SetNameInternal(data.ToString())) {
         notify_listeners = true;
       }
     }
   }
 
   if (notify_listeners) {
-    dev_->UpdateExpiry();
-    dev_->NotifyListeners();
+    peer_->UpdateExpiry();
+    peer_->NotifyListeners();
   }
 }
 
-void RemoteDevice::LowEnergyData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(dev_->connectable() ||
+void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
+  ZX_DEBUG_ASSERT(peer_->connectable() ||
                   state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
@@ -95,7 +94,7 @@ void RemoteDevice::LowEnergyData::SetConnectionState(ConnectionState state) {
 
   bt_log(TRACE, "gap-le",
          "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
-         bt_str(dev_->identifier()),
+         bt_str(peer_->identifier()),
          ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
@@ -105,94 +104,92 @@ void RemoteDevice::LowEnergyData::SetConnectionState(ConnectionState state) {
   // Otherwise, become temporary again if the identity is unknown.
   if (state == ConnectionState::kInitializing ||
       state == ConnectionState::kConnected) {
-    dev_->TryMakeNonTemporary();
+    peer_->TryMakeNonTemporary();
   } else if (state == ConnectionState::kNotConnected &&
-             !dev_->identity_known()) {
-    bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*dev_));
-    dev_->temporary_ = true;
+             !peer_->identity_known()) {
+    bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*peer_));
+    peer_->temporary_ = true;
   }
 
-  dev_->UpdateExpiry();
-  dev_->NotifyListeners();
+  peer_->UpdateExpiry();
+  peer_->NotifyListeners();
 }
 
-void RemoteDevice::LowEnergyData::SetConnectionParameters(
+void Peer::LowEnergyData::SetConnectionParameters(
     const hci::LEConnectionParameters& params) {
-  ZX_DEBUG_ASSERT(dev_->connectable());
+  ZX_DEBUG_ASSERT(peer_->connectable());
   conn_params_ = params;
 }
 
-void RemoteDevice::LowEnergyData::SetPreferredConnectionParameters(
+void Peer::LowEnergyData::SetPreferredConnectionParameters(
     const hci::LEPreferredConnectionParameters& params) {
-  ZX_DEBUG_ASSERT(dev_->connectable());
+  ZX_DEBUG_ASSERT(peer_->connectable());
   preferred_conn_params_ = params;
 }
 
-void RemoteDevice::LowEnergyData::SetBondData(
-    const sm::PairingData& bond_data) {
-  ZX_DEBUG_ASSERT(dev_->connectable());
-  ZX_DEBUG_ASSERT(dev_->address().type() != DeviceAddress::Type::kLEAnonymous);
+void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
+  ZX_DEBUG_ASSERT(peer_->connectable());
+  ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
 
-  // Make sure the device is non-temporary.
-  dev_->TryMakeNonTemporary();
+  // Make sure the peer is non-temporary.
+  peer_->TryMakeNonTemporary();
 
-  // This will mark the device as bonded
+  // This will mark the peer as bonded
   bond_data_ = bond_data;
 
   // Update to the new identity address if the current address is random.
-  if (dev_->address().type() == DeviceAddress::Type::kLERandom &&
+  if (peer_->address().type() == DeviceAddress::Type::kLERandom &&
       bond_data.identity_address) {
-    dev_->set_identity_known(true);
-    dev_->set_address(*bond_data.identity_address);
+    peer_->set_identity_known(true);
+    peer_->set_address(*bond_data.identity_address);
   }
 
-  dev_->NotifyListeners();
+  peer_->NotifyListeners();
 }
 
-void RemoteDevice::LowEnergyData::ClearBondData() {
+void Peer::LowEnergyData::ClearBondData() {
   ZX_ASSERT(bond_data_);
   if (bond_data_->irk) {
-    dev_->set_identity_known(false);
+    peer_->set_identity_known(false);
   }
   bond_data_ = std::nullopt;
 }
 
-RemoteDevice::BrEdrData::BrEdrData(RemoteDevice* owner)
-    : dev_(owner), conn_state_(ConnectionState::kNotConnected), eir_len_(0u) {
-  ZX_DEBUG_ASSERT(dev_);
-  ZX_DEBUG_ASSERT(dev_->identity_known());
+Peer::BrEdrData::BrEdrData(Peer* owner)
+    : peer_(owner), conn_state_(ConnectionState::kNotConnected), eir_len_(0u) {
+  ZX_DEBUG_ASSERT(peer_);
+  ZX_DEBUG_ASSERT(peer_->identity_known());
 
   // Devices that are capable of BR/EDR and use a LE random device address will
   // end up with separate entries for the BR/EDR and LE addresses.
-  ZX_DEBUG_ASSERT(dev_->address().type() != DeviceAddress::Type::kLERandom &&
-                  dev_->address().type() != DeviceAddress::Type::kLEAnonymous);
-  address_ = {DeviceAddress::Type::kBREDR, dev_->address().value()};
+  ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLERandom &&
+                  peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
+  address_ = {DeviceAddress::Type::kBREDR, peer_->address().value()};
 }
 
-void RemoteDevice::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
-  ZX_DEBUG_ASSERT(dev_->address().value() == value.bd_addr);
+void Peer::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
+  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset,
                  value.page_scan_repetition_mode);
 }
 
-void RemoteDevice::BrEdrData::SetInquiryData(
-    const hci::InquiryResultRSSI& value) {
-  ZX_DEBUG_ASSERT(dev_->address().value() == value.bd_addr);
+void Peer::BrEdrData::SetInquiryData(const hci::InquiryResultRSSI& value) {
+  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset,
                  value.page_scan_repetition_mode, value.rssi);
 }
 
-void RemoteDevice::BrEdrData::SetInquiryData(
+void Peer::BrEdrData::SetInquiryData(
     const hci::ExtendedInquiryResultEventParams& value) {
-  ZX_DEBUG_ASSERT(dev_->address().value() == value.bd_addr);
+  ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
   SetInquiryData(value.class_of_device, value.clock_offset,
                  value.page_scan_repetition_mode, value.rssi,
                  BufferView(value.extended_inquiry_response,
                             sizeof(value.extended_inquiry_response)));
 }
 
-void RemoteDevice::BrEdrData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(dev_->connectable() ||
+void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
+  ZX_DEBUG_ASSERT(peer_->connectable() ||
                   state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
@@ -203,32 +200,32 @@ void RemoteDevice::BrEdrData::SetConnectionState(ConnectionState state) {
 
   bt_log(TRACE, "gap-bredr",
          "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
-         bt_str(dev_->identifier()),
+         bt_str(peer_->identifier()),
          ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
   conn_state_ = state;
-  dev_->UpdateExpiry();
-  dev_->NotifyListeners();
+  peer_->UpdateExpiry();
+  peer_->NotifyListeners();
 
   // Become non-temporary if we became connected. BR/EDR device remain
   // non-temporary afterwards.
   if (state == ConnectionState::kConnected) {
-    dev_->TryMakeNonTemporary();
+    peer_->TryMakeNonTemporary();
   }
 }
 
-void RemoteDevice::BrEdrData::SetInquiryData(
+void Peer::BrEdrData::SetInquiryData(
     common::DeviceClass device_class, uint16_t clock_offset,
     hci::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
     const common::BufferView& eir_data) {
-  dev_->UpdateExpiry();
+  peer_->UpdateExpiry();
 
   bool notify_listeners = false;
 
   // TODO(armansito): Consider sending notifications for RSSI updates perhaps
   // with throttling to avoid spamming.
-  dev_->SetRssiInternal(rssi);
+  peer_->SetRssiInternal(rssi);
 
   page_scan_rep_mode_ = page_scan_rep_mode;
   clock_offset_ = static_cast<uint16_t>(hci::kClockOffsetValidFlagBit |
@@ -244,11 +241,11 @@ void RemoteDevice::BrEdrData::SetInquiryData(
   }
 
   if (notify_listeners) {
-    dev_->NotifyListeners();
+    peer_->NotifyListeners();
   }
 }
 
-bool RemoteDevice::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
+bool Peer::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
   ZX_DEBUG_ASSERT(eir.size());
 
   // TODO(armansito): Validate that the EIR data is not malformed?
@@ -268,34 +265,33 @@ bool RemoteDevice::BrEdrData::SetEirData(const common::ByteBuffer& eir) {
       // TODO(armansito): Parse more fields.
       // TODO(armansito): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
-      changed = dev_->SetNameInternal(data.ToString());
+      changed = peer_->SetNameInternal(data.ToString());
     }
   }
   return changed;
 }
 
-void RemoteDevice::BrEdrData::SetBondData(const sm::LTK& link_key) {
-  ZX_DEBUG_ASSERT(dev_->connectable());
+void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
+  ZX_DEBUG_ASSERT(peer_->connectable());
 
-  // Make sure the device is non-temporary.
-  dev_->TryMakeNonTemporary();
+  // Make sure the peer is non-temporary.
+  peer_->TryMakeNonTemporary();
 
   // Storing the key establishes the bond.
   link_key_ = link_key;
 
-  dev_->NotifyListeners();
+  peer_->NotifyListeners();
 }
 
-void RemoteDevice::BrEdrData::ClearBondData() {
+void Peer::BrEdrData::ClearBondData() {
   ZX_ASSERT(link_key_);
   link_key_ = std::nullopt;
 }
 
-RemoteDevice::RemoteDevice(DeviceCallback notify_listeners_callback,
-                           DeviceCallback update_expiry_callback,
-                           DeviceCallback dual_mode_callback,
-                           DeviceId identifier, const DeviceAddress& address,
-                           bool connectable)
+Peer::Peer(DeviceCallback notify_listeners_callback,
+           DeviceCallback update_expiry_callback,
+           DeviceCallback dual_mode_callback, DeviceId identifier,
+           const DeviceAddress& address, bool connectable)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
@@ -326,7 +322,7 @@ RemoteDevice::RemoteDevice(DeviceCallback notify_listeners_callback,
   }
 }
 
-RemoteDevice::LowEnergyData& RemoteDevice::MutLe() {
+Peer::LowEnergyData& Peer::MutLe() {
   if (le_data_) {
     return *le_data_;
   }
@@ -340,7 +336,7 @@ RemoteDevice::LowEnergyData& RemoteDevice::MutLe() {
   return *le_data_;
 }
 
-RemoteDevice::BrEdrData& RemoteDevice::MutBrEdr() {
+Peer::BrEdrData& Peer::MutBrEdr() {
   if (bredr_data_) {
     return *bredr_data_;
   }
@@ -354,12 +350,12 @@ RemoteDevice::BrEdrData& RemoteDevice::MutBrEdr() {
   return *bredr_data_;
 }
 
-std::string RemoteDevice::ToString() const {
-  return fxl::StringPrintf("{remote-device id: %s, address: %s}",
-                           bt_str(identifier_), bt_str(address_));
+std::string Peer::ToString() const {
+  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(identifier_),
+                           bt_str(address_));
 }
 
-void RemoteDevice::SetName(const std::string& name) {
+void Peer::SetName(const std::string& name) {
   if (SetNameInternal(name)) {
     UpdateExpiry();
     NotifyListeners();
@@ -368,7 +364,7 @@ void RemoteDevice::SetName(const std::string& name) {
 
 // Private methods below:
 
-bool RemoteDevice::SetRssiInternal(int8_t rssi) {
+bool Peer::SetRssiInternal(int8_t rssi) {
   if (rssi != hci::kRSSIInvalid && rssi_ != rssi) {
     rssi_ = rssi;
     return true;
@@ -376,7 +372,7 @@ bool RemoteDevice::SetRssiInternal(int8_t rssi) {
   return false;
 }
 
-bool RemoteDevice::SetNameInternal(const std::string& name) {
+bool Peer::SetNameInternal(const std::string& name) {
   if (!name_ || *name_ != name) {
     name_ = name;
     return true;
@@ -384,7 +380,7 @@ bool RemoteDevice::SetNameInternal(const std::string& name) {
   return false;
 }
 
-bool RemoteDevice::TryMakeNonTemporary() {
+bool Peer::TryMakeNonTemporary() {
   // TODO(armansito): Since we don't currently support address resolution,
   // random addresses should never be persisted.
   if (!connectable()) {
@@ -403,17 +399,17 @@ bool RemoteDevice::TryMakeNonTemporary() {
   return true;
 }
 
-void RemoteDevice::UpdateExpiry() {
+void Peer::UpdateExpiry() {
   ZX_DEBUG_ASSERT(update_expiry_callback_);
   update_expiry_callback_(*this);
 }
 
-void RemoteDevice::NotifyListeners() {
+void Peer::NotifyListeners() {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   notify_listeners_callback_(*this);
 }
 
-void RemoteDevice::MakeDualMode() {
+void Peer::MakeDualMode() {
   technology_ = TechnologyType::kDualMode;
   ZX_DEBUG_ASSERT(dual_mode_callback_);
   dual_mode_callback_(*this);

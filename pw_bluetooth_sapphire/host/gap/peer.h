@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 
 #include <fbl/macros.h>
 
@@ -21,23 +21,23 @@
 namespace bt {
 namespace gap {
 
-class RemoteDeviceCache;
+class PeerCache;
 
 // Represents a remote Bluetooth device that is known to the current system due
 // to discovery and/or connection and bonding procedures. These devices can be
 // LE-only, Classic-only, or dual-mode.
 //
 // Instances should not be created directly and must be obtained via a
-// RemoteDeviceCache.
-class RemoteDevice final {
+// PeerCache.
+class Peer final {
  public:
-  // Device connection state.
+  // Connection state.
   enum class ConnectionState {
     // No link exists between the local adapter and this device.
     kNotConnected,
 
-    // The device is currently establishing a link or performing service
-    // discovery or encryption setup. In this state, a link may have been
+    // Currently establishing a link, performing service discovery, or
+    // setting up encryption. In this state, a link may have been
     // established but it is not ready to use yet.
     kInitializing,
 
@@ -45,10 +45,10 @@ class RemoteDevice final {
     kConnected
   };
 
-  // Contains RemoteDevice data that apply only to the LE transport.
+  // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
    public:
-    explicit LowEnergyData(RemoteDevice* owner);
+    explicit LowEnergyData(Peer* owner);
 
     // Current connection state.
     ConnectionState connection_state() const { return conn_state_; }
@@ -63,27 +63,27 @@ class RemoteDevice final {
       return adv_data_buffer_.view(0, adv_data_len_);
     }
 
-    // Most recently used LE connection parameters. Has no value if this device
+    // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
     const std::optional<hci::LEConnectionParameters>& connection_parameters()
         const {
       return conn_params_;
     }
 
-    // Preferred LE connection parameters as reported by this device.
+    // Preferred LE connection parameters as reported by the peer.
     const std::optional<hci::LEPreferredConnectionParameters>&
     preferred_connection_parameters() const {
       return preferred_conn_params_;
     }
 
-    // This device's LE bond data, if bonded.
+    // This peer's LE bond data, if bonded.
     const std::optional<sm::PairingData>& bond_data() const {
       return bond_data_;
     }
 
     // Setters:
 
-    // Updates the LE advertising and scan response data for this device.
+    // Updates the LE advertising and scan response data.
     // |rssi| corresponds to the most recent advertisement RSSI.
     // |advertising_data| should include any scan response data if obtained
     // during an active scan.
@@ -92,26 +92,26 @@ class RemoteDevice final {
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
 
-    // Modify the current or preferred connection parameters for this device.
+    // Modify the current or preferred connection parameters.
     // The device must be connectable.
     void SetConnectionParameters(const hci::LEConnectionParameters& value);
     void SetPreferredConnectionParameters(
         const hci::LEPreferredConnectionParameters& value);
 
-    // Stores LE bonding data and makes this device "bonded." Marks the device
-    // as non-temporary if necessary.
+    // Stores LE bonding data and makes this "bonded."
+    // Marks as non-temporary if necessary.
     void SetBondData(const sm::PairingData& bond_data);
 
-    // Removes any stored keys. Does not make the device temporary, even if it
+    // Removes any stored keys. Does not make the peer temporary, even if it
     // is disconnected. Does not notify listeners.
     void ClearBondData();
 
     // TODO(armansito): Store most recently seen random address and identity
-    // address separately, once RemoteDeviceCache can index devices by multiple
+    // address separately, once PeerCache can index peers by multiple
     // addresses.
 
    private:
-    RemoteDevice* dev_;  // weak
+    Peer* peer_;  // weak
 
     ConnectionState conn_state_;
     size_t adv_data_len_;
@@ -125,10 +125,10 @@ class RemoteDevice final {
     // TODO(armansito): Store GATT service UUIDs.
   };
 
-  // Contains RemoteDevice data that apply only to the BR/EDR transport.
+  // Contains Peer data that apply only to the BR/EDR transport.
   class BrEdrData final {
    public:
-    explicit BrEdrData(RemoteDevice* owner);
+    explicit BrEdrData(Peer* owner);
 
     // Current connection state.
     ConnectionState connection_state() const { return conn_state_; }
@@ -137,21 +137,21 @@ class RemoteDevice final {
     }
     bool bonded() const { return link_key_.has_value(); }
 
-    // Returns the device's BD_ADDR.
+    // Returns the peer's BD_ADDR.
     const common::DeviceAddress& address() const { return address_; }
 
-    // Returns the device class of this device, if it is known.
+    // Returns the device class reported by the peer, if it is known.
     const std::optional<common::DeviceClass>& device_class() const {
       return device_class_;
     }
 
-    // Returns the page scan repetition mode of this device, if known.
+    // Returns the page scan repetition mode of the peer, if known.
     const std::optional<hci::PageScanRepetitionMode>&
     page_scan_repetition_mode() const {
       return page_scan_rep_mode_;
     }
 
-    // Returns the clock offset reported by the device, if known and valid. The
+    // Returns the clock offset reported by the peer, if known and valid. The
     // clock offset will have the highest-order bit set and the rest represent
     // bits 16-2 of CLKNslave-CLK (see hci::kClockOffsetFlagBit in
     // hci/hci_constants.h).
@@ -166,7 +166,7 @@ class RemoteDevice final {
 
     // Setters:
 
-    // Updates the inquiry data for this device and notifies listeners. These
+    // Updates the inquiry data and notifies listeners. These
     // methods expect HCI inquiry result structures as they are obtained from
     // the Bluetooth controller. Each field should be encoded in little-endian
     // byte order.
@@ -178,7 +178,7 @@ class RemoteDevice final {
     void SetConnectionState(ConnectionState state);
 
     // Stores a link key resulting from Secure Simple Pairing and makes this
-    // device "bonded." Marks the device as non-temporary if necessary. All
+    // peer "bonded." Marks the peer as non-temporary if necessary. All
     // BR/EDR link keys are "long term" (reusable across sessions).
     void SetBondData(const sm::LTK& link_key);
 
@@ -186,7 +186,7 @@ class RemoteDevice final {
     // it is disconnected. Does not notify listeners.
     void ClearBondData();
 
-    // TODO(armansito): Store BD_ADDR here, once RemoteDeviceCache can index
+    // TODO(armansito): Store BD_ADDR here, once PeerCache can index
     // devices by multiple addresses.
 
    private:
@@ -201,7 +201,7 @@ class RemoteDevice final {
     // Updates the EIR data field and returns true if any properties changed.
     bool SetEirData(const common::ByteBuffer& data);
 
-    RemoteDevice* dev_;  // weak
+    Peer* peer_;  // weak
     ConnectionState conn_state_;
     common::DeviceAddress address_;
     std::optional<common::DeviceClass> device_class_;
@@ -241,7 +241,7 @@ class RemoteDevice final {
   //
   //   * For BR/EDR/LE devices this is the BD_ADDR and the LE identity address.
   //     If a BR/EDR/LE device uses an identity address that is different from
-  //     its BD_ADDR, then there will be two separate RemoteDevice entries for
+  //     its BD_ADDR, then there will be two separate Peer entries for
   //     it.
   const common::DeviceAddress& address() const { return address_; }
   bool identity_known() const { return identity_known_; }
@@ -262,7 +262,7 @@ class RemoteDevice final {
     return (le() && le()->bonded()) || (bredr() && bredr()->bonded());
   }
 
-  // Returns the most recently observed RSSI for this remote device. Returns
+  // Returns the most recently observed RSSI for this peer. Returns
   // hci::kRSSIInvalid if the value is unknown.
   int8_t rssi() const { return rssi_; }
 
@@ -274,7 +274,7 @@ class RemoteDevice final {
   // Returns the set of features of this device.
   const hci::LMPFeatureSet& features() const { return lmp_features_; }
 
-  // A temporary device gets removed from the RemoteDeviceCache after a period
+  // A temporary device gets removed from the PeerCache after a period
   // of inactivity (see the |update_expiry_callback| argument to the
   // constructor). The following rules determine the temporary state of a
   // device:
@@ -307,7 +307,7 @@ class RemoteDevice final {
   // Returns a string representation of this device.
   std::string ToString() const;
 
-  // The following methods mutate RemoteDevice properties:
+  // The following methods mutate Peer properties:
 
   // Updates the name of this device. This will override the existing name (if
   // present) and notify listeners of the change.
@@ -331,20 +331,20 @@ class RemoteDevice final {
   }
 
  private:
-  friend class RemoteDeviceCache;
-  using DeviceCallback = fit::function<void(const RemoteDevice&)>;
+  friend class PeerCache;
+  using DeviceCallback = fit::function<void(const Peer&)>;
 
   // Caller must ensure that callbacks are non-empty.
-  // Note that the ctor is only intended for use by RemoteDeviceCache.
-  // Expanding access would a) violate the constraint that all RemoteDevices
-  // are created through a RemoteDeviceCache, and b) introduce lifetime issues
+  // Note that the ctor is only intended for use by PeerCache.
+  // Expanding access would a) violate the constraint that all Peers
+  // are created through a PeerCache, and b) introduce lifetime issues
   // (do the callbacks outlive |this|?).
-  RemoteDevice(DeviceCallback notify_listeners_callback,
-               DeviceCallback update_expiry_callback,
-               DeviceCallback dual_mode_callback, DeviceId identifier,
-               const common::DeviceAddress& address, bool connectable);
+  Peer(DeviceCallback notify_listeners_callback,
+       DeviceCallback update_expiry_callback, DeviceCallback dual_mode_callback,
+       DeviceId identifier, const common::DeviceAddress& address,
+       bool connectable);
 
-  // Marks this device's identity as known. Called by RemoteDeviceCache when
+  // Marks this device's identity as known. Called by PeerCache when
   // initializing a bonded device and by LowEnergyData when setting bond data
   // with an identity address.
   void set_identity_known(bool value) { identity_known_ = value; }
@@ -370,7 +370,7 @@ class RemoteDevice final {
   // conditions are subtle and not fully supported yet.
   bool TryMakeNonTemporary();
 
-  // Tells the owning RemoteDeviceCache to update the expiry state of this
+  // Tells the owning PeerCache to update the expiry state of this
   // device.
   void UpdateExpiry();
 
@@ -408,10 +408,10 @@ class RemoteDevice final {
   // device is known to support BR/EDR.
   std::optional<BrEdrData> bredr_data_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteDevice);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
 };
 
 }  // namespace gap
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_REMOTE_DEVICE_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_

@@ -228,8 +228,8 @@ class FakeController : public FakeControllerBase,
 
   // Finds and returns the FakePeer with the given parameters or nullptr if no
   // such device exists.
-  FakePeer* FindDeviceByAddress(const common::DeviceAddress& addr);
-  FakePeer* FindDeviceByConnHandle(hci::ConnectionHandle handle);
+  FakePeer* FindByAddress(const common::DeviceAddress& addr);
+  FakePeer* FindByConnHandle(hci::ConnectionHandle handle);
 
   // Returns the next available L2CAP signaling channel command ID.
   uint8_t NextL2CAPCommandId();

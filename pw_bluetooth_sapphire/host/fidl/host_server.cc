@@ -51,24 +51,22 @@ HostServer::HostServer(zx::channel channel,
   ZX_DEBUG_ASSERT(gatt_host_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  adapter->remote_device_cache()->set_device_updated_callback(
-      [self](const auto& device) {
-        if (self) {
-          self->OnRemoteDeviceUpdated(device);
-        }
-      });
-  adapter->remote_device_cache()->set_device_removed_callback(
+  adapter->peer_cache()->set_peer_updated_callback([self](const auto& peer) {
+    if (self) {
+      self->OnPeerUpdated(peer);
+    }
+  });
+  adapter->peer_cache()->set_peer_removed_callback(
       [self](const auto& identifier) {
         if (self) {
-          self->OnRemoteDeviceRemoved(identifier);
+          self->OnPeerRemoved(identifier);
         }
       });
-  adapter->remote_device_cache()->set_device_bonded_callback(
-      [self](const auto& device) {
-        if (self) {
-          self->OnRemoteDeviceBonded(device);
-        }
-      });
+  adapter->peer_cache()->set_peer_bonded_callback([self](const auto& peer) {
+    if (self) {
+      self->OnPeerBonded(peer);
+    }
+  });
   adapter->set_auto_connect_callback([self](auto conn_ref) {
     if (self) {
       self->RegisterLowEnergyConnection(std::move(conn_ref), true);
@@ -94,12 +92,11 @@ void HostServer::SetLocalData(::fuchsia::bluetooth::host::HostData host_data) {
 
 void HostServer::ListDevices(ListDevicesCallback callback) {
   std::vector<RemoteDevice> fidl_devices;
-  adapter()->remote_device_cache()->ForEach(
-      [&fidl_devices](const bt::gap::RemoteDevice& dev) {
-        if (dev.connectable()) {
-          fidl_devices.push_back(fidl_helpers::NewRemoteDevice(dev));
-        }
-      });
+  adapter()->peer_cache()->ForEach([&fidl_devices](const bt::gap::Peer& p) {
+    if (p.connectable()) {
+      fidl_devices.push_back(fidl_helpers::NewRemoteDevice(p));
+    }
+  });
   callback(std::vector<RemoteDevice>(std::move(fidl_devices)));
 }
 
@@ -171,7 +168,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
 
     // Set up a general-discovery filter for connectable devices.
     // NOTE(armansito): This currently has no effect since OnDeviceUpdated
-    // events are generated based on RemoteDeviceCache events. |session|'s
+    // events are generated based on PeerCache events. |session|'s
     // "result callback" is unused.
     session->filter()->set_connectable(true);
     session->filter()->SetGeneralDiscoveryFlags();
@@ -281,8 +278,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
   std::vector<std::string> failed_ids;
 
   for (auto& bond : bonds) {
-    auto device_id = DeviceIdFromString(bond.identifier);
-    if (!device_id) {
+    auto peer_id = DeviceIdFromString(bond.identifier);
+    if (!peer_id) {
       failed_ids.push_back(bond.identifier);
       continue;
     }
@@ -307,7 +304,7 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
 
     std::optional<bt::sm::LTK> bredr_link_key;
     if (bond.bredr) {
-      // Dual-mode devices will have a BR/EDR-typed address.
+      // Dual-mode peers will have a BR/EDR-typed address.
       address = bt::common::DeviceAddress(
           bt::common::DeviceAddress::Type::kBREDR, bond.bredr->address);
       bredr_link_key = fidl_helpers::BrEdrKeyFromFidl(*bond.bredr);
@@ -323,8 +320,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     // TODO(armansito): BondingData should contain the identity address for both
     // transports instead of storing them separately. For now use the one we
     // obtained from |bond.le|.
-    if (!adapter()->AddBondedDevice(*device_id, address, le_bond_data,
-                                    bredr_link_key)) {
+    if (!adapter()->AddBondedPeer(*peer_id, address, le_bond_data,
+                                  bredr_link_key)) {
       failed_ids.push_back(bond.identifier);
       continue;
     }
@@ -333,32 +330,31 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
   if (!failed_ids.empty()) {
     callback(fidl_helpers::NewFidlError(
         ErrorCode::FAILED,
-        fxl::StringPrintf("Some devices failed to load (ids: %s)",
+        fxl::StringPrintf("Some peers failed to load (ids: %s)",
                           fxl::JoinStrings(failed_ids, ", ").c_str())));
   } else {
     callback(Status());
   }
 }
 
-void HostServer::OnRemoteDeviceBonded(
-    const bt::gap::RemoteDevice& remote_device) {
-  bt_log(TRACE, "bt-host", "OnRemoteDeviceBonded()");
+void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
+  bt_log(TRACE, "bt-host", "OnPeerBonded()");
   binding()->events().OnNewBondingData(
-      fidl_helpers::NewBondingData(*adapter(), remote_device));
+      fidl_helpers::NewBondingData(*adapter(), peer));
 }
 
 void HostServer::RegisterLowEnergyConnection(
     bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
-  bt::gap::DeviceId id = conn_ref->device_identifier();
+  bt::gap::DeviceId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
-    bt_log(WARN, "bt-host", "device already connected; reference dropped");
+    bt_log(WARN, "bt-host", "peer already connected; reference dropped");
     return;
   }
 
-  bt_log(TRACE, "bt-host", "LE device connected (%s): %s ",
+  bt_log(TRACE, "bt-host", "LE peer connected (%s): %s ",
          (auto_connect ? "auto" : "direct"), bt_str(id));
   conn_ref->set_closed_callback([self = weak_ptr_factory_.GetWeakPtr(), id] {
     if (self)
@@ -471,27 +467,27 @@ void HostServer::SetPairingDelegate(
   });
 }
 
-// Attempt to connect to device identified by |device_id|. The device must be
-// in our device cache. We will attempt to connect technologies (LowEnergy,
-// Classic or Dual-Mode) as the device claims to support when discovered
-void HostServer::Connect(::std::string device_id, ConnectCallback callback) {
-  auto id = DeviceIdFromString(device_id);
+// Attempt to connect to peer identified by |peer_id|. The peer must be
+// in our peer cache. We will attempt to connect technologies (LowEnergy,
+// Classic or Dual-Mode) as the peer claims to support when discovered
+void HostServer::Connect(::std::string peer_id, ConnectCallback callback) {
+  auto id = DeviceIdFromString(peer_id);
   if (!id.has_value()) {
-    callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid device ID"));
+    callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
   }
-  auto device = adapter()->remote_device_cache()->FindDeviceById(*id);
-  if (!device) {
-    // We don't support connecting to devices that are not in our cache
+  auto peer = adapter()->peer_cache()->FindById(*id);
+  if (!peer) {
+    // We don't support connecting to peers that are not in our cache
     callback(NewFidlError(ErrorCode::NOT_FOUND,
-                          "Cannot find device with the given ID"));
+                          "Cannot find peer with the given ID"));
     return;
   }
 
-  // TODO(BT-649): Dual-mode currently not supported; if the device supports
-  // LowEnergy we assume LE. If a dual-mode device, we should attempt to connect
+  // TODO(BT-649): Dual-mode currently not supported; if the peer supports
+  // LowEnergy we assume LE. If a dual-mode peer, we should attempt to connect
   // both protocols.
-  if (!device->le()) {
+  if (!peer->le()) {
     ConnectBrEdr(*id, std::move(callback));
     return;
   }
@@ -505,15 +501,15 @@ void HostServer::ConnectLowEnergy(DeviceId peer_id, ConnectCallback callback) {
                          auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to device (id %s)",
+      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)",
              bt_str(peer_id));
       callback(StatusToFidl(status, "failed to connect"));
       return;
     }
 
-    // We must be connected and to the right device
+    // We must be connected and to the right peer
     ZX_ASSERT(connection);
-    ZX_ASSERT(peer_id == connection->device_identifier());
+    ZX_ASSERT(peer_id == connection->peer_identifier());
 
     callback(Status());
 
@@ -533,13 +529,13 @@ void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
                          auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to device (id %s)",
+      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)",
              bt_str(peer_id));
       callback(StatusToFidl(status, "failed to connect"));
       return;
     }
 
-    // We must be connected and to the right device
+    // We must be connected and to the right peer
     ZX_ASSERT(connection);
     ZX_ASSERT(peer_id == connection->peer_id());
 
@@ -552,13 +548,13 @@ void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
   }
 }
 
-void HostServer::Forget(::std::string device_id, ForgetCallback callback) {
-  auto id = DeviceIdFromString(device_id);
+void HostServer::Forget(::std::string peer_id, ForgetCallback callback) {
+  auto id = DeviceIdFromString(peer_id);
   if (!id.has_value()) {
     callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Invalid peer ID"));
     return;
   }
-  auto peer = adapter()->remote_device_cache()->FindDeviceById(*id);
+  auto peer = adapter()->peer_cache()->FindById(*id);
   if (!peer) {
     callback(NewFidlError(ErrorCode::NOT_FOUND,
                           "Cannot find peer with the given ID"));
@@ -572,8 +568,8 @@ void HostServer::Forget(::std::string device_id, ForgetCallback callback) {
     adapter()->bredr_connection_manager()->Disconnect(*id);
   }
 
-  const bool forgot = adapter()->remote_device_cache()->ForgetPeer(*id);
-  bt_log(TRACE, "bt-host", "forget peer (id %s) %s", device_id.c_str(),
+  const bool forgot = adapter()->peer_cache()->ForgetPeer(*id);
+  bt_log(TRACE, "bt-host", "forget peer (id %s) %s", peer_id.c_str(),
          forgot ? "succeeded" : "failed");
   if (!forgot) {
     callback(NewFidlError(ErrorCode::FAILED, "Failed to forget peer"));
@@ -673,17 +669,17 @@ bt::sm::IOCapability HostServer::io_capability() const {
 }
 
 void HostServer::CompletePairing(DeviceId id, bt::sm::Status status) {
-  bt_log(INFO, "bt-host", "pairing complete for device: %s, status: %s",
+  bt_log(INFO, "bt-host", "pairing complete for peer: %s, status: %s",
          bt_str(id), status.ToString().c_str());
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(id.ToString(), StatusToFidl(status));
 }
 
 void HostServer::ConfirmPairing(DeviceId id, ConfirmCallback confirm) {
-  bt_log(INFO, "bt-host", "pairing request for device: %s", bt_str(id));
-  auto found_device = adapter()->remote_device_cache()->FindDeviceById(id);
-  ZX_DEBUG_ASSERT(found_device);
-  auto device = fidl_helpers::NewRemoteDevicePtr(*found_device);
+  bt_log(INFO, "bt-host", "pairing request for peer: %s", bt_str(id));
+  auto found_peer = adapter()->peer_cache()->FindById(id);
+  ZX_DEBUG_ASSERT(found_peer);
+  auto device = fidl_helpers::NewRemoteDevicePtr(*found_peer);
   ZX_DEBUG_ASSERT(device);
 
   ZX_DEBUG_ASSERT(pairing_delegate_);
@@ -696,11 +692,12 @@ void HostServer::ConfirmPairing(DeviceId id, ConfirmCallback confirm) {
 
 void HostServer::DisplayPasskey(DeviceId id, uint32_t passkey,
                                 ConfirmCallback confirm) {
-  bt_log(INFO, "bt-host", "pairing request for device: %s", bt_str(id));
+  bt_log(INFO, "bt-host", "pairing request for peer: %s", bt_str(id));
   bt_log(INFO, "bt-host", "enter passkey: %06u", passkey);
 
-  auto device = fidl_helpers::NewRemoteDevicePtr(
-      *adapter()->remote_device_cache()->FindDeviceById(id));
+  auto* peer = adapter()->peer_cache()->FindById(id);
+  ZX_DEBUG_ASSERT(peer);
+  auto device = fidl_helpers::NewRemoteDevicePtr(*peer);
   ZX_DEBUG_ASSERT(device);
 
   ZX_DEBUG_ASSERT(pairing_delegate_);
@@ -713,8 +710,9 @@ void HostServer::DisplayPasskey(DeviceId id, uint32_t passkey,
 }
 
 void HostServer::RequestPasskey(DeviceId id, PasskeyResponseCallback respond) {
-  auto device = fidl_helpers::NewRemoteDevicePtr(
-      *adapter()->remote_device_cache()->FindDeviceById(id));
+  auto* peer = adapter()->peer_cache()->FindById(id);
+  ZX_DEBUG_ASSERT(peer);
+  auto device = fidl_helpers::NewRemoteDevicePtr(*peer);
   ZX_DEBUG_ASSERT(device);
 
   ZX_DEBUG_ASSERT(pairing_delegate_);
@@ -743,24 +741,23 @@ void HostServer::OnConnectionError(Server* server) {
   servers_.erase(server);
 }
 
-void HostServer::OnRemoteDeviceUpdated(
-    const bt::gap::RemoteDevice& remote_device) {
-  if (!remote_device.connectable()) {
+void HostServer::OnPeerUpdated(const bt::gap::Peer& peer) {
+  if (!peer.connectable()) {
     return;
   }
 
-  auto fidl_device = fidl_helpers::NewRemoteDevicePtr(remote_device);
+  auto fidl_device = fidl_helpers::NewRemoteDevicePtr(peer);
   if (!fidl_device) {
-    bt_log(TRACE, "bt-host", "ignoring malformed device update");
+    bt_log(TRACE, "bt-host", "ignoring malformed peer update");
     return;
   }
 
   this->binding()->events().OnDeviceUpdated(std::move(*fidl_device));
 }
 
-void HostServer::OnRemoteDeviceRemoved(bt::gap::DeviceId identifier) {
-  // TODO(armansito): Notify only if the device is connectable for symmetry with
-  // OnDeviceUpdated?
+void HostServer::OnPeerRemoved(bt::gap::DeviceId identifier) {
+  // TODO(armansito): Notify only if the peer is connectable for symmetry with
+  // OnPeerUpdated?
   this->binding()->events().OnDeviceRemoved(identifier.ToString());
 }
 

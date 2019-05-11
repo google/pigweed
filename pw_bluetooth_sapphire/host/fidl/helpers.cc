@@ -4,9 +4,9 @@
 
 #include "helpers.h"
 
-#include <unordered_set>
-
 #include <endian.h>
+
+#include <unordered_set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -99,9 +99,8 @@ fhost::AddressType BondingAddrTypeToFidl(bt::common::DeviceAddress::Type type) {
 }
 
 bt::sm::LTK LtkFromFidl(const fhost::LTK& ltk) {
-  return bt::sm::LTK(
-      SecurityPropsFromFidl(ltk.key.security_properties),
-      bt::hci::LinkKey(ltk.key.value, ltk.rand, ltk.ediv));
+  return bt::sm::LTK(SecurityPropsFromFidl(ltk.key.security_properties),
+                     bt::hci::LinkKey(ltk.key.value, ltk.rand, ltk.ediv));
 }
 
 fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
@@ -118,8 +117,7 @@ fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
 }
 
 bt::sm::Key KeyFromFidl(const fhost::RemoteKey& key) {
-  return bt::sm::Key(SecurityPropsFromFidl(key.security_properties),
-                     key.value);
+  return bt::sm::Key(SecurityPropsFromFidl(key.security_properties), key.value);
 }
 
 fhost::RemoteKey KeyToFidl(const bt::sm::Key& key) {
@@ -239,13 +237,13 @@ fctrl::AdapterInfo NewAdapterInfo(const bt::gap::Adapter& adapter) {
   return adapter_info;
 }
 
-fctrl::RemoteDevice NewRemoteDevice(const bt::gap::RemoteDevice& device) {
+fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
   fctrl::RemoteDevice fidl_device;
-  fidl_device.identifier = device.identifier().ToString();
-  fidl_device.address = device.address().value().ToString();
-  fidl_device.technology = TechnologyTypeToFidl(device.technology());
-  fidl_device.connected = device.connected();
-  fidl_device.bonded = device.bonded();
+  fidl_device.identifier = peer.identifier().ToString();
+  fidl_device.address = peer.address().value().ToString();
+  fidl_device.technology = TechnologyTypeToFidl(peer.technology());
+  fidl_device.connected = peer.connected();
+  fidl_device.bonded = peer.bonded();
 
   // Set default value for device appearance.
   fidl_device.appearance = fctrl::Appearance::UNKNOWN;
@@ -254,19 +252,19 @@ fctrl::RemoteDevice NewRemoteDevice(const bt::gap::RemoteDevice& device) {
   // to it.
   fidl_device.service_uuids.resize(0);
 
-  if (device.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device.rssi = Int8::New();
-    fidl_device.rssi->value = device.rssi();
+    fidl_device.rssi->value = peer.rssi();
   }
 
-  if (device.name()) {
-    fidl_device.name = *device.name();
+  if (peer.name()) {
+    fidl_device.name = *peer.name();
   }
 
-  if (device.le()) {
+  if (peer.le()) {
     bt::gap::AdvertisingData adv_data;
 
-    if (!bt::gap::AdvertisingData::FromBytes(device.le()->advertising_data(),
+    if (!bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(),
                                              &adv_data)) {
       return fidl_device;
     }
@@ -288,29 +286,29 @@ fctrl::RemoteDevice NewRemoteDevice(const bt::gap::RemoteDevice& device) {
   return fidl_device;
 }
 
-fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::RemoteDevice& device) {
+fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer) {
   auto fidl_device = fctrl::RemoteDevice::New();
-  *fidl_device = NewRemoteDevice(device);
+  *fidl_device = NewRemoteDevice(peer);
   return fidl_device;
 }
 
 fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
-                                  const bt::gap::RemoteDevice& device) {
+                                  const bt::gap::Peer& peer) {
   fhost::BondingData out_data;
-  out_data.identifier = device.identifier().ToString();
+  out_data.identifier = peer.identifier().ToString();
   out_data.local_address = adapter.state().controller_address().ToString();
 
-  if (device.name()) {
-    out_data.name = *device.name();
+  if (peer.name()) {
+    out_data.name = *peer.name();
   }
 
   // Store LE data.
-  if (device.le() && device.le()->bond_data()) {
+  if (peer.le() && peer.le()->bond_data()) {
     out_data.le = fhost::LEData::New();
 
-    const auto& le_data = *device.le()->bond_data();
+    const auto& le_data = *peer.le()->bond_data();
     const auto& identity =
-        le_data.identity_address ? *le_data.identity_address : device.address();
+        le_data.identity_address ? *le_data.identity_address : peer.address();
     out_data.le->address = identity.value().ToString();
     out_data.le->address_type = BondingAddrTypeToFidl(identity.type());
 
@@ -335,10 +333,10 @@ fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
   }
 
   // Store BR/EDR data.
-  if (device.bredr() && device.bredr()->link_key()) {
+  if (peer.bredr() && peer.bredr()->link_key()) {
     out_data.bredr = fhost::BREDRData::New();
 
-    out_data.bredr->address = device.bredr()->address().value().ToString();
+    out_data.bredr->address = peer.bredr()->address().value().ToString();
 
     // TODO(BT-669): Populate with history of role switches.
     out_data.bredr->piconet_leader = false;
@@ -346,25 +344,25 @@ fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
     // TODO(BT-670): Populate with discovered SDP services.
     out_data.bredr->services.resize(0);
 
-    if (device.bredr()->link_key()) {
+    if (peer.bredr()->link_key()) {
       out_data.bredr->link_key = fhost::LTK::New();
-      *out_data.bredr->link_key = LtkToFidl(*device.bredr()->link_key());
+      *out_data.bredr->link_key = LtkToFidl(*peer.bredr()->link_key());
     }
   }
 
   return out_data;
 }
 
-fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::RemoteDevice& device) {
+fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
   bt::gap::AdvertisingData ad;
-  if (!device.le()) {
+  if (!peer.le()) {
     return nullptr;
   }
 
-  const auto& le = *device.le();
+  const auto& le = *peer.le();
   auto fidl_device = fble::RemoteDevice::New();
-  fidl_device->identifier = device.identifier().ToString();
-  fidl_device->connectable = device.connectable();
+  fidl_device->identifier = peer.identifier().ToString();
+  fidl_device->connectable = peer.connectable();
 
   // Initialize advertising data only if its non-empty.
   if (le.advertising_data().size() != 0u) {
@@ -375,9 +373,9 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::RemoteDevice& device) {
     fidl_device->advertising_data = ad.AsLEAdvertisingData();
   }
 
-  if (device.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device->rssi = Int8::New();
-    fidl_device->rssi->value = device.rssi();
+    fidl_device->rssi->value = peer.rssi();
   }
 
   return fidl_device;

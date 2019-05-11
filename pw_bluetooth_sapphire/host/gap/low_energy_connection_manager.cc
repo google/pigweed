@@ -8,8 +8,8 @@
 #include <zircon/syscalls.h>
 
 #include "pairing_delegate.h"
-#include "remote_device.h"
-#include "remote_device_cache.h"
+#include "peer.h"
+#include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -135,12 +135,12 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
     // Obtain existing pairing data, if any.
     std::optional<sm::LTK> ltk;
-    auto* dev = conn_mgr_->device_cache()->FindDeviceById(peer_id());
-    ZX_DEBUG_ASSERT_MSG(dev, "connected device must be present in cache!");
+    auto* peer = conn_mgr_->peer_cache()->FindById(peer_id());
+    ZX_DEBUG_ASSERT_MSG(peer, "connected peer must be present in cache!");
 
-    if (dev->le() && dev->le()->bond_data()) {
+    if (peer->le() && peer->le()->bond_data()) {
       // |ltk| will remain as std::nullopt if bonding data contains no LTK.
-      ltk = dev->le()->bond_data()->ltk;
+      ltk = peer->le()->bond_data()->ltk;
     }
 
     // Obtain the local I/O capabilities from the delegate. Default to
@@ -190,7 +190,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     // TODO(armansito): Support bonding with just the CSRK for LE security mode
     // 2.
     if (!pairing_data.ltk) {
-      bt_log(INFO, "gap-le", "temporarily paired with device (id: %s)",
+      bt_log(INFO, "gap-le", "temporarily paired with peer (id: %s)",
              bt_str(peer_id()));
       return;
     }
@@ -205,8 +205,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
                : "",
            pairing_data.csrk ? "csrk " : "", bt_str(peer_id()));
 
-    if (!conn_mgr_->device_cache()->StoreLowEnergyBond(peer_id_,
-                                                       pairing_data)) {
+    if (!conn_mgr_->peer_cache()->StoreLowEnergyBond(peer_id_, pairing_data)) {
       bt_log(ERROR, "gap-le", "failed to cache bonding data (id: %s)",
              bt_str(peer_id()));
     }
@@ -224,7 +223,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
   // sm::PairingState::Delegate override:
   void OnAuthenticationFailure(hci::Status status) override {
-    // TODO(armansito): Clear bonding data from the remote device cache as any
+    // TODO(armansito): Clear bonding data from the remote peer cache as any
     // stored link key is not valid.
     bt_log(ERROR, "gap-le", "link layer authentication failed: %s",
            status.ToString().c_str());
@@ -342,10 +341,10 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 }  // namespace internal
 
 LowEnergyConnectionRef::LowEnergyConnectionRef(
-    DeviceId device_id, hci::ConnectionHandle handle,
+    DeviceId peer_id, hci::ConnectionHandle handle,
     fxl::WeakPtr<LowEnergyConnectionManager> manager)
-    : active_(true), device_id_(device_id), handle_(handle), manager_(manager) {
-  ZX_DEBUG_ASSERT(device_id_.IsValid());
+    : active_(true), peer_id_(peer_id), handle_(handle), manager_(manager) {
+  ZX_DEBUG_ASSERT(peer_id_.IsValid());
   ZX_DEBUG_ASSERT(manager_);
   ZX_DEBUG_ASSERT(handle_);
 }
@@ -392,19 +391,19 @@ void LowEnergyConnectionManager::PendingRequestData::NotifyCallbacks(
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
     fxl::RefPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
-    hci::LowEnergyConnector* connector, RemoteDeviceCache* device_cache,
+    hci::LowEnergyConnector* connector, PeerCache* peer_cache,
     fbl::RefPtr<data::Domain> data_domain, fbl::RefPtr<gatt::GATT> gatt)
     : hci_(hci),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
-      device_cache_(device_cache),
+      peer_cache_(peer_cache),
       data_domain_(data_domain),
       gatt_(gatt),
       connector_(connector),
       local_address_delegate_(addr_delegate),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(device_cache_);
+  ZX_DEBUG_ASSERT(peer_cache_);
   ZX_DEBUG_ASSERT(data_domain_);
   ZX_DEBUG_ASSERT(gatt_);
   ZX_DEBUG_ASSERT(hci_);
@@ -462,37 +461,37 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
   connections_.clear();
 }
 
-bool LowEnergyConnectionManager::Connect(DeviceId device_id,
+bool LowEnergyConnectionManager::Connect(DeviceId peer_id,
                                          ConnectionResultCallback callback) {
   if (!connector_) {
     bt_log(WARN, "gap-le", "connect called during shutdown!");
     return false;
   }
 
-  RemoteDevice* peer = device_cache_->FindDeviceById(device_id);
+  Peer* peer = peer_cache_->FindById(peer_id);
   if (!peer) {
-    bt_log(WARN, "gap-le", "device not found (id: %s)", bt_str(device_id));
+    bt_log(WARN, "gap-le", "peer not found (id: %s)", bt_str(peer_id));
     return false;
   }
 
   if (peer->technology() == TechnologyType::kClassic) {
-    bt_log(ERROR, "gap-le", "device does not support LE: %s",
+    bt_log(ERROR, "gap-le", "peer does not support LE: %s",
            peer->ToString().c_str());
     return false;
   }
 
   if (!peer->connectable()) {
-    bt_log(ERROR, "gap-le", "device not connectable: %s",
+    bt_log(ERROR, "gap-le", "peer not connectable: %s",
            peer->ToString().c_str());
     return false;
   }
 
-  // If we are already waiting to connect to |device_id| then we store
+  // If we are already waiting to connect to |peer_id| then we store
   // |callback| to be processed after the connection attempt completes (in
   // either success of failure).
-  auto pending_iter = pending_requests_.find(device_id);
+  auto pending_iter = pending_requests_.find(peer_id);
   if (pending_iter != pending_requests_.end()) {
-    ZX_DEBUG_ASSERT(connections_.find(device_id) == connections_.end());
+    ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
     ZX_DEBUG_ASSERT(connector_->request_pending());
 
     pending_iter->second.AddCallback(std::move(callback));
@@ -501,7 +500,7 @@ bool LowEnergyConnectionManager::Connect(DeviceId device_id,
 
   // If there is already an active connection then we add a new reference and
   // succeed.
-  auto conn_ref = AddConnectionRef(device_id);
+  auto conn_ref = AddConnectionRef(peer_id);
   if (conn_ref) {
     async::PostTask(dispatcher_, [conn_ref = std::move(conn_ref),
                                   callback = std::move(callback)]() mutable {
@@ -518,9 +517,8 @@ bool LowEnergyConnectionManager::Connect(DeviceId device_id,
     return true;
   }
 
-  peer->MutLe().SetConnectionState(
-      RemoteDevice::ConnectionState::kInitializing);
-  pending_requests_[device_id] =
+  peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
+  pending_requests_[peer_id] =
       PendingRequestData(peer->address(), std::move(callback));
 
   TryCreateNextConnection();
@@ -528,10 +526,10 @@ bool LowEnergyConnectionManager::Connect(DeviceId device_id,
   return true;
 }
 
-bool LowEnergyConnectionManager::Disconnect(DeviceId device_id) {
-  auto iter = connections_.find(device_id);
+bool LowEnergyConnectionManager::Disconnect(DeviceId peer_id) {
+  auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
-    bt_log(WARN, "gap-le", "device not connected (id: %s)", bt_str(device_id));
+    bt_log(WARN, "gap-le", "peer not connected (id: %s)", bt_str(peer_id));
     return false;
   }
 
@@ -552,14 +550,14 @@ LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
   bt_log(TRACE, "gap-le", "new remote-initiated link (local addr: %s): %s",
          link->local_address().ToString().c_str(), link->ToString().c_str());
 
-  RemoteDevice* peer = UpdateRemoteDeviceWithLink(*link);
+  Peer* peer = UpdatePeerWithLink(*link);
 
   // TODO(armansito): Use own address when storing the connection (NET-321).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
   auto conn_ref = InitializeConnection(peer->identifier(), std::move(link));
   if (conn_ref) {
-    peer->MutLe().SetConnectionState(RemoteDevice::ConnectionState::kConnected);
+    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
   }
   return conn_ref;
 }
@@ -593,7 +591,7 @@ void LowEnergyConnectionManager::ReleaseReference(
     LowEnergyConnectionRef* conn_ref) {
   ZX_DEBUG_ASSERT(conn_ref);
 
-  auto iter = connections_.find(conn_ref->device_identifier());
+  auto iter = connections_.find(conn_ref->peer_identifier());
   ZX_DEBUG_ASSERT(iter != connections_.end());
 
   iter->second->DropRef(conn_ref);
@@ -623,28 +621,28 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
     bt_log(SPEW, "gap-le", "no pending requests remaining");
 
     // TODO(armansito): Unpause discovery and disable background scanning if
-    // there aren't any devices to auto-connect to.
+    // there aren't any peers to auto-connect to.
     return;
   }
 
   for (auto& iter : pending_requests_) {
-    const auto& next_device_addr = iter.second.address();
-    RemoteDevice* peer = device_cache_->FindDeviceByAddress(next_device_addr);
+    const auto& next_peer_addr = iter.second.address();
+    Peer* peer = peer_cache_->FindByAddress(next_peer_addr);
     if (peer) {
       RequestCreateConnection(peer);
       break;
     }
 
-    bt_log(TRACE, "gap-le", "deferring connection attempt for device: %s",
-           next_device_addr.ToString().c_str());
+    bt_log(TRACE, "gap-le", "deferring connection attempt for peer: %s",
+           next_peer_addr.ToString().c_str());
 
-    // TODO(armansito): For now the requests for this device won't complete
-    // until the next device discovery. This will no longer be an issue when we
+    // TODO(armansito): For now the requests for this peer won't complete
+    // until the next peer discovery. This will no longer be an issue when we
     // use background scanning (see NET-187).
   }
 }
 
-void LowEnergyConnectionManager::RequestCreateConnection(RemoteDevice* peer) {
+void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
   ZX_DEBUG_ASSERT(peer);
 
   // During the initial connection to a peripheral we use the initial high
@@ -661,10 +659,10 @@ void LowEnergyConnectionManager::RequestCreateConnection(RemoteDevice* peer) {
       hci::defaults::kLESupervisionTimeout);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, device_id = peer->identifier()](hci::Status status,
-                                                          auto link) {
+  auto status_cb = [self, peer_id = peer->identifier()](hci::Status status,
+                                                        auto link) {
     if (self)
-      self->OnConnectResult(device_id, status, std::move(link));
+      self->OnConnectResult(peer_id, status, std::move(link));
   };
 
   // We set the scan window and interval to the same value for continuous
@@ -675,15 +673,15 @@ void LowEnergyConnectionManager::RequestCreateConnection(RemoteDevice* peer) {
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
-    DeviceId device_id, std::unique_ptr<hci::Connection> link) {
+    DeviceId peer_id, std::unique_ptr<hci::Connection> link) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
 
   // TODO(armansito): For now reject having more than one link with the same
   // peer. This should change once this has more context on the local
   // destination for remote initiated connections (see NET-321).
-  if (connections_.find(device_id) != connections_.end()) {
-    bt_log(TRACE, "gap-le", "multiple links from device; connection refused");
+  if (connections_.find(peer_id) != connections_.end()) {
+    bt_log(TRACE, "gap-le", "multiple links from peer; connection refused");
     link->Close();
     return nullptr;
   }
@@ -692,32 +690,32 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
   // the channels are open.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto conn_param_update_cb = [self, handle = link->handle(),
-                               device_id](const auto& params) {
+                               peer_id](const auto& params) {
     if (self) {
-      self->OnNewLEConnectionParams(device_id, handle, params);
+      self->OnNewLEConnectionParams(peer_id, handle, params);
     }
   };
 
-  auto link_error_cb = [self, device_id] {
+  auto link_error_cb = [self, peer_id] {
     bt_log(TRACE, "gap", "link error received from L2CAP");
     if (self) {
-      self->Disconnect(device_id);
+      self->Disconnect(peer_id);
     }
   };
 
   // Initialize connection.
   auto conn = std::make_unique<internal::LowEnergyConnection>(
-      device_id, std::move(link), dispatcher_, weak_ptr_factory_.GetWeakPtr(),
+      peer_id, std::move(link), dispatcher_, weak_ptr_factory_.GetWeakPtr(),
       data_domain_, gatt_);
   conn->InitializeFixedChannels(std::move(conn_param_update_cb),
                                 std::move(link_error_cb));
 
   auto first_ref = conn->AddRef();
-  connections_[device_id] = std::move(conn);
+  connections_[peer_id] = std::move(conn);
 
   // TODO(armansito): Should complete a few more things before returning the
   // connection:
-  //    1. If this is the first time we connected to this device:
+  //    1. If this is the first time we connected to this peer:
   //      a. Obtain LE remote features
   //      b. If master, obtain Peripheral Preferred Connection Parameters via
   //         GATT if available
@@ -730,8 +728,8 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::AddConnectionRef(
-    DeviceId device_id) {
-  auto iter = connections_.find(device_id);
+    DeviceId peer_id) {
+  auto iter = connections_.find(peer_id);
   if (iter == connections_.end())
     return nullptr;
 
@@ -742,11 +740,10 @@ void LowEnergyConnectionManager::CleanUpConnection(
     std::unique_ptr<internal::LowEnergyConnection> conn, bool close_link) {
   ZX_DEBUG_ASSERT(conn);
 
-  // Mark the peer device as no longer connected.
-  RemoteDevice* peer = device_cache_->FindDeviceById(conn->peer_id());
+  // Mark the peer peer as no longer connected.
+  Peer* peer = peer_cache_->FindById(conn->peer_id());
   ZX_DEBUG_ASSERT(peer);
-  peer->MutLe().SetConnectionState(
-      RemoteDevice::ConnectionState::kNotConnected);
+  peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
   if (!close_link) {
     // Mark the connection as already closed so that hci::Connection::Close()
@@ -766,7 +763,7 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
   bt_log(INFO, "gap-le", "new connection %s", link->ToString().c_str());
 
-  RemoteDevice* peer = UpdateRemoteDeviceWithLink(*link);
+  Peer* peer = UpdatePeerWithLink(*link);
 
   // Initialize the connection  and obtain the initial reference.
   // This reference lasts until this method returns to prevent it from dropping
@@ -781,7 +778,7 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(
   ZX_DEBUG_ASSERT(conn_iter != connections_.end());
 
   // For now, jump to the initialized state.
-  peer->MutLe().SetConnectionState(RemoteDevice::ConnectionState::kConnected);
+  peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
 
   auto iter = pending_requests_.find(peer->identifier());
   if (iter != pending_requests_.end()) {
@@ -801,21 +798,20 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(
   TryCreateNextConnection();
 }
 
-RemoteDevice* LowEnergyConnectionManager::UpdateRemoteDeviceWithLink(
+Peer* LowEnergyConnectionManager::UpdatePeerWithLink(
     const hci::Connection& link) {
-  RemoteDevice* peer = device_cache_->FindDeviceByAddress(link.peer_address());
+  Peer* peer = peer_cache_->FindByAddress(link.peer_address());
   if (!peer) {
-    peer =
-        device_cache_->NewDevice(link.peer_address(), true /* connectable */);
+    peer = peer_cache_->NewPeer(link.peer_address(), true /* connectable */);
   }
   peer->MutLe().SetConnectionParameters(link.low_energy_parameters());
   return peer;
 }
 
-void LowEnergyConnectionManager::OnConnectResult(DeviceId device_id,
+void LowEnergyConnectionManager::OnConnectResult(DeviceId peer_id,
                                                  hci::Status status,
                                                  hci::ConnectionPtr link) {
-  ZX_DEBUG_ASSERT(connections_.find(device_id) == connections_.end());
+  ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
 
   if (status) {
     bt_log(TRACE, "gap-le", "connection request successful");
@@ -824,14 +820,14 @@ void LowEnergyConnectionManager::OnConnectResult(DeviceId device_id,
   }
 
   // The request failed or timed out.
-  bt_log(ERROR, "gap-le", "failed to connect to device (id: %s)",
-         bt_str(device_id));
-  RemoteDevice* dev = device_cache_->FindDeviceById(device_id);
-  ZX_ASSERT(dev);
-  dev->MutLe().SetConnectionState(RemoteDevice::ConnectionState::kNotConnected);
+  bt_log(ERROR, "gap-le", "failed to connect to peer (id: %s)",
+         bt_str(peer_id));
+  Peer* peer = peer_cache_->FindById(peer_id);
+  ZX_ASSERT(peer);
+  peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
   // Notify the matching pending callbacks about the failure.
-  auto iter = pending_requests_.find(device_id);
+  auto iter = pending_requests_.find(peer_id);
   ZX_DEBUG_ASSERT(iter != pending_requests_.end());
 
   // Remove the entry from |pending_requests_| before notifying callbacks.
@@ -923,7 +919,7 @@ void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(
                                      le16toh(payload->supervision_timeout));
   conn.link()->set_low_energy_parameters(params);
 
-  RemoteDevice* peer = device_cache_->FindDeviceById(conn.peer_id());
+  Peer* peer = peer_cache_->FindById(conn.peer_id());
   if (!peer) {
     bt_log(ERROR, "gap-le", "conn. parameters updated for unknown peer!");
     return;
@@ -936,11 +932,11 @@ void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(
 }
 
 void LowEnergyConnectionManager::OnNewLEConnectionParams(
-    DeviceId device_id, hci::ConnectionHandle handle,
+    DeviceId peer_id, hci::ConnectionHandle handle,
     const hci::LEPreferredConnectionParameters& params) {
   bt_log(TRACE, "gap-le", "conn. parameters received (handle: %#.4x)", handle);
 
-  RemoteDevice* peer = device_cache_->FindDeviceById(device_id);
+  Peer* peer = peer_cache_->FindById(peer_id);
   if (!peer) {
     bt_log(ERROR, "gap-le", "conn. parameters received from unknown peer!");
     return;

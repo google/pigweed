@@ -66,7 +66,7 @@ std::string StatusCodeToString(StatusCode code) {
     case kInvalidHCICommandParameters: return "invalid HCI command parameters";
     case kRemoteUserTerminatedConnection: return "remote user terminated connection";
     case kRemoteDeviceTerminatedConnectionLowResources: return "remote device terminated connection: low resources";
-    case kRemoteDeviceTerminatedConnectionPowerOff: return "remote device rerminated connection: power off";
+    case kRemoteDeviceTerminatedConnectionPowerOff: return "remote device terminated connection: power off";
     case kConnectionTerminatedByLocalHost: return "connection terminated by local host";
     case kRepeatedAttempts: return "repeated attempts";
     case kPairingNotAllowed: return "pairing not allowed";

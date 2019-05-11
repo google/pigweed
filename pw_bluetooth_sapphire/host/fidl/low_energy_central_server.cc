@@ -6,9 +6,8 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Int8;
@@ -92,9 +91,9 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
         if (filter)
           fidl_helpers::PopulateDiscoveryFilter(*filter, session->filter());
 
-        session->SetResultCallback([self](const auto& device) {
+        session->SetResultCallback([self](const auto& peer) {
           if (self)
-            self->OnScanResult(device);
+            self->OnScanResult(peer);
         });
 
         session->set_error_callback([self] {
@@ -130,7 +129,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
   auto peer_id = fidl_helpers::DeviceIdFromString(identifier);
   if (!peer_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "invalid device ID"));
+                                        "invalid peer ID"));
     return;
   }
 
@@ -164,14 +163,14 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
     if (!status) {
       ZX_DEBUG_ASSERT(!conn_ref);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to device (id %s)",
+      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)",
              bt_str(peer_id));
       callback(fidl_helpers::StatusToFidl(status, "failed to connect"));
       return;
     }
 
     ZX_DEBUG_ASSERT(conn_ref);
-    ZX_DEBUG_ASSERT(peer_id == conn_ref->device_identifier());
+    ZX_DEBUG_ASSERT(peer_id == conn_ref->peer_identifier());
 
     if (iter->second) {
       // This can happen if a connect is requested after a previous request was
@@ -200,10 +199,10 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
   if (!adapter()->le_connection_manager()->Connect(*peer_id,
                                                    std::move(conn_cb))) {
-    bt_log(TRACE, "bt-host", "cannot connect to unknown device (id: %s)",
+    bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)",
            identifier.c_str());
     callback(
-        fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown device ID"));
+        fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;
   }
 
@@ -215,20 +214,20 @@ void LowEnergyCentralServer::DisconnectPeripheral(
   auto peer_id = fidl_helpers::DeviceIdFromString(identifier);
   if (!peer_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "invalid device ID"));
+                                        "invalid peer ID"));
     return;
   }
 
   auto iter = connections_.find(*peer_id);
   if (iter == connections_.end()) {
-    bt_log(TRACE, "bt-host", "client not connected to device (id: %s)",
+    bt_log(TRACE, "bt-host", "client not connected to peer (id: %s)",
            identifier.c_str());
-    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND,
-                                        "device not connected"));
+    callback(
+        fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "peer not connected"));
     return;
   }
 
-  // If a request to this device is pending then the request will be canceled.
+  // If a request to this peer is pending then the request will be canceled.
   bool was_pending = !iter->second;
   connections_.erase(iter);
 
@@ -242,17 +241,16 @@ void LowEnergyCentralServer::DisconnectPeripheral(
   callback(Status());
 }
 
-void LowEnergyCentralServer::OnScanResult(
-    const bt::gap::RemoteDevice& remote_device) {
-  auto fidl_device = fidl_helpers::NewLERemoteDevice(remote_device);
+void LowEnergyCentralServer::OnScanResult(const bt::gap::Peer& peer) {
+  auto fidl_device = fidl_helpers::NewLERemoteDevice(peer);
   if (!fidl_device) {
     bt_log(TRACE, "bt-host", "ignoring malformed scan result");
     return;
   }
 
-  if (remote_device.rssi() != bt::hci::kRSSIInvalid) {
+  if (peer.rssi() != bt::hci::kRSSIInvalid) {
     fidl_device->rssi = Int8::New();
-    fidl_device->rssi->value = remote_device.rssi();
+    fidl_device->rssi->value = peer.rssi();
   }
 
   binding()->events().OnDeviceDiscovered(std::move(*fidl_device));

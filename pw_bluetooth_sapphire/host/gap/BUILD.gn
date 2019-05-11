@@ -33,10 +33,10 @@ static_library("gap") {
     "low_energy_state.cc",
     "low_energy_state.h",
     "pairing_delegate.h",
-    "remote_device.cc",
-    "remote_device.h",
-    "remote_device_cache.cc",
-    "remote_device_cache.h",
+    "peer.cc",
+    "peer.h",
+    "peer_cache.cc",
+    "peer_cache.h",
   ]
 
   public_deps = [
@@ -70,7 +70,7 @@ source_set("tests") {
     "low_energy_advertising_manager_unittest.cc",
     "low_energy_connection_manager_unittest.cc",
     "low_energy_discovery_manager_unittest.cc",
-    "remote_device_cache_unittest.cc",
+    "peer_cache_unittest.cc",
   ]
 
   deps = [

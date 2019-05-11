@@ -24,7 +24,7 @@ class LocalAddressDelegate;
 
 // LegacyLowEnergyScanner implements the LowEnergyScanner interface for
 // controllers that do not support the 5.0 Extended Advertising feature. This
-// uses the legacy HCI LE device scan commands and events:
+// uses the legacy HCI LE scan commands and events:
 //     - HCI_LE_Set_Scan_Parameters
 //     - HCI_LE_Set_Scan_Enable
 //     - HCI_LE_Advertising_Report event
@@ -54,7 +54,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
     common::StaticByteBuffer<kMaxLEAdvertisingDataLength * 2> data;
   };
 
-  // Called by StartScan() after the local device address has been obtained.
+  // Called by StartScan() after the local peer address has been obtained.
   void StartScanInternal(const common::DeviceAddress& local_address,
                          bool active, uint16_t scan_interval,
                          uint16_t scan_window, bool filter_duplicates,
@@ -70,14 +70,14 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   // Called when a Scan Response is received during an active scan.
   void HandleScanResponse(const LEAdvertisingReportData& report, int8_t rssi);
 
-  // Notifies observers of a device that was found.
-  void NotifyDeviceFound(const LowEnergyScanResult& result,
-                         const common::ByteBuffer& data);
+  // Notifies observers of a peer that was found.
+  void NotifyPeerFound(const LowEnergyScanResult& result,
+                       const common::ByteBuffer& data);
 
   // Called when the scan timeout task executes.
   void OnScanPeriodComplete();
 
-  // Used to obtain the local device address type to use during scanning.
+  // Used to obtain the local peer address type to use during scanning.
   LocalAddressDelegate* local_addr_delegate_;  // weak
 
   // Callback passed in to the most recently accepted call to StartScan();

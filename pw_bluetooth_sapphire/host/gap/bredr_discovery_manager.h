@@ -12,7 +12,7 @@
 #include <queue>
 #include <unordered_set>
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -26,11 +26,11 @@ class Transport;
 namespace gap {
 
 class BrEdrDiscoveryManager;
-class RemoteDeviceCache;
+class PeerCache;
 
-// BrEdrDiscoveryManager implements discovery for BR/EDR devices.  We provide a
-// mechanism for multiple clients to simultaneously request discovery.  Devices
-// discovered will be added to the RemoteDeviceCache.
+// BrEdrDiscoveryManager implements discovery for BR/EDR peers.  We provide a
+// mechanism for multiple clients to simultaneously request discovery.  Peers
+// discovered will be added to the PeerCache.
 //
 // Only one instance of BrEdrDiscoveryManager should be created for a bt-host.
 //
@@ -52,10 +52,10 @@ class BrEdrDiscoverySession final {
   // Set a result callback that will be notified whenever a result is returned
   // from the controller.  You will get duplicate results when using this
   // method.
-  // Prefer RemoteDeviceCache.set_device_updated_callback() instead.
-  using DeviceFoundCallback = fit::function<void(const RemoteDevice& device)>;
-  void set_result_callback(DeviceFoundCallback callback) {
-    device_found_callback_ = std::move(callback);
+  // Prefer PeerCache.set_peer_updated_callback() instead.
+  using PeerFoundCallback = fit::function<void(const Peer& peer)>;
+  void set_result_callback(PeerFoundCallback callback) {
+    peer_found_callback_ = std::move(callback);
   }
 
   // Set a callback to be notified if the session becomes inactive because
@@ -70,15 +70,15 @@ class BrEdrDiscoverySession final {
   // Used by the BrEdrDiscoveryManager to create a session.
   explicit BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager);
 
-  // Called by the BrEdrDiscoveryManager when a device report is found.
-  void NotifyDiscoveryResult(const RemoteDevice& device) const;
+  // Called by the BrEdrDiscoveryManager when a peer report is found.
+  void NotifyDiscoveryResult(const Peer& peer) const;
 
   // Marks this session as ended because of an error.
   void NotifyError() const;
 
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
   fit::closure error_callback_;
-  DeviceFoundCallback device_found_callback_;
+  PeerFoundCallback peer_found_callback_;
   fxl::ThreadChecker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
@@ -87,7 +87,7 @@ class BrEdrDiscoverySession final {
 class BrEdrDiscoverableSession final {
  public:
   // Destroying a session instance relinquishes the request.
-  // The device may still be discoverable if others are requesting so.
+  // The peer may still be discoverable if others are requesting so.
   ~BrEdrDiscoverableSession();
 
  private:
@@ -105,15 +105,15 @@ class BrEdrDiscoverableSession final {
 
 class BrEdrDiscoveryManager final {
  public:
-  // |device_cache| MUST out-live this BrEdrDiscoveryManager.
+  // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
   BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci, hci::InquiryMode mode,
-                        RemoteDeviceCache* device_cache);
+                        PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
 
   // Starts discovery and reports the status via |callback|. If discovery has
   // been successfully started, the callback will receive a session object that
-  // it owns. If no sessions are owned, device discovery is stopped.
+  // it owns. If no sessions are owned, peer discovery is stopped.
   using DiscoveryCallback =
       fit::function<void(const hci::Status& status,
                          std::unique_ptr<BrEdrDiscoverySession> session)>;
@@ -122,7 +122,7 @@ class BrEdrDiscoveryManager final {
   // Returns whether a discovery session is active.
   bool discovering() const { return !discovering_.empty(); }
 
-  // Requests this device be discoverable. Devices are discoverable as long as
+  // Requests this device be discoverable. We are discoverable as long as
   // anyone holds a discoverable session.
   using DiscoverableCallback =
       fit::function<void(const hci::Status& status,
@@ -172,8 +172,8 @@ class BrEdrDiscoveryManager final {
   // Removes |session_| from the active sessions.
   void RemoveDiscoverableSession(BrEdrDiscoverableSession* session);
 
-  // Sends a RemoteNameRequest to the device with |id|.
-  void RequestRemoteDeviceName(DeviceId id);
+  // Sends a RemoteNameRequest to the peer with |id|.
+  void RequestPeerName(DeviceId id);
 
   // The HCI Transport
   fxl::RefPtr<hci::Transport> hci_;
@@ -181,9 +181,9 @@ class BrEdrDiscoveryManager final {
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;
 
-  // Device cache to use.
+  // Peer cache to use.
   // We hold a raw pointer is because it must out-live us.
-  RemoteDeviceCache* cache_;
+  PeerCache* cache_;
 
   // The list of discovering sessions. We store raw pointers here as we
   // don't own the sessions.  Sessions notify us when they are destroyed to
@@ -196,7 +196,7 @@ class BrEdrDiscoveryManager final {
   // TODO(NET-619): we should not need these once we can Inquiry Cancel.
   std::unordered_set<BrEdrDiscoverySession*> zombie_discovering_;
 
-  // The set of devices that we have pending name requests for.
+  // The set of peers that we have pending name requests for.
   std::unordered_set<DeviceId> requesting_names_;
 
   // The set of callbacks that are waiting on inquiry to start.

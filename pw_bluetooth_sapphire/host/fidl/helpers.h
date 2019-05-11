@@ -5,22 +5,21 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 
-#include <optional>
-
 #include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <fuchsia/bluetooth/le/cpp/fidl.h>
 
+#include <optional>
+
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/remote_device.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
 
@@ -75,9 +74,9 @@ bt::sm::IOCapability IoCapabilityFromFidl(
 fuchsia::bluetooth::control::AdapterInfo NewAdapterInfo(
     const bt::gap::Adapter& adapter);
 fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(
-    const bt::gap::RemoteDevice& device);
+    const bt::gap::Peer& peer);
 fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
-    const bt::gap::RemoteDevice& device);
+    const bt::gap::Peer& peer);
 
 // Functions to convert Host FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(
@@ -87,13 +86,13 @@ bt::common::UInt128 LocalKeyFromFidl(
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
     const fuchsia::bluetooth::host::BREDRData& data);
 fuchsia::bluetooth::host::BondingData NewBondingData(
-    const bt::gap::Adapter& adapter, const bt::gap::RemoteDevice& device);
+    const bt::gap::Adapter& adapter, const bt::gap::Peer& peer);
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::AdvertisingDataPtr NewAdvertisingData(
     const bt::common::ByteBuffer& advertising_data);
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(
-    const bt::gap::RemoteDevice& device);
+    const bt::gap::Peer& peer);
 
 // Validates the contents of a ScanFilter.
 bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);

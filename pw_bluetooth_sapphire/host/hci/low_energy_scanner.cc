@@ -14,8 +14,8 @@ namespace hci {
 
 // Default implementations do nothing.
 
-void LowEnergyScanner::Delegate::OnDeviceFound(
-    const LowEnergyScanResult& result, const common::ByteBuffer& data) {}
+void LowEnergyScanner::Delegate::OnPeerFound(const LowEnergyScanResult& result,
+                                             const common::ByteBuffer& data) {}
 
 void LowEnergyScanner::Delegate::OnDirectedAdvertisement(
     const LowEnergyScanResult& result) {}
