@@ -63,7 +63,7 @@ class HostDevice final {
   zx_status_t OpenHostChannel(zx::channel channel);
 
   // Called when a new remote GATT service has been found.
-  void OnRemoteGattServiceAdded(bt::gatt::DeviceId peer_id,
+  void OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                 fbl::RefPtr<bt::gatt::RemoteService> service);
 
   void CleanUp() __TA_REQUIRES(mtx_);

@@ -825,10 +825,10 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   EXPECT_EQ(0, count);
 
   // Mark the peer as bonded.
-  constexpr DeviceId kDeviceId(1);
+  constexpr PeerId kPeerId(1);
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(kDeviceId, kAddress0, pdata, {});
+  peer_cache()->AddBondedPeer(kPeerId, kAddress0, pdata, {});
   EXPECT_EQ(1u, peer_cache()->count());
 
   // Advance to the next scan period. We should receive a new notification.
@@ -1021,7 +1021,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
        BackgroundScanOnlyHandlesDirectedEventsFromBondedPeers) {
-  DeviceId kBondedDeviceId(1);
+  PeerId kBondedPeerId(1);
   AddFakePeers();
 
   // Add a bonded peer.
@@ -1031,7 +1031,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(kBondedDeviceId, kAddress0, pdata, {});
+  peer_cache()->AddBondedPeer(kBondedPeerId, kAddress0, pdata, {});
   EXPECT_EQ(1u, peer_cache()->count());
 
   // Add a second peer the sends directed advertisements but do not mark it as
@@ -1043,7 +1043,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   int count = 0;
   discovery_manager()->set_directed_connectable_callback([&](const auto& id) {
     count++;
-    EXPECT_EQ(kBondedDeviceId, id);
+    EXPECT_EQ(kBondedPeerId, id);
   });
   discovery_manager()->EnableBackgroundScan(true);
   RunLoopUntilIdle();

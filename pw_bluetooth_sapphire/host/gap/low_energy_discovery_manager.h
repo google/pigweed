@@ -201,7 +201,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // Registers a callback which runs after a directed connectable advertisement
   // is received from a bonded peer with the given |id|.
-  using DirectedConnectableCallback = fit::function<void(DeviceId id)>;
+  using DirectedConnectableCallback = fit::function<void(PeerId id)>;
   void set_directed_connectable_callback(DirectedConnectableCallback callback) {
     directed_conn_cb_ = std::move(callback);
   }
@@ -211,7 +211,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   const PeerCache* peer_cache() const { return peer_cache_; }
 
-  const std::unordered_set<DeviceId>& cached_scan_results() const {
+  const std::unordered_set<PeerId>& cached_scan_results() const {
     return cached_scan_results_;
   }
 
@@ -271,7 +271,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // session that joined in the middle of a scan period and duplicate filtering
   // is enabled. We maintain this cache to immediately notify new sessions of
   // the currently cached results for this period.
-  std::unordered_set<DeviceId> cached_scan_results_;
+  std::unordered_set<PeerId> cached_scan_results_;
 
   // The value (in ms) that we use for the duration of each scan period.
   zx::duration scan_period_ = kLEGeneralDiscoveryScanMin;

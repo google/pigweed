@@ -20,7 +20,7 @@ namespace {
 using common::LowerBits;
 using common::UpperBits;
 
-constexpr DeviceId kTestDeviceId(1);
+constexpr PeerId kTestPeerId(1);
 constexpr common::UUID kTestType16((uint16_t)0xBEEF);
 constexpr common::UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
                                      13, 14, 15});
@@ -48,7 +48,7 @@ class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(l2cap::kATTChannelId);
     auto fake_chan = CreateFakeChannel(options);
     att_ = att::Bearer::Create(std::move(fake_chan));
-    server_ = std::make_unique<Server>(kTestDeviceId, db_, att_);
+    server_ = std::make_unique<Server>(kTestPeerId, db_, att_);
   }
 
   void TearDown() override {
@@ -904,7 +904,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
 TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
-  attr->set_read_handler([attr](DeviceId peer_id, auto handle, uint16_t offset,
+  attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset,
                                 const auto& result_cb) {
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
@@ -946,10 +946,10 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
-  attr->set_read_handler([](DeviceId peer_id, auto handle, uint16_t offset,
-                            const auto& result_cb) {
-    result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
-  });
+  attr->set_read_handler(
+      [](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
+        result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1390,10 +1390,10 @@ TEST_F(GATT_ServerTest, WriteRequestError) {
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
 
-  attr->set_write_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
                               uint16_t offset, const auto& value,
                               const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(common::ContainersEqual(
@@ -1428,10 +1428,10 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
 
-  attr->set_write_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
                               uint16_t offset, const auto& value,
                               const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(common::ContainersEqual(
@@ -1465,10 +1465,10 @@ TEST_F(GATT_ServerTest, WriteCommandSuccess) {
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  AllowedNoSecurity());
 
-  attr->set_write_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
                               uint16_t offset, const auto& value,
                               const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(common::ContainersEqual(
@@ -1607,9 +1607,9 @@ TEST_F(GATT_ServerTest, ReadRequestError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
 
@@ -1661,9 +1661,9 @@ TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
 
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(22u, offset);
     result_cb(att::ErrorCode::kNoError,
@@ -1699,9 +1699,9 @@ TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
@@ -1811,9 +1811,9 @@ TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  att::AccessRequirements(true, false, false));
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     result_cb(att::ErrorCode::kUnlikelyError, common::BufferView());
@@ -1847,9 +1847,9 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     result_cb(att::ErrorCode::kInvalidOffset, common::BufferView());
@@ -1879,9 +1879,9 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
                                  att::AccessRequirements());
-  attr->set_read_handler([&](DeviceId peer_id, att::Handle handle,
+  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
                              uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
 
@@ -1951,7 +1951,7 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
   grp->set_active(true);
 
   int write_count = 0;
-  attr->set_write_handler([&](DeviceId, att::Handle, uint16_t, const auto&,
+  attr->set_write_handler([&](PeerId, att::Handle, uint16_t, const auto&,
                               const auto&) { write_count++; });
 
   ASSERT_EQ(0x0002, attr->handle());
@@ -2081,7 +2081,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
   attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
                               uint16_t offset, const auto& value,
                               const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     // Write the contents into |buffer|.
@@ -2166,7 +2166,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
   attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
                               uint16_t offset, const auto& value,
                               const auto& result_cb) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
     // Make the write to non-zero offsets fail (this corresponds to the second
@@ -2245,7 +2245,7 @@ TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
                               const auto& result_cb) {
     write_count++;
 
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
     EXPECT_TRUE(common::ContainersEqual(

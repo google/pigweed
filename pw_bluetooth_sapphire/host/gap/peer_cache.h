@@ -35,7 +35,7 @@ namespace gap {
 class PeerCache final {
  public:
   using PeerCallback = fit::function<void(const Peer& peer)>;
-  using PeerIdCallback = fit::function<void(DeviceId identifier)>;
+  using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
   PeerCache() = default;
 
@@ -71,7 +71,7 @@ class PeerCache final {
   // should be instead updated with new bond information to create a dual-mode
   // peer.
   //
-  bool AddBondedPeer(DeviceId identifier, const common::DeviceAddress& address,
+  bool AddBondedPeer(PeerId identifier, const common::DeviceAddress& address,
                      const sm::PairingData& bond_data,
                      const std::optional<sm::LTK>& link_key);
 
@@ -86,8 +86,7 @@ class PeerCache final {
   // return false. TODO(armansito): Merge the peers instead of failing? What
   // happens if we obtain a LE identity address from a dual-mode peer that
   // matches the BD_ADDR previously obtained from it over BR/EDR?
-  bool StoreLowEnergyBond(DeviceId identifier,
-                          const sm::PairingData& bond_data);
+  bool StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bond_data);
 
   // Update a peer identified by BD_ADDR |address| with a new BR/EDR link key.
   // The peer will be considered "bonded" and the bonded callback notified. If
@@ -103,11 +102,11 @@ class PeerCache final {
   //
   // TODO(BT-824): Delete the peer immediately after disconnecting. Will return
   // true if a known peer was deleted or marked for deletion.
-  bool ForgetPeer(DeviceId peer_id);
+  bool ForgetPeer(PeerId peer_id);
 
   // Returns the remote peer with identifier |peer_id|. Returns nullptr if
   // |peer_id| is not recognized.
-  Peer* FindById(DeviceId peer_id) const;
+  Peer* FindById(PeerId peer_id) const;
 
   // Finds and returns a Peer with address |address| if it exists,
   // returns nullptr otherwise. Tries to resolve |address| if it is resolvable.
@@ -166,7 +165,7 @@ class PeerCache final {
   // |address|, and connectability (|connectable|). Returns a pointer to the
   // inserted peer or nullptr if |identifier| or |address| already exists in
   // the cache.
-  Peer* InsertPeerRecord(DeviceId identifier,
+  Peer* InsertPeerRecord(PeerId identifier,
                          const common::DeviceAddress& address,
                          bool connectable);
 
@@ -196,12 +195,12 @@ class PeerCache final {
   // technologies if it is a public address. |address| should be already
   // resolved, if it is resolvable. If found, returns a valid peer ID;
   // otherwise returns std::nullopt.
-  std::optional<DeviceId> FindIdByAddress(
+  std::optional<PeerId> FindIdByAddress(
       const common::DeviceAddress& address) const;
 
   // Mapping from unique peer IDs to PeerRecords.
   // Owns the corresponding Peers.
-  std::unordered_map<DeviceId, PeerRecord> peers_;
+  std::unordered_map<PeerId, PeerRecord> peers_;
 
   // Mapping from peer addresses to unique peer identifiers for all known
   // peers. This is used to look-up and update existing cached data for a
@@ -210,7 +209,7 @@ class PeerCache final {
   //
   // Dual-mode peers shall have identity addresses of both technologies
   // mapped to the same ID, if the addresses have the same value.
-  std::unordered_map<common::DeviceAddress, DeviceId> address_map_;
+  std::unordered_map<common::DeviceAddress, PeerId> address_map_;
 
   // The LE identity resolving list used to resolve RPAs.
   IdentityResolvingList le_resolving_list_;

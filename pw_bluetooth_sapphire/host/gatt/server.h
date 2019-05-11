@@ -33,7 +33,7 @@ class Server final {
   // |peer_id| is the unique system identifier for the peer device.
   // |database| will be queried by the Server to resolve transactions.
   // |bearer| is the ATT data bearer that this Server operates on.
-  Server(DeviceId peer_id, fxl::RefPtr<att::Database> database,
+  Server(PeerId peer_id, fxl::RefPtr<att::Database> database,
          fxl::RefPtr<att::Bearer> bearer);
   ~Server();
 
@@ -86,7 +86,7 @@ class Server final {
       size_t entry_prefix_size, size_t* out_value_size,
       std::list<const att::Attribute*>* out_results);
 
-  DeviceId peer_id_;
+  PeerId peer_id_;
   fxl::RefPtr<att::Database> db_;
   fxl::RefPtr<att::Bearer> att_;
 

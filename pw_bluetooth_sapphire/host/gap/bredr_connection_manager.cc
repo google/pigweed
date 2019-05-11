@@ -177,10 +177,10 @@ void BrEdrConnectionManager::SetPairingDelegate(
   // TODO(armansito): implement
 }
 
-DeviceId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
+PeerId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    return common::kInvalidDeviceId;
+    return common::kInvalidPeerId;
   }
 
   auto* peer = cache_->FindByAddress(it->second.link().peer_address());
@@ -188,7 +188,7 @@ DeviceId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   return peer->identifier();
 }
 
-bool BrEdrConnectionManager::OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm,
+bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               SocketCallback cb,
                                               async_dispatcher_t* dispatcher) {
   auto handle = FindConnectionById(peer_id);
@@ -214,7 +214,7 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
   return discoverer_.RemoveSearch(id);
 }
 
-bool BrEdrConnectionManager::Disconnect(DeviceId peer_id) {
+bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
   auto handle = FindConnectionById(peer_id);
   if (!handle) {
     return false;
@@ -289,7 +289,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
 }
 
 std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
-BrEdrConnectionManager::FindConnectionById(DeviceId peer_id) {
+BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
   auto* const peer = cache_->FindById(peer_id);
   if (!peer || !peer->bredr() || !peer->bredr()->connected()) {
     return std::nullopt;
@@ -684,7 +684,7 @@ void BrEdrConnectionManager::OnUserConfirmationRequest(
 }
 
 bool BrEdrConnectionManager::Connect(
-    DeviceId peer_id, ConnectResultCallback on_connection_result) {
+    PeerId peer_id, ConnectResultCallback on_connection_result) {
   Peer* peer = cache_->FindById(peer_id);
   if (!peer) {
     bt_log(WARN, "gap-bredr", "peer not found (id: %s)", bt_str(peer_id));
@@ -781,7 +781,7 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 }
 
 void BrEdrConnectionManager::OnConnectFailure(hci::Status status,
-                                              DeviceId peer_id) {
+                                              PeerId peer_id) {
   // The request failed or timed out.
   bt_log(ERROR, "gap-bredr", "failed to connect to peer (id: %s)",
          bt_str(peer_id));

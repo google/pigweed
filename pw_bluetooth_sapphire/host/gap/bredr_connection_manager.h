@@ -33,17 +33,17 @@ class BrEdrConnectionManager;
 // interrogation
 class BrEdrConnection final {
  public:
-  BrEdrConnection(DeviceId peer_id, std::unique_ptr<hci::Connection> link)
+  BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link)
       : link_(std::move(link)), peer_id_(peer_id) {}
 
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
 
-  DeviceId peer_id() const { return peer_id_; }
+  PeerId peer_id() const { return peer_id_; }
 
  private:
   std::unique_ptr<hci::Connection> link_;
-  DeviceId peer_id_;
+  PeerId peer_id_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };
@@ -69,13 +69,13 @@ class BrEdrConnectionManager final {
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
 
   // Retrieves the peer id that is connected to the connection |handle|.
-  // Returns common::kInvalidDeviceId if no such peer exists.
-  DeviceId GetPeerId(hci::ConnectionHandle handle) const;
+  // Returns common::kInvalidPeerId if no such peer exists.
+  PeerId GetPeerId(hci::ConnectionHandle handle) const;
 
   // Opens a new L2CAP channel to service |psm| on |peer_id|. Returns false if
   // the peer is not already connected.
   using SocketCallback = fit::function<void(zx::socket)>;
-  bool OpenL2capChannel(DeviceId peer_id, l2cap::PSM psm, SocketCallback cb,
+  bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, SocketCallback cb,
                         async_dispatcher_t* dispatcher);
 
   // Add a service search to be performed on new connected remote peers.
@@ -106,14 +106,14 @@ class BrEdrConnectionManager final {
   // request was invalid, otherwise returns true and |callback| will be called
   // with the result of the procedure, whether successful or not
   // TODO(BT-820) - implement a timeout
-  [[nodiscard]] bool Connect(DeviceId peer_id, ConnectResultCallback callback);
+  [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
   // Intialize a GAP-level ACL connection from the hci connection_handle
   void InitializeConnection(common::DeviceAddress addr,
                             hci::ConnectionHandle connection_handle);
 
   // Called when an outgoing connection fails to establish
-  void OnConnectFailure(hci::Status status, common::DeviceId peer_id);
+  void OnConnectFailure(hci::Status status, common::PeerId peer_id);
 
   // Called to cancel an outgoing connection request
   void SendCreateConnectionCancelCommand(common::DeviceAddress addr);
@@ -121,7 +121,7 @@ class BrEdrConnectionManager final {
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
   // |peer_id| is not a recognized BR/EDR peer or the corresponding peer is
   // not connected.
-  bool Disconnect(DeviceId peer_id);
+  bool Disconnect(PeerId peer_id);
 
  private:
   // Reads the controller page scan settings.
@@ -140,7 +140,7 @@ class BrEdrConnectionManager final {
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
   std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
-  FindConnectionById(DeviceId peer_id);
+  FindConnectionById(PeerId peer_id);
 
   // Callbacks for registered events
   void OnConnectionRequest(const hci::EventPacket& event);
@@ -215,7 +215,7 @@ class BrEdrConnectionManager final {
   bool use_interlaced_scan_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<DeviceId, ConnectionRequest<BrEdrConnection*>>
+  std::unordered_map<PeerId, ConnectionRequest<BrEdrConnection*>>
       connection_requests_;
 
   std::optional<hci::BrEdrConnectionRequest> pending_request_;

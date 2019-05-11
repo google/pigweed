@@ -192,7 +192,7 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
-bool Adapter::AddBondedPeer(DeviceId identifier,
+bool Adapter::AddBondedPeer(PeerId identifier,
                             const common::DeviceAddress& address,
                             const sm::PairingData& le_bond_data,
                             const std::optional<sm::LTK>& link_key) {
@@ -688,11 +688,11 @@ void Adapter::OnTransportClosed() {
     transport_closed_cb_();
 }
 
-void Adapter::OnLeAutoConnectRequest(DeviceId peer_id) {
+void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
   auto self = weak_ptr_factory_.GetWeakPtr();
   le_connection_manager_->Connect(peer_id, [self](auto status, auto conn) {
-    DeviceId id = conn->peer_identifier();
+    PeerId id = conn->peer_identifier();
     if (!self) {
       bt_log(INFO, "gap", "ignoring auto-connection (adapter destroyed)");
       return;

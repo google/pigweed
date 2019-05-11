@@ -152,7 +152,7 @@ class Adapter final {
 
   // Add a previously bonded device to the peer cache and set it up for
   // auto-connect procedures.
-  bool AddBondedPeer(DeviceId identifier, const common::DeviceAddress& address,
+  bool AddBondedPeer(PeerId identifier, const common::DeviceAddress& address,
                      const sm::PairingData& le_bond_data,
                      const std::optional<sm::LTK>& link_key);
 
@@ -216,7 +216,7 @@ class Adapter final {
   // which is handled by routing the request to |le_connection_manager_| to
   // initiate a Direct Connection Establishment procedure (Vol 3, Part C,
   // 9.3.8).
-  void OnLeAutoConnectRequest(DeviceId peer_id);
+  void OnLeAutoConnectRequest(PeerId peer_id);
 
   // Called by |le_address_manager_| to query whether it is currently allowed to
   // reconfigure the LE random address.

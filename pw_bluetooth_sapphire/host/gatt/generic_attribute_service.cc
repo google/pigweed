@@ -55,7 +55,7 @@ void GenericAttributeService::Register() {
   service->AddCharacteristic(std::move(service_changed_chr));
 
   ClientConfigCallback ccc_callback = [this](IdType service_id, IdType chrc_id,
-                                             DeviceId peer_id, bool notify,
+                                             PeerId peer_id, bool notify,
                                              bool indicate) {
     ZX_DEBUG_ASSERT(chrc_id == 0u);
 

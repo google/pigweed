@@ -7,7 +7,6 @@
 #include <zircon/assert.h>
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
 namespace bt {
@@ -17,19 +16,19 @@ namespace {
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
 void NopWriteHandler(IdType, IdType, uint16_t, const common::ByteBuffer&,
                      const WriteResponder&) {}
-void NopCCCallback(IdType, IdType, DeviceId, bool notify, bool indicate) {}
-void NopSendIndication(DeviceId, att::Handle, const common::ByteBuffer&) {}
+void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
+void NopSendIndication(PeerId, att::Handle, const common::ByteBuffer&) {}
 
 // Handles for the third attribute (Service Changed characteristic) and fourth
 // attribute (corresponding client config).
 constexpr att::Handle kChrcHandle = 0x0003;
 constexpr att::Handle kCCCHandle = 0x0004;
-constexpr DeviceId kTestDeviceId(1);
+constexpr PeerId kTestPeerId(1);
 constexpr uint16_t kEnableInd = 0x0002;
 
 class GATT_GenericAttributeServiceTest : public ::testing::Test {
  protected:
-  bool WriteServiceChangedCCC(DeviceId peer_id, uint16_t ccc_value,
+  bool WriteServiceChangedCCC(PeerId peer_id, uint16_t ccc_value,
                               att::ErrorCode* out_ecode) {
     ZX_DEBUG_ASSERT(out_ecode);
 
@@ -75,9 +74,9 @@ TEST_F(GATT_GenericAttributeServiceTest, RegisterUnregister) {
 // callback to send an indication to the "client."
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   int callback_count = 0;
-  auto send_indication = [&](DeviceId peer_id, att::Handle handle,
+  auto send_indication = [&](PeerId peer_id, att::Handle handle,
                              const common::ByteBuffer& value) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
 
@@ -95,7 +94,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
 
   // Enable Service Changed indications for the test client.
   att::ErrorCode ecode;
-  WriteServiceChangedCCC(kTestDeviceId, kEnableInd, &ecode);
+  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
   EXPECT_EQ(0, callback_count);
 
   constexpr common::UUID kTestSvcType((uint32_t)0xdeadbeef);
@@ -118,9 +117,9 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
 // the latter test service.
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   int callback_count = 0;
-  auto send_indication = [&](DeviceId peer_id, att::Handle handle,
+  auto send_indication = [&](PeerId peer_id, att::Handle handle,
                              const common::ByteBuffer& value) {
-    EXPECT_EQ(kTestDeviceId, peer_id);
+    EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
 
@@ -152,7 +151,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
 
   // Enable Service Changed indications for the test client.
   att::ErrorCode ecode;
-  WriteServiceChangedCCC(kTestDeviceId, kEnableInd, &ecode);
+  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
   EXPECT_EQ(0, callback_count);
 
   mgr.UnregisterService(service_id);

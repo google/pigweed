@@ -7,20 +7,19 @@
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
+#include "gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-#include "gatt_defs.h"
-
 namespace bt {
 namespace gatt {
 
 using common::DynamicByteBuffer;
 
-Server::Server(DeviceId peer_id, fxl::RefPtr<att::Database> database,
+Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database,
                fxl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(db_);

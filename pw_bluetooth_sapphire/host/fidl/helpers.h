@@ -37,7 +37,7 @@ namespace fidl_helpers {
 // TODO(BT-305): Temporary logic for converting between the stack identifier
 // type (integer) and FIDL identifier type (string). Remove these once all FIDL
 // interfaces have been converted to use integer IDs.
-std::optional<bt::common::DeviceId> DeviceIdFromString(const std::string& id);
+std::optional<bt::common::PeerId> PeerIdFromString(const std::string& id);
 
 // Functions for generating a FIDL bluetooth::common::Status
 

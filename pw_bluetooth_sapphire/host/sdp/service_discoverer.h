@@ -49,7 +49,7 @@ class ServiceDiscoverer final {
   // or kInvalidSearchId if adding the search failed.
   // |callback| will be called on the creation thread of ServiceDiscoverer.
   using ResultCallback = fit::function<void(
-      common::DeviceId, const std::map<AttributeId, DataElement> &)>;
+      common::PeerId, const std::map<AttributeId, DataElement> &)>;
   SearchId AddSearch(const common::UUID &uuid,
                      std::unordered_set<AttributeId> attributes,
                      ResultCallback callback);
@@ -64,7 +64,7 @@ class ServiceDiscoverer final {
   // If a search is already being performed on the same |peer_id|, the client
   // is immediately dropped.
   // Returns true if discovery was started, and false otherwise.
-  bool StartServiceDiscovery(common::DeviceId peer_id,
+  bool StartServiceDiscovery(common::PeerId peer_id,
                              std::unique_ptr<Client> client);
 
   // Returns the number of searches that will be performed on a
@@ -90,7 +90,7 @@ class ServiceDiscoverer final {
 
   // Finish the Discovery Session for |peer_id| searching |search_id|,
   // releasing the client if all searches are complete.
-  void FinishPeerSearch(common::DeviceId peer_id, SearchId search_id);
+  void FinishPeerSearch(common::PeerId peer_id, SearchId search_id);
 
   // Next likely search id
   SearchId next_id_;
@@ -100,7 +100,7 @@ class ServiceDiscoverer final {
 
   // Clients that searches are still being performed on, based on the remote
   // peer id.
-  std::unordered_map<common::DeviceId, DiscoverySession> sessions_;
+  std::unordered_map<common::PeerId, DiscoverySession> sessions_;
 
   fxl::ThreadChecker thread_checker_;
 };

@@ -16,8 +16,8 @@ namespace att {
 namespace {
 
 using common::ByteBuffer;
-using common::DeviceId;
 using common::DynamicByteBuffer;
+using common::PeerId;
 using common::UUID;
 
 bool StartLessThan(const AttributeGrouping& grp, const Handle handle) {
@@ -236,8 +236,7 @@ const Attribute* Database::FindAttribute(Handle handle) {
   return &iter->attributes()[index];
 }
 
-void Database::ExecuteWriteQueue(DeviceId peer_id,
-                                 PrepareWriteQueue write_queue,
+void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                                  const sm::SecurityProperties& security,
                                  WriteCallback callback) {
   ZX_DEBUG_ASSERT(callback);

@@ -16,8 +16,8 @@ namespace bt {
 namespace hci {
 
 using common::DeviceAddress;
-using common::DeviceId;
 using common::HostError;
+using common::PeerId;
 
 std::unique_ptr<CommandPacket> CreateConnectionPacket(
     DeviceAddress address,
@@ -101,8 +101,8 @@ Status BrEdrConnectionRequest::CompleteRequest(Status status) {
     if (state_ == RequestState::kTimedOut) {
       status = Status(HostError::kTimedOut);
     } else if (status.protocol_error() == StatusCode::kUnknownConnectionId) {
-      // The "Unknown Connection Identifier" error code is returned if this event
-      // was sent due to a successful cancellation via the
+      // The "Unknown Connection Identifier" error code is returned if this
+      // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command
       // See Core Spec v5.0 Vol 2, Part E, Section 7.1.7
       status = Status(HostError::kCanceled);

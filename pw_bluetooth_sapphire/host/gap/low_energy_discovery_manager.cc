@@ -29,7 +29,7 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
   peer_found_callback_ = std::move(callback);
   if (!manager_)
     return;
-  for (DeviceId cached_peer_id : manager_->cached_scan_results()) {
+  for (PeerId cached_peer_id : manager_->cached_scan_results()) {
     auto peer = manager_->peer_cache()->FindById(cached_peer_id);
     ZX_DEBUG_ASSERT(peer);
     NotifyDiscoveryResult(*peer);

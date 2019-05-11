@@ -9,14 +9,14 @@
 namespace bt {
 namespace common {
 
-DeviceId RandomDeviceId() {
-  DeviceId id = kInvalidDeviceId;
-  while (id == kInvalidDeviceId) {
+PeerId RandomPeerId() {
+  PeerId id = kInvalidPeerId;
+  while (id == kInvalidPeerId) {
     // TODO(BT-748): zx_cprng_draw() current guarantees this random ID to be
     // unique and that there will be no collisions. Re-consider where this
     // address is generated and whether we need to provide unique-ness
     // guarantees beyond device scope.
-    id = DeviceId(Random<uint64_t>());
+    id = PeerId(Random<uint64_t>());
   }
   return id;
 }

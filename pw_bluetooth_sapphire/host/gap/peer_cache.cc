@@ -36,7 +36,7 @@ DeviceAddress GetAliasAddress(const DeviceAddress& address) {
 Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* const peer =
-      InsertPeerRecord(common::RandomDeviceId(), address, connectable);
+      InsertPeerRecord(common::RandomPeerId(), address, connectable);
   if (peer) {
     UpdateExpiry(*peer);
     NotifyPeerUpdated(*peer);
@@ -52,7 +52,7 @@ void PeerCache::ForEach(PeerCallback f) {
   }
 }
 
-bool PeerCache::AddBondedPeer(DeviceId identifier, const DeviceAddress& address,
+bool PeerCache::AddBondedPeer(PeerId identifier, const DeviceAddress& address,
                               const sm::PairingData& bond_data,
                               const std::optional<sm::LTK>& link_key) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -114,7 +114,7 @@ bool PeerCache::AddBondedPeer(DeviceId identifier, const DeviceAddress& address,
   return true;
 }
 
-bool PeerCache::StoreLowEnergyBond(DeviceId identifier,
+bool PeerCache::StoreLowEnergyBond(PeerId identifier,
                                    const sm::PairingData& bond_data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* peer = FindById(identifier);
@@ -190,7 +190,7 @@ bool PeerCache::StoreBrEdrBond(const common::DeviceAddress& address,
   return true;
 }
 
-bool PeerCache::ForgetPeer(DeviceId peer_id) {
+bool PeerCache::ForgetPeer(PeerId peer_id) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* const peer = FindById(peer_id);
   if (!peer) {
@@ -230,7 +230,7 @@ bool PeerCache::ForgetPeer(DeviceId peer_id) {
   return bond_removed;
 }
 
-Peer* PeerCache::FindById(DeviceId peer_id) const {
+Peer* PeerCache::FindById(PeerId peer_id) const {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto iter = peers_.find(peer_id);
   return iter != peers_.end() ? iter->second.peer() : nullptr;
@@ -262,7 +262,7 @@ Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
 
 // Private methods below.
 
-Peer* PeerCache::InsertPeerRecord(DeviceId identifier,
+Peer* PeerCache::InsertPeerRecord(PeerId identifier,
                                   const common::DeviceAddress& address,
                                   bool connectable) {
   if (FindIdByAddress(address)) {
@@ -351,7 +351,7 @@ void PeerCache::RemovePeer(Peer* peer) {
   ZX_DEBUG_ASSERT(peer_record_it != peers_.end());
   ZX_DEBUG_ASSERT(peer_record_it->second.peer() == peer);
 
-  DeviceId id = peer->identifier();
+  PeerId id = peer->identifier();
   bt_log(SPEW, "gap", "removing peer %s", bt_str(id));
   for (auto iter = address_map_.begin(); iter != address_map_.end();) {
     if (iter->second == id) {
@@ -366,7 +366,7 @@ void PeerCache::RemovePeer(Peer* peer) {
   }
 }
 
-std::optional<DeviceId> PeerCache::FindIdByAddress(
+std::optional<PeerId> PeerCache::FindIdByAddress(
     const common::DeviceAddress& address) const {
   auto iter = address_map_.find(address);
   if (iter == address_map_.end()) {

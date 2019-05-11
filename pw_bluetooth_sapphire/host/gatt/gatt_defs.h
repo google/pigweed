@@ -77,7 +77,7 @@ using ExtendedProperties = uint16_t;
 constexpr uint16_t kCCCNotificationBit = 0x0001;
 constexpr uint16_t kCCCIndicationBit = 0x0002;
 
-using DeviceId = common::DeviceId;
+using PeerId = common::PeerId;
 
 // An identifier uniquely identifies a service, characteristic, or descriptor.
 using IdType = uint64_t;

@@ -16,12 +16,12 @@ void FakeLayer::ShutDown() {
   // TODO: implement
 }
 
-void FakeLayer::AddConnection(DeviceId peer_id,
+void FakeLayer::AddConnection(PeerId peer_id,
                               fbl::RefPtr<l2cap::Channel> att_chan) {
   // TODO: implement
 }
 
-void FakeLayer::RemoveConnection(DeviceId peer_id) {
+void FakeLayer::RemoveConnection(PeerId peer_id) {
   // TODO: implement
 }
 
@@ -37,12 +37,12 @@ void FakeLayer::UnregisterService(IdType service_id) {
 }
 
 void FakeLayer::SendNotification(IdType service_id, IdType chrc_id,
-                                 DeviceId peer_id, ::std::vector<uint8_t> value,
+                                 PeerId peer_id, ::std::vector<uint8_t> value,
                                  bool indicate) {
   // TODO: implement
 }
 
-void FakeLayer::DiscoverServices(DeviceId peer_id) {
+void FakeLayer::DiscoverServices(PeerId peer_id) {
   // TODO: implement
 }
 
@@ -51,12 +51,12 @@ void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
   // TODO: implement
 }
 
-void FakeLayer::ListServices(DeviceId peer_id, std::vector<common::UUID> uuids,
+void FakeLayer::ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
                              ServiceListCallback callback) {
   // TODO: implement
 }
 
-void FakeLayer::FindService(DeviceId peer_id, IdType service_id,
+void FakeLayer::FindService(PeerId peer_id, IdType service_id,
                             RemoteServiceCallback callback) {
   // TODO: implement
 }

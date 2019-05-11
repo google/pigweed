@@ -4,10 +4,9 @@
 
 #include "gatt_host.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "fidl/gatt_client_server.h"
 #include "fidl/gatt_server_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 using namespace bt;
 
@@ -81,7 +80,7 @@ void GattHost::BindGattServer(
 }
 
 void GattHost::BindGattClient(
-    Token token, bt::gatt::DeviceId peer_id,
+    Token token, bt::gatt::PeerId peer_id,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request) {
   PostMessage([this, token, peer_id, request = std::move(request)]() mutable {
     if (client_servers_.find(token) != client_servers_.end()) {

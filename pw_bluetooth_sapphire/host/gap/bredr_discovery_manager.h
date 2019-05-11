@@ -173,7 +173,7 @@ class BrEdrDiscoveryManager final {
   void RemoveDiscoverableSession(BrEdrDiscoverableSession* session);
 
   // Sends a RemoteNameRequest to the peer with |id|.
-  void RequestPeerName(DeviceId id);
+  void RequestPeerName(PeerId id);
 
   // The HCI Transport
   fxl::RefPtr<hci::Transport> hci_;
@@ -197,7 +197,7 @@ class BrEdrDiscoveryManager final {
   std::unordered_set<BrEdrDiscoverySession*> zombie_discovering_;
 
   // The set of peers that we have pending name requests for.
-  std::unordered_set<DeviceId> requesting_names_;
+  std::unordered_set<PeerId> requesting_names_;
 
   // The set of callbacks that are waiting on inquiry to start.
   std::queue<DiscoveryCallback> pending_discovery_;

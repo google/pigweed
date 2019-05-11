@@ -283,7 +283,7 @@ TEST_F(GAP_AdapterTest, PeerCacheReturnsNonNull) {
 
 TEST_F(GAP_AdapterTest, LeAutoConnect) {
   constexpr zx::duration kTestScanPeriod = zx::sec(10);
-  constexpr DeviceId kDeviceId(1234);
+  constexpr PeerId kPeerId(1234);
 
   FakeController::Settings settings;
   settings.ApplyLEOnlyDefaults();
@@ -310,13 +310,13 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   // Mark the peer as bonded and advance the scan period.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(kDeviceId, kTestAddr, pdata, {});
+  adapter()->peer_cache()->AddBondedPeer(kPeerId, kTestAddr, pdata, {});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
   RunLoopFor(kTestScanPeriod);
 
   // The peer should have been auto-connected.
   ASSERT_TRUE(conn);
-  EXPECT_EQ(kDeviceId, conn->peer_identifier());
+  EXPECT_EQ(kPeerId, conn->peer_identifier());
 }
 
 // Tests the interactions between the advertising manager and the local address

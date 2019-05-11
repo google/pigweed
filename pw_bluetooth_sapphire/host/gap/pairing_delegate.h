@@ -26,15 +26,15 @@ class PairingDelegate {
 
   // Terminate any ongoing pairing challenge for the peer device with the given
   // |identifier|.
-  virtual void CompletePairing(DeviceId peer_id, sm::Status status) = 0;
+  virtual void CompletePairing(PeerId peer_id, sm::Status status) = 0;
 
   // Ask the user to confirm the pairing request from the device with the given
   // |id| and confirm or reject by calling |confirm|.
-  virtual void ConfirmPairing(DeviceId peer_id, ConfirmCallback confirm) = 0;
+  virtual void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) = 0;
 
   // Ask the user to confirm the 6-digit |passkey| and report status by invoking
   // |confirm|.
-  virtual void DisplayPasskey(DeviceId peer_id, uint32_t passkey,
+  virtual void DisplayPasskey(PeerId peer_id, uint32_t passkey,
                               ConfirmCallback confirm) = 0;
 
   // Ask the user to enter a 6-digit passkey or reject pairing. Report the
@@ -43,7 +43,7 @@ class PairingDelegate {
   // A valid |passkey| must be a non-negative integer. Pass a negative value to
   // reject pairing.
   using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
-  virtual void RequestPasskey(DeviceId peer_id,
+  virtual void RequestPasskey(PeerId peer_id,
                               PasskeyResponseCallback respond) = 0;
 
  protected:

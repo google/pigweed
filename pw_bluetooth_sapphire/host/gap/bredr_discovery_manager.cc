@@ -295,7 +295,7 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(
   }
 }
 
-void BrEdrDiscoveryManager::RequestPeerName(DeviceId id) {
+void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   if (requesting_names_.count(id)) {
     bt_log(SPEW, "gap-bredr", "already requesting name for %s", bt_str(id));
     return;

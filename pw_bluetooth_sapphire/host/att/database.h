@@ -181,8 +181,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // The Handle argument of |callback| is undefined if ErrorCode is
   // ErrorCode::kNoError and should be ignored.
   using WriteCallback = fit::function<void(Handle, ErrorCode)>;
-  void ExecuteWriteQueue(common::DeviceId peer_id,
-                         PrepareWriteQueue write_queue,
+  void ExecuteWriteQueue(common::PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security,
                          WriteCallback callback);
 

@@ -126,7 +126,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
     ConnectPeripheralCallback callback) {
   bt_log(TRACE, "bt-host", "ConnectPeripheral()");
 
-  auto peer_id = fidl_helpers::DeviceIdFromString(identifier);
+  auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "invalid peer ID"));
@@ -211,7 +211,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
 void LowEnergyCentralServer::DisconnectPeripheral(
     ::std::string identifier, DisconnectPeripheralCallback callback) {
-  auto peer_id = fidl_helpers::DeviceIdFromString(identifier);
+  auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "invalid peer ID"));
@@ -261,7 +261,7 @@ void LowEnergyCentralServer::NotifyScanStateChanged(bool scanning) {
 }
 
 void LowEnergyCentralServer::NotifyPeripheralDisconnected(
-    bt::gap::DeviceId peer_id) {
+    bt::gap::PeerId peer_id) {
   binding()->events().OnPeripheralDisconnected(peer_id.ToString());
 }
 

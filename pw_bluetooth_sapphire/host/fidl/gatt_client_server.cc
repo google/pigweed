@@ -6,11 +6,10 @@
 
 #include <lib/fit/defer.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-
 #include "gatt_remote_service_server.h"
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -22,7 +21,7 @@ using fuchsia::bluetooth::gatt::ServiceInfoPtr;
 
 namespace bthost {
 
-GattClientServer::GattClientServer(bt::gatt::DeviceId peer_id,
+GattClientServer::GattClientServer(bt::gatt::PeerId peer_id,
                                    fbl::RefPtr<bt::gatt::GATT> gatt,
                                    fidl::InterfaceRequest<Client> request)
     : GattServerBase(gatt, this, std::move(request)),

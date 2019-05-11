@@ -405,7 +405,7 @@ void ProfileServer::AddSearch(
 
 void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
                                  ConnectL2capCallback callback) {
-  auto dev_id = fidl_helpers::DeviceIdFromString(peer_id);
+  auto dev_id = fidl_helpers::PeerIdFromString(peer_id);
   if (!dev_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "invalid device ID"),
@@ -451,7 +451,7 @@ void ProfileServer::OnChannelConnected(
 }
 
 void ProfileServer::OnServiceFound(
-    bt::common::DeviceId peer_id,
+    bt::common::PeerId peer_id,
     const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes) {
   // Convert ProfileDescriptor Attribute
   auto it = attributes.find(bt::sdp::kBluetoothProfileDescriptorList);

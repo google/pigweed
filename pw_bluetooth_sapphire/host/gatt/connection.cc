@@ -6,17 +6,16 @@
 
 #include <zircon/assert.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "client.h"
 #include "server.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/database.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
 namespace gatt {
 namespace internal {
 
-Connection::Connection(DeviceId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
+Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
                        fxl::RefPtr<att::Database> local_db,
                        RemoteServiceWatcher svc_watcher,
                        async_dispatcher_t* gatt_dispatcher)

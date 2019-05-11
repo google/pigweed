@@ -42,7 +42,7 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
   // Instead use a counter like other internal IDs once this ID is not visible
   // outside of bt-host.
   explicit ActiveAdvertisement(const common::DeviceAddress& address)
-      : address_(address), id_(common::RandomDeviceId().value()) {}
+      : address_(address), id_(common::RandomPeerId().value()) {}
 
   ~ActiveAdvertisement() = default;
 

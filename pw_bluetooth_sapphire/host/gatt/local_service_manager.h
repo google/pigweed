@@ -47,7 +47,7 @@ using WriteHandler = fit::function<void(
 // Called when the peer device with the given |peer_id| has enabled or disabled
 // notifications/indications on the characteristic with id |chrc_id|.
 using ClientConfigCallback =
-    fit::function<void(IdType service_id, IdType chrc_id, DeviceId peer_id,
+    fit::function<void(IdType service_id, IdType chrc_id, PeerId peer_id,
                        bool notify, bool indicate)>;
 
 // Called with the ID and range of attributes handles spanned (inclusive) by a
@@ -92,13 +92,13 @@ class LocalServiceManager final {
     bool indicate;
   };
   bool GetCharacteristicConfig(IdType service_id, IdType chrc_id,
-                               DeviceId peer_id,
+                               PeerId peer_id,
                                ClientCharacteristicConfig* out_config);
 
   // Erase any client characteristic configuration associated to a specific
   // client and invoke its ClientConfigCallback to signal that notifications and
   // indications are now disabled.
-  void DisconnectClient(DeviceId peer_id);
+  void DisconnectClient(PeerId peer_id);
 
   void set_service_changed_callback(ServiceChangedCallback callback) {
     service_changed_callback_ = std::move(callback);

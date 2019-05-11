@@ -16,8 +16,8 @@ namespace {
 using common::BufferView;
 using common::ByteBuffer;
 using common::ContainersEqual;
-using common::DeviceId;
 using common::DynamicByteBuffer;
+using common::PeerId;
 
 constexpr Handle kTestRangeStart = 1;
 constexpr Handle kTestRangeEnd = 10;
@@ -539,7 +539,7 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
  protected:
   struct PendingWrite {
-    DeviceId peer_id;
+    PeerId peer_id;
     Handle handle;
     uint16_t offset;
     DynamicByteBuffer value;
@@ -550,7 +550,7 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
     db_ = Database::Create(kTestRangeStart, kTestRangeEnd);
   }
 
-  void ExecuteWriteQueue(DeviceId peer_id, PrepareWriteQueue wq,
+  void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue wq,
                          const sm::SecurityProperties& security = kNoSecurity) {
     db_->ExecuteWriteQueue(peer_id, std::move(wq), security,
                            [this](Handle h, ErrorCode e) {
@@ -608,7 +608,7 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
   Database* db() { return db_.get(); }
 
  private:
-  void WriteHandler(DeviceId peer_id, Handle handle, uint16_t offset,
+  void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset,
                     const ByteBuffer& value,
                     Attribute::WriteResultCallback result_callback) {
     PendingWrite pw;
@@ -636,7 +636,7 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
   DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseExecuteWriteQueueTest);
 };
 
-constexpr DeviceId kPeerId(1);
+constexpr PeerId kPeerId(1);
 
 TEST_F(ATT_DatabaseExecuteWriteQueueTest, EmptyQueueSucceedsImmediately) {
   ExecuteWriteQueue(kPeerId, {});

@@ -222,7 +222,7 @@ class Peer final {
   // clients to interact with multiple controllers simultaneously though this
   // could possibly lead to collisions if the active adapter gets changed
   // without clearing the previous adapter's cache.
-  DeviceId identifier() const { return identifier_; }
+  PeerId identifier() const { return identifier_; }
 
   // The Bluetooth technologies that are supported by this device.
   TechnologyType technology() const { return technology_; }
@@ -341,7 +341,7 @@ class Peer final {
   // (do the callbacks outlive |this|?).
   Peer(DeviceCallback notify_listeners_callback,
        DeviceCallback update_expiry_callback, DeviceCallback dual_mode_callback,
-       DeviceId identifier, const common::DeviceAddress& address,
+       PeerId identifier, const common::DeviceAddress& address,
        bool connectable);
 
   // Marks this device's identity as known. Called by PeerCache when
@@ -385,7 +385,7 @@ class Peer final {
   DeviceCallback update_expiry_callback_;
   DeviceCallback dual_mode_callback_;
 
-  DeviceId identifier_;
+  PeerId identifier_;
   TechnologyType technology_;
 
   common::DeviceAddress address_;

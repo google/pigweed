@@ -4,10 +4,10 @@
 
 #include "gatt_remote_service_device.h"
 
-#include <memory>
-
 #include <ddk/binding.h>
 #include <zircon/status.h>
+
+#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
@@ -105,7 +105,7 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
 }  // namespace
 
 GattRemoteServiceDevice::GattRemoteServiceDevice(
-    zx_device_t* parent_device, bt::gatt::DeviceId peer_id,
+    zx_device_t* parent_device, bt::gatt::PeerId peer_id,
     fbl::RefPtr<bt::gatt::RemoteService> service)
     : loop_(&kAsyncLoopConfigNoAttachToThread),
       parent_device_(parent_device),

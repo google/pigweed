@@ -33,7 +33,7 @@ namespace internal {
 // there is at least one LowEnergyConnectionRef that references it.
 class LowEnergyConnection final : public sm::PairingState::Delegate {
  public:
-  LowEnergyConnection(DeviceId peer_id, std::unique_ptr<hci::Connection> link,
+  LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       async_dispatcher_t* dispatcher,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                       fbl::RefPtr<data::Domain> data_domain,
@@ -117,7 +117,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
   size_t ref_count() const { return refs_.size(); }
 
-  DeviceId peer_id() const { return peer_id_; }
+  PeerId peer_id() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return link_->handle(); }
   hci::Connection* link() const { return link_.get(); }
 
@@ -313,7 +313,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     refs_.clear();
   }
 
-  DeviceId peer_id_;
+  PeerId peer_id_;
   std::unique_ptr<hci::Connection> link_;
   async_dispatcher_t* dispatcher_;
   fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
@@ -341,7 +341,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 }  // namespace internal
 
 LowEnergyConnectionRef::LowEnergyConnectionRef(
-    DeviceId peer_id, hci::ConnectionHandle handle,
+    PeerId peer_id, hci::ConnectionHandle handle,
     fxl::WeakPtr<LowEnergyConnectionManager> manager)
     : active_(true), peer_id_(peer_id), handle_(handle), manager_(manager) {
   ZX_DEBUG_ASSERT(peer_id_.IsValid());
@@ -461,7 +461,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
   connections_.clear();
 }
 
-bool LowEnergyConnectionManager::Connect(DeviceId peer_id,
+bool LowEnergyConnectionManager::Connect(PeerId peer_id,
                                          ConnectionResultCallback callback) {
   if (!connector_) {
     bt_log(WARN, "gap-le", "connect called during shutdown!");
@@ -526,7 +526,7 @@ bool LowEnergyConnectionManager::Connect(DeviceId peer_id,
   return true;
 }
 
-bool LowEnergyConnectionManager::Disconnect(DeviceId peer_id) {
+bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
     bt_log(WARN, "gap-le", "peer not connected (id: %s)", bt_str(peer_id));
@@ -673,7 +673,7 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
-    DeviceId peer_id, std::unique_ptr<hci::Connection> link) {
+    PeerId peer_id, std::unique_ptr<hci::Connection> link) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
 
@@ -728,7 +728,7 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::AddConnectionRef(
-    DeviceId peer_id) {
+    PeerId peer_id) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end())
     return nullptr;
@@ -808,7 +808,7 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(
   return peer;
 }
 
-void LowEnergyConnectionManager::OnConnectResult(DeviceId peer_id,
+void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id,
                                                  hci::Status status,
                                                  hci::ConnectionPtr link) {
   ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
@@ -932,7 +932,7 @@ void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(
 }
 
 void LowEnergyConnectionManager::OnNewLEConnectionParams(
-    DeviceId peer_id, hci::ConnectionHandle handle,
+    PeerId peer_id, hci::ConnectionHandle handle,
     const hci::LEPreferredConnectionParameters& params) {
   bt_log(TRACE, "gap-le", "conn. parameters received (handle: %#.4x)", handle);
 

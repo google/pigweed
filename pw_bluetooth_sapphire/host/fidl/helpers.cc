@@ -129,13 +129,13 @@ fhost::RemoteKey KeyToFidl(const bt::sm::Key& key) {
 
 }  // namespace
 
-std::optional<bt::common::DeviceId> DeviceIdFromString(const std::string& id) {
+std::optional<bt::common::PeerId> PeerIdFromString(const std::string& id) {
   uint64_t value;
   if (!fxl::StringToNumberWithError<decltype(value)>(id, &value,
                                                      fxl::Base::k16)) {
     return std::nullopt;
   }
-  return bt::common::DeviceId(value);
+  return bt::common::PeerId(value);
 }
 
 ErrorCode HostErrorToFidl(bt::common::HostError host_error) {

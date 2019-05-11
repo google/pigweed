@@ -5,13 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
 
+#include <zircon/compiler.h>
+
 #include <list>
 #include <map>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <zircon/compiler.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
@@ -158,7 +158,7 @@ constexpr common::UUID kMPSProfile(uint16_t(0x113A));
 constexpr common::UUID kMPSClass(uint16_t(0x113B));
 // Calendar, Task, and Notes Profile omitted (unsupported)
 // Device ID
-constexpr common::UUID kDeviceIdentification(uint16_t(0x1200));
+constexpr common::UUID kPeerIdentification(uint16_t(0x1200));
 // Video Distribution Profile (VDP)
 constexpr common::UUID kVideoSource(uint16_t(0x1303));
 constexpr common::UUID kVideoSink(uint16_t(0x1304));

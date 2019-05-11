@@ -7,7 +7,6 @@
 #include <zircon/assert.h>
 
 #include "gtest/gtest.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
@@ -15,8 +14,8 @@ namespace bt {
 namespace gatt {
 namespace {
 
-constexpr DeviceId kTestDeviceId(1);
-constexpr DeviceId kTestDeviceId2(2);
+constexpr PeerId kTestPeerId(1);
+constexpr PeerId kTestPeerId2(2);
 constexpr common::UUID kTestType16((uint16_t)0xdead);
 constexpr common::UUID kTestType32((uint32_t)0xdeadbeef);
 
@@ -35,7 +34,7 @@ inline att::AccessRequirements AllowedNoSecurity() {
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
 void NopWriteHandler(IdType, IdType, uint16_t, const common::ByteBuffer&,
                      const WriteResponder&) {}
-void NopCCCallback(IdType service_id, IdType chrc_id, DeviceId peer_id,
+void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id,
                    bool notify, bool indicate) {}
 
 // Convenience function that registers |service| with |mgr| using the NOP
@@ -464,7 +463,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
     result_called = true;
   };
 
-  EXPECT_FALSE(attr->ReadAsync(kTestDeviceId, 0, std::move(result_cb)));
+  EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
   EXPECT_FALSE(called);
   EXPECT_FALSE(result_called);
 }
@@ -494,7 +493,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   att::ErrorCode ecode = att::ErrorCode::kNoError;
   auto result_cb = [&ecode](auto code, const auto&) { ecode = code; };
 
-  EXPECT_TRUE(attr->ReadAsync(kTestDeviceId, 0, std::move(result_cb)));
+  EXPECT_TRUE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
 
   // The error should be handled internally and not reach |read_cb|.
   EXPECT_FALSE(called);
@@ -540,7 +539,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
     EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
   };
 
-  EXPECT_TRUE(attr->ReadAsync(kTestDeviceId, kOffset, std::move(result_cb)));
+  EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
 
   EXPECT_TRUE(called);
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
@@ -572,7 +571,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   auto result_cb = [&result_called](auto) { result_called = true; };
 
   EXPECT_FALSE(
-      attr->WriteAsync(kTestDeviceId, 0, kTestValue, std::move(result_cb)));
+      attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
   EXPECT_FALSE(called);
   EXPECT_FALSE(result_called);
 }
@@ -604,7 +603,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   auto result_cb = [&ecode](auto code) { ecode = code; };
 
   EXPECT_TRUE(
-      attr->WriteAsync(kTestDeviceId, 0, kTestValue, std::move(result_cb)));
+      attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
 
   // The error should be handled internally and not reach |write_cb|.
   EXPECT_FALSE(called);
@@ -650,8 +649,8 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
   att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
   auto result_cb = [&ecode](auto code) { ecode = code; };
 
-  EXPECT_TRUE(attr->WriteAsync(kTestDeviceId, kOffset, kTestValue,
-                               std::move(result_cb)));
+  EXPECT_TRUE(
+      attr->WriteAsync(kTestPeerId, kOffset, kTestValue, std::move(result_cb)));
 
   EXPECT_TRUE(called);
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
@@ -686,7 +685,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
     result_called = true;
   };
 
-  EXPECT_FALSE(attr->ReadAsync(kTestDeviceId, 0, std::move(result_cb)));
+  EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
   EXPECT_FALSE(called);
   EXPECT_FALSE(result_called);
 }
@@ -735,7 +734,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
     EXPECT_TRUE(common::ContainersEqual(kTestValue, value));
   };
 
-  EXPECT_TRUE(attr->ReadAsync(kTestDeviceId, kOffset, std::move(result_cb)));
+  EXPECT_TRUE(attr->ReadAsync(kTestPeerId, kOffset, std::move(result_cb)));
 
   EXPECT_TRUE(called);
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
@@ -770,7 +769,7 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   bool result_called = false;
   auto result_cb = [&result_called](auto) { result_called = true; };
 
-  EXPECT_FALSE(attr->WriteAsync(kTestDeviceId, 0, kTestValue, result_cb));
+  EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, kTestValue, result_cb));
   EXPECT_FALSE(called);
   EXPECT_FALSE(result_called);
 }
@@ -817,7 +816,7 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
   att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
   auto result_cb = [&ecode](auto code) { ecode = code; };
 
-  EXPECT_TRUE(attr->WriteAsync(kTestDeviceId, kOffset, kTestValue, result_cb));
+  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kOffset, kTestValue, result_cb));
 
   EXPECT_TRUE(called);
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
@@ -904,7 +903,7 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
   int ccc_callback_count = 0;
   IdType last_service_id = 0u;
-  DeviceId last_peer_id = DeviceId(kInvalidId);
+  PeerId last_peer_id = PeerId(kInvalidId);
   bool last_notify = false;
   bool last_indicate = false;
 
@@ -914,7 +913,7 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
         std::make_unique<Service>(true /* is_primary */, kTestType16);
     service->AddCharacteristic(std::make_unique<Characteristic>(
         kChrcId, kTestType32, props, 0, kReqs, kReqs, update_reqs));
-    auto ccc_callback = [this](IdType cb_svc_id, IdType id, DeviceId peer_id,
+    auto ccc_callback = [this](IdType cb_svc_id, IdType id, PeerId peer_id,
                                bool notify, bool indicate) {
       ccc_callback_count++;
       EXPECT_EQ(last_service_id, cb_svc_id);
@@ -931,7 +930,7 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     EXPECT_EQ(last_service_count + 1u, mgr.database()->groupings().size());
   }
 
-  bool ReadCCC(const att::Attribute* attr, DeviceId peer_id,
+  bool ReadCCC(const att::Attribute* attr, PeerId peer_id,
                att::ErrorCode* out_ecode, uint16_t* out_value) {
     ZX_DEBUG_ASSERT(attr);
     ZX_DEBUG_ASSERT(out_ecode);
@@ -949,8 +948,8 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     return attr->ReadAsync(peer_id, 0u, result_cb);
   }
 
-  bool WriteCCC(const att::Attribute* attr, DeviceId peer_id,
-                uint16_t ccc_value, att::ErrorCode* out_ecode) {
+  bool WriteCCC(const att::Attribute* attr, PeerId peer_id, uint16_t ccc_value,
+                att::ErrorCode* out_ecode) {
     ZX_DEBUG_ASSERT(attr);
     ZX_DEBUG_ASSERT(out_ecode);
 
@@ -990,13 +989,13 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest,
   // Enabling indications should fail as the characteristic only supports
   // notifications.
   att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableInd, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
   EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
 
   uint16_t ccc_value;
 
   // Notifications and indications for this device should remain disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId, &ecode, &ccc_value));
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 }
@@ -1015,13 +1014,13 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest,
   // Enabling notifications should fail as the characteristic only supports
   // indications.
   att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableNot, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
   EXPECT_EQ(att::ErrorCode::kWriteNotPermitted, ecode);
 
   uint16_t ccc_value;
 
   // Notifications and indications for this device should remain disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId, &ecode, &ccc_value));
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 }
@@ -1038,47 +1037,47 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
 
   LocalServiceManager::ClientCharacteristicConfig config;
   EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                           kTestDeviceId, &config));
+                                           kTestPeerId, &config));
 
   att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableNot, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 
   uint16_t ccc_value;
 
-  // Notifications should be enabled for kTestDeviceId.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId, &ecode, &ccc_value));
+  // Notifications should be enabled for kTestPeerId.
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(kEnableNot, ccc_value);
 
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestDeviceId, &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId,
+                                          &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_TRUE(config.notify);
   EXPECT_FALSE(config.indicate);
 
-  // ..but not for kTestDeviceId2.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId2, &ecode, &ccc_value));
+  // ..but not for kTestPeerId2.
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId2, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 
-  // A set configurations now exists for |kChrcId| but kTestDeviceId2 should
+  // A set configurations now exists for |kChrcId| but kTestPeerId2 should
   // appear as unsubscribed.
   EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestDeviceId2, &config));
+                                          kTestPeerId2, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_FALSE(config.indicate);
 
   // The callback should have been notified.
   EXPECT_EQ(1, ccc_callback_count);
-  EXPECT_EQ(kTestDeviceId, last_peer_id);
+  EXPECT_EQ(kTestPeerId, last_peer_id);
   EXPECT_TRUE(last_notify);
   EXPECT_FALSE(last_indicate);
 
   // Enable notifications again. The write should succeed but the callback
   // should not get called as the value will remain unchanged.
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableNot, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(1, ccc_callback_count);
 }
@@ -1094,45 +1093,45 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
   att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableInd, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 
   uint16_t ccc_value;
 
-  // Indications should be enabled for kTestDeviceId.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId, &ecode, &ccc_value));
+  // Indications should be enabled for kTestPeerId.
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(kEnableInd, ccc_value);
 
   LocalServiceManager::ClientCharacteristicConfig config;
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestDeviceId, &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId,
+                                          &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_TRUE(config.indicate);
 
-  // ..but not for kTestDeviceId2.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId2, &ecode, &ccc_value));
+  // ..but not for kTestPeerId2.
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId2, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 
-  // A set configurations now exists for |kChrcId| but kTestDeviceId2 should
+  // A set configurations now exists for |kChrcId| but kTestPeerId2 should
   // appear as unsubscribed.
   EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestDeviceId2, &config));
+                                          kTestPeerId2, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_FALSE(config.indicate);
 
   // The callback should have been notified.
   EXPECT_EQ(1, ccc_callback_count);
-  EXPECT_EQ(kTestDeviceId, last_peer_id);
+  EXPECT_EQ(kTestPeerId, last_peer_id);
   EXPECT_FALSE(last_notify);
   EXPECT_TRUE(last_indicate);
 
   // Enable indications again. The write should succeed but the callback
   // should not get called as the value will remain unchanged.
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableInd, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableInd, &ecode));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(1, ccc_callback_count);
 }
@@ -1149,38 +1148,38 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
 
   LocalServiceManager::ClientCharacteristicConfig config;
   EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                           kTestDeviceId, &config));
+                                           kTestPeerId, &config));
 
   att::ErrorCode ecode;
-  EXPECT_TRUE(WriteCCC(attr, kTestDeviceId, kEnableNot, &ecode));
+  EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
 
   // The callback should have been notified.
   EXPECT_EQ(1, ccc_callback_count);
-  EXPECT_EQ(kTestDeviceId, last_peer_id);
+  EXPECT_EQ(kTestPeerId, last_peer_id);
   EXPECT_TRUE(last_notify);
   EXPECT_FALSE(last_indicate);
 
-  mgr.DisconnectClient(kTestDeviceId);
+  mgr.DisconnectClient(kTestPeerId);
 
   uint16_t ccc_value;
   // Reads should succeed but notifications should be disabled.
-  EXPECT_TRUE(ReadCCC(attr, kTestDeviceId, &ecode, &ccc_value));
+  EXPECT_TRUE(ReadCCC(attr, kTestPeerId, &ecode, &ccc_value));
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 
   // The callback should have been called again to disable notifications.
   EXPECT_EQ(2, ccc_callback_count);
-  EXPECT_EQ(kTestDeviceId, last_peer_id);
+  EXPECT_EQ(kTestPeerId, last_peer_id);
   EXPECT_FALSE(last_notify);
   EXPECT_FALSE(last_indicate);
 
-  mgr.DisconnectClient(kTestDeviceId2);
+  mgr.DisconnectClient(kTestPeerId2);
 
   // The callback should not be called if a device isn't registered for
   // notifications.
   EXPECT_EQ(2, ccc_callback_count);
-  EXPECT_EQ(kTestDeviceId, last_peer_id);
+  EXPECT_EQ(kTestPeerId, last_peer_id);
 }
 
 }  // namespace

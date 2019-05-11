@@ -53,33 +53,33 @@ class BrEdrInterrogator {
   // abandoned.
   using ResultCallback =
       fit::function<void(hci::Status status, hci::ConnectionPtr conn_ptr)>;
-  void Start(DeviceId device_id, hci::ConnectionPtr conn_ptr,
+  void Start(PeerId device_id, hci::ConnectionPtr conn_ptr,
              ResultCallback callback);
 
   // Abandons any interrogation of |device_id|.  Their callbacks will be called
   // with a Status of Canceled.
-  void Cancel(DeviceId device_id);
+  void Cancel(PeerId device_id);
 
  private:
   // Completes |device| if there is nothing else to ask.
-  void MaybeComplete(DeviceId device_id);
+  void MaybeComplete(PeerId device_id);
 
   // Completes interrogation on |device| with |status|, possibly early.
-  void Complete(DeviceId device_id, hci::Status status);
+  void Complete(PeerId device_id, hci::Status status);
 
   // Reade the remote version information from the device.
-  void ReadRemoteVersionInformation(DeviceId device_id,
+  void ReadRemoteVersionInformation(PeerId device_id,
                                     hci::ConnectionHandle handle);
 
   // Requests the name of the remote device.
-  void MakeRemoteNameRequest(DeviceId device_id);
+  void MakeRemoteNameRequest(PeerId device_id);
 
   // Requests features of |device|, and asks for Extended Features if they
   // exist.
-  void ReadRemoteFeatures(DeviceId device_id, hci::ConnectionHandle handle);
+  void ReadRemoteFeatures(PeerId device_id, hci::ConnectionHandle handle);
 
   // Reads the extended feature page |page| of |device|.
-  void ReadRemoteExtendedFeatures(DeviceId device_id,
+  void ReadRemoteExtendedFeatures(PeerId device_id,
                                   hci::ConnectionHandle handle, uint8_t page);
 
   using CancelableCommandCallback = fxl::CancelableCallback<void(
@@ -113,7 +113,7 @@ class BrEdrInterrogator {
 
   // The current set of interrogations
   // TODO(BT-750): Store Interrogations by value.
-  std::unordered_map<DeviceId, std::unique_ptr<Interrogation>> pending_;
+  std::unordered_map<PeerId, std::unique_ptr<Interrogation>> pending_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

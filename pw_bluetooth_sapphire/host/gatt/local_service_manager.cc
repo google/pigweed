@@ -173,7 +173,7 @@ class LocalServiceManager::ServiceData final {
   inline att::Handle start_handle() const { return start_handle_; }
   inline att::Handle end_handle() const { return end_handle_; }
 
-  bool GetCharacteristicConfig(IdType chrc_id, DeviceId peer_id,
+  bool GetCharacteristicConfig(IdType chrc_id, PeerId peer_id,
                                ClientCharacteristicConfig* out_config) {
     ZX_DEBUG_ASSERT(out_config);
 
@@ -192,7 +192,7 @@ class LocalServiceManager::ServiceData final {
   // Invoke the ClientConfigCallback for each matching client to be removed if
   // notify or indicate is enabled to signal that they are cleared, then clears
   // them.
-  void DisconnectClient(DeviceId peer_id) {
+  void DisconnectClient(PeerId peer_id) {
     for (auto& id_config_pair : chrc_configs_) {
       const uint16_t value = id_config_pair.second.Get(peer_id);
       id_config_pair.second.Erase(peer_id);
@@ -212,7 +212,7 @@ class LocalServiceManager::ServiceData final {
     // The characteristic handle.
     att::Handle handle() const { return handle_; }
 
-    uint16_t Get(DeviceId peer_id) {
+    uint16_t Get(PeerId peer_id) {
       auto iter = client_states_.find(peer_id);
 
       // If a configuration doesn't exist for |peer_id| then return the default
@@ -223,22 +223,22 @@ class LocalServiceManager::ServiceData final {
       return iter->second;
     }
 
-    void Set(DeviceId peer_id, uint16_t value) {
+    void Set(PeerId peer_id, uint16_t value) {
       client_states_[peer_id] = value;
     }
 
-    void Erase(DeviceId peer_id) { client_states_.erase(peer_id); }
+    void Erase(PeerId peer_id) { client_states_.erase(peer_id); }
 
    private:
     att::Handle handle_;
-    std::unordered_map<DeviceId, uint16_t> client_states_;
+    std::unordered_map<PeerId, uint16_t> client_states_;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CharacteristicConfig);
   };
 
   // Called when a read request is performed on a CCC descriptor belonging to
   // the characteristic identified by |chrc_id|.
-  void OnReadCCC(IdType chrc_id, DeviceId peer_id, att::Handle handle,
+  void OnReadCCC(IdType chrc_id, PeerId peer_id, att::Handle handle,
                  uint16_t offset, const ReadResponder& result_cb) {
     uint16_t value = 0;
     auto iter = chrc_configs_.find(chrc_id);
@@ -254,7 +254,7 @@ class LocalServiceManager::ServiceData final {
 
   // Called when a write request is performed on a CCC descriptor belonging to
   // the characteristic identified by |chrc_id|.
-  void OnWriteCCC(IdType chrc_id, uint8_t chrc_props, DeviceId peer_id,
+  void OnWriteCCC(IdType chrc_id, uint8_t chrc_props, PeerId peer_id,
                   att::Handle handle, uint16_t offset,
                   const common::ByteBuffer& value,
                   const WriteResponder& result_cb) {
@@ -559,7 +559,7 @@ bool LocalServiceManager::UnregisterService(IdType service_id) {
 }
 
 bool LocalServiceManager::GetCharacteristicConfig(
-    IdType service_id, IdType chrc_id, DeviceId peer_id,
+    IdType service_id, IdType chrc_id, PeerId peer_id,
     ClientCharacteristicConfig* out_config) {
   ZX_DEBUG_ASSERT(out_config);
 
@@ -570,7 +570,7 @@ bool LocalServiceManager::GetCharacteristicConfig(
   return iter->second->GetCharacteristicConfig(chrc_id, peer_id, out_config);
 }
 
-void LocalServiceManager::DisconnectClient(DeviceId peer_id) {
+void LocalServiceManager::DisconnectClient(PeerId peer_id) {
   for (auto& id_service_pair : services_) {
     id_service_pair.second->DisconnectClient(peer_id);
   }

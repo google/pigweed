@@ -167,7 +167,7 @@ class GattServerServer::LocalServiceImpl
 
   void NotifyValue(uint64_t characteristic_id, ::std::string peer_id,
                    ::std::vector<uint8_t> value, bool confirm) override {
-    auto id = fidl_helpers::DeviceIdFromString(std::move(peer_id));
+    auto id = fidl_helpers::PeerIdFromString(std::move(peer_id));
     if (id) {
       gatt()->SendNotification(id_, characteristic_id, *id, std::move(value),
                                confirm);
@@ -273,7 +273,7 @@ void GattServerServer::PublishService(
       responder(bt::att::ErrorCode::kUnlikelyError);
     }
   };
-  auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::DeviceId peer_id,
+  auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::PeerId peer_id,
                              bool notify, bool indicate) {
     if (self)
       self->OnCharacteristicConfig(svc_id, id, peer_id, notify, indicate);
@@ -368,7 +368,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
 
 void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id,
                                               bt::gatt::IdType chrc_id,
-                                              bt::gatt::DeviceId peer_id,
+                                              bt::gatt::PeerId peer_id,
                                               bool notify, bool indicate) {
   auto iter = services_.find(service_id);
   if (iter != services_.end()) {

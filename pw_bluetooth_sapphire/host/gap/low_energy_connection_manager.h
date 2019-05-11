@@ -60,14 +60,14 @@ class LowEnergyConnectionRef final {
     closed_cb_ = std::move(callback);
   }
 
-  DeviceId peer_identifier() const { return peer_id_; }
+  PeerId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
  private:
   friend class LowEnergyConnectionManager;
   friend class internal::LowEnergyConnection;
 
-  LowEnergyConnectionRef(DeviceId peer_id, hci::ConnectionHandle handle,
+  LowEnergyConnectionRef(PeerId peer_id, hci::ConnectionHandle handle,
                          fxl::WeakPtr<LowEnergyConnectionManager> manager);
 
   // Called by LowEnergyConnectionManager when the underlying connection is
@@ -75,7 +75,7 @@ class LowEnergyConnectionRef final {
   void MarkClosed();
 
   bool active_;
-  DeviceId peer_id_;
+  PeerId peer_id_;
   hci::ConnectionHandle handle_;
   fxl::WeakPtr<LowEnergyConnectionManager> manager_;
   fit::closure closed_cb_;
@@ -130,7 +130,7 @@ class LowEnergyConnectionManager final {
   // |callback| is posted on the creation thread's dispatcher.
   using ConnectionResultCallback =
       fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
-  bool Connect(DeviceId peer_id, ConnectionResultCallback callback);
+  bool Connect(PeerId peer_id, ConnectionResultCallback callback);
 
   PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const {
@@ -140,7 +140,7 @@ class LowEnergyConnectionManager final {
   // Disconnects any existing LE connection to |peer_id|, invalidating
   // all active LowEnergyConnectionRefs. Returns false if |peer_id| is
   // not recognized or the corresponding remote peer is not connected.
-  bool Disconnect(DeviceId peer_id);
+  bool Disconnect(PeerId peer_id);
 
   // Initializes a new connection over the given |link| and returns a connection
   // reference. Returns nullptr if the connection was rejected.
@@ -192,7 +192,7 @@ class LowEnergyConnectionManager final {
 
   // Mapping from peer identifiers to open LE connections.
   using ConnectionMap =
-      std::unordered_map<DeviceId,
+      std::unordered_map<PeerId,
                          std::unique_ptr<internal::LowEnergyConnection>>;
 
   class PendingRequestData {
@@ -236,13 +236,13 @@ class LowEnergyConnectionManager final {
   // Initializes the connection to the peer with the given identifier and
   // returns the initial reference to it. This method is responsible for setting
   // up all data bearers.
-  LowEnergyConnectionRefPtr InitializeConnection(DeviceId peer_id,
+  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id,
                                                  hci::ConnectionPtr link);
 
   // Adds a new connection reference to an existing connection to the peer
   // with the ID |peer_id| and returns it. Returns nullptr if
   // |peer_id| is not recognized.
-  LowEnergyConnectionRefPtr AddConnectionRef(DeviceId peer_id);
+  LowEnergyConnectionRefPtr AddConnectionRef(PeerId peer_id);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command
   // if |close_link| is true, and notifies any referenced
@@ -275,7 +275,7 @@ class LowEnergyConnectionManager final {
   Peer* UpdatePeerWithLink(const hci::Connection& link);
 
   // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(DeviceId peer_id, hci::Status status,
+  void OnConnectResult(PeerId peer_id, hci::Status status,
                        hci::ConnectionPtr link);
 
   // Event handler for the HCI Disconnection Complete event.
@@ -306,7 +306,7 @@ class LowEnergyConnectionManager final {
   // |peer_id| uniquely identifies the peer. |handle| represents
   // the logical link that |params| should be applied to.
   void OnNewLEConnectionParams(
-      DeviceId peer_id, hci::ConnectionHandle handle,
+      PeerId peer_id, hci::ConnectionHandle handle,
       const hci::LEPreferredConnectionParameters& params);
 
   // Tells the controller to use the given connection |params| on the given
@@ -364,7 +364,7 @@ class LowEnergyConnectionManager final {
   DisconnectCallback test_disconn_cb_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<DeviceId, PendingRequestData> pending_requests_;
+  std::unordered_map<PeerId, PendingRequestData> pending_requests_;
 
   // Mapping from peer identifiers to currently open LE connections.
   ConnectionMap connections_;

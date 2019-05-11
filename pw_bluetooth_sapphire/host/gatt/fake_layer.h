@@ -22,21 +22,21 @@ class FakeLayer final : public GATT {
   // GATT overrides:
   void Initialize() override;
   void ShutDown() override;
-  void AddConnection(DeviceId peer_id,
+  void AddConnection(PeerId peer_id,
                      fbl::RefPtr<l2cap::Channel> att_chan) override;
-  void RemoveConnection(DeviceId peer_id) override;
+  void RemoveConnection(PeerId peer_id) override;
   void RegisterService(ServicePtr service, ServiceIdCallback callback,
                        ReadHandler read_handler, WriteHandler write_handler,
                        ClientConfigCallback ccc_callback) override;
   void UnregisterService(IdType service_id) override;
-  void SendNotification(IdType service_id, IdType chrc_id, DeviceId peer_id,
+  void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override;
-  void DiscoverServices(DeviceId peer_id) override;
+  void DiscoverServices(PeerId peer_id) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
                                     async_dispatcher_t* dispatcher) override;
-  void ListServices(DeviceId peer_id, std::vector<common::UUID> uuids,
+  void ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
                     ServiceListCallback callback) override;
-  void FindService(DeviceId peer_id, IdType service_id,
+  void FindService(PeerId peer_id, IdType service_id,
                    RemoteServiceCallback callback) override;
 
  private:

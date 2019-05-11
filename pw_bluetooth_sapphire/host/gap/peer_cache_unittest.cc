@@ -28,7 +28,7 @@ const hci::LEConnectionParameters kTestParams;
 
 // Arbitrary ID value used by the bonding tests below. The actual value of this
 // constant does not effect the test logic.
-constexpr DeviceId kId(100);
+constexpr PeerId kId(100);
 constexpr int8_t kTestRSSI = 10;
 
 const DeviceAddress kAddrBrEdr(DeviceAddress::Type::kBREDR,
@@ -444,7 +444,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddLowEnergyBondedPeerSuccess) {
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
-  DeviceId kId(5);
+  PeerId kId(5);
   sm::PairingData data;
 
   EXPECT_TRUE(cache()->AddBondedPeer(kId, kAddrBrEdr, data, kBrEdrKey));
@@ -665,7 +665,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, ForgetUnknownPeer) {
-  const DeviceId id(0x9999);
+  const PeerId id(0x9999);
   ASSERT_FALSE(cache()->FindById(id));
   EXPECT_FALSE(cache()->ForgetPeer(id));
   EXPECT_EQ(0, updated_callback_count());
@@ -678,7 +678,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, ForgetBrEdrPeer) {
   ASSERT_FALSE(peer()->temporary());
   ASSERT_EQ(3, updated_callback_count());
 
-  const DeviceId id = peer()->identifier();
+  const PeerId id = peer()->identifier();
   EXPECT_TRUE(cache()->ForgetPeer(id));
   ASSERT_TRUE(cache()->FindById(id));
   EXPECT_FALSE(peer()->bonded());
@@ -695,7 +695,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, ForgetLowEnergyPeerWithPublicAddress) {
   ASSERT_FALSE(peer()->temporary());
   ASSERT_EQ(2, updated_callback_count());
 
-  const DeviceId id = peer()->identifier();
+  const PeerId id = peer()->identifier();
   EXPECT_TRUE(cache()->ForgetPeer(id));
   ASSERT_TRUE(cache()->FindById(id));
   EXPECT_FALSE(peer()->bonded());
@@ -720,7 +720,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, ForgetLowEnergyPeerWithIrk) {
   ASSERT_EQ(kAddrLeAlias, peer()->address());
   EXPECT_EQ(3, updated_callback_count());
 
-  const DeviceId id = peer()->identifier();
+  const PeerId id = peer()->identifier();
   EXPECT_TRUE(cache()->ForgetPeer(id));
   ASSERT_TRUE(cache()->FindById(id));
   EXPECT_FALSE(peer()->bonded());
@@ -752,7 +752,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
   ASSERT_TRUE(peer()->bonded());
   ASSERT_FALSE(peer()->temporary());
 
-  const DeviceId id = peer()->identifier();
+  const PeerId id = peer()->identifier();
   EXPECT_TRUE(cache()->ForgetPeer(id));
   ASSERT_TRUE(cache()->FindById(id));
   EXPECT_TRUE(peer()->temporary());
@@ -774,7 +774,7 @@ class DualModeBondingTest
       public ::testing::WithParamInterface<DeviceAddress> {};
 
 TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
-  DeviceId kId(5);
+  PeerId kId(5);
   sm::PairingData data;
   data.ltk = kLTK;
 
@@ -804,7 +804,7 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
 }
 
 TEST_P(DualModeBondingTest, ForgetPeer) {
-  DeviceId kId(5);
+  PeerId kId(5);
   sm::PairingData data;
   data.ltk = kLTK;
 
@@ -1152,7 +1152,7 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
  public:
   void SetUp() {
     TestLoopFixture::SetUp();
-    cache_.set_peer_removed_callback([this](DeviceId) { peers_removed_++; });
+    cache_.set_peer_removed_callback([this](PeerId) { peers_removed_++; });
     auto* peer = cache_.NewPeer(kAddrLeAlias, true /*connectable*/);
     ASSERT_TRUE(peer);
     ASSERT_TRUE(peer->temporary());
@@ -1169,7 +1169,7 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   }
 
   Peer* GetDefaultPeer() { return cache_.FindById(peer_id_); }
-  Peer* GetPeerById(DeviceId id) { return cache_.FindById(id); }
+  Peer* GetPeerById(PeerId id) { return cache_.FindById(id); }
   bool IsDefaultPeerAddressInCache() const {
     return cache_.FindByAddress(peer_addr_);
   }
@@ -1186,7 +1186,7 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   PeerCache cache_;
   common::DeviceAddress peer_addr_;
   common::DeviceAddress peer_addr_alias_;
-  DeviceId peer_id_;
+  PeerId peer_id_;
   int peers_removed_;
 };
 
@@ -1291,7 +1291,7 @@ TEST_F(GAP_PeerCacheExpirationTest,
 
 TEST_F(GAP_PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
-  DeviceId custom_peer_id;
+  PeerId custom_peer_id;
   {
     auto* custom_peer = NewPeer(kAddrLeRandom, true);
     ASSERT_TRUE(custom_peer);
@@ -1328,7 +1328,7 @@ TEST_F(GAP_PeerCacheExpirationTest, LERandomPeerBecomesTemporaryOnDisconnect) {
 
 TEST_F(GAP_PeerCacheExpirationTest, BrEdrPeerRemainsNonTemporaryOnDisconnect) {
   // Create our Peer, and get it into the kConnected state.
-  DeviceId custom_peer_id;
+  PeerId custom_peer_id;
   {
     auto* custom_peer = NewPeer(kAddrLePublic, true);
     ASSERT_TRUE(custom_peer);

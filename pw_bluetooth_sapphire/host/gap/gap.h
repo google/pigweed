@@ -33,7 +33,7 @@ enum class Mode {
 
 // Opaque identifier type. This is used by the GAP library to identify remote
 // Bluetooth devices.
-using DeviceId = common::DeviceId;
+using PeerId = common::PeerId;
 
 // EIR Data Type, Advertising Data Type (AD Type), OOB Data Type definitions.
 // clang-format off

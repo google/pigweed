@@ -41,8 +41,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
       local_services_ = std::make_unique<LocalServiceManager>();
 
       // Forwards Service Changed payloads to clients.
-      auto send_indication_callback = [this](DeviceId peer_id,
-                                             att::Handle handle,
+      auto send_indication_callback = [this](PeerId peer_id, att::Handle handle,
                                              const common::ByteBuffer& value) {
         auto iter = connections_.find(peer_id);
         if (iter == connections_.end()) {
@@ -75,7 +74,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     remote_service_callbacks_.clear();
   }
 
-  void AddConnection(DeviceId peer_id,
+  void AddConnection(PeerId peer_id,
                      fbl::RefPtr<l2cap::Channel> att_chan) override {
     bt_log(TRACE, "gatt", "add connection %s", bt_str(peer_id));
 
@@ -105,7 +104,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     });
   }
 
-  void RemoveConnection(DeviceId peer_id) override {
+  void RemoveConnection(PeerId peer_id) override {
     bt_log(TRACE, "gatt", "remove connection: %s", bt_str(peer_id));
     PostMessage([this, peer_id] {
       local_services_->DisconnectClient(peer_id);
@@ -143,7 +142,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     });
   }
 
-  void SendNotification(IdType service_id, IdType chrc_id, DeviceId peer_id,
+  void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override {
     PostMessage([this, svc_id = service_id, chrc_id, indicate, peer_id,
                  value = std::move(value)] {
@@ -182,7 +181,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     });
   }
 
-  void DiscoverServices(DeviceId peer_id) override {
+  void DiscoverServices(PeerId peer_id) override {
     bt_log(TRACE, "gatt", "discover services: %s", bt_str(peer_id));
 
     PostMessage([this, peer_id] {
@@ -208,7 +207,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
         });
   }
 
-  void ListServices(DeviceId peer_id, std::vector<common::UUID> uuids,
+  void ListServices(PeerId peer_id, std::vector<common::UUID> uuids,
                     ServiceListCallback callback) override {
     ZX_DEBUG_ASSERT(callback);
     PostMessage([this, peer_id, callback = std::move(callback),
@@ -224,7 +223,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     });
   }
 
-  void FindService(DeviceId peer_id, IdType service_id,
+  void FindService(PeerId peer_id, IdType service_id,
                    RemoteServiceCallback callback) override {
     PostMessage([this, service_id, peer_id,
                  callback = std::move(callback)]() mutable {
@@ -240,7 +239,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
 
  private:
   // Called when a new remote GATT service is discovered.
-  void OnServiceAdded(DeviceId peer_id, fbl::RefPtr<RemoteService> svc) {
+  void OnServiceAdded(PeerId peer_id, fbl::RefPtr<RemoteService> svc) {
     bt_log(TRACE, "gatt", "service added (peer_id: %s, handle: %#.4x, uuid: %s",
            bt_str(peer_id), svc->handle(), bt_str(svc->uuid()));
     for (auto& handler : remote_service_callbacks_) {
@@ -261,7 +260,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
   std::unique_ptr<GenericAttributeService> gatt_service_;
 
   // Contains the state of all GATT profile connections and their services.
-  std::unordered_map<DeviceId, internal::Connection> connections_;
+  std::unordered_map<PeerId, internal::Connection> connections_;
 
   // All registered remote service handlers.
   struct RemoteServiceHandler {
@@ -272,7 +271,7 @@ class Impl final : public GATT, common::TaskDomain<Impl, GATT> {
     RemoteServiceHandler() = default;
     RemoteServiceHandler(RemoteServiceHandler&&) = default;
 
-    void Notify(DeviceId peer_id, fbl::RefPtr<RemoteService> svc) {
+    void Notify(PeerId peer_id, fbl::RefPtr<RemoteService> svc) {
       if (!dispatcher_) {
         watcher_(peer_id, std::move(svc));
         return;

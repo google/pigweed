@@ -48,14 +48,14 @@ TEST(IdentifierTest, Hash) {
   EXPECT_EQ(2u, ids.size());
 }
 
-TEST(IdentifierTest, DeviceIdIsValid) {
+TEST(IdentifierTest, PeerIdIsValid) {
   {
-    DeviceId id;
+    PeerId id;
     EXPECT_FALSE(id.IsValid());
   }
 
   {
-    DeviceId id(1);
+    PeerId id(1);
     EXPECT_TRUE(id.IsValid());
   }
 }

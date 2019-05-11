@@ -6,10 +6,9 @@
 
 #include <zircon/status.h>
 
+#include "host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
-
-#include "host.h"
 
 namespace bthost {
 
@@ -159,12 +158,11 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
                     host->BindHostInterface(std::move(chan));
                   });
 
-
   return ZX_OK;
 }
 
 void HostDevice::OnRemoteGattServiceAdded(
-    bt::gatt::DeviceId peer_id, fbl::RefPtr<bt::gatt::RemoteService> service) {
+    bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::RemoteService> service) {
   auto gatt_device =
       std::make_unique<GattRemoteServiceDevice>(dev_, peer_id, service);
   auto gatt_device_ptr = gatt_device.get();

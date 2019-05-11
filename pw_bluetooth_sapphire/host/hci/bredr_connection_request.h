@@ -5,6 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_
 
+#include <lib/async/default.h>
+#include <lib/async/dispatcher.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -13,9 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
-
-#include <lib/async/default.h>
-#include <lib/async/dispatcher.h>
 
 namespace bt {
 namespace hci {
@@ -48,9 +48,9 @@ constexpr PacketTypeType kEnableAllPacketTypes =
 // BrEdrConnectionManager
 class BrEdrConnectionRequest final {
  public:
-  using OnCompleteDelegate = fit::function<void(Status, common::DeviceId)>;
+  using OnCompleteDelegate = fit::function<void(Status, common::PeerId)>;
 
-  BrEdrConnectionRequest(common::DeviceId id, common::DeviceAddress addr,
+  BrEdrConnectionRequest(common::PeerId id, common::DeviceAddress addr,
                          fit::closure timeout_cb)
       : state_(RequestState::kPending),
         peer_id_(id),
@@ -74,7 +74,7 @@ class BrEdrConnectionRequest final {
       std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
       zx::duration timeout, OnCompleteDelegate on_command_fail);
 
-  common::DeviceId peer_id() const { return peer_id_; }
+  common::PeerId peer_id() const { return peer_id_; }
   common::DeviceAddress peer_address() const { return peer_address_; }
 
   // Complete the request, either successfully or not, and return the status
@@ -93,7 +93,7 @@ class BrEdrConnectionRequest final {
 
  private:
   RequestState state_;
-  common::DeviceId peer_id_;
+  common::PeerId peer_id_;
   common::DeviceAddress peer_address_;
 
   async::TaskClosure timeout_task_;

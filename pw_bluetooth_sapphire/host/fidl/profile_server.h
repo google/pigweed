@@ -45,7 +45,7 @@ class ProfileServer
 
   // Callback for services found on connected device
   void OnServiceFound(
-      bt::common::DeviceId peer_id,
+      bt::common::PeerId peer_id,
       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
   // Registered service IDs handed out, correlated with Service Handles.

@@ -26,10 +26,10 @@
 
 namespace bthost {
 
-using bt::gap::DeviceId;
+using bt::gap::PeerId;
 using bt::sm::IOCapability;
-using fidl_helpers::DeviceIdFromString;
 using fidl_helpers::NewFidlError;
+using fidl_helpers::PeerIdFromString;
 using fidl_helpers::StatusToFidl;
 using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::ErrorCode;
@@ -278,7 +278,7 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
   std::vector<std::string> failed_ids;
 
   for (auto& bond : bonds) {
-    auto peer_id = DeviceIdFromString(bond.identifier);
+    auto peer_id = PeerIdFromString(bond.identifier);
     if (!peer_id) {
       failed_ids.push_back(bond.identifier);
       continue;
@@ -347,7 +347,7 @@ void HostServer::RegisterLowEnergyConnection(
     bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
-  bt::gap::DeviceId id = conn_ref->peer_identifier();
+  bt::gap::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
     bt_log(WARN, "bt-host", "peer already connected; reference dropped");
@@ -471,7 +471,7 @@ void HostServer::SetPairingDelegate(
 // in our peer cache. We will attempt to connect technologies (LowEnergy,
 // Classic or Dual-Mode) as the peer claims to support when discovered
 void HostServer::Connect(::std::string peer_id, ConnectCallback callback) {
-  auto id = DeviceIdFromString(peer_id);
+  auto id = PeerIdFromString(peer_id);
   if (!id.has_value()) {
     callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
@@ -495,7 +495,7 @@ void HostServer::Connect(::std::string peer_id, ConnectCallback callback) {
   ConnectLowEnergy(*id, std::move(callback));
 }
 
-void HostServer::ConnectLowEnergy(DeviceId peer_id, ConnectCallback callback) {
+void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto on_complete = [self, callback = std::move(callback), peer_id](
                          auto status, auto connection) {
@@ -524,7 +524,7 @@ void HostServer::ConnectLowEnergy(DeviceId peer_id, ConnectCallback callback) {
 
 // Initiate an outgoing Br/Edr connection, unless already connected
 // Br/Edr connections are host-wide, and stored in BrEdrConnectionManager
-void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
+void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [callback = std::move(callback), peer_id](
                          auto status, auto connection) {
     if (!status) {
@@ -549,7 +549,7 @@ void HostServer::ConnectBrEdr(DeviceId peer_id, ConnectCallback callback) {
 }
 
 void HostServer::Forget(::std::string peer_id, ForgetCallback callback) {
-  auto id = DeviceIdFromString(peer_id);
+  auto id = PeerIdFromString(peer_id);
   if (!id.has_value()) {
     callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Invalid peer ID"));
     return;
@@ -668,14 +668,14 @@ bt::sm::IOCapability HostServer::io_capability() const {
   return io_capability_;
 }
 
-void HostServer::CompletePairing(DeviceId id, bt::sm::Status status) {
+void HostServer::CompletePairing(PeerId id, bt::sm::Status status) {
   bt_log(INFO, "bt-host", "pairing complete for peer: %s, status: %s",
          bt_str(id), status.ToString().c_str());
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(id.ToString(), StatusToFidl(status));
 }
 
-void HostServer::ConfirmPairing(DeviceId id, ConfirmCallback confirm) {
+void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {
   bt_log(INFO, "bt-host", "pairing request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
   ZX_DEBUG_ASSERT(found_peer);
@@ -690,7 +690,7 @@ void HostServer::ConfirmPairing(DeviceId id, ConfirmCallback confirm) {
           const bool success, const std::string passkey) { confirm(success); });
 }
 
-void HostServer::DisplayPasskey(DeviceId id, uint32_t passkey,
+void HostServer::DisplayPasskey(PeerId id, uint32_t passkey,
                                 ConfirmCallback confirm) {
   bt_log(INFO, "bt-host", "pairing request for peer: %s", bt_str(id));
   bt_log(INFO, "bt-host", "enter passkey: %06u", passkey);
@@ -709,7 +709,7 @@ void HostServer::DisplayPasskey(DeviceId id, uint32_t passkey,
           const bool success, const std::string passkey) { confirm(success); });
 }
 
-void HostServer::RequestPasskey(DeviceId id, PasskeyResponseCallback respond) {
+void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   auto* peer = adapter()->peer_cache()->FindById(id);
   ZX_DEBUG_ASSERT(peer);
   auto device = fidl_helpers::NewRemoteDevicePtr(*peer);
@@ -755,7 +755,7 @@ void HostServer::OnPeerUpdated(const bt::gap::Peer& peer) {
   this->binding()->events().OnDeviceUpdated(std::move(*fidl_device));
 }
 
-void HostServer::OnPeerRemoved(bt::gap::DeviceId identifier) {
+void HostServer::OnPeerRemoved(bt::gap::PeerId identifier) {
   // TODO(armansito): Notify only if the peer is connectable for symmetry with
   // OnPeerUpdated?
   this->binding()->events().OnDeviceRemoved(identifier.ToString());

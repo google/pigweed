@@ -19,7 +19,7 @@ using TestingBase = ::gtest::TestLoopFixture;
 
 using common::CreateStaticByteBuffer;
 
-constexpr common::DeviceId kDeviceOne(1), kDeviceTwo(2), kDeviceThree(3);
+constexpr common::PeerId kDeviceOne(1), kDeviceTwo(2), kDeviceThree(3);
 
 class FakeClient : public Client {
  public:
@@ -140,11 +140,11 @@ TEST_F(SDP_ServiceDiscovererTest, NoResults) {
 TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
   ServiceDiscoverer discoverer;
 
-  std::vector<std::pair<common::DeviceId, std::map<AttributeId, DataElement>>>
+  std::vector<std::pair<common::PeerId, std::map<AttributeId, DataElement>>>
       results;
 
   ServiceDiscoverer::ResultCallback result_cb =
-      [&results](common::DeviceId id, const auto &attributes) {
+      [&results](common::PeerId id, const auto &attributes) {
         std::map<AttributeId, DataElement> attributes_clone;
         for (const auto &it : attributes) {
           auto [inserted_it, added] =
@@ -336,7 +336,7 @@ TEST_F(SDP_ServiceDiscovererTest, Disconnected) {
 TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
   ServiceDiscoverer discoverer;
 
-  std::optional<std::pair<common::DeviceId, std::map<AttributeId, DataElement>>>
+  std::optional<std::pair<common::PeerId, std::map<AttributeId, DataElement>>>
       result;
 
   ServiceDiscoverer::SearchId id = ServiceDiscoverer::kInvalidSearchId;

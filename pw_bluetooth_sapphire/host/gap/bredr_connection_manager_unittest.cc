@@ -23,7 +23,7 @@ using bt::testing::CommandTransaction;
 
 using common::DeviceAddress;
 using common::DynamicByteBuffer;
-using common::kInvalidDeviceId;
+using common::kInvalidPeerId;
 using common::LowerBits;
 using common::UpperBits;
 
@@ -548,7 +548,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 // Test: An incoming connection request should trigger an acceptance and an
 // interrogation to discover capabilities.
 TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
-  EXPECT_EQ(kInvalidDeviceId, connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn();
 
@@ -604,7 +604,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
 // Test: A remote disconnect should correctly remove the connection.
 TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
-  EXPECT_EQ(kInvalidDeviceId, connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -621,7 +621,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(kInvalidDeviceId, connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   // deallocating the connection manager disables connectivity.
   test_device()->QueueCommandTransaction(
@@ -832,7 +832,7 @@ const auto kLinkKeyRequestReplyRsp = common::CreateStaticByteBuffer(
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   ASSERT_TRUE(
-      peer_cache()->AddBondedPeer(DeviceId(999), kTestDevAddr, {}, kLinkKey));
+      peer_cache()->AddBondedPeer(PeerId(999), kTestDevAddr, {}, kLinkKey));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connected());
@@ -1056,7 +1056,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
   peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   EXPECT_FALSE(peer->connected());
-  EXPECT_EQ(kInvalidDeviceId, connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
@@ -1155,7 +1155,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {
-  EXPECT_FALSE(connmgr()->Connect(DeviceId(456), {}));
+  EXPECT_FALSE(connmgr()->Connect(PeerId(456), {}));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
@@ -1172,7 +1172,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   RunLoopUntilIdle();
 
   // Disconnecting an unknown peer should do nothing.
-  EXPECT_FALSE(connmgr()->Disconnect(DeviceId(999)));
+  EXPECT_FALSE(connmgr()->Disconnect(PeerId(999)));
 
   RunLoopUntilIdle();
 

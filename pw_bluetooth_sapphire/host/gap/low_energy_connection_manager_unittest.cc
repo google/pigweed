@@ -159,7 +159,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 using GAP_LowEnergyConnectionManagerTest = LowEnergyConnectionManagerTest;
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectUnknownPeer) {
-  constexpr DeviceId kUnknownId(1);
+  constexpr PeerId kUnknownId(1);
   EXPECT_FALSE(conn_mgr()->Connect(kUnknownId, {}));
 }
 

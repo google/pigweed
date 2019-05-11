@@ -52,7 +52,7 @@ BrEdrInterrogator::~BrEdrInterrogator() {
   }
 }
 
-void BrEdrInterrogator::Start(DeviceId device_id, hci::ConnectionPtr conn_ptr,
+void BrEdrInterrogator::Start(PeerId device_id, hci::ConnectionPtr conn_ptr,
                               ResultCallback callback) {
   ZX_DEBUG_ASSERT(conn_ptr);
   ZX_DEBUG_ASSERT(callback);
@@ -84,7 +84,7 @@ void BrEdrInterrogator::Start(DeviceId device_id, hci::ConnectionPtr conn_ptr,
   }
 }
 
-void BrEdrInterrogator::Cancel(DeviceId device_id) {
+void BrEdrInterrogator::Cancel(PeerId device_id) {
   async::PostTask(dispatcher_, [id = std::move(device_id),
                                 self = weak_ptr_factory_.GetWeakPtr()]() {
     if (!self) {
@@ -101,7 +101,7 @@ void BrEdrInterrogator::Cancel(DeviceId device_id) {
   });
 }
 
-void BrEdrInterrogator::MaybeComplete(DeviceId device_id) {
+void BrEdrInterrogator::MaybeComplete(PeerId device_id) {
   Peer* device = cache_->FindById(device_id);
   if (!device) {
     Complete(device_id, hci::Status(common::HostError::kFailed));
@@ -129,7 +129,7 @@ void BrEdrInterrogator::MaybeComplete(DeviceId device_id) {
   Complete(device_id, hci::Status());
 }
 
-void BrEdrInterrogator::Complete(DeviceId device_id, hci::Status status) {
+void BrEdrInterrogator::Complete(PeerId device_id, hci::Status status) {
   auto it = pending_.find(std::move(device_id));
   ZX_DEBUG_ASSERT(it != pending_.end());
 
@@ -137,7 +137,7 @@ void BrEdrInterrogator::Complete(DeviceId device_id, hci::Status status) {
   pending_.erase(it);
 }
 
-void BrEdrInterrogator::MakeRemoteNameRequest(DeviceId device_id) {
+void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
   Peer* device = cache_->FindById(device_id);
   if (!device) {
     Complete(device_id, hci::Status(common::HostError::kFailed));
@@ -205,7 +205,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(DeviceId device_id) {
 }
 
 void BrEdrInterrogator::ReadRemoteVersionInformation(
-    DeviceId device_id, hci::ConnectionHandle handle) {
+    PeerId device_id, hci::ConnectionHandle handle) {
   auto packet =
       hci::CommandPacket::New(hci::kReadRemoteVersionInfo,
                               sizeof(hci::ReadRemoteVersionInfoCommandParams));
@@ -253,7 +253,7 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
       hci::kReadRemoteVersionInfoCompleteEventCode);
 }
 
-void BrEdrInterrogator::ReadRemoteFeatures(DeviceId device_id,
+void BrEdrInterrogator::ReadRemoteFeatures(PeerId device_id,
                                            hci::ConnectionHandle handle) {
   auto packet = hci::CommandPacket::New(
       hci::kReadRemoteSupportedFeatures,
@@ -307,7 +307,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(DeviceId device_id,
       hci::kReadRemoteSupportedFeaturesCompleteEventCode);
 }
 
-void BrEdrInterrogator::ReadRemoteExtendedFeatures(DeviceId device_id,
+void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId device_id,
                                                    hci::ConnectionHandle handle,
                                                    uint8_t page) {
   auto packet = hci::CommandPacket::New(

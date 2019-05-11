@@ -7,7 +7,7 @@
 namespace bt {
 namespace att {
 
-using common::DeviceId;
+using common::PeerId;
 
 AccessRequirements::AccessRequirements() : value_(0u) {}
 
@@ -47,7 +47,7 @@ void Attribute::SetValue(const common::ByteBuffer& value) {
   value_ = common::DynamicByteBuffer(value);
 }
 
-bool Attribute::ReadAsync(DeviceId peer_id, uint16_t offset,
+bool Attribute::ReadAsync(PeerId peer_id, uint16_t offset,
                           ReadResultCallback result_callback) const {
   if (!is_initialized() || !read_handler_)
     return false;
@@ -59,7 +59,7 @@ bool Attribute::ReadAsync(DeviceId peer_id, uint16_t offset,
   return true;
 }
 
-bool Attribute::WriteAsync(DeviceId peer_id, uint16_t offset,
+bool Attribute::WriteAsync(PeerId peer_id, uint16_t offset,
                            const common::ByteBuffer& value,
                            WriteResultCallback result_callback) const {
   if (!is_initialized() || !write_handler_)

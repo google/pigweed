@@ -58,20 +58,20 @@ class Identifier {
   T value_;
 };
 
-// Opaque identifier type for Bluetooth devices.
-class DeviceId : public Identifier<uint64_t> {
+// Opaque identifier type for Bluetooth peers.
+class PeerId : public Identifier<uint64_t> {
  public:
-  constexpr explicit DeviceId(uint64_t value) : Identifier<uint64_t>(value) {}
-  constexpr DeviceId() : DeviceId(0u) {}
+  constexpr explicit PeerId(uint64_t value) : Identifier<uint64_t>(value) {}
+  constexpr PeerId() : PeerId(0u) {}
 
   bool IsValid() const { return value() != 0u; }
 };
 
-constexpr DeviceId kInvalidDeviceId(0u);
+constexpr PeerId kInvalidPeerId(0u);
 
-// Generates a valid random device identifier. This function can never return
-// kInvalidDeviceId.
-DeviceId RandomDeviceId();
+// Generates a valid random peer identifier. This function can never return
+// kInvalidPeerId.
+PeerId RandomPeerId();
 
 }  // namespace common
 }  // namespace bt
@@ -87,8 +87,8 @@ struct hash<bt::common::Identifier<T>> {
 };
 
 template <>
-struct hash<bt::common::DeviceId> {
-  size_t operator()(const bt::common::DeviceId& id) const {
+struct hash<bt::common::PeerId> {
+  size_t operator()(const bt::common::PeerId& id) const {
     return std::hash<decltype(id.value())>()(id.value());
   }
 };
