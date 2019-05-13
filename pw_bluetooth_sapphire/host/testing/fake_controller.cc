@@ -195,6 +195,12 @@ void FakeController::ClearDefaultResponseStatus(hci::OpCode opcode) {
 }
 
 void FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
+  // Prevent multiple entries with the same address.
+  ZX_DEBUG_ASSERT(
+      std::find_if(peers_.begin(), peers_.end(), [&](const auto& p) {
+        return p->address() == peer->address();
+      }) == peers_.end());
+
   peer->set_ctrl(this);
   peers_.push_back(std::move(peer));
 }

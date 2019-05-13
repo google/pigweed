@@ -199,11 +199,15 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // Returns whether there is an active discovery session.
   bool discovering() const { return !sessions_.empty(); }
 
-  // Registers a callback which runs after a directed connectable advertisement
-  // is received from a bonded peer with the given |id|.
-  using DirectedConnectableCallback = fit::function<void(PeerId id)>;
-  void set_directed_connectable_callback(DirectedConnectableCallback callback) {
-    directed_conn_cb_ = std::move(callback);
+  // Registers a callback which runs when a connectable advertisement is
+  // received from a bonded peer.
+  //
+  // Note: this callback can be triggered during a background scan as well as
+  // general discovery.
+  using BondedPeerConnectableCallback = fit::function<void(PeerId id)>;
+  void set_bonded_peer_connectable_callback(
+      BondedPeerConnectableCallback callback) {
+    bonded_conn_cb_ = std::move(callback);
   }
 
  private:
@@ -251,7 +255,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // Called when a directed connectable advertisement is received during an
   // active or passive scan.
-  DirectedConnectableCallback directed_conn_cb_;
+  BondedPeerConnectableCallback bonded_conn_cb_;
 
   // The list of currently pending calls to start discovery.
   std::queue<SessionCallback> pending_;

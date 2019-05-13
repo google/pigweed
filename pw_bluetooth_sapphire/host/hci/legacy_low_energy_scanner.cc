@@ -263,6 +263,8 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
 
 void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     const EventPacket& event) {
+  bt_log(DEBUG, "hci-le", "received advertising report");
+
   // Drop the event if not requested to scan.
   if (!IsScanning())
     return;

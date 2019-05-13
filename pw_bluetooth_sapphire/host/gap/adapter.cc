@@ -548,7 +548,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
       hci_, hci_le_scanner_.get(), &peer_cache_);
-  le_discovery_manager_->set_directed_connectable_callback(
+  le_discovery_manager_->set_bonded_peer_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_,
@@ -689,9 +689,12 @@ void Adapter::OnTransportClosed() {
 
 void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
+
+  // TODO(BT-888): We shouldn't always accept connection requests from all
+  // bonded peripherals (e.g. if one is explicitly disconnected). Maybe add an
+  // "auto_connect()" property to Peer?
   auto self = weak_ptr_factory_.GetWeakPtr();
   le_connection_manager_->Connect(peer_id, [self](auto status, auto conn) {
-    PeerId id = conn->peer_identifier();
     if (!self) {
       bt_log(INFO, "gap", "ignoring auto-connection (adapter destroyed)");
       return;
@@ -701,6 +704,8 @@ void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
       return;
     }
 
+    ZX_DEBUG_ASSERT(conn);
+    PeerId id = conn->peer_identifier();
     bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
     if (self->auto_conn_cb_) {
       self->auto_conn_cb_(std::move(conn));

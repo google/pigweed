@@ -28,14 +28,18 @@ using bt::testing::FakePeer;
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:01");
+                              "00:00:00:00:00:00");
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
-                              "00:00:00:00:00:02");
+                              "00:00:00:00:00:01");
 const DeviceAddress kAddress2(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:03");
+                              "00:00:00:00:00:02");
 const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic,
+                              "00:00:00:00:00:03");
+const DeviceAddress kAddress4(DeviceAddress::Type::kLEPublic,
                               "00:00:00:00:00:04");
+const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic,
+                              "00:00:00:00:00:05");
 
 constexpr zx::duration kTestScanPeriod = zx::sec(10);
 
@@ -811,7 +815,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   test_device()->AddPeer(std::move(fake_peer));
 
   int count = 0;
-  discovery_manager()->set_directed_connectable_callback(
+  discovery_manager()->set_bonded_peer_connectable_callback(
       [&](const auto&) { count++; });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
@@ -1018,37 +1022,43 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       BackgroundScanOnlyHandlesDirectedEventsFromBondedPeers) {
-  PeerId kBondedPeerId(1);
+       BackgroundScanOnlyHandlesEventsFromBondedDevices) {
+  PeerId kBondedPeerId1(1);
+  PeerId kBondedPeerId2(2);
+
+  // kAddress0 and kAddress1 are in undirected connectable mode.
   AddFakePeers();
 
-  // Add a bonded peer.
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, false);
+  // Add two devices that are in directed connectable mode.
+  auto fake_peer = std::make_unique<FakePeer>(kAddress4, true, false);
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
+  fake_peer = std::make_unique<FakePeer>(kAddress5, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Mark one directed and one undirected connectable device as bonded. We
+  // expect advertisements from all other devices to get ignored.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(kBondedPeerId, kAddress0, pdata, {});
-  EXPECT_EQ(1u, peer_cache()->count());
-
-  // Add a second peer the sends directed advertisements but do not mark it as
-  // bonded. Advertisements from this peer should be ignored.
-  fake_peer = std::make_unique<FakePeer>(kAddress1, true, false);
-  fake_peer->enable_directed_advertising(true);
-  test_device()->AddPeer(std::move(fake_peer));
+  peer_cache()->AddBondedPeer(kBondedPeerId1, kAddress0, pdata, {});
+  peer_cache()->AddBondedPeer(kBondedPeerId2, kAddress4, pdata, {});
+  EXPECT_EQ(2u, peer_cache()->count());
 
   int count = 0;
-  discovery_manager()->set_directed_connectable_callback([&](const auto& id) {
-    count++;
-    EXPECT_EQ(kBondedPeerId, id);
-  });
+  discovery_manager()->set_bonded_peer_connectable_callback(
+      [&](const auto& id) {
+        count++;
+        EXPECT_TRUE(id == kBondedPeerId1 || id == kBondedPeerId2)
+            << id.ToString();
+      });
   discovery_manager()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
-  EXPECT_EQ(1, count);
+  EXPECT_EQ(2, count);
 
   // No new remote peer cache entries should have been created.
-  EXPECT_EQ(1u, peer_cache()->count());
+  EXPECT_EQ(2u, peer_cache()->count());
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanPeriodRestart) {

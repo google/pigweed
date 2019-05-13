@@ -180,12 +180,19 @@ void LowEnergyDiscoveryManager::OnPeerFound(
     const hci::LowEnergyScanResult& result, const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  // Ignore regular scan results during a passive scan.
+  auto peer = peer_cache_->FindByAddress(result.address);
+  if (peer && peer->bonded() && bonded_conn_cb_) {
+    bt_log(SPEW, "gap-le", "found connectable bonded peer (id: %s)",
+           bt_str(peer->identifier()));
+    bonded_conn_cb_(peer->identifier());
+  }
+
+  // Do not process further during a passive scan.
   if (scanner_->IsPassiveScanning()) {
     return;
   }
 
-  auto peer = peer_cache_->FindByAddress(result.address);
+  // Create a new entry if we found the device during general discovery.
   if (!peer) {
     peer = peer_cache_->NewPeer(result.address, result.connectable);
   }
@@ -204,30 +211,27 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
 
   // TODO(NET-1572): Resolve the address in the host if it is random and
   // |result.resolved| is false.
-  bt_log(SPEW, "gap", "Received directed advertisement (address: %s, %s)",
+  bt_log(SPEW, "gap-le", "Received directed advertisement (address: %s, %s)",
          result.address.ToString().c_str(),
          (result.resolved ? "resolved" : "not resolved"));
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (!peer) {
-    bt_log(TRACE, "gap",
+    bt_log(TRACE, "gap-le",
            "ignoring connection request from unknown peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
   if (!peer->le() || !peer->le()->bonded()) {
-    bt_log(TRACE, "gap",
+    bt_log(TRACE, "gap-le",
            "rejecting connection request from unbonded peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
-  // TODO(armansito): We shouldn't always accept connection requests from all
-  // bonded peripherals (e.g. if one is explicitly disconnected). Maybe add an
-  // "auto_connect()" property to Peer?
-  if (directed_conn_cb_) {
-    directed_conn_cb_(peer->identifier());
+  if (bonded_conn_cb_) {
+    bonded_conn_cb_(peer->identifier());
   }
 }
 
