@@ -22,10 +22,13 @@ class RxEngine {
   virtual ~RxEngine() = default;
 
   // Consumes a PDU and returns a buffer containing the resulting SDU. Returns
-  // nullptr if no SDU was produced. Callers should not interpret a nullptr as
-  // an error, as there are many valid conditions under which a PDU does not
-  // yield an SDU.
-  virtual ByteBufferPtr ProcessPdu(PDU) = 0;
+  // nullptr if no SDU was produced.
+  //
+  // Notes:
+  // * Callers should not interpret a nullptr as an error, as there are many
+  //   valid conditions under which a PDU does not yield an SDU.
+  // * The caller must ensure that |pdu.is_valid() == true|.
+  virtual ByteBufferPtr ProcessPdu(PDU pdu) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);

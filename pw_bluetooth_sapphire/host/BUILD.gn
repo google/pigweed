@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/config/fuchsia/rules.gni")
+import("//build/fuzzing/fuzzer.gni")
 import("//build/package.gni")
 
 driver_module("driver") {
@@ -115,5 +116,11 @@ executable("tests") {
     "sm:tests",
     "testing:gtest_main",
     "//third_party/googletest:gtest",
+  ]
+}
+
+fuzzers_package("bluetooth_fuzzers") {
+  fuzzers = [
+    "l2cap:basic_mode_rx_engine_fuzzer",
   ]
 }
