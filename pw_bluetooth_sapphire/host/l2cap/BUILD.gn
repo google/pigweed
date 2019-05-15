@@ -78,6 +78,8 @@ source_set("testing") {
     "fake_channel_test.h",
     "fake_signaling_channel.cc",
     "fake_signaling_channel.h",
+    "pdu_generator.cc",
+    "pdu_generator.h",
   ]
 
   public_deps = [
@@ -107,6 +109,7 @@ source_set("tests") {
     "fragmenter_unittest.cc",
     "frame_headers_unittest.cc",
     "le_signaling_channel_unittest.cc",
+    "pdu_generator_unittest.cc",
     "pdu_unittest.cc",
     "recombiner_unittest.cc",
     "scoped_channel_unittest.cc",
