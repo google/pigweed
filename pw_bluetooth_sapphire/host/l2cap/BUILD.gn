@@ -135,3 +135,13 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
     ":testing",
   ]
 }
+
+fuzzer("enhanced_retransmission_mode_rx_engine_fuzzer") {
+  sources = [
+    "enhanced_retransmission_mode_rx_engine_fuzztest.cc",
+  ]
+  deps = [
+    ":l2cap",
+    ":testing",
+  ]
+}
