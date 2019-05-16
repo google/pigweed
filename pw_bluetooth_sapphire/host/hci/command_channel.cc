@@ -570,8 +570,8 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
         bt_log(DEBUG, "hci",
                "removing completed async handler (id %zu, event code: %#.2x)",
                event_id, event_code);
-        RemoveEventHandlerInternal(event_id);
         pending_transactions_.erase(handler.pending_opcode);
+        RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
       }
 
       pending_callbacks.emplace_back(std::move(callback), dispatcher);
