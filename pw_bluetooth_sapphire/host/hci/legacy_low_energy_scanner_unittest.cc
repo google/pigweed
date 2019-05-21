@@ -312,7 +312,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
   AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
-  set_peer_found_callback([&, this](const auto& result, const auto& data) {
+  set_peer_found_callback([&](const auto& result, const auto& data) {
     results[result.address] = std::make_pair(result, data.ToString());
   });
 
@@ -416,7 +416,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
   set_peer_found_callback(
-      [&results, this](const auto& result, const auto& data) {
+      [&results](const auto& result, const auto& data) {
         results[result.address] = std::make_pair(result, data.ToString());
       });
 
@@ -450,7 +450,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
   AddFakePeers();
 
   std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
-  set_peer_found_callback([&, this](const auto& result, const auto& data) {
+  set_peer_found_callback([&](const auto& result, const auto& data) {
     results[result.address] = std::make_pair(result, data.ToString());
   });
 

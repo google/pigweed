@@ -314,7 +314,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveData) {
   };
 
   bool smp_cb_called = false;
-  auto smp_rx_cb = [&smp_cb_called, this](ByteBufferPtr sdu) {
+  auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
     ZX_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
@@ -374,7 +374,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
 
   bool smp_cb_called = false;
-  auto smp_rx_cb = [&smp_cb_called, this](ByteBufferPtr sdu) {
+  auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
     ZX_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
@@ -432,7 +432,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
   auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
 
   bool smp_cb_called = false;
-  auto smp_rx_cb = [&smp_cb_called, this](ByteBufferPtr sdu) {
+  auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
     ZX_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
@@ -495,7 +495,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
 
   bool smp_cb_called = false;
-  auto smp_rx_cb = [&smp_cb_called, this](ByteBufferPtr sdu) {
+  auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
     ZX_DEBUG_ASSERT(sdu);
     EXPECT_EQ(0u, sdu->size());
     smp_cb_called = true;
@@ -741,7 +741,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdusDifferentBuffers) {
 
 TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
   bool link_error = false;
-  auto link_error_cb = [&link_error, this] { link_error = true; };
+  auto link_error_cb = [&link_error] { link_error = true; };
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
 
   // Activate a new Attribute channel to signal the error.
@@ -757,7 +757,7 @@ TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
 
 TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   bool link_error = false;
-  auto link_error_cb = [&link_error, this] { link_error = true; };
+  auto link_error_cb = [&link_error] { link_error = true; };
   RegisterACL(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
 
   // Activate a new Security Manager channel to signal the error.
@@ -773,7 +773,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
 
 TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   bool conn_param_cb_called = false;
-  auto conn_param_cb = [&conn_param_cb_called, this](const auto& params) {
+  auto conn_param_cb = [&conn_param_cb_called](const auto& params) {
     // The parameters should match the payload of the HCI packet seen below.
     EXPECT_EQ(0x0006, params.min_interval());
     EXPECT_EQ(0x0C80, params.max_interval());

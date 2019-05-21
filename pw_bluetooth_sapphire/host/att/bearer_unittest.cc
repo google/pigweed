@@ -119,10 +119,9 @@ TEST_F(ATT_BearerTest, RequestTimeout) {
   // error.
   bool closed = false;
   bool err_cb_called = false;
-  bearer()->set_closed_callback(
-      [&closed, &err_cb_called, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&closed, &err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
@@ -154,10 +153,9 @@ TEST_F(ATT_BearerTest, RequestTimeoutMany) {
   bool closed = false;
   unsigned int err_cb_count = 0u;
 
-  bearer()->set_closed_callback(
-      [&err_cb_count, &closed, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&closed, &err_cb_count, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_count](Status status, Handle handle) {
     EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
@@ -190,10 +188,9 @@ TEST_F(ATT_BearerTest, IndicationTimeout) {
   bool closed = false;
   bool err_cb_called = false;
 
-  bearer()->set_closed_callback(
-      [&closed, &err_cb_called, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&closed, &err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
@@ -226,10 +223,9 @@ TEST_F(ATT_BearerTest, IndicationTimeoutMany) {
   bool closed = false;
   unsigned int err_cb_count = 0u;
 
-  bearer()->set_closed_callback(
-      [&closed, &err_cb_count, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&closed, &err_cb_count, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_count](Status status, Handle handle) {
     EXPECT_EQ(HostError::kTimedOut, status.error());
     EXPECT_EQ(0, handle);
 
@@ -301,9 +297,9 @@ TEST_F(ATT_BearerTest, SendRequestWrongResponse) {
   bool err_cb_called = false;
   bool closed = false;
 
-  bearer()->set_closed_callback([&closed, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(HostError::kFailed, status.error());
     EXPECT_EQ(0, handle);
 
@@ -339,9 +335,9 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseTooShort) {
   bool err_cb_called = false;
   bool closed = false;
 
-  bearer()->set_closed_callback([&closed, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
     EXPECT_EQ(HostError::kFailed, status.error());
 
@@ -377,9 +373,9 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseTooLong) {
   bool err_cb_called = false;
   bool closed = false;
 
-  bearer()->set_closed_callback([&closed, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
     EXPECT_EQ(HostError::kFailed, status.error());
 
@@ -420,9 +416,9 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponseWrongOpCode) {
   bool err_cb_called = false;
   bool closed = false;
 
-  bearer()->set_closed_callback([&closed, this] { closed = true; });
+  bearer()->set_closed_callback([&closed] { closed = true; });
 
-  auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_EQ(0, handle);
     EXPECT_EQ(HostError::kFailed, status.error());
 
@@ -461,7 +457,7 @@ TEST_F(ATT_BearerTest, SendRequestErrorResponse) {
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
   bool err_cb_called = false;
-  auto err_cb = [&err_cb_called, this](Status status, Handle handle) {
+  auto err_cb = [&err_cb_called](Status status, Handle handle) {
     EXPECT_TRUE(status.is_protocol_error());
     EXPECT_EQ(ErrorCode::kRequestNotSupported, status.protocol_error());
     EXPECT_EQ(0x0001, handle);
@@ -1005,14 +1001,14 @@ TEST_F(ATT_BearerTest, RequestAndIndication) {
 
   int req_count = 0;
   int ind_count = 0;
-  auto req_handler = [&req_id, &req_count, this](auto id, const auto& packet) {
+  auto req_handler = [&req_id, &req_count](auto id, const auto& packet) {
     EXPECT_EQ(kTestRequest, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
     req_count++;
     req_id = id;
   };
-  auto ind_handler = [&ind_id, &ind_count, this](auto id, const auto& packet) {
+  auto ind_handler = [&ind_id, &ind_count](auto id, const auto& packet) {
     EXPECT_EQ(kIndication, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 

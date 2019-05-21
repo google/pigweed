@@ -519,7 +519,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   std::unique_ptr<BrEdrDiscoverySession> session;
 
   discovery_manager()->RequestDiscovery(
-      [&session](auto status, auto cb_session) {
+      [](auto status, auto cb_session) {
         EXPECT_FALSE(status);
         EXPECT_FALSE(cb_session);
         EXPECT_EQ(HostError::kProtocolError, status.error());

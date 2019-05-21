@@ -67,7 +67,7 @@ class SDP_ServerTest : public TestingBase {
     }
 
     bool success = false;
-    auto cb = [&expected, &success, this](auto cb_packet) {
+    auto cb = [&expected, &success](auto cb_packet) {
       success = ContainersEqual(expected, *cb_packet);
     };
 
@@ -810,7 +810,7 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
       );
 
   ServiceSearchAttributeResponse rsp;
-  auto send_cb = [this, &rsp](auto cb_packet) {
+  auto send_cb = [&rsp](auto cb_packet) {
     EXPECT_LE(sizeof(Header), cb_packet->size());
     PacketView<sdp::Header> packet(cb_packet.get());
     ASSERT_EQ(0x07, packet.header().pdu_id);

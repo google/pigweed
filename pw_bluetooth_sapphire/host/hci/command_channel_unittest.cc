@@ -72,8 +72,8 @@ TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
   auto reset = CommandPacket::New(kReset);
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(
       std::move(reset), dispatcher(),
-      [&id, this, test_obj](CommandChannel::TransactionId callback_id,
-                            const EventPacket& event) {
+      [&id, test_obj](CommandChannel::TransactionId callback_id,
+                      const EventPacket& event) {
         EXPECT_EQ(id, callback_id);
         EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
         EXPECT_EQ(4, event.view().header().parameter_total_size);
@@ -128,8 +128,8 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
   // Send HCI_Inquiry
   CommandChannel::TransactionId id;
   int cb_count = 0;
-  auto cb = [&cb_count, &id, this](CommandChannel::TransactionId callback_id,
-                                   const EventPacket& event) {
+  auto cb = [&cb_count, &id](CommandChannel::TransactionId callback_id,
+                             const EventPacket& event) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
@@ -176,8 +176,8 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
 
   // Send HCI_Reset
   CommandChannel::TransactionId id;
-  auto complete_cb = [&id, this](CommandChannel::TransactionId callback_id,
-                                 const EventPacket& event) {
+  auto complete_cb = [&id](CommandChannel::TransactionId callback_id,
+                           const EventPacket& event) {
     EXPECT_EQ(callback_id, id);
     EXPECT_EQ(kCommandStatusEventCode, event.event_code());
     EXPECT_EQ(StatusCode::kSuccess,
@@ -524,9 +524,8 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 
   CommandChannel::TransactionId id;
   size_t cb_count = 0;
-  auto cb = [&cb_count, &id, kTestEventCode0, this](
-                CommandChannel::TransactionId callback_id,
-                const EventPacket& event) {
+  auto cb = [&cb_count, &id, kTestEventCode0](
+      CommandChannel::TransactionId callback_id, const EventPacket& event) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
@@ -586,15 +585,19 @@ TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [&event_count1, kTestEventCode0,
-                    this](const EventPacket& event) {
+  auto event_cb1 = [
+    &event_count1,
+    kTestEventCode0
+  ](const EventPacket& event) {
     event_count1++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
   };
 
   int event_count2 = 0;
-  auto event_cb2 = [&event_count2, kTestEventCode1,
-                    this](const EventPacket& event) {
+  auto event_cb2 = [
+    &event_count2,
+    kTestEventCode1
+  ](const EventPacket& event) {
     event_count2++;
     EXPECT_EQ(kTestEventCode1, event.event_code());
   };
@@ -709,8 +712,10 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   StartTestDevice();
 
   int event_count = 0;
-  auto event_cb = [&event_count, kTestEventCode,
-                   this](const EventPacket& event) {
+  auto event_cb = [
+    &event_count,
+    kTestEventCode
+  ](const EventPacket& event) {
     event_count++;
     EXPECT_EQ(kTestEventCode, event.event_code());
     EXPECT_EQ(1u, event.view().header().parameter_total_size);
@@ -742,8 +747,10 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
       CreateStaticByteBuffer(hci::kLEMetaEventCode, 0x01, kTestSubeventCode1);
 
   int event_count0 = 0;
-  auto event_cb0 = [&event_count0, kTestSubeventCode0,
-                    this](const EventPacket& event) {
+  auto event_cb0 = [
+    &event_count0,
+    kTestSubeventCode0
+  ](const EventPacket& event) {
     event_count0++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode0,
@@ -751,8 +758,10 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [&event_count1, kTestSubeventCode1,
-                    this](const EventPacket& event) {
+  auto event_cb1 = [
+    &event_count1,
+    kTestSubeventCode1
+  ](const EventPacket& event) {
     event_count1++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode1,
@@ -913,7 +922,7 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
   StartTestDevice();
 
   bool closed_cb_called = false;
-  auto closed_cb = [&closed_cb_called, this] { closed_cb_called = true; };
+  auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
   transport()->SetTransportClosedCallback(closed_cb, dispatcher());
 
   async::PostTask(dispatcher(),
@@ -937,9 +946,8 @@ TEST_F(HCI_CommandChannelTest, CommandTimeout) {
 
   size_t cb_count = 0;
   CommandChannel::TransactionId id1, id2;
-  auto cb = [&cb_count, &id1, &id2, this](
-                CommandChannel::TransactionId callback_id,
-                const EventPacket& event) {
+  auto cb = [&cb_count, &id1, &id2](CommandChannel::TransactionId callback_id,
+                                    const EventPacket& event) {
     cb_count++;
     EXPECT_TRUE(callback_id == id1 || callback_id == id2);
     EXPECT_EQ(kCommandStatusEventCode, event.event_code());

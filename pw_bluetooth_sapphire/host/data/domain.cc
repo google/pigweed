@@ -167,9 +167,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
                        async_dispatcher_t* cb_dispatcher) override {
     RegisterService(
-        psm,
-        [this, psm, cb = std::move(socket_callback),
-         cb_dispatcher](auto channel) mutable {
+        psm, [ this, cb = std::move(socket_callback),
+               cb_dispatcher ](auto channel) mutable {
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
           // Called every time the service is connected, cb must be shared.
           async::PostTask(cb_dispatcher,

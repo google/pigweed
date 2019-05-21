@@ -298,8 +298,8 @@ class Impl final : public Client {
     });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([res_cb = status_callback.share()](
+            att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.4.1).
           if (status.is_protocol_error() &&
@@ -451,8 +451,8 @@ class Impl final : public Client {
         });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([res_cb = status_callback.share()](
+            att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
           if (status.is_protocol_error() &&
@@ -538,8 +538,8 @@ class Impl final : public Client {
     });
 
     auto error_cb =
-        BindErrorCallback([this, res_cb = status_callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([res_cb = status_callback.share()](
+            att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.7.1).
           if (status.is_protocol_error() &&
@@ -566,15 +566,15 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ReadRequestParams>();
     params->handle = htole16(handle);
 
-    auto rsp_cb = BindCallback(
-        [this, callback = callback.share()](const att::PacketReader& rsp) {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
-          callback(att::Status(), rsp.payload_data());
-        });
+    auto rsp_cb = BindCallback([callback = callback.share()](
+        const att::PacketReader& rsp) {
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
+      callback(att::Status(), rsp.payload_data());
+    });
 
     auto error_cb =
-        BindErrorCallback([this, callback = callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([callback = callback.share()](att::Status status,
+                                                        att::Handle handle) {
           bt_log(TRACE, "gatt", "read request failed: %s, handle %#.4x",
                  status.ToString().c_str(), handle);
           callback(status, BufferView());
@@ -599,15 +599,15 @@ class Impl final : public Client {
     params->handle = htole16(handle);
     params->offset = htole16(offset);
 
-    auto rsp_cb = BindCallback(
-        [this, callback = callback.share()](const att::PacketReader& rsp) {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
-          callback(att::Status(), rsp.payload_data());
-        });
+    auto rsp_cb = BindCallback([callback = callback.share()](
+        const att::PacketReader& rsp) {
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+      callback(att::Status(), rsp.payload_data());
+    });
 
     auto error_cb =
-        BindErrorCallback([this, callback = callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([callback = callback.share()](att::Status status,
+                                                        att::Handle handle) {
           bt_log(TRACE, "gatt", "read blob request failed: %s, handle: %#.4x",
                  status.ToString().c_str(), handle);
           callback(status, BufferView());
@@ -656,8 +656,8 @@ class Impl final : public Client {
         });
 
     auto error_cb =
-        BindErrorCallback([this, callback = callback.share()](
-                              att::Status status, att::Handle handle) {
+        BindErrorCallback([callback = callback.share()](att::Status status,
+                                                        att::Handle handle) {
           bt_log(TRACE, "gatt", "write request failed: %s, handle: %#.2x",
                  status.ToString().c_str(), handle);
           callback(status);

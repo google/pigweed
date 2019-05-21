@@ -218,7 +218,7 @@ using GAP_LowEnergyDiscoveryManagerTest = LowEnergyDiscoveryManagerTest;
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [this, &session](auto cb_session) { session = std::move(cb_session); });
+      [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
@@ -242,7 +242,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   // should immediately terminate the session.
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [this, &session](auto cb_session) { session = std::move(cb_session); });
+      [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
@@ -265,7 +265,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
   // session is inactive with the error callback called.
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [this, &session](auto cb_session) { session = std::move(cb_session); });
+      [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
@@ -311,7 +311,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
 
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
-  auto cb = [this, &cb_count, &sessions](auto session) {
+  auto cb = [&cb_count, &sessions](auto session) {
     sessions.push_back(std::move(session));
     cb_count++;
   };
@@ -354,7 +354,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
 
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
-  auto cb = [this, &cb_count, &sessions](auto session) {
+  auto cb = [&cb_count, &sessions](auto session) {
     sessions.push_back(std::move(session));
     cb_count++;
   };
@@ -378,7 +378,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
   std::unique_ptr<LowEnergyDiscoverySession> session;
-  auto cb = [this, &cb_count, &session](auto cb_session) {
+  auto cb = [&cb_count, &session](auto cb_session) {
     cb_count++;
     if (cb_count == kExpectedSessionCount) {
       // Hold on to only the last session object. The rest should get deleted
@@ -409,7 +409,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
 
   discovery_manager()->StartDiscovery(
-      [this, &session](auto cb_session) { session = std::move(cb_session); });
+      [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
@@ -422,7 +422,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   // Request a new session. The discovery manager should restart the scan after
   // the ongoing one stops.
   discovery_manager()->StartDiscovery(
-      [this, &session](auto cb_session) { session = std::move(cb_session); });
+      [&session](auto cb_session) { session = std::move(cb_session); });
 
   // Discovery should stop and start again.
   RunLoopUntilIdle();
@@ -438,7 +438,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
 
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
-  auto cb = [this, &cb_count](auto session) {
+  auto cb = [&cb_count](auto session) {
     // |session| should contain nullptr as the request will fail.
     EXPECT_FALSE(session);
     cb_count++;
@@ -483,7 +483,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   discovery_manager()->StartDiscovery([&](auto cb_session) {
     session = std::move(cb_session);
     session->set_error_callback(
-        [&session_error, this] { session_error = true; });
+        [&session_error] { session_error = true; });
   });
 
   // The controller will fail to restart scanning after scanning stops at the
@@ -722,7 +722,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   // Session 0 is interested in performing general discovery.
   std::unordered_set<DeviceAddress> peers_session0;
   LowEnergyDiscoverySession::PeerFoundCallback result_cb =
-      [this, &peers_session0](const auto& peer) {
+      [&peers_session0](const auto& peer) {
         peers_session0.insert(peer.address());
       };
   sessions.push_back(StartDiscoverySession());

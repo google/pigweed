@@ -295,13 +295,13 @@ TEST_F(L2CAP_LESignalingChannelTest, ConnParamUpdateAccept) {
   // clang-format on
 
   bool fake_chan_cb_called = false;
-  auto fake_chan_cb = [&expected, &fake_chan_cb_called, this](auto packet) {
+  auto fake_chan_cb = [&expected, &fake_chan_cb_called](auto packet) {
     EXPECT_TRUE(ContainersEqual(expected, *packet));
     fake_chan_cb_called = true;
   };
 
   bool conn_param_cb_called = false;
-  auto conn_param_cb = [&conn_param_cb_called, this](const auto& params) {
+  auto conn_param_cb = [&conn_param_cb_called](const auto& params) {
     EXPECT_EQ(0x0006, params.min_interval());
     EXPECT_EQ(0x0C80, params.max_interval());
     EXPECT_EQ(0x01F3, params.max_latency());
@@ -341,7 +341,7 @@ TEST_F(L2CAP_LESignalingChannelSlaveTest, ConnParamUpdateReject) {
   // clang-format on
 
   bool cb_called = false;
-  auto cb = [&expected, &cb_called, this](auto packet) {
+  auto cb = [&expected, &cb_called](auto packet) {
     EXPECT_TRUE(ContainersEqual(expected, *packet));
     cb_called = true;
   };

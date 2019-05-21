@@ -670,7 +670,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallback) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
   bool closed_cb_called = false;
-  auto closed_cb = [&closed_cb_called, this] { closed_cb_called = true; };
+  auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
   transport()->SetTransportClosedCallback(closed_cb, dispatcher());
 
   async::PostTask(dispatcher(),

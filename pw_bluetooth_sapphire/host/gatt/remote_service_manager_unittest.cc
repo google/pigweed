@@ -148,7 +148,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
       [&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 
@@ -173,7 +173,7 @@ TEST_F(GATT_RemoteServiceManagerTest, Initialize) {
       [&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 
@@ -201,7 +201,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeFailure) {
   ASSERT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 
@@ -225,7 +225,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesBeforeInit) {
   EXPECT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 
@@ -241,7 +241,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
   fake_client()->set_primary_services(std::move(fake_services));
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 
@@ -277,7 +277,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesByUuid) {
   ASSERT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([this, &status](att::Status val) { status = val; });
+  mgr()->Initialize([&status](att::Status val) { status = val; });
 
   RunLoopUntilIdle();
 

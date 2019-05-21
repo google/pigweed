@@ -47,7 +47,7 @@ void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
         ->scan_enable = scan_type;
     hci->command_channel()->SendCommand(
         std::move(write_enable), dispatcher,
-        [cb = std::move(finish_cb), enabled](
+        [cb = std::move(finish_cb)](
             auto, const hci::EventPacket& event) { cb(event.ToStatus()); });
   };
   hci->command_channel()->SendCommand(std::move(read_enable), dispatcher,

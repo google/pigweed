@@ -115,7 +115,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
   ConnectionPtr conn;
   bool callback_called = false;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     conn = std::move(cb_conn);
     callback_called = true;
@@ -159,7 +159,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnectionStatusError) {
   ConnectionPtr conn;
   bool callback_called = false;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     conn = std::move(cb_conn);
     callback_called = true;
@@ -194,7 +194,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnectionEventError) {
   ConnectionPtr conn;
   bool callback_called = false;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     callback_called = true;
     conn = std::move(cb_conn);
@@ -229,7 +229,7 @@ TEST_F(HCI_LowEnergyConnectorTest, Cancel) {
   ConnectionPtr conn;
   bool callback_called = false;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     callback_called = true;
     conn = std::move(cb_conn);
@@ -303,7 +303,7 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   ConnectionPtr conn;
   unsigned int callback_count = 0;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     callback_count++;
     conn = std::move(cb_conn);
@@ -354,7 +354,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnectionTimeout) {
   ConnectionPtr conn;
   bool callback_called = false;
 
-  auto callback = [&, this](auto cb_status, auto cb_conn) {
+  auto callback = [&](auto cb_status, auto cb_conn) {
     status = cb_status;
     callback_called = true;
     conn = std::move(cb_conn);

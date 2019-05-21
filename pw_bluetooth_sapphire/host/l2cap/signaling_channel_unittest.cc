@@ -249,7 +249,7 @@ TEST_F(L2CAP_SignalingChannelTest, HandlePacket) {
       'L', 'O', 'L', 'Z');
 
   bool called = false;
-  sig()->set_packet_callback([&cmd, &called, this](auto packet) {
+  sig()->set_packet_callback([&cmd, &called](auto packet) {
     EXPECT_TRUE(ContainersEqual(cmd, packet.data()));
     called = true;
   });

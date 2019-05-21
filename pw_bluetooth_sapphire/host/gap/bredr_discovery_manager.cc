@@ -439,7 +439,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     resolve_pending.cancel();
     self->hci_->command_channel()->SendCommand(
         std::move(write_enable), self->dispatcher_,
-        [self, enable](auto, const hci::EventPacket& event) {
+        [self](auto, const hci::EventPacket& event) {
           if (!self) {
             return;
           }

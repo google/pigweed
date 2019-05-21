@@ -403,8 +403,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
     EXPECT_FALSE(deleted);
   };
 
-  auto success_cb = [&conn_ref, &closed_cb, this](auto status,
-                                                  auto cb_conn_ref) {
+  auto success_cb = [&conn_ref, &closed_cb](auto status,
+                                            auto cb_conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(cb_conn_ref);
     conn_ref = std::move(cb_conn_ref);
@@ -681,7 +681,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Destructor) {
   // of destruction.
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto success_cb = [&conn_ref, this](auto status, auto cb_conn_ref) {
+  auto success_cb = [&conn_ref](auto status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
     EXPECT_TRUE(status);
 
@@ -732,7 +732,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Disconnect) {
   auto closed_cb = [&closed_count] { closed_count++; };
 
   std::vector<LowEnergyConnectionRefPtr> conn_refs;
-  auto success_cb = [&conn_refs, &closed_cb, this](auto status, auto conn_ref) {
+  auto success_cb = [&conn_refs, &closed_cb](auto status, auto conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(conn_ref);
     conn_ref->set_closed_callback(closed_cb);
@@ -763,10 +763,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEvent) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
   int closed_count = 0;
-  auto closed_cb = [&closed_count, this] { closed_count++; };
+  auto closed_cb = [&closed_count] { closed_count++; };
 
   std::vector<LowEnergyConnectionRefPtr> conn_refs;
-  auto success_cb = [&conn_refs, &closed_cb, this](auto status, auto conn_ref) {
+  auto success_cb = [&conn_refs, &closed_cb](auto status, auto conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(conn_ref);
     conn_ref->set_closed_callback(closed_cb);
@@ -794,7 +794,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectWhileRefPending) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto success_cb = [&conn_ref, this](auto status, auto cb_conn_ref) {
+  auto success_cb = [&conn_ref](auto status, auto cb_conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(cb_conn_ref);
     EXPECT_TRUE(cb_conn_ref->active());
@@ -828,7 +828,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto success_cb = [&conn_ref, this](auto status, auto cb_conn_ref) {
+  auto success_cb = [&conn_ref](auto status, auto cb_conn_ref) {
     ASSERT_TRUE(cb_conn_ref);
     ASSERT_TRUE(status);
     EXPECT_TRUE(cb_conn_ref->active());

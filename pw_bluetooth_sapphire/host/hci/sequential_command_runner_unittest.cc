@@ -91,7 +91,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   Status status;
   int status_cb_called = 0;
-  auto status_cb = [&, this](Status cb_status) {
+  auto status_cb = [&](Status cb_status) {
     status = cb_status;
     status_cb_called++;
   };
@@ -228,7 +228,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   Status status;
   int status_cb_called = 0;
-  auto status_cb = [&, this](Status cb_status) {
+  auto status_cb = [&](Status cb_status) {
     status = cb_status;
     status_cb_called++;
   };

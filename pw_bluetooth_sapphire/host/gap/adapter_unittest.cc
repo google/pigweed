@@ -80,7 +80,7 @@ using GAP_AdapterTest = AdapterTest;
 TEST_F(GAP_AdapterTest, InitializeFailureNoFeaturesSupported) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -95,7 +95,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureNoFeaturesSupported) {
 TEST_F(GAP_AdapterTest, InitializeFailureNoBufferInfo) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -115,7 +115,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureNoBufferInfo) {
 TEST_F(GAP_AdapterTest, InitializeNoBREDR) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -142,7 +142,7 @@ TEST_F(GAP_AdapterTest, InitializeNoBREDR) {
 TEST_F(GAP_AdapterTest, InitializeSuccess) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -168,7 +168,7 @@ TEST_F(GAP_AdapterTest, InitializeSuccess) {
 TEST_F(GAP_AdapterTest, InitializeFailureHCICommandError) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -190,7 +190,7 @@ TEST_F(GAP_AdapterTest, InitializeFailureHCICommandError) {
 TEST_F(GAP_AdapterTest, TransportClosedCallback) {
   bool success;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -218,7 +218,7 @@ TEST_F(GAP_AdapterTest, SetNameError) {
   bool success;
   hci::Status result;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };
@@ -249,7 +249,7 @@ TEST_F(GAP_AdapterTest, SetNameSuccess) {
   bool success;
   hci::Status result;
   int init_cb_count = 0;
-  auto init_cb = [&, this](bool cb_success) {
+  auto init_cb = [&](bool cb_success) {
     success = cb_success;
     init_cb_count++;
   };

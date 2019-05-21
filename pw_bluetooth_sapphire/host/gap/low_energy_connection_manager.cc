@@ -172,7 +172,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
     bt_log(TRACE, "gap-le", "received security upgrade request");
 
-    pairing_->UpgradeSecurity(level, [handle, cb = std::move(callback)](
+    pairing_->UpgradeSecurity(level, [cb = std::move(callback)](
                                          sm::Status status, const auto& sp) {
       bt_log(INFO, "gap-le", "pairing status: %s, properties: %s",
              status.ToString().c_str(), sp.ToString().c_str());
@@ -967,7 +967,7 @@ void LowEnergyConnectionManager::UpdateConnectionParams(
   event_params->minimum_ce_length = 0x0000;
   event_params->maximum_ce_length = 0x0000;
 
-  auto status_cb = [handle](auto id, const hci::EventPacket& event) {
+  auto status_cb = [](auto id, const hci::EventPacket& event) {
     ZX_DEBUG_ASSERT(event.event_code() == hci::kCommandStatusEventCode);
 
     // Warn if the command failed.

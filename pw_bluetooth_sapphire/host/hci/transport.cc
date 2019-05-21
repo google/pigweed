@@ -147,17 +147,17 @@ bool Transport::IsInitialized() const {
 
 void Transport::WatchChannelClosed(const zx::channel& channel,
                                    Waiter& wait) {
-  async::PostTask(io_dispatcher_,
-    [handle = channel.get(), &wait, this, ref = fxl::Ref(this)] {
-    wait.set_object(handle);
-    wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
-    zx_status_t status = wait.Begin(async_get_default_dispatcher());
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed to set up closed handler: %s",
-             zx_status_get_string(status));
-      wait.set_object(ZX_HANDLE_INVALID);
-    }
-  });
+  async::PostTask(
+      io_dispatcher_, [ handle = channel.get(), &wait, ref = fxl::Ref(this) ] {
+        wait.set_object(handle);
+        wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
+        zx_status_t status = wait.Begin(async_get_default_dispatcher());
+        if (status != ZX_OK) {
+          bt_log(ERROR, "hci", "failed to set up closed handler: %s",
+                 zx_status_get_string(status));
+          wait.set_object(ZX_HANDLE_INVALID);
+        }
+      });
 }
 
 void Transport::OnChannelClosed(

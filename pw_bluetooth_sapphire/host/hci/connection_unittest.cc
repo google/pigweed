@@ -118,7 +118,7 @@ TEST_P(LinkTypeConnectionTest, Close) {
 
   bool callback_called = false;
   test_device()->SetTransactionCallback(
-      [&callback_called, this] { callback_called = true; }, dispatcher());
+      [&callback_called] { callback_called = true; }, dispatcher());
 
   auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());
@@ -153,7 +153,7 @@ TEST_P(LinkTypeConnectionTest, CloseError) {
   // The callback should get called regardless of the procedure status.
   bool callback_called = false;
   test_device()->SetTransactionCallback(
-      [&callback_called, this] { callback_called = true; }, dispatcher());
+      [&callback_called] { callback_called = true; }, dispatcher());
 
   auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());

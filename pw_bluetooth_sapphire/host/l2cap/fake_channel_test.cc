@@ -26,7 +26,7 @@ bool FakeChannelTest::Expect(const ByteBuffer& expected) {
   }
 
   bool success = false;
-  auto cb = [&expected, &success, this](auto cb_packet) {
+  auto cb = [&expected, &success](auto cb_packet) {
     success = ContainersEqual(expected, *cb_packet);
   };
 

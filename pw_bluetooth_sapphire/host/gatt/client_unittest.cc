@@ -93,7 +93,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUMalformedResponse) {
   // Initialize to a non-zero value.
   uint16_t final_mtu = kPreferredMTU;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -132,7 +132,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorNotSupported) {
 
   uint16_t final_mtu = 0;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -174,7 +174,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUErrorOther) {
 
   uint16_t final_mtu = kPreferredMTU;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -214,7 +214,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectLocal) {
 
   uint16_t final_mtu = 0;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -253,7 +253,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectRemote) {
 
   uint16_t final_mtu = 0;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -292,7 +292,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
 
   uint16_t final_mtu = 0;
   att::Status status;
-  auto mtu_cb = [&, this](att::Status cb_status, uint16_t val) {
+  auto mtu_cb = [&](att::Status cb_status, uint16_t val) {
     final_mtu = val;
     status = cb_status;
   };
@@ -321,7 +321,7 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryResponseTooShort) {
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -340,7 +340,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryResponseTooShort) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedDataLength) {
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -365,7 +365,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedDataLength) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedAttrDataList) {
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -391,7 +391,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedAttrDataList) {
 // an empty data list as not an error.
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryEmptyDataList) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -413,7 +413,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryEmptyDataList) {
 // The first request results in "Attribute Not Found".
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryAttributeNotFound) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -438,7 +438,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryAttributeNotFound) {
 // The first request results in an error.
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryError) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -462,7 +462,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryError) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedServiceRange) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, res_cb] {
@@ -489,7 +489,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedServiceRange) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimary16BitResultsSingleRequest) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) {
@@ -530,7 +530,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimary16BitResultsSingleRequest) {
 
 TEST_F(GATT_ClientTest, DiscoverAllPrimary128BitResultSingleRequest) {
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) {
@@ -585,7 +585,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
       );
 
   att::Status status(HostError::kFailed);
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<ServiceData> services;
   auto svc_cb = [&services](const ServiceData& svc) {
@@ -662,7 +662,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesEqual) {
   constexpr att::Handle kEnd = 0x0001;
 
   att::Status status(HostError::kFailed);  // Initialize as error
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Should succeed immediately.
   client()->DiscoverCharacteristics(kStart, kEnd, NopChrcCallback, res_cb);
@@ -681,7 +681,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResponseTooShort) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -710,7 +710,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedDataLength) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -745,7 +745,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMalformedAttrDataList) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -781,7 +781,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -813,7 +813,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -847,7 +847,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryError) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the message loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
@@ -881,7 +881,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery16BitResultsSingleRequest) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -934,7 +934,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscovery128BitResultsSingleRequest) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -992,7 +992,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -1082,7 +1082,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeforeRange) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -1125,7 +1125,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryResultsBeyondRange) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -1168,7 +1168,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryValueNotContiguous) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {
@@ -1209,7 +1209,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
       );
 
   att::Status status;
-  auto res_cb = [this, &status](att::Status val) { status = val; };
+  auto res_cb = [&status](att::Status val) { status = val; };
 
   std::vector<CharacteristicData> chrcs;
   auto chrc_cb = [&chrcs](const CharacteristicData& chrc) {

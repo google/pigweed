@@ -332,7 +332,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp;
 
-  auto connect_cb = [this](AdvertisementId connected_id,
+  auto connect_cb = [](AdvertisementId connected_id,
                            hci::ConnectionPtr conn) {};
 
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, connect_cb, kTestInterval,

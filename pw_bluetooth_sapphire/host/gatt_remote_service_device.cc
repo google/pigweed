@@ -318,7 +318,7 @@ void GattRemoteServiceDevice::EnableNotifications(
     bt_gatt_id_t id, const bt_gatt_notification_value_t* value,
     bt_gatt_svc_enable_notifications_callback status_cb, void* cookie) {
   auto value_cb = *value;
-  auto notif_callback = [cookie, id, value_cb](const ByteBuffer& buff) {
+  auto notif_callback = [id, value_cb](const ByteBuffer& buff) {
     value_cb.callback(value_cb.ctx, id, buff.data(), buff.size());
   };
 

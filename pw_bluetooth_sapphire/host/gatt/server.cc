@@ -405,8 +405,8 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
 
     att::Handle handle = results.front()->handle();
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto result_cb = [self, tid, handle, kMaxValueSize, kHeaderSize](
-                         att::ErrorCode ecode, const auto& value) {
+    auto result_cb = [self, tid, handle, kMaxValueSize](att::ErrorCode ecode,
+                                                        const auto& value) {
       if (!self)
         return;
 
@@ -493,8 +493,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
   constexpr size_t kHeaderSize = sizeof(att::Header);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto callback = [self, tid, offset, handle](att::ErrorCode ecode,
-                                              const auto& value) {
+  auto callback = [self, tid, handle](att::ErrorCode ecode, const auto& value) {
     if (!self)
       return;
 
