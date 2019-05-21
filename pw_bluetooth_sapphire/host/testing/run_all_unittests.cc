@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 #include <ddk/driver.h>
+#include <cstdlib>
 
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/command_line.h"
 #include "src/lib/fxl/log_settings_command_line.h"
+#include "src/lib/fxl/test/test_settings.h"
 
 BT_DECLARE_FAKE_DRIVER();
 
@@ -40,6 +42,9 @@ LogSeverity FxlLogToBtLogLevel(fxl::LogSeverity severity) {
 
 int main(int argc, char** argv) {
   auto cl = fxl::CommandLineFromArgcArgv(argc, argv);
+  if (!fxl::SetTestSettings(cl)) {
+    return EXIT_FAILURE;
+  }
 
   fxl::LogSettings log_settings;
   log_settings.min_log_level = fxl::LOG_ERROR;

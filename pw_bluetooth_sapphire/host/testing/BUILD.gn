@@ -31,10 +31,10 @@ source_set("fake_controller") {
     "fake_controller.h",
     "fake_controller_base.cc",
     "fake_controller_base.h",
-    "fake_peer.cc",
-    "fake_peer.h",
     "fake_gatt_server.cc",
     "fake_gatt_server.h",
+    "fake_peer.cc",
+    "fake_peer.h",
   ]
 
   public_deps = [
@@ -66,6 +66,7 @@ source_set("gtest_main") {
   deps = [
     "//garnet/public/lib/fsl",
     "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/lib/fxl/test:test_settings",
     "//zircon/public/lib/driver",
   ]
 
