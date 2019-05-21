@@ -80,7 +80,6 @@ source_set("testing") {
   testonly = true
 
   sources = [
-    "//src/lib/fxl",
     "fake_connection.cc",
     "fake_connection.h",
     "fake_local_address_delegate.cc",
@@ -89,6 +88,10 @@ source_set("testing") {
 
   public_deps = [
     ":hci",
+  ]
+
+  deps = [
+    "//src/lib/fxl",
   ]
 }
 
