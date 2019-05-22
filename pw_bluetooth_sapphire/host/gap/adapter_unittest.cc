@@ -538,8 +538,10 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // The connection request should use a public address.
   hci::Status status;
-  auto connect_cb = [&](auto s, auto conn_ref) {
+  int connect_cb_calls = 0;
+  auto connect_cb = [&status, &connect_cb_calls](auto s, auto conn_ref) {
     status = s;
+    connect_cb_calls++;
     ASSERT_FALSE(conn_ref);
   };
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
@@ -557,6 +559,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   // Let the connection request timeout.
   RunLoopFor(kTestTimeout);
   EXPECT_EQ(HostError::kTimedOut, status.error());
+  EXPECT_EQ(1, connect_cb_calls);
 
   // The peer should not have expired.
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
@@ -574,9 +577,15 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
 
-  // The address should refresh after the next connection attempt.
+  // The address should refresh after the pending request expires and before the
+  // next connection attempt.
   RunLoopFor(kTestDelay);
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  ASSERT_EQ(2, connect_cb_calls);
+
+  // This will be notified when LowEnergyConnectionManager is destroyed.
+  auto noop_connect_cb = [](auto, auto) {};
+  adapter()->le_connection_manager()->Connect(peer->identifier(),
+                                              std::move(noop_connect_cb));
   RunLoopUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
   EXPECT_EQ(hci::LEOwnAddressType::kRandom,
