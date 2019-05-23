@@ -1391,6 +1391,61 @@ TEST_F(SMP_InitiatorPairingTest,
   EXPECT_EQ(pairing_status(), pairing_complete_status());
 }
 
+// The responder sends the sample LTK from the specification doc
+TEST_F(SMP_InitiatorPairingTest,
+       Phase3MasterIdentificationReceiveSampleLTK) {
+  UInt128 stk;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            KeyDistGen::kEncKey);
+
+  const UInt128 kLtkSample{{0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36,
+                            0xD8, 0x74, 0xF5, 0x39, 0x41, 0x38, 0x68, 0x4C}};
+
+  // Pairing should still be in progress.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(0, pairing_callback_count());
+  EXPECT_EQ(0, pairing_data_callback_count());
+
+  // Send a bad LTK, this should cause pairing to fail.
+  ReceiveEncryptionInformation(kLtkSample);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+}
+
+// The responder sends the sample Rand from the specification doc
+TEST_F(SMP_InitiatorPairingTest,
+       Phase3MasterIdentificationReceiveExampleRand) {
+  UInt128 stk;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            KeyDistGen::kEncKey);
+
+  uint64_t kRandSample = 0xABCDEF1234567890;
+  uint16_t kEDiv = 20;
+
+  // Pairing should still be in progress.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(0, pairing_callback_count());
+  EXPECT_EQ(0, pairing_data_callback_count());
+
+  // Send a bad Rand, this should cause pairing to fail.
+  ReceiveEncryptionInformation(UInt128());
+  ReceiveMasterIdentification(kRandSample, kEDiv);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+}
+
 TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
   UInt128 stk;
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,

@@ -674,6 +674,13 @@ void PairingState::OnLongTermKey(const UInt128& ltk) {
     return;
   }
 
+  // Abort pairing if the LTK is the sample LTK from the core spec
+  if (ltk == kSpecSampleLtk) {
+    bt_log(ERROR, "sm", "LTK is sample from spec, not secure! aborting");
+    AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
+    return;
+  }
+
   ZX_DEBUG_ASSERT(!(legacy_state_->obtained_remote_keys & KeyDistGen::kEncKey));
   legacy_state_->ltk_bytes = ltk;
   legacy_state_->has_ltk = true;
@@ -714,6 +721,13 @@ void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
 
   if (legacy_state_->obtained_remote_keys & KeyDistGen::kEncKey) {
     bt_log(ERROR, "sm", "already received EDIV and Rand!");
+    AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
+    return;
+  }
+
+  // Abort pairing if the Rand is the sample Rand from the core spec
+  if (random == kSpecSampleRandom) {
+    bt_log(ERROR, "sm", "random is sample from core spec, not secure! aborting");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
