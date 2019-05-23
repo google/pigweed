@@ -525,6 +525,14 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id,
 }
 
 bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
+  // TODO(BT-873): When connection requests can be canceled, do so here.
+  if (pending_requests_.find(peer_id) != pending_requests_.end()) {
+    bt_log(WARN, "gap-le",
+           "Can't disconnect peer %s because it's being connected to",
+           bt_str(peer_id));
+    return false;
+  }
+
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
     bt_log(WARN, "gap-le", "peer not connected (id: %s)", bt_str(peer_id));

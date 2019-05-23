@@ -162,13 +162,13 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectUnknownPeer) {
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectClassicPeer) {
-  auto* dev = peer_cache()->NewPeer(kAddress2, true);
-  EXPECT_FALSE(conn_mgr()->Connect(dev->identifier(), {}));
+  auto* peer = peer_cache()->NewPeer(kAddress2, true);
+  EXPECT_FALSE(conn_mgr()->Connect(peer->identifier(), {}));
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
-  auto* dev = peer_cache()->NewPeer(kAddress0, false);
-  EXPECT_FALSE(conn_mgr()->Connect(dev->identifier(), {}));
+  auto* peer = peer_cache()->NewPeer(kAddress0, false);
+  EXPECT_FALSE(conn_mgr()->Connect(peer->identifier(), {}));
 }
 
 // An error is received via the HCI Command cb_status event
@@ -714,6 +714,21 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Destructor) {
   EXPECT_TRUE(conn_closed);
   EXPECT_EQ(1u, canceled_peers().size());
   EXPECT_EQ(1u, canceled_peers().count(kAddress1));
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectPendingConnections) {
+  auto* dev0 = peer_cache()->NewPeer(kAddress0, true);
+  auto* dev1 = peer_cache()->NewPeer(kAddress1, true);
+
+  auto callback = [](auto, auto) {};  // no-op
+
+  EXPECT_TRUE(conn_mgr()->Connect(dev0->identifier(), callback));
+  EXPECT_TRUE(conn_mgr()->Connect(dev1->identifier(), callback));
+  EXPECT_EQ(Peer::ConnectionState::kInitializing,
+            dev0->le()->connection_state());
+
+  EXPECT_FALSE(conn_mgr()->Disconnect(dev0->identifier()));
+  EXPECT_FALSE(conn_mgr()->Disconnect(dev1->identifier()));
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectError) {

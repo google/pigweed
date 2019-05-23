@@ -549,9 +549,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
 
   RunLoopUntilIdle();
 
-  auto* dev = peer_cache()->FindByAddress(kTestDevAddr);
-  ASSERT_TRUE(dev);
-  EXPECT_EQ(dev->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
   // When we deallocate the connection manager next, we should disconnect.
@@ -577,9 +577,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
        IncomingConnectionUpgradesKnownLowEnergyPeerToDualMode) {
   const DeviceAddress le_alias_addr(DeviceAddress::Type::kLEPublic,
                                     kTestDevAddr.value());
-  Peer* const dev = peer_cache()->NewPeer(le_alias_addr, true);
-  ASSERT_TRUE(dev);
-  ASSERT_EQ(TechnologyType::kLowEnergy, dev->technology());
+  Peer* const peer = peer_cache()->NewPeer(le_alias_addr, true);
+  ASSERT_TRUE(peer);
+  ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
   QueueSuccessfulIncomingConn();
 
@@ -587,9 +587,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   RunLoopUntilIdle();
 
-  ASSERT_EQ(dev, peer_cache()->FindByAddress(kTestDevAddr));
-  EXPECT_EQ(dev->identifier(), connmgr()->GetPeerId(kConnectionHandle));
-  EXPECT_EQ(TechnologyType::kDualMode, dev->technology());
+  ASSERT_EQ(peer, peer_cache()->FindByAddress(kTestDevAddr));
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
 
   // Prepare for disconnection upon teardown.
   QueueDisconnection(kConnectionHandle);
@@ -1570,6 +1570,35 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
   EXPECT_TRUE(NotConnected(peer_a));
   EXPECT_TRUE(IsConnected(peer_b));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
+  auto* peer_a = peer_cache()->NewPeer(kTestDevAddr, true);
+  auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
+
+  // Enqueue first connection request (which will await Connection Complete)
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kCreateConnectionCancel,
+      {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+
+  // No-op connection callbacks
+  auto callback_a = [](auto, auto) {};
+  auto callback_b = [](auto, auto) {};
+
+  // Launch both requests (second one is queued. Neither completes.)
+  EXPECT_TRUE(connmgr()->Connect(peer_a->identifier(), callback_a));
+  EXPECT_TRUE(connmgr()->Connect(peer_b->identifier(), callback_b));
+
+  // Put the first connection into flight.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  ASSERT_TRUE(IsInitializing(peer_a));
+  ASSERT_TRUE(IsInitializing(peer_b));
+
+  EXPECT_FALSE(connmgr()->Disconnect(peer_a->identifier()));
+  EXPECT_FALSE(connmgr()->Disconnect(peer_b->identifier()));
 }
 
 // TODO(BT-819) Connecting a peer that's being interrogated

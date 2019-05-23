@@ -137,9 +137,10 @@ class LowEnergyConnectionManager final {
     return local_address_delegate_;
   }
 
-  // Disconnects any existing LE connection to |peer_id|, invalidating
-  // all active LowEnergyConnectionRefs. Returns false if |peer_id| is
-  // not recognized or the corresponding remote peer is not connected.
+  // Disconnects any existing LE connection to |peer_id|, invalidating all
+  // active LowEnergyConnectionRefs. Returns false if |peer_id| is not
+  // recognized, the corresponding peer is not connected, or the peer can not be
+  // disconnected.
   bool Disconnect(PeerId peer_id);
 
   // Initializes a new connection over the given |link| and returns a connection

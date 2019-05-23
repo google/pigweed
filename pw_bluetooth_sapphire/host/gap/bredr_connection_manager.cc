@@ -213,6 +213,13 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
 }
 
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
+  if (connection_requests_.find(peer_id) != connection_requests_.end()) {
+    bt_log(WARN, "gap-bredr",
+           "Can't disconnect peer %s because it's being connected to",
+           bt_str(peer_id));
+    return false;
+  }
+
   auto handle = FindConnectionById(peer_id);
   if (!handle) {
     return false;
