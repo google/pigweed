@@ -124,4 +124,5 @@ fuzzers_package("bluetooth_fuzzers") {
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_rx_engine_fuzzer",
   ]
+  generated_test_package = "bluetooth_fuzzers_test"
 }
