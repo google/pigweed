@@ -52,6 +52,12 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
   // Returns the HCI event code currently in this packet.
   EventCode event_code() const { return view().header().event_code; }
 
+  // Convenience function to get a parameter payload from a packet
+  template <typename ParamsType>
+  const ParamsType& params() const {
+    return view().payload<ParamsType>();
+  }
+
   // If this is a CommandComplete event packet, this method returns a pointer to
   // the beginning of the return parameter structure. If the given template type
   // would exceed the bounds of the packet or if this packet does not represent
@@ -63,7 +69,7 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
             view().payload_size() - sizeof(CommandCompleteEventParams))
       return nullptr;
     return reinterpret_cast<const ReturnParams*>(
-        view().payload<CommandCompleteEventParams>().return_parameters);
+        params<CommandCompleteEventParams>().return_parameters);
   }
 
   // If this is a LE Meta Event packet, this method returns a pointer to the
@@ -77,7 +83,7 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
             view().payload_size() - sizeof(LEMetaEventParams))
       return nullptr;
     return reinterpret_cast<const SubeventParams*>(
-        view().payload<LEMetaEventParams>().subevent_parameters);
+        params<LEMetaEventParams>().subevent_parameters);
   }
 
   // If this is an event packet with a standard status (See Vol 2, Part D), this

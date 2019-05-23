@@ -310,8 +310,7 @@ BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
 void BrEdrConnectionManager::OnConnectionRequest(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionRequestEventCode);
-  const auto& params =
-      event.view().payload<hci::ConnectionRequestEventParams>();
+  const auto& params = event.params<hci::ConnectionRequestEventParams>();
   std::string link_type_str =
       params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
 
@@ -368,8 +367,7 @@ void BrEdrConnectionManager::OnConnectionComplete(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionCompleteEventCode);
 
-  const auto& params =
-      event.view().payload<hci::ConnectionCompleteEventParams>();
+  const auto& params = event.params<hci::ConnectionCompleteEventParams>();
   auto connection_handle = letoh16(params.connection_handle);
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
@@ -492,8 +490,7 @@ void BrEdrConnectionManager::EstablishConnection(
 void BrEdrConnectionManager::OnDisconnectionComplete(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
-  const auto& params =
-      event.view().payload<hci::DisconnectionCompleteEventParams>();
+  const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
 
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
   if (hci_is_error(event, WARN, "gap-bredr",
@@ -534,7 +531,7 @@ void BrEdrConnectionManager::CleanupConnection(hci::ConnectionHandle handle,
 
 void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLinkKeyRequestEventCode);
-  const auto& params = event.view().payload<hci::LinkKeyRequestParams>();
+  const auto& params = event.params<hci::LinkKeyRequestParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
@@ -581,8 +578,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
 void BrEdrConnectionManager::OnLinkKeyNotification(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLinkKeyNotificationEventCode);
-  const auto& params =
-      event.view().payload<hci::LinkKeyNotificationEventParams>();
+  const auto& params = event.params<hci::LinkKeyNotificationEventParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
@@ -633,8 +629,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
 void BrEdrConnectionManager::OnIOCapabilitiesRequest(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kIOCapabilityRequestEventCode);
-  const auto& params =
-      event.view().payload<hci::IOCapabilityRequestEventParams>();
+  const auto& params = event.params<hci::IOCapabilityRequestEventParams>();
 
   auto reply = hci::CommandPacket::New(
       hci::kIOCapabilityRequestReply,
@@ -658,8 +653,7 @@ void BrEdrConnectionManager::OnIOCapabilitiesRequest(
 void BrEdrConnectionManager::OnUserConfirmationRequest(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kUserConfirmationRequestEventCode);
-  const auto& params =
-      event.view().payload<hci::UserConfirmationRequestEventParams>();
+  const auto& params = event.params<hci::UserConfirmationRequestEventParams>();
 
   bt_log(INFO, "gap-bredr", "auto-confirming pairing from %s (%u)",
          bt_str(params.bd_addr), params.numeric_value);

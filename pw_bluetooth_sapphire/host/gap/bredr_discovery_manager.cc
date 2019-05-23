@@ -31,7 +31,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache,
     return updated;
   }
 
-  const auto& result = event.view().payload<EventParamType>();
+  const auto& result = event.params<EventParamType>();
   for (int i = 0; i < result.num_responses; i++) {
     DeviceAddress addr(DeviceAddress::Type::kBREDR,
                        result.responses[i].bd_addr);
@@ -274,8 +274,7 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(
            event.view().payload_size());
     return;
   }
-  const auto& result =
-      event.view().payload<hci::ExtendedInquiryResultEventParams>();
+  const auto& result = event.params<hci::ExtendedInquiryResultEventParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, result.bd_addr);
   Peer* peer = cache_->FindByAddress(addr);

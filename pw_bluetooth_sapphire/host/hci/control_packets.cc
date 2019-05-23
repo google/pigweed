@@ -58,7 +58,7 @@ bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
   if (event.view().payload_size() < sizeof(T))
     return false;
 
-  *out_code = event.view().payload<T>().status;
+  *out_code = event.params<T>().status;
   return true;
 }
 

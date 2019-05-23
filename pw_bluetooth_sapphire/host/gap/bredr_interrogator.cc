@@ -176,7 +176,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId peer_id) {
                     hci::kRemoteNameRequestCompleteEventCode);
 
     const auto& params =
-        event.view().payload<hci::RemoteNameRequestCompleteEventParams>();
+        event.params<hci::RemoteNameRequestCompleteEventParams>();
 
     size_t len = 0;
     for (; len < hci::kMaxNameLength; len++) {
@@ -212,35 +212,35 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
   auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
 
-  it->second.callbacks.emplace_back([peer_id,
-                                     self = weak_ptr_factory_.GetWeakPtr()](
-                                        auto, const hci::EventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-bredr",
-                     "read remote version info failed")) {
-      self->Complete(peer_id, event.ToStatus());
-      return;
-    }
+  it->second.callbacks.emplace_back(
+      [peer_id, self = weak_ptr_factory_.GetWeakPtr()](
+          auto, const hci::EventPacket& event) {
+        if (hci_is_error(event, WARN, "gap-bredr",
+                         "read remote version info failed")) {
+          self->Complete(peer_id, event.ToStatus());
+          return;
+        }
 
-    if (event.event_code() == hci::kCommandStatusEventCode) {
-      return;
-    }
+        if (event.event_code() == hci::kCommandStatusEventCode) {
+          return;
+        }
 
-    ZX_DEBUG_ASSERT(event.event_code() ==
-                    hci::kReadRemoteVersionInfoCompleteEventCode);
+        ZX_DEBUG_ASSERT(event.event_code() ==
+                        hci::kReadRemoteVersionInfoCompleteEventCode);
 
-    const auto params =
-        event.view().payload<hci::ReadRemoteVersionInfoCompleteEventParams>();
+        const auto params =
+            event.params<hci::ReadRemoteVersionInfoCompleteEventParams>();
 
-    Peer* peer = self->cache_->FindById(peer_id);
-    if (!peer) {
-      self->Complete(peer_id, hci::Status(HostError::kFailed));
-      return;
-    }
-    peer->set_version(params.lmp_version, params.manufacturer_name,
-                      params.lmp_subversion);
+        Peer* peer = self->cache_->FindById(peer_id);
+        if (!peer) {
+          self->Complete(peer_id, hci::Status(HostError::kFailed));
+          return;
+        }
+        peer->set_version(params.lmp_version, params.manufacturer_name,
+                          params.lmp_subversion);
 
-    self->MaybeComplete(peer_id);
-  });
+        self->MaybeComplete(peer_id);
+      });
 
   bt_log(SPEW, "gap-bredr", "asking for version info");
   hci_->command_channel()->SendCommand(

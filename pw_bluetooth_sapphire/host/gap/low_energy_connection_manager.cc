@@ -841,8 +841,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id,
 void LowEnergyConnectionManager::OnDisconnectionComplete(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
-  const auto& params =
-      event.view().payload<hci::DisconnectionCompleteEventParams>();
+  const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
 
   if (params.status != hci::StatusCode::kSuccess) {
@@ -882,9 +881,8 @@ void LowEnergyConnectionManager::OnDisconnectionComplete(
 void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(
-      event.view().payload<hci::LEMetaEventParams>().subevent_code ==
-      hci::kLEConnectionUpdateCompleteSubeventCode);
+  ZX_DEBUG_ASSERT(event.params<hci::LEMetaEventParams>().subevent_code ==
+                  hci::kLEConnectionUpdateCompleteSubeventCode);
 
   auto payload =
       event.le_event_params<hci::LEConnectionUpdateCompleteSubeventParams>();

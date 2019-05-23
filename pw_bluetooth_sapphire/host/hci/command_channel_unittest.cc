@@ -134,7 +134,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
       EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-      const auto params = event.view().payload<CommandStatusEventParams>();
+      const auto params = event.params<CommandStatusEventParams>();
       EXPECT_EQ(StatusCode::kSuccess, params.status);
       EXPECT_EQ(kInquiry, params.command_opcode);
     } else {
@@ -181,14 +181,12 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
     EXPECT_EQ(callback_id, id);
     EXPECT_EQ(kCommandStatusEventCode, event.event_code());
     EXPECT_EQ(StatusCode::kSuccess,
-              event.view().payload<CommandStatusEventParams>().status);
+              event.params<CommandStatusEventParams>().status);
     EXPECT_EQ(1, event.view()
                      .payload<CommandStatusEventParams>()
                      .num_hci_command_packets);
-    EXPECT_EQ(
-        kReset,
-        le16toh(
-            event.view().payload<CommandStatusEventParams>().command_opcode));
+    EXPECT_EQ(kReset,
+              le16toh(event.params<CommandStatusEventParams>().command_opcode));
   };
 
   auto reset = CommandPacket::New(kReset);
@@ -253,8 +251,7 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
     }
     EXPECT_EQ(
         expected_opcode,
-        le16toh(
-            event.view().payload<CommandCompleteEventParams>().command_opcode));
+        le16toh(event.params<CommandCompleteEventParams>().command_opcode));
     cb_event_count++;
   };
 
@@ -328,8 +325,8 @@ TEST_F(HCI_CommandChannelTest, QueuedCommands) {
   auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
                                           const EventPacket& event) {
     EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
-    auto opcode = le16toh(
-        event.view().payload<CommandCompleteEventParams>().command_opcode);
+    auto opcode =
+        le16toh(event.params<CommandCompleteEventParams>().command_opcode);
     if (opcode == kReset) {
       reset_count++;
     } else if (opcode == kInquiryCancel) {
@@ -427,7 +424,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
     }
     if ((cb_count % 2) == 0) {
       EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-      auto params = event.view().payload<CommandStatusEventParams>();
+      auto params = event.params<CommandStatusEventParams>();
       EXPECT_EQ(StatusCode::kSuccess, params.status);
     } else if ((cb_count % 2) == 1) {
       EXPECT_EQ(kTestEventCode0, event.event_code());
@@ -530,7 +527,7 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
       EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-      const auto params = event.view().payload<CommandStatusEventParams>();
+      const auto params = event.params<CommandStatusEventParams>();
       EXPECT_EQ(StatusCode::kSuccess, params.status);
       EXPECT_EQ(kReset, params.command_opcode);
     } else {
@@ -754,7 +751,7 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
     event_count0++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode0,
-              event.view().payload<LEMetaEventParams>().subevent_code);
+              event.params<LEMetaEventParams>().subevent_code);
   };
 
   int event_count1 = 0;
@@ -765,7 +762,7 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
     event_count1++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode1,
-              event.view().payload<LEMetaEventParams>().subevent_code);
+              event.params<LEMetaEventParams>().subevent_code);
   };
 
   auto id0 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0,
@@ -860,8 +857,7 @@ TEST_F(HCI_CommandChannelTest,
   int le_event_count = 0;
   auto le_event_cb = [&](const EventPacket& event) {
     EXPECT_EQ(kLEMetaEventCode, event.event_code());
-    EXPECT_EQ(kTestEventCode,
-              event.view().payload<LEMetaEventParams>().subevent_code);
+    EXPECT_EQ(kTestEventCode, event.params<LEMetaEventParams>().subevent_code);
     le_event_count++;
   };
   cmd_channel()->AddLEMetaEventHandler(kLEConnectionCompleteSubeventCode,
@@ -952,7 +948,7 @@ TEST_F(HCI_CommandChannelTest, CommandTimeout) {
     EXPECT_TRUE(callback_id == id1 || callback_id == id2);
     EXPECT_EQ(kCommandStatusEventCode, event.event_code());
 
-    const auto params = event.view().payload<CommandStatusEventParams>();
+    const auto params = event.params<CommandStatusEventParams>();
     EXPECT_EQ(StatusCode::kUnspecifiedError, params.status);
     EXPECT_EQ(kReset, params.command_opcode);
   };
@@ -1031,7 +1027,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
     if ((cb_count % 2) == 0) {
       // First event from each command - CommandStatus
       EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-      auto params = event.view().payload<CommandStatusEventParams>();
+      auto params = event.params<CommandStatusEventParams>();
       EXPECT_EQ(StatusCode::kSuccess, params.status);
     } else {
       // Second event from each command - completion event
@@ -1172,7 +1168,7 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
             // Status for kExclusiveOne -> Send kExclusiveTwo (queued)
             EXPECT_EQ(id1, callback_id);
             EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.view().payload<CommandStatusEventParams>();
+            auto params = event.params<CommandStatusEventParams>();
             EXPECT_EQ(StatusCode::kSuccess, params.status);
             auto packet = CommandPacket::New(kExclusiveTwo);
             id2 = cmd_channel->SendExclusiveCommand(
@@ -1200,7 +1196,7 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
           case 2: {  // Status for kExclusiveTwo
             EXPECT_EQ(id2, callback_id);
             EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.view().payload<CommandStatusEventParams>();
+            auto params = event.params<CommandStatusEventParams>();
             EXPECT_EQ(StatusCode::kSuccess, params.status);
             break;
           }
@@ -1212,7 +1208,7 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
           case 4: {  // Status for Second kExclusiveOne
             EXPECT_EQ(id3, callback_id);
             EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.view().payload<CommandStatusEventParams>();
+            auto params = event.params<CommandStatusEventParams>();
             EXPECT_EQ(StatusCode::kSuccess, params.status);
             break;
           }

@@ -10,11 +10,10 @@
 #include <zircon/status.h>
 
 #include "slab_allocators.h"
-#include "transport.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/lib/fxl/strings/string_printf.h"
+#include "transport.h"
 
 namespace bt {
 namespace hci {
@@ -227,8 +226,7 @@ void ACLDataChannel::NumberOfCompletedPacketsCallback(
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(event.event_code() == kNumberOfCompletedPacketsEventCode);
 
-  const auto& payload =
-      event.view().payload<NumberOfCompletedPacketsEventParams>();
+  const auto& payload = event.params<NumberOfCompletedPacketsEventParams>();
   size_t total_comp_packets = 0;
   size_t le_total_comp_packets = 0;
 

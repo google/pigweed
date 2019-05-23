@@ -68,7 +68,7 @@ TEST(HCI_PacketTest, EventPacket) {
 
   EXPECT_EQ(kTestEventCode, packet->event_code());
   EXPECT_EQ(kPayloadSize, packet->view().payload_size());
-  EXPECT_EQ(127, packet->view().payload<TestPayload>().foo);
+  EXPECT_EQ(127, packet->params<TestPayload>().foo);
 }
 
 TEST(HCI_PacketTest, EventPacketReturnParams) {

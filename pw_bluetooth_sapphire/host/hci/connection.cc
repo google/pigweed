@@ -211,7 +211,7 @@ void ConnectionImpl::Close(StatusCode reason) {
 
   auto status_cb = [](auto id, const EventPacket& event) {
     ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
-    const auto& params = event.view().payload<CommandStatusEventParams>();
+    const auto& params = event.params<CommandStatusEventParams>();
     if (params.status != StatusCode::kSuccess) {
       bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x",
              params.status);
@@ -369,7 +369,7 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
     return;
   }
 
-  const auto& params = event.view().payload<EncryptionChangeEventParams>();
+  const auto& params = event.params<EncryptionChangeEventParams>();
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
 
   // Silently ignore the event as it isn't meant for this connection.
@@ -409,8 +409,7 @@ void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
     return;
   }
 
-  const auto& params =
-      event.view().payload<EncryptionKeyRefreshCompleteEventParams>();
+  const auto& params = event.params<EncryptionKeyRefreshCompleteEventParams>();
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
 
   // Silently ignore this event as it isn't meant for this connection.
@@ -435,7 +434,7 @@ void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
 void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(event.view().payload<LEMetaEventParams>().subevent_code ==
+  ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
                   kLELongTermKeyRequestSubeventCode);
 
   auto* params = event.le_event_params<LELongTermKeyRequestSubeventParams>();

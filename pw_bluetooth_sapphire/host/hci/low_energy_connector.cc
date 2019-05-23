@@ -193,7 +193,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 
 void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
-  ZX_DEBUG_ASSERT(event.view().payload<LEMetaEventParams>().subevent_code ==
+  ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
                   kLEConnectionCompleteSubeventCode);
 
   auto params = event.le_event_params<LEConnectionCompleteSubeventParams>();

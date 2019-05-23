@@ -471,11 +471,11 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   bool unregister_async_handler = false;
 
   if (event->event_code() == kCommandCompleteEventCode) {
-    const auto& params = event->view().payload<CommandCompleteEventParams>();
+    const auto& params = event->params<CommandCompleteEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_ = params.num_hci_command_packets;
   } else {  // kCommandStatusEventCode
-    const auto& params = event->view().payload<CommandStatusEventParams>();
+    const auto& params = event->params<CommandStatusEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_ = params.num_hci_command_packets;
     unregister_async_handler = params.status != StatusCode::kSuccess;
@@ -533,7 +533,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     bool is_le_event = false;
     if (event->event_code() == kLEMetaEventCode) {
       is_le_event = true;
-      event_code = event->view().payload<LEMetaEventParams>().subevent_code;
+      event_code = event->params<LEMetaEventParams>().subevent_code;
       event_handlers = &subevent_code_handlers_;
     } else {
       event_code = event->event_code();

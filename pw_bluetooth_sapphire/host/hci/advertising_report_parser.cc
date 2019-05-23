@@ -14,7 +14,7 @@ namespace hci {
 AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
     : encountered_error_(false) {
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
-  const auto& params = event.view().payload<LEMetaEventParams>();
+  const auto& params = event.params<LEMetaEventParams>();
   ZX_DEBUG_ASSERT(params.subevent_code == kLEAdvertisingReportSubeventCode);
 
   auto subevent_params =
@@ -27,8 +27,7 @@ AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
 }
 
 bool AdvertisingReportParser::GetNextReport(
-    const LEAdvertisingReportData** out_data,
-    int8_t* out_rssi) {
+    const LEAdvertisingReportData** out_data, int8_t* out_rssi) {
   ZX_DEBUG_ASSERT(out_data);
   ZX_DEBUG_ASSERT(out_rssi);
 
