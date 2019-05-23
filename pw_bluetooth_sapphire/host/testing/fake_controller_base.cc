@@ -71,6 +71,7 @@ bool FakeControllerBase::StartSnoopChannel(zx::channel chan) {
 void FakeControllerBase::Stop() {
   CloseCommandChannel();
   CloseACLDataChannel();
+  CloseSnoopChannel();
 }
 
 zx_status_t FakeControllerBase::SendCommandChannelPacket(
