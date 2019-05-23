@@ -52,121 +52,119 @@ BrEdrInterrogator::~BrEdrInterrogator() {
   }
 }
 
-void BrEdrInterrogator::Start(PeerId device_id, hci::ConnectionPtr conn_ptr,
+void BrEdrInterrogator::Start(PeerId peer_id, hci::ConnectionPtr conn_ptr,
                               ResultCallback callback) {
   ZX_DEBUG_ASSERT(conn_ptr);
   ZX_DEBUG_ASSERT(callback);
 
   hci::ConnectionHandle handle = conn_ptr->handle();
 
-  pending_.emplace(device_id, std::make_unique<Interrogation>(
-                                  std::move(conn_ptr), std::move(callback)));
+  auto placed =
+      pending_.try_emplace(peer_id, std::move(conn_ptr), std::move(callback));
+  ZX_DEBUG_ASSERT_MSG(placed.second, "interrogating peer %s twice at once",
+                      bt_str(peer_id));
 
-  Peer* device = cache_->FindById(device_id);
-  if (!device) {
-    Complete(device_id, hci::Status(HostError::kFailed));
+  Peer* peer = cache_->FindById(peer_id);
+  if (!peer) {
+    Complete(peer_id, hci::Status(HostError::kFailed));
     return;
   }
 
-  if (!device->name()) {
-    MakeRemoteNameRequest(device_id);
+  if (!peer->name()) {
+    MakeRemoteNameRequest(peer_id);
   }
 
-  if (!device->version()) {
-    ReadRemoteVersionInformation(device_id, handle);
+  if (!peer->version()) {
+    ReadRemoteVersionInformation(peer_id, handle);
   }
 
-  if (!device->features().HasPage(0)) {
-    ReadRemoteFeatures(device_id, handle);
-  } else if (device->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
-    device->set_last_page_number(1);
-    ReadRemoteExtendedFeatures(device_id, handle, 1);
+  if (!peer->features().HasPage(0)) {
+    ReadRemoteFeatures(peer_id, handle);
+  } else if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
+    peer->set_last_page_number(1);
+    ReadRemoteExtendedFeatures(peer_id, handle, 1);
   }
 }
 
-void BrEdrInterrogator::Cancel(PeerId device_id) {
-  async::PostTask(dispatcher_, [id = std::move(device_id),
-                                self = weak_ptr_factory_.GetWeakPtr()]() {
-    if (!self) {
-      return;
-    }
+void BrEdrInterrogator::Cancel(PeerId peer_id) {
+  async::PostTask(dispatcher_,
+                  [peer_id, self = weak_ptr_factory_.GetWeakPtr()]() {
+                    if (!self) {
+                      return;
+                    }
 
-    auto it = self->pending_.find(id);
-    if (it == self->pending_.end()) {
-      return;
-    }
+                    auto node = self->pending_.extract(peer_id);
+                    if (!node) {
+                      return;
+                    }
 
-    it->second->Finish(hci::Status(HostError::kCanceled));
-    self->pending_.erase(it);
-  });
+                    node.mapped().Finish(hci::Status(HostError::kCanceled));
+                  });
 }
 
-void BrEdrInterrogator::MaybeComplete(PeerId device_id) {
-  Peer* device = cache_->FindById(device_id);
-  if (!device) {
-    Complete(device_id, hci::Status(HostError::kFailed));
+void BrEdrInterrogator::MaybeComplete(PeerId peer_id) {
+  Peer* peer = cache_->FindById(peer_id);
+  if (!peer) {
+    Complete(peer_id, hci::Status(HostError::kFailed));
     return;
   }
-  if (!device->name()) {
+  if (!peer->name()) {
     return;
   }
-
-  if (!device->version()) {
+  if (!peer->version()) {
     return;
   }
-
-  if (!device->features().HasPage(0)) {
+  if (!peer->features().HasPage(0)) {
     return;
-  } else if (device->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
-    for (uint8_t page = 1; page <= device->features().last_page_number();
+  } else if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
+    for (uint8_t page = 1; page <= peer->features().last_page_number();
          page++) {
-      if (!device->features().HasPage(page)) {
+      if (!peer->features().HasPage(page)) {
         return;
       }
     }
   }
 
-  Complete(device_id, hci::Status());
+  Complete(peer_id, hci::Status());
 }
 
-void BrEdrInterrogator::Complete(PeerId device_id, hci::Status status) {
-  auto it = pending_.find(std::move(device_id));
-  ZX_DEBUG_ASSERT(it != pending_.end());
+void BrEdrInterrogator::Complete(PeerId peer_id, hci::Status status) {
+  auto node = pending_.extract(peer_id);
+  ZX_DEBUG_ASSERT(node);
 
-  it->second->Finish(std::move(status));
-  pending_.erase(it);
+  node.mapped().Finish(std::move(status));
 }
 
-void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
-  Peer* device = cache_->FindById(device_id);
-  if (!device) {
-    Complete(device_id, hci::Status(HostError::kFailed));
+void BrEdrInterrogator::MakeRemoteNameRequest(PeerId peer_id) {
+  Peer* peer = cache_->FindById(peer_id);
+  if (!peer) {
+    Complete(peer_id, hci::Status(HostError::kFailed));
     return;
   }
-  ZX_DEBUG_ASSERT(device->bredr());
+  ZX_DEBUG_ASSERT(peer->bredr());
   hci::PageScanRepetitionMode mode = hci::PageScanRepetitionMode::kR0;
-  if (device->bredr()->page_scan_repetition_mode()) {
-    mode = *device->bredr()->page_scan_repetition_mode();
+  if (peer->bredr()->page_scan_repetition_mode()) {
+    mode = *peer->bredr()->page_scan_repetition_mode();
   }
   auto packet = hci::CommandPacket::New(
       hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   auto params = packet->mutable_view()
                     ->mutable_payload<hci::RemoteNameRequestCommandParams>();
-  params->bd_addr = device->address().value();
+  params->bd_addr = peer->address().value();
   params->page_scan_repetition_mode = mode;
-  if (device->bredr()->clock_offset()) {
-    params->clock_offset = *(device->bredr()->clock_offset());
+  if (peer->bredr()->clock_offset()) {
+    params->clock_offset = *(peer->bredr()->clock_offset());
   }
 
-  auto it = pending_.find(device_id);
+  auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
 
-  it->second->callbacks.emplace_back([device_id,
-                                      self = weak_ptr_factory_.GetWeakPtr()](
-                                         auto, const auto& event) {
+  it->second.callbacks.emplace_back([peer_id,
+                                     self = weak_ptr_factory_.GetWeakPtr()](
+                                        auto, const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "remote name request failed")) {
-      self->Complete(device_id, event.ToStatus());
+      self->Complete(peer_id, event.ToStatus());
       return;
     }
 
@@ -178,8 +176,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
                     hci::kRemoteNameRequestCompleteEventCode);
 
     const auto& params =
-        event.view()
-            .template payload<hci::RemoteNameRequestCompleteEventParams>();
+        event.view().payload<hci::RemoteNameRequestCompleteEventParams>();
 
     size_t len = 0;
     for (; len < hci::kMaxNameLength; len++) {
@@ -187,25 +184,24 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId device_id) {
         break;
       }
     }
-    Peer* device = self->cache_->FindById(device_id);
-    if (!device) {
-      self->Complete(device_id, hci::Status(HostError::kFailed));
+    Peer* peer = self->cache_->FindById(peer_id);
+    if (!peer) {
+      self->Complete(peer_id, hci::Status(HostError::kFailed));
       return;
     }
-    device->SetName(std::string(params.remote_name, params.remote_name + len));
+    peer->SetName(std::string(params.remote_name, params.remote_name + len));
 
-    self->MaybeComplete(device_id);
+    self->MaybeComplete(peer_id);
   });
 
-  bt_log(SPEW, "gap-bredr", "name request %s",
-         device->address().ToString().c_str());
+  bt_log(SPEW, "gap-bredr", "name request %s", bt_str(peer->address()));
   hci_->command_channel()->SendExclusiveCommand(
-      std::move(packet), dispatcher_, it->second->callbacks.back().callback(),
+      std::move(packet), dispatcher_, it->second.callbacks.back().callback(),
       hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
 }
 
 void BrEdrInterrogator::ReadRemoteVersionInformation(
-    PeerId device_id, hci::ConnectionHandle handle) {
+    PeerId peer_id, hci::ConnectionHandle handle) {
   auto packet =
       hci::CommandPacket::New(hci::kReadRemoteVersionInfo,
                               sizeof(hci::ReadRemoteVersionInfoCommandParams));
@@ -213,15 +209,15 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
       ->mutable_payload<hci::ReadRemoteVersionInfoCommandParams>()
       ->connection_handle = htole16(handle);
 
-  auto it = pending_.find(device_id);
+  auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
 
-  it->second->callbacks.emplace_back([device_id,
-                                      self = weak_ptr_factory_.GetWeakPtr()](
-                                         auto, const auto& event) {
+  it->second.callbacks.emplace_back([peer_id,
+                                     self = weak_ptr_factory_.GetWeakPtr()](
+                                        auto, const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr",
                      "read remote version info failed")) {
-      self->Complete(device_id, event.ToStatus());
+      self->Complete(peer_id, event.ToStatus());
       return;
     }
 
@@ -233,27 +229,26 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(
                     hci::kReadRemoteVersionInfoCompleteEventCode);
 
     const auto params =
-        event.view()
-            .template payload<hci::ReadRemoteVersionInfoCompleteEventParams>();
+        event.view().payload<hci::ReadRemoteVersionInfoCompleteEventParams>();
 
-    Peer* device = self->cache_->FindById(device_id);
-    if (!device) {
-      self->Complete(device_id, hci::Status(HostError::kFailed));
+    Peer* peer = self->cache_->FindById(peer_id);
+    if (!peer) {
+      self->Complete(peer_id, hci::Status(HostError::kFailed));
       return;
     }
-    device->set_version(params.lmp_version, params.manufacturer_name,
-                        params.lmp_subversion);
+    peer->set_version(params.lmp_version, params.manufacturer_name,
+                      params.lmp_subversion);
 
-    self->MaybeComplete(device_id);
+    self->MaybeComplete(peer_id);
   });
 
   bt_log(SPEW, "gap-bredr", "asking for version info");
   hci_->command_channel()->SendCommand(
-      std::move(packet), dispatcher_, it->second->callbacks.back().callback(),
+      std::move(packet), dispatcher_, it->second.callbacks.back().callback(),
       hci::kReadRemoteVersionInfoCompleteEventCode);
 }
 
-void BrEdrInterrogator::ReadRemoteFeatures(PeerId device_id,
+void BrEdrInterrogator::ReadRemoteFeatures(PeerId peer_id,
                                            hci::ConnectionHandle handle) {
   auto packet = hci::CommandPacket::New(
       hci::kReadRemoteSupportedFeatures,
@@ -262,15 +257,15 @@ void BrEdrInterrogator::ReadRemoteFeatures(PeerId device_id,
       ->mutable_payload<hci::ReadRemoteSupportedFeaturesCommandParams>()
       ->connection_handle = htole16(handle);
 
-  auto it = pending_.find(device_id);
+  auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
 
-  it->second->callbacks.emplace_back(
-      [device_id, handle, self = weak_ptr_factory_.GetWeakPtr()](
-          auto, const auto& event) {
+  it->second.callbacks.emplace_back(
+      [peer_id, handle, self = weak_ptr_factory_.GetWeakPtr()](
+          auto, const hci::EventPacket& event) {
         if (hci_is_error(event, WARN, "gap-bredr",
                          "read remote supported features failed")) {
-          self->Complete(device_id, event.ToStatus());
+          self->Complete(peer_id, event.ToStatus());
           return;
         }
 
@@ -283,31 +278,30 @@ void BrEdrInterrogator::ReadRemoteFeatures(PeerId device_id,
 
         const auto& params =
             event.view()
-                .template payload<
-                    hci::ReadRemoteSupportedFeaturesCompleteEventParams>();
+                .payload<hci::ReadRemoteSupportedFeaturesCompleteEventParams>();
 
-        Peer* device = self->cache_->FindById(device_id);
-        if (!device) {
-          self->Complete(device_id, hci::Status(HostError::kFailed));
+        Peer* peer = self->cache_->FindById(peer_id);
+        if (!peer) {
+          self->Complete(peer_id, hci::Status(HostError::kFailed));
           return;
         }
-        device->SetFeaturePage(0, le64toh(params.lmp_features));
+        peer->SetFeaturePage(0, le64toh(params.lmp_features));
 
-        if (device->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
-          device->set_last_page_number(1);
-          self->ReadRemoteExtendedFeatures(device_id, handle, 1);
+        if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
+          peer->set_last_page_number(1);
+          self->ReadRemoteExtendedFeatures(peer_id, handle, 1);
         }
 
-        self->MaybeComplete(device_id);
+        self->MaybeComplete(peer_id);
       });
 
   bt_log(SPEW, "gap-bredr", "asking for supported features");
   hci_->command_channel()->SendCommand(
-      std::move(packet), dispatcher_, it->second->callbacks.back().callback(),
+      std::move(packet), dispatcher_, it->second.callbacks.back().callback(),
       hci::kReadRemoteSupportedFeaturesCompleteEventCode);
 }
 
-void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId device_id,
+void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId peer_id,
                                                    hci::ConnectionHandle handle,
                                                    uint8_t page) {
   auto packet = hci::CommandPacket::New(
@@ -319,15 +313,15 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId device_id,
   params->connection_handle = htole16(handle);
   params->page_number = page;
 
-  auto it = pending_.find(device_id);
+  auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
 
-  it->second->callbacks.emplace_back([device_id, handle, page,
-                                      self = weak_ptr_factory_.GetWeakPtr()](
-                                         auto, const auto& event) {
+  it->second.callbacks.emplace_back([peer_id, handle, page,
+                                     self = weak_ptr_factory_.GetWeakPtr()](
+                                        auto, const auto& event) {
     if (hci_is_error(event, WARN, "gap-bredr",
                      "read remote extended features failed")) {
-      self->Complete(device_id, event.ToStatus());
+      self->Complete(peer_id, event.ToStatus());
       return;
     }
 
@@ -343,31 +337,29 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId device_id,
             .template payload<
                 hci::ReadRemoteExtendedFeaturesCompleteEventParams>();
 
-    Peer* device = self->cache_->FindById(device_id);
-    if (!device) {
-      self->Complete(device_id, hci::Status(HostError::kFailed));
+    Peer* peer = self->cache_->FindById(peer_id);
+    if (!peer) {
+      self->Complete(peer_id, hci::Status(HostError::kFailed));
       return;
     }
-    device->SetFeaturePage(params.page_number, le64toh(params.lmp_features));
+    peer->SetFeaturePage(params.page_number, le64toh(params.lmp_features));
     if (params.page_number != page) {
-      bt_log(INFO, "gap-bredr",
-             "requested page %u and received page %u, giving up", page,
-             params.page_number);
-      device->set_last_page_number(0);
+      bt_log(INFO, "gap-bredr", "requested page %u and got page %u, giving up",
+             page, params.page_number);
+      peer->set_last_page_number(0);
     } else {
-      device->set_last_page_number(params.max_page_number);
+      peer->set_last_page_number(params.max_page_number);
     }
 
-    if (params.page_number < device->features().last_page_number()) {
-      self->ReadRemoteExtendedFeatures(device_id, handle,
-                                       params.page_number + 1);
+    if (params.page_number < peer->features().last_page_number()) {
+      self->ReadRemoteExtendedFeatures(peer_id, handle, params.page_number + 1);
     }
-    self->MaybeComplete(device_id);
+    self->MaybeComplete(peer_id);
   });
 
   bt_log(SPEW, "gap-bredr", "get ext page %u", page);
   hci_->command_channel()->SendCommand(
-      std::move(packet), dispatcher_, it->second->callbacks.back().callback(),
+      std::move(packet), dispatcher_, it->second.callbacks.back().callback(),
       hci::kReadRemoteExtendedFeaturesCompleteEventCode);
 }
 

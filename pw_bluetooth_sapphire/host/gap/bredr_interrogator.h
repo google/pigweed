@@ -32,7 +32,7 @@ class Transport;
 namespace gap {
 
 // A BrEdrInterrogator abstracts over the HCI commands and events involved
-// immediately after connecting to a remote device over BR/EDR.
+// immediately after connecting to a peer over BR/EDR.
 // It also provides a way to hold pending connections while waiting for
 // confirmation and times out those connections out when we do not get a
 // response.
@@ -53,34 +53,33 @@ class BrEdrInterrogator {
   // abandoned.
   using ResultCallback =
       fit::function<void(hci::Status status, hci::ConnectionPtr conn_ptr)>;
-  void Start(PeerId device_id, hci::ConnectionPtr conn_ptr,
+  void Start(PeerId peer_id, hci::ConnectionPtr conn_ptr,
              ResultCallback callback);
 
-  // Abandons any interrogation of |device_id|.  Their callbacks will be called
+  // Abandons any interrogation of |peer_id|.  Their callbacks will be called
   // with a Status of Canceled.
-  void Cancel(PeerId device_id);
+  void Cancel(PeerId peer_id);
 
  private:
-  // Completes |device| if there is nothing else to ask.
-  void MaybeComplete(PeerId device_id);
+  // Completes |peer| if there is nothing else to ask.
+  void MaybeComplete(PeerId peer_id);
 
-  // Completes interrogation on |device| with |status|, possibly early.
-  void Complete(PeerId device_id, hci::Status status);
+  // Completes interrogation on |peer| with |status|, possibly early.
+  void Complete(PeerId peer_id, hci::Status status);
 
-  // Reade the remote version information from the device.
-  void ReadRemoteVersionInformation(PeerId device_id,
+  // Reade the remote version information from the peer.
+  void ReadRemoteVersionInformation(PeerId peer_id,
                                     hci::ConnectionHandle handle);
 
-  // Requests the name of the remote device.
-  void MakeRemoteNameRequest(PeerId device_id);
+  // Requests the name of the remote peer.
+  void MakeRemoteNameRequest(PeerId peer_id);
 
-  // Requests features of |device|, and asks for Extended Features if they
-  // exist.
-  void ReadRemoteFeatures(PeerId device_id, hci::ConnectionHandle handle);
+  // Requests features of |peer|, and asks for Extended Features if they exist.
+  void ReadRemoteFeatures(PeerId peer_id, hci::ConnectionHandle handle);
 
-  // Reads the extended feature page |page| of |device|.
-  void ReadRemoteExtendedFeatures(PeerId device_id,
-                                  hci::ConnectionHandle handle, uint8_t page);
+  // Reads the extended feature page |page| of |peer|.
+  void ReadRemoteExtendedFeatures(PeerId peer_id, hci::ConnectionHandle handle,
+                                  uint8_t page);
 
   using CancelableCommandCallback = fxl::CancelableCallback<void(
       hci::CommandChannel::TransactionId id, const hci::EventPacket& event)>;
@@ -89,7 +88,7 @@ class BrEdrInterrogator {
     ~Interrogation();
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Interrogation);
 
-    // Connection to |device|
+    // Connection to |peer|
     hci::ConnectionPtr conn_ptr;
 
     // Callback for results.
@@ -108,12 +107,11 @@ class BrEdrInterrogator {
   // The dispatcher we use.
   async_dispatcher_t* dispatcher_;
 
-  // Cache to retrieve devices from.
+  // Cache to retrieve peer from.
   PeerCache* cache_;
 
   // The current set of interrogations
-  // TODO(BT-750): Store Interrogations by value.
-  std::unordered_map<PeerId, std::unique_ptr<Interrogation>> pending_;
+  std::unordered_map<PeerId, Interrogation> pending_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
