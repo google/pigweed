@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -152,9 +153,7 @@ class Adapter final {
 
   // Add a previously bonded device to the peer cache and set it up for
   // auto-connect procedures.
-  bool AddBondedPeer(PeerId identifier, const DeviceAddress& address,
-                     const sm::PairingData& le_bond_data,
-                     const std::optional<sm::LTK>& link_key);
+  bool AddBondedPeer(BondingData bonding_data);
 
   // Assigns a pairing delegate to this adapter. This PairingDelegate and its
   // I/O capabilities will be used for all future pairing procedures. Setting a

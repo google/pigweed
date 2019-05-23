@@ -192,11 +192,8 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
-bool Adapter::AddBondedPeer(PeerId identifier, const DeviceAddress& address,
-                            const sm::PairingData& le_bond_data,
-                            const std::optional<sm::LTK>& link_key) {
-  return peer_cache()->AddBondedPeer(identifier, address, le_bond_data,
-                                     link_key);
+bool Adapter::AddBondedPeer(BondingData bonding_data) {
+  return peer_cache()->AddBondedPeer(bonding_data);
 }
 
 void Adapter::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {

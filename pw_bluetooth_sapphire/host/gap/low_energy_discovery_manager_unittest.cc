@@ -830,7 +830,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   constexpr PeerId kPeerId(1);
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(kPeerId, kAddress0, pdata, {});
+  peer_cache()->AddBondedPeer(BondingData{kPeerId, kAddress0, {}, pdata, {}});
   EXPECT_EQ(1u, peer_cache()->count());
 
   // Advance to the next scan period. We should receive a new notification.
@@ -1042,8 +1042,10 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   // expect advertisements from all other devices to get ignored.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(kBondedPeerId1, kAddress0, pdata, {});
-  peer_cache()->AddBondedPeer(kBondedPeerId2, kAddress4, pdata, {});
+  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId1, kAddress0, {}, pdata,
+                                          {}});
+  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId2, kAddress4, {}, pdata,
+                                          {}});
   EXPECT_EQ(2u, peer_cache()->count());
 
   int count = 0;

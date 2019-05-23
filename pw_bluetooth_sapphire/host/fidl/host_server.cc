@@ -12,6 +12,7 @@
 #include "profile_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -284,6 +285,11 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
       continue;
     }
 
+    std::optional<std::string> peer_name;
+    if (bond.name) {
+      peer_name = std::move(bond.name);
+    }
+
     bt::DeviceAddress address;
     bt::sm::PairingData le_bond_data;
     if (bond.le) {
@@ -320,8 +326,9 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     // TODO(armansito): BondingData should contain the identity address for both
     // transports instead of storing them separately. For now use the one we
     // obtained from |bond.le|.
-    if (!adapter()->AddBondedPeer(*peer_id, address, le_bond_data,
-                                  bredr_link_key)) {
+    if (!adapter()->AddBondedPeer(bt::gap::BondingData{*peer_id, address,
+                                                       peer_name, le_bond_data,
+                                                       bredr_link_key})){
       failed_ids.push_back(bond.identifier);
       continue;
     }

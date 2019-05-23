@@ -825,7 +825,8 @@ const auto kLinkKeyRequestReplyRsp = CreateStaticByteBuffer(
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   ASSERT_TRUE(
-      peer_cache()->AddBondedPeer(PeerId(999), kTestDevAddr, {}, kLinkKey));
+      peer_cache()->AddBondedPeer(BondingData{PeerId(999), kTestDevAddr, {},
+                                              {}, kLinkKey}));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connected());

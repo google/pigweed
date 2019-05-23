@@ -308,7 +308,8 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   // Mark the peer as bonded and advance the scan period.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(kPeerId, kTestAddr, pdata, {});
+  adapter()->peer_cache()->AddBondedPeer(BondingData{kPeerId, kTestAddr, {},
+                                                     pdata, {}});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
   RunLoopFor(kTestScanPeriod);
 

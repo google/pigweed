@@ -49,31 +49,31 @@ void PeerCache::ForEach(PeerCallback f) {
   }
 }
 
-bool PeerCache::AddBondedPeer(PeerId identifier, const DeviceAddress& address,
-                              const sm::PairingData& bond_data,
-                              const std::optional<sm::LTK>& link_key) {
+bool PeerCache::AddBondedPeer(BondingData bd) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(!bond_data.identity_address ||
-                  address.value() == bond_data.identity_address->value());
-  ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kLEAnonymous);
+  ZX_DEBUG_ASSERT(!bd.le_pairing_data.identity_address ||
+          bd.address.value() == bd.le_pairing_data.identity_address->value());
+  ZX_DEBUG_ASSERT(bd.address.type() !=
+                  DeviceAddress::Type::kLEAnonymous);
 
-  const bool bond_le = bond_data.ltk || bond_data.csrk;
-  const bool bond_bredr = link_key.has_value();
+  const bool bond_le = bd.le_pairing_data.ltk || bd.le_pairing_data.csrk;
+  const bool bond_bredr = bd.bredr_link_key.has_value();
 
-  // |bond_data| must contain either a LTK or CSRK for LE Security Mode 1 or 2.
-  if (address.IsLowEnergy() && !bond_le) {
+  // |bd.le_pairing_data| must contain either a LTK or CSRK for LE
+  // Security Mode 1 or 2.
+  if (bd.address.IsLowEnergy() && !bond_le) {
     bt_log(ERROR, "gap-le", "mandatory keys missing: no LTK or CSRK (id: %s)",
-           bt_str(identifier));
+           bt_str(bd.identifier));
     return false;
   }
 
-  if (address.IsBrEdr() && !bond_bredr) {
+  if (bd.address.IsBrEdr() && !bond_bredr) {
     bt_log(ERROR, "gap-bredr", "mandatory link key missing (id: %s)",
-           bt_str(identifier));
+           bt_str(bd.identifier));
     return false;
   }
 
-  auto* peer = InsertPeerRecord(identifier, address, true);
+  auto* peer = InsertPeerRecord(bd.identifier, bd.address, true);
   if (!peer) {
     return false;
   }
@@ -81,29 +81,33 @@ bool PeerCache::AddBondedPeer(PeerId identifier, const DeviceAddress& address,
   // A bonded peer must have its identity known.
   peer->set_identity_known(true);
 
+  if (bd.name.has_value()) {
+    peer->SetName(bd.name.value());
+  }
+
   if (bond_le) {
-    peer->MutLe().SetBondData(bond_data);
+    peer->MutLe().SetBondData(bd.le_pairing_data);
     ZX_DEBUG_ASSERT(peer->le()->bonded());
 
     // Add the peer to the resolving list if it has an IRK.
-    if (bond_data.irk) {
-      le_resolving_list_.Add(peer->address(), bond_data.irk->value());
+    if (bd.le_pairing_data.irk) {
+      le_resolving_list_.Add(peer->address(), bd.le_pairing_data.irk->value());
     }
   }
 
   if (bond_bredr) {
-    peer->MutBrEdr().SetBondData(*link_key);
+    peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
     ZX_DEBUG_ASSERT(peer->bredr()->bonded());
   }
 
   if (peer->technology() == TechnologyType::kDualMode) {
-    address_map_[GetAliasAddress(address)] = identifier;
+    address_map_[GetAliasAddress(bd.address)] = bd.identifier;
   }
 
   ZX_DEBUG_ASSERT(!peer->temporary());
   ZX_DEBUG_ASSERT(peer->bonded());
-  bt_log(SPEW, "gap", "restored bonded peer: %s, id: %s", bt_str(address),
-         bt_str(identifier));
+  bt_log(SPEW, "gap", "restored bonded peer: %s, id: %s",
+         bt_str(bd.address), bt_str(bd.identifier));
 
   // Don't call UpdateExpiry(). Since a bonded peer starts out as
   // non-temporary it is not necessary to ever set up the expiration callback.

@@ -43,6 +43,10 @@ const DeviceAddress kAddrLeRandom2(DeviceAddress::Type::kLERandom,
 const DeviceAddress kAddrLeAnon(DeviceAddress::Type::kLEAnonymous,
                                 "06:05:04:03:02:01");
 
+// Arbitrary name value used by the bonding tests below. The actual value of
+// this constant does not effect the test logic.
+const std::string kName = "TestName";
+
 const auto kAdvData =
     CreateStaticByteBuffer(0x05,  // Length
                            0x09,  // AD type: Complete Local Name
@@ -378,14 +382,16 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
   sm::PairingData data;
   data.ltk = kLTK;
   EXPECT_FALSE(
-      cache()->AddBondedPeer(peer()->identifier(), kAddrLeRandom, data, {}));
+  cache()->AddBondedPeer(BondingData{peer()->identifier(), kAddrLeRandom, {},
+                                     data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingAddress) {
   sm::PairingData data;
   data.ltk = kLTK;
-  EXPECT_FALSE(cache()->AddBondedPeer(kId, peer()->address(), data, {}));
+  EXPECT_FALSE(
+  cache()->AddBondedPeer(BondingData{kId, peer()->address(), {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
@@ -394,22 +400,26 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
   EXPECT_TRUE(NewPeer(kAddrBrEdr, true));
   sm::PairingData data;
   data.ltk = kLTK;
-  EXPECT_FALSE(cache()->AddBondedPeer(kId, kAddrLeAlias, data, {}));
+  EXPECT_FALSE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrLeAlias, {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest,
        AddBondedBrEdrPeerFailsWithExistingLowEnergyAliasAddress) {
   EXPECT_TRUE(NewPeer(kAddrLeAlias, true));
-  EXPECT_FALSE(cache()->AddBondedPeer(kId, kAddrBrEdr, {}, kBrEdrKey));
+  EXPECT_FALSE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrBrEdr, {}, {}, kBrEdrKey}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithoutMandatoryKeys) {
   sm::PairingData data;
-  EXPECT_FALSE(cache()->AddBondedPeer(kId, kAddrLeAlias, data, kBrEdrKey));
+  EXPECT_FALSE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrLeAlias, {}, data, kBrEdrKey}));
   data.ltk = kLTK;
-  EXPECT_FALSE(cache()->AddBondedPeer(kId, kAddrBrEdr, data, {}));
+  EXPECT_FALSE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrBrEdr, {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
@@ -417,12 +427,14 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddLowEnergyBondedPeerSuccess) {
   sm::PairingData data;
   data.ltk = kLTK;
 
-  EXPECT_TRUE(cache()->AddBondedPeer(kId, kAddrLeRandom, data, {}));
+  EXPECT_TRUE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrLeRandom, kName, data, {}}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrLeRandom));
   EXPECT_EQ(kId, peer->identifier());
   EXPECT_EQ(kAddrLeRandom, peer->address());
+  EXPECT_EQ(kName, peer->name());
   EXPECT_TRUE(peer->identity_known());
   ASSERT_TRUE(peer->le());
   EXPECT_TRUE(peer->le()->bonded());
@@ -440,12 +452,14 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
   PeerId kId(5);
   sm::PairingData data;
 
-  EXPECT_TRUE(cache()->AddBondedPeer(kId, kAddrBrEdr, data, kBrEdrKey));
+  EXPECT_TRUE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrBrEdr, {}, data, kBrEdrKey}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrBrEdr));
   EXPECT_EQ(kId, peer->identifier());
   EXPECT_EQ(kAddrBrEdr, peer->address());
+  ASSERT_FALSE(peer->name());
   EXPECT_TRUE(peer->identity_known());
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(peer->bredr()->bonded());
@@ -465,7 +479,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
   data.ltk = kLTK;
   data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
 
-  EXPECT_TRUE(cache()->AddBondedPeer(kId, kAddrLeRandom, data, {}));
+  EXPECT_TRUE(
+  cache()->AddBondedPeer(BondingData{kId, kAddrLeRandom, {}, data, {}}));
   auto* peer = cache()->FindByAddress(kAddrLeRandom);
   ASSERT_TRUE(peer);
   EXPECT_EQ(kAddrLeRandom, peer->address());
@@ -772,13 +787,15 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
   data.ltk = kLTK;
 
   const DeviceAddress& address = GetParam();
-  EXPECT_TRUE(cache()->AddBondedPeer(kId, address, data, kBrEdrKey));
+  EXPECT_TRUE(
+  cache()->AddBondedPeer(BondingData{kId, address, kName, data, kBrEdrKey}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrLeAlias));
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrBrEdr));
   EXPECT_EQ(kId, peer->identifier());
   EXPECT_EQ(address, peer->address());
+  EXPECT_EQ(kName, peer->name());
   EXPECT_TRUE(peer->identity_known());
   EXPECT_TRUE(peer->bonded());
   ASSERT_TRUE(peer->le());
@@ -802,7 +819,8 @@ TEST_P(DualModeBondingTest, ForgetPeer) {
   data.ltk = kLTK;
 
   const DeviceAddress& address = GetParam();
-  EXPECT_TRUE(cache()->AddBondedPeer(kId, address, data, kBrEdrKey));
+  EXPECT_TRUE(
+  cache()->AddBondedPeer(BondingData{kId, address, {}, data, kBrEdrKey}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bonded());

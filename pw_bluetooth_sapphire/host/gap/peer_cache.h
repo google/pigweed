@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/identity_resolving_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -54,24 +55,22 @@ class PeerCache final {
   // Peer objects.
   void ForEach(PeerCallback f);
 
-  // Creates a new non-temporary peer entry using the given |identifier| and
-  // identity |address|. This is intended to initialize this PeerCache
+  // Creates a new non-temporary peer entry using the given |bd.identifier| and
+  // identity |bd.address|. This is intended to initialize this PeerCache
   // with previously bonded peers while bootstrapping a bt-host peer. The
   // "peer bonded" callback will not be invoked.
   //
   // This method is not intended for updating the bonding data of a peer that
-  // already exists the cache and returns false if a mapping for |identifier| or
-  // |address| is already present. Use Store*Bond() methods to update pairing
-  // information of an existing peer.
+  // already exists the cache and returns false if a mapping for
+  // |bd. identifier| or |bd.address| is already present. Use Store*Bond()
+  // methods to update pairing information of an existing peer.
   //
   // If a peer already exists that has the same public identity address with a
   // different technology, this method will return false. The existing peer
   // should be instead updated with new bond information to create a dual-mode
   // peer.
   //
-  bool AddBondedPeer(PeerId identifier, const DeviceAddress& address,
-                     const sm::PairingData& bond_data,
-                     const std::optional<sm::LTK>& link_key);
+  bool AddBondedPeer(BondingData bd);
 
   // Update the peer with the given identifier with new LE bonding
   // information. The peer will be considered "bonded" and the bonded callback
