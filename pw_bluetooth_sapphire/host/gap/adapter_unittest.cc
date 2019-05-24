@@ -213,6 +213,35 @@ TEST_F(GAP_AdapterTest, TransportClosedCallback) {
   EXPECT_TRUE(transport_closed_called());
 }
 
+// TODO(BT-919): Add a unit test for Adapter::ShutDown() and update
+// ShutDownDuringInitialize() with the same expectations.
+
+TEST_F(GAP_AdapterTest, ShutDownDuringInitialize) {
+  bool success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool result) {
+    success = result;
+    init_cb_count++;
+  };
+
+  FakeController::Settings settings;
+  settings.ApplyLEOnlyDefaults();
+  test_device()->set_settings(settings);
+
+  adapter()->Initialize(std::move(init_cb), [] {});
+  EXPECT_TRUE(adapter()->IsInitializing());
+  adapter()->ShutDown();
+
+  EXPECT_EQ(1, init_cb_count);
+  EXPECT_FALSE(success);
+  EXPECT_FALSE(adapter()->IsInitializing());
+  EXPECT_FALSE(adapter()->IsInitialized());
+
+  // Further calls to ShutDown() should have no effect.
+  adapter()->ShutDown();
+  RunLoopUntilIdle();
+}
+
 TEST_F(GAP_AdapterTest, SetNameError) {
   std::string kNewName = "something";
   bool success;
@@ -308,8 +337,8 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   // Mark the peer as bonded and advance the scan period.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(BondingData{kPeerId, kTestAddr, {},
-                                                     pdata, {}});
+  adapter()->peer_cache()->AddBondedPeer(
+      BondingData{kPeerId, kTestAddr, {}, pdata, {}});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
   RunLoopFor(kTestScanPeriod);
 
