@@ -4,11 +4,12 @@
 
 #include "host.h"
 
-#include "fidl/host_server.h"
-#include "gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+
+#include "fidl/host_server.h"
+#include "gatt_host.h"
 
 using namespace bt;
 
@@ -52,8 +53,7 @@ bool Host::Initialize(InitCallback callback) {
   // L2CAP services.
   auto gap_init_callback = [gatt_host = gatt_host_,
                             callback = std::move(callback)](bool success) {
-    bt_log(TRACE, "bt-host", "GAP init complete (%s)",
-           (success ? "success" : "failure"));
+    bt_log(TRACE, "bt-host", "GAP initialized");
 
     if (success) {
       gatt_host->Initialize();
@@ -72,21 +72,14 @@ void Host::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   bt_log(TRACE, "bt-host", "shutting down");
 
-  if (!gap_) {
-    bt_log(TRACE, "bt-host", "already shut down");
-    return;
-  }
-
   // Closes all FIDL channels owned by |host_server_|.
   host_server_ = nullptr;
 
   // This shuts down the GATT profile and all of its clients.
   gatt_host_->ShutDown();
-  gap_->ShutDown();
-  data_domain_->ShutDown();
 
   // Make sure that |gap_| gets shut down and destroyed on its creation thread
-  // as it is not thread-safe.
+  // as it is not thread-safe. This shuts down the data domain.
   gap_ = nullptr;
   data_domain_ = nullptr;
   gatt_host_ = nullptr;

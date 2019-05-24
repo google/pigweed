@@ -90,10 +90,8 @@ zx_status_t HostDevice::Bind() {
         std::lock_guard<std::mutex> lock(mtx_);
 
         // Abort if CleanUp has been called.
-        if (!host_) {
-          bt_log(SPEW, "bt-host", "host already removed; nothing to do");
+        if (!host_)
           return;
-        }
 
         if (success) {
           bt_log(TRACE, "bt-host", "adapter initialized; make device visible");
@@ -103,12 +101,12 @@ zx_status_t HostDevice::Bind() {
           return;
         }
 
-        bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
-
-        host->ShutDown();
-        loop_.Shutdown();
+        bt_log(ERROR, "bt-host", "failed to initialize adapter");
         CleanUp();
       }
+
+      host->ShutDown();
+      loop_.Shutdown();
     });
   });
 
@@ -118,32 +116,23 @@ zx_status_t HostDevice::Bind() {
 void HostDevice::Unbind() {
   bt_log(TRACE, "bt-host", "unbind");
 
-  {
-    std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard<std::mutex> lock(mtx_);
 
-    if (!host_)
-      return;
+  if (!host_)
+    return;
 
-    // Do this immediately to stop receiving new service callbacks.
-    host_->gatt_host()->SetRemoteServiceWatcher({});
+  // Do this immediately to stop receiving new service callbacks.
+  host_->gatt_host()->SetRemoteServiceWatcher({});
 
-    // Tear down the bt-host device and all of its GATT children. Make a copy of
-    // |host_| first since CleanUp() clears it.
-    auto host = host_;
-    CleanUp();
+  async::PostTask(loop_.dispatcher(), [this, host = host_] {
+    host->ShutDown();
+    loop_.Quit();
+  });
 
-    async::PostTask(loop_.dispatcher(), [this, host] {
-      host->ShutDown();
-      loop_.Quit();
-    });
-
-    // Don't hold lock waiting on the loop to terminate.
-  }
-
-  // Make sure that the ShutDown task runs before this returns. We re
+  // Make sure that the ShutDown task runs before this returns.
   loop_.JoinThreads();
 
-  bt_log(TRACE, "bt-host", "GAP has been shut down");
+  CleanUp();
 }
 
 void HostDevice::Release() {
@@ -189,16 +178,13 @@ void HostDevice::OnRemoteGattServiceAdded(
 }
 
 void HostDevice::CleanUp() {
-  bt_log(TRACE, "bt-host", "clean up");
   host_ = nullptr;
 
   // Removing the devices explicitly instead of letting unbind handle it for us.
   gatt_devices_.clear();
+  device_remove(dev_);
 
-  if (dev_) {
-    device_remove(dev_);
-    dev_ = nullptr;
-  }
+  dev_ = nullptr;
 }
 
 }  // namespace bthost

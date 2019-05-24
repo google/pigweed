@@ -651,11 +651,6 @@ uint64_t Adapter::BuildLEEventMask() {
 void Adapter::CleanUp() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  if (init_state_ == State::kNotInitialized) {
-    bt_log(TRACE, "gap", "clean up: not initialized");
-    return;
-  }
-
   init_state_ = State::kNotInitialized;
   state_ = AdapterState();
   transport_closed_cb_ = nullptr;
@@ -674,10 +669,7 @@ void Adapter::CleanUp() {
   le_address_manager_ = nullptr;
 
   // Clean up the data domain as it gets initialized by the Adapter.
-  if (data_domain_) {
-    data_domain_->ShutDown();
-    data_domain_ = nullptr;
-  }
+  data_domain_->ShutDown();
 
   // TODO(armansito): hci::Transport::ShutDown() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon
