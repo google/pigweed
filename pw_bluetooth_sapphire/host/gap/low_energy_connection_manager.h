@@ -138,8 +138,7 @@ class LowEnergyConnectionManager final {
   }
 
   // Disconnects any existing LE connection to |peer_id|, invalidating all
-  // active LowEnergyConnectionRefs. Returns false if |peer_id| is not
-  // recognized, the corresponding peer is not connected, or the peer can not be
+  // active LowEnergyConnectionRefs. Returns false if the peer can not be
   // disconnected.
   bool Disconnect(PeerId peer_id);
 

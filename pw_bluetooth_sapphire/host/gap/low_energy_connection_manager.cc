@@ -536,15 +536,14 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
     bt_log(WARN, "gap-le", "peer not connected (id: %s)", bt_str(peer_id));
-    return false;
+    return true;
   }
 
   // Remove the connection state from the internal map right away.
   auto conn = std::move(iter->second);
   connections_.erase(iter);
 
-  bt_log(INFO, "gap-le", "disconnecting link: %s",
-         conn->link()->ToString().c_str());
+  bt_log(INFO, "gap-le", "disconnecting link: %s", bt_str(*conn->link()));
   CleanUpConnection(std::move(conn));
   return true;
 }
