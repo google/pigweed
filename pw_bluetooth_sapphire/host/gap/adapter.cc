@@ -603,7 +603,8 @@ uint64_t Adapter::BuildEventMask() {
 #define ENABLE_EVT(event) \
   event_mask |= static_cast<uint64_t>(hci::EventMask::event)
 
-  // Enable events that are needed for basic functionality.
+  // Enable events that are needed for basic functionality. (alphabetic)
+  ENABLE_EVT(kAuthenticationCompleteEvent);
   ENABLE_EVT(kConnectionCompleteEvent);
   ENABLE_EVT(kConnectionRequestEvent);
   ENABLE_EVT(kDisconnectionCompleteEvent);

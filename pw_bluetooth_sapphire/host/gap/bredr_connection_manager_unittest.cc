@@ -344,6 +344,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
  protected:
   static constexpr const int kIncomingConnTransactions = 6;
+  static constexpr const int kDisconnectionTransactions = 1;
 
   BrEdrConnectionManager* connmgr() const { return connection_manager_.get(); }
   void SetConnectionManager(std::unique_ptr<BrEdrConnectionManager> mgr) {
@@ -1146,6 +1147,140 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   ASSERT_EQ(1u, search_cb_count);
 
   QueueDisconnection(kConnectionHandle);
+}
+
+const auto kAuthenticationRequest =
+    CreateStaticByteBuffer(LowerBits(hci::kAuthenticationRequested),
+                           UpperBits(hci::kAuthenticationRequested),
+                           0x02,       // parameter_total_size (2 bytes)
+                           0xAA, 0x0B  // Connection_Handle
+    );
+
+const auto kAuthenticationStatus = COMMAND_STATUS_RSP(
+    hci::kAuthenticationRequested, hci::StatusCode::kSuccess);
+
+const auto kAuthenticationComplete =
+    CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
+                           0x03,  // parameter_total_size (3 bytes)
+                           hci::StatusCode::kSuccess,  // status
+                           0xAA, 0x0B                  // connection_handle
+    );
+
+const auto kAuthenticationCompleteFailed =
+    CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
+                           0x03,  // parameter_total_size (3 bytes)
+                           hci::StatusCode::kPairingNotAllowed,  // status
+                           0xAA, 0x0B  // connection_handle
+    );
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthentication) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  std::optional<zx::socket> connected_socket;
+
+  auto socket_cb = [&](zx::socket socket) {
+    connected_socket = std::move(socket);
+  };
+
+  // Initial connection request
+
+  // Note: this skips some parts of the pairing flow, because the link key being
+  // received is the important part of this.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kAuthenticationRequest, {&kAuthenticationStatus, &kLinkKeyNotification}));
+
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+                              async_get_default_dispatcher());
+
+  RunLoopUntilIdle();
+
+  // The L2CAP shouldn't have been called
+  // We should not have a socket, and the callback shouldn't have been called,
+  // but the LTK should be stored since the link key got received.
+  ASSERT_FALSE(connected_socket);
+
+  test_device()->SendCommandChannelPacket(kAuthenticationComplete);
+
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP,
+                                            0x40, 0x41);
+
+  RunLoopUntilIdle();
+
+  // The socket should be returned.
+  ASSERT_TRUE(connected_socket);
+
+  connected_socket.reset();
+
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP,
+                                            0x40, 0x41);
+
+  // A second connection request should not require another authentication.
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+                              async_get_default_dispatcher());
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(connected_socket);
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationFailed) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  std::optional<zx::socket> connected_socket;
+
+  auto socket_cb = [&](zx::socket socket) {
+    connected_socket = std::move(socket);
+  };
+
+  // Initial connection request
+
+  // Note: this skips some parts of the pairing flow, because the link key being
+  // received is the important part of this. The key is not received when the
+  // authendication fails.
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kAuthenticationRequest, {&kAuthenticationStatus}));
+
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+                              async_get_default_dispatcher());
+
+  RunLoopUntilIdle();
+
+  // The L2CAP shouldn't have been called
+  // We should not have a socket, and the callback shouldn't have been called.
+  ASSERT_FALSE(connected_socket);
+
+  test_device()->SendCommandChannelPacket(kAuthenticationCompleteFailed);
+
+  int count = transaction_count();
+
+  // We disconnect the peer when authentication fails.
+  QueueDisconnection(kConnectionHandle);
+
+  RunLoopUntilIdle();
+
+  // An invalid socket should have been sent because the connection failed.
+  ASSERT_TRUE(connected_socket);
+  ASSERT_EQ(ZX_HANDLE_INVALID, *connected_socket);
+
+  ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {

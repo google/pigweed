@@ -196,16 +196,8 @@ class BrEdrConnectionManager final {
   // Holds the connections that are active.
   ConnectionMap connections_;
 
-  // Handler ID for connection events
-  hci::CommandChannel::EventHandlerId conn_complete_handler_id_;
-  hci::CommandChannel::EventHandlerId conn_request_handler_id_;
-  hci::CommandChannel::EventHandlerId disconn_cmpl_handler_id_;
-
-  // Handler IDs for pairing events
-  hci::CommandChannel::EventHandlerId link_key_request_handler_id_;
-  hci::CommandChannel::EventHandlerId link_key_notification_handler_id_;
-  hci::CommandChannel::EventHandlerId io_cap_req_handler_id_;
-  hci::CommandChannel::EventHandlerId user_conf_handler_id_;
+  // Handler IDs for registered events
+  std::vector<hci::CommandChannel::EventHandlerId> event_handler_ids_;
 
   // The current page scan parameters of the controller.
   // Set to 0 when non-connectable.
