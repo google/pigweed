@@ -83,6 +83,9 @@ void BrEdrInterrogator::Start(PeerId peer_id, hci::ConnectionPtr conn_ptr,
   } else if (peer->features().HasBit(0, hci::LMPFeature::kExtendedFeatures)) {
     peer->set_last_page_number(1);
     ReadRemoteExtendedFeatures(peer_id, handle, 1);
+  } else {
+    // Test completion if we didn't request remote features.
+    MaybeComplete(peer_id);
   }
 }
 

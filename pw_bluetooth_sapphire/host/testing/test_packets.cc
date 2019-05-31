@@ -118,16 +118,18 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(
 }
 
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
-    hci::ConnectionHandle conn) {
+    hci::ConnectionHandle conn, bool extended_features) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kReadRemoteSupportedFeaturesCompleteEventCode,
       0x0B,                              // parameter_total_size (11 bytes)
       hci::StatusCode::kSuccess,         // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
-      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80
+      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
+      (extended_features ? 0x80 : 0x00)
       // lmp_features
       // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
-      // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
+      // Role Switch, Hold Mode, Sniff Mode, LE Supported
+      // Extended Features if enabled
       ));
 }
 
@@ -152,7 +154,7 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(
       0x01,                              // page_number
       0x03,                              // max_page_number (3 pages)
       0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
-      // lmp_features
+      // lmp_features (page 1)
       // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
       //  SimultaneousLEAndBREDR, Secure Connections (Host Support)
       ));

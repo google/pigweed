@@ -28,7 +28,7 @@ DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
     hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
-    hci::ConnectionHandle conn);
+    hci::ConnectionHandle conn, bool extended_features);
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
