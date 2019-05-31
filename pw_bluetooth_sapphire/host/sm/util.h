@@ -7,6 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt {
@@ -18,6 +19,10 @@ std::string PairingMethodToString(PairingMethod method);
 
 // Returns a string representation of a given IOCapability.
 std::string IOCapabilityToString(IOCapability capability);
+
+// Returns the HCI version of an SMP IOCapability. Returns
+// hci::IOCapability::kNoInputNoOutput for values not in sm::IOCapability.
+hci::IOCapability IOCapabilityForHci(IOCapability capability);
 
 // Used to select the key generation method as described in Vol 3, Part H,
 // 2.3.5.1 based on local and peer authentication parameters:

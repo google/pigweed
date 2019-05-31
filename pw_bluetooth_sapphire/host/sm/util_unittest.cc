@@ -13,6 +13,25 @@ namespace sm {
 namespace util {
 namespace {
 
+TEST(SMP_UtilTest, ConvertSmIoCapabilityToHci) {
+  EXPECT_EQ(hci::IOCapability::kDisplayOnly,
+            IOCapabilityForHci(IOCapability::kDisplayOnly));
+  EXPECT_EQ(hci::IOCapability::kDisplayYesNo,
+            IOCapabilityForHci(IOCapability::kDisplayYesNo));
+  EXPECT_EQ(hci::IOCapability::kKeyboardOnly,
+            IOCapabilityForHci(IOCapability::kKeyboardOnly));
+  EXPECT_EQ(hci::IOCapability::kNoInputNoOutput,
+            IOCapabilityForHci(IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(hci::IOCapability::kDisplayYesNo,
+            IOCapabilityForHci(IOCapability::kKeyboardDisplay));
+
+  // Test remaining invalid values for sm::IOCapability.
+  for (int i = 0x05; i < 0xff; i++) {
+    EXPECT_EQ(hci::IOCapability::kNoInputNoOutput,
+              IOCapabilityForHci(static_cast<IOCapability>(i)));
+  }
+}
+
 TEST(SMP_UtilTest, SelectPairingMethodOOB) {
   // In SC OOB is selected if either device has OOB data.
   EXPECT_EQ(PairingMethod::kOutOfBand,

@@ -65,6 +65,28 @@ std::string IOCapabilityToString(IOCapability capability) {
   return "(unknown)";
 }
 
+hci::IOCapability IOCapabilityForHci(IOCapability capability) {
+  switch (capability) {
+    case IOCapability::kDisplayOnly:
+      return hci::IOCapability::kDisplayOnly;
+    case IOCapability::kDisplayYesNo:
+      return hci::IOCapability::kDisplayYesNo;
+    case IOCapability::kKeyboardOnly:
+      return hci::IOCapability::kKeyboardOnly;
+    case IOCapability::kNoInputNoOutput:
+      return hci::IOCapability::kNoInputNoOutput;
+
+    // There's no dedicated HCI "Keyboard w/ Display" IO Capability. Use
+    // DisplayYesNo for devices with keyboard input and numeric output. See Core
+    // Spec v5.0 Vol 3, Part C, Section 5.2.2.5 (Table 5.5).
+    case IOCapability::kKeyboardDisplay:
+      return hci::IOCapability::kDisplayYesNo;
+    default:
+      break;
+  }
+  return hci::IOCapability::kNoInputNoOutput;
+}
+
 std::string PairingMethodToString(PairingMethod method) {
   switch (method) {
     case PairingMethod::kJustWorks:
