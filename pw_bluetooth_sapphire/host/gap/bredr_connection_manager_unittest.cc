@@ -1435,6 +1435,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   QueueDisconnection(kConnectionHandle);
 
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_FALSE(peer->bredr()->connected());
 
   RunLoopUntilIdle();
 

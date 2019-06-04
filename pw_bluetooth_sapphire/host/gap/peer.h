@@ -31,9 +31,13 @@ class PeerCache;
 // PeerCache.
 class Peer final {
  public:
-  // Connection state.
+  // Connection state as considered by the GAP layer. This may not correspond
+  // exactly with the presence or absence of a link at the link layer. For
+  // example, GAP may consider a peer disconnected whilst the link disconnection
+  // procedure is still continuing.
   enum class ConnectionState {
-    // No link exists between the local adapter and this device.
+    // No link exists between the local adapter and peer or link is being torn
+    // down (disconnection command has been sent).
     kNotConnected,
 
     // Currently establishing a link, performing service discovery, or

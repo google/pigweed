@@ -261,17 +261,18 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
     return false;
   }
 
-  auto handle = FindConnectionById(peer_id);
-  if (!handle) {
+  auto node = FindConnectionById(peer_id);
+  if (!node) {
     return false;
   }
 
-  auto& connection = connections_.find(handle->first)->second.link();
-  if (!connection.is_open()) {
+  auto [handle, connection] = *node;
+  if (!connection->link().is_open()) {
     return false;
   }
 
-  connection.Close();
+  CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()),
+                    true /* close_link */);
   return true;
 }
 
@@ -336,23 +337,18 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
 
 std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
 BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
-  auto* const peer = cache_->FindById(peer_id);
-  if (!peer || !peer->bredr() || !peer->bredr()->connected()) {
-    return std::nullopt;
-  }
-
   auto it = std::find_if(
       connections_.begin(), connections_.end(),
       [peer_id](const auto& c) { return c.second.peer_id() == peer_id; });
 
-  // If we're connected, we must have an ID.
-  ZX_ASSERT_MSG(it != connections_.end(), "couldn't find handle for peer %s",
-                bt_str(peer_id));
+  if (it == connections_.end()) {
+    return std::nullopt;
+  }
 
-  auto& [handle, conn_ptr] = *it;
-  ZX_ASSERT(conn_ptr.link().ll_type() != hci::Connection::LinkType::kLE);
+  auto& [handle, conn] = *it;
+  ZX_ASSERT(conn.link().ll_type() != hci::Connection::LinkType::kLE);
 
-  return std::pair(handle, &conn_ptr);
+  return std::pair(handle, &conn);
 }
 
 void BrEdrConnectionManager::OnConnectionRequest(
@@ -547,7 +543,6 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
   }
 
   auto it = connections_.find(handle);
-
   if (it == connections_.end()) {
     bt_log(TRACE, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
     return;
@@ -559,22 +554,25 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
          bt_str(peer->identifier()), bt_str(event.ToStatus()), handle,
          params.reason);
 
-  CleanupConnection(handle, connections_.extract(handle).mapped(), true);
+  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()),
+                    false /* close_link */);
 }
 
-void BrEdrConnectionManager::CleanupConnection(hci::ConnectionHandle handle,
-                                               BrEdrConnection& conn,
-                                               bool link_already_closed) {
+void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle,
+                                               BrEdrConnection conn,
+                                               bool close_link) {
   auto* peer = cache_->FindByAddress(conn.link().peer_address());
   ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
   peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
 
   data_domain_->RemoveConnection(handle);
 
-  if (link_already_closed) {
+  if (!close_link) {
     // Connection is already closed, so we don't need to send a disconnect.
     conn.link().set_closed();
   }
+
+  // |conn| is destroyed when it goes out of scope.
 }
 
 void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {

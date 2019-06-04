@@ -36,6 +36,9 @@ class BrEdrConnection final {
   BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link)
       : link_(std::move(link)), peer_id_(peer_id) {}
 
+  BrEdrConnection(BrEdrConnection&&) = default;
+  BrEdrConnection& operator=(BrEdrConnection&&) = default;
+
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
 
@@ -167,10 +170,13 @@ class BrEdrConnectionManager final {
   // the request and initiating the next one in the queue
   void OnRequestTimeout();
 
-  // Cleanup a connection which has been deliberately disconnected, or had all
-  // references to it dropped
-  void CleanupConnection(hci::ConnectionHandle handle, BrEdrConnection& conn,
-                         bool link_already_closed);
+  // Clean up |conn| after it has been deliberately disconnected or after its
+  // link closed. Unregisters the connection from the data domain and marks the
+  // peer's BR/EDR cache state as disconnected. Takes ownership of |conn| and
+  // destroys it. If |close_link| is true, this results in an HCI Disconnect
+  // command.
+  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn,
+                         bool close_link);
 
   using ConnectionMap =
       std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
