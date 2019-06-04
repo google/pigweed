@@ -129,7 +129,7 @@ class Status {
 
   bool TestForErrorAndLogF(LogSeverity severity, const char* tag,
                            const char* file, int line, const char* fmt,
-                           ...) const {
+                           ...) const FXL_PRINTF_FORMAT(6, 7) {
     va_list args;
     va_start(args, fmt);
     std::string msg = fxl::StringVPrintf(fmt, args);
