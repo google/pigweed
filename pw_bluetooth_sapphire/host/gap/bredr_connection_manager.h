@@ -121,9 +121,8 @@ class BrEdrConnectionManager final {
   // Called to cancel an outgoing connection request
   void SendCreateConnectionCancelCommand(DeviceAddress addr);
 
-  // Disconnects any existing BR/EDR connection to |peer_id|. Returns false if
-  // |peer_id| is not a recognized BR/EDR peer or the corresponding peer is
-  // not connected.
+  // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
+  // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id);
 
  private:

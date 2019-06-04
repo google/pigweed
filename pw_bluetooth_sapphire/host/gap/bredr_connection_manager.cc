@@ -238,7 +238,10 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
 
   bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm,
          bt_str(peer_id));
-  data_domain_->OpenL2capChannel(handle, psm, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
+  data_domain_->OpenL2capChannel(
+      handle, psm,
+      [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); },
+      dispatcher);
   return true;
 }
 
@@ -261,16 +264,15 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
     return false;
   }
 
-  auto node = FindConnectionById(peer_id);
-  if (!node) {
-    return false;
+  auto conn_pair = FindConnectionById(peer_id);
+  if (!conn_pair) {
+    bt_log(INFO, "gap-bredr",
+           "No need to disconnect peer (id: %s): It is not connected",
+           bt_str(peer_id));
+    return true;
   }
 
-  auto [handle, connection] = *node;
-  if (!connection->link().is_open()) {
-    return false;
-  }
-
+  auto [handle, connection] = *conn_pair;
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()),
                     true /* close_link */);
   return true;

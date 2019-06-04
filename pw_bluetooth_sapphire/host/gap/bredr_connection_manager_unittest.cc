@@ -1414,16 +1414,19 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
   EXPECT_FALSE(connmgr()->Connect(peer->identifier(), {}));
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectUnknownPeerDoesNothing) {
+  EXPECT_TRUE(connmgr()->Disconnect(PeerId(999)));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(0, transaction_count());
+}
+
 // Test: user-initiated disconnection
 TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
-
-  RunLoopUntilIdle();
-
-  // Disconnecting an unknown peer should do nothing.
-  EXPECT_FALSE(connmgr()->Disconnect(PeerId(999)));
 
   RunLoopUntilIdle();
 
@@ -1441,9 +1444,35 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
   EXPECT_FALSE(peer->bredr()->connected());
+}
 
-  // Disconnecting a closed connection returns false.
-  EXPECT_FALSE(connmgr()->Disconnect(peer->identifier()));
+TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  QueueDisconnection(kConnectionHandle);
+
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_FALSE(peer->bredr()->connected());
+
+  // Try to disconnect again while the first disconnect is in progress (HCI
+  // Disconnection Complete not yet received).
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
+  EXPECT_FALSE(peer->bredr()->connected());
+
+  // Try to disconnect once more, now that the link is gone.
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
