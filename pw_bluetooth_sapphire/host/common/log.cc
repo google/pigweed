@@ -37,11 +37,6 @@ inline const char* LogSeverityToString(LogSeverity severity) {
   return kLogSeverityNames[LogSeverityToIndex(severity)];
 }
 
-const char* StripPath(const char* path) {
-  const char* p = strrchr(path, '/');
-  return p ? p + 1 : path;
-}
-
 bool IsPrintfEnabled() { return g_printf_min_severity >= 0; }
 
 }  // namespace
@@ -53,20 +48,17 @@ bool IsLogLevelEnabled(LogSeverity severity) {
   return zxlog_level_enabled_etc(LogSeverityToDdkLog(severity));
 }
 
-void LogMessage(const char* file, int line, LogSeverity severity,
-                const char* tag, const char* fmt, ...) {
+void LogMessage(LogSeverity severity, const char* tag, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
   std::string msg = fxl::StringVPrintf(fmt, args);
   va_end(args);
 
   if (IsPrintfEnabled()) {
-    printf("[%s:%s(%d)] %s: %s\n", LogSeverityToString(severity),
-           StripPath(file), line, tag, msg.c_str());
+    printf("[%s] %s: %s\n", tag, LogSeverityToString(severity), msg.c_str());
   } else {
-    driver_printf(LogSeverityToDdkLog(severity), "[%s:%s(%d)] %s: %s\n",
-                  LogSeverityToString(severity), StripPath(file), line, tag,
-                  msg.c_str());
+    driver_printf(LogSeverityToDdkLog(severity), "[bt-host/%s] %s: %s\n", tag,
+                  LogSeverityToString(severity), msg.c_str());
   }
 }
 

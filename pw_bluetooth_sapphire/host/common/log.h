@@ -22,8 +22,7 @@
 // number:
 //
 //     if (IsLogLevelEnabled(LogSeverity::TRACE)) {
-//       LogMessage(__FILE__, __LINE__, LogSeverity::TRACE, "bt-host", "oops:
-//                  %d", foo);
+//       LogMessage(LogSeverity::TRACE, "bt-host", "oops: %d", foo);
 //     }
 //
 // or using the bt_log convenience macro:
@@ -113,18 +112,18 @@ enum class LogSeverity {
 constexpr size_t kNumLogSeverities = 6;
 
 bool IsLogLevelEnabled(LogSeverity severity);
-void LogMessage(const char* file, int line, LogSeverity severity,
-                const char* tag, const char* fmt, ...) FXL_PRINTF_FORMAT(5, 6);
+void LogMessage(LogSeverity severity, const char* tag, const char* fmt, ...)
+    FXL_PRINTF_FORMAT(3, 4);
 
 void UsePrintf(LogSeverity min_severity);
 
 }  // namespace bt
 
-#define bt_log(flag, tag, fmt...)                                          \
-  do {                                                                     \
-    if (bt::IsLogLevelEnabled(bt::LogSeverity::flag)) {                    \
-      bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
-    }                                                                      \
+#define bt_log(flag, tag, fmt...)                       \
+  do {                                                  \
+    if (bt::IsLogLevelEnabled(bt::LogSeverity::flag)) { \
+      bt::LogMessage(bt::LogSeverity::flag, tag, fmt);  \
+    }                                                   \
   } while (0)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};
