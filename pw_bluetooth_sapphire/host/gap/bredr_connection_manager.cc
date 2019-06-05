@@ -198,7 +198,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   auto& [handle, connection] = *conn_pair;
 
   if (!connection->link().ltk()) {
-    // Connection doesn't have a key, initiate an authendication request.
+    // Connection doesn't have a key, initiate an authentication request.
     auto auth_request = hci::CommandPacket::New(
         hci::kAuthenticationRequested,
         sizeof(hci::AuthenticationRequestedCommandParams));
@@ -602,8 +602,9 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
     return;
   }
 
+  auto peer_id = peer->identifier();
   bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s",
-         bt_str(peer->identifier()));
+         bt_str(peer_id));
 
   auto reply = hci::CommandPacket::New(
       hci::kLinkKeyRequestReply, sizeof(hci::LinkKeyRequestReplyCommandParams));
@@ -614,8 +615,17 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   reply_params->bd_addr = params.bd_addr;
   const sm::LTK& link_key = *peer->bredr()->link_key();
   ZX_DEBUG_ASSERT(link_key.security().enc_key_size() == 16);
-  const auto& key_value = link_key.key().value();
+  const auto& hci_key = link_key.key();
+  const auto& key_value = hci_key.value();
   std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
+
+  auto handle = FindConnectionById(peer_id);
+  if (!handle) {
+    bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)",
+           bt_str(peer_id));
+  } else {
+    handle->second->link().set_link_key(hci_key);
+  }
 
   hci_->command_channel()->SendCommand(
       std::move(reply), dispatcher_, [](auto, const hci::EventPacket& event) {
@@ -672,7 +682,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   hci::LinkKey hci_key(key_value, 0, 0);
   sm::LTK key(sec_props, hci_key);
 
-  auto handle = FindConnectionById(peer->identifier());
+  auto handle = FindConnectionById(peer_id);
   if (!handle) {
     bt_log(WARN, "gap-bredr", "can't find current connection for ltk (id: %s)",
            bt_str(peer_id));
