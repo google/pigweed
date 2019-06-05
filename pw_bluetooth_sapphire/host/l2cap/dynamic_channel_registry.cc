@@ -14,10 +14,10 @@ namespace internal {
 
 DynamicChannelRegistry::~DynamicChannelRegistry() {
   // Clean up connected channels.
-  for (auto& id_and_chan : channels_) {
-    auto& chan = id_and_chan.second;
-    if (chan->IsConnected()) {
-      chan->Disconnect();
+  for (auto& [id, channel] : channels_) {
+    if (channel->IsConnected()) {
+      const auto no_op = [] {};
+      channel->Disconnect(no_op);
     }
   }
 }
@@ -44,8 +44,13 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid) {
   }
 
   ZX_DEBUG_ASSERT(channel->IsConnected());
-  channel->Disconnect();
-  RemoveChannel(channel);
+  auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), channel] {
+    if (!self) {
+      return;
+    }
+    self->RemoveChannel(channel);
+  };
+  channel->Disconnect(std::move(disconn_done_cb));
 }
 
 DynamicChannelRegistry::DynamicChannelRegistry(
@@ -53,7 +58,8 @@ DynamicChannelRegistry::DynamicChannelRegistry(
     ServiceRequestCallback service_request_cb)
     : largest_channel_id_(largest_channel_id),
       close_cb_(std::move(close_cb)),
-      service_request_cb_(std::move(service_request_cb)) {
+      service_request_cb_(std::move(service_request_cb)),
+      weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(largest_channel_id_ >= kFirstDynamicChannelId);
   ZX_DEBUG_ASSERT(close_cb_);
   ZX_DEBUG_ASSERT(service_request_cb_);
@@ -103,7 +109,7 @@ void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
   // It's safe to capture |this| here because the callback will be owned by the
   // DynamicChannel, which this registry owns.
   auto return_chan = [this, channel, open_cb = std::move(open_cb),
-                      pass_failed]() {
+                      pass_failed]() mutable {
     if (channel->IsOpen()) {
       open_cb(channel);
       return;
@@ -115,16 +121,24 @@ void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
 
     // TODO(NET-1084): Maybe negotiate channel parameters here? For now, just
     // disconnect the channel.
-    if (channel->IsConnected()) {
-      channel->Disconnect();
-    }
-    if (pass_failed) {
-      open_cb(nullptr);
-    }
+    // Move the callback to the stack to prepare for channel destruction.
+    auto pass_failure = [open_cb = std::move(open_cb), pass_failed] {
+      if (pass_failed) {
+        open_cb(nullptr);
+      }
+    };
 
     // This lambda is owned by the channel, so captures are no longer valid
     // after this call.
-    RemoveChannel(channel);
+    auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), channel] {
+      if (!self) {
+        return;
+      }
+      self->RemoveChannel(channel);
+    };
+    channel->Disconnect(std::move(disconn_done_cb));
+
+    pass_failure();
   };
 
   channel->Open(std::move(return_chan));

@@ -82,10 +82,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   void Open(fit::closure open_cb) override;
 
   // Mark this channel as closed and disconnected. Send a Disconnection Request
-  // to the remote peer if possible (remote peer had send an ID for its
-  // endpoint). This object shall be destroyed after this call returns and it is
-  // safe to do so regardless of receiving the Disconnection Response.
-  void Disconnect() override;
+  // to the peer if possible (peer had sent an ID for its endpoint). |done_cb|
+  // will be called when Disconnection Response is received or if channel is
+  // already not connected.
+  void Disconnect(DisconnectDoneCallback done_cb) override;
 
   bool IsConnected() const override;
   bool IsOpen() const override;

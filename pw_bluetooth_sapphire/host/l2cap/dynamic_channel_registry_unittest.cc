@@ -6,8 +6,8 @@
 
 #include <lib/async/cpp/task.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
 namespace l2cap {
@@ -46,8 +46,20 @@ class FakeDynamicChannel final : public DynamicChannel {
   }
 
   void DoRemoteClose() {
-    Disconnect();
+    open_ = false;
+    connected_ = false;
     OnDisconnected();
+  }
+
+  // After calling |set_defer_disconnect_callback|, this returns the callback
+  // passed to |Disconnect|, or an empty callback if |Disconnect| hasn't been
+  // called.
+  DisconnectDoneCallback& disconnect_done_callback() {
+    return disconnect_done_callback_;
+  }
+
+  void set_defer_disconnect_done_callback() {
+    defer_disconnect_done_callback_ = true;
   }
 
  private:
@@ -55,12 +67,28 @@ class FakeDynamicChannel final : public DynamicChannel {
   void Open(fit::closure open_result_cb) override {
     open_result_cb_ = std::move(open_result_cb);
   }
-  void Disconnect() override {
+  void Disconnect(DisconnectDoneCallback done_cb) override {
     open_ = false;
     connected_ = false;
+
+    bt_log(TRACE, "l2cap", "Got Disconnect %#.4x callback: %d", local_cid(),
+           psm());
+
+    ASSERT_FALSE(disconnect_done_callback_);
+    if (defer_disconnect_done_callback_) {
+      disconnect_done_callback_ = std::move(done_cb);
+    } else {
+      done_cb();
+    }
   }
 
   fit::closure open_result_cb_;
+  DisconnectDoneCallback disconnect_done_callback_;
+
+  // If true, the Disconnect call does not immediately signal its callback. The
+  // test will have to call it explicitly with |disconnect_callback()|.
+  bool defer_disconnect_done_callback_ = false;
+
   bool connected_ = false;
   bool open_ = false;
 };
@@ -368,6 +396,46 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
   registry.last_channel()->DoOpen();
   EXPECT_EQ(kNumChannelsAllowed + 2, open_result_cb_count);
   EXPECT_EQ(1, close_cb_count);
+}
+
+TEST(L2CAP_DynamicChannelRegistryTest,
+     ChannelIdNotReusedUntilDisconnectionCompletes) {
+  TestDynamicChannelRegistry registry(DoNothing, RejectAllServices);
+
+  registry.OpenOutbound(kPsm, DoNothing);
+  registry.last_channel()->DoConnect(kRemoteCId);
+  registry.last_channel()->DoOpen();
+
+  ASSERT_TRUE(registry.FindChannel(kLocalCId));
+  ASSERT_NE(kLocalCId, registry.FindAvailableChannelId());
+
+  // Close the channel but don't let the disconnection complete.
+  FakeDynamicChannel* const first_channel = registry.last_channel();
+  first_channel->set_defer_disconnect_done_callback();
+  registry.CloseChannel(kLocalCId);
+
+  // New channels should not reuse the "mostly disconnected" channel's ID.
+  EXPECT_NE(kLocalCId, registry.FindAvailableChannelId());
+  ASSERT_TRUE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannel(kLocalCId)->IsConnected());
+
+  // Open a new channel and make sure it has a different channel ID.
+  bool open_result_cb_called = false;
+  auto open_result_cb = [&open_result_cb_called](const DynamicChannel* chan) {
+    EXPECT_FALSE(open_result_cb_called);
+    open_result_cb_called = true;
+    ASSERT_TRUE(chan);
+    EXPECT_EQ(kLocalCId + 1, chan->local_cid());
+  };
+  registry.OpenOutbound(kPsm, std::move(open_result_cb));
+  registry.last_channel()->DoConnect(kRemoteCId + 1);
+  registry.last_channel()->DoOpen();
+  EXPECT_TRUE(open_result_cb_called);
+
+  // Complete the disconnection for the first channel opened.
+  ASSERT_TRUE(first_channel->disconnect_done_callback());
+  first_channel->disconnect_done_callback()();
+  EXPECT_EQ(kLocalCId, registry.FindAvailableChannelId());
 }
 
 }  // namespace

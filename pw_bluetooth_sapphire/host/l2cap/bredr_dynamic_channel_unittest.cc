@@ -637,6 +637,63 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       ChannelIdNotReusedUntilDisconnectionCompletes) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kConfigReq.view(),
+      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+  auto disconn_id =
+      EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view());
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    ASSERT_TRUE(chan);
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto chan) {
+    EXPECT_TRUE(chan);
+    close_cb_count++;
+  });
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Complete opening the channel.
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq,
+                                       kInboundOkConfigRsp));
+
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+
+  registry()->CloseChannel(kLocalCId);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Disconnection Response hasn't been received yet so the second channel
+  // should use a different channel ID.
+  const ByteBuffer& kSecondChannelConnReq = CreateStaticByteBuffer(
+      // PSM
+      LowerBits(kPsm), UpperBits(kPsm),
+
+      // Source CID
+      LowerBits(kLocalCId + 1), UpperBits(kLocalCId + 1));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kSecondChannelConnReq.view());
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  // Complete the disconnection on the first channel.
+  RETURN_IF_FATAL(sig()->ReceiveResponses(
+      disconn_id, {{SignalingChannel::Status::kSuccess, kDisconRsp.view()}}));
+
+  // Now the first channel ID gets reused.
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view());
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});

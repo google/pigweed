@@ -185,27 +185,27 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
   state_ |= kConnRequested;
 }
 
-void BrEdrDynamicChannel::Disconnect() {
-  ZX_DEBUG_ASSERT((state_ & kDisconnected) == 0);
+void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
+  ZX_ASSERT(done_cb);
+  if (!IsConnected()) {
+    done_cb();
+    return;
+  }
 
   state_ |= kDisconnected;
 
   // Don't send disconnect request if the peer never responded (also can't,
   // because we don't have their end's ID).
   if (remote_cid() == kInvalidChannelId) {
+    done_cb();
     return;
   }
 
-  // This response handler can't hold references to this object, which is about
-  // to be destroyed.
-  //
-  // TODO(NET-1373): Destroying this channel and allowing this channel ID to be
-  // recycled should wait until either this response is received or RTX timeout.
-  // For now, don't wait for the response at all to avoid a hang on non-
-  // response.
+  // TODO(BT-331): Call |done_cb| after RTX timeout to avoid zombie channels.
   auto on_discon_rsp =
-      [local_cid = local_cid(), remote_cid = remote_cid()](
-          const BrEdrCommandHandler::DisconnectionResponse& rsp) {
+      [local_cid = local_cid(), remote_cid = remote_cid(),
+       self = weak_ptr_factory_.GetWeakPtr(), done_cb = done_cb.share()](
+          const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
         if (rsp.local_cid() != local_cid || rsp.remote_cid() != remote_cid) {
           bt_log(WARN, "l2cap-bredr",
                  "Channel %#.4x: Got Disconnection Response with ID %#.4x/"
@@ -215,6 +215,11 @@ void BrEdrDynamicChannel::Disconnect() {
           bt_log(SPEW, "l2cap-bredr",
                  "Channel %#.4x: Got Disconnection Response", local_cid);
         }
+
+        if (self) {
+          done_cb();
+        }
+
         return false;
       };
 
@@ -223,6 +228,7 @@ void BrEdrDynamicChannel::Disconnect() {
                                             std::move(on_discon_rsp))) {
     bt_log(ERROR, "l2cap-bredr",
            "Channel %#.4x: Failed to send Disconnection Request", local_cid());
+    done_cb();
     return;
   }
 

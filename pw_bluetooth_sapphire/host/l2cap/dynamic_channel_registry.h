@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace l2cap {
@@ -132,6 +133,8 @@ class DynamicChannelRegistry {
 
   // Maps local CIDs to alive dynamic channels on this logical link.
   std::unordered_map<ChannelId, DynamicChannelPtr> channels_;
+
+  fxl::WeakPtrFactory<DynamicChannelRegistry> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };

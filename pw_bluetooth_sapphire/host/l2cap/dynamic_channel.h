@@ -61,9 +61,15 @@ class DynamicChannel {
   // channel is considered open.
   virtual void Open(fit::closure open_result_cb) = 0;
 
-  // Close the channel and notify the remote of the closure if already
-  // connected. The owner should then destroy this object and not reuse it.
-  virtual void Disconnect() = 0;
+  // If connected, close the channel. |disconnect_callback| will be called when
+  // the peer confirms that the channel is disconnected, or if the channel is
+  // already not connected. The owner should then destroy this object and not
+  // reuse it.
+  //
+  // TODO(BT-331): |disconnect_callback| will be called by RTX timeout when
+  //               implemented.
+  using DisconnectDoneCallback = fit::callback<void()>;
+  virtual void Disconnect(DisconnectDoneCallback done_cb) = 0;
 
   // If true, both local and remote endpoints are connected and this instance
   // shall have valid and unique identifiers.
