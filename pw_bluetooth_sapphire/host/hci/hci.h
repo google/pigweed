@@ -246,7 +246,7 @@ struct RejectConnectionRequestCommandParams {
 // Controller to indicate that this command has been completed. Instead, the
 // Connection Complete event will indicate that this command has been completed.
 
-// ====================================================
+// ==============================================
 // Link Key Request Reply Command (v1.1) (BR/EDR)
 constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
@@ -318,8 +318,7 @@ struct SetConnectionEncryptionCommandParams {
 
 // NOTE on ReturnParams: No Command Complete event will be sent by the
 // Controller to indicate that this command has been completed. Instead, the
-// Encryption Change event will indicate that this command has been
-// completed.
+// Encryption Change event will indicate that this command has been completed.
 
 // ============================================================
 // Read Remote Version Information Command (v1.1) (BR/EDR & LE)
@@ -430,13 +429,6 @@ struct IOCapabilityRequestReplyReturnParams {
   DeviceAddressBytes bd_addr;
 } __PACKED;
 
-// ======= Controller & Baseband Commands =======
-// Core Spec v5.0 Vol 2, Part E, Section 7.3
-constexpr uint8_t kControllerAndBasebandOGF = 0x03;
-constexpr OpCode ControllerAndBasebandOpCode(const uint16_t ocf) {
-  return DefineOpCode(kControllerAndBasebandOGF, ocf);
-}
-
 // =============================================================
 // User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserConfirmationRequestReply = LinkControlOpCode(0x002C);
@@ -455,6 +447,13 @@ struct UserConfirmationRequestNegativeReplyCommandParams {
   // The BD_ADDR of the remote device involved in the simple pairing process.
   DeviceAddressBytes bd_addr;
 } __PACKED;
+
+// ======= Controller & Baseband Commands =======
+// Core Spec v5.0 Vol 2, Part E, Section 7.3
+constexpr uint8_t kControllerAndBasebandOGF = 0x03;
+constexpr OpCode ControllerAndBasebandOpCode(const uint16_t ocf) {
+  return DefineOpCode(kControllerAndBasebandOGF, ocf);
+}
 
 // =============================
 // Set Event Mask Command (v1.1)
@@ -1209,7 +1208,7 @@ struct NumberOfCompletedPacketsEventParams {
   NumberOfCompletedPacketsEventData data[];
 } __PACKED;
 
-// ========================================
+// ======================================
 // Link Key Request Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 
@@ -1218,7 +1217,7 @@ struct LinkKeyRequestParams {
   DeviceAddressBytes bd_addr;
 } __PACKED;
 
-// ========================================
+// ===========================================
 // Link Key Notification Event (v1.1) (BR/EDR)
 constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
 
@@ -1270,7 +1269,7 @@ struct InquiryResultWithRSSIEventParams {
   InquiryResultRSSI responses[];
 } __PACKED;
 
-// =============================================================
+// ============================================================
 // Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
 
@@ -1343,7 +1342,7 @@ struct EncryptionKeyRefreshCompleteEventParams {
   ConnectionHandle connection_handle;
 } __PACKED;
 
-// =============================================
+// =================================================
 // IO Capability Request Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 
@@ -1352,7 +1351,7 @@ struct IOCapabilityRequestEventParams {
   DeviceAddressBytes bd_addr;
 } __PACKED;
 
-// =============================================
+// ==================================================
 // IO Capability Response Event (v2.1 + EDR) (BR/EDR)
 constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
 
@@ -1382,9 +1381,17 @@ struct UserConfirmationRequestEventParams {
   // Address of the device involved in simple pairing process
   DeviceAddressBytes bd_addr;
 
-  // Numeric valud to be displayed.  Valid values are 0 - 999999
+  // Numeric value to be displayed. Valid values are 0 - 999999.
   uint32_t numeric_value;
 } __PACKED;
+
+// ================================================
+// User Passkey Request Event (v2.1 + EDR) (BR/EDR)
+constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
+
+// =====================================================
+// User Passkey Notification Event (v2.1 + EDR) (BR/EDR)
+constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;
 
 // =========================
 // LE Meta Event (v4.0) (LE)
