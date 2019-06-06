@@ -231,6 +231,20 @@ bool PeerCache::ForgetPeer(PeerId peer_id) {
   return bond_removed;
 }
 
+bool PeerCache::RemoveDisconnectedPeer(PeerId peer_id) {
+  Peer* const peer = FindById(peer_id);
+  if (!peer) {
+    return true;
+  }
+
+  if (peer->connected()) {
+    return false;
+  }
+
+  RemovePeer(peer);
+  return true;
+}
+
 Peer* PeerCache::FindById(PeerId peer_id) const {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto iter = peers_.find(peer_id);

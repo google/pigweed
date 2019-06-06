@@ -357,9 +357,14 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
     updated_callback_count_ = 0;
     cache()->set_peer_updated_callback(
         [this](auto&) { updated_callback_count_++; });
+    removed_callback_count_ = 0;
+    cache()->set_peer_removed_callback(
+        [this](PeerId) { removed_callback_count_++; });
   }
 
   void TearDown() override {
+    cache()->set_peer_removed_callback(nullptr);
+    removed_callback_count_ = 0;
     cache()->set_peer_updated_callback(nullptr);
     updated_callback_count_ = 0;
     cache()->set_peer_bonded_callback(nullptr);
@@ -373,9 +378,12 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
   // Returns 0 at the beginning of each test case.
   int updated_callback_count() const { return updated_callback_count_; }
 
+  int removed_callback_count() const { return removed_callback_count_; }
+
  private:
   bool bonded_callback_called_;
   int updated_callback_count_;
+  int removed_callback_count_;
 };
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
@@ -774,6 +782,30 @@ TEST_F(GAP_PeerCacheTest_BondingTest,
 
   RunLoopFor(kCacheTimeout);
   EXPECT_FALSE(cache()->FindById(id));
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnknownPeer) {
+  const PeerId id(0x9999);
+  ASSERT_FALSE(cache()->FindById(id));
+  EXPECT_TRUE(cache()->RemoveDisconnectedPeer(id));
+  EXPECT_EQ(0, updated_callback_count());
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnconnectedPeer) {
+  ASSERT_FALSE(peer()->connected());
+  const PeerId id = peer()->identifier();
+  EXPECT_TRUE(cache()->RemoveDisconnectedPeer(id));
+  EXPECT_EQ(1, removed_callback_count());
+  EXPECT_FALSE(cache()->FindById(id));
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnConnectedPeer) {
+  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  ASSERT_TRUE(peer()->connected());
+  const PeerId id = peer()->identifier();
+  EXPECT_FALSE(cache()->RemoveDisconnectedPeer(id));
+  EXPECT_EQ(0, removed_callback_count());
+  EXPECT_TRUE(cache()->FindById(id));
 }
 
 // Fixture parameterized by peer address

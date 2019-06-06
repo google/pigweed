@@ -96,9 +96,14 @@ class PeerCache final {
   // otherwise disconnect the peer or remove its ID or address from the cache.
   // Returns true if bonds were deleted from a known peer.
   //
-  // TODO(BT-824): Delete the peer immediately after disconnecting. Will return
-  // true if a known peer was deleted or marked for deletion.
+  // TODO(BT-824): Replace calls to |ForgetPeer| with |RemoveDisconnectedPeer|
+  // to delete the peer immediately after disconnecting.
   bool ForgetPeer(PeerId peer_id);
+
+  // If a peer identified by |peer_id| exists and is not connected on either
+  // transport, remove it from the cache immediately. Returns true after no peer
+  // with |peer_id| exists in the cache, false otherwise.
+  [[nodiscard]] bool RemoveDisconnectedPeer(PeerId peer_id);
 
   // Returns the remote peer with identifier |peer_id|. Returns nullptr if
   // |peer_id| is not recognized.
