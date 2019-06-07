@@ -941,6 +941,38 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
   RunLoopUntilIdle();
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       RemovePeerFromPeerCacheDuringDisconnection) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto success_cb = [&conn_ref, this](auto status, auto cb_conn_ref) {
+    EXPECT_TRUE(status);
+    ASSERT_TRUE(cb_conn_ref);
+    EXPECT_TRUE(cb_conn_ref->active());
+
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), success_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_ref);
+
+  // This should invalidate the ref that was bound to |ref_cb|.
+  const PeerId id = peer->identifier();
+  EXPECT_TRUE(conn_mgr()->Disconnect(id));
+  ASSERT_FALSE(peer->le()->connected());
+  EXPECT_FALSE(conn_ref->active());
+
+  EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(id));
+
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(peer_cache()->FindById(id));
+  EXPECT_FALSE(peer_cache()->FindByAddress(kAddress0));
+}
+
 // Listener receives remote initiated connection ref.
 TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));

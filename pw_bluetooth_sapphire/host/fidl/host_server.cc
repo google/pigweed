@@ -326,9 +326,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     // TODO(armansito): BondingData should contain the identity address for both
     // transports instead of storing them separately. For now use the one we
     // obtained from |bond.le|.
-    if (!adapter()->AddBondedPeer(bt::gap::BondingData{*peer_id, address,
-                                                       peer_name, le_bond_data,
-                                                       bredr_link_key})){
+    if (!adapter()->AddBondedPeer(bt::gap::BondingData{
+            *peer_id, address, peer_name, le_bond_data, bredr_link_key})) {
       failed_ids.push_back(bond.identifier);
       continue;
     }
@@ -563,28 +562,27 @@ void HostServer::Forget(::std::string peer_id, ForgetCallback callback) {
   }
   auto peer = adapter()->peer_cache()->FindById(*id);
   if (!peer) {
-    callback(NewFidlError(ErrorCode::NOT_FOUND,
-                          "Cannot find peer with the given ID"));
+    bt_log(TRACE, "bt-host", "peer %s to forget wasn't found", peer_id.c_str());
+    callback(Status());
     return;
   }
 
-  if (peer->le()) {
-    adapter()->le_connection_manager()->Disconnect(*id);
-  }
-  if (peer->bredr()) {
-    adapter()->bredr_connection_manager()->Disconnect(*id);
-  }
+  const bool le_disconnected =
+      adapter()->le_connection_manager()->Disconnect(*id);
+  const bool bredr_disconnected =
+      adapter()->bredr_connection_manager()->Disconnect(*id);
+  const bool peer_removed =
+    adapter()->peer_cache()->RemoveDisconnectedPeer(*id);
 
-  const bool forgot = adapter()->peer_cache()->ForgetPeer(*id);
-  bt_log(TRACE, "bt-host", "forget peer (id %s) %s", peer_id.c_str(),
-         forgot ? "succeeded" : "failed");
-  if (!forgot) {
-    callback(NewFidlError(ErrorCode::FAILED, "Failed to forget peer"));
-    return;
+  if (!le_disconnected || !bredr_disconnected) {
+    const auto message = fxl::StringPrintf("Link(s) failed to close:%s%s",
+                                           le_disconnected ? "" : " LE",
+                                           bredr_disconnected ? "" : " BR/EDR");
+    callback(NewFidlError(ErrorCode::FAILED, message));
+  } else {
+    ZX_ASSERT(peer_removed);
+    callback(Status());
   }
-
-  // TODO(BT-652): This should be called when disconnection completes.
-  callback(Status());
 }
 
 void HostServer::RequestLowEnergyCentral(

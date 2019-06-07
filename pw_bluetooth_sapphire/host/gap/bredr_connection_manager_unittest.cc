@@ -1544,6 +1544,34 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest,
+       RemovePeerFromPeerCacheDuringDisconnection) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  QueueDisconnection(kConnectionHandle);
+
+  const PeerId id = peer->identifier();
+  EXPECT_TRUE(connmgr()->Disconnect(id));
+  ASSERT_FALSE(peer->bredr()->connected());
+
+  // Remove the peer from PeerCache before receving HCI Disconnection Complete.
+  EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(id));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
+  EXPECT_FALSE(peer_cache()->FindById(id));
+  EXPECT_FALSE(peer_cache()->FindByAddress(kTestDevAddr));
+}
+
 TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto&) {
