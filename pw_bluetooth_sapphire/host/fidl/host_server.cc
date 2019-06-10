@@ -36,8 +36,8 @@ using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
 using fuchsia::bluetooth::control::AdapterState;
+using fuchsia::bluetooth::control::BondingData;
 using fuchsia::bluetooth::control::RemoteDevice;
-using fuchsia::bluetooth::host::BondingData;
 
 HostServer::HostServer(zx::channel channel,
                        fxl::WeakPtr<bt::gap::Adapter> adapter,
@@ -81,7 +81,8 @@ void HostServer::GetInfo(GetInfoCallback callback) {
   callback(fidl_helpers::NewAdapterInfo(*adapter()));
 }
 
-void HostServer::SetLocalData(::fuchsia::bluetooth::host::HostData host_data) {
+void HostServer::SetLocalData(
+    ::fuchsia::bluetooth::control::HostData host_data) {
   if (host_data.irk) {
     bt_log(TRACE, "bt-host", "assign IRK");
     auto addr_mgr = adapter()->le_address_manager();

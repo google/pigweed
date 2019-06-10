@@ -78,13 +78,13 @@ fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(
 fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
     const bt::gap::Peer& peer);
 
-// Functions to convert Host FIDL library objects.
+// Functions to convert Control FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(
-    const fuchsia::bluetooth::host::LEData& data);
-bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::host::LocalKey& key);
+    const fuchsia::bluetooth::control::LEData& data);
+bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::control::LocalKey& key);
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
-    const fuchsia::bluetooth::host::BREDRData& data);
-fuchsia::bluetooth::host::BondingData NewBondingData(
+    const fuchsia::bluetooth::control::BREDRData& data);
+fuchsia::bluetooth::control::BondingData NewBondingData(
     const bt::gap::Adapter& adapter, const bt::gap::Peer& peer);
 
 // Functions to construct FIDL LE library objects from library objects.

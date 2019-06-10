@@ -46,7 +46,7 @@ fctrl::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
 }
 
 bt::sm::SecurityProperties SecurityPropsFromFidl(
-    const fhost::SecurityProperties& sec_prop) {
+    const fctrl::SecurityProperties& sec_prop) {
   auto level = bt::sm::SecurityLevel::kEncrypted;
   if (sec_prop.authenticated) {
     level = bt::sm::SecurityLevel::kAuthenticated;
@@ -55,9 +55,9 @@ bt::sm::SecurityProperties SecurityPropsFromFidl(
                                     sec_prop.secure_connections);
 }
 
-fhost::SecurityProperties SecurityPropsToFidl(
+fctrl::SecurityProperties SecurityPropsToFidl(
     const bt::sm::SecurityProperties& sec_prop) {
-  fhost::SecurityProperties result;
+  fctrl::SecurityProperties result;
   result.authenticated = sec_prop.authenticated();
   result.secure_connections = sec_prop.secure_connections();
   result.encryption_key_size = sec_prop.enc_key_size();
@@ -65,13 +65,13 @@ fhost::SecurityProperties SecurityPropsToFidl(
 }
 
 bt::DeviceAddress::Type BondingAddrTypeFromFidl(
-    const fhost::AddressType& type) {
+    const fctrl::AddressType& type) {
   switch (type) {
-    case fhost::AddressType::LE_RANDOM:
+    case fctrl::AddressType::LE_RANDOM:
       return bt::DeviceAddress::Type::kLERandom;
-    case fhost::AddressType::LE_PUBLIC:
+    case fctrl::AddressType::LE_PUBLIC:
       return bt::DeviceAddress::Type::kLEPublic;
-    case fhost::AddressType::BREDR:
+    case fctrl::AddressType::BREDR:
       return bt::DeviceAddress::Type::kBREDR;
     default:
       ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
@@ -80,14 +80,14 @@ bt::DeviceAddress::Type BondingAddrTypeFromFidl(
   return bt::DeviceAddress::Type::kBREDR;
 }
 
-fhost::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
+fctrl::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
   switch (type) {
     case bt::DeviceAddress::Type::kLERandom:
-      return fhost::AddressType::LE_RANDOM;
+      return fctrl::AddressType::LE_RANDOM;
     case bt::DeviceAddress::Type::kLEPublic:
-      return fhost::AddressType::LE_PUBLIC;
+      return fctrl::AddressType::LE_PUBLIC;
     case bt::DeviceAddress::Type::kBREDR:
-      return fhost::AddressType::BREDR;
+      return fctrl::AddressType::BREDR;
     default:
       // Anonymous is not a valid address type to use for bonding, so we treat
       // that as a programming error.
@@ -95,16 +95,16 @@ fhost::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
                static_cast<unsigned int>(type));
       break;
   }
-  return fhost::AddressType::BREDR;
+  return fctrl::AddressType::BREDR;
 }
 
-bt::sm::LTK LtkFromFidl(const fhost::LTK& ltk) {
+bt::sm::LTK LtkFromFidl(const fctrl::LTK& ltk) {
   return bt::sm::LTK(SecurityPropsFromFidl(ltk.key.security_properties),
                      bt::hci::LinkKey(ltk.key.value, ltk.rand, ltk.ediv));
 }
 
-fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
-  fhost::LTK result;
+fctrl::LTK LtkToFidl(const bt::sm::LTK& ltk) {
+  fctrl::LTK result;
   result.key.security_properties = SecurityPropsToFidl(ltk.security());
   result.key.value = ltk.key().value();
 
@@ -116,12 +116,12 @@ fhost::LTK LtkToFidl(const bt::sm::LTK& ltk) {
   return result;
 }
 
-bt::sm::Key KeyFromFidl(const fhost::RemoteKey& key) {
+bt::sm::Key KeyFromFidl(const fctrl::RemoteKey& key) {
   return bt::sm::Key(SecurityPropsFromFidl(key.security_properties), key.value);
 }
 
-fhost::RemoteKey KeyToFidl(const bt::sm::Key& key) {
-  fhost::RemoteKey result;
+fctrl::RemoteKey KeyToFidl(const bt::sm::Key& key) {
+  fctrl::RemoteKey result;
   result.security_properties = SecurityPropsToFidl(key.security());
   result.value = key.value();
   return result;
@@ -192,7 +192,7 @@ bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
   return bt::sm::IOCapability::kNoInputNoOutput;
 }
 
-bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
+bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {
   bt::sm::PairingData result;
   result.identity_address = bt::DeviceAddress(
       BondingAddrTypeFromFidl(data.address_type), data.address);
@@ -208,9 +208,9 @@ bt::sm::PairingData PairingDataFromFidl(const fhost::LEData& data) {
   return result;
 }
 
-bt::UInt128 LocalKeyFromFidl(const fhost::LocalKey& key) { return key.value; }
+bt::UInt128 LocalKeyFromFidl(const fctrl::LocalKey& key) { return key.value; }
 
-std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fhost::BREDRData& data) {
+std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fctrl::BREDRData& data) {
   if (data.link_key) {
     return LtkFromFidl(*data.link_key);
   }
@@ -290,9 +290,9 @@ fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer) {
   return fidl_device;
 }
 
-fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
+fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter,
                                   const bt::gap::Peer& peer) {
-  fhost::BondingData out_data;
+  fctrl::BondingData out_data;
   out_data.identifier = peer.identifier().ToString();
   out_data.local_address = adapter.state().controller_address().ToString();
 
@@ -302,7 +302,7 @@ fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
 
   // Store LE data.
   if (peer.le() && peer.le()->bond_data()) {
-    out_data.le = fhost::LEData::New();
+    out_data.le = fctrl::LEData::New();
 
     const auto& le_data = *peer.le()->bond_data();
     const auto& identity =
@@ -317,22 +317,22 @@ fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
     out_data.le->services.resize(0);
 
     if (le_data.ltk) {
-      out_data.le->ltk = fhost::LTK::New();
+      out_data.le->ltk = fctrl::LTK::New();
       *out_data.le->ltk = LtkToFidl(*le_data.ltk);
     }
     if (le_data.irk) {
-      out_data.le->irk = fhost::RemoteKey::New();
+      out_data.le->irk = fctrl::RemoteKey::New();
       *out_data.le->irk = KeyToFidl(*le_data.irk);
     }
     if (le_data.csrk) {
-      out_data.le->csrk = fhost::RemoteKey::New();
+      out_data.le->csrk = fctrl::RemoteKey::New();
       *out_data.le->csrk = KeyToFidl(*le_data.csrk);
     }
   }
 
   // Store BR/EDR data.
   if (peer.bredr() && peer.bredr()->link_key()) {
-    out_data.bredr = fhost::BREDRData::New();
+    out_data.bredr = fctrl::BREDRData::New();
 
     out_data.bredr->address = peer.bredr()->address().value().ToString();
 
@@ -343,7 +343,7 @@ fhost::BondingData NewBondingData(const bt::gap::Adapter& adapter,
     out_data.bredr->services.resize(0);
 
     if (peer.bredr()->link_key()) {
-      out_data.bredr->link_key = fhost::LTK::New();
+      out_data.bredr->link_key = fctrl::LTK::New();
       *out_data.bredr->link_key = LtkToFidl(*peer.bredr()->link_key());
     }
   }
