@@ -20,7 +20,7 @@ class FakeLayer final : public GATT {
   }
 
   // GATT overrides:
-  void Initialize() override;
+  void Initialize(InitializeCallback callback) override;
   void ShutDown() override;
   void AddConnection(PeerId peer_id,
                      fbl::RefPtr<l2cap::Channel> att_chan) override;

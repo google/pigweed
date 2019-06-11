@@ -27,9 +27,9 @@ GattHost::GattHost(std::string thrd_name)
 
 GattHost::~GattHost() {}
 
-void GattHost::Initialize() {
+void GattHost::Initialize(InitializeCallback callback) {
   // Initialize the profile.
-  gatt_->Initialize();
+  gatt_->Initialize(std::move(callback));
   gatt_->RegisterRemoteServiceWatcher(
       [self = fbl::WrapRefPtr(this)](auto peer_id, auto service) {
         std::lock_guard<std::mutex> lock(self->mtx_);

@@ -85,31 +85,37 @@ zx_status_t HostDevice::Bind() {
 
     std::lock_guard<std::mutex> lock(mtx_);
     host_ = fxl::MakeRefCounted<Host>(hci_proto);
-    host_->Initialize([host = host_, this](bool success) {
-      {
-        std::lock_guard<std::mutex> lock(mtx_);
+    host_->Initialize([this](bool success) {
+      // This callback normally runs on the GATT thread, but we want it to run
+      // on the host thread, so we schedule the actual callback task on the
+      // host thread.
+      async::PostTask(loop_.dispatcher(), [this, success]() {
+        {
+          std::lock_guard<std::mutex> lock(mtx_);
 
-        // Abort if CleanUp has been called.
-        if (!host_) {
-          bt_log(SPEW, "bt-host", "host already removed; nothing to do");
-          return;
+          // Abort if CleanUp has been called.
+          if (!host_) {
+            bt_log(SPEW, "bt-host", "host already removed; nothing to do");
+            return;
+          }
+
+          if (success) {
+            bt_log(TRACE, "bt-host",
+                   "adapter initialized; make device visible");
+            host_->gatt_host()->SetRemoteServiceWatcher(
+                fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
+            device_make_visible(dev_);
+            return;
+          }
+
+          bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
+
+          host_->ShutDown();
+          CleanUp();
         }
 
-        if (success) {
-          bt_log(TRACE, "bt-host", "adapter initialized; make device visible");
-          host_->gatt_host()->SetRemoteServiceWatcher(
-              fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
-          device_make_visible(dev_);
-          return;
-        }
-
-        bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
-
-        host->ShutDown();
-        CleanUp();
-      }
-
-      loop_.JoinThreads();
+        loop_.JoinThreads();
+      });
     });
   });
 

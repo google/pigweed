@@ -34,8 +34,8 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
   }
 
   // GATT overrides:
-  void Initialize() override {
-    PostMessage([this] {
+  void Initialize(InitializeCallback callback) override {
+    PostMessage([this, callback = std::move(callback)] {
       ZX_DEBUG_ASSERT(!initialized_);
 
       local_services_ = std::make_unique<LocalServiceManager>();
@@ -58,6 +58,8 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
       initialized_ = true;
 
       bt_log(TRACE, "gatt", "initialized");
+
+      callback();
     });
   }
 

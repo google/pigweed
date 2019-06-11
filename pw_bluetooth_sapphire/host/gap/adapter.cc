@@ -192,6 +192,17 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
+void Adapter::InitializeService() {
+  gas_ = std::make_unique<GenericAccessService>(gatt_);
+  if (!gas_) {
+    bt_log(ERROR, "gap", "Failed to initialize generic access service");
+    return;
+  }
+
+  // Make sure the service is aware of the current adapter name.
+  gas_->UpdateDeviceName(state().local_name_);
+}
+
 bool Adapter::AddBondedPeer(BondingData bonding_data) {
   return peer_cache()->AddBondedPeer(bonding_data);
 }
@@ -229,6 +240,15 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
       [this, name = std::move(name), cb = std::move(callback)](
           auto, const hci::EventPacket& event) mutable {
         if (!hci_is_error(event, WARN, "gap", "set local name failed")) {
+          if (gas_) {
+            gas_->UpdateDeviceName(name);
+          } else {
+            bt_log(WARN, "gap",
+                   "Adapter's local name was updated but the generic access "
+                   "service is not initialized so remote peers may not know "
+                   "about the new name");
+          }
+
           state_.local_name_ = std::move(name);
         }
         cb(event.ToStatus());

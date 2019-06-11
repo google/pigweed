@@ -8,7 +8,7 @@ namespace bt {
 namespace gatt {
 namespace testing {
 
-void FakeLayer::Initialize() {
+void FakeLayer::Initialize(InitializeCallback callback) {
   // TODO: implement
 }
 
