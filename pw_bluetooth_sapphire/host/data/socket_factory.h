@@ -52,7 +52,8 @@ class SocketFactory final {
   // It is an error to call MakeSocketForChannel() multiple times for
   // the same Channel.
   //
-  // Returns the new socket on success, and an invalid socket otherwise.
+  // Returns the new socket on success, and an invalid socket otherwise
+  // (including if |channel| is nullptr).
   zx::socket MakeSocketForChannel(fbl::RefPtr<ChannelT> channel);
 
  private:

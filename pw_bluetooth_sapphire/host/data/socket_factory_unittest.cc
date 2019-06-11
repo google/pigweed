@@ -59,6 +59,11 @@ TEST_F(DATA_SocketFactoryTest, CanCreateSocket) {
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(channel()));
 }
 
+TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelIsNullptr) {
+  FactoryT socket_factory;
+  EXPECT_FALSE(socket_factory.MakeSocketForChannel(nullptr));
+}
+
 TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
   FactoryT socket_factory;
   zx::socket socket = socket_factory.MakeSocketForChannel(channel());

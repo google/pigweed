@@ -25,13 +25,16 @@ template <typename ChannelT>
 zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
     fbl::RefPtr<ChannelT> channel) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(channel);
+
+  if (!channel) {
+    return zx::socket();
+  }
 
   const auto unique_id = channel->unique_id();
   if (channel_to_relay_.find(unique_id) != channel_to_relay_.end()) {
     bt_log(ERROR, "l2cap", "channel %u @ %u is already bound to a socket",
            channel->link_handle(), channel->id());
-    return {};
+    return zx::socket();
   }
 
   zx::socket local_socket, remote_socket;
@@ -40,7 +43,7 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
   if (status != ZX_OK) {
     bt_log(ERROR, "l2cap", "Failed to create socket for channel %u @ %u: %s",
            channel->link_handle(), channel->id(), zx_status_get_string(status));
-    return {};
+    return zx::socket();
   }
 
   auto relay = std::make_unique<RelayT>(
@@ -58,7 +61,7 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
   if (!relay->Activate()) {
     bt_log(ERROR, "l2cap", "Failed to Activate() relay for channel %u",
            channel->id());
-    return {};
+    return zx::socket();
   }
 
   channel_to_relay_.emplace(unique_id, std::move(relay));
