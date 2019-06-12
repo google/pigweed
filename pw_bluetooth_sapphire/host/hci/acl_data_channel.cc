@@ -223,6 +223,10 @@ size_t ACLDataChannel::GetBufferMTU(Connection::LinkType ll_type) const {
 
 void ACLDataChannel::NumberOfCompletedPacketsCallback(
     const EventPacket& event) {
+  if (!is_initialized_) {
+    return;
+  }
+
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(event.event_code() == kNumberOfCompletedPacketsEventCode);
 

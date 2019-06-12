@@ -697,6 +697,32 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   EXPECT_EQ(1, closed_cb_count);
 }
 
+// Make sure that a HCI "Number of completed packets" event received after shut
+// down does not cause a crash.
+TEST_F(HCI_ACLDataChannelTest, HciEventReceivedAfterShutDown) {
+  InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  auto event_buffer = CreateStaticByteBuffer(
+      0x13, 0x09,              // Event header
+      0x02,                    // Number of handles
+      0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+      0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
+  );
+  test_device()->SendCommandChannelPacket(event_buffer);
+
+  // Since ACLDataChannel registers the HCI event handler with a dispatcher, it
+  // will be processed in a deferred task. We post a ShutDown() task so that
+  // events are processed in the following order:
+  //
+  //   1. Wait task to read the HCI event.
+  //   2. ShutDown() task
+  //   3. Event handler for the HCI event.
+  async::PostTask(dispatcher(), [this] { transport()->ShutDown(); });
+
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt
