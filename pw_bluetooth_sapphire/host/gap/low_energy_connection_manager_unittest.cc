@@ -947,7 +947,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto success_cb = [&conn_ref, this](auto status, auto cb_conn_ref) {
+  auto success_cb = [&conn_ref](auto status, auto cb_conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(cb_conn_ref);
     EXPECT_TRUE(cb_conn_ref->active());
