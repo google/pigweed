@@ -123,6 +123,9 @@ class Domain : public fbl::RefCounted<Domain> {
   // channel created to the remote or ZX_INVALID_HANDLE if the channel creation
   // resulted in an error.
   //
+  // Regardless of success, |link_handle| will be the same as the initial
+  // |handle| argument.
+  //
   // Has no effect if this Domain is uninitialized or shut down.
   using SocketCallback =
       fit::function<void(zx::socket, hci::ConnectionHandle link_handle)>;

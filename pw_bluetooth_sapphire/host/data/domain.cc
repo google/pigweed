@@ -133,17 +133,14 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     ZX_DEBUG_ASSERT(cb_dispatcher);
     OpenL2capChannel(
         handle, psm,
-        [this, cb = std::move(socket_callback),
+        [this, handle, cb = std::move(socket_callback),
          cb_dispatcher](auto channel) mutable {
           // MakeSocketForChannel makes invalid sockets for null channels (i.e.
           // that have failed to open).
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          // Called every time the service is connected, cb must be shared.
           async::PostTask(cb_dispatcher,
-                          [s = std::move(s), cb = cb.share(),
-                           handle = channel->link_handle()]() mutable {
-                            cb(std::move(s), handle);
-                          });
+                          [s = std::move(s), cb = std::move(cb),
+                           handle]() mutable { cb(std::move(s), handle); });
         },
         dispatcher());
   }

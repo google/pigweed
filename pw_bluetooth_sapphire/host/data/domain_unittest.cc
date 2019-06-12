@@ -283,6 +283,27 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
 }
 
+TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  // Don't register any links. This should cause outbound channels to fail.
+  bool sock_cb_called = false;
+  auto sock_cb = [&sock_cb_called, kLinkHandle](zx::socket cb_sock,
+                                                hci::ConnectionHandle handle) {
+    sock_cb_called = true;
+    EXPECT_FALSE(cb_sock);
+    EXPECT_EQ(kLinkHandle, handle);
+  };
+
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb),
+                             dispatcher());
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(sock_cb_called);
+}
+
 // TODO(armansito): Add unit tests for RFCOMM sockets when the Domain class
 // has a public API for it.
 
