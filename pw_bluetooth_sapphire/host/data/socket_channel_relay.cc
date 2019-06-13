@@ -174,8 +174,15 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
 
   if (state_ == RelayState::kDeactivating) {
     bt_log(TRACE, "l2cap",
-           "Ignorning %s on socket for channel %u while deactivating", __func__,
+           "Ignoring %s on socket for channel %u while deactivating", __func__,
            channel_->id());
+    return;
+  }
+
+  ZX_DEBUG_ASSERT(rx_data);
+  if (rx_data->size() == 0) {
+    bt_log(TRACE, "l2cap", "Ignoring empty %s on socket on channel %u", __func__,
+        channel_->id());
     return;
   }
 
@@ -274,9 +281,10 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
   do {
     ZX_DEBUG_ASSERT(!socket_write_queue_.empty());
     ZX_DEBUG_ASSERT(socket_write_queue_.front());
-    ZX_DEBUG_ASSERT(socket_write_queue_.front()->size());
 
     const ByteBuffer& rx_data = *socket_write_queue_.front();
+    ZX_DEBUG_ASSERT_MSG(rx_data.size(), "Zero-length message on write queue");
+
     size_t n_bytes_written = 0;
     write_res =
         socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);
