@@ -433,13 +433,14 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   void FastForwardToSTK(UInt128* out_stk,
                         SecurityLevel level = SecurityLevel::kEncrypted,
                         KeyDistGenField remote_keys = 0,
-                        KeyDistGenField local_keys = 0) {
+                        KeyDistGenField local_keys = 0,
+                        uint8_t max_key_size = kMaxEncryptionKeySize) {
     UpgradeSecurity(level);
 
     PairingRequestParams pairing_params;
     pairing_params.io_capability = IOCapability::kNoInputNoOutput;
     pairing_params.auth_req = 0;
-    pairing_params.max_encryption_key_size = kMaxEncryptionKeySize;
+    pairing_params.max_encryption_key_size = max_key_size;
     pairing_params.initiator_key_dist_gen = local_keys;
     pairing_params.responder_key_dist_gen = remote_keys;
     ReceivePairingFeatures(pairing_params);
@@ -468,8 +469,9 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
 
   void FastForwardToSTKEncrypted(
       UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
-      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0) {
-    FastForwardToSTK(out_stk, level, remote_keys, local_keys);
+      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
+      uint8_t max_key_size = kMaxEncryptionKeySize) {
+    FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size);
 
     ASSERT_TRUE(fake_link()->ltk());
     EXPECT_EQ(1, fake_link()->start_encryption_count());
@@ -516,11 +518,12 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
   void FastForwardToSTK(UInt128* out_stk,
                         SecurityLevel level = SecurityLevel::kEncrypted,
                         KeyDistGenField remote_keys = 0,
-                        KeyDistGenField local_keys = 0) {
+                        KeyDistGenField local_keys = 0,
+                        uint8_t max_key_size = kMaxEncryptionKeySize) {
     PairingRequestParams pairing_params;
     pairing_params.io_capability = IOCapability::kNoInputNoOutput;
     pairing_params.auth_req = 0;
-    pairing_params.max_encryption_key_size = kMaxEncryptionKeySize;
+    pairing_params.max_encryption_key_size = max_key_size;
     pairing_params.initiator_key_dist_gen = remote_keys;
     pairing_params.responder_key_dist_gen = local_keys;
     ReceivePairingFeatures(pairing_params, true /* peer_initiator */);
@@ -558,8 +561,9 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
 
   void FastForwardToSTKEncrypted(
       UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
-      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0) {
-    FastForwardToSTK(out_stk, level, remote_keys, local_keys);
+      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
+      uint8_t max_key_size = kMaxEncryptionKeySize) {
+    FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size);
 
     ASSERT_TRUE(fake_link()->ltk());
 
@@ -1290,6 +1294,22 @@ TEST_F(SMP_InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(SecurityProperties(), pairing()->security());
 }
 
+// Tests that the STK is generated according to the max length provided
+TEST_F(SMP_InitiatorPairingTest, StkLengthGeneration) {
+  UInt128 stk;
+  uint8_t max_key_size = 10;
+  FastForwardToSTK(&stk, SecurityLevel::kEncrypted, 0, 0, max_key_size);
+
+  // At this stage, the stk is stored here
+  ASSERT_TRUE(fake_link()->ltk());
+
+  // Ensure that most significant (16 - max_key_size) bytes are zero. The key
+  // should be generated up to the max_key_size.
+  for (auto i = max_key_size; i < fake_link()->ltk()->value().size(); i++) {
+    EXPECT_TRUE(fake_link()->ltk()->value()[i] == 0);
+  }
+}
+
 // Tests that the pairing procedure ends after encryption with the STK if there
 // are no keys to distribute.
 TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithoutKeyExchange) {
@@ -1392,8 +1412,7 @@ TEST_F(SMP_InitiatorPairingTest,
 }
 
 // The responder sends the sample LTK from the specification doc
-TEST_F(SMP_InitiatorPairingTest,
-       Phase3MasterIdentificationReceiveSampleLTK) {
+TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveSampleLTK) {
   UInt128 stk;
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             KeyDistGen::kEncKey);
@@ -1419,8 +1438,7 @@ TEST_F(SMP_InitiatorPairingTest,
 }
 
 // The responder sends the sample Rand from the specification doc
-TEST_F(SMP_InitiatorPairingTest,
-       Phase3MasterIdentificationReceiveExampleRand) {
+TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
   UInt128 stk;
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             KeyDistGen::kEncKey);
@@ -1436,6 +1454,32 @@ TEST_F(SMP_InitiatorPairingTest,
   // Send a bad Rand, this should cause pairing to fail.
   ReceiveEncryptionInformation(UInt128());
   ReceiveMasterIdentification(kRandSample, kEDiv);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+}
+
+// The responder sends an LTK that is longer than the max key size
+TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveLongLTK) {
+  UInt128 stk;
+  auto max_key_size = 8;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            KeyDistGen::kEncKey, 0, max_key_size);
+
+  const UInt128 kLtk{{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}};
+
+  // Pairing should still be in progress.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(0, pairing_callback_count());
+  EXPECT_EQ(0, pairing_data_callback_count());
+
+  // Send a long LTK, this should cause pairing to fail.
+  ReceiveEncryptionInformation(kLtk);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1512,6 +1556,68 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
 
   EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   EXPECT_EQ(16u, sec_props().enc_key_size());
+  EXPECT_FALSE(sec_props().secure_connections());
+
+  // Should have been called at least once to determine local identity
+  // availability.
+  EXPECT_NE(0, local_id_info_callback_count());
+
+  // Local identity information should not have been distributed by us since it
+  // isn't available.
+  EXPECT_EQ(0, id_info_count());
+  EXPECT_EQ(0, id_addr_info_count());
+
+  // Should have notified the LTK.
+  EXPECT_EQ(1, pairing_data_callback_count());
+  ASSERT_TRUE(ltk());
+  ASSERT_FALSE(irk());
+  ASSERT_FALSE(identity());
+  ASSERT_FALSE(csrk());
+  EXPECT_EQ(sec_props(), ltk()->security());
+  EXPECT_EQ(kLTK, ltk()->key().value());
+  EXPECT_EQ(kRand, ltk()->key().rand());
+  EXPECT_EQ(kEDiv, ltk()->key().ediv());
+
+  // No security property update should have been sent for the LTK. This is
+  // because the LTK and the STK are expected to have the same properties.
+  EXPECT_EQ(1, new_sec_props_count());
+}
+
+// Pairing completes after obtaining short encryption information only.
+TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
+  UInt128 stk;
+  uint8_t max_key_size = 12;
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            KeyDistGen::kEncKey, 0u, max_key_size);
+
+  // This LTK is within the max_key_size specified above.
+  const UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 0, 0, 0, 0}};
+  uint64_t kRand = 5;
+  uint16_t kEDiv = 20;
+
+  ReceiveEncryptionInformation(kLTK);
+  ReceiveMasterIdentification(kRand, kEDiv);
+  RunLoopUntilIdle();
+
+  // Pairing should have succeeded.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(pairing_status());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+
+  // LTK should have been assigned to the link.
+  ASSERT_TRUE(fake_link()->ltk());
+  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
+  EXPECT_EQ(kRand, fake_link()->ltk()->rand());
+  EXPECT_EQ(kEDiv, fake_link()->ltk()->ediv());
+
+  // We don't re-encrypt with the LTK while the link is already authenticated
+  // with the STK.
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+
+  EXPECT_EQ(SecurityLevel::kEncrypted, sec_props().level());
+  EXPECT_EQ(max_key_size, sec_props().enc_key_size());
   EXPECT_FALSE(sec_props().secure_connections());
 
   // Should have been called at least once to determine local identity
@@ -2155,6 +2261,49 @@ TEST_F(SMP_ResponderPairingTest,
   // Nonetheless the link should have been assigned the LTK.
   ASSERT_TRUE(pairing_data().ltk);
   EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+}
+
+// Locally generated ltk length should match max key length specified
+TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
+  EXPECT_EQ(0, enc_info_count());
+  EXPECT_EQ(0, master_ident_count());
+
+  UInt128 stk;
+  uint16_t max_key_size = 7;
+
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
+                            0u,                    // remote keys
+                            KeyDistGen::kEncKey,   // local keys
+                            max_key_size);
+
+  // Local LTK, EDiv, and Rand should be sent to the peer.
+  EXPECT_EQ(1, enc_info_count());
+  EXPECT_EQ(1, master_ident_count());
+  ASSERT_TRUE(fake_link()->ltk());
+  EXPECT_EQ(enc_info(), fake_link()->ltk()->value());
+  EXPECT_EQ(ediv(), fake_link()->ltk()->ediv());
+  EXPECT_EQ(rand(), fake_link()->ltk()->rand());
+
+  // This LTK should be stored with the pairing data but the pairing callback
+  // shouldn't be called because pairing wasn't initiated by UpgradeSecurity().
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(0, pairing_callback_count());
+
+  // Pairing is considered complete when all keys have been distributed even if
+  // we're still encrypted with the STK. This is because the initiator may not
+  // always re-encrypt the link with the LTK until a reconnection.
+  EXPECT_EQ(1, pairing_data_callback_count());
+
+  // The link should have been assigned the LTK.
+  ASSERT_TRUE(pairing_data().ltk);
+  EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+
+  // Ensure that most significant (16 - max_key_size) bytes are zero. The key
+  // should be generated up to the max_key_size.
+  auto ltk = pairing_data().ltk->key().value();
+  for (auto i = max_key_size; i < ltk.size(); i++) {
+    EXPECT_TRUE(ltk[i] == 0);
+  }
 }
 
 TEST_F(SMP_ResponderPairingTest,
