@@ -25,7 +25,7 @@ class FakeControllerBase {
   FakeControllerBase();
   virtual ~FakeControllerBase();
 
-  // Stops the message loop and thread.
+  // Closes all open bt-hci protocol channels.
   void Stop();
 
   // Sends the given packet over this FakeController's command channel endpoint.
