@@ -37,9 +37,10 @@ namespace internal {
 // link.
 class Connection final {
  public:
-  // |peer_id| is the 128-bit UUID that identifies the peer device.
+  // |peer_id| identifies the peer device.
   // |local_db| is the local attribute database that the GATT server will
-  // operate on. |att_chan| must correspond to an open L2CAP Attribute channel.
+  // operate on.
+  // |att_bearer| is the ATT protocol data transport for this connection.
   Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
              fxl::RefPtr<att::Database> local_db,
              RemoteServiceWatcher svc_watcher,
