@@ -1187,7 +1187,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharAfterShutDown) {
 
   att::Status status;
   service->WriteCharacteristic(
-      0, std::vector<uint8_t>(),
+      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
       [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1201,7 +1201,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharWhileNotReady) {
 
   att::Status status;
   service->WriteCharacteristic(
-      0, std::vector<uint8_t>(),
+      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
       [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1216,7 +1216,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotFound) {
 
   att::Status status;
   service->WriteCharacteristic(
-      0, std::vector<uint8_t>(),
+      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
       [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1234,7 +1234,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotSupported) {
 
   att::Status status;
   service->WriteCharacteristic(
-      0, std::vector<uint8_t>(),
+      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
       [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1263,12 +1263,135 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
 
   att::Status status;
   service->WriteCharacteristic(
-      0, kValue, [&](att::Status cb_status) { status = cb_status; });
+      0 /*id*/, 0 /*offset*/, kValue,
+      [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status.is_protocol_error());
   EXPECT_EQ(kStatus, status);
+}
+
+// Tests that a long write is chunked up properly into a series of QueuedWrites
+// that will be processed by the client. This tests a non-zero offset.
+TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
+  constexpr att::Handle kValueHandle = 3;
+  constexpr uint16_t kOffset = 5;
+  constexpr uint16_t kExpectedQueueSize = 4;
+  constexpr uint16_t kExpectedFullWriteSize = 18;
+  constexpr uint16_t kExpectedFinalWriteSize = 15;
+
+  ServiceData data(1, kValueHandle, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
+  SetupCharacteristics(service, {{chr}});
+
+  // Create a vector that will take 4 requests to write. Since the default MTU
+  // is 23:
+  //   a. The size of |full_write_value| is 69.
+  //   b. att:Handle, |kOffset|, and att::OpCode size is 5 bytes total.
+  //   c. We should write 18 + 18 + 18 + 15 bytes across 4 requests.
+  //   d. These bytes will be written with offset 5, from (5) to (5+69)
+  std::vector<uint8_t> full_write_value(att::kLEMinMTU * 3);
+
+  // Initialize the contents.
+  for (size_t i = 0; i < full_write_value.size(); ++i) {
+    full_write_value[i] = i;
+  }
+
+  uint8_t process_long_write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](att::PrepareWriteQueue write_queue, auto callback) {
+        EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
+
+        att::QueuedWrite prepare_write;
+        for (int i = 0; i < kExpectedQueueSize; i++) {
+          auto write = std::move(write_queue.front());
+          write_queue.pop();
+
+          EXPECT_EQ(write.handle(), kValueHandle);
+          EXPECT_EQ(write.offset(), kOffset + (i * kExpectedFullWriteSize));
+
+          // All writes expect the final should be full, the final should be
+          // the remainder.
+          if (i < kExpectedQueueSize - 1) {
+            EXPECT_EQ(write.value().size(), kExpectedFullWriteSize);
+          } else {
+            EXPECT_EQ(write.value().size(), kExpectedFinalWriteSize);
+          }
+        }
+
+        process_long_write_count++;
+
+        callback(att::Status());
+      });
+
+  att::Status status(HostError::kFailed);
+  service->WriteCharacteristic(
+      0, kOffset, full_write_value,
+      [&](att::Status cb_status) { status = cb_status; });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(1u, process_long_write_count);
+}
+
+TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
+  constexpr att::Handle kValueHandle = 3;
+  constexpr uint16_t kOffset = 0;
+  constexpr uint16_t kExpectedQueueSize = 4;
+  constexpr uint16_t kExpectedFullWriteSize = 18;
+
+  ServiceData data(1, kValueHandle, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
+  SetupCharacteristics(service, {{chr}});
+
+  // Create a vector that will take 4 requests to write. Since the default MTU
+  // is 23:
+  //   a. The size of |full_write_value| is 72.
+  //   b. att:Handle, |kOffset|, and att::OpCode size is 5 bytes total.
+  //   c. We should write 18 + 18 + 18 + 18 bytes across 4 requests.
+  //   d. These bytes will be written with offset 0, from (0) to (72)
+  std::vector<uint8_t> full_write_value((att::kLEMinMTU - 5) * 4);
+
+  // Initialize the contents.
+  for (size_t i = 0; i < full_write_value.size(); ++i) {
+    full_write_value[i] = i;
+  }
+
+  uint8_t process_long_write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](att::PrepareWriteQueue write_queue, auto callback) {
+        EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
+
+        att::QueuedWrite prepare_write;
+        for (int i = 0; i < kExpectedQueueSize; i++) {
+          auto write = std::move(write_queue.front());
+          write_queue.pop();
+
+          EXPECT_EQ(write.handle(), kValueHandle);
+          EXPECT_EQ(write.offset(), kOffset + (i * kExpectedFullWriteSize));
+
+          // All writes should be full
+          EXPECT_EQ(write.value().size(), kExpectedFullWriteSize);
+        }
+
+        process_long_write_count++;
+
+        callback(att::Status());
+      });
+
+  att::Status status(HostError::kFailed);
+  service->WriteCharacteristic(
+      0, kOffset, full_write_value,
+      [&](att::Status cb_status) { status = cb_status; });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(1u, process_long_write_count);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
@@ -1521,7 +1644,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->WriteDescriptor(0, std::vector<uint8_t>(),
+  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1534,7 +1657,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->WriteDescriptor(0, std::vector<uint8_t>(),
+  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1548,7 +1671,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->WriteDescriptor(0, std::vector<uint8_t>(),
+  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1566,7 +1689,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotAllowed) {
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
   att::Status status;
-  service->WriteDescriptor(0, std::vector<uint8_t>(),
+  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1596,11 +1719,78 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
       });
 
   att::Status status;
-  service->WriteDescriptor(0, kValue,
+  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, kValue,
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(kStatus, status);
+}
+
+// Tests that WriteDescriptor with a long vector is prepared correctly.
+// Other conditions around the long write procedure are already covered by the
+// tests for WriteCharacteristic as the implementations are shared.
+TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
+  constexpr att::Handle kValueHandle = 3;
+  constexpr att::Handle kDescrHandle = 4;
+  constexpr uint16_t kOffset = 0;
+  constexpr uint16_t kExpectedQueueSize = 4;
+  constexpr uint16_t kExpectedFullWriteSize = 18;
+  constexpr uint16_t kExpectedFinalWriteSize = 15;
+
+  ServiceData data(1, kDescrHandle, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
+  DescriptorData desc(kDescrHandle, kTestUuid4);
+  SetupCharacteristics(service, {{chr}}, {{desc}});
+
+  // Create a vector that will take 4 requests to write. Since the default MTU
+  // is 23:
+  //   a. The size of |full_write_value| is 69.
+  //   b. att:Handle, |kOffset|, and att::OpCode size is 5 bytes total.
+  //   c. We should write 18 + 18 + 18 + 15 bytes across 4 requests.
+  //   d. These bytes will be written with offset 5, from (5) to (5+69)
+  std::vector<uint8_t> full_write_value(att::kLEMinMTU * 3);
+
+  // Initialize the contents.
+  for (size_t i = 0; i < full_write_value.size(); ++i) {
+    full_write_value[i] = i;
+  }
+
+  uint8_t process_long_write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](att::PrepareWriteQueue write_queue, auto callback) {
+        EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
+
+        att::QueuedWrite prepare_write;
+        for (int i = 0; i < kExpectedQueueSize; i++) {
+          auto write = std::move(write_queue.front());
+          write_queue.pop();
+
+          EXPECT_EQ(write.handle(), kDescrHandle);
+          EXPECT_EQ(write.offset(), kOffset + (i * kExpectedFullWriteSize));
+
+          // All writes expect the final should be full, the final should be
+          // the remainder.
+          if (i < kExpectedQueueSize - 1) {
+            EXPECT_EQ(write.value().size(), kExpectedFullWriteSize);
+          } else {
+            EXPECT_EQ(write.value().size(), kExpectedFinalWriteSize);
+          }
+        }
+
+        process_long_write_count++;
+
+        callback(att::Status());
+      });
+
+  att::Status status(HostError::kFailed);
+  service->WriteDescriptor(0, kOffset, full_write_value,
+                           [&](att::Status cb_status) { status = cb_status; });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(1u, process_long_write_count);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {

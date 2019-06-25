@@ -25,10 +25,6 @@ bool EndLessThan(const AttributeGrouping& grp, const Handle handle) {
 
 }  // namespace
 
-QueuedWrite::QueuedWrite(Handle handle, uint16_t offset,
-                         const ByteBuffer& value)
-    : handle_(handle), offset_(offset), value_(value) {}
-
 Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end,
                              const UUID* type, bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {

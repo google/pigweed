@@ -231,10 +231,11 @@ void RemoteService::ReadLongCharacteristic(IdType id, uint16_t offset,
       });
 }
 
-void RemoteService::WriteCharacteristic(IdType id, std::vector<uint8_t> value,
+void RemoteService::WriteCharacteristic(IdType id, uint16_t offset,
+                                        std::vector<uint8_t> value,
                                         StatusCallback cb,
                                         async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, value = std::move(value), cb = std::move(cb),
+  RunGattTask([this, id, offset, value = std::move(value), cb = std::move(cb),
                dispatcher]() mutable {
     RemoteCharacteristic* chrc;
     Status status = Status(GetCharacteristic(id, &chrc));
@@ -244,16 +245,22 @@ void RemoteService::WriteCharacteristic(IdType id, std::vector<uint8_t> value,
       return;
     }
 
-    // TODO(armansito): Use the "long write" procedure when supported.
     if (!(chrc->info().properties & Property::kWrite)) {
       bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
       ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
-
-    SendWriteRequest(chrc->info().value_handle,
-                     BufferView(value.data(), value.size()), std::move(cb),
-                     dispatcher);
+    size_t payload_size =
+        sizeof(att::WriteRequestParams) + sizeof(att::OpCode) + value.size();
+    if ((offset > 0) || (payload_size > client_->mtu())) {
+      SendLongWriteRequest(chrc->info().value_handle, offset,
+                           BufferView(value.data(), value.size()),
+                           std::move(cb), dispatcher);
+    } else {
+      SendWriteRequest(chrc->info().value_handle,
+                       BufferView(value.data(), value.size()), std::move(cb),
+                       dispatcher);
+    }
   });
 }
 
@@ -327,10 +334,11 @@ void RemoteService::ReadLongDescriptor(IdType id, uint16_t offset,
       });
 }
 
-void RemoteService::WriteDescriptor(IdType id, std::vector<uint8_t> value,
+void RemoteService::WriteDescriptor(IdType id, uint16_t offset,
+                                    std::vector<uint8_t> value,
                                     att::StatusCallback cb,
                                     async_dispatcher_t* dispatcher) {
-  RunGattTask([this, id, value = std::move(value), cb = std::move(cb),
+  RunGattTask([this, id, offset, value = std::move(value), cb = std::move(cb),
                dispatcher]() mutable {
     const RemoteCharacteristic::Descriptor* desc;
     Status status = Status(GetDescriptor(id, &desc));
@@ -347,9 +355,17 @@ void RemoteService::WriteDescriptor(IdType id, std::vector<uint8_t> value,
       return;
     }
 
-    SendWriteRequest(desc->info().handle,
-                     BufferView(value.data(), value.size()), std::move(cb),
-                     dispatcher);
+    size_t payload_size =
+        sizeof(att::WriteRequestParams) + sizeof(att::OpCode) + value.size();
+    if ((offset > 0) || (payload_size > client_->mtu())) {
+      SendLongWriteRequest(desc->info().handle, offset,
+                           BufferView(value.data(), value.size()),
+                           std::move(cb), dispatcher);
+    } else {
+      SendWriteRequest(desc->info().handle,
+                       BufferView(value.data(), value.size()), std::move(cb),
+                       dispatcher);
+    }
   });
 }
 
@@ -551,6 +567,34 @@ void RemoteService::SendWriteRequest(att::Handle handle,
                                      async_dispatcher_t* dispatcher) {
   client_->WriteRequest(
       handle, value, [cb = std::move(cb), dispatcher](Status status) mutable {
+        ReportStatus(status, std::move(cb), dispatcher);
+      });
+}
+
+void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset,
+                                         BufferView value,
+                                         att::StatusCallback final_cb,
+                                         async_dispatcher_t* dispatcher) {
+  att::PrepareWriteQueue long_write_queue;
+  auto header_ln = sizeof(att::PrepareWriteRequestParams) + sizeof(att::OpCode);
+  uint16_t bytes_written = 0;
+
+  // Divide up the long write into it's constituent PreparedWrites and add them
+  // to the queue.
+  while (bytes_written < value.size()) {
+    uint16_t part_value_size =
+        std::min(client_->mtu() - header_ln, value.size() - bytes_written);
+    auto part_buffer = value.view(bytes_written, part_value_size);
+
+    long_write_queue.push(att::QueuedWrite(handle, offset, part_buffer));
+
+    bytes_written += part_value_size;
+    offset += part_value_size;
+  }
+
+  client_->ExecutePrepareWrites(
+      std::move(long_write_queue),
+      [cb = std::move(final_cb), dispatcher](Status status) mutable {
         ReportStatus(status, std::move(cb), dispatcher);
       });
 }

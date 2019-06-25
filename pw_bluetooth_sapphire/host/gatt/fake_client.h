@@ -88,6 +88,29 @@ class FakeClient final : public Client {
     write_request_callback_ = std::move(callback);
   }
 
+  using ExecutePrepareWritesCallback = fit::function<void(
+      att::PrepareWriteQueue prep_write_queue, att::StatusCallback)>;
+  void set_execute_prepare_writes_callback(
+      ExecutePrepareWritesCallback callback) {
+    execute_prepare_writes_callback_ = std::move(callback);
+  }
+
+  // Sets a callback which will run when PrepareWriteRequest gets called.
+  using PrepareWriteRequestCallback = fit::function<void(
+      att::Handle, uint16_t offset, const ByteBuffer&, PrepareCallback)>;
+  void set_prepare_write_request_callback(
+      PrepareWriteRequestCallback callback) {
+    prepare_write_request_callback_ = std::move(callback);
+  }
+
+  // Sets a callback which will run when ExecuteWriteRequest gets called.
+  using ExecuteWriteRequestCallback =
+      fit::function<void(att::ExecuteWriteFlag flag, att::StatusCallback)>;
+  void set_execute_write_request_callback(
+      ExecuteWriteRequestCallback callback) {
+    execute_write_request_callback_ = std::move(callback);
+  }
+
   // Sets a callback which will run when WriteWithoutResponse gets called.
   using WriteWithoutResponseCallback =
       fit::function<void(att::Handle, const ByteBuffer&)>;
@@ -117,6 +140,13 @@ class FakeClient final : public Client {
                        ReadCallback callback) override;
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;
+  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
+                            att::StatusCallback callback) override;
+  void PrepareWriteRequest(att::Handle handle, uint16_t offset,
+                           const ByteBuffer& part_value,
+                           PrepareCallback callback) override;
+  void ExecuteWriteRequest(att::ExecuteWriteFlag flag,
+                           att::StatusCallback callback) override;
   void WriteWithoutResponse(att::Handle handle,
                             const ByteBuffer& value) override;
   void SetNotificationHandler(NotificationCallback callback) override;
@@ -154,6 +184,10 @@ class FakeClient final : public Client {
   ReadRequestCallback read_request_callback_;
   ReadBlobRequestCallback read_blob_request_callback_;
   WriteRequestCallback write_request_callback_;
+  ExecutePrepareWritesCallback execute_prepare_writes_callback_;
+  PrepareWriteRequestCallback prepare_write_request_callback_;
+  ExecuteWriteRequestCallback execute_write_request_callback_;
+
   WriteWithoutResponseCallback write_without_rsp_callback_;
   NotificationCallback notification_callback_;
 

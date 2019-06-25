@@ -97,10 +97,12 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
                               async_dispatcher_t* dispatcher = nullptr);
 
   // Sends a write request to the characteristic with the given identifier.
-  // Fails if characteristics have not been discovered.
+  // If there is an offset or the value too large for the mtu, this will
+  // execute a long write. Fails if characteristics have not been discovered.
   //
   // TODO(armansito): Add a ByteBuffer version.
-  void WriteCharacteristic(IdType id, std::vector<uint8_t> value,
+  void WriteCharacteristic(IdType id, uint16_t offset,
+                           std::vector<uint8_t> value,
                            att::StatusCallback callback,
                            async_dispatcher_t* dispatcher = nullptr);
 
@@ -108,9 +110,6 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // identifier. Fails if characteristics have not been discovered.
   void WriteCharacteristicWithoutResponse(IdType id,
                                           std::vector<uint8_t> value);
-
-  // TODO(NET-1712): Add support for "write long characteristic values"
-  // procedure.
 
   // Performs the "Read Characteristic Descriptors" procedure (v5.0, Vol 3, Part
   // G, 4.12.1).
@@ -127,7 +126,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Part G, 4.12.3).
   //
   // TODO(armansito): Add a ByteBuffer version.
-  void WriteDescriptor(IdType id, std::vector<uint8_t> value,
+  void WriteDescriptor(IdType id, uint16_t offset, std::vector<uint8_t> value,
                        att::StatusCallback callback,
                        async_dispatcher_t* dispatcher = nullptr);
 
@@ -231,6 +230,14 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // nullptr.
   void SendWriteRequest(att::Handle handle, const ByteBuffer& value,
                         att::StatusCallback cb, async_dispatcher_t* dispatcher);
+
+  // Breaks Long Write requests down into a PrepareWriteQueue, then enqueues
+  // for the client to process. Drives the "Write Long Characteristic/
+  // Descriptor Values" procedure. Called by WriteCharacteristic() and
+  // WriteDescriptor().
+  void SendLongWriteRequest(att::Handle value_handle, uint16_t offset,
+                            BufferView value, att::StatusCallback callback,
+                            async_dispatcher_t* dispatcher);
 
   // Helper function that drives the recursive "Read Long Characteristic Values"
   // procedure. Called by ReadLongCharacteristic().

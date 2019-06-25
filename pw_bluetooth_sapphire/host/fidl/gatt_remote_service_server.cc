@@ -133,9 +133,7 @@ void GattRemoteServiceServer::WriteCharacteristic(
     callback(fidl_helpers::StatusToFidl(status, ""));
   };
 
-  // TODO(armansito): Use |offset| when gatt::RemoteService supports the long
-  // write procedure.
-  service_->WriteCharacteristic(id, std::move(value), std::move(cb));
+  service_->WriteCharacteristic(id, offset, std::move(value), std::move(cb));
 }
 
 void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(
@@ -187,10 +185,10 @@ void GattRemoteServiceServer::ReadLongDescriptor(
 }
 
 void GattRemoteServiceServer::WriteDescriptor(
-    uint64_t id, ::std::vector<uint8_t> value,
+    uint64_t id, uint16_t offset, ::std::vector<uint8_t> value,
     WriteDescriptorCallback callback) {
   service_->WriteDescriptor(
-      id, std::move(value),
+      id, offset, std::move(value),
       [callback = std::move(callback)](bt::att::Status status) {
         callback(fidl_helpers::StatusToFidl(status, ""));
       });

@@ -299,7 +299,7 @@ class Impl final : public Client {
 
     auto error_cb =
         BindErrorCallback([res_cb = status_callback.share()](
-            att::Status status, att::Handle handle) {
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.4.1).
           if (status.is_protocol_error() &&
@@ -452,7 +452,7 @@ class Impl final : public Client {
 
     auto error_cb =
         BindErrorCallback([res_cb = status_callback.share()](
-            att::Status status, att::Handle handle) {
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.6.1).
           if (status.is_protocol_error() &&
@@ -539,7 +539,7 @@ class Impl final : public Client {
 
     auto error_cb =
         BindErrorCallback([res_cb = status_callback.share()](
-            att::Status status, att::Handle handle) {
+                              att::Status status, att::Handle handle) {
           // An Error Response code of "Attribute Not Found" indicates the end
           // of the procedure (v5.0, Vol 3, Part G, 4.7.1).
           if (status.is_protocol_error() &&
@@ -566,15 +566,14 @@ class Impl final : public Client {
     auto params = writer.mutable_payload<att::ReadRequestParams>();
     params->handle = htole16(handle);
 
-    auto rsp_cb = BindCallback([callback = callback.share()](
-        const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
-      callback(att::Status(), rsp.payload_data());
-    });
+    auto rsp_cb = BindCallback(
+        [callback = callback.share()](const att::PacketReader& rsp) {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadResponse);
+          callback(att::Status(), rsp.payload_data());
+        });
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status,
-                                                        att::Handle handle) {
+    auto error_cb = BindErrorCallback(
+        [callback = callback.share()](att::Status status, att::Handle handle) {
           bt_log(TRACE, "gatt", "read request failed: %s, handle %#.4x",
                  status.ToString().c_str(), handle);
           callback(status, BufferView());
@@ -599,15 +598,14 @@ class Impl final : public Client {
     params->handle = htole16(handle);
     params->offset = htole16(offset);
 
-    auto rsp_cb = BindCallback([callback = callback.share()](
-        const att::PacketReader& rsp) {
-      ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
-      callback(att::Status(), rsp.payload_data());
-    });
+    auto rsp_cb = BindCallback(
+        [callback = callback.share()](const att::PacketReader& rsp) {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadBlobResponse);
+          callback(att::Status(), rsp.payload_data());
+        });
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status,
-                                                        att::Handle handle) {
+    auto error_cb = BindErrorCallback(
+        [callback = callback.share()](att::Status status, att::Handle handle) {
           bt_log(TRACE, "gatt", "read blob request failed: %s, handle: %#.4x",
                  status.ToString().c_str(), handle);
           callback(status, BufferView());
@@ -655,11 +653,188 @@ class Impl final : public Client {
           callback(att::Status());
         });
 
-    auto error_cb =
-        BindErrorCallback([callback = callback.share()](att::Status status,
-                                                        att::Handle handle) {
+    auto error_cb = BindErrorCallback(
+        [callback = callback.share()](att::Status status, att::Handle handle) {
           bt_log(TRACE, "gatt", "write request failed: %s, handle: %#.2x",
                  status.ToString().c_str(), handle);
+          callback(status);
+        });
+
+    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                                std::move(error_cb))) {
+      callback(att::Status(HostError::kPacketMalformed));
+    }
+  }
+
+  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
+                            att::StatusCallback callback) override {
+    auto new_request =
+        std::make_pair(std::move(prep_write_queue), std::move(callback));
+    long_write_queue_.push(std::move(new_request));
+
+    // If the |long_write_queue| has a pending request, then appending this
+    // request will be sufficient, otherwise kick off the request.
+    if (long_write_queue_.size() == 1) {
+      ProcessWriteQueue(std::move(long_write_queue_.front().first),
+                        std::move(long_write_queue_.front().second));
+    }
+  }
+
+  void ProcessWriteQueue(att::PrepareWriteQueue prep_write_queue,
+                         att::StatusCallback callback) {
+    if (!prep_write_queue.empty()) {
+      att::QueuedWrite prep_write_request = std::move(prep_write_queue.front());
+      prep_write_queue.pop();
+
+      auto prep_write_cb = [this, callback = std::move(callback),
+                            wq = std::move(prep_write_queue)](
+                               att::Status status,
+                               const ByteBuffer& blob) mutable {
+        // In this case, cancel the prep writes and then move on to the next
+        // long write in the queue.
+        if (!status) {
+          auto exec_write_cb = [this, callback = std::move(callback),
+                                prep_write_status =
+                                    status](att::Status status) mutable {
+            // In this case return the original failure status. This effectively
+            // overrides the ExecuteWrite status.
+            callback(prep_write_status);
+            // Now that this request is complete, remove it from the overall
+            // queue.
+            ZX_DEBUG_ASSERT(!long_write_queue_.empty());
+            long_write_queue_.pop();
+
+            if (long_write_queue_.size() > 0) {
+              ProcessWriteQueue(std::move(long_write_queue_.front().first),
+                                std::move(long_write_queue_.front().second));
+            }
+          };
+
+          ExecuteWriteRequest(att::ExecuteWriteFlag::kCancelAll,
+                              std::move(exec_write_cb));
+
+          return;
+        }
+
+        // The device will echo the value written in the blob, according to the
+        // spec (Vol 3, Part G, 4.9.4) this does not need to be verified, but
+        // could be to support a 'Reliable Write' (Vol 3, Part G, 4.9.5).
+
+        ProcessWriteQueue(std::move(wq), std::move(callback));
+      };
+
+      PrepareWriteRequest(
+          prep_write_request.handle(), prep_write_request.offset(),
+          std::move(prep_write_request.value()), std::move(prep_write_cb));
+    }
+    // End of this write, send and prepare for next item in overall write queue
+    else {
+      auto exec_write_cb =
+          [this, callback = std::move(callback)](att::Status status) mutable {
+            callback(status);
+            // Now that this request is complete, remove it from the overall
+            // queue.
+            ZX_DEBUG_ASSERT(!long_write_queue_.empty());
+            long_write_queue_.pop();
+
+            // If the super queue still has any long writes left to execute,
+            // initiate them
+            if (long_write_queue_.size() > 0) {
+              ProcessWriteQueue(std::move(long_write_queue_.front().first),
+                                std::move(long_write_queue_.front().second));
+            }
+          };
+
+      ExecuteWriteRequest(att::ExecuteWriteFlag::kWritePending,
+                          std::move(exec_write_cb));
+    }
+  }
+
+  void PrepareWriteRequest(att::Handle handle, uint16_t offset,
+                           const ByteBuffer& part_value,
+                           PrepareCallback callback) override {
+    const size_t payload_size =
+        sizeof(att::PrepareWriteRequestParams) + part_value.size();
+    if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
+      bt_log(SPEW, "gatt", "prepare write request payload exceeds MTU");
+      callback(att::Status(HostError::kPacketMalformed), BufferView());
+      return;
+    }
+
+    auto pdu = NewPDU(payload_size);
+    if (!pdu) {
+      callback(att::Status(HostError::kOutOfMemory), BufferView());
+      return;
+    }
+
+    att::PacketWriter writer(att::kPrepareWriteRequest, pdu.get());
+    auto params = writer.mutable_payload<att::PrepareWriteRequestParams>();
+    params->handle = htole16(handle);
+    params->offset = htole16(offset);
+
+    auto header_size = sizeof(att::Handle) + sizeof(uint16_t);
+    auto value_view = writer.mutable_payload_data().mutable_view(header_size);
+    part_value.Copy(&value_view);
+
+    auto rsp_cb = BindCallback(
+        [callback = callback.share()](const att::PacketReader& rsp) {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kPrepareWriteResponse);
+          callback(att::Status(), rsp.payload_data());
+        });
+
+    auto error_cb = BindErrorCallback(
+        [callback = callback.share()](att::Status status, att::Handle handle) {
+          bt_log(TRACE, "gatt",
+                 "prepare write request failed: %s, handle:"
+                 "%#.4x",
+                 status.ToString().c_str(), handle);
+          callback(status, BufferView());
+        });
+
+    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb),
+                                std::move(error_cb))) {
+      callback(att::Status(HostError::kPacketMalformed), BufferView());
+    }
+  }
+
+  void ExecuteWriteRequest(att::ExecuteWriteFlag flag,
+                           att::StatusCallback callback) override {
+    const size_t payload_size = sizeof(att::ExecuteWriteRequestParams);
+    if (sizeof(att::OpCode) + payload_size > att_->mtu()) {
+      // This really shouldn't happen because we aren't consuming any actual
+      // payload here, but just in case...
+      bt_log(SPEW, "gatt", "execute write request size exceeds MTU");
+      callback(att::Status(HostError::kPacketMalformed));
+      return;
+    }
+
+    auto pdu = NewPDU(payload_size);
+    if (!pdu) {
+      callback(att::Status(HostError::kOutOfMemory));
+      return;
+    }
+
+    att::PacketWriter writer(att::kExecuteWriteRequest, pdu.get());
+    auto params = writer.mutable_payload<att::ExecuteWriteRequestParams>();
+    params->flags = flag;
+
+    auto rsp_cb = BindCallback(
+        [this, callback = callback.share()](const att::PacketReader& rsp) {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kExecuteWriteResponse);
+
+          if (rsp.payload_size()) {
+            att_->ShutDown();
+            callback(att::Status(HostError::kPacketMalformed));
+            return;
+          }
+
+          callback(att::Status());
+        });
+
+    auto error_cb = BindErrorCallback(
+        [callback = callback.share()](att::Status status, att::Handle handle) {
+          bt_log(TRACE, "gatt", "execute write request failed: %s",
+                 status.ToString().c_str());
           callback(status);
         });
 
@@ -726,6 +901,16 @@ class Impl final : public Client {
   att::Bearer::HandlerId not_handler_id_;
   att::Bearer::HandlerId ind_handler_id_;
   NotificationCallback notification_handler_;
+  // |long_write_queue_| contains pairs of long write requests and their
+  // associated callbacks. Series of PrepareWrites are executed or cancelled at
+  // the same time so this is used to block while a single series is processed.
+  //
+  // While the top element is processed, the |PrepareWriteQueue| and callback
+  // will be empty and will be popped once the queue is cancelled or executed.
+  // Following the processing of each pair, the client will automatically
+  // process the next pair in the |long_write_queue_|.
+  std::queue<std::pair<att::PrepareWriteQueue, StatusCallback>>
+      long_write_queue_;
   fxl::WeakPtrFactory<Client> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);

@@ -9,6 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/write_queue.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -108,6 +109,39 @@ class Client {
   // a single ATT request.
   virtual void WriteRequest(att::Handle handle, const ByteBuffer& value,
                             att::StatusCallback callback) = 0;
+
+  // Adds a new PrepareWriteQueue to be sent. This sends multiple
+  // PrepareWriteRequests followed by an ExecuteWriteRequest. The request will
+  // be enqueued if there are any pending.
+  //
+  // Reports the status of the procedure in |callback|.
+  // HostError::kPacketMalformed is returned if any writes in the queue are too
+  // large to write in a single ATT request.
+  virtual void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
+                                    att::StatusCallback callback) = 0;
+
+  // Sends an ATT Prepare Write Request with the requested attribute |handle|,
+  // |offset|, and |part_value|. This can be used to send a long write request
+  // to any attribute by following with 0-N prepare write requests and finally
+  // an Execute Write Request.
+  // (Vol 3, Part G, 4.9.4)
+  //
+  // Reports the status of the procedure in |callback|, along with mirroring the
+  // data written to the buffer.
+  // HostError::kPacketMalformed is returned if |part_value| is too large to
+  // write in a single ATT request.
+  using PrepareCallback = fit::function<void(att::Status, const ByteBuffer&)>;
+  virtual void PrepareWriteRequest(att::Handle handle, uint16_t offset,
+                                   const ByteBuffer& part_value,
+                                   PrepareCallback callback) = 0;
+
+  // Following a series of Prepare Write Requests, this will write the series if
+  // the input is kWritePending, or cancel all pending if it is kCancelAll.
+  // (Vol 3, Part G, 4.9.4)
+  //
+  // Reports the status of the procedure in |callback|.
+  virtual void ExecuteWriteRequest(att::ExecuteWriteFlag flag,
+                                   att::StatusCallback callback) = 0;
 
   // Sends an ATT Write Command with the requested |handle| and |value|. This
   // should only be used with characteristics that support the "Write Without

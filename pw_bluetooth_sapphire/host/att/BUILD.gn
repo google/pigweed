@@ -30,6 +30,8 @@ static_library("att") {
     "permissions.h",
     "status.cc",
     "status.h",
+    "write_queue.cc",
+    "write_queue.h",
   ]
 
   public_deps = [

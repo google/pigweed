@@ -111,6 +111,29 @@ void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
   }
 }
 
+void FakeClient::ExecutePrepareWrites(att::PrepareWriteQueue write_queue,
+                                      att::StatusCallback callback) {
+  if (execute_prepare_writes_callback_) {
+    execute_prepare_writes_callback_(std::move(write_queue),
+                                     std::move(callback));
+  }
+}
+
+void FakeClient::PrepareWriteRequest(att::Handle handle, uint16_t offset,
+                                     const ByteBuffer& part_value,
+                                     PrepareCallback callback) {
+  if (prepare_write_request_callback_) {
+    prepare_write_request_callback_(handle, offset, part_value,
+                                    std::move(callback));
+  }
+}
+void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag,
+                                     att::StatusCallback callback) {
+  if (execute_write_request_callback_) {
+    execute_write_request_callback_(flag, std::move(callback));
+  }
+}
+
 void FakeClient::WriteWithoutResponse(att::Handle handle,
                                       const ByteBuffer& value) {
   if (write_without_rsp_callback_) {

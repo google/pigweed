@@ -1662,6 +1662,598 @@ TEST_F(GATT_ClientTest, WriteRequestSuccess) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
+TEST_F(GATT_ClientTest, PrepareWriteRequestExceedsMtu) {
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
+  constexpr att::Handle kHandle = 0x0001;
+  constexpr auto kOffset = 0;
+  constexpr size_t kMtu = 7;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  ASSERT_EQ(kMtu + 1, kExpectedRequest.size());
+
+  att()->set_mtu(kMtu);
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
+
+  client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
+TEST_F(GATT_ClientTest, PrepareWriteRequestError) {
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kHandle = 0x0001;
+  const auto kOffset = 5;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x05, 0x00,    // offset: 0x0005
+                             'f', 'o', 'o'  // value: "foo"
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x16,        // request: prepare write request
+      0x01, 0x00,  // handle: 0x0001
+      0x06         // error: Request Not Supported
+      ));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, PrepareWriteRequestSuccess) {
+  const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kHandle = 0x0001;
+  const auto kOffset = 0;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status, const ByteBuffer& value) {
+    status = cb_status;
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->PrepareWriteRequest(kHandle, kOffset, kValue, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ExecuteWriteRequestPendingSuccess) {
+  const auto kFlag = att::ExecuteWriteFlag::kWritePending;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x01   // flag: write pending
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status) { status = cb_status; };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->ExecuteWriteRequest(kFlag, cb); });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ExecuteWriteRequestCancelSuccess) {
+  const auto kFlag = att::ExecuteWriteFlag::kCancelAll;
+  const auto kExpectedRequest =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x00   // flag: cancel all
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status) { status = cb_status; };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->ExecuteWriteRequest(kFlag, cb); });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+// ExecutePrepareWrites should send each QueuedWrite request in the
+// PrepareWriteQueue as a PrepareWriteRequest then finally send an ExecuteWrite.
+TEST_F(GATT_ClientTest, ExecutePrepareWritesSuccess) {
+  const auto kHandle = 0x0001;
+  const auto kOffset = 0;
+  const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+
+  const auto kExpectedPrep1 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  const auto kExpectedPrep2 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x03, 0x00,    // offset: 0x0003
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedExec =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x01   // flag: write pending
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status) { status = cb_status; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create the PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue;
+    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+    prep_write_queue.push(
+        att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue), cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedPrep1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  // The client should follow up with a second prepare write request
+  ASSERT_TRUE(Expect(kExpectedPrep2));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x03, 0x00,    // offset: 0x0003
+      'b', 'a', 'r'  // value: "bar"
+      ));
+
+  // The client should send an execute write request following the prepared
+  // writes
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+// When the PreparedWrite request exceeds the mtu, the client should
+// automatically send a kCancellAll request.
+TEST_F(GATT_ClientTest, ExecutePrepareWritesMalformedFailure) {
+  const auto kHandle = 0x0001;
+  const auto kOffset = 0;
+  constexpr size_t kMtu = 7;
+  const auto kValue1 = CreateStaticByteBuffer('f', 'o');
+  const auto kValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+
+  const auto kExpectedPrep1 =
+      CreateStaticByteBuffer(0x16,        // opcode: prepare write request
+                             0x01, 0x00,  // handle: 0x0001
+                             0x00, 0x00,  // offset: 0x0000
+                             'f', 'o'     // value: "fo"
+      );
+  const auto kExpectedPrep2 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x02, 0x00,    // offset: 0x0002
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedExec =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x00   // flag: kCancelAll
+      );
+
+  ASSERT_EQ(kMtu, kExpectedPrep1.size());
+  ASSERT_EQ(kMtu + 1, kExpectedPrep2.size());
+
+  att()->set_mtu(kMtu);
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status) { status = cb_status; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create the PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue;
+    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+    prep_write_queue.push(
+        att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue), cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedPrep1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,        // opcode: prepare write response
+      0x01, 0x00,  // handle: 0x0001
+      0x00, 0x00,  // offset: 0x0000
+      'f', 'o'     // value: "foo"
+      ));
+
+  // The second request is malformed, the client should send an ExecuteWrite
+  // instead of the malformed PrepareWrite.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
+// When the PreparedWrite receives an error response, the client should
+// automatically send a kCancellAll request.
+TEST_F(GATT_ClientTest, ExecutePrepareWritesErrorFailure) {
+  const auto kHandle = 0x0001;
+  const auto kOffset = 0;
+  const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+
+  const auto kExpectedPrep1 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "fo"
+      );
+  const auto kExpectedExec =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x00   // flag: kCancelAll
+      );
+
+  att::Status status;
+  auto cb = [&status](att::Status cb_status) { status = cb_status; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create the PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue;
+    prep_write_queue.push(att::QueuedWrite(kHandle, kOffset, kValue1));
+    prep_write_queue.push(
+        att::QueuedWrite(kHandle, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue), cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedPrep1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x01,        // opcode: error response
+      0x16,        // request: prepare write request
+      0x01, 0x00,  // handle: 0x0001
+      0x06         // error: Request Not Supported
+      ));
+
+  // The first request returned an error, the client should send an ExecuteWrite
+  // instead of the second PrepareWrite.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+// ExecutePrepareWrites should enqueue immediately and send both long writes,
+// one after the other.
+TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
+  const auto kHandle1 = 0x0001;
+  const auto kHandle2 = 0x0002;
+  const auto kOffset = 0;
+  const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+
+  const auto kExpectedPrep1 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  const auto kExpectedPrep2 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x03, 0x00,    // offset: 0x0003
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedPrep3 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x02, 0x00,    // handle: 0x0002
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  const auto kExpectedPrep4 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x02, 0x00,    // handle: 0x0002
+                             0x03, 0x00,    // offset: 0x0003
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedExec =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x01   // flag: write pending
+      );
+
+  att::Status status1;
+  auto cb1 = [&status1](att::Status cb_status) { status1 = cb_status; };
+
+  att::Status status2;
+  auto cb2 = [&status2](att::Status cb_status) { status2 = cb_status; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create the first PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue1;
+    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
+    prep_write_queue1.push(
+        att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue1), cb1);
+
+    // Create the second PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue2;
+    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
+    prep_write_queue2.push(
+        att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue2), cb2);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedPrep1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  // The client should follow up with a second prepare write request
+  ASSERT_TRUE(Expect(kExpectedPrep2));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x03, 0x00,    // offset: 0x0003
+      'b', 'a', 'r'  // value: "bar"
+      ));
+
+  // The client should send an execute write request following the prepared
+  // writes.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  // The first request should be fully complete now, and should trigger the
+  // second.
+  EXPECT_TRUE(status1);
+
+  ASSERT_TRUE(Expect(kExpectedPrep3));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x02, 0x00,    // handle: 0x0002
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  // The client should follow up with a second prepare write request
+  ASSERT_TRUE(Expect(kExpectedPrep4));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x02, 0x00,    // handle: 0x0002
+      0x03, 0x00,    // offset: 0x0003
+      'b', 'a', 'r'  // value: "bar"
+      ));
+
+  // The client should send an execute write request following the prepared
+  // writes.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status2);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+// ExecutePrepareWrites should enqueue while one is being processed and send
+// both long writes, one after the other.
+TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
+  const auto kHandle1 = 0x0001;
+  const auto kHandle2 = 0x0002;
+  const auto kOffset = 0;
+  const auto kValue1 = CreateStaticByteBuffer('f', 'o', 'o');
+  const auto kValue2 = CreateStaticByteBuffer('b', 'a', 'r');
+
+  const auto kExpectedPrep1 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  const auto kExpectedPrep2 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x01, 0x00,    // handle: 0x0001
+                             0x03, 0x00,    // offset: 0x0003
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedPrep3 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x02, 0x00,    // handle: 0x0002
+                             0x00, 0x00,    // offset: 0x0000
+                             'f', 'o', 'o'  // value: "foo"
+      );
+  const auto kExpectedPrep4 =
+      CreateStaticByteBuffer(0x16,          // opcode: prepare write request
+                             0x02, 0x00,    // handle: 0x0002
+                             0x03, 0x00,    // offset: 0x0003
+                             'b', 'a', 'r'  // value: "bar"
+      );
+  const auto kExpectedExec =
+      CreateStaticByteBuffer(0x18,  // opcode: execute write request
+                             0x01   // flag: write pending
+      );
+
+  att::Status status1;
+  auto cb1 = [&status1](att::Status cb_status) { status1 = cb_status; };
+
+  att::Status status2;
+  auto cb2 = [&status2](att::Status cb_status) { status2 = cb_status; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create the first PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue1;
+    prep_write_queue1.push(att::QueuedWrite(kHandle1, kOffset, kValue1));
+    prep_write_queue1.push(
+        att::QueuedWrite(kHandle1, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue1), cb1);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedPrep1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  // Initiate another request while the first one is being processed. It should
+  // be enqueued to be processed afterwards.
+  async::PostTask(dispatcher(), [&, this] {
+    // Create another PrepareWriteQueue of requests to pass to the client
+    att::PrepareWriteQueue prep_write_queue2;
+    prep_write_queue2.push(att::QueuedWrite(kHandle2, kOffset, kValue1));
+    prep_write_queue2.push(
+        att::QueuedWrite(kHandle2, kOffset + kValue1.size(), kValue2));
+    client()->ExecutePrepareWrites(std::move(prep_write_queue2), cb2);
+  });
+
+  // The client should follow up with a second prepare write request
+  ASSERT_TRUE(Expect(kExpectedPrep2));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x01, 0x00,    // handle: 0x0001
+      0x03, 0x00,    // offset: 0x0003
+      'b', 'a', 'r'  // value: "bar"
+      ));
+
+  // The client should send an execute write request following the prepared
+  // writes.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  // The first request should be fully complete now, and should trigger the
+  // second.
+  EXPECT_TRUE(status1);
+
+  ASSERT_TRUE(Expect(kExpectedPrep3));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x02, 0x00,    // handle: 0x0002
+      0x00, 0x00,    // offset: 0x0000
+      'f', 'o', 'o'  // value: "foo"
+      ));
+
+  // The client should follow up with a second prepare write request
+  ASSERT_TRUE(Expect(kExpectedPrep4));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(
+      0x17,          // opcode: prepare write response
+      0x02, 0x00,    // handle: 0x0002
+      0x03, 0x00,    // offset: 0x0003
+      'b', 'a', 'r'  // value: "bar"
+      ));
+
+  // The client should send an execute write request following the prepared
+  // writes.
+  ASSERT_TRUE(Expect(kExpectedExec));
+
+  fake_chan()->Receive(
+      CreateStaticByteBuffer(0x19)  // opcode: execute write response
+  );
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status2);
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
 TEST_F(GATT_ClientTest, WriteWithoutResponseExceedsMtu) {
   const auto kValue = CreateStaticByteBuffer('f', 'o', 'o');
   constexpr att::Handle kHandle = 0x0001;

@@ -9,10 +9,10 @@
 
 #include <list>
 #include <memory>
-#include <queue>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/write_queue.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -20,34 +20,6 @@
 
 namespace bt {
 namespace att {
-
-// Represents a singe write operation queued for atomic submission by an ATT
-// protocol write method.
-class QueuedWrite {
- public:
-  QueuedWrite() = default;
-  ~QueuedWrite() = default;
-
-  // Constructs a write request by copying the contents of |value|.
-  QueuedWrite(Handle handle, uint16_t offset, const ByteBuffer& value);
-
-  // Allow move operations.
-  QueuedWrite(QueuedWrite&&) = default;
-  QueuedWrite& operator=(QueuedWrite&&) = default;
-
-  Handle handle() const { return handle_; }
-  uint16_t offset() const { return offset_; }
-  const ByteBuffer& value() const { return value_; }
-
- private:
-  Handle handle_;
-  uint16_t offset_;
-  DynamicByteBuffer value_;
-};
-
-// Represents a prepare queue used to handle the ATT Prepare Write and Execute
-// Write requests.
-using PrepareWriteQueue = std::queue<QueuedWrite>;
 
 // This class provides a simple attribute database abstraction. Attributes can
 // be populated directly and queried to fulfill ATT protocol requests.
