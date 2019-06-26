@@ -15,34 +15,34 @@ namespace testing {
 // tests.
 class FakeLayer final : public GATT {
  public:
-  inline static fbl::RefPtr<FakeLayer> Create() {
-    return fbl::AdoptRef(new FakeLayer());
-  }
+  inline static fbl::RefPtr<FakeLayer> Create() { return fbl::AdoptRef(new FakeLayer()); }
+
+  // Notifies the remote service watcher if one is registered.
+  void NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> service);
 
   // GATT overrides:
   void Initialize(InitializeCallback callback) override;
   void ShutDown() override;
-  void AddConnection(PeerId peer_id,
-                     fbl::RefPtr<l2cap::Channel> att_chan) override;
+  void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
   void RemoveConnection(PeerId peer_id) override;
-  void RegisterService(ServicePtr service, ServiceIdCallback callback,
-                       ReadHandler read_handler, WriteHandler write_handler,
-                       ClientConfigCallback ccc_callback) override;
+  void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
+                       WriteHandler write_handler, ClientConfigCallback ccc_callback) override;
   void UnregisterService(IdType service_id) override;
   void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override;
   void DiscoverServices(PeerId peer_id) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
                                     async_dispatcher_t* dispatcher) override;
-  void ListServices(PeerId peer_id, std::vector<UUID> uuids,
-                    ServiceListCallback callback) override;
-  void FindService(PeerId peer_id, IdType service_id,
-                   RemoteServiceCallback callback) override;
+  void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
+  void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
 
  private:
   friend class fbl::RefPtr<FakeLayer>;
   FakeLayer() = default;
   ~FakeLayer() override = default;
+
+  RemoteServiceWatcher remote_service_watcher_;
+  async_dispatcher_t* remote_service_watcher_dispatcher_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };

@@ -9,6 +9,10 @@ import("//build/package.gni")
 driver_module("driver") {
   output_name = "bt-host"
 
+  sources = [
+    "driver.cc",
+  ]
+
   deps = [
     ":sources",
   ]
@@ -19,7 +23,6 @@ driver_module("driver") {
 
 source_set("sources") {
   sources = [
-    "driver.cc",
     "gatt_host.cc",
     "gatt_host.h",
     "gatt_remote_service_device.cc",
@@ -49,7 +52,7 @@ source_set("sources") {
     "fidl/server_base.h",
   ]
 
-  deps = [
+  public_deps = [
     ":stack",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.control",
@@ -98,12 +101,29 @@ package("bt-host") {
   ]
 }
 
+# Unit tests for driver code, not including the Bluetooth stack unit tests
+# defined in subdirectories.
+source_set("driver_tests") {
+  testonly = true
+
+  sources = [
+    "gatt_host_unittests.cc",
+  ]
+
+  deps = [
+    ":sources",
+    "gatt:testing",
+    "//garnet/public/lib/gtest",
+  ]
+}
+
 executable("tests") {
   testonly = true
 
   output_name = "bt-host-unittests"
 
   deps = [
+    ":driver_tests",
     "att:tests",
     "common:tests",
     "data:tests",

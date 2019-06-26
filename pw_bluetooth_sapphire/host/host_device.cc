@@ -28,8 +28,7 @@ zx_status_t HostDevice::Bind() {
   std::lock_guard<std::mutex> lock(mtx_);
 
   bt_hci_protocol_t hci_proto;
-  zx_status_t status =
-      device_get_protocol(parent_, ZX_PROTOCOL_BT_HCI, &hci_proto);
+  zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_HCI, &hci_proto);
   if (status != ZX_OK) {
     bt_log(ERROR, "bt-host", "failed to obtain bt-hci protocol ops: %s",
            zx_status_get_string(status));
@@ -71,8 +70,7 @@ zx_status_t HostDevice::Bind() {
 
   status = device_add(parent_, &args, &dev_);
   if (status != ZX_OK) {
-    bt_log(ERROR, "bt-host", "Failed to publish device: %s",
-           zx_status_get_string(status));
+    bt_log(ERROR, "bt-host", "Failed to publish device: %s", zx_status_get_string(status));
     return status;
   }
 
@@ -100,8 +98,7 @@ zx_status_t HostDevice::Bind() {
           }
 
           if (success) {
-            bt_log(TRACE, "bt-host",
-                   "adapter initialized; make device visible");
+            bt_log(TRACE, "bt-host", "adapter initialized; make device visible");
             host_->gatt_host()->SetRemoteServiceWatcher(
                 fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
             device_make_visible(dev_);
@@ -133,6 +130,7 @@ void HostDevice::Unbind() {
     }
 
     // Do this immediately to stop receiving new service callbacks.
+    bt_log(SPEW, "bt-host", "removing GATT service watcher");
     host_->gatt_host()->SetRemoteServiceWatcher({});
 
     // Tear down the bt-host device and all of its GATT children. Make a copy of
@@ -149,6 +147,7 @@ void HostDevice::Unbind() {
   }
 
   // Make sure that the ShutDown task runs before this returns. We re
+  bt_log(SPEW, "bt-host", "waiting for shut down tasks to complete");
   loop_.JoinThreads();
 
   bt_log(TRACE, "bt-host", "GAP has been shut down");
@@ -172,18 +171,18 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
 
   // Tell Host to start processing messages on this handle.
   ZX_DEBUG_ASSERT(host_);
-  async::PostTask(loop_.dispatcher(),
-                  [host = host_, chan = std::move(channel)]() mutable {
-                    host->BindHostInterface(std::move(chan));
-                  });
+  async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(channel)]() mutable {
+    host->BindHostInterface(std::move(chan));
+  });
 
   return ZX_OK;
 }
 
-void HostDevice::OnRemoteGattServiceAdded(
-    bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::RemoteService> service) {
-  auto gatt_device =
-      std::make_unique<GattRemoteServiceDevice>(dev_, peer_id, service);
+void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
+                                          fbl::RefPtr<bt::gatt::RemoteService> service) {
+  std::lock_guard<std::mutex> lock(mtx_);
+
+  auto gatt_device = std::make_unique<GattRemoteServiceDevice>(dev_, peer_id, service);
   auto gatt_device_ptr = gatt_device.get();
 
   zx_status_t status = gatt_device->Bind();
@@ -192,16 +191,18 @@ void HostDevice::OnRemoteGattServiceAdded(
 
   gatt_devices_[gatt_device_ptr] = std::move(gatt_device);
 
-  service->AddRemovedHandler(
-      [this, gatt_device_ptr] { gatt_devices_.erase(gatt_device_ptr); });
+  service->AddRemovedHandler([this, gatt_device_ptr] {
+    std::lock_guard<std::mutex> lock(mtx_);
+    gatt_devices_.erase(gatt_device_ptr);
+  });
 }
 
 void HostDevice::CleanUp() {
   bt_log(TRACE, "bt-host", "clean up");
-  host_ = nullptr;
 
   // Removing the devices explicitly instead of letting unbind handle it for us.
   gatt_devices_.clear();
+  host_ = nullptr;
 
   if (dev_) {
     device_remove(dev_);

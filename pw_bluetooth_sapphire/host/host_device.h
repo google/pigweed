@@ -34,9 +34,7 @@ class HostDevice final {
   // Protocol trampolines.
   static void DdkUnbind(void* ctx) { static_cast<HostDevice*>(ctx)->Unbind(); }
 
-  static void DdkRelease(void* ctx) {
-    static_cast<HostDevice*>(ctx)->Release();
-  }
+  static void DdkRelease(void* ctx) { static_cast<HostDevice*>(ctx)->Release(); }
 
   // Route ddk fidl messages to the dispatcher function
   static zx_status_t DdkMessage(void* ctx, fidl_msg_t* msg, fidl_txn_t* txn) {
@@ -78,9 +76,8 @@ class HostDevice final {
   std::mutex mtx_;
 
   // Map of child DDK gatt devices
-  std::unordered_map<GattRemoteServiceDevice*,
-                     std::unique_ptr<GattRemoteServiceDevice>>
-      gatt_devices_;
+  std::unordered_map<GattRemoteServiceDevice*, std::unique_ptr<GattRemoteServiceDevice>>
+      gatt_devices_ __TA_GUARDED(mtx_);
 
   // Host processes all its messages on |loop_|. |loop_| is initialized to run
   // in its own thread.
