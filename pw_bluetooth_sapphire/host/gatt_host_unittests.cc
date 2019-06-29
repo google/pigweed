@@ -11,8 +11,6 @@
 namespace bthost {
 namespace {
 
-void NopCallback() {}
-
 class GattHostTest : public ::gtest::TestLoopFixture {
  public:
   GattHostTest() = default;
@@ -40,7 +38,7 @@ class GattHostTest : public ::gtest::TestLoopFixture {
 };
 
 TEST_F(GattHostTest, RemoteServiceWatcher) {
-  gatt_host()->Initialize(NopCallback);
+  gatt_host()->Initialize();
 
   bool called = false;
   gatt_host()->SetRemoteServiceWatcher([&](auto peer_id, auto svc) {

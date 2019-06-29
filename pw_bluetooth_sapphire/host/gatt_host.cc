@@ -39,9 +39,9 @@ GattHost::GattHost(async_dispatcher_t* dispatcher, fbl::RefPtr<bt::gatt::GATT> g
 
 GattHost::~GattHost() {}
 
-void GattHost::Initialize(InitializeCallback callback) {
+void GattHost::Initialize() {
   // Initialize the profile.
-  gatt_->Initialize(std::move(callback));
+  gatt_->Initialize();
   gatt_->RegisterRemoteServiceWatcher([self = fbl::WrapRefPtr(this)](auto peer_id, auto service) {
     // Make sure we are not holding the lock while |watcher| executes to
     // prevent potential deadlocks.

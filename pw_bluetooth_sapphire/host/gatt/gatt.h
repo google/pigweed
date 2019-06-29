@@ -45,8 +45,7 @@ class GATT : public fbl::RefCounted<GATT> {
   // reference after ShutDown.
   //
   // The owner MUST call ShutDown() to properly clean up the object.
-  using InitializeCallback = fit::function<void()>;
-  virtual void Initialize(InitializeCallback callback) = 0;
+  virtual void Initialize() = 0;
   virtual void ShutDown() = 0;
 
   // Registers the given connection with the GATT profile without initiating

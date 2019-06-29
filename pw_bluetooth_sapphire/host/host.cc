@@ -46,41 +46,23 @@ bool Host::Initialize(InitCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(data_domain_);
 
-  // Called when the GATT profile is ready. After the GATT profile is ready,
-  // we initialize the generic access service as it depends on the GATT
-  // profile to be ready.
-  auto gatt_init_callback = [gap = gap_->AsWeakPtr(),
-                             init_callback = callback.share()]() {
-    bt_log(TRACE, "bt-host", "GATT init complete (success)");
-
-    if (gap) {
-      bt_log(TRACE, "bt-host", "Initializing Generic Access Service...");
-      gap->InitializeService();
-    }
-
-    init_callback(true);
-  };
-
   // Called when the GAP layer is ready. We initialize the GATT profile after
   // initial setup in GAP. The data domain will be initialized by GAP because it
   // both sets up the HCI ACL data channel that L2CAP relies on and registers
   // L2CAP services.
   auto gap_init_callback = [gatt_host = gatt_host_,
-                            init_callback = std::move(callback),
-                            gatt_init_callback = std::move(gatt_init_callback)](
-                               bool success) mutable {
+                            callback = std::move(callback)](bool success) {
     bt_log(TRACE, "bt-host", "GAP init complete (%s)",
            (success ? "success" : "failure"));
 
     if (success) {
-      bt_log(TRACE, "bt-host", "Initializing GATT...");
-      gatt_host->Initialize(std::move(gatt_init_callback));
-    } else {
-      init_callback(false);
+      gatt_host->Initialize();
     }
+
+    callback(success);
   };
 
-  bt_log(TRACE, "bt-host", "Initializing GAP...");
+  bt_log(TRACE, "bt-host", "initializing GAP");
   return gap_->Initialize(std::move(gap_init_callback), [] {
     bt_log(TRACE, "bt-host", "bt-host: HCI transport has closed");
   });

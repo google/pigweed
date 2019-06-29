@@ -21,7 +21,7 @@ class FakeLayer final : public GATT {
   void NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> service);
 
   // GATT overrides:
-  void Initialize(InitializeCallback callback) override;
+  void Initialize() override;
   void ShutDown() override;
   void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
   void RemoveConnection(PeerId peer_id) override;

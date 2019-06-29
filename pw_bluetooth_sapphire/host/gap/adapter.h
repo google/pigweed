@@ -17,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -102,9 +101,6 @@ class Adapter final {
 
   // Returns true if this Adapter has been fully initialized.
   bool IsInitialized() const { return init_state_ == State::kInitialized; }
-
-  // Initialize the Generic Access Service.
-  void InitializeService();
 
   // Returns the global adapter setting parameters.
   const AdapterState& state() const { return state_; }
@@ -261,9 +257,6 @@ class Adapter final {
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.
   fbl::RefPtr<gatt::GATT> gatt_;
-
-  // The generic access service.
-  std::unique_ptr<GenericAccessService> gas_;
 
   // Objects that abstract the controller for connection and advertising
   // procedures.

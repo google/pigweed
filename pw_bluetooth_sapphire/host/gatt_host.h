@@ -52,12 +52,8 @@ class GattHost final : public fbl::RefCounted<GattHost>, public bt::TaskDomain<G
   static fbl::RefPtr<GattHost> CreateForTesting(async_dispatcher_t* dispatcher,
                                                 fbl::RefPtr<bt::gatt::GATT> gatt);
 
-  // Initialize GATT. |callback| will be called after the GATT profile
-  // is initialized.
-  //
-  // Note, |callback| will be run on the GATT domain.
-  using InitializeCallback = fit::function<void()>;
-  void Initialize(InitializeCallback callback);
+  // Initialize.
+  void Initialize();
 
   // This MUST be called to cleanly destroy this object. This method is
   // thread-safe.

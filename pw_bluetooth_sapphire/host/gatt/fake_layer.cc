@@ -22,10 +22,8 @@ void FakeLayer::NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> s
                     });
   }
 }
-
-void FakeLayer::Initialize(InitializeCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
-  callback();
+void FakeLayer::Initialize() {
+  // TODO: implement
 }
 
 void FakeLayer::ShutDown() {
