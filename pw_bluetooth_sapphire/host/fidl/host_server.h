@@ -41,50 +41,41 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void GetInfo(GetInfoCallback callback) override;
   void SetLocalData(::fuchsia::bluetooth::control::HostData host_data) override;
   void ListDevices(ListDevicesCallback callback) override;
-  void AddBondedDevices(
-      ::std::vector<fuchsia::bluetooth::control::BondingData> bonds,
-      AddBondedDevicesCallback callback) override;
-  void SetLocalName(::std::string local_name,
-                    SetLocalNameCallback callback) override;
+  void AddBondedDevices(::std::vector<fuchsia::bluetooth::control::BondingData> bonds,
+                        AddBondedDevicesCallback callback) override;
+  void SetLocalName(::std::string local_name, SetLocalNameCallback callback) override;
   void SetDeviceClass(fuchsia::bluetooth::control::DeviceClass device_class,
                       SetDeviceClassCallback callback) override;
 
   void StartDiscovery(StartDiscoveryCallback callback) override;
   void StopDiscovery(StopDiscoveryCallback callback) override;
-  void SetConnectable(bool connectable,
-                      SetConnectableCallback callback) override;
-  void SetDiscoverable(bool discoverable,
-                       SetDiscoverableCallback callback) override;
+  void SetConnectable(bool connectable, SetConnectableCallback callback) override;
+  void SetDiscoverable(bool discoverable, SetDiscoverableCallback callback) override;
   void EnableBackgroundScan(bool enabled) override;
   void EnablePrivacy(bool enabled) override;
   void SetPairingDelegate(
       ::fuchsia::bluetooth::control::InputCapabilityType input,
       ::fuchsia::bluetooth::control::OutputCapabilityType output,
-      ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate>
-          delegate) override;
+      ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate> delegate) override;
   void Connect(::std::string device_id, ConnectCallback callback) override;
+  void Disconnect(::std::string device_id, DisconnectCallback callback) override;
   void Forget(::std::string peer_id, ForgetCallback callback) override;
 
   void RequestLowEnergyCentral(
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> central)
-      override;
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> central) override;
   void RequestLowEnergyPeripheral(
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> peripheral)
-      override;
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> peripheral) override;
   void RequestGattServer(
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server)
-      override;
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server) override;
   void RequestProfile(
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile)
-      override;
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile) override;
   void Close() override;
 
   // bt::gap::PairingDelegate overrides:
   bt::sm::IOCapability io_capability() const override;
   void CompletePairing(bt::PeerId id, bt::sm::Status status) override;
   void ConfirmPairing(bt::PeerId id, ConfirmCallback confirm) override;
-  void DisplayPasskey(bt::PeerId id, uint32_t passkey,
-                      ConfirmCallback confirm) override;
+  void DisplayPasskey(bt::PeerId id, uint32_t passkey, ConfirmCallback confirm) override;
   void RequestPasskey(bt::PeerId id, PasskeyResponseCallback respond) override;
 
   // Called by |adapter()->peer_cache()| when a peer is updated.
@@ -101,8 +92,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // Called when a connection is established to a peer, either when initiated
   // by a user via a client of Host.fidl, or automatically by the GAP adapter
-  void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref,
-                                   bool auto_connect);
+  void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect);
 
   // Called when |server| receives a channel connection error.
   void OnConnectionError(Server* server);
@@ -118,11 +108,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // ServerType.
   template <typename ServerType, typename... Args>
   void BindServer(Args... args) {
-    auto server = std::make_unique<ServerType>(adapter()->AsWeakPtr(),
-                                               std::move(args)...);
+    auto server = std::make_unique<ServerType>(adapter()->AsWeakPtr(), std::move(args)...);
     Server* s = server.get();
-    server->set_error_handler(
-        [this, s](zx_status_t status) { this->OnConnectionError(s); });
+    server->set_error_handler([this, s](zx_status_t status) { this->OnConnectionError(s); });
     servers_[server.get()] = std::move(server);
   }
 
@@ -136,8 +124,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   std::unique_ptr<bt::gap::BrEdrDiscoverySession> bredr_discovery_session_;
 
   bool requesting_discoverable_;
-  std::unique_ptr<bt::gap::BrEdrDiscoverableSession>
-      bredr_discoverable_session_;
+  std::unique_ptr<bt::gap::BrEdrDiscoverableSession> bredr_discoverable_session_;
 
   bt::sm::IOCapability io_capability_;
 
@@ -151,8 +138,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // auto-connected by the system.
   // TODO(armansito): Consider storing auto-connected references separately from
   // directly connected references.
-  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr>
-      le_connections_;
+  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr> le_connections_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

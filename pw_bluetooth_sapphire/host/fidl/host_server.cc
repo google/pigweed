@@ -474,6 +474,31 @@ void HostServer::Connect(::std::string peer_id, ConnectCallback callback) {
   ConnectLowEnergy(*id, std::move(callback));
 }
 
+// Attempt to disconnect the peer identified by |peer_id| from all transports.
+// If the peer is already not connected, return success. If the peer is
+// disconnected succesfully, return success.
+void HostServer::Disconnect(::std::string peer_id, DisconnectCallback callback) {
+  auto id = PeerIdFromString(peer_id);
+  if (!id.has_value()) {
+    callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
+    return;
+  }
+
+  auto le_disc = adapter()->le_connection_manager()->Disconnect(*id);
+  auto bredr_disc = adapter()->bredr_connection_manager()->Disconnect(*id);
+
+  if (le_disc && bredr_disc) {
+    callback(Status());
+  } else {
+    if (le_disc)
+      callback(NewFidlError(ErrorCode::UNKNOWN, "Failed to disconnect from Br/Edr"));
+    else if (bredr_disc)
+      callback(NewFidlError(ErrorCode::UNKNOWN, "Failed to disconnect from LE"));
+    else
+      callback(NewFidlError(ErrorCode::UNKNOWN, "Failed to disconnect from both LE and Br/Edr"));
+  }
+}
+
 void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto on_complete = [self, callback = std::move(callback), peer_id](auto status, auto connection) {
