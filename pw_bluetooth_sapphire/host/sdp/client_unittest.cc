@@ -141,6 +141,83 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
   EXPECT_FALSE(fake_chan()->activated());
 }
 
+TEST_F(SDP_ClientTest, TwoQueries) {
+  {
+    auto client = Client::Create(channel());
+
+    EXPECT_TRUE(fake_chan()->activated());
+
+    size_t cb_count = 0;
+    auto result_cb = [&](auto status,
+                         const std::map<AttributeId, DataElement> &attrs) {
+      cb_count++;
+      // We return no results for both queries.
+      EXPECT_FALSE(status);
+      EXPECT_EQ(HostError::kNotFound, status.error());
+      return true;
+    };
+
+    const auto kSearchExpectedParams = CreateStaticByteBuffer(
+        // ServiceSearchPattern
+        0x35, 0x03,        // Sequence uint8 3 bytes
+        0x19, 0x11, 0x0B,  // UUID (kAudioSink)
+        0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+        // Attribute ID list
+        0x35, 0x03,        // Sequence uint8 3 bytes
+        0x09, 0x00, 0x01,  // uint16_t (kServiceClassIdList)
+        0x00               // No continuation state
+    );
+
+    uint32_t request_tid;
+    bool success = false;
+
+    fake_chan()->SetSendCallback(
+        [&request_tid, &success, &kSearchExpectedParams](auto packet) {
+          // First byte should be type.
+          ASSERT_LE(3u, packet->size());
+          ASSERT_EQ(kServiceSearchAttributeRequest, (*packet)[0]);
+          ASSERT_EQ(kSearchExpectedParams, packet->view(5));
+          request_tid = (*packet)[1] << 8 || (*packet)[2];
+          success = true;
+        },
+        dispatcher());
+
+    // Search for all A2DP sinks, get the:
+    //  - Service Class ID list
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb, dispatcher());
+    RunLoopUntilIdle();
+    EXPECT_TRUE(success);
+
+    // Receive the response (empty response)
+    // Record makes building the response easier.
+    ServiceSearchAttributeResponse rsp;
+    auto rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    fake_chan()->Receive(*rsp_ptr);
+
+    RunLoopUntilIdle();
+
+    EXPECT_EQ(1u, cb_count);
+
+    // Twice
+    success = false;
+    client->ServiceSearchAttributes(
+        {profile::kAudioSink}, {kServiceClassIdList}, result_cb, dispatcher());
+    RunLoopUntilIdle();
+    EXPECT_TRUE(success);
+
+    rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    fake_chan()->Receive(*rsp_ptr);
+
+    RunLoopUntilIdle();
+
+    EXPECT_EQ(2u, cb_count);
+  }
+  EXPECT_FALSE(fake_chan()->activated());
+}
+
 // Continuing response test:
 //  - send correctly formatted request
 //  - receives a response with a continuing response

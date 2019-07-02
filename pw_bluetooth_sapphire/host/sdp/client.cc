@@ -182,10 +182,10 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
     return;
   }
   packet.Resize(params_len);
-  TransactionId tid = letoh16(packet.header().tid);
+  TransactionId tid = betoh16(packet.header().tid);
   auto it = pending_.find(tid);
   if (it == pending_.end()) {
-    bt_log(INFO, "sdp", "Impl rx unknown transaction id (%u)", tid);
+    bt_log(INFO, "sdp", "Received unknown transaction id (%u)", tid);
     return;
   }
   auto& transaction = it->second;
@@ -207,6 +207,7 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
     return;
   }
   if (transaction.response.complete()) {
+    bt_log(TRACE, "sdp", "Rx complete, finishing tid %u", tid);
     Finish(tid);
   }
 }
