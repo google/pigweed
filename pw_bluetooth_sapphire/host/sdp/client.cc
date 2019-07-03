@@ -6,6 +6,8 @@
 
 #include <lib/async/default.h>
 
+#include <optional>
+
 namespace bt {
 namespace sdp {
 
@@ -20,26 +22,25 @@ class Impl final : public Client {
   virtual ~Impl() override;
 
  private:
-  void ServiceSearchAttributes(
-      std::unordered_set<UUID> search_pattern,
-      const std::unordered_set<AttributeId>& req_attributes,
-      SearchResultCallback result_cb,
-      async_dispatcher_t* cb_dispatcher) override;
+  void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
+                               const std::unordered_set<AttributeId>& req_attributes,
+                               SearchResultCallback result_cb,
+                               async_dispatcher_t* cb_dispatcher) override;
 
   // Information about a transaction that hasn't finished yet.
   struct Transaction {
-    Transaction(TransactionId id, ServiceSearchAttributeRequest req,
-                SearchResultCallback cb, async_dispatcher_t* disp);
+    Transaction(TransactionId id, ServiceSearchAttributeRequest req, SearchResultCallback cb,
+                async_dispatcher_t* disp);
     // The TransactionId used for this request.  This will be reused until the
     // transaction is complete.
     TransactionId id;
-    // The Request for this transaction,
+    // Request PDU for this transaction.
     ServiceSearchAttributeRequest request;
-    // Callback for results
+    // Callback for results.
     SearchResultCallback callback;
-    // The dispatcher that result callbacks get called on
+    // The dispatcher that |callback| is executed on.
     async_dispatcher_t* dispatcher;
-    // The response, built from successive responses from the remote server.
+    // The response, built from responses from the remote server.
     ServiceSearchAttributeResponse response;
   };
 
@@ -54,17 +55,24 @@ class Impl final : public Client {
   // callback with the given status.
   void Cancel(TransactionId id, Status status);
 
+  // Cancels all remaining transactions without sending them, with the given
+  // status.
+  void CancelAll(Status status);
+
   // Get the next available transaction id
   TransactionId GetNextId();
+
+  // Try to send the next pending request, if possible.
+  void TrySendNextTransaction();
 
   // The channel that this client is running on.
   l2cap::ScopedChannel channel_;
   // THe next transaction id that we should use
   TransactionId next_tid_;
-  // Any transactions that have been sent but are not completed.
+  // Any transactions that are not completed.
   std::unordered_map<TransactionId, Transaction> pending_;
-  // Timeouts for the transactions that are pending.
-  std::unordered_map<TransactionId, async::TaskClosure> timeouts_;
+  // Timeout for the current transaction. false if none are waiting for a response.
+  std::optional<async::TaskClosure> pending_timeout_;
 
   fxl::WeakPtrFactory<Impl> weak_ptr_factory_;
 
@@ -92,16 +100,48 @@ Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)
   }
 }
 
-Impl::~Impl() {
+Impl::~Impl() { CancelAll(Status(HostError::kCanceled)); }
+
+void Impl::CancelAll(Status status) {
   while (!pending_.empty()) {
-    Cancel(pending_.begin()->first, Status(HostError::kCanceled));
+    Cancel(pending_.begin()->first, status);
   }
 }
 
-void Impl::ServiceSearchAttributes(
-    std::unordered_set<UUID> search_pattern,
-    const std::unordered_set<AttributeId>& req_attributes,
-    SearchResultCallback result_cb, async_dispatcher_t* cb_dispatcher) {
+void Impl::TrySendNextTransaction() {
+  if (pending_timeout_) {
+    // Waiting on a transaction to finish.
+    return;
+  }
+
+  if (!channel_) {
+    bt_log(INFO, "sdp", "Failed to send %zu requests: link closed", pending_.size());
+    CancelAll(Status(HostError::kLinkDisconnected));
+  }
+
+  if (pending_.empty()) {
+    return;
+  }
+
+  auto& next = pending_.begin()->second;
+
+  if (!channel_->Send(next.request.GetPDU(next.id))) {
+    bt_log(INFO, "sdp", "Failed to send request: channel send failed");
+    Cancel(next.id, Status(HostError::kFailed));
+    return;
+  }
+
+  auto& timeout = pending_timeout_.emplace();
+
+  // Timeouts are held in this so it is safe to use.
+  timeout.set_handler([this, id = next.id]() { Cancel(id, Status(HostError::kTimedOut)); });
+  timeout.PostDelayed(async_get_default_dispatcher(), kTransactionTimeout);
+}
+
+void Impl::ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
+                                   const std::unordered_set<AttributeId>& req_attributes,
+                                   SearchResultCallback result_cb,
+                                   async_dispatcher_t* cb_dispatcher) {
   ServiceSearchAttributeRequest req;
   req.set_search_pattern(std::move(search_pattern));
   if (req_attributes.empty()) {
@@ -113,62 +153,47 @@ void Impl::ServiceSearchAttributes(
   }
   TransactionId next = GetNextId();
 
-  if (!channel_ || !channel_->Send(req.GetPDU(next))) {
-    bt_log(INFO, "sdp", "Failed to send search request: link closed");
-    return;
-  }
-
-  pending_.try_emplace(next, next, std::move(req), std::move(result_cb),
-                       cb_dispatcher);
-  auto [iter, placed] = timeouts_.try_emplace(next);
+  auto [iter, placed] =
+      pending_.try_emplace(next, next, std::move(req), std::move(result_cb), cb_dispatcher);
   ZX_DEBUG_ASSERT_MSG(placed, "Should not have repeat transaction ID %u", next);
-  auto& timeout_task = iter->second;
-  // Timeouts are held in this so it is safe to use.
-  timeout_task.set_handler(
-      [this, next]() { Cancel(next, Status(HostError::kTimedOut)); });
-  timeout_task.PostDelayed(async_get_default_dispatcher(), kTransactionTimeout);
+
+  TrySendNextTransaction();
 }
 
 void Impl::Finish(TransactionId id) {
   auto node = pending_.extract(id);
   ZX_DEBUG_ASSERT(node);
   auto& state = node.mapped();
-  auto timeout_node = timeouts_.extract(id);
-  ZX_DEBUG_ASSERT(timeout_node);
-  timeout_node.mapped().Cancel();
+  pending_timeout_.reset();
   if (!state.callback) {
     return;
   }
-  FXL_DCHECK(state.response.complete());
-  async::PostTask(state.dispatcher, [cb = std::move(state.callback),
-                                     response = std::move(state.response)] {
-    size_t count = response.num_attribute_lists();
-    for (size_t idx = 0; idx < count; idx++) {
-      if (!cb(Status(), response.attributes(idx))) {
-        return;
-      }
-    }
-    cb(Status(HostError::kNotFound), {});
-  });
+  ZX_DEBUG_ASSERT_MSG(state.response.complete(), "Finished without complete response");
+  async::PostTask(state.dispatcher,
+                  [cb = std::move(state.callback), response = std::move(state.response)] {
+                    size_t count = response.num_attribute_lists();
+                    for (size_t idx = 0; idx < count; idx++) {
+                      if (!cb(Status(), response.attributes(idx))) {
+                        return;
+                      }
+                    }
+                    cb(Status(HostError::kNotFound), {});
+                  });
+  TrySendNextTransaction();
 }
 
-Impl::Transaction::Transaction(TransactionId id,
-                               ServiceSearchAttributeRequest req,
-                               SearchResultCallback cb,
-                               async_dispatcher_t* disp)
-    : id(id),
-      request(std::move(req)),
-      callback(std::move(cb)),
-      dispatcher(disp) {}
+Impl::Transaction::Transaction(TransactionId id, ServiceSearchAttributeRequest req,
+                               SearchResultCallback cb, async_dispatcher_t* disp)
+    : id(id), request(std::move(req)), callback(std::move(cb)), dispatcher(disp) {}
 
 void Impl::Cancel(TransactionId id, Status status) {
   auto node = pending_.extract(id);
   if (!node) {
     return;
   }
-  async::PostTask(node.mapped().dispatcher,
-                  [callback = std::move(node.mapped().callback),
-                   status = std::move(status)] { callback(status, {}); });
+  async::PostTask(node.mapped().dispatcher, [callback = std::move(node.mapped().callback),
+                                             status = std::move(status)] { callback(status, {}); });
+  TrySendNextTransaction();
 }
 
 void Impl::OnRxFrame(ByteBufferPtr data) {
@@ -177,8 +202,7 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
   size_t pkt_params_len = data->size() - sizeof(Header);
   uint16_t params_len = betoh16(packet.header().param_length);
   if (params_len != pkt_params_len) {
-    bt_log(INFO, "sdp", "bad params length (len %zu != %u), dropping",
-           pkt_params_len, params_len);
+    bt_log(INFO, "sdp", "bad params length (len %zu != %u), dropping", pkt_params_len, params_len);
     return;
   }
   packet.Resize(params_len);
@@ -193,10 +217,9 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
   if (!parse_status) {
     if (parse_status.error() == HostError::kInProgress) {
       bt_log(INFO, "sdp", "Requesting continuation of id (%u)", tid);
-      transaction.request.SetContinuationState(
-          transaction.response.ContinuationState());
+      transaction.request.SetContinuationState(transaction.response.ContinuationState());
       if (!channel_->Send(transaction.request.GetPDU(tid))) {
-        bt_log(INFO, "sdp", "Failed to request continuation of transaction!");
+        bt_log(INFO, "sdp", "Failed to send continuation of transaction!");
       }
       return;
     }
