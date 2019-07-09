@@ -42,6 +42,28 @@ hci::EventCode GetExpectedEvent(hci::IOCapability local_cap,
 bool IsPairingAuthenticated(hci::IOCapability local_cap,
                             hci::IOCapability peer_cap);
 
+// Get the Authentication Requirements for a locally-initiated pairing according
+// to Core Spec v5.0, Vol 2, Part E, Sec 7.1.29.
+//
+// Non-Bondable Mode and Dedicated Bonding over BR/EDR are not supported and
+// this always returns kMITMGeneralBonding if |local_cap| is not
+// kNoInputNoOutput, kGeneralBonding otherwise. This requests authentication
+// when possible (based on IO Capabilities), as we don't know the peer's
+// authentication requirements yet.
+hci::AuthRequirements GetInitiatorAuthRequirements(hci::IOCapability local_cap);
+
+// Get the Authentication Requirements for a peer-initiated pairing. This will
+// request MITM protection whenever possible to obtain an "authenticated" link
+// encryption key.
+//
+// Local service requirements and peer authentication bonding type should be
+// available by the time this is called, but Non-Bondable Mode and Dedicated
+// Bonding over BR/EDR are not supported, so this always returns
+// kMITMGeneralBonding if this pairing can result in an authenticated link key,
+// kGeneralBonding otherwise.
+hci::AuthRequirements GetResponderAuthRequirements(
+    hci::IOCapability local_cap, hci::IOCapability remote_cap);
+
 }  // namespace gap
 }  // namespace bt
 

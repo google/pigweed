@@ -7,6 +7,7 @@
 namespace bt {
 namespace gap {
 
+using hci::AuthRequirements;
 using hci::IOCapability;
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap,
@@ -73,6 +74,21 @@ bool IsPairingAuthenticated(IOCapability local_cap, IOCapability peer_cap) {
     return true;
   }
   return false;
+}
+
+AuthRequirements GetInitiatorAuthRequirements(IOCapability local_cap) {
+  if (local_cap == IOCapability::kNoInputNoOutput) {
+    return AuthRequirements::kGeneralBonding;
+  }
+  return AuthRequirements::kMITMGeneralBonding;
+}
+
+AuthRequirements GetResponderAuthRequirements(IOCapability local_cap,
+                                              IOCapability peer_cap) {
+  if (IsPairingAuthenticated(local_cap, peer_cap)) {
+    return AuthRequirements::kMITMGeneralBonding;
+  }
+  return AuthRequirements::kGeneralBonding;
 }
 
 }  // namespace gap

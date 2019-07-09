@@ -10,6 +10,7 @@ namespace bt {
 namespace gap {
 namespace {
 
+using hci::AuthRequirements;
 using hci::IOCapability;
 using hci::kUserConfirmationRequestEventCode;
 using hci::kUserPasskeyNotificationEventCode;
@@ -219,6 +220,71 @@ TEST(GAP_PairingStateTest, IsPairingAuthenticated) {
                                       IOCapability::kKeyboardOnly));
   EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kNoInputNoOutput,
                                       IOCapability::kNoInputNoOutput));
+}
+
+TEST(GAP_PairingStateTest, GetInitiatorAuthRequirements) {
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetInitiatorAuthRequirements(IOCapability::kDisplayOnly));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetInitiatorAuthRequirements(IOCapability::kDisplayYesNo));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetInitiatorAuthRequirements(IOCapability::kKeyboardOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetInitiatorAuthRequirements(IOCapability::kNoInputNoOutput));
+}
+
+TEST(GAP_PairingStateTest, GetResponderAuthRequirements) {
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayOnly,
+                                         IOCapability::kDisplayOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayOnly,
+                                         IOCapability::kDisplayYesNo));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayOnly,
+                                         IOCapability::kKeyboardOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayOnly,
+                                         IOCapability::kNoInputNoOutput));
+
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayYesNo,
+                                         IOCapability::kDisplayOnly));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayYesNo,
+                                         IOCapability::kDisplayYesNo));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayYesNo,
+                                         IOCapability::kKeyboardOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kDisplayYesNo,
+                                         IOCapability::kNoInputNoOutput));
+
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kKeyboardOnly,
+                                         IOCapability::kDisplayOnly));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kKeyboardOnly,
+                                         IOCapability::kDisplayYesNo));
+  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kKeyboardOnly,
+                                         IOCapability::kKeyboardOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kKeyboardOnly,
+                                         IOCapability::kNoInputNoOutput));
+
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kNoInputNoOutput,
+                                         IOCapability::kDisplayOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kNoInputNoOutput,
+                                         IOCapability::kDisplayYesNo));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kNoInputNoOutput,
+                                         IOCapability::kKeyboardOnly));
+  EXPECT_EQ(AuthRequirements::kGeneralBonding,
+            GetResponderAuthRequirements(IOCapability::kNoInputNoOutput,
+                                         IOCapability::kNoInputNoOutput));
 }
 
 }  // namespace
