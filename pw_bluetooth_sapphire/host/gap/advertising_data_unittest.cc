@@ -40,8 +40,8 @@ TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
   data.AddURI("https://abc.xyz");
 
-  auto bytes = CreateStaticByteBuffer(0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c',
-                                      '.', 'x', 'y', 'z');
+  auto bytes =
+      CreateStaticByteBuffer(0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
 
   EXPECT_EQ(bytes.size(), data.CalculateBlockSize());
   DynamicByteBuffer block(data.CalculateBlockSize());
@@ -53,8 +53,8 @@ TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
   AdvertisingData data;
   data.AddURI("flubs:xyz");
 
-  auto bytes = CreateStaticByteBuffer(0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's',
-                                      ':', 'x', 'y', 'z');
+  auto bytes =
+      CreateStaticByteBuffer(0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'x', 'y', 'z');
 
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
@@ -103,7 +103,7 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
 }
 
 TEST(GAP_AdvertisingDataTest, ParseFIDL) {
-  fuchsia::bluetooth::le::AdvertisingData fidl_ad;
+  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
 
   // Confirming UTF-8 codepoints are working as well.
   fidl_ad.name = "Test💖";
@@ -135,7 +135,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDL) {
 }
 
 TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedUuid) {
-  fuchsia::bluetooth::le::AdvertisingData fidl_ad;
+  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
   fidl_ad.service_uuids.push_back("12");
 
   AdvertisingData data;
@@ -143,7 +143,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedUuid) {
 }
 
 TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedServiceDataUuid) {
-  fuchsia::bluetooth::le::AdvertisingData fidl_ad;
+  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
 
   auto svc_data = fidl::VectorPtr<uint8_t>::New(1);
 
@@ -285,9 +285,7 @@ TEST(GAP_AdvertisingDataTest, Move) {
   EXPECT_EQ(AdvertisingData(), source);
 
   // Dest should have the data we set.
-  EXPECT_EQ(
-      std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}),
-      dest.uris());
+  EXPECT_EQ(std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}), dest.uris());
   EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
 
   EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
@@ -305,8 +303,7 @@ TEST(GAP_AdvertisingDataTest, Uris) {
 
   auto uris = data.uris();
   EXPECT_EQ(2u, uris.size());
-  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") !=
-              uris.end());
+  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") != uris.end());
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "flubs:abc") != uris.end());
 }
 
@@ -349,8 +346,7 @@ TEST(GAP_AdvertisingDataTest, ReaderMalformedData) {
 }
 
 TEST(GAP_AdvertisingDataTest, ReaderParseFields) {
-  auto bytes =
-      CreateStaticByteBuffer(0x02, 0x01, 0x00, 0x05, 0x09, 'T', 'e', 's', 't');
+  auto bytes = CreateStaticByteBuffer(0x02, 0x01, 0x00, 0x05, 0x09, 'T', 'e', 's', 't');
   AdvertisingDataReader reader(bytes);
   EXPECT_TRUE(reader.is_valid());
   EXPECT_TRUE(reader.HasMoreData());
@@ -387,8 +383,7 @@ TEST(GAP_AdvertisingDataTest, WriteField) {
 
   // Have just enough space for the first three values (+ 6 for 2 extra octets
   // for each TLV field).
-  constexpr char kBufferSize =
-      StringSize(kValue0) + StringSize(kValue1) + StringSize(kValue2) + 6;
+  constexpr char kBufferSize = StringSize(kValue0) + StringSize(kValue1) + StringSize(kValue2) + 6;
   StaticByteBuffer<kBufferSize> buffer;
 
   AdvertisingDataWriter writer(&buffer);
@@ -398,21 +393,16 @@ TEST(GAP_AdvertisingDataTest, WriteField) {
   EXPECT_TRUE(writer.WriteField(DataType::kFlags, BufferView(kValue0)));
   EXPECT_EQ(StringSize(kValue0) + 2, writer.bytes_written());
 
-  EXPECT_TRUE(
-      writer.WriteField(DataType::kShortenedLocalName, BufferView(kValue1)));
-  EXPECT_EQ(StringSize(kValue0) + 2 + StringSize(kValue1) + 2,
-            writer.bytes_written());
+  EXPECT_TRUE(writer.WriteField(DataType::kShortenedLocalName, BufferView(kValue1)));
+  EXPECT_EQ(StringSize(kValue0) + 2 + StringSize(kValue1) + 2, writer.bytes_written());
 
   // Trying to write kValue3 should fail because there isn't enough room left in
   // the buffer.
-  EXPECT_FALSE(
-      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
+  EXPECT_FALSE(writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
 
   // Writing kValue2 should fill up the buffer.
-  EXPECT_TRUE(
-      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue2)));
-  EXPECT_FALSE(
-      writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
+  EXPECT_TRUE(writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue2)));
+  EXPECT_FALSE(writer.WriteField(DataType::kCompleteLocalName, BufferView(kValue3)));
   EXPECT_EQ(buffer.size(), writer.bytes_written());
 
   // Verify the contents.

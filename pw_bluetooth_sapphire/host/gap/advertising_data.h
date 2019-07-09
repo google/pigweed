@@ -50,7 +50,7 @@ class AdvertisingData {
   // Populate AdvertisingData |out_ad| from the corresponding FIDL object
   // |fidl_ad|. Overwrites existing contents of |out_ad|. Returns false if
   // |fidl_ad| contains malformed entries.
-  static bool FromFidl(const fuchsia::bluetooth::le::AdvertisingData& fidl_ad,
+  static bool FromFidl(const fuchsia::bluetooth::le::AdvertisingDataDeprecated& fidl_ad,
                        AdvertisingData* out_ad);
 
   // Copies all of the data in this object to |out|, including making a copy of
@@ -128,7 +128,7 @@ class AdvertisingData {
   bool WriteBlock(MutableByteBuffer* buffer) const;
 
   // Makes a FIDL object that holds the same data
-  fuchsia::bluetooth::le::AdvertisingDataPtr AsLEAdvertisingData() const;
+  fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr AsLEAdvertisingData() const;
 
   // Relation operators
   bool operator==(const AdvertisingData& other) const;

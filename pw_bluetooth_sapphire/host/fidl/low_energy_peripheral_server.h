@@ -20,12 +20,10 @@
 namespace bthost {
 
 // Implements the low_energy::Central FIDL interface.
-class LowEnergyPeripheralServer
-    : public AdapterServerBase<fuchsia::bluetooth::le::Peripheral> {
+class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::le::Peripheral> {
  public:
-  LowEnergyPeripheralServer(
-      fxl::WeakPtr<bt::gap::Adapter> adapter,
-      fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
+  LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+                            fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
   ~LowEnergyPeripheralServer() override;
 
  private:
@@ -34,8 +32,7 @@ class LowEnergyPeripheralServer
   class InstanceData final {
    public:
     InstanceData() = default;
-    InstanceData(bt::gap::AdvertisementId id,
-                 fxl::WeakPtr<LowEnergyPeripheralServer> owner);
+    InstanceData(bt::gap::AdvertisementId id, fxl::WeakPtr<LowEnergyPeripheralServer> owner);
 
     InstanceData(InstanceData&& other) = default;
     InstanceData& operator=(InstanceData&& other) = default;
@@ -44,8 +41,7 @@ class LowEnergyPeripheralServer
 
     // Takes ownership of |conn_ref| and notifies the delegate of the new
     // connection.
-    void RetainConnection(ConnectionRefPtr conn_ref,
-                          fuchsia::bluetooth::le::RemoteDevice central);
+    void RetainConnection(ConnectionRefPtr conn_ref, fuchsia::bluetooth::le::RemoteDevice central);
 
     // Deletes the connection reference and notifies the delegate of
     // disconnection.
@@ -62,20 +58,23 @@ class LowEnergyPeripheralServer
   };
 
   // fuchsia::bluetooth::le::Peripheral overrides:
-  void StartAdvertising(
-      fuchsia::bluetooth::le::AdvertisingData advertising_data,
-      fuchsia::bluetooth::le::AdvertisingDataPtr scan_result, bool connectable,
-      uint32_t interval, bool anonymous,
-      StartAdvertisingCallback callback) override;
+  void StartAdvertising(fuchsia::bluetooth::le::AdvertisingData advertising_data,
+                        fuchsia::bluetooth::le::AdvertisingDataPtr scan_result, bool connectable,
+                        uint32_t interval, bool anonymous,
+                        StartAdvertisingCallback callback) override;
+  void StartAdvertisingDeprecated(
+      fuchsia::bluetooth::le::AdvertisingDataDeprecated advertising_data,
+      fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr scan_result, bool connectable,
+      uint32_t interval, bool anonymous, StartAdvertisingDeprecatedCallback callback) override;
 
-  void StopAdvertising(::std::string advertisement_id,
-                       StopAdvertisingCallback callback) override;
+  void StopAdvertising(::std::string advertisement_id, StopAdvertisingCallback callback) override;
+  void StopAdvertisingDeprecated(::std::string advertisement_id,
+                                 StopAdvertisingDeprecatedCallback callback) override;
   bool StopAdvertisingInternal(bt::gap::AdvertisementId id);
 
   // Called when a central connects to us.  When this is called, the
   // advertisement in |advertisement_id| has been stopped.
-  void OnConnected(bt::gap::AdvertisementId advertisement_id,
-                   bt::hci::ConnectionPtr link);
+  void OnConnected(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link);
 
   // Tracks currently active advertisements.
   std::unordered_map<bt::gap::AdvertisementId, InstanceData> instances_;
