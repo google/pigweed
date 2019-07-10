@@ -23,15 +23,39 @@ TEST(GAP_PairingStateTest, PairingStateStartsAsResponder) {
 
 TEST(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
   PairingState pairing_state;
-  pairing_state.OnIOCapabilitiesResponse(hci::IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(hci::IOCapability::kDisplayYesNo);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest,
      PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
   PairingState pairing_state;
-  pairing_state.InitiatePairing();
+  EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
+            pairing_state.InitiatePairing());
   EXPECT_TRUE(pairing_state.initiator());
+}
+
+TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
+  PairingState pairing_state;
+  EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
+            pairing_state.InitiatePairing());
+  EXPECT_TRUE(pairing_state.initiator());
+
+  EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
+            pairing_state.InitiatePairing());
+  EXPECT_TRUE(pairing_state.initiator());
+}
+
+TEST(
+    GAP_PairingStateTest,
+    PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
+  PairingState pairing_state;
+  pairing_state.OnIoCapabilityResponse(hci::IOCapability::kDisplayYesNo);
+  ASSERT_FALSE(pairing_state.initiator());
+
+  EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
+            pairing_state.InitiatePairing());
+  EXPECT_FALSE(pairing_state.initiator());
 }
 
 // PairingAction expected answers are inferred from "device A" Authentication

@@ -43,13 +43,55 @@ class PairingState final {
   bool initiator() const { return initiator_; }
 
   // Starts pairing against the peer, if pairing is not already in progress.
-  // This device becomes the pairing initiator.
-  void InitiatePairing();
+  // If not, this device becomes the pairing initiator, and returns
+  // |kSendAuthenticationRequest| to indicate that the caller shall send an
+  // Authentication Request for this peer.
+  enum class InitiatorAction {
+    kDoNotSendAuthenticationRequest,
+    kSendAuthenticationRequest,
+  };
+  [[nodiscard]] InitiatorAction InitiatePairing();
 
-  void OnIOCapabilitiesResponse(hci::IOCapability peer_iocap);
+  void OnIoCapabilityResponse(hci::IOCapability peer_iocap);
 
  private:
+  enum class State {
+    // Wait for initiator's IO Capability Response or for locally-initiated
+    // pairing.
+    kIdle,
+
+    // As initiator, wait for IO Capability Request or Authentication Complete.
+    kInitiatorPairingStarted,
+
+    // As initiator, wait for IO Capability Response.
+    kInitiatorWaitIoCapResponse,
+
+    // As responder, wait for IO Capability Request.
+    kResponderWaitIoCapRequest,
+
+    // Wait for controller event for pairing action.
+    kWaitPairingEvent,
+
+    // Wait for Simple Pairing Complete.
+    kWaitPairingComplete,
+
+    // Wait for Link Key Notification.
+    kWaitLinkKey,
+
+    // As initiator, wait for Authentication Complete.
+    kInitiatorWaitAuthComplete,
+
+    // Wait for Encryption Change.
+    kWaitEncryption,
+
+    // Error occurred; wait for link closure and ignore events.
+    kFailed,
+  };
+
+  State state() const { return state_; }
+
   bool initiator_;
+  State state_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };

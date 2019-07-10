@@ -10,11 +10,23 @@ namespace gap {
 using hci::AuthRequirements;
 using hci::IOCapability;
 
-PairingState::PairingState() : initiator_(false) {}
+PairingState::PairingState() : initiator_(false), state_(State::kIdle) {}
 
-void PairingState::InitiatePairing() { initiator_ = true; }
+PairingState::InitiatorAction PairingState::InitiatePairing() {
+  if (state() == State::kIdle) {
+    initiator_ = true;
+    state_ = State::kInitiatorWaitIoCapResponse;
+    return InitiatorAction::kSendAuthenticationRequest;
+  }
+  return InitiatorAction::kDoNotSendAuthenticationRequest;
+}
 
-void PairingState::OnIOCapabilitiesResponse(hci::IOCapability peer_iocap) {}
+void PairingState::OnIoCapabilityResponse(hci::IOCapability peer_iocap) {
+  if (state() == State::kIdle) {
+    ZX_ASSERT(!initiator());
+    state_ = State::kResponderWaitIoCapRequest;
+  }
+}
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap,
                                         IOCapability responder_cap) {
