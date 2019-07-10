@@ -16,6 +16,24 @@ using hci::kUserConfirmationRequestEventCode;
 using hci::kUserPasskeyNotificationEventCode;
 using hci::kUserPasskeyRequestEventCode;
 
+TEST(GAP_PairingStateTest, PairingStateStartsAsResponder) {
+  PairingState pairing_state;
+  EXPECT_FALSE(pairing_state.initiator());
+}
+
+TEST(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
+  PairingState pairing_state;
+  pairing_state.OnIOCapabilitiesResponse(hci::IOCapability::kDisplayYesNo);
+  EXPECT_FALSE(pairing_state.initiator());
+}
+
+TEST(GAP_PairingStateTest,
+     PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
+  PairingState pairing_state;
+  pairing_state.InitiatePairing();
+  EXPECT_TRUE(pairing_state.initiator());
+}
+
 // PairingAction expected answers are inferred from "device A" Authentication
 // Stage 1 specs in v5.0 Vol 3, Part C, Sec 5.2.2.6, Table 5.7.
 TEST(GAP_PairingStateTest, GetInitiatorPairingAction) {

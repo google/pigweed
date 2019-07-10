@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -31,6 +33,25 @@ enum class PairingAction {
 
   // Request a 6-digit value entry.
   kRequestPasskey,
+};
+
+class PairingState final {
+ public:
+  PairingState();
+  ~PairingState() = default;
+
+  bool initiator() const { return initiator_; }
+
+  // Starts pairing against the peer, if pairing is not already in progress.
+  // This device becomes the pairing initiator.
+  void InitiatePairing();
+
+  void OnIOCapabilitiesResponse(hci::IOCapability peer_iocap);
+
+ private:
+  bool initiator_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
 PairingAction GetInitiatorPairingAction(hci::IOCapability initiator_cap,

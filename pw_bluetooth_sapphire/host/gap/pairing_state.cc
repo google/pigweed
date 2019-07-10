@@ -10,6 +10,12 @@ namespace gap {
 using hci::AuthRequirements;
 using hci::IOCapability;
 
+PairingState::PairingState() : initiator_(false) {}
+
+void PairingState::InitiatePairing() { initiator_ = true; }
+
+void PairingState::OnIOCapabilitiesResponse(hci::IOCapability peer_iocap) {}
+
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap,
                                         IOCapability responder_cap) {
   if (initiator_cap == IOCapability::kNoInputNoOutput) {
