@@ -104,11 +104,9 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
 
 }  // namespace
 
-GattRemoteServiceDevice::GattRemoteServiceDevice(
-    zx_device_t* parent_device, bt::gatt::PeerId peer_id,
-    fbl::RefPtr<bt::gatt::RemoteService> service)
+GattRemoteServiceDevice::GattRemoteServiceDevice(bt::gatt::PeerId peer_id,
+                                                 fbl::RefPtr<bt::gatt::RemoteService> service)
     : loop_(&kAsyncLoopConfigNoAttachToThread),
-      parent_device_(parent_device),
       dev_(nullptr),
       peer_id_(peer_id),
       service_(service) {
@@ -117,24 +115,24 @@ GattRemoteServiceDevice::GattRemoteServiceDevice(
   dev_proto_.release = &GattRemoteServiceDevice::DdkRelease;
 }
 
-GattRemoteServiceDevice::~GattRemoteServiceDevice() {
-  if (dev_ != nullptr) {
-    device_remove(dev_);
-    dev_ = nullptr;
-  }
-}
-
 bt_gatt_svc_protocol_ops_t GattRemoteServiceDevice::proto_ops_ = {
     .connect = &GattRemoteServiceDevice::OpConnect,
     .stop = &GattRemoteServiceDevice::OpStop,
     .read_characteristic = &GattRemoteServiceDevice::OpReadCharacteristic,
-    .read_long_characteristic =
-        &GattRemoteServiceDevice::OpReadLongCharacteristic,
+    .read_long_characteristic = &GattRemoteServiceDevice::OpReadLongCharacteristic,
     .write_characteristic = &GattRemoteServiceDevice::OpWriteCharacteristic,
     .enable_notifications = &GattRemoteServiceDevice::OpEnableNotifications,
 };
 
-zx_status_t GattRemoteServiceDevice::Bind() {
+zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
+  ZX_DEBUG_ASSERT(parent);
+
+  std::lock_guard<std::mutex> lock(mtx_);
+
+  if (dev_) {
+    return ZX_ERR_ALREADY_BOUND;
+  }
+
   // The bind program of an attaching device driver can either bind using to the
   // well known short 16 bit UUID of the service if available or the full 128
   // bit UUID (split across 4 32 bit values).
@@ -142,8 +140,7 @@ zx_status_t GattRemoteServiceDevice::Bind() {
   uint32_t uuid16 = 0;
 
   if (uuid.CompactSize() == 2) {
-    uuid16 =
-        le16toh(*reinterpret_cast<const uint16_t*>(uuid.CompactView().data()));
+    uuid16 = le16toh(*reinterpret_cast<const uint16_t*>(uuid.CompactView().data()));
   }
 
   uint32_t uuid01, uuid02, uuid03, uuid04 = 0;
@@ -155,10 +152,8 @@ zx_status_t GattRemoteServiceDevice::Bind() {
   uuid04 = le32toh(*reinterpret_cast<uint32_t*>(&uuid_bytes[12]));
 
   zx_device_prop_t props[] = {
-      {BIND_BT_GATT_SVC_UUID16, 0, uuid16},
-      {BIND_BT_GATT_SVC_UUID128_1, 0, uuid01},
-      {BIND_BT_GATT_SVC_UUID128_2, 0, uuid02},
-      {BIND_BT_GATT_SVC_UUID128_3, 0, uuid03},
+      {BIND_BT_GATT_SVC_UUID16, 0, uuid16},    {BIND_BT_GATT_SVC_UUID128_1, 0, uuid01},
+      {BIND_BT_GATT_SVC_UUID128_2, 0, uuid02}, {BIND_BT_GATT_SVC_UUID128_3, 0, uuid03},
       {BIND_BT_GATT_SVC_UUID128_4, 0, uuid04},
   };
 
@@ -179,12 +174,10 @@ zx_status_t GattRemoteServiceDevice::Bind() {
       .flags = 0,
   };
 
-  zx_status_t status = device_add(parent_device_, &args, &dev_);
-
+  zx_status_t status = device_add(parent, &args, &dev_);
   if (status != ZX_OK) {
     dev_ = nullptr;
-    bt_log(ERROR, "bt-host",
-           "bt-gatt-svc: failed to publish child gatt device: %s",
+    bt_log(ERROR, "bt-host", "bt-gatt-svc: failed to publish child gatt device: %s",
            zx_status_get_string(status));
     return status;
   }
@@ -198,11 +191,26 @@ void GattRemoteServiceDevice::Unbind() {
   bt_log(TRACE, "bt-host", "bt-gatt-svc: unbinding service");
   async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
   loop_.JoinThreads();
-}
-void GattRemoteServiceDevice::Release() { dev_ = nullptr; }
 
-void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb,
-                                      void* cookie) {
+  std::lock_guard<std::mutex> lock(mtx_);
+  if (dev_) {
+    device_remove(dev_);
+    dev_ = nullptr;
+  }
+}
+
+void GattRemoteServiceDevice::Release() {
+  {
+    // We expect no associated bt-gatt-svc device to exist in this state.
+    std::lock_guard<std::mutex> lock(mtx_);
+    ZX_ASSERT(!dev_);  // We expect the device to have been unpublished
+  }
+
+  // The DDK no longer owns this context object, so delete it.
+  delete this;
+}
+
+void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb, void* cookie) {
   async::PostTask(loop_.dispatcher(), [this, connect_cb, cookie]() {
     service_->DiscoverCharacteristics(
         [connect_cb, cookie](att::Status cb_status, const auto& chrcs) {
@@ -219,16 +227,14 @@ void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb,
 
             auto& descriptors = chr.descriptors();
             if (descriptors.size() > 0) {
-              ddk_chars[char_idx].descriptor_list =
-                  new bt_gatt_descriptor_t[descriptors.size()];
+              ddk_chars[char_idx].descriptor_list = new bt_gatt_descriptor_t[descriptors.size()];
               ddk_chars[char_idx].descriptor_count = descriptors.size();
               size_t desc_idx = 0;
               for (auto& descriptor : descriptors) {
                 ddk_chars[char_idx].descriptor_list[desc_idx].id =
                     static_cast<bt_gatt_id_t>(descriptor.id());
-                CopyUUIDBytes(
-                    &ddk_chars[char_idx].descriptor_list[desc_idx].type,
-                    descriptor.info().type);
+                CopyUUIDBytes(&ddk_chars[char_idx].descriptor_list[desc_idx].type,
+                              descriptor.info().type);
                 desc_idx++;
               }
             } else {
@@ -239,8 +245,7 @@ void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb,
             char_idx++;
           }
 
-          bt_log(TRACE, "bt-host",
-                 "bt-gatt-svc: connected; discovered %zu characteristics",
+          bt_log(TRACE, "bt-host", "bt-gatt-svc: connected; discovered %zu characteristics",
                  char_idx);
           bt_gatt_status_t status = {.status = ZX_OK};
           connect_cb(cookie, &status, ddk_chars.get(), char_idx);
@@ -264,16 +269,15 @@ void GattRemoteServiceDevice::Stop() {
   // We may replace this with an explicit unregister for notifications instead.
 }
 
-void GattRemoteServiceDevice::ReadCharacteristic(
-    bt_gatt_id_t id, bt_gatt_svc_read_characteristic_callback read_cb,
-    void* cookie) {
-  auto read_callback = [id, cookie, read_cb](att::Status status,
-                                             const ByteBuffer& buff) {
+void GattRemoteServiceDevice::ReadCharacteristic(bt_gatt_id_t id,
+                                                 bt_gatt_svc_read_characteristic_callback read_cb,
+                                                 void* cookie) {
+  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadCharacteristic(static_cast<bt::gatt::IdType>(id),
-                               std::move(read_callback), loop_.dispatcher());
+  service_->ReadCharacteristic(static_cast<bt::gatt::IdType>(id), std::move(read_callback),
+                               loop_.dispatcher());
 
   return;
 }
@@ -281,14 +285,12 @@ void GattRemoteServiceDevice::ReadCharacteristic(
 void GattRemoteServiceDevice::ReadLongCharacteristic(
     bt_gatt_id_t id, uint16_t offset, size_t max_bytes,
     bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
-  auto read_callback = [id, cookie, read_cb](att::Status status,
-                                             const ByteBuffer& buff) {
+  auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadLongCharacteristic(static_cast<bt::gatt::IdType>(id), offset,
-                                   max_bytes, std::move(read_callback),
-                                   loop_.dispatcher());
+  service_->ReadLongCharacteristic(static_cast<bt::gatt::IdType>(id), offset, max_bytes,
+                                   std::move(read_callback), loop_.dispatcher());
 
   return;
 }
@@ -299,17 +301,16 @@ void GattRemoteServiceDevice::WriteCharacteristic(
   auto* buf = static_cast<const uint8_t*>(buff);
   std::vector<uint8_t> data(buf, buf + len);
   if (write_cb == nullptr) {
-    service_->WriteCharacteristicWithoutResponse(
-        static_cast<bt::gatt::IdType>(id), std::move(data));
+    service_->WriteCharacteristicWithoutResponse(static_cast<bt::gatt::IdType>(id),
+                                                 std::move(data));
   } else {
     auto status_callback = [cookie, id, write_cb](bt::att::Status status) {
       bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
       write_cb(cookie, &ddk_status, id);
     };
 
-    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id), 0,
-                                  std::move(data), std::move(status_callback),
-                                  loop_.dispatcher());
+    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id), 0, std::move(data),
+                                  std::move(status_callback), loop_.dispatcher());
   }
   return;
 }
@@ -328,9 +329,8 @@ void GattRemoteServiceDevice::EnableNotifications(
     status_cb(cookie, &ddk_status, id);
   };
 
-  service_->EnableNotifications(static_cast<bt::gatt::IdType>(id),
-                                notif_callback, std::move(status_callback),
-                                loop_.dispatcher());
+  service_->EnableNotifications(static_cast<bt::gatt::IdType>(id), notif_callback,
+                                std::move(status_callback), loop_.dispatcher());
 
   return;
 }
