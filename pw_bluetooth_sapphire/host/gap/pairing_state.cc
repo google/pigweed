@@ -10,7 +10,8 @@ namespace gap {
 using hci::AuthRequirements;
 using hci::IOCapability;
 
-PairingState::PairingState() : initiator_(false), state_(State::kIdle) {}
+PairingState::PairingState(StatusCallback status_cb)
+    : initiator_(false), state_(State::kIdle) {}
 
 PairingState::InitiatorAction PairingState::InitiatePairing() {
   if (state() == State::kIdle) {

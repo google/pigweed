@@ -37,7 +37,10 @@ enum class PairingAction {
 
 class PairingState final {
  public:
-  PairingState();
+  // Used to report the status of a pairing procedure.
+  using StatusCallback =
+      fit::function<void(hci::ConnectionHandle, hci::Status)>;
+  PairingState(StatusCallback status_cb);
   ~PairingState() = default;
 
   bool initiator() const { return initiator_; }

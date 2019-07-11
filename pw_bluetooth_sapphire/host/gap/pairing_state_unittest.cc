@@ -16,27 +16,29 @@ using hci::kUserConfirmationRequestEventCode;
 using hci::kUserPasskeyNotificationEventCode;
 using hci::kUserPasskeyRequestEventCode;
 
+void NoOpStatusCallback(hci::ConnectionHandle, hci::Status){};
+
 TEST(GAP_PairingStateTest, PairingStateStartsAsResponder) {
-  PairingState pairing_state;
+  PairingState pairing_state(NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
-  PairingState pairing_state;
+  PairingState pairing_state(NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(hci::IOCapability::kDisplayYesNo);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest,
      PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
-  PairingState pairing_state;
+  PairingState pairing_state(NoOpStatusCallback);
   EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
             pairing_state.InitiatePairing());
   EXPECT_TRUE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
-  PairingState pairing_state;
+  PairingState pairing_state(NoOpStatusCallback);
   EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
             pairing_state.InitiatePairing());
   EXPECT_TRUE(pairing_state.initiator());
@@ -49,13 +51,51 @@ TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
 TEST(
     GAP_PairingStateTest,
     PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
-  PairingState pairing_state;
+  PairingState pairing_state(NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(hci::IOCapability::kDisplayYesNo);
   ASSERT_FALSE(pairing_state.initiator());
 
   EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
             pairing_state.InitiatePairing());
   EXPECT_FALSE(pairing_state.initiator());
+}
+
+// Test helper to inspect StatusCallback invocations.
+class TestStatusHandler final {
+ public:
+  auto MakeStatusCallback() {
+    return [this]([[maybe_unused]] hci::ConnectionHandle, hci::Status status) {
+      call_count_++;
+      status_ = status;
+    };
+  }
+
+  auto call_count() const { return call_count_; }
+
+  // Returns std::nullopt if |call_count() < 1|, otherwise the most recent
+  // status this was called with.
+  auto& status() const { return status_; }
+
+ private:
+  int call_count_ = 0;
+  std::optional<hci::Status> status_;
+};
+
+TEST(GAP_PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
+  TestStatusHandler handler;
+  EXPECT_EQ(0, handler.call_count());
+  EXPECT_FALSE(handler.status());
+
+  PairingState::StatusCallback status_cb = handler.MakeStatusCallback();
+  EXPECT_EQ(0, handler.call_count());
+  EXPECT_FALSE(handler.status());
+
+  status_cb(hci::ConnectionHandle(0x0A0B),
+            hci::Status(hci::StatusCode::kPairingNotAllowed));
+  EXPECT_EQ(1, handler.call_count());
+  ASSERT_TRUE(handler.status());
+  EXPECT_EQ(hci::Status(hci::StatusCode::kPairingNotAllowed),
+            *handler.status());
 }
 
 // PairingAction expected answers are inferred from "device A" Authentication
