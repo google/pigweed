@@ -177,6 +177,11 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                           fbl::RefPtr<bt::gatt::RemoteService> service) {
   std::lock_guard<std::mutex> lock(mtx_);
 
+  // Ignore the event if our bt-host device has been removed (this is likely during shut down).
+  if (!dev_) {
+    return;
+  }
+
   auto gatt_device = std::make_unique<GattRemoteServiceDevice>(peer_id, service);
   zx_status_t status = gatt_device->Bind(dev_);
   if (status != ZX_OK) {
