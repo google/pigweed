@@ -309,7 +309,7 @@ void GattRemoteServiceDevice::WriteCharacteristic(
       write_cb(cookie, &ddk_status, id);
     };
 
-    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id), 0, std::move(data),
+    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id), std::move(data),
                                   std::move(status_callback), loop_.dispatcher());
   }
   return;

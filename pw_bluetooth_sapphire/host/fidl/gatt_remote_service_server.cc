@@ -28,8 +28,7 @@ Characteristic CharacteristicToFidl(const RemoteCharacteristic& chrc) {
   Characteristic fidl_char;
   fidl_char.id = chrc.id();
   fidl_char.type = chrc.info().type.ToString();
-  fidl_char.properties =
-      static_cast<uint16_t>(chrc.info().properties & kPropertyMask);
+  fidl_char.properties = static_cast<uint16_t>(chrc.info().properties & kPropertyMask);
 
   // TODO(armansito): Add extended properties.
 
@@ -48,8 +47,7 @@ void NopStatusCallback(bt::att::Status) {}
 }  // namespace
 
 GattRemoteServiceServer::GattRemoteServiceServer(
-    fbl::RefPtr<bt::gatt::RemoteService> service,
-    fbl::RefPtr<bt::gatt::GATT> gatt,
+    fbl::RefPtr<bt::gatt::RemoteService> service, fbl::RefPtr<bt::gatt::GATT> gatt,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),
@@ -60,16 +58,13 @@ GattRemoteServiceServer::GattRemoteServiceServer(
 GattRemoteServiceServer::~GattRemoteServiceServer() {
   for (const auto& iter : notify_handlers_) {
     if (iter.second != bt::gatt::kInvalidId) {
-      service_->DisableNotifications(iter.first, iter.second,
-                                     NopStatusCallback);
+      service_->DisableNotifications(iter.first, iter.second, NopStatusCallback);
     }
   }
 }
 
-void GattRemoteServiceServer::DiscoverCharacteristics(
-    DiscoverCharacteristicsCallback callback) {
-  auto res_cb = [callback = std::move(callback)](bt::att::Status status,
-                                                 const auto& chrcs) {
+void GattRemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCallback callback) {
+  auto res_cb = [callback = std::move(callback)](bt::att::Status status, const auto& chrcs) {
     std::vector<Characteristic> fidl_chrcs;
     if (status) {
       for (const auto& chrc : chrcs) {
@@ -83,10 +78,8 @@ void GattRemoteServiceServer::DiscoverCharacteristics(
   service_->DiscoverCharacteristics(std::move(res_cb));
 }
 
-void GattRemoteServiceServer::ReadCharacteristic(
-    uint64_t id, ReadCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status,
-                                             const bt::ByteBuffer& value) {
+void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristicCallback callback) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -97,18 +90,16 @@ void GattRemoteServiceServer::ReadCharacteristic(
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status),
-             fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
   };
 
   service_->ReadCharacteristic(id, std::move(cb));
 }
 
-void GattRemoteServiceServer::ReadLongCharacteristic(
-    uint64_t id, uint16_t offset, uint16_t max_bytes,
-    ReadLongCharacteristicCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status,
-                                             const bt::ByteBuffer& value) {
+void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offset,
+                                                     uint16_t max_bytes,
+                                                     ReadLongCharacteristicCallback callback) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -119,32 +110,38 @@ void GattRemoteServiceServer::ReadLongCharacteristic(
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status),
-             fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
   };
 
   service_->ReadLongCharacteristic(id, offset, max_bytes, std::move(cb));
 }
 
-void GattRemoteServiceServer::WriteCharacteristic(
-    uint64_t id, uint16_t offset, ::std::vector<uint8_t> value,
-    WriteCharacteristicCallback callback) {
+void GattRemoteServiceServer::WriteCharacteristic(uint64_t id, ::std::vector<uint8_t> value,
+                                                  WriteCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](bt::att::Status status) {
     callback(fidl_helpers::StatusToFidl(status, ""));
   };
 
-  service_->WriteCharacteristic(id, offset, std::move(value), std::move(cb));
+  service_->WriteCharacteristic(id, std::move(value), std::move(cb));
 }
 
-void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(
-    uint64_t id, ::std::vector<uint8_t> value) {
+void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offset,
+                                                      ::std::vector<uint8_t> value,
+                                                      WriteLongCharacteristicCallback callback) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status) {
+    callback(fidl_helpers::StatusToFidl(status, ""));
+  };
+
+  service_->WriteLongCharacteristic(id, offset, std::move(value), std::move(cb));
+}
+
+void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,
+                                                                 ::std::vector<uint8_t> value) {
   service_->WriteCharacteristicWithoutResponse(id, std::move(value));
 }
 
-void GattRemoteServiceServer::ReadDescriptor(uint64_t id,
-                                             ReadDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status,
-                                             const bt::ByteBuffer& value) {
+void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback callback) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -155,18 +152,15 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id,
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status),
-             fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
   };
 
   service_->ReadDescriptor(id, std::move(cb));
 }
 
-void GattRemoteServiceServer::ReadLongDescriptor(
-    uint64_t id, uint16_t offset, uint16_t max_bytes,
-    ReadLongDescriptorCallback callback) {
-  auto cb = [callback = std::move(callback)](bt::att::Status status,
-                                             const bt::ByteBuffer& value) {
+void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, uint16_t max_bytes,
+                                                 ReadLongDescriptorCallback callback) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, const bt::ByteBuffer& value) {
     // We always reply with a non-null value.
     std::vector<uint8_t> vec;
 
@@ -177,53 +171,55 @@ void GattRemoteServiceServer::ReadLongDescriptor(
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status),
-             fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
   };
 
   service_->ReadLongDescriptor(id, offset, max_bytes, std::move(cb));
 }
 
-void GattRemoteServiceServer::WriteDescriptor(
-    uint64_t id, uint16_t offset, ::std::vector<uint8_t> value,
-    WriteDescriptorCallback callback) {
-  service_->WriteDescriptor(
-      id, offset, std::move(value),
-      [callback = std::move(callback)](bt::att::Status status) {
-        callback(fidl_helpers::StatusToFidl(status, ""));
-      });
+void GattRemoteServiceServer::WriteDescriptor(uint64_t id, ::std::vector<uint8_t> value,
+                                              WriteDescriptorCallback callback) {
+  service_->WriteDescriptor(id, std::move(value),
+                            [callback = std::move(callback)](bt::att::Status status) {
+                              callback(fidl_helpers::StatusToFidl(status, ""));
+                            });
 }
 
-void GattRemoteServiceServer::NotifyCharacteristic(
-    uint64_t id, bool enable, NotifyCharacteristicCallback callback) {
+void GattRemoteServiceServer::WriteLongDescriptor(uint64_t id, uint16_t offset,
+                                                  ::std::vector<uint8_t> value,
+                                                  WriteLongDescriptorCallback callback) {
+  service_->WriteLongDescriptor(id, offset, std::move(value),
+                                [callback = std::move(callback)](bt::att::Status status) {
+                                  callback(fidl_helpers::StatusToFidl(status, ""));
+                                });
+}
+
+void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
+                                                   NotifyCharacteristicCallback callback) {
   if (!enable) {
     auto iter = notify_handlers_.find(id);
     if (iter == notify_handlers_.end()) {
-      callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND,
-                                          "characteristic not notifying"));
+      callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "characteristic not notifying"));
       return;
     }
 
     if (iter->second == bt::gatt::kInvalidId) {
-      callback(fidl_helpers::NewFidlError(
-          ErrorCode::IN_PROGRESS,
-          "characteristic notification registration pending"));
+      callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS,
+                                          "characteristic notification registration pending"));
       return;
     }
 
-    service_->DisableNotifications(
-        id, iter->second,
-        [callback = std::move(callback)](bt::att::Status status) {
-          callback(fidl_helpers::StatusToFidl(status, ""));
-        });
+    service_->DisableNotifications(id, iter->second,
+                                   [callback = std::move(callback)](bt::att::Status status) {
+                                     callback(fidl_helpers::StatusToFidl(status, ""));
+                                   });
     notify_handlers_.erase(iter);
 
     return;
   }
 
   if (notify_handlers_.count(id) != 0) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::ALREADY,
-                                        "characteristic already notifying"));
+    callback(fidl_helpers::NewFidlError(ErrorCode::ALREADY, "characteristic already notifying"));
     return;
   }
 

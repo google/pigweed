@@ -16,15 +16,13 @@ namespace bt {
 namespace gatt {
 
 // This must be in the correct namespace for it to be visible to EXPECT_EQ.
-static bool operator==(const CharacteristicData& chrc1,
-                       const CharacteristicData& chrc2) {
+static bool operator==(const CharacteristicData& chrc1, const CharacteristicData& chrc2) {
   return chrc1.properties == chrc2.properties && chrc1.handle == chrc2.handle &&
          chrc1.value_handle == chrc2.value_handle && chrc1.type == chrc2.type;
 }
 
 // This must be in the correct namespace for it to be visible to EXPECT_EQ.
-static bool operator==(const DescriptorData& desc1,
-                       const DescriptorData& desc2) {
+static bool operator==(const DescriptorData& desc1, const DescriptorData& desc2) {
   return desc1.handle == desc2.handle && desc1.type == desc2.type;
 }
 
@@ -52,8 +50,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     auto client = std::make_unique<testing::FakeClient>(dispatcher());
     fake_client_ = client.get();
 
-    mgr_ =
-        std::make_unique<RemoteServiceManager>(std::move(client), dispatcher());
+    mgr_ = std::make_unique<RemoteServiceManager>(std::move(client), dispatcher());
   }
 
   void TearDown() override {
@@ -71,10 +68,9 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     mgr()->Initialize(NopStatusCallback);
 
     ServiceList services;
-    mgr()->ListServices(std::vector<UUID>(),
-                        [&services](auto status, ServiceList cb_services) {
-                          services = std::move(cb_services);
-                        });
+    mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
+      services = std::move(cb_services);
+    });
 
     RunLoopUntilIdle();
 
@@ -84,8 +80,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
   // Discover the characteristics of |service| based on the given |fake_data|.
   void SetupCharacteristics(
-      fbl::RefPtr<RemoteService> service,
-      std::vector<CharacteristicData> fake_chrs,
+      fbl::RefPtr<RemoteService> service, std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
     ZX_DEBUG_ASSERT(service);
 
@@ -107,19 +102,16 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     SetupCharacteristics(service, {{chr}}, {{desc}});
 
     fake_client()->set_write_request_callback(
-        [&](att::Handle, const auto&, auto status_callback) {
-          status_callback(att::Status());
-        });
+        [&](att::Handle, const auto&, auto status_callback) { status_callback(att::Status()); });
 
     RunLoopUntilIdle();
 
     return service;
   }
 
-  void EnableNotifications(
-      fbl::RefPtr<RemoteService> service, IdType chr_id,
-      att::Status* out_status, IdType* out_id,
-      RemoteService::ValueCallback callback = NopValueCallback) {
+  void EnableNotifications(fbl::RefPtr<RemoteService> service, IdType chr_id,
+                           att::Status* out_status, IdType* out_id,
+                           RemoteService::ValueCallback callback = NopValueCallback) {
     ZX_DEBUG_ASSERT(out_status);
     ZX_DEBUG_ASSERT(out_id);
     service->EnableNotifications(chr_id, std::move(callback),
@@ -144,8 +136,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
 TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
   std::vector<fbl::RefPtr<RemoteService>> services;
-  mgr()->set_service_watcher(
-      [&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -155,10 +146,9 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeNoServices) {
   EXPECT_TRUE(status);
   EXPECT_TRUE(services.empty());
 
-  mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
-                        services = std::move(cb_services);
-                      });
+  mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
+    services = std::move(cb_services);
+  });
   EXPECT_TRUE(services.empty());
 }
 
@@ -169,8 +159,7 @@ TEST_F(GATT_RemoteServiceManagerTest, Initialize) {
   fake_client()->set_primary_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->set_service_watcher(
-      [&services](auto svc) { services.push_back(svc); });
+  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
   mgr()->Initialize([&status](att::Status val) { status = val; });
@@ -186,18 +175,15 @@ TEST_F(GATT_RemoteServiceManagerTest, Initialize) {
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, InitializeFailure) {
-  fake_client()->set_service_discovery_status(
-      att::Status(att::ErrorCode::kRequestNotSupported));
+  fake_client()->set_service_discovery_status(att::Status(att::ErrorCode::kRequestNotSupported));
 
   ServiceList watcher_services;
-  mgr()->set_service_watcher(
-      [&watcher_services](auto svc) { watcher_services.push_back(svc); });
+  mgr()->set_service_watcher([&watcher_services](auto svc) { watcher_services.push_back(svc); });
 
   ServiceList services;
-  mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
-                        services = std::move(cb_services);
-                      });
+  mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
+    services = std::move(cb_services);
+  });
   ASSERT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
@@ -218,10 +204,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesBeforeInit) {
   fake_client()->set_primary_services(std::move(fake_services));
 
   ServiceList services;
-  mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
-                        services = std::move(cb_services);
-                      });
+  mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
+    services = std::move(cb_services);
+  });
   EXPECT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
@@ -248,10 +233,9 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesAfterInit) {
   ASSERT_TRUE(status);
 
   ServiceList services;
-  mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
-                        services = std::move(cb_services);
-                      });
+  mgr()->ListServices(std::vector<UUID>(), [&services](auto status, ServiceList cb_services) {
+    services = std::move(cb_services);
+  });
   EXPECT_EQ(1u, services.size());
   EXPECT_EQ(svc.range_start, services[0]->handle());
   EXPECT_EQ(svc.type, services[0]->uuid());
@@ -267,13 +251,11 @@ TEST_F(GATT_RemoteServiceManagerTest, ListServicesByUuid) {
 
   att::Status list_services_status;
   ServiceList services;
-  mgr()->set_service_watcher(
-      [&services](auto svc) { services.push_back(svc); });
-  mgr()->ListServices(std::move(uuids),
-                      [&](att::Status cb_status, ServiceList cb_services) {
-                        list_services_status = cb_status;
-                        services = std::move(cb_services);
-                      });
+  mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
+  mgr()->ListServices(std::move(uuids), [&](att::Status cb_status, ServiceList cb_services) {
+    list_services_status = cb_status;
+    services = std::move(cb_services);
+  });
   ASSERT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
@@ -296,11 +278,10 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsAfterShutDown) {
 
   att::Status status;
   size_t chrcs_size;
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        chrcs_size = chrcs.size();
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    chrcs_size = chrcs.size();
+  });
 
   RunLoopUntilIdle();
   EXPECT_FALSE(status);
@@ -320,32 +301,30 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   fake_client()->set_characteristics(std::move(fake_chrcs));
 
   att::Status status1(HostError::kFailed);
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status1 = cb_status;
-        EXPECT_EQ(2u, chrcs.size());
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status1 = cb_status;
+    EXPECT_EQ(2u, chrcs.size());
 
-        EXPECT_EQ(0u, chrcs[0].id());
-        EXPECT_EQ(1u, chrcs[1].id());
+    EXPECT_EQ(0u, chrcs[0].id());
+    EXPECT_EQ(1u, chrcs[1].id());
 
-        EXPECT_EQ(fake_chrc1, chrcs[0].info());
-        EXPECT_EQ(fake_chrc2, chrcs[1].info());
-      });
+    EXPECT_EQ(fake_chrc1, chrcs[0].info());
+    EXPECT_EQ(fake_chrc2, chrcs[1].info());
+  });
 
   // Queue a second request.
   att::Status status2(HostError::kFailed);
   RemoteCharacteristicList chrcs2;
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status2 = cb_status;
-        EXPECT_EQ(2u, chrcs.size());
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status2 = cb_status;
+    EXPECT_EQ(2u, chrcs.size());
 
-        EXPECT_EQ(0u, chrcs[0].id());
-        EXPECT_EQ(1u, chrcs[1].id());
+    EXPECT_EQ(0u, chrcs[0].id());
+    EXPECT_EQ(1u, chrcs[1].id());
 
-        EXPECT_EQ(fake_chrc1, chrcs[0].info());
-        EXPECT_EQ(fake_chrc2, chrcs[1].info());
-      });
+    EXPECT_EQ(fake_chrc1, chrcs[0].info());
+    EXPECT_EQ(fake_chrc2, chrcs[1].info());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -356,8 +335,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   EXPECT_TRUE(service->IsDiscovered());
   EXPECT_TRUE(status1);
   EXPECT_TRUE(status2);
-  EXPECT_EQ(data.range_start,
-            fake_client()->last_chrc_discovery_start_handle());
+  EXPECT_EQ(data.range_start, fake_client()->last_chrc_discovery_start_handle());
   EXPECT_EQ(data.range_end, fake_client()->last_chrc_discovery_end_handle());
 
   // Request discovery again. This should succeed without an ATT request.
@@ -381,25 +359,22 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsError) {
   std::vector<CharacteristicData> fake_chrcs{{chrc1, chrc2}};
   fake_client()->set_characteristics(std::move(fake_chrcs));
 
-  fake_client()->set_characteristic_discovery_status(
-      att::Status(HostError::kNotSupported));
+  fake_client()->set_characteristic_discovery_status(att::Status(HostError::kNotSupported));
 
   att::Status status1;
   RemoteCharacteristicList chrcs1;
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status1 = cb_status;
-        EXPECT_TRUE(chrcs.empty());
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status1 = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
 
   // Queue a second request.
   att::Status status2;
   RemoteCharacteristicList chrcs2;
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status2 = cb_status;
-        EXPECT_TRUE(chrcs.empty());
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status2 = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -434,17 +409,16 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2}});
 
   att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        EXPECT_EQ(1u, chrcs.size());
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    EXPECT_EQ(1u, chrcs.size());
 
-        EXPECT_EQ(2u, chrcs[0].descriptors().size());
-        EXPECT_EQ(0u, chrcs[0].descriptors()[0].id());
-        EXPECT_EQ(fake_desc1, chrcs[0].descriptors()[0].info());
-        EXPECT_EQ(1u, chrcs[0].descriptors()[1].id());
-        EXPECT_EQ(fake_desc2, chrcs[0].descriptors()[1].info());
-      });
+    EXPECT_EQ(2u, chrcs[0].descriptors().size());
+    EXPECT_EQ(0u, chrcs[0].descriptors()[0].id());
+    EXPECT_EQ(fake_desc1, chrcs[0].descriptors()[0].info());
+    EXPECT_EQ(1u, chrcs[0].descriptors()[1].id());
+    EXPECT_EQ(fake_desc2, chrcs[0].descriptors()[1].info());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -475,15 +449,13 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
   DescriptorData fake_desc1(kDesc1, kTestUuid3);
   DescriptorData fake_desc2(kDesc2, kTestUuid4);
   fake_client()->set_descriptors({{fake_desc1, fake_desc2}});
-  fake_client()->set_descriptor_discovery_status(
-      att::Status(HostError::kNotSupported));
+  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported));
 
   att::Status status;
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        EXPECT_TRUE(chrcs.empty());
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -515,27 +487,26 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
   att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        EXPECT_EQ(3u, chrcs.size());
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    EXPECT_EQ(3u, chrcs.size());
 
-        // Characteristic #1
-        EXPECT_EQ(1u, chrcs[0].descriptors().size());
-        EXPECT_EQ(0u, chrcs[0].descriptors()[0].id());
-        EXPECT_EQ(fake_desc1, chrcs[0].descriptors()[0].info());
+    // Characteristic #1
+    EXPECT_EQ(1u, chrcs[0].descriptors().size());
+    EXPECT_EQ(0u, chrcs[0].descriptors()[0].id());
+    EXPECT_EQ(fake_desc1, chrcs[0].descriptors()[0].info());
 
-        // Characteristic #2
-        EXPECT_TRUE(chrcs[1].descriptors().empty());
+    // Characteristic #2
+    EXPECT_TRUE(chrcs[1].descriptors().empty());
 
-        // Characteristic #3
-        EXPECT_EQ(2u, chrcs[2].descriptors().size());
-        EXPECT_EQ(2u, chrcs[2].id());
-        EXPECT_EQ(0x020000u, chrcs[2].descriptors()[0].id());
-        EXPECT_EQ(fake_desc2, chrcs[2].descriptors()[0].info());
-        EXPECT_EQ(0x020001u, chrcs[2].descriptors()[1].id());
-        EXPECT_EQ(fake_desc3, chrcs[2].descriptors()[1].info());
-      });
+    // Characteristic #3
+    EXPECT_EQ(2u, chrcs[2].descriptors().size());
+    EXPECT_EQ(2u, chrcs[2].id());
+    EXPECT_EQ(0x020000u, chrcs[2].descriptors()[0].id());
+    EXPECT_EQ(fake_desc2, chrcs[2].descriptors()[0].info());
+    EXPECT_EQ(0x020001u, chrcs[2].descriptors()[1].id());
+    EXPECT_EQ(fake_desc3, chrcs[2].descriptors()[1].info());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -570,15 +541,13 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
   // The first request will fail
-  fake_client()->set_descriptor_discovery_status(
-      att::Status(HostError::kNotSupported), 1);
+  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported), 1);
 
   att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        EXPECT_TRUE(chrcs.empty());
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -613,15 +582,13 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   fake_client()->set_descriptors({{fake_desc1, fake_desc2, fake_desc3}});
 
   // The last request will fail
-  fake_client()->set_descriptor_discovery_status(
-      att::Status(HostError::kNotSupported), 2);
+  fake_client()->set_descriptor_discovery_status(att::Status(HostError::kNotSupported), 2);
 
   att::Status status(HostError::kFailed);
-  service->DiscoverCharacteristics(
-      [&](att::Status cb_status, const auto& chrcs) {
-        status = cb_status;
-        EXPECT_TRUE(chrcs.empty());
-      });
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto& chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
 
   EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
   RunLoopUntilIdle();
@@ -642,8 +609,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadCharacteristic(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -655,8 +621,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->ReadCharacteristic(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -669,8 +634,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->ReadCharacteristic(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -686,8 +650,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharNotSupported) {
   SetupCharacteristics(service, {{chr}});
 
   att::Status status;
-  service->ReadCharacteristic(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadCharacteristic(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -705,11 +668,10 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequest) {
 
   const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        EXPECT_EQ(kValueHandle, handle);
-        callback(att::Status(), kValue);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kValueHandle, handle);
+    callback(att::Status(), kValue);
+  });
 
   att::Status status(HostError::kFailed);
   service->ReadCharacteristic(0, [&](att::Status cb_status, const auto& value) {
@@ -733,11 +695,10 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadCharSendsReadRequestWithDispatcher) {
 
   const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        EXPECT_EQ(kValueHandle, handle);
-        callback(att::Status(), kValue);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kValueHandle, handle);
+    callback(att::Status(), kValue);
+  });
 
   att::Status status(HostError::kFailed);
   service->ReadCharacteristic(
@@ -760,9 +721,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadLongCharacteristic(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(0, 0, 512,
+                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -774,9 +734,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->ReadLongCharacteristic(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(0, 0, 512,
+                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -789,9 +748,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->ReadLongCharacteristic(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(0, 0, 512,
+                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -807,9 +765,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongNotSupported) {
   SetupCharacteristics(service, {{chr}});
 
   att::Status status;
-  service->ReadLongCharacteristic(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(0, 0, 512,
+                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -825,8 +782,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMaxSizeZero) {
   SetupCharacteristics(service, {{chr}});
 
   att::Status status;
-  service->ReadLongCharacteristic(
-      0, 0, 0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongCharacteristic(0, 0, 0,
+                                  [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -855,11 +812,11 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongSingleBlob) {
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(
-      0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(kValue, value));
-      });
+  service->ReadLongCharacteristic(0, kOffset, kMaxBytes,
+                                  [&](att::Status cb_status, const auto& value) {
+                                    status = cb_status;
+                                    EXPECT_TRUE(ContainersEqual(kValue, value));
+                                  });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -905,11 +862,11 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobs) {
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(
-      0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(expected_value, value));
-      });
+  service->ReadLongCharacteristic(0, kOffset, kMaxBytes,
+                                  [&](att::Status cb_status, const auto& value) {
+                                    status = cb_status;
+                                    EXPECT_TRUE(ContainersEqual(expected_value, value));
+                                  });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -959,11 +916,11 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongValueExactMultipleOfMTU) {
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongCharacteristic(
-      0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(expected_value, value));
-      });
+  service->ReadLongCharacteristic(0, kOffset, kMaxBytes,
+                                  [&](att::Status cb_status, const auto& value) {
+                                    status = cb_status;
+                                    EXPECT_TRUE(ContainersEqual(expected_value, value));
+                                  });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -996,8 +953,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongMultipleBlobsWithMaxSize) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(),
-                 expected_value.view(offset, att::kLEMinMTU - 1));
+        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
       });
 
   att::Status status(HostError::kFailed);
@@ -1039,16 +995,14 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffset) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(),
-                 expected_value.view(offset, att::kLEMinMTU - 1));
+        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
       0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
         status = cb_status;
-        EXPECT_TRUE(
-            ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
+        EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
       });
 
   RunLoopUntilIdle();
@@ -1084,16 +1038,14 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongAtOffsetWithMaxBytes) {
       [&](att::Handle handle, uint16_t offset, auto callback) {
         EXPECT_EQ(kValueHandle, handle);
         read_blob_count++;
-        callback(att::Status(),
-                 expected_value.view(offset, att::kLEMinMTU - 1));
+        callback(att::Status(), expected_value.view(offset, att::kLEMinMTU - 1));
       });
 
   att::Status status(HostError::kFailed);
   service->ReadLongCharacteristic(
       0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
         status = cb_status;
-        EXPECT_TRUE(
-            ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
+        EXPECT_TRUE(ContainersEqual(expected_value.view(kOffset, kMaxBytes), value));
       });
 
   RunLoopUntilIdle();
@@ -1186,9 +1138,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->WriteCharacteristic(
-      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteCharacteristic(0, std::vector<uint8_t>(),
+                               [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1200,9 +1151,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->WriteCharacteristic(
-      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteCharacteristic(0, std::vector<uint8_t>(),
+                               [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1215,9 +1165,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->WriteCharacteristic(
-      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteCharacteristic(0, std::vector<uint8_t>(),
+                               [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1233,9 +1182,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharNotSupported) {
   SetupCharacteristics(service, {{chr}});
 
   att::Status status;
-  service->WriteCharacteristic(
-      0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteCharacteristic(0, std::vector<uint8_t>(),
+                               [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1256,15 +1204,12 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharSendsWriteRequest) {
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
         EXPECT_EQ(kValueHandle, handle);
-        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(),
-                               value.end()));
+        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
         status_callback(kStatus);
       });
 
   att::Status status;
-  service->WriteCharacteristic(
-      0 /*id*/, 0 /*offset*/, kValue,
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteCharacteristic(0, kValue, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1328,9 +1273,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
       });
 
   att::Status status(HostError::kFailed);
-  service->WriteCharacteristic(
-      0, kOffset, full_write_value,
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteLongCharacteristic(0, kOffset, full_write_value,
+                                   [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1385,9 +1329,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
       });
 
   att::Status status(HostError::kFailed);
-  service->WriteCharacteristic(
-      0, kOffset, full_write_value,
-      [&](att::Status cb_status) { status = cb_status; });
+  service->WriteLongCharacteristic(0, kOffset, full_write_value,
+                                   [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1403,8 +1346,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   SetupCharacteristics(service, {{chr}});
 
   bool called = false;
-  fake_client()->set_write_without_rsp_callback(
-      [&](auto, const auto&) { called = true; });
+  fake_client()->set_write_without_rsp_callback([&](auto, const auto&) { called = true; });
 
   service->WriteCharacteristicWithoutResponse(0, std::vector<uint8_t>());
   RunLoopUntilIdle();
@@ -1418,18 +1360,15 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccess) {
   ServiceData data(1, kValueHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr(Property::kWriteWithoutResponse, 2, kValueHandle,
-                         kTestUuid3);
+  CharacteristicData chr(Property::kWriteWithoutResponse, 2, kValueHandle, kTestUuid3);
   SetupCharacteristics(service, {{chr}});
 
   bool called = false;
-  fake_client()->set_write_without_rsp_callback(
-      [&](att::Handle handle, const auto& value) {
-        EXPECT_EQ(kValueHandle, handle);
-        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(),
-                               value.end()));
-        called = true;
-      });
+  fake_client()->set_write_without_rsp_callback([&](att::Handle handle, const auto& value) {
+    EXPECT_EQ(kValueHandle, handle);
+    EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
+    called = true;
+  });
 
   service->WriteCharacteristicWithoutResponse(0, kValue);
   RunLoopUntilIdle();
@@ -1444,8 +1383,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->ReadDescriptor(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1457,8 +1395,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->ReadDescriptor(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1471,8 +1408,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescriptorNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->ReadDescriptor(
-      0, [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadDescriptor(0, [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1498,21 +1434,19 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
 
   const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        EXPECT_EQ(kDescrHandle, handle);
-        callback(att::Status(), kValue);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kDescrHandle, handle);
+    callback(att::Status(), kValue);
+  });
 
   // We read the first descriptor of the second characteristic. The descriptor
   // has this ID based on the scheme described in remote_characteristic.h.
   constexpr IdType kDescrId = 0x010000;
   att::Status status(HostError::kFailed);
-  service->ReadDescriptor(kDescrId,
-                          [&](att::Status cb_status, const auto& value) {
-                            status = cb_status;
-                            EXPECT_TRUE(ContainersEqual(kValue, value));
-                          });
+  service->ReadDescriptor(kDescrId, [&](att::Status cb_status, const auto& value) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(kValue, value));
+  });
 
   RunLoopUntilIdle();
 
@@ -1532,11 +1466,10 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
 
   const auto kValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        EXPECT_EQ(kDescrHandle, handle);
-        callback(att::Status(), kValue);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kDescrHandle, handle);
+    callback(att::Status(), kValue);
+  });
 
   att::Status status(HostError::kFailed);
   service->ReadDescriptor(
@@ -1557,9 +1490,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->ReadLongDescriptor(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongDescriptor(0, 0, 512,
+                              [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1572,9 +1504,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->ReadLongDescriptor(
-      0, 0, 512,
-      [&](att::Status cb_status, const auto&) { status = cb_status; });
+  service->ReadLongDescriptor(0, 0, 512,
+                              [&](att::Status cb_status, const auto&) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1626,11 +1557,10 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
       });
 
   att::Status status(HostError::kFailed);
-  service->ReadLongDescriptor(
-      0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
-        status = cb_status;
-        EXPECT_TRUE(ContainersEqual(expected_value, value));
-      });
+  service->ReadLongDescriptor(0, kOffset, kMaxBytes, [&](att::Status cb_status, const auto& value) {
+    status = cb_status;
+    EXPECT_TRUE(ContainersEqual(expected_value, value));
+  });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1644,7 +1574,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
+  service->WriteDescriptor(0, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1657,7 +1587,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
+  service->WriteDescriptor(0, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1671,7 +1601,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
+  service->WriteDescriptor(0, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1689,7 +1619,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotAllowed) {
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
   att::Status status;
-  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, std::vector<uint8_t>(),
+  service->WriteDescriptor(0, std::vector<uint8_t>(),
                            [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1713,14 +1643,12 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
         EXPECT_EQ(kValueHandle, handle);
-        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(),
-                               value.end()));
+        EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
         status_callback(kStatus);
       });
 
   att::Status status;
-  service->WriteDescriptor(0 /*id*/, 0 /*offset*/, kValue,
-                           [&](att::Status cb_status) { status = cb_status; });
+  service->WriteDescriptor(0, kValue, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(kStatus, status);
@@ -1785,8 +1713,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
       });
 
   att::Status status(HostError::kFailed);
-  service->WriteDescriptor(0, kOffset, full_write_value,
-                           [&](att::Status cb_status) { status = cb_status; });
+  service->WriteLongDescriptor(0, kOffset, full_write_value,
+                               [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -1800,9 +1728,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsAfterShutDown) {
   service->ShutDown();
 
   att::Status status;
-  service->EnableNotifications(
-      0, NopValueCallback,
-      [&](att::Status cb_status, IdType) { status = cb_status; });
+  service->EnableNotifications(0, NopValueCallback,
+                               [&](att::Status cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1814,9 +1741,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->EnableNotifications(
-      0, NopValueCallback,
-      [&](att::Status cb_status, IdType) { status = cb_status; });
+  service->EnableNotifications(0, NopValueCallback,
+                               [&](att::Status cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1829,9 +1755,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsCharNotFound) {
   SetupCharacteristics(service, std::vector<CharacteristicData>());
 
   att::Status status;
-  service->EnableNotifications(
-      0, NopValueCallback,
-      [&](att::Status cb_status, IdType) { status = cb_status; });
+  service->EnableNotifications(0, NopValueCallback,
+                               [&](att::Status cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1848,9 +1773,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
   att::Status status;
-  service->EnableNotifications(
-      0, NopValueCallback,
-      [&](att::Status cb_status, IdType) { status = cb_status; });
+  service->EnableNotifications(0, NopValueCallback,
+                               [&](att::Status cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1866,9 +1790,8 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoCCC) {
   SetupCharacteristics(service, {{chr}});
 
   att::Status status;
-  service->EnableNotifications(
-      0, NopValueCallback,
-      [&](att::Status cb_status, IdType) { status = cb_status; });
+  service->EnableNotifications(0, NopValueCallback,
+                               [&](att::Status cb_status, IdType) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -1894,11 +1817,10 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsSuccess) {
 
   IdType id = kInvalidId;
   att::Status status(HostError::kFailed);
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
-                                 status = cb_status;
-                                 id = cb_id;
-                               });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status cb_status, IdType cb_id) {
+    status = cb_status;
+    id = cb_id;
+  });
 
   RunLoopUntilIdle();
 
@@ -1925,11 +1847,10 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableIndications) {
 
   IdType id = kInvalidId;
   att::Status status(HostError::kFailed);
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
-                                 status = cb_status;
-                                 id = cb_id;
-                               });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status cb_status, IdType cb_id) {
+    status = cb_status;
+    id = cb_id;
+  });
 
   RunLoopUntilIdle();
 
@@ -1959,11 +1880,10 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsError) {
 
   IdType id = kInvalidId;
   att::Status status;
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status cb_status, IdType cb_id) {
-                                 status = cb_status;
-                                 id = cb_id;
-                               });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status cb_status, IdType cb_id) {
+    status = cb_status;
+    id = cb_id;
+  });
 
   RunLoopUntilIdle();
 
@@ -2006,36 +1926,31 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestMany) {
 
   size_t cb_count = 0u;
 
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status status, IdType id) {
-                                 cb_count++;
-                                 EXPECT_EQ(1u, id);
-                                 EXPECT_TRUE(status);
-                               });
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status status, IdType id) {
-                                 cb_count++;
-                                 EXPECT_EQ(2u, id);
-                                 EXPECT_TRUE(status);
-                               });
-  service->EnableNotifications(1, NopValueCallback,
-                               [&](att::Status status, IdType id) {
-                                 cb_count++;
-                                 EXPECT_EQ(1u, id);
-                                 EXPECT_TRUE(status);
-                               });
-  service->EnableNotifications(1, NopValueCallback,
-                               [&](att::Status status, IdType id) {
-                                 cb_count++;
-                                 EXPECT_EQ(2u, id);
-                                 EXPECT_TRUE(status);
-                               });
-  service->EnableNotifications(1, NopValueCallback,
-                               [&](att::Status status, IdType id) {
-                                 cb_count++;
-                                 EXPECT_EQ(3u, id);
-                                 EXPECT_TRUE(status);
-                               });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status status, IdType id) {
+    cb_count++;
+    EXPECT_EQ(1u, id);
+    EXPECT_TRUE(status);
+  });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status status, IdType id) {
+    cb_count++;
+    EXPECT_EQ(2u, id);
+    EXPECT_TRUE(status);
+  });
+  service->EnableNotifications(1, NopValueCallback, [&](att::Status status, IdType id) {
+    cb_count++;
+    EXPECT_EQ(1u, id);
+    EXPECT_TRUE(status);
+  });
+  service->EnableNotifications(1, NopValueCallback, [&](att::Status status, IdType id) {
+    cb_count++;
+    EXPECT_EQ(2u, id);
+    EXPECT_TRUE(status);
+  });
+  service->EnableNotifications(1, NopValueCallback, [&](att::Status status, IdType id) {
+    cb_count++;
+    EXPECT_EQ(3u, id);
+    EXPECT_TRUE(status);
+  });
 
   RunLoopUntilIdle();
 
@@ -2052,11 +1967,10 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   EXPECT_EQ(5u, cb_count);
 
   // An extra request should succeed without sending any PDUs.
-  service->EnableNotifications(0, NopValueCallback,
-                               [&](att::Status status, IdType) {
-                                 cb_count++;
-                                 EXPECT_TRUE(status);
-                               });
+  service->EnableNotifications(0, NopValueCallback, [&](att::Status status, IdType) {
+    cb_count++;
+    EXPECT_TRUE(status);
+  });
 
   RunLoopUntilIdle();
 
@@ -2127,8 +2041,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
 // dropped and not cause a crash.
 TEST_F(GATT_RemoteServiceManagerTest, NotificationWithoutServices) {
   for (att::Handle i = 0; i < 10; ++i) {
-    fake_client()->SendNotification(
-        false, i, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+    fake_client()->SendNotification(false, i, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   }
   RunLoopUntilIdle();
 }
@@ -2150,9 +2063,7 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc1, desc2}});
 
   fake_client()->set_write_request_callback(
-      [&](att::Handle, const auto&, auto status_callback) {
-        status_callback(att::Status());
-      });
+      [&](att::Handle, const auto&, auto status_callback) { status_callback(att::Status()); });
 
   IdType handler_id = kInvalidId;
   att::Status status(HostError::kFailed);
@@ -2170,10 +2081,9 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   };
 
   // Notify both characteristics which should get dropped.
-  fake_client()->SendNotification(
-      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
-  fake_client()->SendNotification(
-      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+  fake_client()->SendNotification(true, 6,
+                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
 
   EnableNotifications(service, kId1, &status, &handler_id, std::move(chr1_cb));
   ASSERT_TRUE(status);
@@ -2181,30 +2091,28 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   ASSERT_TRUE(status);
 
   // Notify characteristic 1.
-  fake_client()->SendNotification(
-      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(0, chr2_count);
 
   // Notify characteristic 2.
-  fake_client()->SendNotification(
-      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(true, 6,
+                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(1, chr2_count);
 
   // Disable notifications from characteristic 1.
   status = att::Status(HostError::kFailed);
-  service->DisableNotifications(
-      kId1, handler_id, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(kId1, handler_id,
+                                [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
 
   // Notifications for characteristic 1 should get dropped.
-  fake_client()->SendNotification(
-      false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
-  fake_client()->SendNotification(
-      true, 6, CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
+  fake_client()->SendNotification(false, 3, CreateStaticByteBuffer('n', 'o', 't', 'i', 'f', 'y'));
+  fake_client()->SendNotification(true, 6,
+                                  CreateStaticByteBuffer('i', 'n', 'd', 'i', 'c', 'a', 't', 'e'));
   EXPECT_EQ(1, chr1_count);
   EXPECT_EQ(2, chr2_count);
 }
@@ -2221,8 +2129,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsAfterShutDown) {
 
   service->ShutDown();
 
-  service->DisableNotifications(
-      0, id, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(0, id, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2234,8 +2141,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsWhileNotReady) {
   auto service = SetUpFakeService(data);
 
   att::Status status;
-  service->DisableNotifications(
-      0, 1, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(0, 1, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2250,8 +2156,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsCharNotFound) {
   EnableNotifications(service, 0, &status, &id);
 
   // "1" is an invalid characteristic ID.
-  service->DisableNotifications(
-      1, id, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(1, id, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2266,8 +2171,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsIdNotFound) {
   EnableNotifications(service, 0, &status, &id);
 
   // Valid characteristic ID but invalid notification handler ID.
-  service->DisableNotifications(
-      0, id + 1, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(0, id + 1, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2295,8 +2199,7 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsSingleHandler) {
       });
 
   status = att::Status(HostError::kFailed);
-  service->DisableNotifications(
-      0, id, [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(0, id, [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
 
@@ -2354,9 +2257,8 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
 
   // Disabling should succeed without an ATT transaction.
   att::Status status(HostError::kFailed);
-  service->DisableNotifications(
-      0, handler_ids.back(),
-      [&](att::Status cb_status) { status = cb_status; });
+  service->DisableNotifications(0, handler_ids.back(),
+                                [&](att::Status cb_status) { status = cb_status; });
   handler_ids.pop_back();
   RunLoopUntilIdle();
   EXPECT_TRUE(status);
@@ -2372,9 +2274,8 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
   // Disabling all should send out an ATT transaction.
   while (!handler_ids.empty()) {
     att::Status status(HostError::kFailed);
-    service->DisableNotifications(
-        0, handler_ids.back(),
-        [&](att::Status cb_status) { status = cb_status; });
+    service->DisableNotifications(0, handler_ids.back(),
+                                  [&](att::Status cb_status) { status = cb_status; });
     handler_ids.pop_back();
     RunLoopUntilIdle();
     EXPECT_TRUE(status);
