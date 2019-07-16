@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 
+#include <fbl/macros.h>
+
 #include "lib/async/cpp/task.h"
 #include "lib/fit/function.h"
 #include "lib/zx/time.h"
@@ -132,7 +134,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine>
       weak_factory_;  // Keep last
 
-  FXL_DISALLOW_COPY_AND_ASSIGN(EnhancedRetransmissionModeTxEngine);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };
 
 }  // namespace internal
