@@ -548,6 +548,114 @@ TEST_F(
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineClosesChannelAfterMaxTransmitsOfIFrame) {
+  constexpr size_t kMaxTransmissions = 2;
+  size_t num_info_frames_sent = 0;
+  bool connection_failed = false;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [&](ByteBufferPtr pdu) {
+        if (pdu->size() >= sizeof(EnhancedControlField) &&
+            pdu->As<EnhancedControlField>().designates_information_frame()) {
+          ++num_info_frames_sent;
+        }
+      },
+      [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, num_info_frames_sent);
+
+  // Not having received an acknowledgement after 2 seconds,
+  // receiver_ready_poll_task_ will fire, and cause us to send a
+  // ReceiverReadyPoll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // The peer indicates that it has not received any frames. This causes us to
+  // retransmit the frame.
+  tx_engine.UpdateAckSeq(0, true);
+  EXPECT_EQ(2u, num_info_frames_sent);
+
+  // Not having received an acknowledgement after 2 seconds,
+  // receiver_ready_poll_task_ will fire, and cause us to send another
+  // ReceiverReadyPoll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // The connection should remain open, to allow the peer time to respond to our
+  // poll, and acknowledge the outstanding frame.
+  EXPECT_FALSE(connection_failed);
+
+  // The peer again indicates that it has not received any frames.
+  tx_engine.UpdateAckSeq(0, true);
+
+  // Because we've exhausted kMaxTransmissions, the connection will be closed.
+  EXPECT_TRUE(connection_failed);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineExhaustsAllRetransmissionsOfIFrameBeforeClosingChannel) {
+  constexpr size_t kMaxTransmissions = 255;
+  size_t num_info_frames_sent = 0;
+  bool connection_failed = false;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [&](ByteBufferPtr pdu) {
+        if (pdu->size() >= sizeof(EnhancedControlField) &&
+            pdu->As<EnhancedControlField>().designates_information_frame()) {
+          ++num_info_frames_sent;
+        }
+      },
+      [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  for (size_t i = 0; i < kMaxTransmissions; ++i) {
+    // Not having received an acknowledgement after 2 seconds,
+    // receiver_ready_poll_task_ will fire, and cause us to send a
+    // ReceiverReadyPoll.
+    ASSERT_TRUE(RunLoopFor(zx::sec(2))) << "(i=" << i << ")";
+
+    // The connection should remain open, to allow the peer time to respond to
+    // our poll, and acknowledge the outstanding frame.
+    EXPECT_FALSE(connection_failed);
+
+    // The peer indicates that it has not received any frames.
+    tx_engine.UpdateAckSeq(0, true);
+  }
+
+  // The connection is closed, and we've exhausted kMaxTransmissions.
+  EXPECT_TRUE(connection_failed);
+  EXPECT_EQ(255u, num_info_frames_sent);
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineClosesChannelAfterMaxTransmitsOfIFrameEvenIfRetransmissionsAreDisabled) {
+  constexpr size_t kMaxTransmissions = 1;
+  bool connection_failed = false;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Not having received an acknowledgement after 2 seconds,
+  // receiver_ready_poll_task_ will fire, and cause us to send a
+  // ReceiverReadyPoll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // The connection should remain open, to allow the peer time to respond to our
+  // poll, and acknowledge the outstanding frame.
+  EXPECT_FALSE(connection_failed);
+
+  // The peer indicates that it has not received any frames.
+  tx_engine.UpdateAckSeq(0, true);
+  EXPECT_TRUE(connection_failed);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        EngineRetransmitsMissingFrameOnPollResponse) {
   constexpr size_t kMaxTransmissions = 2;
   ByteBufferPtr last_pdu;

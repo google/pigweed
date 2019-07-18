@@ -175,12 +175,25 @@ uint8_t Engine::NumUnackedFrames() {
 void Engine::RetransmitUnackedData() {
   auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
   ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
-  std::for_each_n(pending_pdus_.begin(), n_to_send, [this](auto& frame) {
-    // TODO(quiche): If we've exhausted max_transmissions_, we should close
-    // the channel.
-    frame.tx_count++;
-    send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(frame.buf));
-  });
+
+  auto cur_frame = pending_pdus_.begin();
+  auto last_frame = std::next(cur_frame, n_to_send);
+  while (cur_frame != last_frame) {
+    ZX_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
+
+    if (cur_frame->tx_count >= max_transmissions_) {
+      ZX_DEBUG_ASSERT(cur_frame->tx_count == max_transmissions_);
+      connection_failure_callback_();
+      return;
+    }
+
+    cur_frame->tx_count++;
+    // TODO(BT-860): If the task is already running, we should not restart it.
+    StartReceiverReadyPollTimer();
+    send_basic_frame_callback_(
+        std::make_unique<DynamicByteBuffer>(cur_frame->buf));
+    ++cur_frame;
+  }
 }
 
 }  // namespace internal
