@@ -7,6 +7,8 @@
 
 #include <fbl/macros.h>
 
+#include <optional>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -35,14 +37,120 @@ enum class PairingAction {
   kRequestPasskey,
 };
 
+// Tracks the pairing state of a peer's BR/EDR link. This drives HCI
+// transactions and user interactions for pairing in order to obtain the highest
+// possible level of link security given the capabilities of the controllers
+// and hosts participating in the pairing.
+//
+// This implements Core Spec v5.0 Vol 2, Part F, Sec 4.2 through Sec 4.4, per
+// logic requirements in Vol 3, Part C, Sec 5.2.2.
+//
+// This tracks both the bonded case (both hosts furnish their Link Keys to their
+// controllers) and the unbonded case (both controllers perform Secure Simple
+// Pairing and deliver the resulting Link Keys to their hosts).
+//
+// Pairing is considered complete when the Link Keys have been used to
+// successfully encrypt the link, at which time pairing may be restarted (e.g.
+// with different capabilities).
+//
+// This state machine navigates the following HCI message sequences, in which
+// both the host subsystem and the Link Manager use knowledge of both peers' IO
+// Capabilities and Authentication Requirements to decide on the same
+// association model.
+// ▶ means command.
+// ◀ means event.
+//
+// Initiator flow
+// --------------
+// Authentication Requested▶
+//     ◀ Link Key Request
+// Link Key Request Reply▶ (skip to "Set Connection Encryption")
+//     or
+// Link Key Request Negative Reply▶ (continue with pairing)
+//     ◀ Command Complete
+//     ◀ IO Capability Request
+// IO Capability Request Reply▶
+//     or
+// IO Capability Request Negative Reply▶ (reject pairing)
+//     ◀ Command Complete
+//     ◀ IO Capability Response
+//     ◀ User Confirmation Request
+//         or
+//     ◀ User Passkey Request
+//         or
+//     ◀ User Passkey Notification
+//         or
+//     ◀ Remote OOB Data Request
+// User Confirmation Request Reply▶
+//     or
+// User Confirmation Request Negative Reply▶ (reject pairing)
+//     or
+// User Passkey Request Reply▶
+//     or
+// User Passkey Request Negative Reply▶ (reject pairing)
+//     or
+// Remote OOB Data Request Reply▶
+//     or
+// Remote OOB Extended Data Request Reply▶
+//     or
+// Remote OOB Data Request Negative Reply▶ (reject pairing)
+//     ◀ Simple Pairing Complete (status may be error)
+//     ◀ Link Key Notification (key may be insufficient)
+//     ◀ Authentication Complete (status may be error)
+// Set Connection Encryption▶
+//     ◀ Command Status
+//     ◀ Encryption Change (status may be error or encryption may be disabled)
+//
+// Responder flow
+// --------------
+//     ◀ IO Capability Response
+//     ◀ IO Capability Request
+// IO Capability Request Reply▶
+//     or
+// IO Capability Request Negative Reply▶ (reject pairing)
+//     ◀ Command Complete
+// Pairing
+//     ◀ User Confirmation Request
+//         or
+//     ◀ User Passkey Request
+//         or
+//     ◀ User Passkey Notification
+//         or
+//     ◀ Remote OOB Data Request
+// User Confirmation Request Reply▶
+//     or
+// User Confirmation Request Negative Reply▶ (reject pairing)
+//     or
+// User Passkey Request Reply▶
+//     or
+// User Passkey Request Negative Reply▶ (reject pairing)
+//     or
+// Remote OOB Data Request Reply▶
+//     or
+// Remote OOB Extended Data Request Reply▶
+//     or
+// Remote OOB Data Request Negative Reply▶ (reject pairing)
+//     ◀ Simple Pairing Complete (status may contain error)
+//     ◀ Link Key Notification (key may be insufficient)
+// Set Connection Encryption▶
+//     ◀ Command Status
+//     ◀ Encryption Change (status may be error or encryption may be disabled)
+//
+// This class is not thread-safe and should only be called on the thread on
+// which it was created.
 class PairingState final {
  public:
-  // Used to report the status of a pairing procedure.
+  // Used to report the status of each pairing procedure on this link. |status|
+  // will contain HostError::kNotSupported if the pairing procedure does not
+  // proceed in the order of events expected.
+  // TODO(xow): Report successful link encryption when implemented.
   using StatusCallback =
       fit::function<void(hci::ConnectionHandle, hci::Status)>;
   PairingState(StatusCallback status_cb);
   ~PairingState() = default;
 
+  // True if there is currently a pairing procedure in progress that the local
+  // device initiated.
   bool initiator() const { return initiator_; }
 
   // Starts pairing against the peer, if pairing is not already in progress.
@@ -55,7 +163,47 @@ class PairingState final {
   };
   [[nodiscard]] InitiatorAction InitiatePairing();
 
+  // Event handlers. Caller must ensure that the event is addressed to the link
+  // for this PairingState.
+
+  // Returns value for IO Capability Request Reply, else std::nullopt for IO
+  // Capability Negative Reply.
+  //
+  // TODO(BT-8): Indicate presence of out-of-band (OOB) data.
+  [[nodiscard]] std::optional<hci::IOCapability> OnIoCapabilityRequest();
+
+  // Caller is not expected to send a response.
   void OnIoCapabilityResponse(hci::IOCapability peer_iocap);
+
+  // |cb| is called with: true to send User Confirmation Request Reply, else
+  // for to send User Confirmation Request Negative Reply. It may not be called
+  // from the same thread that called OnUserConfirmationRequest.
+  using UserConfirmationCallback = fit::callback<void(bool confirm)>;
+  void OnUserConfirmationRequest(uint32_t numeric_value,
+                                 UserConfirmationCallback cb);
+
+  // |cb| is called with: passkey value to send User Passkey Request Reply, else
+  // std::nullopt to send User Passkey Request Negative Reply. It may not be
+  // called from the same thread that called OnUserPasskeyRequest.
+  using UserPasskeyCallback =
+      fit::callback<void(std::optional<uint32_t> passkey)>;
+  void OnUserPasskeyRequest(UserPasskeyCallback cb);
+
+  // Caller is not expected to send a response.
+  void OnUserPasskeyNotification(uint32_t numeric_value);
+
+  // Caller is not expected to send a response.
+  void OnSimplePairingComplete(hci::StatusCode status_code);
+
+  // Caller is not expected to send a response.
+  void OnLinkKeyNotification(const UInt128& link_key,
+                             hci::LinkKeyType key_type);
+
+  // Caller is not expected to send a response.
+  void OnAuthenticationComplete(hci::StatusCode status_code);
+
+  // Handler for hci::Connection::set_encryption_change_callback.
+  void OnEncryptionChange(hci::Status status, bool enabled);
 
  private:
   enum class State {
@@ -91,10 +239,27 @@ class PairingState final {
     kFailed,
   };
 
+  static const char* ToString(State state);
+
   State state() const { return state_; }
 
+  // Called to enable encryption on the link for this peer. Sets |state_| to
+  // kWaitEncryption.
+  void EnableEncryption();
+
+  // Called when an event is received while in a state that doesn't expect that
+  // event. Invokes |status_callback_| with HostError::kNotSupported and sets
+  // |state_| to kFailed. Logs an error using |handler_name| for identification.
+  void FailWithUnexpectedEvent(const char* handler_name);
+
+  // Set to true by locally-initiated pairing and cleared when pairing is reset.
   bool initiator_;
+
+  // State machine representation.
   State state_;
+
+  // Callback that status of this pairing is reported back through.
+  StatusCallback status_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
