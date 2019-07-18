@@ -58,6 +58,11 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // our peer.
   void UpdateReqSeq(uint8_t new_seq);
 
+  // Transmits data that has been queued, but which has never been previously
+  // sent to our peer. As usual, the transmissions are subject to transmit
+  // window constraints.
+  void MaybeSendQueuedData();
+
  private:
   struct PendingPdu {
     PendingPdu(DynamicByteBuffer buf_in)
@@ -140,7 +145,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // The sequence number of the "newest" transmitted frame.
   //
   // This sequence number is updated when a new frame is transmitted. This
-  // sequence number is _not_ updated on retransmissions.
+  // excludes cases where a frame is queued but not transmitted (due to transmit
+  // window limitations), and cases where a frame is retransmitted.
   //
   // This value is useful for determining the number of frames than are
   // in-flight to our peer (frames that have been transmitted but not

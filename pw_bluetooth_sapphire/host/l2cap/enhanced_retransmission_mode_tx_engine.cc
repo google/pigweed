@@ -85,15 +85,22 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
   auto body = frame.mutable_view(sizeof(header));
   frame.WriteObj(header);
   sdu->Copy(&body);
-  last_tx_seq_ = seq_num;
 
   // TODO(BT-773): Limit the size of the queue.
   pending_pdus_.push_back(std::move(frame));
-  SendPdu(&pending_pdus_.back());
+  MaybeSendQueuedData();
   return true;
 }
 
 void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
+  // TODO(quiche): Reconsider this assertion if we allow reconfiguration of
+  // the TX window.
+  ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
+                      "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
+                      "ack_seqnum_ = %u, last_tx_seq_ = %u)",
+                      NumUnackedFrames(), n_frames_in_tx_window_, ack_seqnum_,
+                      last_tx_seq_);
+
   const auto n_frames_acked = NumFramesBetween(ack_seqnum_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
     // TODO(quiche): Consider the best error handling strategy here. Should we
@@ -123,6 +130,28 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
 }
 
 void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
+
+void Engine::MaybeSendQueuedData() {
+  // Find the first PDU that has not already been transmitted (if any).
+  // * This is not necessarily the first PDU, because that may have been
+  //   transmited already, and is just pending acknowledgement.
+  // * This is not necessarily the last PDU, because earlier PDUs may have been
+  //   queued without having been sent over-the-air (due, e.g., to tx_window
+  //   constraints).
+  //
+  // TODO(quiche): Consider if there's a way to do this that isn't O(n).
+  auto it = std::find_if(
+      pending_pdus_.begin(), pending_pdus_.end(),
+      [](const auto& pending_pdu) { return pending_pdu.tx_count == 0; });
+
+  while (it != pending_pdus_.end() &&
+         NumUnackedFrames() < n_frames_in_tx_window_) {
+    ZX_DEBUG_ASSERT(it->tx_count == 0);
+    SendPdu(&*it);
+    last_tx_seq_ = it->buf.As<SimpleInformationFrameHeader>().tx_seq();
+    ++it;
+  }
+}
 
 void Engine::StartReceiverReadyPollTimer() {
   ZX_DEBUG_ASSERT(!monitor_task_.is_pending());
@@ -163,10 +192,22 @@ uint8_t Engine::GetNextSeqnum() {
 }
 
 uint8_t Engine::NumUnackedFrames() {
-  return NumFramesBetween(
-      ack_seqnum_,
-      last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
-  );
+  if (pending_pdus_.empty()) {
+    // Initially, |ack_seqnum_ == last_tx_seq_ == 0|, but the number of
+    // unacknowledged frames is 0, not 1.
+    return 0;
+  } else if (pending_pdus_.front().tx_count == 0) {
+    // While we have some data queued, none of that data has been sent
+    // over-the-air. This might happen, e.g., transiently in QueueSdu().
+    return 0;
+  } else {
+    // Having ascertained that some data _is_ in flight, the number of frames in
+    // flight is given by the expression below.
+    return NumFramesBetween(
+        ack_seqnum_,
+        last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
+    );
+  }
 }
 
 void Engine::SendPdu(PendingPdu* pdu) {

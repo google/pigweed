@@ -162,11 +162,12 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        QueueSduRollsOverSequenceNumber) {
+  constexpr size_t kTxWindow = 63;  // Max possible value
   const auto payload = CreateStaticByteBuffer(1);
   ByteBufferPtr last_pdu;
   auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
-                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+                     kTxWindow, tx_callback, NoOpFailureCallback);
 
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
@@ -179,9 +180,48 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
       0,   // SAR bits, ReqSeq
       1);  // Payload
   last_pdu = nullptr;
+  // Free up space for more transmissions. We need room for the 64th frame from
+  // above (since the TxWindow is 63), and the new 0th frame. Hence we
+  // acknowledge original frames 0 and 1.
+  tx_engine.UpdateAckSeq(2, false);
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(expected_pdu, *last_pdu));
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduDoesNotTransmitBeyondTxWindow) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_pdus);
+
+  n_pdus = 0;
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  EXPECT_EQ(0u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduDoesNotTransmitBeyondTxWindowEvenIfQueueWrapsSequenceNumbers) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_pdus);
+
+  constexpr size_t kMaxSeq = 64;
+  n_pdus = 0;
+  for (size_t i = 0; i < kMaxSeq; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+    ASSERT_EQ(0u, n_pdus);
+  }
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
@@ -949,6 +989,16 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   RunLoopUntilIdle();
   tx_engine.UpdateAckSeq(1, true);
   tx_engine.UpdateAckSeq(2, true);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotCrashOnSpuriousAckBeforeAnyDataHasBeenSent) {
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, NoOpFailureCallback);
+  for (size_t i = 0; i <= EnhancedControlField::kMaxSeqNum; ++i) {
+    tx_engine.UpdateAckSeq(i, true);
+  }
 }
 
 }  // namespace
