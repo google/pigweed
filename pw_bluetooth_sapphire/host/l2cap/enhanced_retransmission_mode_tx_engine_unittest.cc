@@ -547,6 +547,302 @@ TEST_F(
   EXPECT_TRUE(connection_failed);
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineRetransmitsMissingFrameOnPollResponse) {
+  constexpr size_t kMaxTransmissions = 2;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) { last_pdu = std::move(pdu); };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  last_pdu = nullptr;
+
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));  // receiver_ready_poll_task_
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(0, true);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(0u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineRetransmitsAllMissingFramesOnPollResponse) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 63;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Send a TxWindow's worth of frames.
+  for (size_t i = 0; i < kTxWindow; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(0, true);
+  EXPECT_EQ(kTxWindow, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(kTxWindow - 1,
+            last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineRetransmitsAllMissingFramesOnPollResponseWithWrappedSequenceNumber) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 63;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Send a TxWindow's worth of frames.
+  for (size_t i = 0; i < kTxWindow; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+
+  // Acknowledge the first 32 of these frames (with sequence numbers 0...31).
+  tx_engine.UpdateAckSeq(32, false);
+
+  // Queue 32 new frames (with sequence numbers 63, 0 ... 30).
+  for (size_t i = 0; i < 32; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and then clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  // Repeat the earlier acknowledgement. This indicates that the peer has
+  // not received frame 32.
+  tx_engine.UpdateAckSeq(32, true);
+
+  // We expect to retransmit frames 32...63, and then 0...30. That's 63 frames
+  // in total.
+  EXPECT_EQ(63u, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(30u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineProperlyHandlesPartialAckWithWrappedSequenceNumber) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 63;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Send a TxWindow's worth of frames.
+  for (size_t i = 0; i < kTxWindow; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+
+  // Acknowledge the first 62 of these frames (with sequence numbers 0...61).
+  tx_engine.UpdateAckSeq(62, false);
+
+  // Queue 62 new frames. These frames have sequence numebrs 63, 0...60.
+  // (Sequence number 62 was used when we queued the first batch of frames
+  // above.)
+  for (size_t i = 0; i < 62; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and then clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  // Acknowledge an additional 5 frames (with sequence numbers 62, 63, 0, 1, 2).
+  tx_engine.UpdateAckSeq(3, true);
+
+  // Verify that all unacknowledged frames are retransmitted.
+  EXPECT_EQ(58u, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(60u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotRetransmitFramesBeyondTxWindow) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 32;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Queue two TxWindow's worth of frames. These have sequence numbers 0...63.
+  for (size_t i = 0; i < 2 * kTxWindow; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  tx_engine.UpdateAckSeq(0, true);
+  EXPECT_EQ(kTxWindow, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  EXPECT_EQ(kTxWindow - 1,
+            last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotRetransmitFramesBeyondTxWindowWhenWindowWraps) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 48;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Queue one TxWindow's worth of frames. This advances the sequence numbers,
+  // so that further transmissions can wrap.
+  for (size_t i = 0; i < 48; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  tx_engine.UpdateAckSeq(48, false);
+  RunLoopUntilIdle();
+
+  // Queue another TxWindow's worth of frames. These have sequence
+  // numbers 48..63, and 0..31. These _should_ be retransmitted at the next
+  // UpdateAckSeq() call.
+  for (size_t i = 0; i < 48; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Queue a few more frames, with sequence numbers 32..39. These should _not_
+  // be retransmitted at the next UpdateAckSeq() call.
+  for (size_t i = 0; i < 8; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  // Report that the peer has not received frame 48. This should trigger
+  // retranmissions of unacknowledged frames within the TxWindow.
+  tx_engine.UpdateAckSeq(48, true);
+
+  // We expect to retransmit frames 48..63 and 0..31. The other frames are
+  // beyond the transmit window.
+  EXPECT_EQ(48u, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(31u, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotRetransmitPreviouslyAckedFramesOnPollResponse) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 2;
+  size_t n_pdus = 0;
+  ByteBufferPtr last_pdu;
+  auto tx_callback = [&](auto pdu) {
+    ++n_pdus;
+    last_pdu = std::move(pdu);
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, and clear out accumulated callback
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  n_pdus = 0;
+  last_pdu = nullptr;
+
+  constexpr size_t kPollResponseReqSeq = 1;
+  tx_engine.UpdateAckSeq(kPollResponseReqSeq, true);
+  EXPECT_EQ(kTxWindow - kPollResponseReqSeq, n_pdus);
+  ASSERT_TRUE(last_pdu);
+  ASSERT_GE(last_pdu->size(), sizeof(SimpleInformationFrameHeader));
+  ASSERT_TRUE(
+      last_pdu->As<EnhancedControlField>().designates_information_frame());
+  EXPECT_EQ(1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotCrashOnAckOfMoreFramesThanAreOutstanding) {
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, NoOpFailureCallback);
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  tx_engine.UpdateAckSeq(2, true);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineDoesNotCrashOnSpuriousAckAfterValidAck) {
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto) {}, NoOpFailureCallback);
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  tx_engine.UpdateAckSeq(1, true);
+  tx_engine.UpdateAckSeq(2, true);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

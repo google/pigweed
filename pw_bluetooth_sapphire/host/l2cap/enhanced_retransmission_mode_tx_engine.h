@@ -5,7 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_TX_ENGINE_H_
 
-#include <fbl/macros.h>
+#include <list>
 
 #include "lib/async/cpp/task.h"
 #include "lib/fit/function.h"
@@ -49,6 +49,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   // The value of |is_final| should reflect the 'F' bit in header of the frame
   // which led to this call.
+  //
+  // * This _may_ trigger retransmission of previously transmitted data.
+  // * This _may_ cause the (initial) transmission of queued data.
   void UpdateAckSeq(uint8_t new_seq, bool is_final);
 
   // Updates the Engine's knowledge of the next frame we expect to receive from
@@ -56,6 +59,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   void UpdateReqSeq(uint8_t new_seq);
 
  private:
+  struct PendingPdu {
+    PendingPdu(DynamicByteBuffer buf_in)
+        : buf(std::move(buf_in)), tx_count(0){};
+    DynamicByteBuffer buf;
+    uint8_t tx_count;
+  };
+
   // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume
   // there is no flush timeout on the underlying logical link.
   //
@@ -98,10 +108,12 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Return and consume the next sequence number.
   uint8_t GetNextSeqnum();
 
-  const uint8_t max_transmissions_;
+  // Returns the number of frames that have been transmitted but not yet
+  // acknowledged.
+  uint8_t NumUnackedFrames();
 
-  // TODO(quiche): Remove |maybe_unused| after adding transmit window logic.
-  [[maybe_unused]] const uint8_t n_frames_in_tx_window_;
+  const uint8_t max_transmissions_;
+  const uint8_t n_frames_in_tx_window_;
 
   // Invoked when the connection encounters a fatal error.
   const ConnectionFailureCallback connection_failure_callback_;
@@ -120,6 +132,20 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t next_seqnum_;  // (AKA NextTxSeq)
 
+  // The sequence number of the "newest" transmitted frame.
+  //
+  // This sequence number is updated when a new frame is transmitted. This
+  // sequence number is _not_ updated on retransmissions.
+  //
+  // This value is useful for determining the number of frames than are
+  // in-flight to our peer (frames that have been transmitted but not
+  // acknowledged).
+  //
+  // We assume that the Extended Window Size option is _not_ enabled. In such
+  // cases, the sequence number is a 6-bit counter that wraps on overflow. See
+  // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
+  uint8_t last_tx_seq_;  // (AKA TxSeq)
+
   // The sequence number we expect for the next packet sent _to_ us.
   //
   // We assume that the Extended Window Size option is _not_ enabled. In such
@@ -129,6 +155,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   uint8_t n_receiver_ready_polls_sent_;
 
+  std::list<PendingPdu> pending_pdus_;
   async::Task receiver_ready_poll_task_;
   async::Task monitor_task_;
   fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine>
