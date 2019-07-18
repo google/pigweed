@@ -112,6 +112,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // acknowledged.
   uint8_t NumUnackedFrames();
 
+  void SendPdu(PendingPdu* pdu);
+
   // Retransmits frames from |pending_pdus_|.
   void RetransmitUnackedData();
 

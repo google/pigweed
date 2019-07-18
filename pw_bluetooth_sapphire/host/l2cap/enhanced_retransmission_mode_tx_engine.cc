@@ -81,18 +81,15 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
 
   const auto seq_num = GetNextSeqnum();
   SimpleInformationFrameHeader header(seq_num);
-  auto frame =
-      std::make_unique<DynamicByteBuffer>(sizeof(header) + sdu->size());
-  auto body = frame->mutable_view(sizeof(header));
-  frame->WriteObj(header);
+  DynamicByteBuffer frame(sizeof(header) + sdu->size());
+  auto body = frame.mutable_view(sizeof(header));
+  frame.WriteObj(header);
   sdu->Copy(&body);
   last_tx_seq_ = seq_num;
 
   // TODO(BT-773): Limit the size of the queue.
-  pending_pdus_.push_back(DynamicByteBuffer(*frame));
-  pending_pdus_.back().tx_count++;
-  StartReceiverReadyPollTimer();
-  send_basic_frame_callback_(std::move(frame));
+  pending_pdus_.push_back(std::move(frame));
+  SendPdu(&pending_pdus_.back());
   return true;
 }
 
@@ -172,6 +169,13 @@ uint8_t Engine::NumUnackedFrames() {
   );
 }
 
+void Engine::SendPdu(PendingPdu* pdu) {
+  ZX_DEBUG_ASSERT(pdu);
+  pdu->tx_count++;
+  StartReceiverReadyPollTimer();
+  send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
+}
+
 void Engine::RetransmitUnackedData() {
   auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
   ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
@@ -187,11 +191,8 @@ void Engine::RetransmitUnackedData() {
       return;
     }
 
-    cur_frame->tx_count++;
     // TODO(BT-860): If the task is already running, we should not restart it.
-    StartReceiverReadyPollTimer();
-    send_basic_frame_callback_(
-        std::make_unique<DynamicByteBuffer>(cur_frame->buf));
+    SendPdu(&*cur_frame);
     ++cur_frame;
   }
 }
