@@ -117,16 +117,8 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
   }
 
   if (is_final) {
-    auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
-    ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
-    std::for_each_n(pending_pdus_.begin(), n_to_send, [this](auto& frame) {
-      // TODO(quiche): If we've exhausted max_transmissions_, we should close
-      // the channel.
-      frame.tx_count++;
-      send_basic_frame_callback_(
-          std::make_unique<DynamicByteBuffer>(frame.buf));
-    });
     monitor_task_.Cancel();
+    RetransmitUnackedData();
   }
 
   // TODO(quiche): Restart the receiver_ready_poll_task_, if there's any
@@ -178,6 +170,17 @@ uint8_t Engine::NumUnackedFrames() {
       ack_seqnum_,
       last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
   );
+}
+
+void Engine::RetransmitUnackedData() {
+  auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
+  ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
+  std::for_each_n(pending_pdus_.begin(), n_to_send, [this](auto& frame) {
+    // TODO(quiche): If we've exhausted max_transmissions_, we should close
+    // the channel.
+    frame.tx_count++;
+    send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(frame.buf));
+  });
 }
 
 }  // namespace internal

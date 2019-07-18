@@ -112,6 +112,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // acknowledged.
   uint8_t NumUnackedFrames();
 
+  // Retransmits frames from |pending_pdus_|.
+  void RetransmitUnackedData();
+
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;
 
