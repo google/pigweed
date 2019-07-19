@@ -123,8 +123,13 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
 
   if (is_final) {
     monitor_task_.Cancel();
+  }
+
+  if (is_final && !remote_is_busy_) {
     RetransmitUnackedData();
   }
+
+  MaybeSendQueuedData();
 
   // TODO(quiche): Restart the receiver_ready_poll_task_, if there's any
   // remaining unacknowledged data.

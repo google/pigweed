@@ -126,7 +126,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   void SendPdu(PendingPdu* pdu);
 
-  // Retransmits frames from |pending_pdus_|.
+  // Retransmits frames from |pending_pdus_|. The caller must ensure that
+  // |!remote_is_busy_|.
   void RetransmitUnackedData();
 
   const uint8_t max_transmissions_;

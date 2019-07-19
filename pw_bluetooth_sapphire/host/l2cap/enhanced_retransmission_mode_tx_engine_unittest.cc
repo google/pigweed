@@ -1016,6 +1016,85 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       UpdateAckSeqTransmitsQueuedDataWhenPossible) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, n_pdus);
+
+  n_pdus = 0;
+  tx_engine.UpdateAckSeq(1, false);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       UpdateAckSeqTransmissionOfQueuedDataRespectsTxWindow) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, n_pdus);
+
+  n_pdus = 0;
+  tx_engine.UpdateAckSeq(1, false);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       NonFinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, n_pdus);
+
+  n_pdus = 0;
+  tx_engine.SetRemoteBusy();
+  tx_engine.UpdateAckSeq(1, false);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       FinalUpdateAckSeqDoesNotTransmitQueudFramesWhenRemoteIsBusy) {
+  constexpr size_t kTxWindow = 1;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, n_pdus);
+
+  n_pdus = 0;
+  tx_engine.SetRemoteBusy();
+  tx_engine.UpdateAckSeq(1, true);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataTransmitsAllQueuedFramesWithinTxWindow) {
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
@@ -1136,6 +1215,45 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   // without transmitting the queued data. See Core Spec v5.0, Volume 3, Part A,
   // Table 8.7, row for "Recv RR (P=1)" for an example of such an operation.
   EXPECT_EQ((std::vector<uint8_t>{0, 1}), pdu_seq_numbers);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       UpdateAckSeqRetransmitsUnackedFramesBeforeTransmittingQueuedFrames) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 63;
+  std::vector<uint8_t> pdu_seq_numbers;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      pdu_seq_numbers.push_back(
+          pdu->As<SimpleInformationFrameHeader>().tx_seq());
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  // Send out two frames.
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, pdu_seq_numbers.size());
+  pdu_seq_numbers.clear();
+
+  // Indicate the remote is busy, and queue a third frame.
+  tx_engine.SetRemoteBusy();
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(pdu_seq_numbers.empty());
+
+  // Clear the busy condition, and then report the new ack sequence number.
+  // Because the ack only acknowledges the first frame, the second frame should
+  // be retransmitted. And that retransmission should come before the (initial)
+  // transmission of the third frame.
+  tx_engine.ClearRemoteBusy();
+  tx_engine.UpdateAckSeq(1, true);
+  RunLoopUntilIdle();
+  EXPECT_EQ((std::vector{uint8_t(1), uint8_t(2)}), pdu_seq_numbers);
 }
 
 }  // namespace
