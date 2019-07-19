@@ -43,6 +43,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
       last_tx_seq_(0),
       req_seqnum_(0),
       n_receiver_ready_polls_sent_(0),
+      remote_is_busy_(false),
       weak_factory_(this) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
   receiver_ready_poll_task_.set_handler(
@@ -131,7 +132,17 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
 
 void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
 
+void Engine::SetRemoteBusy() {
+  // TODO(BT-774): Signal backpressure to the Channel.
+  remote_is_busy_ = true;
+  receiver_ready_poll_task_.Cancel();
+}
+
 void Engine::MaybeSendQueuedData() {
+  if (remote_is_busy_) {
+    return;
+  }
+
   // Find the first PDU that has not already been transmitted (if any).
   // * This is not necessarily the first PDU, because that may have been
   //   transmited already, and is just pending acknowledgement.

@@ -1001,6 +1001,19 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   }
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, n_pdus);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
