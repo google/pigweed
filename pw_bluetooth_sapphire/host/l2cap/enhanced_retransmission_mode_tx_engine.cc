@@ -150,7 +150,7 @@ void Engine::SetRemoteBusy() {
 }
 
 void Engine::MaybeSendQueuedData() {
-  if (remote_is_busy_) {
+  if (remote_is_busy_ || monitor_task_.is_pending()) {
     return;
   }
 

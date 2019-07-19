@@ -1256,6 +1256,73 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ((std::vector{uint8_t(1), uint8_t(2)}), pdu_seq_numbers);
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduDoesNotTransmitNewFrameWhenEngineIsAwaitingPollResponse) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 3;
+  std::vector<uint8_t> pdu_seq_numbers;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      pdu_seq_numbers.push_back(
+          pdu->As<SimpleInformationFrameHeader>().tx_seq());
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Queue a new frame.
+  pdu_seq_numbers.clear();
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  EXPECT_EQ(std::vector<uint8_t>(), pdu_seq_numbers);
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    NonFinalUpdateAckSeqDoesNotTransmitNewFrameWhenEngineIsAwaitingPollResponse) {
+  constexpr size_t kMaxTransmissions = 2;
+  constexpr size_t kTxWindow = 1;
+  std::vector<uint8_t> pdu_seq_numbers;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      pdu_seq_numbers.push_back(
+          pdu->As<SimpleInformationFrameHeader>().tx_seq());
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+                     tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Acknowledge the first frame, making room for the transmission of the second
+  // frame.
+  pdu_seq_numbers.clear();
+  tx_engine.UpdateAckSeq(1, false);
+  RunLoopUntilIdle();
+
+  // Because we're still in the WAIT_F state, the second frame should _not_ be
+  // transmitted.
+  EXPECT_EQ(pdu_seq_numbers.end(),
+            std::find(pdu_seq_numbers.begin(), pdu_seq_numbers.end(), 1));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
