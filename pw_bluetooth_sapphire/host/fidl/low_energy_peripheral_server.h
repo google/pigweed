@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_LOW_ENERGY_PERIPHERAL_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_LOW_ENERGY_PERIPHERAL_SERVER_H_
 
-#include <fbl/macros.h>
-#include <fuchsia/bluetooth/le/cpp/fidl.h>
-
 #include <memory>
 #include <unordered_map>
+
+#include <fbl/macros.h>
+#include <fuchsia/bluetooth/le/cpp/fidl.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -58,16 +58,11 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
   };
 
   // fuchsia::bluetooth::le::Peripheral overrides:
-  void StartAdvertising(fuchsia::bluetooth::le::AdvertisingData advertising_data,
-                        fuchsia::bluetooth::le::AdvertisingDataPtr scan_result, bool connectable,
-                        uint32_t interval, bool anonymous,
-                        StartAdvertisingCallback callback) override;
   void StartAdvertisingDeprecated(
       fuchsia::bluetooth::le::AdvertisingDataDeprecated advertising_data,
       fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr scan_result, bool connectable,
       uint32_t interval, bool anonymous, StartAdvertisingDeprecatedCallback callback) override;
 
-  void StopAdvertising(::std::string advertisement_id, StopAdvertisingCallback callback) override;
   void StopAdvertisingDeprecated(::std::string advertisement_id,
                                  StopAdvertisingDeprecatedCallback callback) override;
   bool StopAdvertisingInternal(bt::gap::AdvertisementId id);

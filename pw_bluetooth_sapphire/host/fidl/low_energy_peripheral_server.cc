@@ -52,20 +52,6 @@ std::optional<bt::gap::AdvertisementId> AdvertisementIdFromString(const std::str
   return bt::gap::AdvertisementId(value);
 }
 
-// TODO(BT-812): Remove once all clients refer to the deprecated type.
-AdvertisingDataDeprecated ConvertToDeprecated(AdvertisingData data) {
-  AdvertisingDataDeprecated depr;
-  depr.name = std::move(data.name);
-  depr.tx_power_level = std::move(data.tx_power_level);
-  depr.appearance = std::move(data.appearance);
-  depr.service_uuids = std::move(data.service_uuids);
-  depr.service_data = std::move(data.service_data);
-  depr.manufacturer_specific_data = std::move(data.manufacturer_specific_data);
-  depr.solicited_service_uuids = std::move(data.solicited_service_uuids);
-  depr.uris = std::move(data.uris);
-  return depr;
-}
-
 }  // namespace
 
 LowEnergyPeripheralServer::InstanceData::InstanceData(bt::gap::AdvertisementId id,
@@ -102,20 +88,6 @@ LowEnergyPeripheralServer::~LowEnergyPeripheralServer() {
   for (const auto& it : instances_) {
     advertising_manager->StopAdvertising(it.first);
   }
-}
-
-void LowEnergyPeripheralServer::StartAdvertising(AdvertisingData advertising_data,
-                                                 AdvertisingDataPtr scan_result, bool connectable,
-                                                 uint32_t interval, bool anonymous,
-                                                 StartAdvertisingCallback callback) {
-  AdvertisingDataDeprecated ad = ConvertToDeprecated(std::move(advertising_data));
-  AdvertisingDataDeprecatedPtr scrsp;
-  if (scan_result) {
-    scrsp = AdvertisingDataDeprecated::New();
-    *scrsp = ConvertToDeprecated(std::move(*scan_result));
-  }
-  StartAdvertisingDeprecated(std::move(ad), std::move(scrsp), connectable, interval, anonymous,
-                             std::move(callback));
 }
 
 void LowEnergyPeripheralServer::StartAdvertisingDeprecated(
@@ -168,11 +140,6 @@ void LowEnergyPeripheralServer::StartAdvertisingDeprecated(
   advertising_manager->StartAdvertising(ad_data, scan_data, std::move(connect_cb),
                                         zx::msec(interval), anonymous,
                                         std::move(advertising_status_cb));
-}
-
-void LowEnergyPeripheralServer::StopAdvertising(::std::string id,
-                                                StopAdvertisingCallback callback) {
-  StopAdvertisingDeprecated(std::move(id), std::move(callback));
 }
 
 void LowEnergyPeripheralServer::StopAdvertisingDeprecated(
