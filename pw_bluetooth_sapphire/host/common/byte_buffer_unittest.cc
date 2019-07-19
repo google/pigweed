@@ -263,6 +263,56 @@ TEST(ByteBufferTest, ByteBufferEqualitySuccess) {
   EXPECT_TRUE(kData0 == kData1);
 }
 
+TEST(ByteBufferTest, ByteBufferAsFundamental) {
+  EXPECT_EQ(191u, CreateStaticByteBuffer(191, 25).As<uint8_t>());
+}
+
+TEST(ByteBufferTest, ByteBufferAsStruct) {
+  const auto data = CreateStaticByteBuffer(10, 12);
+  struct point {
+    uint8_t x;
+    uint8_t y;
+  };
+  EXPECT_EQ(10, data.As<point>().x);
+  EXPECT_EQ(12, data.As<point>().y);
+}
+
+TEST(ByteBufferTest, ByteBufferAsArray) {
+  const auto buf = CreateStaticByteBuffer(191, 25);
+  const auto array = buf.As<uint8_t[2]>();
+  EXPECT_EQ(191, array[0]);
+  EXPECT_EQ(25, array[1]);
+}
+
+TEST(ByteBufferTest, MutableByteBufferAsMutableFundamental) {
+  auto data = CreateStaticByteBuffer(10, 12);
+  ++data.AsMutable<uint8_t>();
+  EXPECT_EQ(11, data[0]);
+}
+
+TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
+  auto data = CreateStaticByteBuffer(10, 12);
+  struct point {
+    uint8_t x;
+    uint8_t y;
+  };
+  ++data.AsMutable<point>().x;
+  ++data.AsMutable<point>().y;
+
+  const auto expected_data = CreateStaticByteBuffer(11, 13);
+  EXPECT_EQ(expected_data, data);
+}
+
+TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
+  auto buf = CreateStaticByteBuffer(10, 12);
+  auto array = buf.AsMutable<uint8_t[2]>();
+  ++array[0];
+  ++array[1];
+
+  EXPECT_EQ(11, buf[0]);
+  EXPECT_EQ(13, buf[1]);
+}
+
 TEST(ByteBufferTest, MutableByteBufferWrite) {
   const auto kData0 = CreateStaticByteBuffer('T', 'e', 's', 't');
   const auto kData1 = CreateStaticByteBuffer('F', 'o', 'o');

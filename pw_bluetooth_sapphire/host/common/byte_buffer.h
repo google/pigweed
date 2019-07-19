@@ -124,6 +124,14 @@ class MutableByteBuffer : public ByteBuffer {
     return mutable_data()[pos];
   }
 
+  // Converts the underlying buffer to a mutable reference to the given type,
+  // with bounds checking. The buffer is allowed to be larger than T.
+  template <typename T>
+  T& AsMutable() {
+    ZX_ASSERT(size() >= sizeof(T));
+    return *reinterpret_cast<T*>(mutable_data());
+  }
+
   // Writes the contents of |data| into this buffer starting at |pos|.
   inline void Write(const ByteBuffer& data, size_t pos = 0) {
     Write(data.data(), data.size(), pos);
