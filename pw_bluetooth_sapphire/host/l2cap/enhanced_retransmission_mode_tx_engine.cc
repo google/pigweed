@@ -132,6 +132,12 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
 
 void Engine::UpdateReqSeq(uint8_t new_seq) { req_seqnum_ = new_seq; }
 
+void Engine::ClearRemoteBusy() {
+  // TODO(quiche): Maybe clear backpressure on the Channel (subject to TxWindow
+  // contraints).
+  remote_is_busy_ = false;
+}
+
 void Engine::SetRemoteBusy() {
   // TODO(BT-774): Signal backpressure to the Channel.
   remote_is_busy_ = true;
@@ -229,6 +235,12 @@ void Engine::SendPdu(PendingPdu* pdu) {
 }
 
 void Engine::RetransmitUnackedData() {
+  // The receive engine should have cleared the remote busy condition before
+  // calling any method that would cause us (the transmit engine) to retransmit
+  // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
+  // "Recv REJ (F=0)".
+  ZX_DEBUG_ASSERT(!remote_is_busy_);
+
   auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
   ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
 

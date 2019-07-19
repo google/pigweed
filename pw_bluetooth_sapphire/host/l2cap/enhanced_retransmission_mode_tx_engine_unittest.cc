@@ -172,6 +172,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   constexpr size_t kMaxSeq = 64;
   for (size_t i = 0; i < kMaxSeq; ++i) {
     tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
+    tx_engine.UpdateAckSeq((i + 1) % kMaxSeq, false);
   }
 
   // See Core Spec v5.0, Volume 3, Part A, Table 3.2.
@@ -1012,6 +1013,129 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunLoopUntilIdle();
   EXPECT_EQ(0u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       MaybeSendQueuedDataTransmitsAllQueuedFramesWithinTxWindow) {
+  constexpr size_t kTxWindow = 63;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  for (size_t i = 0; i < kTxWindow; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+  ASSERT_EQ(0u, n_pdus);
+
+  tx_engine.ClearRemoteBusy();
+  tx_engine.MaybeSendQueuedData();
+  RunLoopUntilIdle();
+  EXPECT_EQ(kTxWindow, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
+  constexpr size_t kTxWindow = 32;
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  for (size_t i = 0; i < kTxWindow + 1; ++i) {
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+  RunLoopUntilIdle();
+  ASSERT_EQ(0u, n_pdus);
+
+  tx_engine.ClearRemoteBusy();
+  tx_engine.MaybeSendQueuedData();
+  RunLoopUntilIdle();
+  EXPECT_EQ(kTxWindow, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       MaybeSendQueuedDataRespectsRemoteBusy) {
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(0u, n_pdus);
+
+  tx_engine.MaybeSendQueuedData();
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       MaybeSendQueuedDataDoesNotCrashWhenCalledWithoutPendingPdus) {
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+      [](auto pdu) {}, NoOpFailureCallback);
+  tx_engine.MaybeSendQueuedData();
+  RunLoopUntilIdle();
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  ASSERT_EQ(0u, n_pdus);
+
+  tx_engine.ClearRemoteBusy();
+  tx_engine.MaybeSendQueuedData();
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, n_pdus);
+  n_pdus = 0;
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, n_pdus);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       QueueSduMaintainsSduOrderingAfterClearRemoteBusy) {
+  std::vector<uint8_t> pdu_seq_numbers;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      pdu_seq_numbers.push_back(
+          pdu->As<SimpleInformationFrameHeader>().tx_seq());
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.SetRemoteBusy();
+  tx_engine.QueueSdu(
+      std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=0
+  RunLoopUntilIdle();
+  ASSERT_TRUE(pdu_seq_numbers.empty());
+
+  tx_engine.ClearRemoteBusy();
+  tx_engine.QueueSdu(
+      std::make_unique<DynamicByteBuffer>(kDefaultPayload));  // seq=1
+  RunLoopUntilIdle();
+
+  // This requirement isn't in the specification directly. But it seems
+  // necessary given that we can sometimes exit the remote-busy condition
+  // without transmitting the queued data. See Core Spec v5.0, Volume 3, Part A,
+  // Table 8.7, row for "Recv RR (P=1)" for an example of such an operation.
+  EXPECT_EQ((std::vector<uint8_t>{0, 1}), pdu_seq_numbers);
 }
 
 }  // namespace

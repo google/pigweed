@@ -58,13 +58,16 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // our peer.
   void UpdateReqSeq(uint8_t new_seq);
 
+  // Informs the Engine that the peer is able to receive frames.
+  void ClearRemoteBusy();
+
   // Informs the Engine that the peer is unable to receive additional frames at
   // this time.
   void SetRemoteBusy();
 
   // Transmits data that has been queued, but which has never been previously
-  // sent to our peer. As usual, the transmissions are subject to remote-busy
-  // and transmit window constraints.
+  // sent to our peer. The transmissions are subject to remote-busy and transmit
+  // window constraints.
   void MaybeSendQueuedData();
 
  private:
