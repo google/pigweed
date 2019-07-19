@@ -237,6 +237,8 @@ uint8_t Engine::NumUnackedFrames() {
 
 void Engine::SendPdu(PendingPdu* pdu) {
   ZX_DEBUG_ASSERT(pdu);
+  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_request_seq_num(
+      req_seqnum_);
   pdu->tx_count++;
   StartReceiverReadyPollTimer();
   send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));

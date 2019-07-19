@@ -1384,6 +1384,91 @@ TEST_F(
   EXPECT_TRUE(connection_failed);
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       TransmissionOfPduIncludesRequestSeqNum) {
+  uint8_t outbound_req_seq = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      outbound_req_seq =
+          pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.UpdateReqSeq(5);
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(5u, outbound_req_seq);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       DeferredTransmissionOfPduIncludesCurrentRequestSeqNum) {
+  constexpr size_t kTxWindow = 1;
+  uint8_t outbound_req_seq = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      outbound_req_seq =
+          pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions,
+                     kTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  tx_engine.UpdateReqSeq(5);
+  tx_engine.UpdateAckSeq(1, true);  // Peer acks first PDU.
+  RunLoopUntilIdle();
+
+  // The second PDU should have been transmitted with ReqSeq = 5.
+  EXPECT_EQ(5u, outbound_req_seq);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       RetransmissionOfPduIncludesCurrentSeqNum) {
+  constexpr size_t kMaxTransmissions = 2;
+  uint8_t outbound_req_seq = 0;
+  size_t n_info_frames = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+      outbound_req_seq =
+          pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+    }
+  };
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions,
+                     kDefaultTxWindow, tx_callback, NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, outbound_req_seq);
+
+  // The receive engine reports that it has received new data from our peer.
+  tx_engine.UpdateReqSeq(10);
+
+  // Let receiver_ready_poll_task_ fire. This triggers us to query if our peer
+  // has received our data.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Our peer indicates that it has not received our data.
+  tx_engine.UpdateAckSeq(0, true);
+  RunLoopUntilIdle();
+
+  // Our retransmission should include our current request sequence number.
+  EXPECT_EQ(2u, n_info_frames);
+  EXPECT_EQ(10u, outbound_req_seq);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
