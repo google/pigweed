@@ -36,7 +36,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // transmission; see tx_engine.h for further detail.
   //
   // The engine will invoke |connection_failure_callback| when a fatal error
-  // occurs on this connection. This callback will never occur synchronously.
+  // occurs on this connection. This callback _may_ occur synchronously. For
+  // example, a call to UpdateAckSeq() may synchronously invoke
+  // |connection_failure_callback|.
   EnhancedRetransmissionModeTxEngine(
       ChannelId channel_id, uint16_t tx_mtu, uint8_t max_transmissions,
       uint8_t n_frames_in_tx_window,
@@ -126,9 +128,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   void SendPdu(PendingPdu* pdu);
 
-  // Retransmits frames from |pending_pdus_|. The caller must ensure that
-  // |!remote_is_busy_|.
-  void RetransmitUnackedData();
+  // Retransmits frames from |pending_pdus_|. Returns |this| on success, or
+  // nullptr if a fatal error occurred.
+  //
+  // Notes:
+  // * The caller must ensure that !remote_is_busy_|.
+  // * When |nullptr| is returned, |this| may be invalid.
+  [[nodiscard]] EnhancedRetransmissionModeTxEngine* RetransmitUnackedData();
 
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;

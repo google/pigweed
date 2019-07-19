@@ -1323,6 +1323,67 @@ TEST_F(
             std::find(pdu_seq_numbers.begin(), pdu_seq_numbers.end(), 1));
 }
 
+// Note: to make the most of this test, the unit tests should be built with
+// ASAN.
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineDoesNotCrashIfExhaustionOfMaxTransmitForIFrameCausesEngineDestruction) {
+  constexpr size_t kMaxTransmissions = 1;
+  constexpr size_t kTxWindow = 2;
+  bool connection_failed = false;
+  std::unique_ptr<TxEngine> tx_engine = std::make_unique<TxEngine>(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, [](auto) {},
+      [&] {
+        connection_failed = true;
+        tx_engine.reset();
+      });
+
+  // Queue three SDUs, of which two should be transmitted immediately.
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire. This moves the engine into the 'WAIT_F'
+  // state.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Acknowledge the first frame, making room for the transmission of the third
+  // frame. If the code is buggy, we may encounter use-after-free errors here.
+  tx_engine->UpdateAckSeq(1, true);
+  RunLoopUntilIdle();
+
+  // Because we only allow one transmission, the connection should have failed.
+  EXPECT_TRUE(connection_failed);
+}
+
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    EngineDoesNotCrashIfExhaustionOfMaxTransmitForReceiverReadyPollCausesEngineDestruction) {
+  constexpr size_t kMaxTransmissions = 1;
+  bool connection_failed = false;
+  std::unique_ptr<TxEngine> tx_engine = std::make_unique<TxEngine>(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow,
+      [](auto) {},
+      [&] {
+        connection_failed = true;
+        tx_engine.reset();
+      });
+
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  RunLoopUntilIdle();
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Let monitor_task_ fire, to attempt retransmission of the poll. The
+  // retransmission should fail, because we have exhausted kMaxTransmissions. If
+  // the code is buggy, we may encounter use-after-free errors here.
+  ASSERT_TRUE(RunLoopFor(zx::sec(12)));
+
+  EXPECT_TRUE(connection_failed);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
