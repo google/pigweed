@@ -12,11 +12,16 @@ namespace gap {
 using hci::AuthRequirements;
 using hci::IOCapability;
 
-PairingState::PairingState(StatusCallback status_cb)
-    : initiator_(false),
+PairingState::PairingState(hci::Connection* link, StatusCallback status_cb)
+    : link_(link),
+      initiator_(false),
       state_(State::kIdle),
       status_callback_(std::move(status_cb)) {
+  ZX_ASSERT(link_);
+  ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
   ZX_ASSERT(status_callback_);
+  link_->set_encryption_change_callback(
+      fit::bind_member(this, &PairingState::OnEncryptionChange));
 }
 
 PairingState::InitiatorAction PairingState::InitiatePairing() {
@@ -135,20 +140,33 @@ void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
 
 void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (state() != State::kWaitEncryption) {
+    // Ignore encryption changes when not expecting them because they may be
+    // triggered by the peer at any time (v5.0 Vol 2, Part F, Sec 4.4).
     bt_log(INFO, "gap-bredr",
            "%s(%s, %s) in state \"%s\", before pairing completed", __func__,
            bt_str(status), enabled ? "true" : "false", ToString(state()));
     return;
   }
 
-  // TODO(xow): Notify |status_callback_|.
+  if (status && !enabled) {
+    // With Secure Connections, encryption should never be disabled (v5.0 Vol 2,
+    // Part E, Sec 7.1.16) at all.
+    bt_log(WARN, "gap-bredr",
+           "Pairing failed due to encryption disable on link %#.04x",
+           link_->handle());
+    status = hci::Status(HostError::kFailed);
+  }
+
+  // TODO(xow): Write link key to Connection::ltk to register new security
+  //            properties.
   // TODO(xow): Notify |InitiatePairing| callers.
+  status_callback_(link_->handle(), status);
+
+  // Perform state transition.
   if (status) {
     // Reset state for another pairing.
     state_ = State::kIdle;
     initiator_ = false;
-  } else {
-    FailWithUnexpectedEvent(__func__);
   }
 }
 
@@ -181,15 +199,20 @@ const char* PairingState::ToString(PairingState::State state) {
 }
 
 void PairingState::EnableEncryption() {
-  // TODO(xow): Start encryption.
+  if (!link_->StartEncryption()) {
+    bt_log(ERROR, "gap-bredr", "Failed to enable encryption (state \"%s\")",
+           ToString(state()));
+    status_callback_(link_->handle(), hci::Status(HostError::kFailed));
+    state_ = State::kFailed;
+    return;
+  }
   state_ = State::kWaitEncryption;
 }
 
 void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
-  // TODO(xow): Reply with the handle of the link for this pairing.
   bt_log(ERROR, "gap-bredr", "Unexpected event %s while in state \"%s\"",
          handler_name, ToString(state()));
-  status_callback_(0x0000, hci::Status(HostError::kNotSupported));
+  status_callback_(link_->handle(), hci::Status(HostError::kNotSupported));
   state_ = State::kFailed;
 }
 

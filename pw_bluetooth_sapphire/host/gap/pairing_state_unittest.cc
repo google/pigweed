@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 
 namespace bt {
 namespace gap {
@@ -17,7 +18,13 @@ using hci::IOCapability;
 using hci::kUserConfirmationRequestEventCode;
 using hci::kUserPasskeyNotificationEventCode;
 using hci::kUserPasskeyRequestEventCode;
+using hci::testing::FakeConnection;
 
+const hci::ConnectionHandle kTestHandle(0x0A0B);
+const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
+                                  "AA:BB:CC:00:11:22");
+const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR,
+                                 "DD:EE:FF:77:88:99");
 const auto kTestPeerIoCap = IOCapability::kDisplayYesNo;
 const uint32_t kTestPasskey = 123456;
 const auto kTestLinkKeyValue = Random<UInt128>();
@@ -28,27 +35,37 @@ void NoOpStatusCallback(hci::ConnectionHandle, hci::Status){};
 void NoOpUserConfirmationCallback(bool){};
 void NoOpUserPasskeyCallback(std::optional<uint32_t>){};
 
+FakeConnection MakeFakeConnection() {
+  return FakeConnection(kTestHandle, hci::Connection::LinkType::kACL,
+                        hci::Connection::Role::kMaster, kLocalAddress,
+                        kPeerAddress);
+}
+
 TEST(GAP_PairingStateTest, PairingStateStartsAsResponder) {
-  PairingState pairing_state(NoOpStatusCallback);
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
-  PairingState pairing_state(NoOpStatusCallback);
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest,
      PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
-  PairingState pairing_state(NoOpStatusCallback);
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, NoOpStatusCallback);
   EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
             pairing_state.InitiatePairing());
   EXPECT_TRUE(pairing_state.initiator());
 }
 
 TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
-  PairingState pairing_state(NoOpStatusCallback);
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, NoOpStatusCallback);
   EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
             pairing_state.InitiatePairing());
   EXPECT_TRUE(pairing_state.initiator());
@@ -61,7 +78,8 @@ TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
 TEST(
     GAP_PairingStateTest,
     PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
-  PairingState pairing_state(NoOpStatusCallback);
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
 
@@ -74,20 +92,23 @@ TEST(
 class TestStatusHandler final {
  public:
   auto MakeStatusCallback() {
-    return [this]([[maybe_unused]] hci::ConnectionHandle, hci::Status status) {
+    return [this](hci::ConnectionHandle handle, hci::Status status) {
       call_count_++;
+      handle_ = handle;
       status_ = status;
     };
   }
 
   auto call_count() const { return call_count_; }
 
-  // Returns std::nullopt if |call_count() < 1|, otherwise the most recent
-  // status this was called with.
+  // Returns std::nullopt if |call_count() < 1|, otherwise values from the most
+  // recent callback invocation.
+  auto& handle() const { return handle_; }
   auto& status() const { return status_; }
 
  private:
   int call_count_ = 0;
+  std::optional<hci::ConnectionHandle> handle_;
   std::optional<hci::Status> status_;
 };
 
@@ -103,9 +124,114 @@ TEST(GAP_PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   status_cb(hci::ConnectionHandle(0x0A0B),
             hci::Status(hci::StatusCode::kPairingNotAllowed));
   EXPECT_EQ(1, handler.call_count());
+  ASSERT_TRUE(handler.handle());
+  EXPECT_EQ(hci::ConnectionHandle(0x0A0B), *handler.handle());
   ASSERT_TRUE(handler.status());
   EXPECT_EQ(hci::Status(hci::StatusCode::kPairingNotAllowed),
             *handler.status());
+}
+
+TEST(GAP_PairingStateTest,
+     UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, status_handler.MakeStatusCallback());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state.InitiatePairing());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+
+  ASSERT_EQ(0, connection.start_encryption_count());
+  ASSERT_EQ(0, status_handler.call_count());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, status_handler.MakeStatusCallback());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state.InitiatePairing());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestAuthenticatedLinkKeyType);
+  pairing_state.OnAuthenticationComplete(hci::StatusCode::kSuccess);
+
+  ASSERT_EQ(0, status_handler.call_count());
+
+  EXPECT_EQ(1, connection.start_encryption_count());
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(hci::Status(), *status_handler.status());
+}
+
+TEST(GAP_PairingStateTest,
+     EncryptionChangeErrorTriggersStatusCallbackWithError) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, status_handler.MakeStatusCallback());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state.InitiatePairing());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestAuthenticatedLinkKeyType);
+  pairing_state.OnAuthenticationComplete(hci::StatusCode::kSuccess);
+
+  ASSERT_EQ(0, status_handler.call_count());
+
+  EXPECT_EQ(1, connection.start_encryption_count());
+  connection.TriggerEncryptionChangeCallback(
+      hci::Status(HostError::kInsufficientSecurity), false);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
+            *status_handler.status());
+}
+
+TEST(GAP_PairingStateTest,
+     EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(&connection, status_handler.MakeStatusCallback());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state.InitiatePairing());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestAuthenticatedLinkKeyType);
+  pairing_state.OnAuthenticationComplete(hci::StatusCode::kSuccess);
+
+  ASSERT_EQ(0, status_handler.call_count());
+
+  EXPECT_EQ(1, connection.start_encryption_count());
+  connection.TriggerEncryptionChangeCallback(hci::Status(), false);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kFailed), *status_handler.status());
 }
 
 // Event injectors. Return values are necessarily ignored in order to make types
@@ -150,9 +276,12 @@ void AuthenticationComplete(PairingState* pairing_state) {
 //   GAP_PairingStateTest/HandlesEvent.<test case>/<index of event>
 class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
  protected:
-  HandlesEvent() : pairing_state_(status_handler_.MakeStatusCallback()) {}
+  HandlesEvent()
+      : connection_(MakeFakeConnection()),
+        pairing_state_(&connection_, status_handler_.MakeStatusCallback()) {}
   ~HandlesEvent() = default;
 
+  const FakeConnection& connection() const { return connection_; }
   const TestStatusHandler& status_handler() const { return status_handler_; }
   PairingState& pairing_state() { return pairing_state_; }
 
@@ -162,6 +291,7 @@ class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
   void InjectEvent() { event()(&pairing_state()); }
 
  private:
+  FakeConnection connection_;
   TestStatusHandler status_handler_;
   PairingState pairing_state_;
 };
@@ -183,6 +313,8 @@ TEST_P(HandlesEvent, InIdleState) {
     EXPECT_EQ(0, status_handler().call_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().handle());
+    EXPECT_EQ(kTestHandle, *status_handler().handle());
     ASSERT_TRUE(status_handler().status());
     EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
   }
@@ -292,10 +424,12 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
   pairing_state().OnUserConfirmationRequest(kTestPasskey,
                                             NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  EXPECT_EQ(0, connection().start_encryption_count());
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == LinkKeyNotification) {
     EXPECT_EQ(0, status_handler().call_count());
+    EXPECT_EQ(1, connection().start_encryption_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
@@ -314,10 +448,12 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteState) {
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue,
                                         kTestAuthenticatedLinkKeyType);
   ASSERT_TRUE(pairing_state().initiator());
+  EXPECT_EQ(0, connection().start_encryption_count());
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == AuthenticationComplete) {
     EXPECT_EQ(0, status_handler().call_count());
+    EXPECT_EQ(1, connection().start_encryption_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
@@ -380,13 +516,16 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
 
   // Successfully enabling encryption should allow pairing to start again.
   pairing_state().OnEncryptionChange(hci::Status(), true);
+  EXPECT_EQ(1, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_TRUE(status_handler().status()->is_success());
   EXPECT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
   if (event() == IoCapabilityResponse) {
-    EXPECT_EQ(0, status_handler().call_count());
-  } else {
     EXPECT_EQ(1, status_handler().call_count());
+  } else {
+    EXPECT_EQ(2, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
     EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
   }

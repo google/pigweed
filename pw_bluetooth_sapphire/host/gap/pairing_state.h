@@ -9,6 +9,7 @@
 
 #include <optional>
 
+#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -143,10 +144,17 @@ class PairingState final {
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
   // proceed in the order of events expected.
-  // TODO(xow): Report successful link encryption when implemented.
   using StatusCallback =
       fit::function<void(hci::ConnectionHandle, hci::Status)>;
-  PairingState(StatusCallback status_cb);
+
+  // Constructs a PairingState for the ACL connection |link|. This object will
+  // receive its "encryption change" callbacks. Successful pairing is reported
+  // through |status_cb| after encryption is enabled. When errors occur, this
+  // object will be put in a "failed" state and the owner shall disconnect the
+  // link and destroy its PairingState.
+  //
+  // |link| must be valid for the lifetime of this object.
+  PairingState(hci::Connection* link, StatusCallback status_cb);
   ~PairingState() = default;
 
   // True if there is currently a pairing procedure in progress that the local
@@ -251,6 +259,9 @@ class PairingState final {
   // event. Invokes |status_callback_| with HostError::kNotSupported and sets
   // |state_| to kFailed. Logs an error using |handler_name| for identification.
   void FailWithUnexpectedEvent(const char* handler_name);
+
+  // The BR/EDR link whose pairing is being driven by this object.
+  hci::Connection* const link_;
 
   // Set to true by locally-initiated pairing and cleared when pairing is reset.
   bool initiator_;
