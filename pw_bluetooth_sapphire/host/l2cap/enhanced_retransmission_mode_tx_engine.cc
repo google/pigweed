@@ -39,7 +39,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
       n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
       ack_seqnum_(0),
-      next_seqnum_(0),
+      next_tx_seq_(0),
       last_tx_seq_(0),
       req_seqnum_(0),
       n_receiver_ready_polls_sent_(0),
@@ -80,7 +80,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
     return false;
   }
 
-  const auto seq_num = GetNextSeqnum();
+  const auto seq_num = GetNextTxSeq();
   SimpleInformationFrameHeader header(seq_num);
   DynamicByteBuffer frame(sizeof(header) + sdu->size());
   auto body = frame.mutable_view(sizeof(header));
@@ -117,7 +117,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
   }
 
   ack_seqnum_ = new_seq;
-  if (ack_seqnum_ == next_seqnum_) {
+  if (ack_seqnum_ == next_tx_seq_) {
     receiver_ready_poll_task_.Cancel();
   }
 
@@ -207,11 +207,11 @@ void Engine::SendReceiverReadyPoll() {
       std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
-uint8_t Engine::GetNextSeqnum() {
-  auto ret = next_seqnum_;
-  ++next_seqnum_;
-  if (next_seqnum_ > EnhancedControlField::kMaxSeqNum) {
-    next_seqnum_ = 0;
+uint8_t Engine::GetNextTxSeq() {
+  auto ret = next_tx_seq_;
+  ++next_tx_seq_;
+  if (next_tx_seq_ > EnhancedControlField::kMaxSeqNum) {
+    next_tx_seq_ = 0;
   }
   return ret;
 }

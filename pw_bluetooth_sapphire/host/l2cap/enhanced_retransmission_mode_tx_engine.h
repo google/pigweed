@@ -120,7 +120,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   void SendReceiverReadyPoll();
 
   // Return and consume the next sequence number.
-  uint8_t GetNextSeqnum();
+  uint8_t GetNextTxSeq();
 
   // Returns the number of frames that have been transmitted but not yet
   // acknowledged.
@@ -154,7 +154,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // We assume that the Extended Window Size option is _not_ enabled. In such
   // cases, the sequence number is a 6-bit counter that wraps on overflow. See
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
-  uint8_t next_seqnum_;  // (AKA NextTxSeq)
+  uint8_t next_tx_seq_;
 
   // The sequence number of the "newest" transmitted frame.
   //
