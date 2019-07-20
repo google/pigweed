@@ -147,7 +147,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // We assume that the Extended Window Size option is _not_ enabled. In such
   // cases, the sequence number is a 6-bit counter that wraps on overflow. See
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
-  uint8_t ack_seqnum_;  // (AKA ExpectedAckSeq)
+  uint8_t expected_ack_seq_;
 
   // The sequence number we will use for the next new outbound I-frame.
   //

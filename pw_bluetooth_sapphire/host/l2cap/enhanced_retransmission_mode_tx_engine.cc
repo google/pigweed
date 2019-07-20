@@ -38,7 +38,7 @@ Engine::EnhancedRetransmissionModeTxEngine(
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
-      ack_seqnum_(0),
+      expected_ack_seq_(0),
       next_tx_seq_(0),
       last_tx_seq_(0),
       req_seqnum_(0),
@@ -98,11 +98,11 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
   // the TX window.
   ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
                       "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
-                      "ack_seqnum_ = %u, last_tx_seq_ = %u)",
-                      NumUnackedFrames(), n_frames_in_tx_window_, ack_seqnum_,
-                      last_tx_seq_);
+                      "expected_ack_seq_ = %u, last_tx_seq_ = %u)",
+                      NumUnackedFrames(), n_frames_in_tx_window_,
+                      expected_ack_seq_, last_tx_seq_);
 
-  const auto n_frames_acked = NumFramesBetween(ack_seqnum_, new_seq);
+  const auto n_frames_acked = NumFramesBetween(expected_ack_seq_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
     // TODO(quiche): Consider the best error handling strategy here. Should we
     // drop the connection entirely?
@@ -116,8 +116,8 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
     --n_frames_to_discard;
   }
 
-  ack_seqnum_ = new_seq;
-  if (ack_seqnum_ == next_tx_seq_) {
+  expected_ack_seq_ = new_seq;
+  if (expected_ack_seq_ == next_tx_seq_) {
     receiver_ready_poll_task_.Cancel();
   }
 
@@ -229,7 +229,7 @@ uint8_t Engine::NumUnackedFrames() {
     // Having ascertained that some data _is_ in flight, the number of frames in
     // flight is given by the expression below.
     return NumFramesBetween(
-        ack_seqnum_,
+        expected_ack_seq_,
         last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
     );
   }
