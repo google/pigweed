@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
+#include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
 using fuchsia::bluetooth::Bool;
@@ -45,8 +46,7 @@ fctrl::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
   return fctrl::TechnologyType::DUAL_MODE;
 }
 
-bt::sm::SecurityProperties SecurityPropsFromFidl(
-    const fctrl::SecurityProperties& sec_prop) {
+bt::sm::SecurityProperties SecurityPropsFromFidl(const fctrl::SecurityProperties& sec_prop) {
   auto level = bt::sm::SecurityLevel::kEncrypted;
   if (sec_prop.authenticated) {
     level = bt::sm::SecurityLevel::kAuthenticated;
@@ -55,8 +55,7 @@ bt::sm::SecurityProperties SecurityPropsFromFidl(
                                     sec_prop.secure_connections);
 }
 
-fctrl::SecurityProperties SecurityPropsToFidl(
-    const bt::sm::SecurityProperties& sec_prop) {
+fctrl::SecurityProperties SecurityPropsToFidl(const bt::sm::SecurityProperties& sec_prop) {
   fctrl::SecurityProperties result;
   result.authenticated = sec_prop.authenticated();
   result.secure_connections = sec_prop.secure_connections();
@@ -64,8 +63,7 @@ fctrl::SecurityProperties SecurityPropsToFidl(
   return result;
 }
 
-bt::DeviceAddress::Type BondingAddrTypeFromFidl(
-    const fctrl::AddressType& type) {
+bt::DeviceAddress::Type BondingAddrTypeFromFidl(const fctrl::AddressType& type) {
   switch (type) {
     case fctrl::AddressType::LE_RANDOM:
       return bt::DeviceAddress::Type::kLERandom;
@@ -91,8 +89,7 @@ fctrl::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
     default:
       // Anonymous is not a valid address type to use for bonding, so we treat
       // that as a programming error.
-      ZX_PANIC("invalid address type for bonding: %u",
-               static_cast<unsigned int>(type));
+      ZX_PANIC("invalid address type for bonding: %u", static_cast<unsigned int>(type));
       break;
   }
   return fctrl::AddressType::BREDR;
@@ -131,11 +128,31 @@ fctrl::RemoteKey KeyToFidl(const bt::sm::Key& key) {
 
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
   uint64_t value;
-  if (!fxl::StringToNumberWithError<decltype(value)>(id, &value,
-                                                     fxl::Base::k16)) {
+  if (!fxl::StringToNumberWithError<decltype(value)>(id, &value, fxl::Base::k16)) {
     return std::nullopt;
   }
   return bt::PeerId(value);
+}
+
+std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& addr) {
+  if (addr.size() != 17)
+    return std::nullopt;
+
+  auto split = fxl::SplitString(fxl::StringView(addr.data(), addr.size()), ":",
+                                fxl::kKeepWhitespace, fxl::kSplitWantAll);
+  if (split.size() != 6)
+    return std::nullopt;
+
+  std::array<uint8_t, 6> bytes;
+  size_t index = 5;
+  for (const auto& octet_str : split) {
+    uint8_t octet;
+    if (!fxl::StringToNumberWithError<uint8_t>(octet_str, &octet, fxl::Base::k16))
+      return std::nullopt;
+    bytes[index--] = octet;
+  }
+
+  return bt::DeviceAddressBytes(bytes);
 }
 
 ErrorCode HostErrorToFidl(bt::HostError host_error) {
@@ -173,8 +190,7 @@ Status NewFidlError(ErrorCode error_code, std::string description) {
 
 bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
                                           fctrl::OutputCapabilityType output) {
-  if (input == fctrl::InputCapabilityType::NONE &&
-      output == fctrl::OutputCapabilityType::NONE) {
+  if (input == fctrl::InputCapabilityType::NONE && output == fctrl::OutputCapabilityType::NONE) {
     return bt::sm::IOCapability::kNoInputNoOutput;
   } else if (input == fctrl::InputCapabilityType::KEYBOARD &&
              output == fctrl::OutputCapabilityType::DISPLAY) {
@@ -194,8 +210,11 @@ bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
 
 bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {
   bt::sm::PairingData result;
-  result.identity_address = bt::DeviceAddress(
-      BondingAddrTypeFromFidl(data.address_type), data.address);
+
+  auto addr = AddressBytesFromString(data.address);
+  ZX_ASSERT(addr);
+
+  result.identity_address = bt::DeviceAddress(BondingAddrTypeFromFidl(data.address_type), *addr);
   if (data.ltk) {
     result.ltk = LtkFromFidl(*data.ltk);
   }
@@ -262,8 +281,7 @@ fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
   if (peer.le()) {
     bt::gap::AdvertisingData adv_data;
 
-    if (!bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(),
-                                             &adv_data)) {
+    if (!bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv_data)) {
       return fidl_device;
     }
 
@@ -271,8 +289,7 @@ fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
       fidl_device.service_uuids.push_back(uuid.ToString());
     }
     if (adv_data.appearance()) {
-      fidl_device.appearance =
-          static_cast<fctrl::Appearance>(le16toh(*adv_data.appearance()));
+      fidl_device.appearance = static_cast<fctrl::Appearance>(le16toh(*adv_data.appearance()));
     }
     if (adv_data.tx_power()) {
       auto fidl_tx_power = Int8::New();
@@ -290,8 +307,7 @@ fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer) {
   return fidl_device;
 }
 
-fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter,
-                                  const bt::gap::Peer& peer) {
+fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap::Peer& peer) {
   fctrl::BondingData out_data;
   out_data.identifier = peer.identifier().ToString();
   out_data.local_address = adapter.state().controller_address().ToString();
@@ -305,8 +321,7 @@ fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter,
     out_data.le = fctrl::LEData::New();
 
     const auto& le_data = *peer.le()->bond_data();
-    const auto& identity =
-        le_data.identity_address ? *le_data.identity_address : peer.address();
+    const auto& identity = le_data.identity_address ? *le_data.identity_address : peer.address();
     out_data.le->address = identity.value().ToString();
     out_data.le->address_type = BondingAddrTypeToFidl(identity.type());
 
@@ -417,8 +432,7 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
   }
 
   if (fidl_filter.manufacturer_identifier) {
-    out_filter->set_manufacturer_code(
-        fidl_filter.manufacturer_identifier->value);
+    out_filter->set_manufacturer_code(fidl_filter.manufacturer_identifier->value);
   }
 
   if (fidl_filter.name_substring && !fidl_filter.name_substring.get().empty()) {
@@ -436,8 +450,7 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 }  // namespace bthost
 
 // static
-fidl::VectorPtr<uint8_t>
-fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer>::Convert(
+fidl::VectorPtr<uint8_t> fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer>::Convert(
     const bt::ByteBuffer& from) {
   auto to = fidl::VectorPtr<uint8_t>::New(from.size());
   bt::MutableBufferView view(to->data(), to->size());

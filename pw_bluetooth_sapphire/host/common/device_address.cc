@@ -6,8 +6,6 @@
 
 #include <zircon/assert.h>
 
-#include "src/lib/fxl/strings/split_string.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -32,8 +30,7 @@ std::string TypeToString(DeviceAddress::Type type) {
 
 DeviceAddressBytes::DeviceAddressBytes() { SetToZero(); }
 
-DeviceAddressBytes::DeviceAddressBytes(
-    std::array<uint8_t, kDeviceAddressSize> bytes) {
+DeviceAddressBytes::DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes) {
   bytes_ = std::move(bytes);
 }
 
@@ -42,38 +39,9 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
-DeviceAddressBytes::DeviceAddressBytes(const fbl::StringPiece bdaddr_string) {
-  // Use ZX_ASSERT to prevent this from being compiled out on non-debug builds.
-  ZX_ASSERT(SetFromString(bdaddr_string));
-}
-
-bool DeviceAddressBytes::SetFromString(const fbl::StringPiece bdaddr_string) {
-  // There are 17 characters in XX:XX:XX:XX:XX:XX
-  if (bdaddr_string.size() != 17)
-    return false;
-
-  auto split = fxl::SplitString(
-      fxl::StringView(bdaddr_string.data(), bdaddr_string.size()), ":",
-      fxl::kKeepWhitespace, fxl::kSplitWantAll);
-  if (split.size() != 6)
-    return false;
-
-  size_t index = 5;
-  for (const auto& octet_str : split) {
-    uint8_t octet;
-    if (!fxl::StringToNumberWithError<uint8_t>(octet_str, &octet,
-                                               fxl::Base::k16))
-      return false;
-    bytes_[index--] = octet;
-  }
-
-  return true;
-}
-
 std::string DeviceAddressBytes::ToString() const {
-  return fxl::StringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5],
-                           bytes_[4], bytes_[3], bytes_[2], bytes_[1],
-                           bytes_[0]);
+  return fxl::StringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", bytes_[5], bytes_[4], bytes_[3],
+                           bytes_[2], bytes_[1], bytes_[0]);
 }
 
 void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }
@@ -92,14 +60,10 @@ std::size_t DeviceAddressBytes::Hash() const {
 
 DeviceAddress::DeviceAddress() : type_(Type::kBREDR) {}
 
-DeviceAddress::DeviceAddress(Type type, const fbl::StringPiece bdaddr_string)
-    : DeviceAddress(type, DeviceAddressBytes(bdaddr_string)) {}
-
 DeviceAddress::DeviceAddress(Type type, const DeviceAddressBytes& value)
     : type_(type), value_(value) {}
 
-DeviceAddress::DeviceAddress(Type type,
-                             std::array<uint8_t, kDeviceAddressSize> bytes)
+DeviceAddress::DeviceAddress(Type type, std::array<uint8_t, kDeviceAddressSize> bytes)
     : DeviceAddress(type, DeviceAddressBytes(bytes)) {}
 
 bool DeviceAddress::IsResolvablePrivate() const {
@@ -130,9 +94,7 @@ std::size_t DeviceAddress::Hash() const {
   return h1 ^ (h2 << 1);
 }
 
-std::string DeviceAddress::ToString() const {
-  return TypeToString(type_) + value_.ToString();
-}
+std::string DeviceAddress::ToString() const { return TypeToString(type_) + value_.ToString(); }
 
 }  // namespace bt
 

@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_DEVICE_ADDRESS_H_
 
-#include <fbl/string_piece.h>
-
 #include <array>
 #include <initializer_list>
 #include <string>
+
+#include <fbl/string_piece.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
@@ -28,15 +28,6 @@ class DeviceAddressBytes {
   explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
   explicit DeviceAddressBytes(const ByteBuffer& bytes);
 
-  // Initializes the contents from a string of the form XX:XX:XX:XX:XX:XX where
-  // each "XX" is an ASCII encoded two-digit hexadecimal integer.
-  explicit DeviceAddressBytes(const fbl::StringPiece bdaddr_string);
-
-  // Resets the contents from a string of the form XX:XX:XX:XX:XX:XX where each
-  // "XX" is an ASCII encoded two-digit hexadecimal integer. Returns false if
-  // |bdaddr_string| is badly formatted.
-  bool SetFromString(const fbl::StringPiece bdaddr_string);
-
   // Returns a string representation of the device address. The bytes in
   // human-readable form will appear in big-endian byte order even though the
   // underlying array stores the bytes in little-endian. The returned string
@@ -49,20 +40,12 @@ class DeviceAddressBytes {
   void SetToZero();
 
   // Returns a view over the raw bytes of this address.
-  inline BufferView bytes() const {
-    return BufferView(bytes_.data(), bytes_.size());
-  }
+  inline BufferView bytes() const { return BufferView(bytes_.data(), bytes_.size()); }
 
   // Comparison operators.
-  inline bool operator==(const DeviceAddressBytes& other) const {
-    return bytes_ == other.bytes_;
-  }
-  inline bool operator!=(const DeviceAddressBytes& other) const {
-    return !(*this == other);
-  }
-  inline bool operator<(const DeviceAddressBytes& other) const {
-    return bytes_ < other.bytes_;
-  }
+  inline bool operator==(const DeviceAddressBytes& other) const { return bytes_ == other.bytes_; }
+  inline bool operator!=(const DeviceAddressBytes& other) const { return !(*this == other); }
+  inline bool operator<(const DeviceAddressBytes& other) const { return bytes_ < other.bytes_; }
 
   // Returns a hash of the contents of this address.
   std::size_t Hash() const;
@@ -72,8 +55,7 @@ class DeviceAddressBytes {
   std::array<uint8_t, kDeviceAddressSize> bytes_;
 };
 
-static_assert(sizeof(DeviceAddressBytes) == 6,
-              "DeviceAddressBytes must take up exactly 6 bytes");
+static_assert(sizeof(DeviceAddressBytes) == 6, "DeviceAddressBytes must take up exactly 6 bytes");
 
 // DeviceAddress represents a Bluetooth device address, encapsulating the 48-bit
 // device address and the address type. A DeviceAddress is comparable and can be
@@ -95,10 +77,6 @@ class DeviceAddress {
   // the type to Type::kBREDR.
   DeviceAddress();
 
-  // Initializes the contents from a string of the form XX:XX:XX:XX:XX:XX where
-  // each "XX" is an ASCII encoded two-digit hexadecimal integer.
-  DeviceAddress(Type type, const fbl::StringPiece bdaddr_string);
-
   // Initializes the contents from raw data.
   DeviceAddress(Type type, const DeviceAddressBytes& value);
   DeviceAddress(Type type, std::array<uint8_t, kDeviceAddressSize> bytes);
@@ -108,8 +86,7 @@ class DeviceAddress {
 
   bool IsBrEdr() const { return type_ == Type::kBREDR; }
   bool IsLowEnergy() const {
-    return type_ == Type::kLEPublic || type_ == Type::kLERandom ||
-           type_ == Type::kLEAnonymous;
+    return type_ == Type::kLEPublic || type_ == Type::kLERandom || type_ == Type::kLEAnonymous;
   }
 
   // Comparison operators. The equality and less-than operators are needed to
@@ -117,13 +94,10 @@ class DeviceAddress {
   inline bool operator==(const DeviceAddress& other) const {
     return type_ == other.type_ && value_ == other.value_;
   }
-  inline bool operator!=(const DeviceAddress& other) const {
-    return !(*this == other);
-  }
+  inline bool operator!=(const DeviceAddress& other) const { return !(*this == other); }
   inline bool operator<(const DeviceAddress& other) const {
     // Treat |type_| as the higher-order bits
-    return type_ < other.type_ ||
-           (type_ == other.type_ && value_ < other.value_);
+    return type_ < other.type_ || (type_ == other.type_ && value_ < other.value_);
   }
 
   // Returns true if this address is a LE public address.
@@ -149,8 +123,7 @@ class DeviceAddress {
   DeviceAddressBytes value_;
 };
 
-static_assert(sizeof(DeviceAddress) == 8,
-              "DeviceAddress must take up exactly 8 bytes");
+static_assert(sizeof(DeviceAddress) == 8, "DeviceAddress must take up exactly 8 bytes");
 
 }  // namespace bt
 

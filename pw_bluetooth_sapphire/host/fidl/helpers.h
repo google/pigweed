@@ -39,16 +39,20 @@ namespace fidl_helpers {
 // interfaces have been converted to use integer IDs.
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id);
 
+// Convert a string of the form "XX:XX:XX:XX:XX" to the DeviceAddressBytes it represents.
+// returns nullopt when the conversion fails (due to wrong format)
+std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& addr);
+
 // Functions for generating a FIDL bluetooth::Status
 
 fuchsia::bluetooth::ErrorCode HostErrorToFidl(bt::HostError host_error);
 
-fuchsia::bluetooth::Status NewFidlError(
-    fuchsia::bluetooth::ErrorCode error_code, std::string description);
+fuchsia::bluetooth::Status NewFidlError(fuchsia::bluetooth::ErrorCode error_code,
+                                        std::string description);
 
 template <typename ProtocolErrorCode>
-fuchsia::bluetooth::Status StatusToFidl(
-    const bt::Status<ProtocolErrorCode>& status, std::string msg = "") {
+fuchsia::bluetooth::Status StatusToFidl(const bt::Status<ProtocolErrorCode>& status,
+                                        std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
   if (status.is_success()) {
     return fidl_status;
@@ -66,32 +70,25 @@ fuchsia::bluetooth::Status StatusToFidl(
 }
 
 // Functions that convert FIDL types to library objects
-bt::sm::IOCapability IoCapabilityFromFidl(
-    const fuchsia::bluetooth::control::InputCapabilityType,
-    const fuchsia::bluetooth::control::OutputCapabilityType);
+bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::control::InputCapabilityType,
+                                          const fuchsia::bluetooth::control::OutputCapabilityType);
 
 // Functions to construct FIDL control library objects from library objects.
-fuchsia::bluetooth::control::AdapterInfo NewAdapterInfo(
-    const bt::gap::Adapter& adapter);
-fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(
-    const bt::gap::Peer& peer);
-fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(
-    const bt::gap::Peer& peer);
+fuchsia::bluetooth::control::AdapterInfo NewAdapterInfo(const bt::gap::Adapter& adapter);
+fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer);
+fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer);
 
 // Functions to convert Control FIDL library objects.
-bt::sm::PairingData PairingDataFromFidl(
-    const fuchsia::bluetooth::control::LEData& data);
+bt::sm::PairingData PairingDataFromFidl(const fuchsia::bluetooth::control::LEData& data);
 bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::control::LocalKey& key);
-std::optional<bt::sm::LTK> BrEdrKeyFromFidl(
-    const fuchsia::bluetooth::control::BREDRData& data);
-fuchsia::bluetooth::control::BondingData NewBondingData(
-    const bt::gap::Adapter& adapter, const bt::gap::Peer& peer);
+std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fuchsia::bluetooth::control::BREDRData& data);
+fuchsia::bluetooth::control::BondingData NewBondingData(const bt::gap::Adapter& adapter,
+                                                        const bt::gap::Peer& peer);
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::AdvertisingDataPtr NewAdvertisingData(
     const bt::ByteBuffer& advertising_data);
-fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(
-    const bt::gap::Peer& peer);
+fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer);
 
 // Validates the contents of a ScanFilter.
 bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
@@ -99,9 +96,8 @@ bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
 // Populates a library DiscoveryFilter based on a FIDL ScanFilter. Returns false
 // if |fidl_filter| contains any malformed data and leaves |out_filter|
 // unmodified.
-bool PopulateDiscoveryFilter(
-    const fuchsia::bluetooth::le::ScanFilter& fidl_filter,
-    bt::gap::DiscoveryFilter* out_filter);
+bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filter,
+                             bt::gap::DiscoveryFilter* out_filter);
 
 }  // namespace fidl_helpers
 }  // namespace bthost

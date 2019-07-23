@@ -4,11 +4,12 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 
-#include <fbl/macros.h>
 #include <zircon/assert.h>
 
 #include <unordered_set>
 #include <vector>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -27,19 +28,13 @@ using bt::testing::FakePeer;
 
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
-const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:00");
+const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {0});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
-const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
-                              "00:00:00:00:00:01");
-const DeviceAddress kAddress2(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:02");
-const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:03");
-const DeviceAddress kAddress4(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:04");
-const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:05");
+const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {1});
+const DeviceAddress kAddress2(DeviceAddress::Type::kLEPublic, {2});
+const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic, {3});
+const DeviceAddress kAddress4(DeviceAddress::Type::kLEPublic, {4});
+const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic, {5});
 
 constexpr zx::duration kTestScanPeriod = zx::sec(10);
 
@@ -61,13 +56,12 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     // |discovery_manager_| rather than constructed by it, a fake implementation
     // could be injected directly. Consider providing fake behavior here in this
     // harness rather than using a FakeController.
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-        &fake_address_delegate_, transport(), dispatcher());
-    discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        transport(), scanner_.get(), &peer_cache_);
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_, transport(),
+                                                             dispatcher());
+    discovery_manager_ =
+        std::make_unique<LowEnergyDiscoveryManager>(transport(), scanner_.get(), &peer_cache_);
     test_device()->SetScanStateCallback(
-        std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this,
-                  std::placeholders::_1),
+        std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this, std::placeholders::_1),
         dispatcher());
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
@@ -82,9 +76,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   }
 
  protected:
-  LowEnergyDiscoveryManager* discovery_manager() const {
-    return discovery_manager_.get();
-  }
+  LowEnergyDiscoveryManager* discovery_manager() const { return discovery_manager_.get(); }
 
   // Deletes |discovery_manager_|.
   void DeleteDiscoveryManager() { discovery_manager_ = nullptr; }
@@ -105,8 +97,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
   // Called by FakeController when the scan state changes.
   void OnScanStateChanged(bool enabled) {
-    bt_log(TRACE, "gap-test", "FakeController scan state: %s",
-           enabled ? "enabled" : "disabled");
+    bt_log(TRACE, "gap-test", "FakeController scan state: %s", enabled ? "enabled" : "disabled");
     scan_enabled_ = enabled;
     scan_states_.push_back(enabled);
 
@@ -299,8 +290,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
                                           hci::StatusCode::kCommandDisallowed);
 
   // |session| should contain nullptr.
-  discovery_manager()->StartDiscovery(
-      [](auto session) { EXPECT_FALSE(session); });
+  discovery_manager()->StartDiscovery([](auto session) { EXPECT_FALSE(session); });
 
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -373,8 +363,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
   EXPECT_FALSE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       StartDiscoveryWhilePendingStartAndStopInCallback) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStopInCallback) {
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
   std::unique_ptr<LowEnergyDiscoverySession> session;
@@ -482,16 +471,15 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   bool session_error = false;
   discovery_manager()->StartDiscovery([&](auto cb_session) {
     session = std::move(cb_session);
-    session->set_error_callback(
-        [&session_error] { session_error = true; });
+    session->set_error_callback([&session_error] { session_error = true; });
   });
 
   // The controller will fail to restart scanning after scanning stops at the
   // end of the period. The scan state will transition twice (-> enabled ->
   // disabled).
   set_scan_state_handler(kNumScanStates, [this] {
-    test_device()->SetDefaultResponseStatus(
-        hci::kLESetScanEnable, hci::StatusCode::kCommandDisallowed);
+    test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
+                                            hci::StatusCode::kCommandDisallowed);
   });
 
   RunLoopUntilIdle();
@@ -540,8 +528,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
   EXPECT_FALSE(scan_states()[3]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       ScanPeriodRemoveSessionDuringRestart) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
   constexpr size_t kNumScanStates = 2;
 
   // Set a very short scan period for the sake of the test.
@@ -574,8 +561,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_FALSE(scan_states()[1]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       ScanPeriodRestartRemoveAndAddSession) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
   constexpr size_t kNumScanPeriodRestartStates = 3;
   constexpr size_t kTotalNumStates = 5;
 
@@ -624,29 +610,23 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   // Session 0 is interested in performing general discovery.
   std::unordered_set<DeviceAddress> peers_session0;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
-      [&peers_session0](const auto& peer) {
-        peers_session0.insert(peer.address());
-      };
+  LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&peers_session0](const auto& peer) {
+    peers_session0.insert(peer.address());
+  };
   sessions.push_back(StartDiscoverySession());
   sessions[0]->filter()->SetGeneralDiscoveryFlags();
   sessions[0]->SetResultCallback(std::move(result_cb));
 
   // Session 1 is interested in performing limited discovery.
   std::unordered_set<DeviceAddress> peers_session1;
-  result_cb = [&peers_session1](const auto& peer) {
-    peers_session1.insert(peer.address());
-  };
+  result_cb = [&peers_session1](const auto& peer) { peers_session1.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
-  sessions[1]->filter()->set_flags(
-      static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
+  sessions[1]->filter()->set_flags(static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
   std::unordered_set<DeviceAddress> peers_session2;
-  result_cb = [&peers_session2](const auto& peer) {
-    peers_session2.insert(peer.address());
-  };
+  result_cb = [&peers_session2](const auto& peer) { peers_session2.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
 
   uint16_t uuid = 0x180d;
@@ -655,18 +635,14 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   // Session 3 is interested in peers whose names contain "Device".
   std::unordered_set<DeviceAddress> peers_session3;
-  result_cb = [&peers_session3](const auto& peer) {
-    peers_session3.insert(peer.address());
-  };
+  result_cb = [&peers_session3](const auto& peer) { peers_session3.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
   sessions[3]->filter()->set_name_substring("Device");
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
   std::unordered_set<DeviceAddress> peers_session4;
-  result_cb = [&peers_session4](const auto& peer) {
-    peers_session4.insert(peer.address());
-  };
+  result_cb = [&peers_session4](const auto& peer) { peers_session4.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
   sessions[4]->filter()->set_connectable(false);
   sessions[4]->SetResultCallback(std::move(result_cb));
@@ -675,8 +651,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   EXPECT_EQ(5u, sessions.size());
 
-#define EXPECT_CONTAINS(addr, dev_list) \
-  EXPECT_TRUE(dev_list.find(addr) != dev_list.end())
+#define EXPECT_CONTAINS(addr, dev_list) EXPECT_TRUE(dev_list.find(addr) != dev_list.end())
   // At this point all sessions should have processed all peers at least once.
 
   // Session 0: Should have seen all peers except for peer 3, which is
@@ -709,8 +684,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 #undef EXPECT_CONTAINS
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       StartDiscoveryWithFiltersCachedPeerNotifications) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWithFiltersCachedPeerNotifications) {
   AddFakePeers();
 
   std::vector<std::unique_ptr<LowEnergyDiscoverySession>> sessions;
@@ -721,10 +695,9 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   // Session 0 is interested in performing general discovery.
   std::unordered_set<DeviceAddress> peers_session0;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
-      [&peers_session0](const auto& peer) {
-        peers_session0.insert(peer.address());
-      };
+  LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&peers_session0](const auto& peer) {
+    peers_session0.insert(peer.address());
+  };
   sessions.push_back(StartDiscoverySession());
   sessions[0]->filter()->SetGeneralDiscoveryFlags();
   sessions[0]->SetResultCallback(std::move(result_cb));
@@ -734,19 +707,14 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   // Session 1 is interested in performing limited discovery.
   std::unordered_set<DeviceAddress> peers_session1;
-  result_cb = [&peers_session1](const auto& peer) {
-    peers_session1.insert(peer.address());
-  };
+  result_cb = [&peers_session1](const auto& peer) { peers_session1.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
-  sessions[1]->filter()->set_flags(
-      static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
+  sessions[1]->filter()->set_flags(static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
   std::unordered_set<DeviceAddress> peers_session2;
-  result_cb = [&peers_session2](const auto& peer) {
-    peers_session2.insert(peer.address());
-  };
+  result_cb = [&peers_session2](const auto& peer) { peers_session2.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
 
   uint16_t uuid = 0x180d;
@@ -755,26 +723,21 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
 
   // Session 3 is interested in peers whose names contain "Device".
   std::unordered_set<DeviceAddress> peers_session3;
-  result_cb = [&peers_session3](const auto& peer) {
-    peers_session3.insert(peer.address());
-  };
+  result_cb = [&peers_session3](const auto& peer) { peers_session3.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
   sessions[3]->filter()->set_name_substring("Device");
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
   std::unordered_set<DeviceAddress> peers_session4;
-  result_cb = [&peers_session4](const auto& peer) {
-    peers_session4.insert(peer.address());
-  };
+  result_cb = [&peers_session4](const auto& peer) { peers_session4.insert(peer.address()); };
   sessions.push_back(StartDiscoverySession());
   sessions[4]->filter()->set_connectable(false);
   sessions[4]->SetResultCallback(std::move(result_cb));
 
   EXPECT_EQ(5u, sessions.size());
 
-#define EXPECT_CONTAINS(addr, dev_list) \
-  EXPECT_TRUE(dev_list.find(addr) != dev_list.end())
+#define EXPECT_CONTAINS(addr, dev_list) EXPECT_TRUE(dev_list.find(addr) != dev_list.end())
   // At this point all sessions should have processed all peers at least once
   // without running the message loop; results for Sessions 1, 2, 3, and 4
   // should have come from the cache.
@@ -815,8 +778,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   test_device()->AddPeer(std::move(fake_peer));
 
   int count = 0;
-  discovery_manager()->set_bonded_peer_connectable_callback(
-      [&](const auto&) { count++; });
+  discovery_manager()->set_bonded_peer_connectable_callback([&](const auto&) { count++; });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   // Start discovery. Advertisements from the peer should be ignored since the
@@ -838,8 +800,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   EXPECT_EQ(1, count);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       ScanResuiltUpgradesKnownBrEdrPeerToDualMode) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResuiltUpgradesKnownBrEdrPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kAddrAlias0, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kAddress0));
@@ -850,10 +811,9 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unordered_set<DeviceAddress> addresses_found;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
-      [&addresses_found](const auto& peer) {
-        addresses_found.insert(peer.address());
-      };
+  LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&addresses_found](const auto& peer) {
+    addresses_found.insert(peer.address());
+  };
   auto session = StartDiscoverySession();
   session->filter()->SetGeneralDiscoveryFlags();
   session->SetResultCallback(std::move(result_cb));
@@ -872,8 +832,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScan) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive,
-            test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScan) {
@@ -886,8 +845,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScan) {
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       EnableAndDisableBackgroundScanQuickly) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableAndDisableBackgroundScanQuickly) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
   discovery_manager()->EnableBackgroundScan(true);
@@ -928,8 +886,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanDuringDiscovery) {
   session = nullptr;
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive,
-            test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   // We expect the following state transitions: -> disabled -> enabled
   ASSERT_EQ(3u, scan_states().size());
@@ -937,8 +894,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanDuringDiscovery) {
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       DisableBackgroundScanDuringDiscovery) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScanDuringDiscovery) {
   auto session = StartDiscoverySession();
   ASSERT_TRUE(session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
@@ -976,8 +932,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryDuringBackgroundScan) {
   discovery_manager()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  ASSERT_EQ(hci::LEScanType::kPassive,
-            test_device()->le_scan_state().scan_type);
+  ASSERT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   // The scan state should transition to enabled.
   ASSERT_EQ(1u, scan_states().size());
@@ -996,8 +951,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryDuringBackgroundScan) {
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       StartDiscoveryWhileEnablingBackgroundScan) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileEnablingBackgroundScan) {
   discovery_manager()->EnableBackgroundScan(true);
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery([&](auto cb_session) {
@@ -1021,8 +975,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_TRUE(scan_states()[2]);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       BackgroundScanOnlyHandlesEventsFromBondedDevices) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanOnlyHandlesEventsFromBondedDevices) {
   PeerId kBondedPeerId1(1);
   PeerId kBondedPeerId2(2);
 
@@ -1042,19 +995,15 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   // expect advertisements from all other devices to get ignored.
   sm::PairingData pdata;
   pdata.ltk = sm::LTK();
-  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId1, kAddress0, {}, pdata,
-                                          {}});
-  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId2, kAddress4, {}, pdata,
-                                          {}});
+  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId1, kAddress0, {}, pdata, {}});
+  peer_cache()->AddBondedPeer(BondingData{kBondedPeerId2, kAddress4, {}, pdata, {}});
   EXPECT_EQ(2u, peer_cache()->count());
 
   int count = 0;
-  discovery_manager()->set_bonded_peer_connectable_callback(
-      [&](const auto& id) {
-        count++;
-        EXPECT_TRUE(id == kBondedPeerId1 || id == kBondedPeerId2)
-            << id.ToString();
-      });
+  discovery_manager()->set_bonded_peer_connectable_callback([&](const auto& id) {
+    count++;
+    EXPECT_TRUE(id == kBondedPeerId1 || id == kBondedPeerId2) << id.ToString();
+  });
   discovery_manager()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_EQ(2, count);
@@ -1076,8 +1025,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanPeriodRestart) {
   // End the scan period by advancing time.
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci::LEScanType::kPassive,
-            test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
 
   // We expect the following state transitions due to the timeout:
   // -> disabled -> enabled.

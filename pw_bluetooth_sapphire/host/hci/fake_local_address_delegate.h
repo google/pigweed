@@ -27,8 +27,7 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
 
  private:
   bool async_ = false;
-  DeviceAddress local_address_ =
-      DeviceAddress(DeviceAddress::Type::kLEPublic, "00:00:00:00:00:00");
+  DeviceAddress local_address_ = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
 };
 
 }  // namespace hci

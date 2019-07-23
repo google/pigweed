@@ -18,9 +18,8 @@ namespace sm {
 namespace {
 
 const DeviceAddress kLocalAddr(DeviceAddress::Type::kLEPublic,
-                               "A1:A2:A3:A4:A5:A6");
-const DeviceAddress kPeerAddr(DeviceAddress::Type::kLERandom,
-                              "B1:B2:B3:B4:B5:B6");
+                               {0xA6, 0xA5, 0xA4, 0xA3, 0xA2, 0xA1});
+const DeviceAddress kPeerAddr(DeviceAddress::Type::kLERandom, {0xB6, 0xB5, 0xB4, 0xB3, 0xB2, 0xB1});
 
 class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
                              public sm::PairingState::Delegate {
@@ -38,24 +37,22 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     // Setup fake SMP channel.
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
-    fake_chan_->SetSendCallback(
-        fit::bind_member(this, &SMP_PairingStateTest::OnDataReceived),
-        dispatcher());
+    fake_chan_->SetSendCallback(fit::bind_member(this, &SMP_PairingStateTest::OnDataReceived),
+                                dispatcher());
 
     // Setup a fake logical link.
-    fake_link_ = std::make_unique<hci::testing::FakeConnection>(
-        1, hci::Connection::LinkType::kLE, role, kLocalAddr, kPeerAddr);
+    fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, hci::Connection::LinkType::kLE,
+                                                                role, kLocalAddr, kPeerAddr);
 
-    pairing_ = std::make_unique<PairingState>(
-        fake_link_->WeakPtr(), fake_chan_, ioc, weak_ptr_factory_.GetWeakPtr());
+    pairing_ = std::make_unique<PairingState>(fake_link_->WeakPtr(), fake_chan_, ioc,
+                                              weak_ptr_factory_.GetWeakPtr());
   }
 
   void DestroyPairingState() { pairing_ = nullptr; }
 
   // Called by |pairing_| to obtain a Temporary Key during legacy pairing.
-  void OnTemporaryKeyRequest(
-      PairingMethod method,
-      PairingState::Delegate::TkResponse responder) override {
+  void OnTemporaryKeyRequest(PairingMethod method,
+                             PairingState::Delegate::TkResponse responder) override {
     if (tk_delegate_) {
       tk_delegate_(method, std::move(responder));
     } else {
@@ -157,10 +154,8 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
   }
 
   // Emulates the receipt of pairing features (both as initiator and responder).
-  void ReceivePairingFeatures(const PairingRequestParams& params,
-                              bool peer_initiator = false) {
-    PacketWriter writer(peer_initiator ? kPairingRequest : kPairingResponse,
-                        &peer_pairing_cmd_);
+  void ReceivePairingFeatures(const PairingRequestParams& params, bool peer_initiator = false) {
+    PacketWriter writer(peer_initiator ? kPairingRequest : kPairingResponse, &peer_pairing_cmd_);
     *writer.mutable_payload<PairingRequestParams>() = params;
     fake_chan()->Receive(peer_pairing_cmd_);
   }
@@ -185,21 +180,16 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     fake_chan()->Receive(buffer);
   }
 
-  void ReceivePairingConfirm(const UInt128& confirm) {
-    Receive128BitCmd(kPairingConfirm, confirm);
-  }
+  void ReceivePairingConfirm(const UInt128& confirm) { Receive128BitCmd(kPairingConfirm, confirm); }
 
-  void ReceivePairingRandom(const UInt128& random) {
-    Receive128BitCmd(kPairingRandom, random);
-  }
+  void ReceivePairingRandom(const UInt128& random) { Receive128BitCmd(kPairingRandom, random); }
 
   void ReceiveEncryptionInformation(const UInt128& ltk) {
     Receive128BitCmd(kEncryptionInformation, ltk);
   }
 
   void ReceiveMasterIdentification(uint64_t random, uint16_t ediv) {
-    StaticByteBuffer<sizeof(Header) + sizeof(MasterIdentificationParams)>
-        buffer;
+    StaticByteBuffer<sizeof(Header) + sizeof(MasterIdentificationParams)> buffer;
     PacketWriter writer(kMasterIdentification, &buffer);
     auto* params = writer.mutable_payload<MasterIdentificationParams>();
     params->ediv = htole16(ediv);
@@ -212,13 +202,11 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
   }
 
   void ReceiveIdentityAddress(const DeviceAddress& address) {
-    StaticByteBuffer<sizeof(Header) + sizeof(IdentityAddressInformationParams)>
-        buffer;
+    StaticByteBuffer<sizeof(Header) + sizeof(IdentityAddressInformationParams)> buffer;
     PacketWriter writer(kIdentityAddressInformation, &buffer);
     auto* params = writer.mutable_payload<IdentityAddressInformationParams>();
-    params->type = address.type() == DeviceAddress::Type::kLEPublic
-                       ? AddressType::kPublic
-                       : AddressType::kStaticRandom;
+    params->type = address.type() == DeviceAddress::Type::kLEPublic ? AddressType::kPublic
+                                                                    : AddressType::kStaticRandom;
     params->bd_addr = address.value();
     fake_chan()->Receive(buffer);
   }
@@ -231,8 +219,8 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     RunLoopUntilIdle();
   }
 
-  void GenerateConfirmValue(const UInt128& random, UInt128* out_value,
-                            bool peer_initiator = false, uint32_t tk = 0) {
+  void GenerateConfirmValue(const UInt128& random, UInt128* out_value, bool peer_initiator = false,
+                            uint32_t tk = 0) {
     ZX_DEBUG_ASSERT(out_value);
 
     tk = htole32(tk);
@@ -267,44 +255,27 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
   const SecurityProperties& sec_props() const { return sec_props_; }
 
   int pairing_complete_count() const { return pairing_complete_count_; }
-  const Status& pairing_complete_status() const {
-    return pairing_complete_status_;
-  }
+  const Status& pairing_complete_status() const { return pairing_complete_status_; }
 
-  int pairing_data_callback_count() const {
-    return pairing_data_callback_count_;
-  }
+  int pairing_data_callback_count() const { return pairing_data_callback_count_; }
 
-  int auth_failure_callback_count() const {
-    return auth_failure_callback_count_;
-  }
-  const hci::Status& auth_failure_status() const {
-    return auth_failure_status_;
-  }
+  int auth_failure_callback_count() const { return auth_failure_callback_count_; }
+  const hci::Status& auth_failure_status() const { return auth_failure_status_; }
 
-  int local_id_info_callback_count() const {
-    return local_id_info_callback_count_;
-  }
+  int local_id_info_callback_count() const { return local_id_info_callback_count_; }
 
   int new_sec_props_count() const { return new_sec_props_count_; }
   const SecurityProperties& new_sec_props() const { return new_sec_props_; }
 
   const std::optional<LTK>& ltk() const { return pairing_data_.ltk; }
   const std::optional<Key>& irk() const { return pairing_data_.irk; }
-  const std::optional<DeviceAddress>& identity() const {
-    return pairing_data_.identity_address;
-  }
+  const std::optional<DeviceAddress>& identity() const { return pairing_data_.identity_address; }
   const std::optional<Key>& csrk() const { return pairing_data_.csrk; }
 
-  using TkDelegate =
-      fit::function<void(PairingMethod, PairingState::Delegate::TkResponse)>;
-  void set_tk_delegate(TkDelegate delegate) {
-    tk_delegate_ = std::move(delegate);
-  }
+  using TkDelegate = fit::function<void(PairingMethod, PairingState::Delegate::TkResponse)>;
+  void set_tk_delegate(TkDelegate delegate) { tk_delegate_ = std::move(delegate); }
 
-  void set_local_id_info(std::optional<IdentityInfo> info) {
-    local_id_info_ = info;
-  }
+  void set_local_id_info(std::optional<IdentityInfo> info) { local_id_info_ = info; }
 
   int pairing_failed_count() const { return pairing_failed_count_; }
   int pairing_request_count() const { return pairing_request_count_; }
@@ -338,8 +309,8 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
 
   // We store the preq/pres values here to generate a valid confirm value for
   // the fake side.
-  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)>
-      local_pairing_cmd_, peer_pairing_cmd_;
+  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)> local_pairing_cmd_,
+      peer_pairing_cmd_;
 
   // Number of times the security callback given to UpgradeSecurity has been
   // called and the most recent parameters that it was called with.
@@ -415,13 +386,12 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
     NewPairingState(hci::Connection::Role::kMaster, ioc);
   }
 
-  void GenerateMatchingConfirmAndRandom(UInt128* out_confirm,
-                                        UInt128* out_random, uint32_t tk = 0) {
+  void GenerateMatchingConfirmAndRandom(UInt128* out_confirm, UInt128* out_random,
+                                        uint32_t tk = 0) {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
     *out_random = RandomUInt128();
-    GenerateConfirmValue(*out_random, out_confirm, false /* peer_initiator */,
-                         tk);
+    GenerateConfirmValue(*out_random, out_confirm, false /* peer_initiator */, tk);
   }
 
   // Emulate legacy pairing up until before encryption with STK. Returns the STK
@@ -430,10 +400,8 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   // This will not resolve the encryption request that is made by using the STK
   // before this function returns (this is to unit test encryption failure). Use
   // FastForwardToSTKEncrypted() to also emulate successful encryption.
-  void FastForwardToSTK(UInt128* out_stk,
-                        SecurityLevel level = SecurityLevel::kEncrypted,
-                        KeyDistGenField remote_keys = 0,
-                        KeyDistGenField local_keys = 0,
+  void FastForwardToSTK(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
+                        KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
                         uint8_t max_key_size = kMaxEncryptionKeySize) {
     UpgradeSecurity(level);
 
@@ -467,18 +435,16 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
     util::S1(tk, srand, pairing_random(), out_stk);
   }
 
-  void FastForwardToSTKEncrypted(
-      UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
-      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
-      uint8_t max_key_size = kMaxEncryptionKeySize) {
+  void FastForwardToSTKEncrypted(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
+                                 KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
+                                 uint8_t max_key_size = kMaxEncryptionKeySize) {
     FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size);
 
     ASSERT_TRUE(fake_link()->ltk());
     EXPECT_EQ(1, fake_link()->start_encryption_count());
 
     // Resolve the encryption request.
-    fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                                 true /* enabled */);
+    fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -499,26 +465,22 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
     NewPairingState(hci::Connection::Role::kSlave, ioc);
   }
 
-  void GenerateMatchingConfirmAndRandom(UInt128* out_confirm,
-                                        UInt128* out_random, uint32_t tk = 0) {
+  void GenerateMatchingConfirmAndRandom(UInt128* out_confirm, UInt128* out_random,
+                                        uint32_t tk = 0) {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
     zx_cprng_draw(out_random->data(), out_random->size());
-    GenerateConfirmValue(*out_random, out_confirm, true /* peer_initiator */,
-                         tk);
+    GenerateConfirmValue(*out_random, out_confirm, true /* peer_initiator */, tk);
   }
 
   void ReceivePairingRequest(IOCapability ioc = IOCapability::kNoInputNoOutput,
                              AuthReqField auth_req = 0,
                              uint8_t max_enc_key_size = kMaxEncryptionKeySize) {
-    ReceivePairingFeatures(ioc, auth_req, max_enc_key_size,
-                           true /* peer_initiator */);
+    ReceivePairingFeatures(ioc, auth_req, max_enc_key_size, true /* peer_initiator */);
   }
 
-  void FastForwardToSTK(UInt128* out_stk,
-                        SecurityLevel level = SecurityLevel::kEncrypted,
-                        KeyDistGenField remote_keys = 0,
-                        KeyDistGenField local_keys = 0,
+  void FastForwardToSTK(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
+                        KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
                         uint8_t max_key_size = kMaxEncryptionKeySize) {
     PairingRequestParams pairing_params;
     pairing_params.io_capability = IOCapability::kNoInputNoOutput;
@@ -559,10 +521,9 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
     util::S1(tk, pairing_random(), mrand, out_stk);
   }
 
-  void FastForwardToSTKEncrypted(
-      UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
-      KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
-      uint8_t max_key_size = kMaxEncryptionKeySize) {
+  void FastForwardToSTKEncrypted(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
+                                 KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
+                                 uint8_t max_key_size = kMaxEncryptionKeySize) {
     FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size);
 
     ASSERT_TRUE(fake_link()->ltk());
@@ -571,8 +532,7 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
     EXPECT_EQ(0, fake_link()->start_encryption_count());
 
     // Pretend that the master succeeded in encrypting the connection.
-    fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                                 true /* enabled */);
+    fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
     RunLoopUntilIdle();
     EXPECT_EQ(1, new_sec_props_count());
     EXPECT_EQ(level, new_sec_props().level());
@@ -1192,8 +1152,7 @@ TEST_F(SMP_InitiatorPairingTest, LegacyPhase2ConfirmValuesExchangedWithUserTK) {
 
   // Our Mconfirm/Mrand should be correct.
   UInt128 expected_confirm;
-  GenerateConfirmValue(pairing_random(), &expected_confirm,
-                       false /* peer_initiator */, kTK);
+  GenerateConfirmValue(pairing_random(), &expected_confirm, false /* peer_initiator */, kTK);
   EXPECT_EQ(expected_confirm, pairing_confirm());
 
   // Send Srandom.
@@ -1247,8 +1206,8 @@ TEST_F(SMP_InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(SecurityProperties(), pairing()->security());
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(
-      hci::Status(hci::StatusCode::kPinOrKeyMissing), false /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(hci::StatusCode::kPinOrKeyMissing),
+                                               false /* enabled */);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1256,8 +1215,7 @@ TEST_F(SMP_InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, auth_failure_callback_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_status().protocol_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(hci::StatusCode::kPinOrKeyMissing,
-            auth_failure_status().protocol_error());
+  EXPECT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 
   // No security property update should have been sent since the security
   // properties have not changed.
@@ -1278,8 +1236,7 @@ TEST_F(SMP_InitiatorPairingTest, EncryptionDisabledInPhase2) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
   EXPECT_EQ(SecurityProperties(), pairing()->security());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               false /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), false /* enabled */);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1324,8 +1281,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithoutKeyExchange) {
   // The host should have requested encryption.
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
 
   // Pairing should succeed without any pairing data.
@@ -1360,8 +1316,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithoutKeyExchange) {
 
 TEST_F(SMP_InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1387,11 +1342,9 @@ TEST_F(SMP_InitiatorPairingTest, Phase3EncryptionInformationReceivedTwice) {
 }
 
 // The responder sends EDIV and Rand before LTK.
-TEST_F(SMP_InitiatorPairingTest,
-       Phase3MasterIdentificationReceivedInWrongOrder) {
+TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedInWrongOrder) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1414,11 +1367,10 @@ TEST_F(SMP_InitiatorPairingTest,
 // The responder sends the sample LTK from the specification doc
 TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveSampleLTK) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
-  const UInt128 kLtkSample{{0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36,
-                            0xD8, 0x74, 0xF5, 0x39, 0x41, 0x38, 0x68, 0x4C}};
+  const UInt128 kLtkSample{{0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36, 0xD8, 0x74, 0xF5, 0x39,
+                            0x41, 0x38, 0x68, 0x4C}};
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1440,8 +1392,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveSampleLTK) {
 // The responder sends the sample Rand from the specification doc
 TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
   uint64_t kRandSample = 0xABCDEF1234567890;
   uint16_t kEDiv = 20;
@@ -1468,8 +1419,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveExampleRand) {
 TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveLongLTK) {
   UInt128 stk;
   auto max_key_size = 8;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey, 0, max_key_size);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey, 0, max_key_size);
 
   const UInt128 kLtk{{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}};
 
@@ -1492,8 +1442,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceiveLongLTK) {
 
 TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1526,8 +1475,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
 // Pairing completes after obtaining encryption information only.
 TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
 
   const UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
   uint64_t kRand = 5;
@@ -1587,8 +1535,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
 TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
   UInt128 stk;
   uint8_t max_key_size = 12;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey, 0u, max_key_size);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey, 0u, max_key_size);
 
   // This LTK is within the max_key_size specified above.
   const UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 0, 0, 0, 0}};
@@ -1696,8 +1643,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
   set_local_id_info(std::nullopt);
 
   // Encrypt with the STK to finish phase 2.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
 
   // Pairing should have been aborted.
@@ -1712,8 +1658,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3IsAbortedIfLocalIdKeyIsRemoved) {
 
 TEST_F(SMP_InitiatorPairingTest, Phase3IRKReceivedTwice) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kIdKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1742,8 +1687,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3IRKReceivedTwice) {
 // The responder sends its identity address before sending its IRK.
 TEST_F(SMP_InitiatorPairingTest, Phase3IdentityAddressReceivedInWrongOrder) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kIdKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1792,8 +1736,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3IdentityAddressReceivedTwice) {
 // Pairing completes after obtaining identity information only.
 TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithIdKey) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kIdKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kIdKey);
 
   // Pairing should still be in progress.
   EXPECT_EQ(0, pairing_failed_count());
@@ -1917,8 +1860,7 @@ TEST_F(SMP_InitiatorPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());
@@ -1938,8 +1880,7 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequest) {
 
 TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   UInt128 stk;
-  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            KeyDistGen::kEncKey);
+  FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted, KeyDistGen::kEncKey);
   EXPECT_EQ(stk, fake_link()->ltk()->value());
   EXPECT_EQ(1, pairing_request_count());
 
@@ -1955,8 +1896,7 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   ReceiveEncryptionInformation(kLTK);
   ReceiveMasterIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_TRUE(pairing_status());
@@ -2068,8 +2008,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase2ReceivePairingRandomInWrongOrder) {
   EXPECT_EQ(0, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(ErrorCode::kUnspecifiedReason,
-            pairing_complete_status().protocol_error());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, pairing_complete_status().protocol_error());
 }
 
 TEST_F(SMP_ResponderPairingTest, LegacyPhase2MconfirmValueInvalid) {
@@ -2115,8 +2054,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase2MconfirmValueInvalid) {
   EXPECT_EQ(0, pairing_callback_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(ErrorCode::kConfirmValueFailed, received_error_code());
-  EXPECT_EQ(ErrorCode::kConfirmValueFailed,
-            pairing_complete_status().protocol_error());
+  EXPECT_EQ(ErrorCode::kConfirmValueFailed, pairing_complete_status().protocol_error());
 }
 
 TEST_F(SMP_ResponderPairingTest, LegacyPhase2ConfirmValuesExchanged) {
@@ -2165,8 +2103,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase2ConfirmValuesExchanged) {
 
   // Sconfirm/Srand values we sent should be correct.
   UInt128 expected_confirm;
-  GenerateConfirmValue(pairing_random(), &expected_confirm,
-                       true /* peer_initiator */);
+  GenerateConfirmValue(pairing_random(), &expected_confirm, true /* peer_initiator */);
   EXPECT_EQ(expected_confirm, pairing_confirm());
 }
 
@@ -2202,8 +2139,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
 
   // Make sure that an encryption change has no effect.
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
   EXPECT_EQ(1, pairing_data_callback_count());
 
@@ -2212,8 +2148,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(1, new_sec_props_count());
 }
 
-TEST_F(SMP_ResponderPairingTest,
-       LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
+TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys) {
   EXPECT_EQ(0, enc_info_count());
   EXPECT_EQ(0, master_ident_count());
 
@@ -2272,8 +2207,8 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
   uint16_t max_key_size = 7;
 
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
-                            0u,                    // remote keys
-                            KeyDistGen::kEncKey,   // local keys
+                            0u,                   // remote keys
+                            KeyDistGen::kEncKey,  // local keys
                             max_key_size);
 
   // Local LTK, EDiv, and Rand should be sent to the peer.
@@ -2306,8 +2241,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
   }
 }
 
-TEST_F(SMP_ResponderPairingTest,
-       LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
+TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
   IdentityInfo local_id_info;
   local_id_info.irk = UInt128{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
   local_id_info.address = kLocalAddr;
@@ -2374,8 +2308,7 @@ TEST_F(SMP_ResponderPairingTest, AssignLongTermKey) {
 
   // The link security level is not assigned until successful encryption.
   EXPECT_EQ(SecurityProperties(), pairing()->security());
-  fake_link()->TriggerEncryptionChangeCallback(hci::Status(),
-                                               true /* enabled */);
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, new_sec_props_count());

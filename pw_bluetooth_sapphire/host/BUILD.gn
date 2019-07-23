@@ -127,6 +127,7 @@ executable("tests") {
     "att:tests",
     "common:tests",
     "data:tests",
+    "fidl:tests",
     "gap:tests",
     "gatt:tests",
     "hci:tests",

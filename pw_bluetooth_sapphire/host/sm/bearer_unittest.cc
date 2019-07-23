@@ -13,8 +13,7 @@ namespace bt {
 namespace sm {
 namespace {
 
-class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
-                       public Bearer::Listener {
+class SMP_BearerTest : public l2cap::testing::FakeChannelTest, public Bearer::Listener {
  public:
   SMP_BearerTest() : weak_ptr_factory_(this) {}
   ~SMP_BearerTest() override = default;
@@ -24,21 +23,18 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
 
   void TearDown() override { bearer_ = nullptr; }
 
-  void NewBearer(
-      hci::Connection::Role role = hci::Connection::Role::kMaster,
-      hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
-      bool sc_supported = false,
-      IOCapability io_capability = IOCapability::kNoInputNoOutput) {
-    l2cap::ChannelId cid = ll_type == hci::Connection::LinkType::kLE
-                               ? l2cap::kLESMPChannelId
-                               : l2cap::kSMPChannelId;
+  void NewBearer(hci::Connection::Role role = hci::Connection::Role::kMaster,
+                 hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
+                 bool sc_supported = false,
+                 IOCapability io_capability = IOCapability::kNoInputNoOutput) {
+    l2cap::ChannelId cid =
+        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 
     fake_chan_ = CreateFakeChannel(options);
-    bearer_ =
-        std::make_unique<Bearer>(fake_chan_, role, sc_supported, io_capability,
-                                 weak_ptr_factory_.GetWeakPtr());
+    bearer_ = std::make_unique<Bearer>(fake_chan_, role, sc_supported, io_capability,
+                                       weak_ptr_factory_.GetWeakPtr());
   }
 
   // Bearer::Listener override:
@@ -48,8 +44,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
   }
 
   // Bearer::Listener override:
-  void OnFeatureExchange(const PairingFeatures& features,
-                         const ByteBuffer& preq,
+  void OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
                          const ByteBuffer& pres) override {
     feature_exchange_count_++;
     features_ = features;
@@ -129,9 +124,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest,
   uint64_t rand() const { return rand_; }
   const UInt128& irk() const { return irk_; }
   const DeviceAddress& identity_addr() const { return identity_addr_; }
-  AuthReqField security_request_auth_req() const {
-    return security_request_auth_req_;
-  }
+  AuthReqField security_request_auth_req() const { return security_request_auth_req_; }
 
   void set_has_identity_info(bool value) { has_identity_info_ = value; }
 
@@ -231,8 +224,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartDefaultParams) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
-            true /* sc_supported */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
+            IOCapability::kDisplayYesNo);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
 
@@ -265,8 +258,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeInitiatorWithIdentityInfo) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
-            true /* sc_supported */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
+            IOCapability::kDisplayYesNo);
   set_has_identity_info(true);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
@@ -333,10 +326,9 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingFailed) {
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
-  fake_chan()->Receive(CreateStaticByteBuffer(
-      0x05,  // code: Pairing Failed
-      0x05   // reason: Pairing Not Supported
-      ));
+  fake_chan()->Receive(CreateStaticByteBuffer(0x05,  // code: Pairing Failed
+                                              0x05   // reason: Pairing Not Supported
+                                              ));
   RunLoopUntilIdle();
 
   EXPECT_FALSE(bearer()->pairing_started());
@@ -374,8 +366,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
   // clang-format on
 
   // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(),
-                  [this] { bearer()->InitiateFeatureExchange(); });
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
   ASSERT_TRUE(Expect(kRequest));
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -418,8 +409,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
   // clang-format on
 
   // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(),
-                  [this] { bearer()->InitiateFeatureExchange(); });
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
   ASSERT_TRUE(Expect(kRequest));
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -462,8 +452,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeFailureAuthenticationRequirements) {
   // clang-format on
 
   // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(),
-                  [this] { bearer()->InitiateFeatureExchange(); });
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
   ASSERT_TRUE(Expect(kRequest));
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -473,8 +462,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeFailureAuthenticationRequirements) {
   EXPECT_FALSE(bearer()->pairing_started());
   EXPECT_EQ(1, pairing_error_count());
   EXPECT_TRUE(last_error().is_protocol_error());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements,
-            last_error().protocol_error());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, last_error().protocol_error());
   EXPECT_EQ(0, feature_exchange_count());
 }
 
@@ -501,8 +489,7 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseJustWorks) {
   // clang-format on
 
   // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(),
-                  [this] { bearer()->InitiateFeatureExchange(); });
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
   ASSERT_TRUE(Expect(kRequest));
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -552,8 +539,7 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseMITM) {
   // clang-format on
 
   // Initiate the request in a loop task for Expect to detect it.
-  async::PostTask(dispatcher(),
-                  [this] { bearer()->InitiateFeatureExchange(); });
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
   ASSERT_TRUE(Expect(kRequest));
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -619,19 +605,17 @@ TEST_F(SMP_BearerTest, FeatureExchangeEncryptionKeySize) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderErrorMaster) {
-  const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: no auth. request by default
-                             0x10,  // encr. key size: 16 (default max)
-                             0x01,  // initiator key dist.: encr. key only
-                             0x01   // responder key dist.: encr. key only
-      );
-  const auto kFailure =
-      CreateStaticByteBuffer(0x05,  // code: Pairing Failed
-                             0x07   // reason: Command Not Supported
-      );
+  const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Request
+                                               0x03,  // IO cap.: NoInputNoOutput
+                                               0x00,  // OOB: not present
+                                               0x00,  // AuthReq: no auth. request by default
+                                               0x10,  // encr. key size: 16 (default max)
+                                               0x01,  // initiator key dist.: encr. key only
+                                               0x01   // responder key dist.: encr. key only
+  );
+  const auto kFailure = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
+                                               0x07   // reason: Command Not Supported
+  );
 
   NewBearer(hci::Connection::Role::kMaster);
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
@@ -648,10 +632,9 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderMalformedRequest) {
                              0x01   // initiator key dist.: encr. key only
                                     // Missing last byte
       );
-  const auto kFailure =
-      CreateStaticByteBuffer(0x05,  // code: Pairing Failed
-                             0x0A   // reason: Invalid Parameters
-      );
+  const auto kFailure = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
+                                               0x0A   // reason: Invalid Parameters
+  );
 
   NewBearer(hci::Connection::Role::kMaster);
   EXPECT_TRUE(ReceiveAndExpect(kMalformedRequest, kFailure));
@@ -767,15 +750,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderTimerRestarted) {
   NewBearer(hci::Connection::Role::kSlave);
 
   constexpr auto kThresholdSeconds = zx::sec(1);
-  const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: no auth. request by default
-                             0x10,  // encr. key size: 16 (default max)
-                             0x01,  // initiator key dist.: encr. key only
-                             0x01   // responder key dist.: encr. key only
-      );
+  const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Request
+                                               0x03,  // IO cap.: NoInputNoOutput
+                                               0x00,  // OOB: not present
+                                               0x00,  // AuthReq: no auth. request by default
+                                               0x10,  // encr. key size: 16 (default max)
+                                               0x01,  // initiator key dist.: encr. key only
+                                               0x01   // responder key dist.: encr. key only
+  );
   fake_chan()->Receive(kRequest);
   RunLoopUntilIdle();
   ASSERT_TRUE(bearer()->pairing_started());
@@ -808,29 +790,25 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderTimerRestarted) {
 
 // Pairing should fail if MITM is required but the pairing method cannot provide
 // it (due to I/O capabilities).
-TEST_F(SMP_BearerTest,
-       FeatureExchangeResponderFailedAuthenticationRequirements) {
+TEST_F(SMP_BearerTest, FeatureExchangeResponderFailedAuthenticationRequirements) {
   NewBearer(hci::Connection::Role::kSlave);
 
-  const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Response
-                             0x00,  // IO cap.: DisplayOnly
-                             0x00,  // OOB: not present
-                             0x04,  // AuthReq: MITM required
-                             0x07,  // encr. key size: 7 (default min)
-                             0x01,  // initiator key dist.: encr. key only
-                             0x01   // responder key dist.: encr. key only
-      );
-  const auto kFailure =
-      CreateStaticByteBuffer(0x05,  // code: Pairing Failed
-                             0x03   // reason: Authentication requirements
-      );
+  const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Response
+                                               0x00,  // IO cap.: DisplayOnly
+                                               0x00,  // OOB: not present
+                                               0x04,  // AuthReq: MITM required
+                                               0x07,  // encr. key size: 7 (default min)
+                                               0x01,  // initiator key dist.: encr. key only
+                                               0x01   // responder key dist.: encr. key only
+  );
+  const auto kFailure = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
+                                               0x03   // reason: Authentication requirements
+  );
 
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
   EXPECT_EQ(1, pairing_error_count());
   EXPECT_FALSE(bearer()->pairing_started());
-  EXPECT_EQ(ErrorCode::kAuthenticationRequirements,
-            last_error().protocol_error());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, last_error().protocol_error());
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderJustWorks) {
@@ -905,8 +883,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderSendsOnlyRequestedKeys) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderMITM) {
-  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
+            IOCapability::kDisplayYesNo);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -953,24 +931,22 @@ TEST_F(SMP_BearerTest, UnsupportedCommandDuringPairing) {
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
-  const auto kExpected =
-      CreateStaticByteBuffer(0x05,  // code: Pairing Failed
-                             0x07   // reason: Command Not Supported
-      );
+  const auto kExpected = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
+                                                0x07   // reason: Command Not Supported
+  );
   ReceiveAndExpect(CreateStaticByteBuffer(0xFF), kExpected);
   EXPECT_FALSE(bearer()->pairing_started());
 }
 
 TEST_F(SMP_BearerTest, StopTimer) {
-  const auto kResponse =
-      CreateStaticByteBuffer(0x02,  // code: Pairing Response
-                             0x00,  // IO cap.: DisplayOnly
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: MITM not required
-                             0x07,  // encr. key size: 7 (default min)
-                             0x00,  // initiator key dist.: none
-                             0x01   // responder key dist.: encr. key only
-      );
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                0x00,  // IO cap.: DisplayOnly
+                                                0x00,  // OOB: not present
+                                                0x00,  // AuthReq: MITM not required
+                                                0x07,  // encr. key size: 7 (default min)
+                                                0x00,  // initiator key dist.: none
+                                                0x01   // responder key dist.: encr. key only
+  );
 
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
@@ -1013,8 +989,7 @@ TEST_F(SMP_BearerTest, SendConfirmValue) {
 
   // Initiate the request in a loop task so it runs after the call to Expect
   // below.
-  async::PostTask(dispatcher(),
-                  [&] { EXPECT_TRUE(bearer()->SendConfirmValue(confirm)); });
+  async::PostTask(dispatcher(), [&] { EXPECT_TRUE(bearer()->SendConfirmValue(confirm)); });
 
   // clang-format off
   EXPECT_TRUE(Expect(CreateStaticByteBuffer(
@@ -1136,8 +1111,7 @@ TEST_F(SMP_BearerTest, SendRandomValue) {
 
   // Initiate the request in a loop task so it runs after the call to Expect
   // below.
-  async::PostTask(dispatcher(),
-                  [&] { EXPECT_TRUE(bearer()->SendRandomValue(rand)); });
+  async::PostTask(dispatcher(), [&] { EXPECT_TRUE(bearer()->SendRandomValue(rand)); });
 
   // clang-format off
   EXPECT_TRUE(Expect(CreateStaticByteBuffer(
@@ -1325,7 +1299,7 @@ TEST_F(SMP_BearerTest, OnIdentityAddressInformationCallbackPublic) {
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
-  DeviceAddress kExpected(DeviceAddress::Type::kLEPublic, "FF:EE:DD:CC:BB:AA");
+  DeviceAddress kExpected(DeviceAddress::Type::kLEPublic, {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF});
 
   // clang-format off
   const auto kIdentityAddr = CreateStaticByteBuffer(
@@ -1345,7 +1319,7 @@ TEST_F(SMP_BearerTest, OnIdentityAddressInformationCallbackRandom) {
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
-  DeviceAddress kExpected(DeviceAddress::Type::kLERandom, "FF:EE:DD:CC:BB:AA");
+  DeviceAddress kExpected(DeviceAddress::Type::kLERandom, {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF});
 
   // clang-format off
   const auto kIdentityAddr = CreateStaticByteBuffer(

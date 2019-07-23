@@ -14,14 +14,10 @@ namespace {
 
 constexpr ConnectionHandle kTestHandle = 0x0001;
 const LEConnectionParameters kTestParams(1, 1, 1);
-const DeviceAddress kLEAddress1(DeviceAddress::Type::kLEPublic,
-                                "00:00:00:00:00:01");
-const DeviceAddress kLEAddress2(DeviceAddress::Type::kLEPublic,
-                                "00:00:00:00:00:02");
-const DeviceAddress kACLAddress1(DeviceAddress::Type::kBREDR,
-                                 "00:00:00:00:00:03");
-const DeviceAddress kACLAddress2(DeviceAddress::Type::kBREDR,
-                                 "00:00:00:00:00:04");
+const DeviceAddress kLEAddress1(DeviceAddress::Type::kLEPublic, {1});
+const DeviceAddress kLEAddress2(DeviceAddress::Type::kLEPublic, {2});
+const DeviceAddress kACLAddress1(DeviceAddress::Type::kBREDR, {3});
+const DeviceAddress kACLAddress2(DeviceAddress::Type::kBREDR, {4});
 
 constexpr UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
 constexpr uint64_t kRand = 1;
@@ -32,8 +28,7 @@ const DataBufferInfo kLeBufferInfo(1024, 1);
 
 using bt::testing::CommandTransaction;
 
-using TestingBase =
-    bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 class ConnectionTest : public TestingBase {
  public:
@@ -47,27 +42,22 @@ class ConnectionTest : public TestingBase {
     StartTestDevice();
   }
 
-  ConnectionPtr NewLEConnection(
-      Connection::Role role = Connection::Role::kMaster) {
-    return Connection::CreateLE(kTestHandle, role, kLEAddress1, kLEAddress2,
-                                kTestParams, transport());
+  ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster) {
+    return Connection::CreateLE(kTestHandle, role, kLEAddress1, kLEAddress2, kTestParams,
+                                transport());
   }
 
-  ConnectionPtr NewACLConnection(
-      Connection::Role role = Connection::Role::kMaster) {
-    return Connection::CreateACL(kTestHandle, role, kACLAddress1, kACLAddress2,
-                                 transport());
+  ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster) {
+    return Connection::CreateACL(kTestHandle, role, kACLAddress1, kACLAddress2, transport());
   }
 };
 
 // Tests using this harness will be instantiated using ACL and LE link types.
 // See INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest, ...)
-class LinkTypeConnectionTest
-    : public ConnectionTest,
-      public ::testing::WithParamInterface<Connection::LinkType> {
+class LinkTypeConnectionTest : public ConnectionTest,
+                               public ::testing::WithParamInterface<Connection::LinkType> {
  protected:
-  ConnectionPtr NewConnection(
-      Connection::Role role = Connection::Role::kMaster) {
+  ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster) {
     const Connection::LinkType ll_type = GetParam();
     switch (ll_type) {
       case Connection::LinkType::kACL:
@@ -113,12 +103,11 @@ TEST_P(LinkTypeConnectionTest, Close) {
 
   // clang-format on
 
-  test_device()->QueueCommandTransaction(req_bytes,
-                                         {&cmd_status_bytes, &disc_cmpl_bytes});
+  test_device()->QueueCommandTransaction(req_bytes, {&cmd_status_bytes, &disc_cmpl_bytes});
 
   bool callback_called = false;
-  test_device()->SetTransactionCallback(
-      [&callback_called] { callback_called = true; }, dispatcher());
+  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
+                                        dispatcher());
 
   auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());
@@ -147,13 +136,12 @@ TEST_P(LinkTypeConnectionTest, CloseError) {
 
   // clang-format on
 
-  test_device()->QueueCommandTransaction(req_bytes,
-                                         {&cmd_status_bytes, &disc_cmpl_bytes});
+  test_device()->QueueCommandTransaction(req_bytes, {&cmd_status_bytes, &disc_cmpl_bytes});
 
   // The callback should get called regardless of the procedure status.
   bool callback_called = false;
-  test_device()->SetTransactionCallback(
-      [&callback_called] { callback_called = true; }, dispatcher());
+  test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
+                                        dispatcher());
 
   auto connection = NewConnection();
   EXPECT_TRUE(connection->is_open());
@@ -224,29 +212,27 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
 }
 
 TEST_F(HCI_ConnectionTest, LEStartEncryptionSuccess) {
-  auto kExpectedCommand = CreateStaticByteBuffer(
-      0x19, 0x20,  // HCI_LE_Start_Encryption
-      28,          // parameter total size
-      0x01, 0x00,  // connection handle: 1
-      0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,        // rand: 1
-      0xFF, 0x00,                                            // ediv: 255
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16  // LTK
-  );
-  auto kStatus =
-      CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
-                             4,          // parameter total size
-                             0x00,       // success status
-                             1,          // num_hci_command_packets
-                             0x19, 0x20  // opcode: HCI_LE_Start_Encryption
+  auto kExpectedCommand =
+      CreateStaticByteBuffer(0x19, 0x20,  // HCI_LE_Start_Encryption
+                             28,          // parameter total size
+                             0x01, 0x00,  // connection handle: 1
+                             0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,        // rand: 1
+                             0xFF, 0x00,                                            // ediv: 255
+                             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16  // LTK
       );
+  auto kStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
+                                        4,          // parameter total size
+                                        0x00,       // success status
+                                        1,          // num_hci_command_packets
+                                        0x19, 0x20  // opcode: HCI_LE_Start_Encryption
+  );
 
   test_device()->QueueCommandTransaction(kExpectedCommand, {&kStatus});
 
   bool callback = false;
   auto conn = NewLEConnection();
   conn->set_link_key(LinkKey(kLTK, kRand, kEDiv));
-  conn->set_encryption_change_callback(
-      [&](Status status, bool enabled) { callback = true; });
+  conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
 
@@ -300,12 +286,11 @@ const auto kReadEncryptionKeySizeCommand =
                            0x01, 0x00   // connection handle: 0x0001
     );
 
-const auto kDisconnectCommand =
-    CreateStaticByteBuffer(0x06, 0x04,  // opcode: HCI_Disconnect
-                           0x03,        // parameter total size
-                           0x01, 0x00,  // handle: 1
-                           0x05         // reason: authentication failure
-    );
+const auto kDisconnectCommand = CreateStaticByteBuffer(0x06, 0x04,  // opcode: HCI_Disconnect
+                                                       0x03,        // parameter total size
+                                                       0x01, 0x00,  // handle: 1
+                                                       0x05  // reason: authentication failure
+);
 
 TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   // clang-format off
@@ -350,8 +335,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 
   if (conn->ll_type() == Connection::LinkType::kACL) {
     // The host tries to validate the size of key used to encrypt ACL links.
-    test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
-                                           {&kKeySizeComplete});
+    test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
   }
 
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
@@ -379,29 +363,26 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 }
 
 TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
-  auto kKeySizeComplete =
-      CreateStaticByteBuffer(0x0E,        // event code: Command Complete
-                             0x07,        // parameters total size
-                             0xFF,        // num command packets allowed (255)
-                             0x08, 0x14,  // original opcode
+  auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
+                                                 0x07,        // parameters total size
+                                                 0xFF,        // num command packets allowed (255)
+                                                 0x08, 0x14,  // original opcode
 
-                             // return parameters
-                             0x2F,        // status (insufficient security)
-                             0x01, 0x00,  // connection handle: 0x0001
-                             0x10         // encryption key size: 16
-      );
+                                                 // return parameters
+                                                 0x2F,        // status (insufficient security)
+                                                 0x01, 0x00,  // connection handle: 0x0001
+                                                 0x10         // encryption key size: 16
+  );
 
   int callback_count = 0;
   auto conn = NewACLConnection();
-  conn->set_encryption_change_callback(
-      [&callback_count](Status status, bool enabled) {
-        callback_count++;
-        EXPECT_FALSE(status);
-        EXPECT_TRUE(enabled);
-      });
+  conn->set_encryption_change_callback([&callback_count](Status status, bool enabled) {
+    callback_count++;
+    EXPECT_FALSE(status);
+    EXPECT_TRUE(enabled);
+  });
 
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
-                                         {&kKeySizeComplete});
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
   test_device()->QueueCommandTransaction(kDisconnectCommand, {});
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
   RunLoopUntilIdle();
@@ -410,29 +391,26 @@ TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
 }
 
 TEST_F(HCI_ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
-  auto kKeySizeComplete =
-      CreateStaticByteBuffer(0x0E,        // event code: Command Complete
-                             0x07,        // parameters total size
-                             0xFF,        // num command packets allowed (255)
-                             0x08, 0x14,  // original opcode
+  auto kKeySizeComplete = CreateStaticByteBuffer(0x0E,        // event code: Command Complete
+                                                 0x07,        // parameters total size
+                                                 0xFF,        // num command packets allowed (255)
+                                                 0x08, 0x14,  // original opcode
 
-                             // return parameters
-                             0x00,        // status (success)
-                             0x01, 0x00,  // connection handle: 0x0001
-                             0x01         // encryption key size: 1
-      );
+                                                 // return parameters
+                                                 0x00,        // status (success)
+                                                 0x01, 0x00,  // connection handle: 0x0001
+                                                 0x01         // encryption key size: 1
+  );
 
   int callback_count = 0;
   auto conn = NewACLConnection();
-  conn->set_encryption_change_callback(
-      [&callback_count](Status status, bool enabled) {
-        callback_count++;
-        EXPECT_FALSE(status);
-        EXPECT_TRUE(enabled);
-      });
+  conn->set_encryption_change_callback([&callback_count](Status status, bool enabled) {
+    callback_count++;
+    EXPECT_FALSE(status);
+    EXPECT_TRUE(enabled);
+  });
 
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand,
-                                         {&kKeySizeComplete});
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
   test_device()->QueueCommandTransaction(kDisconnectCommand, {});
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
   RunLoopUntilIdle();
@@ -629,17 +607,14 @@ TEST_F(HCI_ConnectionTest, ClearAclState) {
   // Consider creating a FakeAclDataChannel class to prevent duplicating tests
   // in HCI_ConnectionTest and HCI_ACLDataChannelTest.
   size_t packet_count = 0;
-  test_device()->SetDataCallback([&](const auto&) { packet_count++; },
-                                 dispatcher());
+  test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(conn->handle(),
-                         ACLPacketBoundaryFlag::kFirstNonFlushable,
+      ACLDataPacket::New(conn->handle(), ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
       Connection::LinkType::kLE));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(conn->handle(),
-                         ACLPacketBoundaryFlag::kFirstNonFlushable,
+      ACLDataPacket::New(conn->handle(), ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
       Connection::LinkType::kLE));
 
@@ -660,8 +635,7 @@ TEST_F(HCI_ConnectionTest, ClearAclState) {
 
 // Test connection handling cases for all types of links.
 INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
-                         ::testing::Values(Connection::LinkType::kACL,
-                                           Connection::LinkType::kLE));
+                         ::testing::Values(Connection::LinkType::kACL, Connection::LinkType::kLE));
 
 }  // namespace
 }  // namespace hci

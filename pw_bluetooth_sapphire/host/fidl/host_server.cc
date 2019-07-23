@@ -29,6 +29,7 @@ namespace bthost {
 
 using bt::PeerId;
 using bt::sm::IOCapability;
+using fidl_helpers::AddressBytesFromString;
 using fidl_helpers::NewFidlError;
 using fidl_helpers::PeerIdFromString;
 using fidl_helpers::StatusToFidl;
@@ -295,7 +296,9 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     std::optional<bt::sm::LTK> bredr_link_key;
     if (bond.bredr) {
       // Dual-mode peers will have a BR/EDR-typed address.
-      address = bt::DeviceAddress(bt::DeviceAddress::Type::kBREDR, bond.bredr->address);
+      auto addr = AddressBytesFromString(bond.bredr->address);
+      ZX_DEBUG_ASSERT(addr);
+      address = bt::DeviceAddress(bt::DeviceAddress::Type::kBREDR, *addr);
       bredr_link_key = fidl_helpers::BrEdrKeyFromFidl(*bond.bredr);
     }
 

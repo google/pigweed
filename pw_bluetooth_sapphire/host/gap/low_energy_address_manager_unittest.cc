@@ -20,8 +20,7 @@ using testing::TestController;
 
 using TestingBase = testing::FakeControllerTest<TestController>;
 
-const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic,
-                            "AA:BB:CC:DD:EE:FF");
+const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 
 class GAP_LowEnergyAddressManagerTest : public TestingBase {
  public:
@@ -32,8 +31,7 @@ class GAP_LowEnergyAddressManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     addr_mgr_ = std::make_unique<LowEnergyAddressManager>(
-        kPublic, [this] { return IsRandomAddressChangeAllowed(); },
-        transport());
+        kPublic, [this] { return IsRandomAddressChangeAllowed(); }, transport());
     ASSERT_EQ(kPublic, addr_mgr()->identity_address());
     ASSERT_FALSE(addr_mgr()->irk());
     StartTestDevice();
@@ -57,15 +55,11 @@ class GAP_LowEnergyAddressManagerTest : public TestingBase {
   }
 
   // Called by |addr_mgr_|.
-  bool IsRandomAddressChangeAllowed() const {
-    return random_address_change_allowed_;
-  }
+  bool IsRandomAddressChangeAllowed() const { return random_address_change_allowed_; }
 
   LowEnergyAddressManager* addr_mgr() const { return addr_mgr_.get(); };
 
-  void set_random_address_change_allowed(bool value) {
-    random_address_change_allowed_ = value;
-  }
+  void set_random_address_change_allowed(bool value) { random_address_change_allowed_ = value; }
 
  private:
   std::unique_ptr<LowEnergyAddressManager> addr_mgr_;
@@ -74,18 +68,15 @@ class GAP_LowEnergyAddressManagerTest : public TestingBase {
   DISALLOW_COPY_ASSIGN_AND_MOVE(GAP_LowEnergyAddressManagerTest);
 };
 
-TEST_F(GAP_LowEnergyAddressManagerTest, DefaultState) {
-  EXPECT_EQ(kPublic, EnsureLocalAddress());
-}
+TEST_F(GAP_LowEnergyAddressManagerTest, DefaultState) { EXPECT_EQ(kPublic, EnsureLocalAddress()); }
 
 TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
   // Respond with success.
-  const auto kResponse =
-      CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                             1,           // 1 allowed packet
-                             0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                             0x00         // status: success
-      );
+  const auto kResponse = CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
+                                                1,           // 1 allowed packet
+                                                0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
+                                                0x00         // status: success
+  );
   test_device()->QueueCommandTransaction(
       CommandTransaction(hci::kLESetRandomAddress, {&kResponse}));
 
@@ -98,8 +89,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
 
         const auto addr_bytes = rx.view(sizeof(hci::CommandHeader));
         ASSERT_EQ(6u, addr_bytes.size());
-        addr = DeviceAddress(DeviceAddress::Type::kLERandom,
-                             DeviceAddressBytes(addr_bytes));
+        addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
       },
       dispatcher());
 
@@ -146,12 +136,11 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
 
 TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
   // Respond with success.
-  const auto kResponse =
-      CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
-                             1,           // 1 allowed packet
-                             0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
-                             0x00         // status: success
-      );
+  const auto kResponse = CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
+                                                1,           // 1 allowed packet
+                                                0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
+                                                0x00         // status: success
+  );
   test_device()->QueueCommandTransaction(
       CommandTransaction(hci::kLESetRandomAddress, {&kResponse}));
 
@@ -163,8 +152,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
 
         const auto addr_bytes = rx.view(sizeof(hci::CommandHeader));
         ASSERT_EQ(6u, addr_bytes.size());
-        addr = DeviceAddress(DeviceAddress::Type::kLERandom,
-                             DeviceAddressBytes(addr_bytes));
+        addr = DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
       },
       dispatcher());
 
@@ -224,8 +212,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest,
-       EnablePrivacyWhileAddressChangeIsDisallowed) {
+TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallowed) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet
@@ -293,8 +280,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpiration) {
   EXPECT_EQ(1, hci_count);
 }
 
-TEST_F(GAP_LowEnergyAddressManagerTest,
-       AddressExpirationWhileAddressChangeIsDisallowed) {
+TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDisallowed) {
   const auto kSuccessResponse =
       CreateStaticByteBuffer(0x0E, 4,     // Command Complete, 4 bytes,
                              1,           // 1 allowed packet

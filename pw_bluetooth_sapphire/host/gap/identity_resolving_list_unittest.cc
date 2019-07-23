@@ -11,10 +11,8 @@ namespace bt {
 namespace gap {
 namespace {
 
-const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
-                              "01:02:03:04:05:06");
-const DeviceAddress kAddress2(DeviceAddress::Type::kLERandom,
-                              "11:22:33:44:55:66");
+const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {6, 5, 4, 3, 2, 1});
+const DeviceAddress kAddress2(DeviceAddress::Type::kLERandom, {0x66, 0x55, 0x44, 0x33, 0x22, 0x11});
 
 TEST(GAP_IdentityResolvingListTest, ResolveEmpty) {
   IdentityResolvingList rl;

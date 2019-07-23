@@ -39,11 +39,10 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // occurs on this connection. This callback _may_ occur synchronously. For
   // example, a call to UpdateAckSeq() may synchronously invoke
   // |connection_failure_callback|.
-  EnhancedRetransmissionModeTxEngine(
-      ChannelId channel_id, uint16_t tx_mtu, uint8_t max_transmissions,
-      uint8_t n_frames_in_tx_window,
-      SendBasicFrameCallback send_basic_frame_callback,
-      ConnectionFailureCallback connection_failure_callback);
+  EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
+                                     uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
+                                     SendBasicFrameCallback send_basic_frame_callback,
+                                     ConnectionFailureCallback connection_failure_callback);
   ~EnhancedRetransmissionModeTxEngine() override = default;
 
   bool QueueSdu(ByteBufferPtr sdu) override;
@@ -74,8 +73,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
  private:
   struct PendingPdu {
-    PendingPdu(DynamicByteBuffer buf_in)
-        : buf(std::move(buf_in)), tx_count(0){};
+    PendingPdu(DynamicByteBuffer buf_in) : buf(std::move(buf_in)), tx_count(0){};
     DynamicByteBuffer buf;
     uint8_t tx_count;
   };
@@ -183,8 +181,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   std::list<PendingPdu> pending_pdus_;
   async::Task receiver_ready_poll_task_;
   async::Task monitor_task_;
-  fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine>
-      weak_factory_;  // Keep last
+  fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine> weak_factory_;  // Keep last
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };

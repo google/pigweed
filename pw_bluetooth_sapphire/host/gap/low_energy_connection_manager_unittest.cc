@@ -4,11 +4,12 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
-#include <fbl/macros.h>
 #include <zircon/assert.h>
 
 #include <memory>
 #include <vector>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -31,12 +32,10 @@ using bt::testing::FakePeer;
 
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 
-const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic,
-                              "00:00:00:00:00:01");
+const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
-const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom,
-                              "00:00:00:00:00:02");
-const DeviceAddress kAddress2(DeviceAddress::Type::kBREDR, "00:00:00:00:00:03");
+const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {2});
+const DeviceAddress kAddress2(DeviceAddress::Type::kBREDR, {3});
 
 class LowEnergyConnectionManagerTest : public TestingBase {
  public:
@@ -48,9 +47,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     TestingBase::SetUp();
 
     // Initialize with LE buffers only.
-    TestingBase::InitializeACLDataChannel(
-        hci::DataBufferInfo(),
-        hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
+    TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
+                                          hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
 
     FakeController::Settings settings;
     settings.ApplyLegacyLEConfig();
@@ -62,16 +60,14 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
         transport(), &addr_delegate_, dispatcher(),
-        fit::bind_member(
-            this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
+        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport(), &addr_delegate_, connector_.get(), peer_cache_.get(),
-        l2cap_, gatt::testing::FakeLayer::Create());
+        transport(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
+        gatt::testing::FakeLayer::Create());
 
     test_device()->SetConnectionStateCallback(
-        fit::bind_member(
-            this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged),
+        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged),
         dispatcher());
     StartTestDevice();
   }
@@ -101,32 +97,25 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   // Addresses of peers with a canceled connection attempt.
   const PeerList& canceled_peers() const { return canceled_peers_; }
 
-  hci::ConnectionPtr MoveLastRemoteInitiated() {
-    return std::move(last_remote_initiated_);
-  }
+  hci::ConnectionPtr MoveLastRemoteInitiated() { return std::move(last_remote_initiated_); }
 
  private:
   // Called by |connector_| when a new remote initiated connection is received.
-  void OnIncomingConnection(hci::ConnectionHandle handle,
-                            hci::Connection::Role role,
+  void OnIncomingConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                             const DeviceAddress& peer_address,
                             const hci::LEConnectionParameters& conn_params) {
-    DeviceAddress local_address(DeviceAddress::Type::kLEPublic,
-                                "03:02:01:01:02:03");
+    DeviceAddress local_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
 
     // Create a production connection object that can interact with the fake
     // controller.
-    last_remote_initiated_ = hci::Connection::CreateLE(
-        handle, role, local_address, peer_address, conn_params, transport());
+    last_remote_initiated_ = hci::Connection::CreateLE(handle, role, local_address, peer_address,
+                                                       conn_params, transport());
   }
 
   // Called by FakeController on connection events.
-  void OnConnectionStateChanged(const DeviceAddress& address, bool connected,
-                                bool canceled) {
-    bt_log(SPEW, "gap-test",
-           "OnConnectionStateChanged: %s connected: %s, canceled %s",
-           address.ToString().c_str(), connected ? "true" : "false",
-           canceled ? "true" : "false");
+  void OnConnectionStateChanged(const DeviceAddress& address, bool connected, bool canceled) {
+    bt_log(SPEW, "gap-test", "OnConnectionStateChanged: %s connected: %s, canceled %s",
+           address.ToString().c_str(), connected ? "true" : "false", canceled ? "true" : "false");
     if (canceled) {
       canceled_peers_.insert(address);
     } else if (connected) {
@@ -175,13 +164,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_status(
-      hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_status(hci::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 
   hci::Status status;
   auto callback = [&status](auto cb_status, auto conn_ref) {
@@ -190,24 +177,20 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   };
 
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished,
-            status.protocol_error());
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
 // LE Connection Complete event reports error
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(
-      hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   hci::Status status;
@@ -218,16 +201,13 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
 
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished,
-            status.protocol_error());
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished, status.protocol_error());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerTimeout) {
@@ -246,15 +226,13 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerTimeout) {
   conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   RunLoopFor(kTestRequestTimeout);
 
   EXPECT_FALSE(status);
   EXPECT_EQ(HostError::kTimedOut, status.error()) << status.ToString();
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
 // Tests that an entry in the cache does not expire while a connection attempt
@@ -278,20 +256,17 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   };
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
   EXPECT_FALSE(peer->temporary());
 
   RunLoopFor(kTestRequestTimeout);
   EXPECT_EQ(HostError::kTimedOut, status.error()) << status.ToString();
   EXPECT_EQ(peer, peer_cache()->FindByAddress(kAddress1));
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
   EXPECT_TRUE(peer->temporary());
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest,
-       PeerDoesNotExpireDuringDelayedConnect) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringDelayedConnect) {
   // Make the connection resolve after a delay that is longer than the cache
   // timeout.
   constexpr zx::duration kConnectionDelay = kCacheTimeout + zx::sec(1);
@@ -324,8 +299,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   };
   EXPECT_TRUE(conn_mgr()->Connect(id, callback));
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   RunLoopFor(kConnectionDelay);
   ASSERT_TRUE(conn_ref);
@@ -360,8 +334,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(peer->le());
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   RunLoopUntilIdle();
 
@@ -403,8 +376,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DeleteRefInClosedCallback) {
     EXPECT_FALSE(deleted);
   };
 
-  auto success_cb = [&conn_ref, &closed_cb](auto status,
-                                            auto cb_conn_ref) {
+  auto success_cb = [&conn_ref, &closed_cb](auto status, auto cb_conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(cb_conn_ref);
     conn_ref = std::move(cb_conn_ref);
@@ -460,8 +432,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ReleaseRef) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(connected_peers().empty());
-  EXPECT_EQ(Peer::ConnectionState::kNotConnected,
-            peer->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
@@ -469,8 +440,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
 
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(
-      hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer));
 
   hci::Status statuses[kRequestCount];
@@ -482,8 +452,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
   };
 
   for (int i = 0; i < kRequestCount; ++i) {
-    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback))
-        << "request count: " << i + 1;
+    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback)) << "request count: " << i + 1;
   }
 
   RunLoopUntilIdle();
@@ -491,8 +460,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
   ASSERT_EQ(kRequestCount, cb_count);
   for (int i = 0; i < kRequestCount; ++i) {
     EXPECT_TRUE(statuses[i].is_protocol_error());
-    EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished,
-              statuses[i].protocol_error())
+    EXPECT_EQ(hci::StatusCode::kConnectionFailedToBeEstablished, statuses[i].protocol_error())
         << "request count: " << i + 1;
   }
 }
@@ -512,8 +480,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, OnePeerManyPendingRequests) {
   };
 
   for (size_t i = 0; i < kRequestCount; ++i) {
-    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback))
-        << "request count: " << i + 1;
+    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback)) << "request count: " << i + 1;
   }
 
   RunLoopUntilIdle();
@@ -570,8 +537,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, AddRefAfterConnection) {
 
   // Add new references.
   for (size_t i = 1; i < kRefCount; ++i) {
-    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback))
-        << "request count: " << i + 1;
+    EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), callback)) << "request count: " << i + 1;
     RunLoopUntilIdle();
   }
 
@@ -635,8 +601,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   auto* peer1 = peer_cache()->NewPeer(kAddress1, true);
 
   auto fake_peer0 = std::make_unique<FakePeer>(kAddress0);
-  fake_peer0->set_connect_response(
-      hci::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer0->set_connect_response(hci::StatusCode::kConnectionFailedToBeEstablished);
   test_device()->AddPeer(std::move(fake_peer0));
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
@@ -724,8 +689,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectPendingConnections) {
 
   EXPECT_TRUE(conn_mgr()->Connect(dev0->identifier(), callback));
   EXPECT_TRUE(conn_mgr()->Connect(dev1->identifier(), callback));
-  EXPECT_EQ(Peer::ConnectionState::kInitializing,
-            dev0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, dev0->le()->connection_state());
 
   EXPECT_FALSE(conn_mgr()->Disconnect(dev0->identifier()));
   EXPECT_FALSE(conn_mgr()->Disconnect(dev1->identifier()));
@@ -941,8 +905,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest,
-       RemovePeerFromPeerCacheDuringDisconnection) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
@@ -985,8 +948,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
+  LowEnergyConnectionRefPtr conn_ref = conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
 
@@ -1005,8 +967,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
 
 // Listener receives remote initiated connection ref for a known peer with the
 // same BR/EDR address.
-TEST_F(GAP_LowEnergyConnectionManagerTest,
-       IncomingConnectionUpgradesKnownBrEdrPeerToDualMode) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kAddrAlias0, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(peer, peer_cache()->FindByAddress(kAddress0));
@@ -1022,8 +983,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
+  LowEnergyConnectionRefPtr conn_ref = conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
   ASSERT_TRUE(conn_ref);
 
   EXPECT_EQ(peer->identifier(), conn_ref->peer_identifier());
@@ -1040,24 +1000,21 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPLEConnectionParameterUpdate) {
   ASSERT_TRUE(peer);
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto conn_cb = [&conn_ref](const auto& peer_id, auto cr) {
-    conn_ref = std::move(cr);
-  };
+  auto conn_cb = [&conn_ref](const auto& peer_id, auto cr) { conn_ref = std::move(cr); };
   ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), conn_cb));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_ref);
 
   hci::LEPreferredConnectionParameters preferred(
-      hci::kLEConnectionIntervalMin, hci::kLEConnectionIntervalMax,
-      hci::kLEConnectionLatencyMax, hci::kLEConnectionSupervisionTimeoutMax);
+      hci::kLEConnectionIntervalMin, hci::kLEConnectionIntervalMax, hci::kLEConnectionLatencyMax,
+      hci::kLEConnectionSupervisionTimeoutMax);
 
   hci::LEConnectionParameters actual;
   bool fake_peer_cb_called = false;
   bool conn_params_cb_called = false;
 
-  auto fake_peer_cb = [&actual, &fake_peer_cb_called](const auto& addr,
-                                                      const auto& params) {
+  auto fake_peer_cb = [&actual, &fake_peer_cb_called](const auto& addr, const auto& params) {
     fake_peer_cb_called = true;
     actual = params;
   };
@@ -1069,8 +1026,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPLEConnectionParameterUpdate) {
   };
   conn_mgr()->SetConnectionParametersCallbackForTesting(conn_params_cb);
 
-  fake_l2cap()->TriggerLEConnectionParameterUpdate(conn_ref->handle(),
-                                                   preferred);
+  fake_l2cap()->TriggerLEConnectionParameterUpdate(conn_ref->handle(), preferred);
 
   RunLoopUntilIdle();
 
@@ -1094,9 +1050,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto conn_cb = [&conn_ref](const auto& peer_id, auto cr) {
-    conn_ref = std::move(cr);
-  };
+  auto conn_cb = [&conn_ref](const auto& peer_id, auto cr) { conn_ref = std::move(cr); };
   ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), conn_cb));
 
   RunLoopUntilIdle();

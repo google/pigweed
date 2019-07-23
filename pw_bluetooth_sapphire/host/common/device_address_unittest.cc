@@ -12,18 +12,14 @@
 namespace bt {
 namespace {
 
-// Initialize from string literal.
-const DeviceAddress kClassic(DeviceAddress::Type::kBREDR, "41:11:22:33:44:55");
-
 // Initialize from bytes.
-const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic,
-                            {0x42, 0x11, 0x22, 0x33, 0x44, 0x55});
+const DeviceAddress kClassic(DeviceAddress::Type::kBREDR, {0x55, 0x44, 0x33, 0x22, 0x11, 0x41});
+const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0x42, 0x11, 0x22, 0x33, 0x44, 0x55});
 const DeviceAddress kNonResolvable(DeviceAddress::Type::kLERandom,
-                                   "00:11:22:33:44:55");
+                                   {0x55, 0x44, 0x33, 0x22, 0x11, 0x00});
 const DeviceAddress kResolvable(DeviceAddress::Type::kLERandom,
-                                "43:11:22:33:44:55");
-const DeviceAddress kStatic(DeviceAddress::Type::kLERandom,
-                            "C3:11:22:33:44:55");
+                                {0x55, 0x44, 0x33, 0x22, 0x11, 0x43});
+const DeviceAddress kStatic(DeviceAddress::Type::kLERandom, {0x55, 0x44, 0x33, 0x22, 0x11, 0xC3});
 
 struct TestPayload {
   uint8_t arg0;
@@ -36,29 +32,6 @@ TEST(DeviceAddressBytesTest, ToString) {
 
   bdaddr = DeviceAddressBytes();
   EXPECT_EQ("00:00:00:00:00:00", bdaddr.ToString());
-}
-
-TEST(DeviceAddressBytesTest, SetFromString) {
-  DeviceAddressBytes bdaddr;
-  EXPECT_FALSE(bdaddr.SetFromString(""));
-  EXPECT_FALSE(bdaddr.SetFromString("FF"));
-  EXPECT_FALSE(bdaddr.SetFromString("FF:FF:FF:FF:"));
-  EXPECT_FALSE(bdaddr.SetFromString("FF:FF:FF:FF:FF:F"));
-  EXPECT_FALSE(bdaddr.SetFromString("FF:FF:FF:FF:FF:FZ"));
-  EXPECT_FALSE(bdaddr.SetFromString("FF:FF:FF:FF:FF:FZ"));
-  EXPECT_FALSE(bdaddr.SetFromString("FF:FF:FF:FF:FF:FF "));
-  EXPECT_FALSE(bdaddr.SetFromString(" FF:FF:FF:FF:FF:FF"));
-
-  EXPECT_TRUE(bdaddr.SetFromString("FF:FF:FF:FF:FF:FF"));
-  EXPECT_EQ("FF:FF:FF:FF:FF:FF", bdaddr.ToString());
-
-  EXPECT_TRUE(bdaddr.SetFromString("03:7F:FF:02:0F:01"));
-  EXPECT_EQ("03:7F:FF:02:0F:01", bdaddr.ToString());
-
-  // Test the constructor with a valid string (an invalid one would fail
-  // fatally).
-  bdaddr = DeviceAddressBytes("03:7F:FF:02:0F:01");
-  EXPECT_EQ("03:7F:FF:02:0F:01", bdaddr.ToString());
 }
 
 TEST(DeviceAddressBytesTest, CastFromBytes) {
@@ -90,7 +63,7 @@ TEST(DeviceAddressTest, Map) {
   DeviceAddress address1;
   DeviceAddress address2(address1);
   DeviceAddress address3(DeviceAddress::Type::kLEPublic, address1.value());
-  DeviceAddress address4(DeviceAddress::Type::kLEPublic, "00:00:00:00:00:01");
+  DeviceAddress address4(DeviceAddress::Type::kLEPublic, {1});
 
   map[address1] = 1;
 
@@ -121,7 +94,7 @@ TEST(DeviceAddressTest, UnorderedMap) {
   DeviceAddress address1;
   DeviceAddress address2(address1);
   DeviceAddress address3(DeviceAddress::Type::kLEPublic, address1.value());
-  DeviceAddress address4(DeviceAddress::Type::kLEPublic, "00:00:00:00:00:01");
+  DeviceAddress address4(DeviceAddress::Type::kLEPublic, {1});
 
   map[address1] = 1;
 
