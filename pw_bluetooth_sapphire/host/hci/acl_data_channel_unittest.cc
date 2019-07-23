@@ -98,7 +98,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
   test_device()->SetDataCallback(data_callback, dispatcher());
 
   // Queue up 10 packets in total, distributed among the two connection handles.
-  async::PostTask(dispatcher(), [this, kHandle0, kHandle1] {
+  async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       Connection::LinkType ll_type =
@@ -174,7 +174,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
   // Queue up 12 packets in total, distributed among the two connection handles
   // and link types. Since the BR/EDR MTU is zero, we expect to only see LE
   // packets transmitted.
-  async::PostTask(dispatcher(), [this, kHandle0, kHandle1] {
+  async::PostTask(dispatcher(), [this] {
     for (size_t i = 0; i < kTotalAttempts; ++i) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       auto packet =
@@ -253,7 +253,7 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
   test_device()->SetDataCallback(data_callback, dispatcher());
 
   // Queue up 10 packets in total, distributed among the two connection handles.
-  async::PostTask(dispatcher(), [this, kHandle0, kHandle1] {
+  async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       Connection::LinkType ll_type =
@@ -327,7 +327,7 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   test_device()->SetDataCallback(data_callback, dispatcher());
 
   // Queue up 10 packets in total, distributed among the two connection handles.
-  async::PostTask(dispatcher(), [this, kHandle0, kHandle1] {
+  async::PostTask(dispatcher(), [this] {
     for (int i = 0; i < 10; ++i) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       Connection::LinkType ll_type =

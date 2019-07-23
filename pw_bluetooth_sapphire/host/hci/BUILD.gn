@@ -95,10 +95,6 @@ source_set("testing") {
   ]
 }
 
-config("allow_unused_capture") {
-  cflags_cc = [ "-Wno-unused-lambda-capture" ]
-}
-
 source_set("tests") {
   testonly = true
 
@@ -122,6 +118,4 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
-
-  configs += [ ":allow_unused_capture" ]
 }
