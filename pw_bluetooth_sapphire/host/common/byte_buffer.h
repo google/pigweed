@@ -5,14 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 
-#include <fbl/macros.h>
-#include <zircon/assert.h>
-#include <zircon/syscalls.h>
-
 #include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
+
+#include <fbl/macros.h>
+#include <zircon/assert.h>
+#include <zircon/syscalls.h>
 
 #include "src/lib/fxl/strings/string_view.h"
 
@@ -60,9 +61,8 @@ class ByteBuffer {
   // A BufferView is only valid as long as the buffer that it points to is
   // valid. Care should be taken to ensure that a BufferView does not outlive
   // its backing buffer.
-  const BufferView view(
-      size_t pos = 0,
-      size_t size = std::numeric_limits<std::size_t>::max()) const;
+  const BufferView view(size_t pos = 0,
+                        size_t size = std::numeric_limits<std::size_t>::max()) const;
 
   // Copies |size| bytes of this buffer into |out_buffer| starting at offset
   // |pos| and returns the number of bytes that were copied. |out_buffer| must
@@ -104,6 +104,9 @@ class ByteBuffer {
   // Returns the contents of this buffer as a C++ string after copying its
   // contents.
   std::string ToString() const;
+
+  // Returns a copy of the contents of this buffer in a std::vector.
+  std::vector<uint8_t> ToVector() const;
 };
 
 using ByteBufferPtr = std::unique_ptr<ByteBuffer>;
@@ -148,8 +151,7 @@ class MutableByteBuffer : public ByteBuffer {
   // If T is an array of known bounds, the entire array will be written.
   template <typename T>
   void WriteObj(const T& data, size_t pos = 0) {
-    static_assert(!std::is_pointer<T>::value,
-                  "Pointer passed to WriteObj, deref or use Write");
+    static_assert(!std::is_pointer<T>::value, "Pointer passed to WriteObj, deref or use Write");
     Write(reinterpret_cast<const uint8_t*>(&data), sizeof(T), pos);
   }
 
@@ -161,8 +163,8 @@ class MutableByteBuffer : public ByteBuffer {
   // A BufferView is only valid as long as the buffer that it points to is
   // valid. Care should be taken to ensure that a BufferView does not outlive
   // its backing buffer.
-  MutableBufferView mutable_view(
-      size_t pos = 0, size_t size = std::numeric_limits<std::size_t>::max());
+  MutableBufferView mutable_view(size_t pos = 0,
+                                 size_t size = std::numeric_limits<std::size_t>::max());
 
   // Sets the contents of the buffer to 0s.
   void SetToZeros() { Fill(0); }
@@ -183,9 +185,7 @@ using MutableByteBufferPtr = std::unique_ptr<MutableByteBuffer>;
 template <size_t BufferSize>
 class StaticByteBuffer : public MutableByteBuffer {
  public:
-  StaticByteBuffer() {
-    static_assert(BufferSize, "|BufferSize| must be non-zero");
-  }
+  StaticByteBuffer() { static_assert(BufferSize, "|BufferSize| must be non-zero"); }
   ~StaticByteBuffer() override = default;
 
   // Variadic template constructor to initialize a StaticByteBuffer using an
@@ -197,8 +197,7 @@ class StaticByteBuffer : public MutableByteBuffer {
   template <typename... T>
   StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
     static_assert(BufferSize, "|BufferSize| must be non-zero");
-    static_assert(BufferSize == sizeof...(T),
-                  "|BufferSize| must match initializer list count");
+    static_assert(BufferSize == sizeof...(T), "|BufferSize| must match initializer list count");
   }
 
   // ByteBuffer overrides
@@ -286,6 +285,7 @@ class BufferView final : public ByteBuffer {
   explicit BufferView(const ByteBuffer& buffer,
                       size_t size = std::numeric_limits<std::size_t>::max());
   explicit BufferView(const fxl::StringView& string);
+  explicit BufferView(const std::vector<uint8_t>& vec);
 
   // The default constructor initializes this to an empty buffer.
   BufferView();

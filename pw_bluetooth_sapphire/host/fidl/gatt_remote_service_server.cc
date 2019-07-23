@@ -231,11 +231,8 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
     if (!self)
       return;
 
-    std::vector<uint8_t> vec(value.size());
-    MutableBufferView vec_view(vec.data(), vec.size());
-    value.Copy(&vec_view);
     self->binding()->events().OnCharacteristicValueUpdated(
-        id, fidl::VectorPtr<uint8_t>(std::move(vec)));
+        id, fidl::VectorPtr<uint8_t>(value.ToVector()));
   };
 
   auto status_cb = [self, svc = service_, id, callback = std::move(callback)](

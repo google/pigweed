@@ -18,8 +18,7 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   buffer.SetToZeros();
   buffer[3] = 3;
 
-  constexpr std::array<uint8_t, kBufferSize> kExpected{
-      {0x00, 0x00, 0x00, 0x03, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpected{{0x00, 0x00, 0x00, 0x03, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 
   // Moving will result in a copy.
@@ -60,8 +59,7 @@ TEST(ByteBufferTest, DynamicByteBuffer) {
   buffer.SetToZeros();
   buffer[3] = 3;
 
-  constexpr std::array<uint8_t, kBufferSize> kExpected{
-      {0x00, 0x00, 0x00, 0x03, 0x00}};
+  constexpr std::array<uint8_t, kBufferSize> kExpected{{0x00, 0x00, 0x00, 0x03, 0x00}};
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 
   // Moving will invalidate the source buffer.
@@ -128,6 +126,12 @@ TEST(ByteBufferTest, BufferViewTest) {
   EXPECT_EQ(kBufferSize, view.size());
 }
 
+TEST(ByteBufferTest, BufferViewFromVector) {
+  const std::vector<uint8_t> kData{{1, 2, 3}};
+  BufferView view(kData);
+  EXPECT_TRUE(ContainersEqual(kData, view));
+}
+
 TEST(ByteBufferTest, MutableBufferViewTest) {
   constexpr size_t kBufferSize = 5;
   constexpr size_t kViewSize = 3;
@@ -166,16 +170,14 @@ TEST(ByteBufferTest, Copy) {
   // should match the contents of |buffer|.
   size_t expected_write_size = buffer.size();
   ASSERT_EQ(expected_write_size, buffer.Copy(&target_buffer));
-  EXPECT_TRUE(
-      ContainersEqual(buffer, BufferView(target_buffer, expected_write_size)));
+  EXPECT_TRUE(ContainersEqual(buffer, BufferView(target_buffer, expected_write_size)));
 
   // Copy all of |buffer| starting at index 1.
   target_buffer.SetToZeros();
   expected_write_size = buffer.size() - 1;
   ASSERT_EQ(expected_write_size, buffer.Copy(&target_buffer, 1));
   BufferView sub = buffer.view(1);
-  EXPECT_TRUE(
-      ContainersEqual(sub, BufferView(target_buffer, expected_write_size)));
+  EXPECT_TRUE(ContainersEqual(sub, BufferView(target_buffer, expected_write_size)));
 
   // Copy one octet of |buffer| starting at index 2
   target_buffer.SetToZeros();
@@ -357,6 +359,18 @@ TEST(ByteBufferTest, Fill) {
   StaticByteBuffer<5> buffer;
   buffer.Fill('A');
   EXPECT_EQ("AAAAA", buffer.AsString());
+}
+
+TEST(ByteBufferTest, ToVectorEmpty) {
+  BufferView buffer;
+  std::vector<uint8_t> vec = buffer.ToVector();
+  EXPECT_TRUE(vec.empty());
+}
+
+TEST(ByteBufferTest, ToVector) {
+  auto buffer = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  std::vector<uint8_t> vec = buffer.ToVector();
+  EXPECT_TRUE(ContainersEqual(vec, buffer));
 }
 
 }  // namespace

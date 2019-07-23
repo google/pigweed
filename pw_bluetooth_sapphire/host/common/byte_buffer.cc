@@ -6,14 +6,12 @@
 
 namespace bt {
 
-size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos,
-                        size_t size) const {
+size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
   ZX_ASSERT(out_buffer);
   ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
 
   size_t write_size = std::min(size, this->size() - pos);
-  ZX_ASSERT_MSG(write_size <= out_buffer->size(),
-                "|out_buffer| is not large enough for copy!");
+  ZX_ASSERT_MSG(write_size <= out_buffer->size(), "|out_buffer| is not large enough for copy!");
 
   std::memcpy(out_buffer->mutable_data(), data() + pos, write_size);
   return write_size;
@@ -30,17 +28,23 @@ fxl::StringView ByteBuffer::AsString() const {
 
 std::string ByteBuffer::ToString() const { return AsString().ToString(); }
 
+std::vector<uint8_t> ByteBuffer::ToVector() const {
+  std::vector<uint8_t> vec(size());
+  MutableBufferView vec_view(vec.data(), vec.size());
+  vec_view.Write(*this);
+  return vec;
+}
+
 void MutableByteBuffer::Write(const uint8_t* data, size_t size, size_t pos) {
   if (!size)
     return;
 
   ZX_ASSERT(data);
-  ZX_ASSERT_MSG(pos <= this->size(),
-                "invalid offset (pos: %zu, buffer size: %zu", pos,
+  ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos: %zu, buffer size: %zu", pos,
                 this->size());
   ZX_ASSERT_MSG(size <= this->size() - pos,
-                "buffer not large enough! (required: %zu, available: %zu)",
-                size, this->size() - pos);
+                "buffer not large enough! (required: %zu, available: %zu)", size,
+                this->size() - pos);
 
   std::memcpy(mutable_data() + pos, data, size);
 }
@@ -53,14 +57,12 @@ void MutableByteBuffer::FillWithRandomBytes() {
 
 MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
   ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
-  return MutableBufferView(mutable_data() + pos,
-                           std::min(size, this->size() - pos));
+  return MutableBufferView(mutable_data() + pos, std::min(size, this->size() - pos));
 }
 
 DynamicByteBuffer::DynamicByteBuffer() : buffer_size_(0u) {}
 
-DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size)
-    : buffer_size_(buffer_size) {
+DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size) : buffer_size_(buffer_size) {
   if (buffer_size == 0)
     return;
   buffer_ = std::make_unique<uint8_t[]>(buffer_size);
@@ -72,8 +74,7 @@ DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size)
 
 DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
     : buffer_size_(buffer.size()),
-      buffer_(buffer.size() ? std::make_unique<uint8_t[]>(buffer.size())
-                            : nullptr) {
+      buffer_(buffer.size() ? std::make_unique<uint8_t[]>(buffer.size()) : nullptr) {
   ZX_ASSERT_MSG(!buffer_size_ || buffer_.get(),
                 "|buffer| cannot be nullptr when |buffer_size| is non-zero");
   buffer.Copy(this);
@@ -82,8 +83,7 @@ DynamicByteBuffer::DynamicByteBuffer(const ByteBuffer& buffer)
 DynamicByteBuffer::DynamicByteBuffer(const DynamicByteBuffer& buffer)
     : DynamicByteBuffer(static_cast<const ByteBuffer&>(buffer)) {}
 
-DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size,
-                                     std::unique_ptr<uint8_t[]> buffer)
+DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size, std::unique_ptr<uint8_t[]> buffer)
     : buffer_size_(buffer_size), buffer_(std::move(buffer)) {
   ZX_ASSERT_MSG(!buffer_size_ || buffer_.get(),
                 "|buffer| cannot be nullptr when |buffer_size| is non-zero");
@@ -108,26 +108,20 @@ uint8_t* DynamicByteBuffer::mutable_data() { return buffer_.get(); }
 
 size_t DynamicByteBuffer::size() const { return buffer_size_; }
 
-void DynamicByteBuffer::Fill(uint8_t value) {
-  memset(buffer_.get(), value, buffer_size_);
-}
+void DynamicByteBuffer::Fill(uint8_t value) { memset(buffer_.get(), value, buffer_size_); }
 
-ByteBuffer::const_iterator DynamicByteBuffer::cbegin() const {
-  return buffer_.get();
-}
+ByteBuffer::const_iterator DynamicByteBuffer::cbegin() const { return buffer_.get(); }
 
-ByteBuffer::const_iterator DynamicByteBuffer::cend() const {
-  return buffer_.get() + buffer_size_;
-}
+ByteBuffer::const_iterator DynamicByteBuffer::cend() const { return buffer_.get() + buffer_size_; }
 
-BufferView::BufferView(const ByteBuffer& buffer, size_t size) {
-  *this = buffer.view(0u, size);
-}
+BufferView::BufferView(const ByteBuffer& buffer, size_t size) { *this = buffer.view(0u, size); }
 
 BufferView::BufferView(const fxl::StringView& string) {
   size_ = string.size();
   bytes_ = reinterpret_cast<const uint8_t*>(string.data());
 }
+
+BufferView::BufferView(const std::vector<uint8_t>& vec) : BufferView(vec.data(), vec.size()) {}
 
 BufferView::BufferView(const void* bytes, size_t size)
     : size_(size), bytes_(static_cast<const uint8_t*>(bytes)) {
@@ -165,9 +159,7 @@ size_t MutableBufferView::size() const { return size_; }
 
 ByteBuffer::const_iterator MutableBufferView::cbegin() const { return bytes_; }
 
-ByteBuffer::const_iterator MutableBufferView::cend() const {
-  return bytes_ + size_;
-}
+ByteBuffer::const_iterator MutableBufferView::cend() const { return bytes_ + size_; }
 
 uint8_t* MutableBufferView::mutable_data() { return bytes_; }
 
