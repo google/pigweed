@@ -5,9 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
 #include <lib/zx/channel.h>
@@ -15,6 +12,10 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
@@ -31,8 +32,7 @@ class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to
 // respond to HCI commands in a predictable manner.
-class FakeController : public FakeControllerBase,
-                       public fbl::RefCounted<FakeController> {
+class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeController> {
  public:
   // Global settings for the FakeController. These can be used to initialize a
   // FakeController and/or to re-configure an existing one.
@@ -96,14 +96,13 @@ class FakeController : public FakeControllerBase,
     LEAdvertisingState();
 
     BufferView advertised_view() const { return BufferView(data, data_length); }
-    BufferView scan_rsp_view() const {
-      return BufferView(scan_rsp_data, scan_rsp_length);
-    }
+    BufferView scan_rsp_view() const { return BufferView(scan_rsp_data, scan_rsp_length); }
 
     bool enabled;
     hci::LEAdvertisingType adv_type;
     hci::LEOwnAddressType own_address_type;
-    uint16_t interval;
+    uint16_t interval_min;
+    uint16_t interval_max;
 
     uint8_t data_length;
     uint8_t data[hci::kMaxLEAdvertisingDataLength];
@@ -136,18 +135,12 @@ class FakeController : public FakeControllerBase,
   const LEScanState& le_scan_state() const { return le_scan_state_; }
 
   // Returns the current LE advertising state.
-  const LEAdvertisingState& le_advertising_state() const {
-    return le_adv_state_;
-  }
+  const LEAdvertisingState& le_advertising_state() const { return le_adv_state_; }
 
   // Returns the most recent LE connection request parameters.
-  const std::optional<LEConnectParams>& le_connect_params() const {
-    return le_connect_params_;
-  }
+  const std::optional<LEConnectParams>& le_connect_params() const { return le_connect_params_; }
 
-  const std::optional<DeviceAddress>& le_random_address() const {
-    return le_random_address_;
-  }
+  const std::optional<DeviceAddress>& le_random_address() const { return le_random_address_; }
 
   // Returns the current Local Name.set in the controller
   const std::string& local_name() const { return local_name_; }
@@ -157,25 +150,22 @@ class FakeController : public FakeControllerBase,
 
   // Sets a callback to be invoked when the scan state changes.
   using ScanStateCallback = fit::function<void(bool enabled)>;
-  void SetScanStateCallback(ScanStateCallback callback,
-                            async_dispatcher_t* dispatcher);
+  void SetScanStateCallback(ScanStateCallback callback, async_dispatcher_t* dispatcher);
 
   // Sets a callback to be invoked when the LE Advertising state changes.
-  void SetAdvertisingStateCallback(fit::closure callback,
-                                   async_dispatcher_t* dispatcher);
+  void SetAdvertisingStateCallback(fit::closure callback, async_dispatcher_t* dispatcher);
 
   // Sets a callback to be invoked on connection events.
   using ConnectionStateCallback =
       fit::function<void(const DeviceAddress&, bool connected, bool canceled)>;
-  void SetConnectionStateCallback(ConnectionStateCallback callback,
-                                  async_dispatcher_t* dispatcher);
+  void SetConnectionStateCallback(ConnectionStateCallback callback, async_dispatcher_t* dispatcher);
 
   // Sets a callback to be invoked when LE connection parameters are updated for
   // a fake device.
-  using LEConnectionParametersCallback = fit::function<void(
-      const DeviceAddress&, const hci::LEConnectionParameters&)>;
-  void SetLEConnectionParametersCallback(
-      LEConnectionParametersCallback callback, async_dispatcher_t* dispatcher);
+  using LEConnectionParametersCallback =
+      fit::function<void(const DeviceAddress&, const hci::LEConnectionParameters&)>;
+  void SetLEConnectionParametersCallback(LEConnectionParametersCallback callback,
+                                         async_dispatcher_t* dispatcher);
 
   // Sends a HCI event with the given parameters.
   void SendEvent(hci::EventCode event_code, const ByteBuffer& payload);
@@ -187,17 +177,15 @@ class FakeController : public FakeControllerBase,
   void SendACLPacket(hci::ConnectionHandle handle, const ByteBuffer& payload);
 
   // Sends a L2CAP basic frame.
-  void SendL2CAPBFrame(hci::ConnectionHandle handle,
-                       l2cap::ChannelId channel_id, const ByteBuffer& payload);
+  void SendL2CAPBFrame(hci::ConnectionHandle handle, l2cap::ChannelId channel_id,
+                       const ByteBuffer& payload);
 
   // Sends a L2CAP control frame over a signaling channel. If |is_le| is true,
   // then the LE signaling channel will be used.
-  void SendL2CAPCFrame(hci::ConnectionHandle handle, bool is_le,
-                       l2cap::CommandCode code, uint8_t id,
-                       const ByteBuffer& payload);
+  void SendL2CAPCFrame(hci::ConnectionHandle handle, bool is_le, l2cap::CommandCode code,
+                       uint8_t id, const ByteBuffer& payload);
 
-  void SendNumberOfCompletedPacketsEvent(hci::ConnectionHandle conn,
-                                         uint16_t num);
+  void SendNumberOfCompletedPacketsEvent(hci::ConnectionHandle conn, uint16_t num);
 
   // Sets up a LE link to the device with the given |addr|. FakeController will
   // report a connection event in which it is in the given |role|.
@@ -207,9 +195,8 @@ class FakeController : public FakeControllerBase,
   // Tells a fake device to initiate the L2CAP Connection Parameter Update
   // procedure using the given |params|. Has no effect if a connected fake
   // device with the given |addr| is not found.
-  void L2CAPConnectionParameterUpdate(
-      const DeviceAddress& addr,
-      const hci::LEPreferredConnectionParameters& params);
+  void L2CAPConnectionParameterUpdate(const DeviceAddress& addr,
+                                      const hci::LEPreferredConnectionParameters& params);
 
   // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
@@ -217,9 +204,7 @@ class FakeController : public FakeControllerBase,
 
  private:
   // Returns the current thread's task dispatcher.
-  async_dispatcher_t* dispatcher() const {
-    return async_get_default_dispatcher();
-  }
+  async_dispatcher_t* dispatcher() const { return async_get_default_dispatcher(); }
 
   // Finds and returns the FakePeer with the given parameters or nullptr if no
   // such device exists.
@@ -256,31 +241,26 @@ class FakeController : public FakeControllerBase,
   void NotifyAdvertisingState();
 
   // Notifies |conn_state_cb_| with the given parameters.
-  void NotifyConnectionState(const DeviceAddress& addr, bool connected,
-                             bool canceled = false);
+  void NotifyConnectionState(const DeviceAddress& addr, bool connected, bool canceled = false);
 
   // Called when a HCI_Create_Connection command is received.
-  void OnCreateConnectionCommandReceived(
-      const hci::CreateConnectionCommandParams& params);
+  void OnCreateConnectionCommandReceived(const hci::CreateConnectionCommandParams& params);
 
   // Notifies |le_conn_params_cb_|
   void NotifyLEConnectionParameters(const DeviceAddress& addr,
                                     const hci::LEConnectionParameters& params);
 
   // Called when a HCI_LE_Create_Connection command is received.
-  void OnLECreateConnectionCommandReceived(
-      const hci::LECreateConnectionCommandParams& params);
+  void OnLECreateConnectionCommandReceived(const hci::LECreateConnectionCommandParams& params);
 
   // Called when a HCI_LE_Connection_Update command is received.
-  void OnLEConnectionUpdateCommandReceived(
-      const hci::LEConnectionUpdateCommandParams& params);
+  void OnLEConnectionUpdateCommandReceived(const hci::LEConnectionUpdateCommandParams& params);
 
   // Called when a HCI_Disconnect command is received.
   void OnDisconnectCommandReceived(const hci::DisconnectCommandParams& params);
 
   // FakeControllerBase overrides:
-  void OnCommandPacketReceived(
-      const PacketView<hci::CommandHeader>& command_packet) override;
+  void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 
   Settings settings_;

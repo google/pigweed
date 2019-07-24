@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_LOW_ENERGY_PERIPHERAL_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_LOW_ENERGY_PERIPHERAL_SERVER_H_
 
+#include <fuchsia/bluetooth/le/cpp/fidl.h>
+
 #include <memory>
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <fuchsia/bluetooth/le/cpp/fidl.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -29,10 +30,12 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
  private:
   using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
 
+  // DEPRECATED
   class InstanceData final {
    public:
     InstanceData() = default;
-    InstanceData(bt::gap::AdvertisementId id, fxl::WeakPtr<LowEnergyPeripheralServer> owner);
+    InstanceData(bt::gap::AdvertisementInstance instance,
+                 fxl::WeakPtr<LowEnergyPeripheralServer> owner);
 
     InstanceData(InstanceData&& other) = default;
     InstanceData& operator=(InstanceData&& other) = default;
@@ -48,7 +51,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
     void ReleaseConnection();
 
    private:
-    bt::gap::AdvertisementId id_;
+    bt::gap::AdvertisementInstance instance_;
     ConnectionRefPtr conn_ref_;
     // The object that created and owns this InstanceData.
     // |owner_| must outlive the InstanceData.

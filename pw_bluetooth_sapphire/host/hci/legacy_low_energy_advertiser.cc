@@ -30,12 +30,11 @@ std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) {
 }
 
 std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const ByteBuffer& data) {
-  auto packet = CommandPacket::New(kLESetAdvertisingData,
-                                   sizeof(LESetAdvertisingDataCommandParams));
+  auto packet =
+      CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_view()
-                    ->mutable_payload<LESetAdvertisingDataCommandParams>();
+  auto params = packet->mutable_view()->mutable_payload<LESetAdvertisingDataCommandParams>();
   params->adv_data_length = data.size();
 
   MutableBufferView adv_view(params->adv_data, params->adv_data_length);
@@ -44,44 +43,30 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const ByteBuffer& data) {
   return packet;
 }
 
-std::unique_ptr<CommandPacket> BuildSetScanResponse(
-    const ByteBuffer& scan_rsp) {
-  auto packet = CommandPacket::New(kLESetScanResponseData,
-                                   sizeof(LESetScanResponseDataCommandParams));
+std::unique_ptr<CommandPacket> BuildSetScanResponse(const ByteBuffer& scan_rsp) {
+  auto packet =
+      CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_view()
-                    ->mutable_payload<LESetScanResponseDataCommandParams>();
+  auto params = packet->mutable_view()->mutable_payload<LESetScanResponseDataCommandParams>();
   params->scan_rsp_data_length = scan_rsp.size();
 
-  MutableBufferView scan_data_view(params->scan_rsp_data,
-                                   sizeof(params->scan_rsp_data));
+  MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
   scan_rsp.Copy(&scan_data_view);
 
   return packet;
 }
 
-std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-    LEAdvertisingType type, LEOwnAddressType own_address_type,
-    uint16_t interval_slices) {
-  auto packet =
-      CommandPacket::New(kLESetAdvertisingParameters,
-                         sizeof(LESetAdvertisingParametersCommandParams));
+std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(LEAdvertisingType type,
+                                                         LEOwnAddressType own_address_type,
+                                                         AdvertisingIntervalRange interval) {
+  auto packet = CommandPacket::New(kLESetAdvertisingParameters,
+                                   sizeof(LESetAdvertisingParametersCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  // Cap the advertising interval based on the allowed range
-  // (Vol 2, Part E, 7.8.5)
-  if (interval_slices > kLEAdvertisingIntervalMax) {
-    interval_slices = kLEAdvertisingIntervalMax;
-  } else if (interval_slices < kLEAdvertisingIntervalMin) {
-    interval_slices = kLEAdvertisingIntervalMin;
-  }
-
-  auto params =
-      packet->mutable_view()
-          ->mutable_payload<LESetAdvertisingParametersCommandParams>();
-  params->adv_interval_min = htole16(interval_slices);
-  params->adv_interval_max = htole16(interval_slices);
+  auto params = packet->mutable_view()->mutable_payload<LESetAdvertisingParametersCommandParams>();
+  params->adv_interval_min = htole16(interval.min());
+  params->adv_interval_max = htole16(interval.max());
   params->adv_type = type;
   params->own_address_type = own_address_type;
   params->adv_channel_map = kLEAdvertisingChannelAll;
@@ -93,60 +78,39 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
   return packet;
 }
 
-// This function is undefined outside the range that ms is valid:
-// notably at 40960 ms it will produce undefined values.
-// (65535 * 625 / 1000 = 40959);
-uint16_t DurationToTimeslices(zx::duration value) {
-  ZX_DEBUG_ASSERT(value.to_msecs() < 40960);
-  ZX_DEBUG_ASSERT(value.get() >= 0);
-
-  uint32_t ms = static_cast<uint32_t>(value.to_msecs());
-  return static_cast<uint16_t>(ms * 1000 / 625);
-}
-
-zx::duration TimeslicesToDuration(uint16_t timeslices) {
-  // Promoted so we don't overflow
-  uint32_t ms = static_cast<uint32_t>(timeslices) * 625 / 1000;
-  return zx::msec(ms);
-}
-
 }  // namespace
 
 LegacyLowEnergyAdvertiser::LegacyLowEnergyAdvertiser(fxl::RefPtr<Transport> hci)
     : hci_(hci), starting_(false), connect_callback_(nullptr) {
-  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(
-      async_get_default_dispatcher(), hci_);
+  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(async_get_default_dispatcher(), hci_);
 }
 
-LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
-  StopAdvertisingInternal();
-}
+LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() { StopAdvertisingInternal(); }
 
-size_t LegacyLowEnergyAdvertiser::GetSizeLimit() {
-  return kMaxLEAdvertisingDataLength;
-}
+size_t LegacyLowEnergyAdvertiser::GetSizeLimit() { return kMaxLEAdvertisingDataLength; }
 
 bool LegacyLowEnergyAdvertiser::AllowsRandomAddressChange() const {
   return !starting_ && !advertising();
 }
 
-void LegacyLowEnergyAdvertiser::StartAdvertising(
-    const DeviceAddress& address, const ByteBuffer& data,
-    const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
-    zx::duration interval, bool anonymous, AdvertisingStatusCallback callback) {
+void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
+                                                 const ByteBuffer& data, const ByteBuffer& scan_rsp,
+                                                 ConnectionCallback connect_callback,
+                                                 AdvertisingIntervalRange interval, bool anonymous,
+                                                 StatusCallback callback) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (anonymous) {
     bt_log(TRACE, "hci-le", "anonymous advertising not supported");
-    callback(zx::duration(), Status(HostError::kNotSupported));
+    callback(Status(HostError::kNotSupported));
     return;
   }
 
   if (advertising()) {
     if (address != advertised_) {
       bt_log(TRACE, "hci-le", "already advertising");
-      callback(zx::duration(), Status(HostError::kNotSupported));
+      callback(Status(HostError::kNotSupported));
       return;
     }
     bt_log(TRACE, "hci-le", "updating existing advertisement");
@@ -154,23 +118,17 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   if (data.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "advertising data too large");
-    callback(zx::duration(), Status(HostError::kInvalidParameters));
+    callback(Status(HostError::kInvalidParameters));
     return;
   }
 
   if (scan_rsp.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "scan response too large");
-    callback(zx::duration(), Status(HostError::kInvalidParameters));
+    callback(Status(HostError::kInvalidParameters));
     return;
   }
 
   if (!hci_cmd_runner_->IsReady()) {
-    if (starting_) {
-      bt_log(TRACE, "hci-le", "already starting");
-      callback(zx::duration(), Status(HostError::kInProgress));
-      return;
-    }
-
     // Abort any remaining commands from the current stop sequence. If we got
     // here then the controller MUST receive our request to disable advertising,
     // so the commands that we send next will overwrite the current advertising
@@ -182,8 +140,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   if (advertising()) {
     // Temporarily disable advertising so we can tweak the parameters.
-    hci_cmd_runner_->QueueCommand(
-        BuildEnablePacket(GenericEnableParam::kDisable));
+    hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kDisable));
   }
 
   // Set advertising and scan response data. If either data is empty then it
@@ -192,7 +149,6 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   hci_cmd_runner_->QueueCommand(BuildSetScanResponse(scan_rsp));
 
   // Set advertising parameters
-  uint16_t interval_slices = DurationToTimeslices(interval);
   LEAdvertisingType type = LEAdvertisingType::kAdvNonConnInd;
   if (connect_callback) {
     type = LEAdvertisingType::kAdvInd;
@@ -207,32 +163,28 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     own_addr_type = LEOwnAddressType::kRandom;
   }
 
-  hci_cmd_runner_->QueueCommand(
-      BuildSetAdvertisingParams(type, own_addr_type, interval_slices));
+  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingParams(type, own_addr_type, interval));
 
   // Enable advertising.
   hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kEnable));
 
   hci_cmd_runner_->RunCommands(
-      [this, address, interval_slices, callback = std::move(callback),
+      [this, address, callback = std::move(callback),
        connect_callback = std::move(connect_callback)](Status status) mutable {
         ZX_DEBUG_ASSERT(starting_);
         starting_ = false;
 
-        bt_log(TRACE, "hci-le", "advertising status: %s",
-               status.ToString().c_str());
+        bt_log(TRACE, "hci-le", "advertising status: %s", status.ToString().c_str());
 
-        zx::duration interval;
         if (status) {
           advertised_ = address;
           connect_callback_ = std::move(connect_callback);
-          interval = TimeslicesToDuration(interval_slices);
         } else {
           // Clear out the advertising data if it partially succeeded.
           StopAdvertisingInternal();
         }
 
-        callback(interval, status);
+        callback(status);
       });
 }
 
@@ -269,30 +221,27 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
   advertised_ = {};
 
   // Disable advertising
-  hci_cmd_runner_->QueueCommand(
-      BuildEnablePacket(GenericEnableParam::kDisable));
+  hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kDisable));
 
   // Unset advertising data
-  auto data_packet = CommandPacket::New(
-      kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
+  auto data_packet =
+      CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
   data_packet->mutable_view()->mutable_payload_data().SetToZeros();
   hci_cmd_runner_->QueueCommand(std::move(data_packet));
 
   // Set scan response data
-  auto scan_rsp_packet = CommandPacket::New(
-      kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
+  auto scan_rsp_packet =
+      CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
   scan_rsp_packet->mutable_view()->mutable_payload_data().SetToZeros();
   hci_cmd_runner_->QueueCommand(std::move(scan_rsp_packet));
 
-  hci_cmd_runner_->RunCommands([](Status status) {
-    bt_log(TRACE, "hci-le", "advertising stopped: %s", bt_str(status));
-  });
+  hci_cmd_runner_->RunCommands(
+      [](Status status) { bt_log(TRACE, "hci-le", "advertising stopped: %s", bt_str(status)); });
 }
 
-void LegacyLowEnergyAdvertiser::OnIncomingConnection(
-    ConnectionHandle handle, Connection::Role role,
-    const DeviceAddress& peer_address,
-    const LEConnectionParameters& conn_params) {
+void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                                                     const DeviceAddress& peer_address,
+                                                     const LEConnectionParameters& conn_params) {
   if (!advertising()) {
     bt_log(TRACE, "hci-le", "connection received without advertising!");
     return;
@@ -310,8 +259,7 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(
   StopAdvertisingInternal();
 
   // Assign the |advertised_| address as the connection's local address.
-  callback(Connection::CreateLE(handle, role, local_address, peer_address,
-                                conn_params, hci_));
+  callback(Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_));
 }
 
 }  // namespace hci

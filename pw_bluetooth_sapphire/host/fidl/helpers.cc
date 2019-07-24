@@ -213,8 +213,8 @@ bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {
 
   auto addr = AddressBytesFromString(data.address);
   ZX_ASSERT(addr);
-
   result.identity_address = bt::DeviceAddress(BondingAddrTypeFromFidl(data.address_type), *addr);
+
   if (data.ltk) {
     result.ltk = LtkFromFidl(*data.ltk);
   }

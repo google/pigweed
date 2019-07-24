@@ -94,13 +94,13 @@ enum AdvFlag : uint8_t {
 // This is in 1.28s time slice units, and is 10.24 seconds.
 constexpr uint8_t kInquiryLengthDefault = 0x08;
 
-// Constants used in Low Energy Discovery (see Core Spec v5.0, Vol 3, Part C,
-// Appendix A).
+// Constants used in Low Energy (see Core Spec v5.0, Vol 3, Part C, Appendix A).
+
 constexpr zx::duration kLEGeneralDiscoveryScanMin = zx::msec(10240);
 constexpr zx::duration kLEGeneralDiscoveryScanMinCoded = zx::msec(30720);
 constexpr zx::duration kLEScanFastPeriod = zx::msec(30720);
 
-// Recommended scan parameters that can be passed directly to the HCI commands.
+// Recommended scan and advertising parameters that can be passed directly to the HCI commands.
 // The HCI spec defines the time conversion as follows: Time =  N * 0.625 ms,
 // where N is the value of the constant.
 //
@@ -122,6 +122,21 @@ constexpr uint16_t kLEScanSlowInterval2 = 0x1000;       // 2.56 s
 constexpr uint16_t kLEScanSlowInterval2Coded = 0x3000;  // 7.68 s
 constexpr uint16_t kLEScanSlowWindow2 = 0x0024;         // 22.5 ms
 constexpr uint16_t kLEScanSlowWindow2Coded = 0x006C;    // 67.5 ms
+
+// Advertising parameters
+constexpr uint16_t kLEAdvertisingFastIntervalMin1 = 0x0030;       // 30 ms
+constexpr uint16_t kLEAdvertisingFastIntervalMax1 = 0x0060;       // 60 ms
+constexpr uint16_t kLEAdvertisingFastIntervalMin2 = 0x00A0;       // 100 ms
+constexpr uint16_t kLEAdvertisingFastIntervalMax2 = 0x00F0;       // 150 ms
+constexpr uint16_t kLEAdvertisingFastIntervalCodedMin1 = 0x0090;  // 90 ms
+constexpr uint16_t kLEAdvertisingFastIntervalCodedMax1 = 0x0120;  // 180 ms
+constexpr uint16_t kLEAdvertisingFastIntervalCodedMin2 = 0x01E0;  // 300 ms
+constexpr uint16_t kLEAdvertisingFastIntervalCodedMax2 = 0x02D0;  // 450 ms
+
+constexpr uint16_t kLEAdvertisingSlowIntervalMin = 0x0640;       // 1 s
+constexpr uint16_t kLEAdvertisingSlowIntervalMax = 0x0780;       // 1.2 s
+constexpr uint16_t kLEAdvertisingSlowIntervalCodedMin = 0x12C0;  // 3 s
+constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
 
 // Timeout used for the LE Create Connection command.
 constexpr zx::duration kLECreateConnectionTimeout = zx::sec(20);

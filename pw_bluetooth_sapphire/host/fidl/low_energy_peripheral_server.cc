@@ -17,11 +17,8 @@
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
 
-using fuchsia::bluetooth::le::AdvertisingData;
 using fuchsia::bluetooth::le::AdvertisingDataDeprecated;
 using fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr;
-using fuchsia::bluetooth::le::AdvertisingDataPtr;
-using fuchsia::bluetooth::le::Peripheral;
 using fuchsia::bluetooth::le::RemoteDevice;
 using fuchsia::bluetooth::le::RemoteDevicePtr;
 
@@ -54,9 +51,9 @@ std::optional<bt::gap::AdvertisementId> AdvertisementIdFromString(const std::str
 
 }  // namespace
 
-LowEnergyPeripheralServer::InstanceData::InstanceData(bt::gap::AdvertisementId id,
+LowEnergyPeripheralServer::InstanceData::InstanceData(bt::gap::AdvertisementInstance instance,
                                                       fxl::WeakPtr<LowEnergyPeripheralServer> owner)
-    : id_(id), owner_(owner) {
+    : instance_(std::move(instance)), owner_(owner) {
   ZX_DEBUG_ASSERT(owner_);
 }
 
@@ -66,7 +63,7 @@ void LowEnergyPeripheralServer::InstanceData::RetainConnection(ConnectionRefPtr 
   ZX_DEBUG_ASSERT(!conn_ref_);
 
   conn_ref_ = std::move(conn_ref);
-  owner_->binding()->events().OnCentralConnected(id_.ToString(), std::move(peer));
+  owner_->binding()->events().OnCentralConnected(instance_.id().ToString(), std::move(peer));
 }
 
 void LowEnergyPeripheralServer::InstanceData::ReleaseConnection() {
@@ -123,7 +120,8 @@ void LowEnergyPeripheralServer::StartAdvertisingDeprecated(
     };
   }
   auto advertising_status_cb = [self, callback = std::move(callback)](
-                                   bt::gap::AdvertisementId ad_id, bt::hci::Status status) mutable {
+                                   bt::gap::AdvertisementInstance instance,
+                                   bt::hci::Status status) mutable {
     if (!self)
       return;
 
@@ -133,12 +131,15 @@ void LowEnergyPeripheralServer::StartAdvertisingDeprecated(
       return;
     }
 
-    self->instances_[ad_id] = InstanceData(ad_id, self->weak_ptr_factory_.GetWeakPtr());
-    callback(Status(), ad_id.ToString());
+    auto id = instance.id();
+    self->instances_[id] = InstanceData(std::move(instance), self->weak_ptr_factory_.GetWeakPtr());
+    callback(Status(), id.ToString());
   };
 
+  // TODO(BT-812): Ignore the input |interval| value and default to FAST1 for now to make current
+  // users happy.
   advertising_manager->StartAdvertising(ad_data, scan_data, std::move(connect_cb),
-                                        zx::msec(interval), anonymous,
+                                        bt::gap::AdvertisingInterval::FAST1, anonymous,
                                         std::move(advertising_status_cb));
 }
 

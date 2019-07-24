@@ -18,6 +18,23 @@
 namespace bt {
 namespace hci {
 
+class AdvertisingIntervalRange final {
+ public:
+  // Constructs an advertising interval range, capping the values based on the allowed range
+  // (Vol 2, Part E, 7.8.5).
+  constexpr AdvertisingIntervalRange(uint16_t min, uint16_t max)
+      : min_(std::max(min, kLEAdvertisingIntervalMin)),
+        max_(std::min(max, kLEAdvertisingIntervalMax)) {
+    ZX_ASSERT(min <= max);
+  }
+
+  uint16_t min() const { return min_; }
+  uint16_t max() const { return max_; }
+
+ private:
+  uint16_t min_, max_;
+};
+
 class LowEnergyAdvertiser : public LocalAddressClient {
  public:
   virtual ~LowEnergyAdvertiser() = default;
@@ -64,23 +81,20 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // when this advertisement is connected to and the advertisement has been
   // stopped.
   //
-  // Provides results in |callback|. If advertising is setup, the final
-  // interval of advertising is provided in |interval_ms| and |status|
-  // is kSuccess.
+  // |interval| must be a value in "controller timeslices". For hci/hci_constants.h for the valid
+  // range.
   //
-  // Otherwise, |status| will indicate the type of error.
+  // Provides results in |callback|. If advertising is setup, the final
+  // interval of advertising is provided in |interval| and |status|
+  // is kSuccess. Otherwise, |status| indicates the type of error and |interval| has no meaning.
   //
   // |callback| may be called before this function returns, but will
   // be called before any calls to |connect_callback|.
-  using AdvertisingStatusCallback =
-      fit::function<void(zx::duration interval, Status status)>;
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
-  virtual void StartAdvertising(const DeviceAddress& address,
-                                const ByteBuffer& data,
-                                const ByteBuffer& scan_rsp,
-                                ConnectionCallback connect_callback,
-                                zx::duration interval, bool anonymous,
-                                AdvertisingStatusCallback callback) = 0;
+  virtual void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
+                                const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
+                                AdvertisingIntervalRange interval, bool anonymous,
+                                StatusCallback callback) = 0;
 
   // Stops any advertisement currently active on |address|. Idempotent and
   // asynchronous. Returns true if advertising will be stopped, false otherwise.
@@ -91,10 +105,9 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // will determine if it was a result of an active advertisement and route the
   // connection accordingly.
   // TODO(armansito): Require advertising handle.
-  virtual void OnIncomingConnection(
-      ConnectionHandle handle, Connection::Role role,
-      const DeviceAddress& peer_address,
-      const LEConnectionParameters& conn_params) = 0;
+  virtual void OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
+                                    const DeviceAddress& peer_address,
+                                    const LEConnectionParameters& conn_params) = 0;
 };
 
 }  // namespace hci

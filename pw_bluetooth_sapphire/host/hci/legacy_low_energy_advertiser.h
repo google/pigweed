@@ -30,10 +30,9 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // 2. If called while a stop request is pending, then cancels the stop request
   //    and proceeds with start.
   void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
-                        const ByteBuffer& scan_rsp,
-                        ConnectionCallback connect_callback,
-                        zx::duration interval, bool anonymous,
-                        AdvertisingStatusCallback callback) override;
+                        const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
+                        AdvertisingIntervalRange interval, bool anonymous,
+                        StatusCallback callback) override;
 
   // If called while a stop request is pending, returns false.
   // If called while a start request is pending, then cancels the start

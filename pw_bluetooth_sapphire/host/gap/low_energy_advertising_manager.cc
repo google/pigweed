@@ -34,7 +34,37 @@ void WriteFlags(MutableByteBuffer* buffer, bool limited = false) {
   }
 }
 
+// Returns the matching minimum and maximum advertising interval values in controller timeslices.
+hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
+  switch (interval) {
+    case AdvertisingInterval::FAST1:
+      return {kLEAdvertisingFastIntervalMin1, kLEAdvertisingFastIntervalMax1};
+    case AdvertisingInterval::FAST2:
+      return {kLEAdvertisingFastIntervalMin2, kLEAdvertisingFastIntervalMax2};
+    case AdvertisingInterval::SLOW:
+      return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
+  }
+
+  ZX_PANIC("unexpected advertising interval value");
+  return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
+}
+
 }  // namespace
+
+AdvertisementInstance::AdvertisementInstance() : id_(kInvalidAdvertisementId) {}
+
+AdvertisementInstance::AdvertisementInstance(AdvertisementId id,
+                                             fxl::WeakPtr<LowEnergyAdvertisingManager> owner)
+    : id_(id), owner_(owner) {
+  ZX_DEBUG_ASSERT(id_ != kInvalidAdvertisementId);
+  ZX_DEBUG_ASSERT(owner_);
+}
+
+AdvertisementInstance::~AdvertisementInstance() {
+  if (owner_) {
+    owner_->StopAdvertising(id_);
+  }
+}
 
 class LowEnergyAdvertisingManager::ActiveAdvertisement final {
  public:
@@ -57,11 +87,8 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
 };
 
 LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(
-    hci::LowEnergyAdvertiser* advertiser,
-    hci::LocalAddressDelegate* local_addr_delegate)
-    : advertiser_(advertiser),
-      local_addr_delegate_(local_addr_delegate),
-      weak_ptr_factory_(this) {
+    hci::LowEnergyAdvertiser* advertiser, hci::LocalAddressDelegate* local_addr_delegate)
+    : advertiser_(advertiser), local_addr_delegate_(local_addr_delegate), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(advertiser_);
   ZX_DEBUG_ASSERT(local_addr_delegate_);
 }
@@ -73,15 +100,15 @@ LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {
   }
 }
 
-void LowEnergyAdvertisingManager::StartAdvertising(
-    const AdvertisingData& data, const AdvertisingData& scan_rsp,
-    ConnectionCallback connect_callback, zx::duration interval, bool anonymous,
-    AdvertisingStatusCallback status_callback) {
+void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
+                                                   const AdvertisingData& scan_rsp,
+                                                   ConnectionCallback connect_callback,
+                                                   AdvertisingInterval interval, bool anonymous,
+                                                   AdvertisingStatusCallback status_callback) {
   // Can't be anonymous and connectable
   if (anonymous && connect_callback) {
     bt_log(TRACE, "gap-le", "can't advertise anonymously and connectable!");
-    status_callback(kInvalidAdvertisementId,
-                    hci::Status(HostError::kInvalidParameters));
+    status_callback(AdvertisementInstance(), hci::Status(HostError::kInvalidParameters));
     return;
   }
 
@@ -107,8 +134,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   // Revisit this logic when multi-advertising is supported.
   local_addr_delegate_->EnsureLocalAddress(
       [self, interval, anonymous, data_bytes = std::move(data_bytes),
-       scan_rsp_bytes = std::move(scan_rsp_bytes),
-       connect_cb = std::move(connect_callback),
+       scan_rsp_bytes = std::move(scan_rsp_bytes), connect_cb = std::move(connect_callback),
        status_cb = std::move(status_callback)](const auto& address) mutable {
         if (!self)
           return;
@@ -116,8 +142,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
         auto ad_ptr = std::make_unique<ActiveAdvertisement>(address);
         hci::LowEnergyAdvertiser::ConnectionCallback adv_conn_cb;
         if (connect_cb) {
-          adv_conn_cb = [self, id = ad_ptr->id(),
-                         connect_cb = std::move(connect_cb)](auto link) {
+          adv_conn_cb = [self, id = ad_ptr->id(), connect_cb = std::move(connect_cb)](auto link) {
             bt_log(TRACE, "gap-le", "received new connection");
 
             if (!self)
@@ -129,30 +154,28 @@ void LowEnergyAdvertisingManager::StartAdvertising(
           };
         }
         auto status_cb_wrapper = [self, ad_ptr = std::move(ad_ptr),
-                                  status_cb = std::move(status_cb)](
-                                     zx::duration, hci::Status status) mutable {
+                                  status_cb = std::move(status_cb)](hci::Status status) mutable {
           if (!self)
             return;
 
           if (!status) {
-            status_cb(kInvalidAdvertisementId, status);
+            status_cb(AdvertisementInstance(), status);
             return;
           }
 
           auto id = ad_ptr->id();
           self->advertisements_.emplace(id, std::move(ad_ptr));
-          status_cb(id, status);
+          status_cb(AdvertisementInstance(id, self), status);
         };
 
         // Call StartAdvertising, with the callback
-        self->advertiser_->StartAdvertising(
-            address, *data_bytes, *scan_rsp_bytes, std::move(adv_conn_cb),
-            interval, anonymous, std::move(status_cb_wrapper));
+        self->advertiser_->StartAdvertising(address, *data_bytes, *scan_rsp_bytes,
+                                            std::move(adv_conn_cb), GetIntervalRange(interval),
+                                            anonymous, std::move(status_cb_wrapper));
       });
 }
 
-bool LowEnergyAdvertisingManager::StopAdvertising(
-    AdvertisementId advertisement_id) {
+bool LowEnergyAdvertisingManager::StopAdvertising(AdvertisementId advertisement_id) {
   auto it = advertisements_.find(advertisement_id);
   if (it == advertisements_.end())
     return false;
