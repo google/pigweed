@@ -22,7 +22,15 @@ namespace {
 // Spec v5.0, Vol 3, Part B, Sec 4.6.1
 constexpr size_t kMinAttributeIDListBytes = 5;
 
+// The maximum amount of services allowed in a service search.
+// Spec v5.0, Vol 3, Part B, Sec 4.5.1
 constexpr size_t kMaxServiceSearchSize = 12;
+
+// Maximum number of services to return in a ServiceSearchResponse PDU
+// TODO(BT-366, BT-616): This is set to 9 because the minimum MTU size is 48.
+// Only returning 9 results results in a maximum packet size of 48 bytes.
+// PTS sets the MTU to 48 during qualification tests.
+constexpr size_t kMaxServiceSearchResponseServices = 9;
 
 // Validates continuation state in |buf|, which should be the configuration
 // state bytes of a PDU.
@@ -315,7 +323,9 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
   } else {
-    continuation_state_ = std::make_unique<DynamicByteBuffer>(cont_state_view);
+    continuation_state_ = NewSlabBuffer(cont_state_view.size());
+    continuation_state_->Write(cont_state_view);
+    return Status(HostError::kInProgress);
   }
   return Status();
 }
@@ -326,9 +336,11 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
   if (!complete()) {
     return nullptr;
   }
-  // We never generate continuation for ServiceSearchResponses.
-  // TODO(jamuraa): do we need to be concerned with MTU?
-  if (cont_state.size() > 0) {
+  uint16_t start_idx = 0;
+  if (cont_state.size() == sizeof(uint16_t)) {
+    start_idx = betoh16(cont_state.As<uint16_t>());
+  } else if (cont_state.size() != 0) {
+    // We don't generate continuation state of any other length.
     return nullptr;
   }
 
@@ -338,8 +350,19 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
     response_record_count = max;
   }
 
-  size_t size =
-      (2 * sizeof(uint16_t)) + (response_record_count * sizeof(ServiceHandle)) + sizeof(uint8_t);
+  uint8_t info_length = 0;
+  uint16_t current_record_count = response_record_count - start_idx;
+  if (!current_record_count) {
+    // Invalid continuation state, out of range.
+    return nullptr;
+  }
+  if (kMaxServiceSearchResponseServices < current_record_count) {
+    current_record_count = kMaxServiceSearchResponseServices;
+    info_length = sizeof(uint16_t);
+  }
+
+  size_t size = (2 * sizeof(uint16_t)) + (current_record_count * sizeof(ServiceHandle)) +
+                sizeof(uint8_t) + info_length;
 
   auto buf = GetNewPDU(kServiceSearchResponse, tid, size);
   if (!buf) {
@@ -351,16 +374,22 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
   // same.
   buf->WriteObj(htobe16(response_record_count), written);
   written += sizeof(uint16_t);
-  buf->WriteObj(htobe16(response_record_count), written);
+  buf->WriteObj(htobe16(current_record_count), written);
   written += sizeof(uint16_t);
 
-  for (size_t i = 0; i < response_record_count; i++) {
-    buf->WriteObj(htobe32(service_record_handle_list_.at(i)), written);
+  for (size_t i = 0; i < current_record_count; i++) {
+    buf->WriteObj(htobe32(service_record_handle_list_.at(start_idx + i)), written);
     written += sizeof(ServiceHandle);
   }
-  // There's no continuation state. Write the InfoLength.
-  buf->WriteObj(static_cast<uint8_t>(0), written);
+
+  // Continuation state
+  buf->WriteObj(info_length, written);
   written += sizeof(uint8_t);
+  if (info_length > 0) {
+    start_idx += current_record_count;
+    buf->WriteObj(htobe16(start_idx), written);
+    written += sizeof(uint16_t);
+  }
   ZX_DEBUG_ASSERT(written == sizeof(Header) + size);
   return buf;
 }

@@ -388,7 +388,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu) 
         return;
       }
       auto resp = SearchServices(request.service_search_pattern());
-      chan->Send(resp.GetPDU(request.max_service_record_count(), tid, BufferView()));
+      auto bytes =
+          resp.GetPDU(request.max_service_record_count(), tid, request.ContinuationState());
+      if (!bytes) {
+        SendErrorResponse(chan, tid, ErrorCode::kInvalidContinuationState);
+        return;
+      }
+      chan->Send(std::move(bytes));
       return;
     }
     case kServiceAttributeRequest: {

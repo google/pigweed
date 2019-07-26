@@ -186,7 +186,7 @@ class ServiceSearchResponse : public Response {
   // The total number of service records in the full response.
   uint16_t total_service_record_count_;
 
-  ByteBufferPtr continuation_state_;
+  MutableByteBufferPtr continuation_state_;
 };
 
 // Represents a range of attributes, inclusive of |start| and |end|.

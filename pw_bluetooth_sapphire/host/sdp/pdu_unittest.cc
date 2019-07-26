@@ -15,6 +15,24 @@ namespace bt {
 namespace sdp {
 namespace {
 
+// Helper function to match one of two options, and print useful information on failure.
+template <class Container1, class Container2, class Container3>
+bool MatchesOneOf(const Container1& one, const Container2& two, const Container3& actual) {
+  bool opt_one = std::equal(one.begin(), one.end(), actual.begin(), actual.end());
+  bool opt_two = std::equal(two.begin(), two.end(), actual.begin(), actual.end());
+
+  if (!(opt_one || opt_two)) {
+    std::cout << "Expected one of {";
+    PrintByteContainer(one.begin(), one.end());
+    std::cout << "}\n or {";
+    PrintByteContainer(two.begin(), two.end());
+    std::cout << "}\n   Found: { ";
+    PrintByteContainer(actual.begin(), actual.end());
+    std::cout << "}" << std::endl;
+  }
+  return opt_one || opt_two;
+}
+
 using SDP_PDUTest = ::testing::Test;
 
 TEST_F(SDP_PDUTest, ErrorResponse) {
@@ -126,7 +144,7 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestGetPDU) {
       );
 
   auto pdu = req.GetPDU(0x1234);
-  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) || ContainersEqual(kExpected2, *pdu));
+  EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
 };
 
 TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
@@ -187,6 +205,41 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
 
   pdu = resp.GetPDU(1, 0x0110, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLimited, *pdu));
+
+  resp.set_service_record_handle_list({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
+  const auto kExpectedContinuation =
+      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
+                             0x01, 0x10,              // Transaction ID (0x0110)
+                             0x00, 0x2B,              // Parameter length: 42
+                             0x00, 0x0B,              // Total service record count: 11
+                             0x00, 0x09,              // Current service record count: 9
+                             0x00, 0x00, 0x00, 0x01,  // Service record 1
+                             0x00, 0x00, 0x00, 0x02,  // Service record 2
+                             0x00, 0x00, 0x00, 0x03,  // Service record 3
+                             0x00, 0x00, 0x00, 0x04,  // Service record 4
+                             0x00, 0x00, 0x00, 0x05,  // Service record 5
+                             0x00, 0x00, 0x00, 0x06,  // Service record 6
+                             0x00, 0x00, 0x00, 0x07,  // Service record 7
+                             0x00, 0x00, 0x00, 0x08,  // Service record 8
+                             0x00, 0x00, 0x00, 0x09,  // Service record 9
+                             0x02, 0x00, 0x09         // Continuation state.
+      );
+
+  pdu = resp.GetPDU(0x00FF, 0x0110, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
+
+  const auto kExpectedRest = CreateStaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
+                                                    0x01, 0x10,  // Transaction ID (0x0110)
+                                                    0x00, 0x0D,  // Parameter length: 13
+                                                    0x00, 0x0B,  // Total service record count: 11
+                                                    0x00, 0x02,  // Current service record count: 2
+                                                    0x00, 0x00, 0x00, 0x0A,  // Service record 10
+                                                    0x00, 0x00, 0x00, 0x0B,  // Service record 11
+                                                    0x00  // No continuation state.
+  );
+
+  pdu = resp.GetPDU(0x00FF, 0x0110, CreateStaticByteBuffer(0x00, 0x09));
+  EXPECT_TRUE(ContainersEqual(kExpectedRest, *pdu));
 };
 
 TEST_F(SDP_PDUTest, ServiceAttributeRequestValidity) {
@@ -631,7 +684,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestGetPDU) {
       );
 
   auto pdu = req.GetPDU(0x1234);
-  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) || ContainersEqual(kExpected2, *pdu));
+  EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
 }
 
 TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
@@ -744,7 +797,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
   EXPECT_FALSE(status);
 }
 
-TEST_F(SDP_PDUTest, ServiceSearchAttributeRepsonseGetPDU) {
+TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
   ServiceSearchAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
@@ -787,8 +840,14 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
   rsp_search.set_service_record_handle_list({1, 2, 3, 4});
   auto buf = rsp_search.GetPDU(0xFFFF, 0x0110, BufferView());
   EXPECT_TRUE(buf);
-  // Any contnuation state is out of range for ServiceSearch
-  buf = rsp_search.GetPDU(0xFFFF, 0x0110, CreateStaticByteBuffer(0x01, 0xFF));
+  // Out of Range (continuation is zero-indexed)
+  uint16_t handle_count = htobe16(rsp_search.service_record_handle_list().size());
+  auto service_search_cont = DynamicByteBuffer(sizeof(uint16_t));
+  service_search_cont.WriteObj(handle_count, 0);
+  buf = rsp_search.GetPDU(0xFFFF, 0x0110, service_search_cont);
+  EXPECT_FALSE(buf);
+  // Wrong size continuation state
+  buf = rsp_search.GetPDU(0xFFFF, 0x0110, CreateStaticByteBuffer(0x01, 0xFF, 0xFF));
   EXPECT_FALSE(buf);
 
   ServiceAttributeResponse rsp_attr;

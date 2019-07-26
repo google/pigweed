@@ -114,6 +114,21 @@ class SDP_ServerTest : public TestingBase {
     return handle;
   }
 
+  ServiceHandle AddL2capService(l2cap::PSM channel) {
+    ServiceRecord record;
+    record.SetServiceClassUUIDs({profile::kAudioSink});
+    record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                                 DataElement(channel));
+    record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
+                                 DataElement(uint16_t(0x0103)));  // Version
+    record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
+    record.SetAttribute(kA2DP_SupportedFeatures,
+                        DataElement(uint16_t(0x0001)));  // Headphones
+    ServiceHandle handle = server()->RegisterService(std::move(record), NopConnectCallback);
+    EXPECT_TRUE(handle);
+    return handle;
+  }
+
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
   fbl::RefPtr<data::testing::FakeDomain> l2cap_;
@@ -409,6 +424,95 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
   EXPECT_TRUE(found_spp || found_a2dp);
 }
 
+// Test ServiceSearchRequest:
+//  - returns continuation state if too many services match
+//  - continuation state in request works correctly
+TEST_F(SDP_ServerTest, ServiceSearchContinuationState) {
+  l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad);
+  RunLoopUntilIdle();
+
+  // Add enough services to generate a continuation state.
+  AddL2capService(0x1001);
+  AddL2capService(0x1003);
+  AddL2capService(0x1005);
+  AddL2capService(0x1007);
+  AddL2capService(0x1009);
+  AddL2capService(0x100B);
+  AddL2capService(0x100D);
+  AddL2capService(0x100F);
+  AddL2capService(0x1011);
+  AddL2capService(0x1013);
+  AddL2capService(0x1015);
+
+  size_t received = 0;
+  ServiceSearchResponse rsp;
+
+  auto send_cb = [this, &rsp, &received](auto cb_packet) {
+    EXPECT_LE(sizeof(Header), cb_packet->size());
+    PacketView<sdp::Header> packet(cb_packet.get());
+    ASSERT_EQ(0x03, packet.header().pdu_id);
+    uint16_t len = betoh16(packet.header().param_length);
+    EXPECT_LE(len,
+              0x2F);  // 10 records (4 * 10) + 2 (total count) + 2 (current count) + 3 (cont state)
+    packet.Resize(len);
+    Status st = rsp.Parse(packet.payload_data());
+    if (received == 0) {
+      // Server should have split this into more than one response.
+      EXPECT_FALSE(st);
+      EXPECT_EQ(HostError::kInProgress, st.error());
+      EXPECT_FALSE(rsp.complete());
+    }
+    received++;
+    if (!st && (st.error() != HostError::kInProgress)) {
+      // This isn't a valid packet and we shouldn't try to get
+      // a continuation.
+      return;
+    }
+    if (!rsp.complete()) {
+      // Repeat the request with the continuation state if it was returned.
+      auto continuation = rsp.ContinuationState();
+      uint8_t cont_size = continuation.size();
+      EXPECT_NE(0u, cont_size);
+      // Make another request with the continutation data.
+      size_t param_size = 8 + cont_size;
+      auto kContinuedRequestStart =
+          CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                                 0x10, 0xC1,  // Transaction ID (0x10C1)
+                                 UpperBits(param_size), LowerBits(param_size),  // Parameter length
+                                 // ServiceSearchPattern
+                                 0x35, 0x03,        // Sequence uint8 3 bytes
+                                 0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                 0x00, 0xFF         // MaximumServiceRecordCount: 256
+          );
+
+      DynamicByteBuffer req(kContinuedRequestStart.size() + sizeof(uint8_t) + cont_size);
+
+      kContinuedRequestStart.Copy(&req);
+      req.Write(&cont_size, sizeof(uint8_t), kContinuedRequestStart.size());
+      req.Write(continuation, kContinuedRequestStart.size() + sizeof(uint8_t));
+
+      fake_chan()->Receive(req);
+    }
+  };
+
+  const auto kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                                                   0x10, 0xC1,  // Transaction ID (0x10C1)
+                                                   0x00, 0x08,  // Parameter length (8 bytes)
+                                                   // ServiceSearchPattern
+                                                   0x35, 0x03,        // Sequence uint8 3 bytes
+                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                                   0x00, 0xFF,  // MaximumServiceRecordCount: 256
+                                                   0x00         // Contunuation State: none
+  );
+
+  fake_chan()->SetSendCallback(send_cb, dispatcher());
+  fake_chan()->Receive(kL2capSearch);
+  RunLoopUntilIdle();
+
+  EXPECT_GE(received, 1u);
+  EXPECT_EQ(11u, rsp.service_record_handle_list().size());
+}
+
 // Test:
 //  - Answers ServiceAttributeRequest correctly
 //  - Continuation state is generated correctly re:
@@ -475,9 +579,9 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
       // Make another request with the continutation data.
       size_t param_size = 17 + cont_size;
       auto kContinuedRequestAttrStart =
-          CreateStaticByteBuffer(0x04,  // SDP_ServiceAttributeRequest
-                                 0x10, static_cast<uint8_t>(received + 1), UpperBits(param_size),
-                                 LowerBits(param_size),       // Parameter length
+          CreateStaticByteBuffer(0x04,        // SDP_ServiceAttributeRequest
+                                 0x10, 0x01,  // Transaction ID (reused)
+                                 UpperBits(param_size), LowerBits(param_size),  // Parameter length
                                  UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
                                  0x00, 0x0A,  // MaximumAttributeByteCount (10 bytes max)
                                  // AttributeIDList
