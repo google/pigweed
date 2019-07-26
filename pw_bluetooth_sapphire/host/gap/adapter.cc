@@ -201,9 +201,9 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
   }
   auto write_name =
       hci::CommandPacket::New(hci::kWriteLocalName, sizeof(hci::WriteLocalNameCommandParams));
-  auto name_buf = MutableBufferView(
-      write_name->mutable_view()->mutable_payload<hci::WriteLocalNameCommandParams>()->local_name,
-      hci::kMaxNameLength);
+  auto name_buf =
+      MutableBufferView(write_name->mutable_payload<hci::WriteLocalNameCommandParams>()->local_name,
+                        hci::kMaxNameLength);
   name_buf.Write(reinterpret_cast<const uint8_t*>(name.data()), name.size());
   if (null_term) {
     name_buf[name.size()] = 0;
@@ -222,9 +222,8 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
 void Adapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
   auto write_dev_class = hci::CommandPacket::New(hci::kWriteClassOfDevice,
                                                  sizeof(hci::WriteClassOfDeviceCommandParams));
-  write_dev_class->mutable_view()
-      ->mutable_payload<hci::WriteClassOfDeviceCommandParams>()
-      ->class_of_device = dev_class;
+  write_dev_class->mutable_payload<hci::WriteClassOfDeviceCommandParams>()->class_of_device =
+      dev_class;
   hci_->command_channel()->SendCommand(
       std::move(write_dev_class), dispatcher_,
       [cb = std::move(callback)](auto, const hci::EventPacket& event) {
@@ -314,9 +313,8 @@ void Adapter::InitializeStep2(InitializeCallback callback) {
     // HCI_Write_Simple_Pairing_Mode
     auto write_ssp = hci::CommandPacket::New(hci::kWriteSimplePairingMode,
                                              sizeof(hci::WriteSimplePairingModeCommandParams));
-    write_ssp->mutable_view()
-        ->mutable_payload<hci::WriteSimplePairingModeCommandParams>()
-        ->simple_pairing_mode = hci::GenericEnableParam::kEnable;
+    write_ssp->mutable_payload<hci::WriteSimplePairingModeCommandParams>()->simple_pairing_mode =
+        hci::GenericEnableParam::kEnable;
     init_seq_runner_->QueueCommand(std::move(write_ssp), [](const auto& event) {
       // Warn if the command failed
       hci_is_error(event, WARN, "gap", "write simple pairing mode failed");
@@ -334,9 +332,7 @@ void Adapter::InitializeStep2(InitializeCallback callback) {
                                               sizeof(hci::ReadLocalExtendedFeaturesCommandParams));
 
     // Try to read page 1.
-    cmd_packet->mutable_view()
-        ->mutable_payload<hci::ReadLocalExtendedFeaturesCommandParams>()
-        ->page_number = 1;
+    cmd_packet->mutable_payload<hci::ReadLocalExtendedFeaturesCommandParams>()->page_number = 1;
 
     init_seq_runner_->QueueCommand(
         std::move(cmd_packet), [this](const hci::EventPacket& cmd_complete) {
@@ -394,8 +390,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
     uint64_t event_mask = BuildEventMask();
     auto cmd_packet =
         hci::CommandPacket::New(hci::kSetEventMask, sizeof(hci::SetEventMaskCommandParams));
-    cmd_packet->mutable_view()->mutable_payload<hci::SetEventMaskCommandParams>()->event_mask =
-        htole64(event_mask);
+    cmd_packet->mutable_payload<hci::SetEventMaskCommandParams>()->event_mask = htole64(event_mask);
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "set event mask failed");
     });
@@ -406,7 +401,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
     uint64_t event_mask = BuildLEEventMask();
     auto cmd_packet =
         hci::CommandPacket::New(hci::kLESetEventMask, sizeof(hci::LESetEventMaskCommandParams));
-    cmd_packet->mutable_view()->mutable_payload<hci::LESetEventMaskCommandParams>()->le_event_mask =
+    cmd_packet->mutable_payload<hci::LESetEventMaskCommandParams>()->le_event_mask =
         htole64(event_mask);
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "LE set event mask failed");
@@ -419,8 +414,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
       state_.IsCommandSupported(24, hci::SupportedCommand::kWriteLEHostSupport)) {
     auto cmd_packet = hci::CommandPacket::New(hci::kWriteLEHostSupport,
                                               sizeof(hci::WriteLEHostSupportCommandParams));
-    auto params =
-        cmd_packet->mutable_view()->mutable_payload<hci::WriteLEHostSupportCommandParams>();
+    auto params = cmd_packet->mutable_payload<hci::WriteLEHostSupportCommandParams>();
     params->le_supported_host = hci::GenericEnableParam::kEnable;
     params->simultaneous_le_host = 0x00;  // note: ignored
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
@@ -435,9 +429,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
                                               sizeof(hci::ReadLocalExtendedFeaturesCommandParams));
 
     // Try to read page 2.
-    cmd_packet->mutable_view()
-        ->mutable_payload<hci::ReadLocalExtendedFeaturesCommandParams>()
-        ->page_number = 2;
+    cmd_packet->mutable_payload<hci::ReadLocalExtendedFeaturesCommandParams>()->page_number = 2;
 
     // HCI_Read_Local_Extended_Features
     init_seq_runner_->QueueCommand(

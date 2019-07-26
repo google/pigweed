@@ -10,13 +10,12 @@
 #include <zircon/status.h>
 
 #include "slab_allocators.h"
-#include "transport.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "src/lib/fxl/time/time_delta.h"
+#include "transport.h"
 
 namespace bt {
 namespace hci {

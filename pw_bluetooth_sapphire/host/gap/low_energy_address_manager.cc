@@ -92,7 +92,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
 
   auto cmd = hci::CommandPacket::New(hci::kLESetRandomAddress,
                                      sizeof(hci::LESetRandomAddressCommandParams));
-  auto params = cmd->mutable_view()->mutable_payload<hci::LESetRandomAddressCommandParams>();
+  auto params = cmd->mutable_payload<hci::LESetRandomAddressCommandParams>();
   params->random_address = random_addr.value();
 
   auto self = weak_ptr_factory_.GetWeakPtr();

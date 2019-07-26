@@ -141,7 +141,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId peer_id) {
   auto packet =
       hci::CommandPacket::New(hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_view()->mutable_payload<hci::RemoteNameRequestCommandParams>();
+  auto params = packet->mutable_payload<hci::RemoteNameRequestCommandParams>();
   params->bd_addr = peer->address().value();
   params->page_scan_repetition_mode = mode;
   if (peer->bredr()->clock_offset()) {
@@ -191,9 +191,8 @@ void BrEdrInterrogator::MakeRemoteNameRequest(PeerId peer_id) {
 void BrEdrInterrogator::ReadRemoteVersionInformation(PeerId peer_id, hci::ConnectionHandle handle) {
   auto packet = hci::CommandPacket::New(hci::kReadRemoteVersionInfo,
                                         sizeof(hci::ReadRemoteVersionInfoCommandParams));
-  packet->mutable_view()
-      ->mutable_payload<hci::ReadRemoteVersionInfoCommandParams>()
-      ->connection_handle = htole16(handle);
+  packet->mutable_payload<hci::ReadRemoteVersionInfoCommandParams>()->connection_handle =
+      htole16(handle);
 
   auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
@@ -232,9 +231,8 @@ void BrEdrInterrogator::ReadRemoteVersionInformation(PeerId peer_id, hci::Connec
 void BrEdrInterrogator::ReadRemoteFeatures(PeerId peer_id, hci::ConnectionHandle handle) {
   auto packet = hci::CommandPacket::New(hci::kReadRemoteSupportedFeatures,
                                         sizeof(hci::ReadRemoteSupportedFeaturesCommandParams));
-  packet->mutable_view()
-      ->mutable_payload<hci::ReadRemoteSupportedFeaturesCommandParams>()
-      ->connection_handle = htole16(handle);
+  packet->mutable_payload<hci::ReadRemoteSupportedFeaturesCommandParams>()->connection_handle =
+      htole16(handle);
 
   auto it = pending_.find(peer_id);
   ZX_DEBUG_ASSERT(it != pending_.end());
@@ -280,8 +278,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(PeerId peer_id, hci::Connecti
                                                    uint8_t page) {
   auto packet = hci::CommandPacket::New(hci::kReadRemoteExtendedFeatures,
                                         sizeof(hci::ReadRemoteExtendedFeaturesCommandParams));
-  auto params =
-      packet->mutable_view()->mutable_payload<hci::ReadRemoteExtendedFeaturesCommandParams>();
+  auto params = packet->mutable_payload<hci::ReadRemoteExtendedFeaturesCommandParams>();
   params->connection_handle = htole16(handle);
   params->page_number = page;
 

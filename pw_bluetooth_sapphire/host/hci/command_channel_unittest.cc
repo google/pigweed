@@ -136,7 +136,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
 
   constexpr size_t kPayloadSize = sizeof(InquiryCommandParams);
   auto packet = CommandPacket::New(kInquiry, kPayloadSize);
-  auto params = packet->mutable_view()->mutable_payload<InquiryCommandParams>();
+  auto params = packet->mutable_payload<InquiryCommandParams>();
   params->lap = kGIAC;
   params->inquiry_length = 1;
   params->num_responses = 0;

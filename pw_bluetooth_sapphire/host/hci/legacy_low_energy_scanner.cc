@@ -113,7 +113,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
   // HCI_LE_Set_Scan_Parameters
   auto command = CommandPacket::New(kLESetScanParameters, sizeof(LESetScanParametersCommandParams));
-  auto scan_params = command->mutable_view()->mutable_payload<LESetScanParametersCommandParams>();
+  auto scan_params = command->mutable_payload<LESetScanParametersCommandParams>();
   scan_params->scan_type = active ? LEScanType::kActive : LEScanType::kPassive;
   scan_params->scan_interval = htole16(scan_interval);
   scan_params->scan_window = htole16(scan_window);
@@ -128,7 +128,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
   // HCI_LE_Set_Scan_Enable
   command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
+  auto enable_params = command->mutable_payload<LESetScanEnableCommandParams>();
   enable_params->scanning_enabled = GenericEnableParam::kEnable;
   enable_params->filter_duplicates =
       filter_duplicates ? GenericEnableParam::kEnable : GenericEnableParam::kDisable;
@@ -217,7 +217,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
 
   // Tell the controller to stop scanning.
   auto command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
+  auto enable_params = command->mutable_payload<LESetScanEnableCommandParams>();
   enable_params->scanning_enabled = GenericEnableParam::kDisable;
   enable_params->filter_duplicates = GenericEnableParam::kDisable;
 

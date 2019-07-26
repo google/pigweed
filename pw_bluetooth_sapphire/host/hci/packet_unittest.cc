@@ -35,7 +35,7 @@ TEST(HCI_PacketTest, CommandPacket) {
   EXPECT_EQ(kTestOpCode, packet->opcode());
   EXPECT_EQ(kPayloadSize, packet->view().payload_size());
 
-  packet->mutable_view()->mutable_payload<TestPayload>()->foo = 127;
+  packet->mutable_payload<TestPayload>()->foo = 127;
 
   // clang-format off
 

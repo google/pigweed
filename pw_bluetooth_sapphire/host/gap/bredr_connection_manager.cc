@@ -41,9 +41,7 @@ void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
     }
     auto write_enable =
         hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
-    write_enable->mutable_view()
-        ->mutable_payload<hci::WriteScanEnableCommandParams>()
-        ->scan_enable = scan_type;
+    write_enable->mutable_payload<hci::WriteScanEnableCommandParams>()->scan_enable = scan_type;
     hci->command_channel()->SendCommand(
         std::move(write_enable), dispatcher,
         [cb = std::move(finish_cb)](auto, const hci::EventPacket& event) { cb(event.ToStatus()); });
@@ -263,7 +261,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
   auto write_activity = hci::CommandPacket::New(hci::kWritePageScanActivity,
                                                 sizeof(hci::WritePageScanActivityCommandParams));
   auto* activity_params =
-      write_activity->mutable_view()->mutable_payload<hci::WritePageScanActivityCommandParams>();
+      write_activity->mutable_payload<hci::WritePageScanActivityCommandParams>();
   activity_params->page_scan_interval = htole16(interval);
   activity_params->page_scan_window = htole16(window);
 
@@ -281,8 +279,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
 
   auto write_type =
       hci::CommandPacket::New(hci::kWritePageScanType, sizeof(hci::WritePageScanTypeCommandParams));
-  auto* type_params =
-      write_type->mutable_view()->mutable_payload<hci::WritePageScanTypeCommandParams>();
+  auto* type_params = write_type->mutable_payload<hci::WritePageScanTypeCommandParams>();
   type_params->page_scan_type =
       (interlaced ? hci::PageScanType::kInterlacedScan : hci::PageScanType::kStandardScan);
 
@@ -332,8 +329,7 @@ void BrEdrConnectionManager::OnConnectionRequest(const hci::EventPacket& event) 
 
     auto accept = hci::CommandPacket::New(hci::kAcceptConnectionRequest,
                                           sizeof(hci::AcceptConnectionRequestCommandParams));
-    auto accept_params =
-        accept->mutable_view()->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
+    auto accept_params = accept->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
     accept_params->bd_addr = params.bd_addr;
     accept_params->role = hci::ConnectionRole::kMaster;
 
@@ -347,8 +343,7 @@ void BrEdrConnectionManager::OnConnectionRequest(const hci::EventPacket& event) 
 
   auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,
                                         sizeof(hci::RejectConnectionRequestCommandParams));
-  auto reject_params =
-      reject->mutable_view()->mutable_payload<hci::RejectConnectionRequestCommandParams>();
+  auto reject_params = reject->mutable_payload<hci::RejectConnectionRequestCommandParams>();
   reject_params->bd_addr = params.bd_addr;
   reject_params->reason = hci::StatusCode::kConnectionRejectedBadBdAddr;
 
@@ -525,8 +520,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
 
     auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestNegativeReply,
                                          sizeof(hci::LinkKeyRequestNegativeReplyCommandParams));
-    auto reply_params =
-        reply->mutable_view()->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
+    auto reply_params = reply->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
 
     reply_params->bd_addr = params.bd_addr;
 
@@ -539,8 +533,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
 
   auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestReply,
                                        sizeof(hci::LinkKeyRequestReplyCommandParams));
-  auto reply_params =
-      reply->mutable_view()->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
+  auto reply_params = reply->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
   const sm::LTK& link_key = *peer->bredr()->link_key();
@@ -625,8 +618,7 @@ void BrEdrConnectionManager::OnIOCapabilitiesRequest(const hci::EventPacket& eve
 
   auto reply = hci::CommandPacket::New(hci::kIOCapabilityRequestReply,
                                        sizeof(hci::IOCapabilityRequestReplyCommandParams));
-  auto reply_params =
-      reply->mutable_view()->mutable_payload<hci::IOCapabilityRequestReplyCommandParams>();
+  auto reply_params = reply->mutable_payload<hci::IOCapabilityRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
   // TODO(jamuraa, BT-169): ask the PairingDelegate if it's set what the IO
@@ -652,8 +644,7 @@ void BrEdrConnectionManager::OnUserConfirmationRequest(const hci::EventPacket& e
   // (JustWorks)
   auto reply = hci::CommandPacket::New(hci::kUserConfirmationRequestReply,
                                        sizeof(hci::UserConfirmationRequestReplyCommandParams));
-  auto reply_params =
-      reply->mutable_view()->mutable_payload<hci::UserConfirmationRequestReplyCommandParams>();
+  auto reply_params = reply->mutable_payload<hci::UserConfirmationRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
 
@@ -781,7 +772,7 @@ void BrEdrConnectionManager::OnRequestTimeout() {
 void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress addr) {
   auto cancel = hci::CommandPacket::New(hci::kCreateConnectionCancel,
                                         sizeof(hci::CreateConnectionCancelCommandParams));
-  auto params = cancel->mutable_view()->mutable_payload<hci::CreateConnectionCancelCommandParams>();
+  auto params = cancel->mutable_payload<hci::CreateConnectionCancelCommandParams>();
   params->bd_addr = addr.value();
   hci_->command_channel()->SendCommand(
       std::move(cancel), dispatcher_, [](auto, const hci::EventPacket& event) {

@@ -6,9 +6,10 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
 
 #include <endian.h>
-#include <fbl/macros.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -31,6 +32,12 @@ class Packet<CommandHeader> : public PacketBase<CommandHeader, CommandPacket> {
 
   // Returns the HCI command opcode currently in this packet.
   OpCode opcode() const { return le16toh(view().header().opcode); }
+
+  // Convenience function to get a mutable payload of a packet.
+  template <typename PayloadType>
+  PayloadType* mutable_payload() {
+    return mutable_view()->mutable_payload<PayloadType>();
+  }
 
  protected:
   Packet<CommandHeader>() = default;

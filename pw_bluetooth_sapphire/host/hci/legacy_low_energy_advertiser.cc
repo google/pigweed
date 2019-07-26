@@ -22,9 +22,7 @@ namespace {
 std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) {
   constexpr size_t kPayloadSize = sizeof(LESetAdvertisingEnableCommandParams);
   auto packet = CommandPacket::New(kLESetAdvertisingEnable, kPayloadSize);
-  packet->mutable_view()
-      ->mutable_payload<LESetAdvertisingEnableCommandParams>()
-      ->advertising_enable = enable;
+  packet->mutable_payload<LESetAdvertisingEnableCommandParams>()->advertising_enable = enable;
   ZX_ASSERT(packet);
   return packet;
 }
@@ -34,7 +32,7 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const ByteBuffer& data) {
       CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_view()->mutable_payload<LESetAdvertisingDataCommandParams>();
+  auto params = packet->mutable_payload<LESetAdvertisingDataCommandParams>();
   params->adv_data_length = data.size();
 
   MutableBufferView adv_view(params->adv_data, params->adv_data_length);
@@ -48,7 +46,7 @@ std::unique_ptr<CommandPacket> BuildSetScanResponse(const ByteBuffer& scan_rsp) 
       CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_view()->mutable_payload<LESetScanResponseDataCommandParams>();
+  auto params = packet->mutable_payload<LESetScanResponseDataCommandParams>();
   params->scan_rsp_data_length = scan_rsp.size();
 
   MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
@@ -64,7 +62,7 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(LEAdvertisingType type,
                                    sizeof(LESetAdvertisingParametersCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
-  auto params = packet->mutable_view()->mutable_payload<LESetAdvertisingParametersCommandParams>();
+  auto params = packet->mutable_payload<LESetAdvertisingParametersCommandParams>();
   params->adv_interval_min = htole16(interval.min());
   params->adv_interval_max = htole16(interval.max());
   params->adv_type = type;

@@ -151,7 +151,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
     auto packet =
         hci::CommandPacket::New(hci::kWriteInquiryMode, sizeof(hci::WriteInquiryModeCommandParams));
-    packet->mutable_view()->mutable_payload<hci::WriteInquiryModeCommandParams>()->inquiry_mode =
+    packet->mutable_payload<hci::WriteInquiryModeCommandParams>()->inquiry_mode =
         desired_inquiry_mode_;
     hci_->command_channel()->SendCommand(
         std::move(packet), dispatcher_,
@@ -167,7 +167,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
   }
 
   auto inquiry = hci::CommandPacket::New(hci::kInquiry, sizeof(hci::InquiryCommandParams));
-  auto params = inquiry->mutable_view()->mutable_payload<hci::InquiryCommandParams>();
+  auto params = inquiry->mutable_payload<hci::InquiryCommandParams>();
   params->lap = hci::kGIAC;
   params->inquiry_length = kInquiryLengthDefault;
   params->num_responses = 0;
@@ -289,7 +289,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   auto packet =
       hci::CommandPacket::New(hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_view()->mutable_payload<hci::RemoteNameRequestCommandParams>();
+  auto params = packet->mutable_payload<hci::RemoteNameRequestCommandParams>();
   ZX_DEBUG_ASSERT(peer->bredr());
   ZX_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
   params->bd_addr = peer->address().value();
@@ -403,9 +403,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     }
     auto write_enable =
         hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
-    write_enable->mutable_view()
-        ->mutable_payload<hci::WriteScanEnableCommandParams>()
-        ->scan_enable = scan_type;
+    write_enable->mutable_payload<hci::WriteScanEnableCommandParams>()->scan_enable = scan_type;
     resolve_pending.cancel();
     self->hci_->command_channel()->SendCommand(
         std::move(write_enable), self->dispatcher_, [self](auto, const hci::EventPacket& event) {
@@ -435,7 +433,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
   auto write_activity = hci::CommandPacket::New(hci::kWriteInquiryScanActivity,
                                                 sizeof(hci::WriteInquiryScanActivityCommandParams));
   auto* activity_params =
-      write_activity->mutable_view()->mutable_payload<hci::WriteInquiryScanActivityCommandParams>();
+      write_activity->mutable_payload<hci::WriteInquiryScanActivityCommandParams>();
   activity_params->inquiry_scan_interval = htole16(interval);
   activity_params->inquiry_scan_window = htole16(window);
 
@@ -449,8 +447,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
 
   auto write_type = hci::CommandPacket::New(hci::kWriteInquiryScanType,
                                             sizeof(hci::WriteInquiryScanTypeCommandParams));
-  auto* type_params =
-      write_type->mutable_view()->mutable_payload<hci::WriteInquiryScanTypeCommandParams>();
+  auto* type_params = write_type->mutable_payload<hci::WriteInquiryScanTypeCommandParams>();
   type_params->inquiry_scan_type =
       (interlaced ? hci::InquiryScanType::kInterlacedScan : hci::InquiryScanType::kStandardScan);
 

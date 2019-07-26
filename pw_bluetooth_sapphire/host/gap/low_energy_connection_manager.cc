@@ -914,8 +914,7 @@ void LowEnergyConnectionManager::UpdateConnectionParams(
   bt_log(TRACE, "gap-le", "updating conn. parameters (handle: %#.4x)", handle);
   auto command = hci::CommandPacket::New(hci::kLEConnectionUpdate,
                                          sizeof(hci::LEConnectionUpdateCommandParams));
-  auto event_params =
-      command->mutable_view()->mutable_payload<hci::LEConnectionUpdateCommandParams>();
+  auto event_params = command->mutable_payload<hci::LEConnectionUpdateCommandParams>();
 
   event_params->connection_handle = htole16(handle);
   event_params->conn_interval_min = htole16(params.min_interval());

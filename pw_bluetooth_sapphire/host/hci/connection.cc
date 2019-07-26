@@ -213,7 +213,7 @@ void ConnectionImpl::Close(StatusCode reason) {
   };
 
   auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
-  auto params = disconn->mutable_view()->mutable_payload<DisconnectCommandParams>();
+  auto params = disconn->mutable_payload<DisconnectCommandParams>();
   params->connection_handle = htole16(handle());
   params->reason = reason;
 
@@ -254,7 +254,7 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   // TODO(BT-208): Tell the data channel to stop data flow.
 
   auto cmd = CommandPacket::New(kLEStartEncryption, sizeof(LEStartEncryptionCommandParams));
-  auto* params = cmd->mutable_view()->mutable_payload<LEStartEncryptionCommandParams>();
+  auto* params = cmd->mutable_payload<LEStartEncryptionCommandParams>();
   params->connection_handle = htole16(handle());
   params->random_number = htole64(ltk.rand());
   params->encrypted_diversifier = htole16(ltk.ediv());
@@ -310,7 +310,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
   ZX_ASSERT(is_open());
 
   auto cmd = CommandPacket::New(kReadEncryptionKeySize, sizeof(ReadEncryptionKeySizeParams));
-  auto* params = cmd->mutable_view()->mutable_payload<ReadEncryptionKeySizeParams>();
+  auto* params = cmd->mutable_payload<ReadEncryptionKeySizeParams>();
   params->connection_handle = htole16(handle());
 
   auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(),
@@ -438,7 +438,7 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     cmd = CommandPacket::New(kLELongTermKeyRequestReply,
                              sizeof(LELongTermKeyRequestReplyCommandParams));
-    auto* params = cmd->mutable_view()->mutable_payload<LELongTermKeyRequestReplyCommandParams>();
+    auto* params = cmd->mutable_payload<LELongTermKeyRequestReplyCommandParams>();
 
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
@@ -447,8 +447,7 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
 
     cmd = CommandPacket::New(kLELongTermKeyRequestNegativeReply,
                              sizeof(LELongTermKeyRequestNegativeReplyCommandParams));
-    auto* params =
-        cmd->mutable_view()->mutable_payload<LELongTermKeyRequestNegativeReplyCommandParams>();
+    auto* params = cmd->mutable_payload<LELongTermKeyRequestNegativeReplyCommandParams>();
     params->connection_handle = htole16(handle);
   }
 

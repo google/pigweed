@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
 
-#include <fbl/macros.h>
 #include <zircon/compiler.h>
 
 #include <array>
 #include <cstdint>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
@@ -23,9 +24,9 @@
 // the Bluetooth Core Specification version 5.0
 //
 // NOTE: Avoid casting raw buffer pointers to the packet payload structure types
-// below; use as template parameter to PacketView::payload() and
-// MutableBufferView::mutable_payload() instead. Take extra care when
-// accessing flexible array members.
+// below; use as template parameter to PacketView::payload(),
+// MutableBufferView::mutable_payload(), or CommandPacket::mutable_payload()
+// instead. Take extra care when accessing flexible array members.
 
 namespace bt {
 namespace hci {

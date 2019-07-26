@@ -95,7 +95,7 @@ void LowEnergyConnector::CreateConnectionInternal(
   pending_request_->local_address = local_address;
 
   auto request = CommandPacket::New(kLECreateConnection, sizeof(LECreateConnectionCommandParams));
-  auto params = request->mutable_view()->mutable_payload<LECreateConnectionCommandParams>();
+  auto params = request->mutable_payload<LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
   params->initiator_filter_policy =

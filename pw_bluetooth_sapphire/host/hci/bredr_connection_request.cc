@@ -19,7 +19,7 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
     DeviceAddress address, std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
   auto request = CommandPacket::New(kCreateConnection, sizeof(CreateConnectionCommandParams));
-  auto params = request->mutable_view()->mutable_payload<CreateConnectionCommandParams>();
+  auto params = request->mutable_payload<CreateConnectionCommandParams>();
 
   params->bd_addr = address.value();
   params->packet_type = htole16(kEnableAllPacketTypes);
