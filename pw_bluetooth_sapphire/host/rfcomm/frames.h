@@ -56,8 +56,8 @@ class Frame {
   // casting a FrameType to a uint8_t. We take a uint8_t instead of a FrameType
   // because Frame can represent frames of unsupported frame type (whose frame
   // types are not enumerated in FrameType).
-  inline Frame(Role role, CommandResponse command_response, DLCI dlci,
-               uint8_t control, bool poll_final);
+  inline Frame(Role role, CommandResponse command_response, DLCI dlci, uint8_t control,
+               bool poll_final);
 
   virtual ~Frame() = default;
 
@@ -79,8 +79,7 @@ class Frame {
   // using AsMuxCommandFrame.
   //
   // For UIH frames, this function will copy from |buffer|.
-  static std::unique_ptr<Frame> Parse(bool credit_based_flow, Role role,
-                                      const ByteBuffer& buffer);
+  static std::unique_ptr<Frame> Parse(bool credit_based_flow, Role role, const ByteBuffer& buffer);
 
   // Write this into a buffer. The base implementation of Write() will simply
   // write the address, control, length(=0), and FCS octets into a buffer. This
@@ -140,8 +139,7 @@ class Frame {
   // TODO(NET-1224): find a cleaner and less bug-prone way to do downcasting.
   template <typename T>
   static inline std::unique_ptr<T> DowncastFrame(std::unique_ptr<Frame> frame) {
-    static_assert(std::is_base_of<Frame, T>::value,
-                  "Must be downcasting to a Frame subclass");
+    static_assert(std::is_base_of<Frame, T>::value, "Must be downcasting to a Frame subclass");
     return std::unique_ptr<T>(static_cast<T*>(frame.release()));
   }
 
@@ -227,9 +225,7 @@ class UnnumberedInfoHeaderCheckFrame : public Frame {
 
  protected:
   // Whether or not this frame contains the optional credit octet.
-  inline bool has_credit_octet() const {
-    return credit_based_flow_ && credits_;
-  }
+  inline bool has_credit_octet() const { return credit_based_flow_ && credits_; }
 
   // The size of the header. In this case, we define the header to be the
   // address octet, control octet, length octet(s), and optional credits octets.
@@ -246,8 +242,7 @@ class UserDataFrame : public UnnumberedInfoHeaderCheckFrame {
  public:
   // |information| is the payload; "information" is RFCOMM/GSM's term for the
   // payload of a frame. Frame takes ownership of |information|.
-  UserDataFrame(Role role, bool credit_based_flow, DLCI dlci,
-                ByteBufferPtr information);
+  UserDataFrame(Role role, bool credit_based_flow, DLCI dlci, ByteBufferPtr information);
 
   // UnnumberedInfoHeaderCheckFrame overrides
   void Write(MutableBufferView buffer) const override;
@@ -269,15 +264,12 @@ class UserDataFrame : public UnnumberedInfoHeaderCheckFrame {
 // These frames will always have DLCI=0 (the multiplexer control channel).
 class MuxCommandFrame : public UnnumberedInfoHeaderCheckFrame {
  public:
-  MuxCommandFrame(Role role, bool credit_based_flow,
-                  std::unique_ptr<MuxCommand> mux_command);
+  MuxCommandFrame(Role role, bool credit_based_flow, std::unique_ptr<MuxCommand> mux_command);
 
   // UnnumberedInfoHeaderCheckFrame overrides
   void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
-  inline InformationLength length() const override {
-    return mux_command_->written_size();
-  }
+  inline InformationLength length() const override { return mux_command_->written_size(); }
 
   // Transfers ownership of the MuxCommand owned by this MuxCommandFrame. In the
   // common usage of MuxCommandFrame, this will be called just before

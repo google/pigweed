@@ -27,8 +27,7 @@ constexpr PSM kTestPsm = 0x0001;
 void DoNothing() {}
 void NopRxCallback(ByteBufferPtr) {}
 void NopLeConnParamCallback(const hci::LEPreferredConnectionParameters&) {}
-void NopSecurityCallback(hci::ConnectionHandle, sm::SecurityLevel,
-                         sm::StatusCallback) {}
+void NopSecurityCallback(hci::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
 
 class L2CAP_ChannelManagerTest : public TestingBase {
  public:
@@ -36,12 +35,10 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   ~L2CAP_ChannelManagerTest() override = default;
 
   void SetUp() override {
-    SetUp(hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10),
-          hci::DataBufferInfo());
+    SetUp(hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10), hci::DataBufferInfo());
   }
 
-  void SetUp(const hci::DataBufferInfo& acl_info,
-             const hci::DataBufferInfo& le_info) {
+  void SetUp(const hci::DataBufferInfo& acl_info, const hci::DataBufferInfo& le_info) {
     TestingBase::SetUp();
     TestingBase::InitializeACLDataChannel(acl_info, le_info);
 
@@ -64,29 +61,26 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   }
 
   // Helper functions for registering logical links with default arguments.
-  void RegisterLE(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
-      LinkErrorCallback lec = DoNothing,
-      LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
-      SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(lec),
-                          std::move(suc), dispatcher());
+  void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
+                  LinkErrorCallback lec = DoNothing,
+                  LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
+                  SecurityUpgradeCallback suc = NopSecurityCallback) {
+    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(lec), std::move(suc),
+                          dispatcher());
   }
 
   void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
                    LinkErrorCallback lec = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc),
-                           dispatcher());
+    chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc), dispatcher());
   }
 
-  fbl::RefPtr<Channel> ActivateNewFixedChannel(
-      ChannelId id, hci::ConnectionHandle conn_handle = kTestHandle1,
-      Channel::ClosedCallback closed_cb = DoNothing,
-      Channel::RxCallback rx_cb = NopRxCallback) {
+  fbl::RefPtr<Channel> ActivateNewFixedChannel(ChannelId id,
+                                               hci::ConnectionHandle conn_handle = kTestHandle1,
+                                               Channel::ClosedCallback closed_cb = DoNothing,
+                                               Channel::RxCallback rx_cb = NopRxCallback) {
     auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
-    if (!chan ||
-        !chan->Activate(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
+    if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
       return nullptr;
     }
 
@@ -99,16 +93,15 @@ class L2CAP_ChannelManagerTest : public TestingBase {
                                hci::ConnectionHandle conn_handle = kTestHandle1,
                                Channel::ClosedCallback closed_cb = DoNothing,
                                Channel::RxCallback rx_cb = NopRxCallback) {
-    ChannelCallback open_cb =
-        [this, activated_cb = std::move(activated_cb), rx_cb = std::move(rx_cb),
-         closed_cb = std::move(closed_cb)](auto chan) mutable {
-          if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb),
-                                       dispatcher())) {
-            activated_cb(nullptr);
-          } else {
-            activated_cb(std::move(chan));
-          }
-        };
+    ChannelCallback open_cb = [this, activated_cb = std::move(activated_cb),
+                               rx_cb = std::move(rx_cb),
+                               closed_cb = std::move(closed_cb)](auto chan) mutable {
+      if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
+        activated_cb(nullptr);
+      } else {
+        activated_cb(std::move(chan));
+      }
+    };
     chanmgr()->OpenChannel(conn_handle, psm, std::move(open_cb), dispatcher());
   }
 
@@ -206,12 +199,10 @@ TEST_F(L2CAP_ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   bool smp_closed = false;
   auto smp_closed_cb = [&smp_closed] { smp_closed = true; };
 
-  auto att_chan =
-      ActivateNewFixedChannel(kATTChannelId, kTestHandle1, att_closed_cb);
+  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, att_closed_cb);
   ASSERT_TRUE(att_chan);
 
-  auto smp_chan =
-      ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, smp_closed_cb);
+  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, smp_closed_cb);
   ASSERT_TRUE(smp_chan);
 
   smp_chan->Deactivate();
@@ -291,8 +282,7 @@ TEST_F(L2CAP_ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   RunLoopUntilIdle();
 }
 
-TEST_F(L2CAP_ChannelManagerTest,
-       CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
+TEST_F(L2CAP_ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
   RegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
   chan->Activate(
@@ -570,24 +560,20 @@ TEST_F(L2CAP_ChannelManagerTest, SendBasicSdu) {
 // Tests that fragmentation of LE vs BR/EDR packets is based on the same
 // fragment size.
 TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
-  constexpr size_t kMaxNumPackets =
-      100;  // Make this large to avoid simulating flow-control.
+  constexpr size_t kMaxNumPackets = 100;  // Make this large to avoid simulating flow-control.
   constexpr size_t kMaxDataSize = 5;
   // constexpr size_t kExpectedNumFragments = 5;
 
   // No LE buffers.
   TearDown();
-  SetUp(hci::DataBufferInfo(kMaxDataSize, kMaxNumPackets),
-        hci::DataBufferInfo());
+  SetUp(hci::DataBufferInfo(kMaxDataSize, kMaxNumPackets), hci::DataBufferInfo());
 
   std::vector<std::unique_ptr<ByteBuffer>> le_fragments, acl_fragments;
   auto data_cb = [&le_fragments, &acl_fragments](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(hci::ACLDataHeader));
-    hci::ConnectionHandle handle =
-        le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(hci::ACLDataHeader));
+    hci::ConnectionHandle handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (handle == kTestHandle1)
       le_fragments.push_back(std::make_unique<DynamicByteBuffer>(bytes));
@@ -664,8 +650,7 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
 // Tests that fragmentation of LE and BR/EDR packets use the corresponding
 // buffer size.
 TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdusDifferentBuffers) {
-  constexpr size_t kMaxNumPackets =
-      100;  // This is large to avoid having to simulate flow-control
+  constexpr size_t kMaxNumPackets = 100;  // This is large to avoid having to simulate flow-control
   constexpr size_t kMaxACLDataSize = 6;
   constexpr size_t kMaxLEDataSize = 10;
   // constexpr size_t kExpectedNumFragments = 3;
@@ -678,10 +663,8 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdusDifferentBuffers) {
   auto data_cb = [&le_fragments, &acl_fragments](const ByteBuffer& bytes) {
     ZX_DEBUG_ASSERT(bytes.size() >= sizeof(hci::ACLDataHeader));
 
-    PacketView<hci::ACLDataHeader> packet(
-        &bytes, bytes.size() - sizeof(hci::ACLDataHeader));
-    hci::ConnectionHandle handle =
-        le16toh(packet.header().handle_and_flags) & 0xFFF;
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(hci::ACLDataHeader));
+    hci::ConnectionHandle handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
 
     if (handle == kTestHandle1)
       le_fragments.push_back(std::make_unique<DynamicByteBuffer>(bytes));
@@ -782,8 +765,7 @@ TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
     conn_param_cb_called = true;
   };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, DoNothing,
-             conn_param_cb);
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, DoNothing, conn_param_cb);
 
   // clang-format off
   test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
@@ -823,8 +805,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
 
-  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1,
-                          std::move(closed_cb));
+  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1, std::move(closed_cb));
   RunLoopUntilIdle();
 
   // clang-format off
@@ -937,8 +918,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
     EXPECT_EQ("Test", sdu->AsString());
   };
 
-  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1,
-                          std::move(closed_cb), std::move(data_rx_cb));
+  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1, std::move(closed_cb),
+                          std::move(data_rx_cb));
   RunLoopUntilIdle();
 
   // clang-format off
@@ -1028,9 +1009,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   bool channel_closed = false;
   auto closed_cb = [&channel_closed] { channel_closed = true; };
 
-  auto data_rx_cb = [](ByteBufferPtr sdu) {
-    FAIL() << "Unexpected data reception";
-  };
+  auto data_rx_cb = [](ByteBufferPtr sdu) { FAIL() << "Unexpected data reception"; };
 
   // Receive SDU for the channel about to be opened. It should be ignored.
   test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
@@ -1040,8 +1019,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
       // L2CAP B-frame: (length: 4, channel-id: 0x0040)
       0x04, 0x00, 0x40, 0x00, 'T', 'e', 's', 't'));
 
-  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1,
-                          std::move(closed_cb), std::move(data_rx_cb));
+  ActivateOutboundChannel(kTestPsm, std::move(channel_cb), kTestHandle1, std::move(closed_cb),
+                          std::move(data_rx_cb));
   RunLoopUntilIdle();
 
   // clang-format off
@@ -1229,16 +1208,15 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
 
   fbl::RefPtr<Channel> channel;
-  auto channel_cb = [this, &channel, closed_cb = std::move(closed_cb)](
-                        fbl::RefPtr<l2cap::Channel> opened_chan) {
+  auto channel_cb = [this, &channel,
+                     closed_cb = std::move(closed_cb)](fbl::RefPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing, dispatcher()));
   };
 
   EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm0, channel_cb, dispatcher()));
   EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm1, channel_cb, dispatcher()));
-  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, std::move(channel_cb),
-                                         dispatcher()));
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, std::move(channel_cb), dispatcher()));
 
   // clang-format off
   test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
@@ -1386,8 +1364,8 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
   sm::Status delivered_status;
   sm::SecurityLevel last_requested_level = sm::SecurityLevel::kNoSecurity;
   int security_request_count = 0;
-  auto security_handler = [&](hci::ConnectionHandle handle,
-                              sm::SecurityLevel level, auto callback) {
+  auto security_handler = [&](hci::ConnectionHandle handle, sm::SecurityLevel level,
+                              auto callback) {
     EXPECT_EQ(kTestHandle1, handle);
     last_requested_level = level;
     security_request_count++;
@@ -1395,8 +1373,8 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
     callback(delivered_status);
   };
 
-  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, DoNothing,
-             NopLeConnParamCallback, std::move(security_handler));
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, DoNothing, NopLeConnParamCallback,
+             std::move(security_handler));
   auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   ASSERT_TRUE(chan);
 

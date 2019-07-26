@@ -14,12 +14,9 @@ void IdentityResolvingList::Add(DeviceAddress identity, const UInt128& irk) {
   registry_[identity] = irk;
 }
 
-void IdentityResolvingList::Remove(DeviceAddress identity) {
-  registry_.erase(identity);
-}
+void IdentityResolvingList::Remove(DeviceAddress identity) { registry_.erase(identity); }
 
-std::optional<DeviceAddress> IdentityResolvingList::Resolve(
-    DeviceAddress rpa) const {
+std::optional<DeviceAddress> IdentityResolvingList::Resolve(DeviceAddress rpa) const {
   if (!rpa.IsResolvablePrivate()) {
     return std::nullopt;
   }

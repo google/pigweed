@@ -7,15 +7,13 @@
 namespace bt {
 namespace gatt {
 
-Service::Service(bool primary, const UUID& type)
-    : primary_(primary), type_(type) {}
+Service::Service(bool primary, const UUID& type) : primary_(primary), type_(type) {}
 
-Characteristic::Characteristic(
-    IdType id, const UUID& type, uint8_t properties,
-    uint16_t extended_properties,
-    const att::AccessRequirements& read_permissions,
-    const att::AccessRequirements& write_permissions,
-    const att::AccessRequirements& update_permissions)
+Characteristic::Characteristic(IdType id, const UUID& type, uint8_t properties,
+                               uint16_t extended_properties,
+                               const att::AccessRequirements& read_permissions,
+                               const att::AccessRequirements& write_permissions,
+                               const att::AccessRequirements& update_permissions)
     : id_(id),
       type_(type),
       properties_(properties),
@@ -24,8 +22,7 @@ Characteristic::Characteristic(
       write_permissions_(write_permissions),
       update_permissions_(update_permissions) {}
 
-Descriptor::Descriptor(IdType id, const UUID& type,
-                       const att::AccessRequirements& read_permissions,
+Descriptor::Descriptor(IdType id, const UUID& type, const att::AccessRequirements& read_permissions,
                        const att::AccessRequirements& write_permissions)
     : id_(id),
       type_(type),

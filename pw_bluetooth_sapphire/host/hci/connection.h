@@ -70,15 +70,17 @@ class Connection {
   };
 
   // Initializes this as a LE connection.
-  static std::unique_ptr<Connection> CreateLE(
-      ConnectionHandle handle, Role role, const DeviceAddress& local_address,
-      const DeviceAddress& peer_address, const LEConnectionParameters& params,
-      fxl::RefPtr<Transport> hci);
+  static std::unique_ptr<Connection> CreateLE(ConnectionHandle handle, Role role,
+                                              const DeviceAddress& local_address,
+                                              const DeviceAddress& peer_address,
+                                              const LEConnectionParameters& params,
+                                              fxl::RefPtr<Transport> hci);
 
   // Initializes this as a BR/EDR ACL connection.
-  static std::unique_ptr<Connection> CreateACL(
-      ConnectionHandle handle, Role role, const DeviceAddress& local_address,
-      const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci);
+  static std::unique_ptr<Connection> CreateACL(ConnectionHandle handle, Role role,
+                                               const DeviceAddress& local_address,
+                                               const DeviceAddress& peer_address,
+                                               fxl::RefPtr<Transport> hci);
 
   // The destructor closes this connection.
   virtual ~Connection() = default;
@@ -141,8 +143,7 @@ class Connection {
 
   // Closes this connection by sending the HCI_Disconnect command to the
   // controller. This method is a NOP if the connection is already closed.
-  virtual void Close(
-      StatusCode reason = StatusCode::kRemoteUserTerminatedConnection) = 0;
+  virtual void Close(StatusCode reason = StatusCode::kRemoteUserTerminatedConnection) = 0;
 
   // Authenticate (i.e. encrypt) this connection using its current link key.
   // Returns false if the procedure cannot be initiated. The result of the
@@ -156,8 +157,7 @@ class Connection {
 
  protected:
   Connection(ConnectionHandle handle, LinkType ll_type, Role role,
-             const DeviceAddress& local_address,
-             const DeviceAddress& peer_address);
+             const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   const EncryptionChangeCallback& encryption_change_callback() const {
     return encryption_change_callback_;

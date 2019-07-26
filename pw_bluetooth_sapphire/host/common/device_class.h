@@ -80,8 +80,7 @@ class DeviceClass {
   std::array<uint8_t, 3> bytes_;
 };
 
-static_assert(sizeof(DeviceClass) == 3,
-              "DeviceClass must take up exactly 3 bytes");
+static_assert(sizeof(DeviceClass) == 3, "DeviceClass must take up exactly 3 bytes");
 
 }  // namespace bt
 

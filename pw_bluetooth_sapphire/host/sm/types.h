@@ -18,9 +18,8 @@ namespace sm {
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
   PairingFeatures();
-  PairingFeatures(bool initiator, bool sc, PairingMethod method,
-                  uint8_t enc_key_size, KeyDistGenField local_kd,
-                  KeyDistGenField remote_kd);
+  PairingFeatures(bool initiator, bool sc, PairingMethod method, uint8_t enc_key_size,
+                  KeyDistGenField local_kd, KeyDistGenField remote_kd);
 
   // True if the local device is in the "initiator" role.
   bool initiator;
@@ -61,8 +60,7 @@ const char* LevelToString(SecurityLevel level);
 class SecurityProperties final {
  public:
   SecurityProperties();
-  SecurityProperties(SecurityLevel level, size_t enc_key_size,
-                     bool secure_connections);
+  SecurityProperties(SecurityLevel level, size_t enc_key_size, bool secure_connections);
 
   // Build from a BR/EDR Link Key that resulted from pairing. |lk_type| should
   // not be kChangedCombination, because that means that the link key is the
@@ -85,13 +83,10 @@ class SecurityProperties final {
 
   // Compare two properties for equality.
   bool operator==(const SecurityProperties& other) const {
-    return level_ == other.level_ && enc_key_size_ == other.enc_key_size_ &&
-           sc_ == other.sc_;
+    return level_ == other.level_ && enc_key_size_ == other.enc_key_size_ && sc_ == other.sc_;
   }
 
-  bool operator!=(const SecurityProperties& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const SecurityProperties& other) const { return !(*this == other); }
 
  private:
   SecurityLevel level_;
@@ -150,8 +145,8 @@ struct PairingData final {
   std::optional<sm::Key> csrk;
 
   bool operator==(const PairingData& other) const {
-    return identity_address == other.identity_address && ltk == other.ltk &&
-           irk == other.irk && csrk == other.csrk;
+    return identity_address == other.identity_address && ltk == other.ltk && irk == other.irk &&
+           csrk == other.csrk;
   }
 };
 

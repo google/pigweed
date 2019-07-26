@@ -17,9 +17,7 @@ namespace data {
 class Impl final : public Domain, public TaskDomain<Impl, Domain> {
  public:
   Impl(fxl::RefPtr<hci::Transport> hci, std::string thread_name)
-      : Domain(),
-        TaskDomain<Impl, Domain>(this, std::move(thread_name)),
-        hci_(hci) {
+      : Domain(), TaskDomain<Impl, Domain>(this, std::move(thread_name)), hci_(hci) {
     ZX_DEBUG_ASSERT(hci_);
   }
 
@@ -37,10 +35,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
 
       InitializeL2CAP();
       InitializeRFCOMM();
-      l2cap_socket_factory_ =
-          std::make_unique<internal::SocketFactory<l2cap::Channel>>();
-      rfcomm_socket_factory_ =
-          std::make_unique<internal::SocketFactory<rfcomm::Channel>>();
+      l2cap_socket_factory_ = std::make_unique<internal::SocketFactory<l2cap::Channel>>();
+      rfcomm_socket_factory_ = std::make_unique<internal::SocketFactory<rfcomm::Channel>>();
 
       bt_log(TRACE, "data-domain", "initialized");
     });
@@ -58,43 +54,39 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     l2cap_ = nullptr;  // Unregisters the RFCOMM PSM.
   }
 
-  void AddACLConnection(hci::ConnectionHandle handle,
-                        hci::Connection::Role role,
+  void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                         l2cap::LinkErrorCallback link_error_callback,
                         l2cap::SecurityUpgradeCallback security_callback,
                         async_dispatcher_t* dispatcher) override {
     PostMessage([this, handle, role, lec = std::move(link_error_callback),
                  suc = std::move(security_callback), dispatcher]() mutable {
       if (l2cap_) {
-        l2cap_->RegisterACL(handle, role, std::move(lec), std::move(suc),
-                            dispatcher);
+        l2cap_->RegisterACL(handle, role, std::move(lec), std::move(suc), dispatcher);
       }
     });
   }
 
-  void AddLEConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
-      l2cap::LinkErrorCallback link_error_callback,
-      l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
-      l2cap::LEFixedChannelsCallback channel_callback,
-      l2cap::SecurityUpgradeCallback security_callback,
-      async_dispatcher_t* dispatcher) override {
+  void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                       l2cap::LinkErrorCallback link_error_callback,
+                       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+                       l2cap::LEFixedChannelsCallback channel_callback,
+                       l2cap::SecurityUpgradeCallback security_callback,
+                       async_dispatcher_t* dispatcher) override {
     PostMessage([this, handle, role, cpc = std::move(conn_param_callback),
-                 lec = std::move(link_error_callback),
-                 suc = std::move(security_callback),
+                 lec = std::move(link_error_callback), suc = std::move(security_callback),
                  cc = std::move(channel_callback), dispatcher]() mutable {
       if (l2cap_) {
-        l2cap_->RegisterLE(handle, role, std::move(cpc), std::move(lec),
-                           std::move(suc), dispatcher);
+        l2cap_->RegisterLE(handle, role, std::move(cpc), std::move(lec), std::move(suc),
+                           dispatcher);
 
         auto att = l2cap_->OpenFixedChannel(handle, l2cap::kATTChannelId);
         auto smp = l2cap_->OpenFixedChannel(handle, l2cap::kLESMPChannelId);
         ZX_DEBUG_ASSERT(att);
         ZX_DEBUG_ASSERT(smp);
-        async::PostTask(dispatcher, [att = std::move(att), smp = std::move(smp),
-                                     cb = std::move(cc)]() mutable {
-          cb(std::move(att), std::move(smp));
-        });
+        async::PostTask(dispatcher,
+                        [att = std::move(att), smp = std::move(smp), cb = std::move(cc)]() mutable {
+                          cb(std::move(att), std::move(smp));
+                        });
       }
     });
   }
@@ -116,8 +108,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     });
   }
 
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelCallback cb,
+  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override {
     ZX_DEBUG_ASSERT(dispatcher);
     PostMessage([this, handle, psm, cb = std::move(cb), dispatcher]() mutable {
@@ -133,32 +124,27 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     ZX_DEBUG_ASSERT(cb_dispatcher);
     OpenL2capChannel(
         handle, psm,
-        [this, handle, cb = std::move(socket_callback),
-         cb_dispatcher](auto channel) mutable {
+        [this, handle, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
           // MakeSocketForChannel makes invalid sockets for null channels (i.e.
           // that have failed to open).
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          async::PostTask(cb_dispatcher,
-                          [s = std::move(s), cb = std::move(cb),
-                           handle]() mutable { cb(std::move(s), handle); });
+          async::PostTask(cb_dispatcher, [s = std::move(s), cb = std::move(cb), handle]() mutable {
+            cb(std::move(s), handle);
+          });
         },
         dispatcher());
   }
 
   void RegisterService(l2cap::PSM psm, l2cap::ChannelCallback callback,
                        async_dispatcher_t* dispatcher) override {
-    PostMessage([this, psm, callback = std::move(callback),
-                 dispatcher]() mutable {
+    PostMessage([this, psm, callback = std::move(callback), dispatcher]() mutable {
       if (l2cap_) {
-        const bool result =
-            l2cap_->RegisterService(psm, std::move(callback), dispatcher);
+        const bool result = l2cap_->RegisterService(psm, std::move(callback), dispatcher);
         ZX_DEBUG_ASSERT(result);
       } else {
         // RegisterService could be called early in host initialization, so log
         // cases where L2CAP isn't ready for a service handler.
-        bt_log(WARN, "l2cap",
-               "failed to register handler for PSM %#.4x while uninitialized",
-               psm);
+        bt_log(WARN, "l2cap", "failed to register handler for PSM %#.4x while uninitialized", psm);
       }
     });
   }
@@ -166,15 +152,14 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
                        async_dispatcher_t* cb_dispatcher) override {
     RegisterService(
-        psm, [ this, cb = std::move(socket_callback),
-               cb_dispatcher ](auto channel) mutable {
+        psm,
+        [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
           // Called every time the service is connected, cb must be shared.
-          async::PostTask(cb_dispatcher,
-                          [s = std::move(s), cb = cb.share(),
-                           handle = channel->link_handle()]() mutable {
-                            cb(std::move(s), handle);
-                          });
+          async::PostTask(cb_dispatcher, [s = std::move(s), cb = cb.share(),
+                                          handle = channel->link_handle()]() mutable {
+            cb(std::move(s), handle);
+          });
         },
         dispatcher());
   }
@@ -201,8 +186,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     // as a result of OpenRemoteChannel.
     rfcomm_ = std::make_unique<rfcomm::ChannelManager>(
         [this](hci::ConnectionHandle handle, l2cap::ChannelCallback cb) {
-          l2cap_->OpenChannel(handle, l2cap::kRFCOMM, std::move(cb),
-                              dispatcher());
+          l2cap_->OpenChannel(handle, l2cap::kRFCOMM, std::move(cb), dispatcher());
         });
 
     // Claim the RFCOMM PSM for inbound connections.
@@ -215,15 +199,13 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
       if (self->rfcomm_->RegisterL2CAPChannel(std::move(channel))) {
         bt_log(TRACE, "data-domain", "RFCOMM session initialized");
       } else {
-        bt_log(ERROR, "data-domain",
-               "failed to initialize RFCOMM session after L2CAP connection");
+        bt_log(ERROR, "data-domain", "failed to initialize RFCOMM session after L2CAP connection");
       }
     };
 
     // Registering the RFCOMM PSM immediately after creation should always
     // succeed.
-    bool result = l2cap_->RegisterService(l2cap::kRFCOMM, std::move(rfcomm_cb),
-                                          dispatcher());
+    bool result = l2cap_->RegisterService(l2cap::kRFCOMM, std::move(rfcomm_cb), dispatcher());
     ZX_ASSERT_MSG(result, "failed to register RFCOMM PSM");
   }
 
@@ -236,25 +218,22 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   std::unique_ptr<rfcomm::ChannelManager> rfcomm_;
 
   // Creates sockets that bridge internal L2CAP channels to profile processes.
-  std::unique_ptr<internal::SocketFactory<l2cap::Channel>>
-      l2cap_socket_factory_;
+  std::unique_ptr<internal::SocketFactory<l2cap::Channel>> l2cap_socket_factory_;
   // Creates sockets that bridge internal RFCOMM channels to profile processes.
-  std::unique_ptr<internal::SocketFactory<rfcomm::Channel>>
-      rfcomm_socket_factory_;
+  std::unique_ptr<internal::SocketFactory<rfcomm::Channel>> rfcomm_socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
 // static
-fbl::RefPtr<Domain> Domain::Create(fxl::RefPtr<hci::Transport> hci,
-                                   std::string thread_name) {
+fbl::RefPtr<Domain> Domain::Create(fxl::RefPtr<hci::Transport> hci, std::string thread_name) {
   ZX_DEBUG_ASSERT(hci);
   return AdoptRef(new Impl(hci, std::move(thread_name)));
 }
 
 // static
-fbl::RefPtr<Domain> Domain::CreateWithDispatcher(
-    fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* dispatcher) {
+fbl::RefPtr<Domain> Domain::CreateWithDispatcher(fxl::RefPtr<hci::Transport> hci,
+                                                 async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(hci);
   ZX_DEBUG_ASSERT(dispatcher);
   return AdoptRef(new Impl(hci, dispatcher));

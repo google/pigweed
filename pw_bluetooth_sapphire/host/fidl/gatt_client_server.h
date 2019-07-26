@@ -16,30 +16,25 @@
 namespace bthost {
 
 // Implements the gatt::Client FIDL interface.
-class GattClientServer
-    : public GattServerBase<fuchsia::bluetooth::gatt::Client> {
+class GattClientServer : public GattServerBase<fuchsia::bluetooth::gatt::Client> {
  public:
-  GattClientServer(
-      bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
-      fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
+  GattClientServer(bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
+                   fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
   ~GattClientServer() override = default;
 
  private:
   // bluetooth::gatt::Client overrides:
-  void ListServices(::fidl::VectorPtr<::std::string> uuids,
-                    ListServicesCallback callback) override;
+  void ListServices(::fidl::VectorPtr<::std::string> uuids, ListServicesCallback callback) override;
   void ConnectToService(
       uint64_t id,
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> service)
-      override;
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> service) override;
 
   // The ID of the peer that this client is attached to.
   bt::gatt::PeerId peer_id_;
 
   // Remote GATT services that were connected through this client. The value can
   // be null while a ConnectToService request is in progress.
-  std::unordered_map<uint64_t, std::unique_ptr<GattRemoteServiceServer>>
-      connected_services_;
+  std::unordered_map<uint64_t, std::unique_ptr<GattRemoteServiceServer>> connected_services_;
 
   fxl::WeakPtrFactory<GattClientServer> weak_ptr_factory_;
 

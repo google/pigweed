@@ -24,8 +24,7 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   // SignalingChannelInterface overrides
   // TODO(NET-1093): Refactor implementation into SignalingChannel so it's
   // shared with LESignalingChannel.
-  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
-                   ResponseHandler cb) override;
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
 
   // Test the link using an Echo Request command that can have an arbitrary
@@ -37,8 +36,7 @@ class BrEdrSignalingChannel final : public SignalingChannel {
 
  private:
   // SignalingChannel overrides
-  void DecodeRxUnit(ByteBufferPtr sdu,
-                    const SignalingPacketHandler& cb) override;
+  void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override;
   bool HandlePacket(const SignalingPacket& packet) override;
 
   // Register a callback that will be invoked when a response-type command
@@ -65,8 +63,7 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   void OnRxResponse(const SignalingPacket& packet);
 
   // Stores response handlers for requests that have been sent.
-  std::unordered_map<CommandId, std::pair<CommandCode, ResponseHandler>>
-      pending_commands_;
+  std::unordered_map<CommandId, std::pair<CommandCode, ResponseHandler>> pending_commands_;
 
   // Stores handlers for incoming request packets.
   std::unordered_map<CommandCode, RequestDelegate> inbound_handlers_;

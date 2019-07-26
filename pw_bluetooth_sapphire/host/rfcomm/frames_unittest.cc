@@ -89,8 +89,8 @@ constexpr DLCI kFuchsiaFrameDLCI = 0x23;
 constexpr bool kFuchsiaFramePF = true;
 constexpr bool kFuchsiaFrameCreditBasedFlow = true;
 constexpr uint8_t kFuchsiaFrameCredits = 5;
-const auto kFuchsiaFrameInformation = CreateStaticByteBuffer(
-    'h', 'e', 'l', 'l', 'o', 'f', 'u', 'c', 'h', 's', 'i', 'a');
+const auto kFuchsiaFrameInformation =
+    CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o', 'f', 'u', 'c', 'h', 's', 'i', 'a');
 const auto kFuchsiaFrame = CreateStaticByteBuffer(
     // Address octet:
     // E/A bit is always 1. C/R bit is 0 in the case of a command being sent
@@ -114,16 +114,12 @@ const auto kFuchsiaFrame = CreateStaticByteBuffer(
 
 constexpr Role kTestCommandFrameRole = Role::kInitiator;
 constexpr CommandResponse kTestCommandFrameCR = CommandResponse::kCommand;
-constexpr FrameType kTestCommandFrameType =
-    FrameType::kUnnumberedInfoHeaderCheck;
+constexpr FrameType kTestCommandFrameType = FrameType::kUnnumberedInfoHeaderCheck;
 constexpr bool kTestCommandCreditBasedFlow = true;
 constexpr uint8_t kTestCommandFrameCredits = 63;
-constexpr MuxCommandType kTestCommandFrameMuxCommandType =
-    MuxCommandType::kTestCommand;
-const auto kTestCommandFrameMuxCommandPattern =
-    CreateStaticByteBuffer(0, 1, 2, 3);
-constexpr CommandResponse kTestCommandFrameMuxCommandCR =
-    CommandResponse::kCommand;
+constexpr MuxCommandType kTestCommandFrameMuxCommandType = MuxCommandType::kTestCommand;
+const auto kTestCommandFrameMuxCommandPattern = CreateStaticByteBuffer(0, 1, 2, 3);
+constexpr CommandResponse kTestCommandFrameMuxCommandCR = CommandResponse::kCommand;
 const auto kTestCommandFrame = CreateStaticByteBuffer(
     // Address: E/A = 1, C/R is 1 for a command from the initiator, DLCI = 0.
     0b00000011,
@@ -226,23 +222,23 @@ const auto kEmptyUserDataFrame = CreateStaticByteBuffer(
 const auto kInvalidLengthFrame = CreateStaticByteBuffer(0, 1, 2);
 
 // Same as the hellofuchsia frame, but information field is too short.
-const auto kInvalidLengthFrame2 = CreateStaticByteBuffer(
-    0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o');
+const auto kInvalidLengthFrame2 =
+    CreateStaticByteBuffer(0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o');
 
 // Same as the hellofuchsia frame, but with an invalid FCS.
-const auto kInvalidFCSFrame = CreateStaticByteBuffer(
-    0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
-    'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10000001 + 1);
+const auto kInvalidFCSFrame =
+    CreateStaticByteBuffer(0b10001101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
+                           'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10000001 + 1);
 
 // Same as the hellofuchsia frame, but with an invalid DLCI (1)
-const auto kInvalidDLCIFrame = CreateStaticByteBuffer(
-    0b00000101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
-    'f', 'u', 'c', 'h', 's', 'i', 'a', 0b11000011);
+const auto kInvalidDLCIFrame =
+    CreateStaticByteBuffer(0b00000101, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
+                           'f', 'u', 'c', 'h', 's', 'i', 'a', 0b11000011);
 
 // Same as the hellofuchsia frame, but with an invalid DLCI (62)
-const auto kInvalidDLCIFrame2 = CreateStaticByteBuffer(
-    0b11111001, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
-    'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10011111);
+const auto kInvalidDLCIFrame2 =
+    CreateStaticByteBuffer(0b11111001, 0b11111111, 0b00011001, 0b00000101, 'h', 'e', 'l', 'l', 'o',
+                           'f', 'u', 'c', 'h', 's', 'i', 'a', 0b10011111);
 
 using RFCOMM_FrameTest = ::testing::Test;
 
@@ -257,8 +253,8 @@ TEST_F(RFCOMM_FrameTest, WriteFrame) {
 TEST_F(RFCOMM_FrameTest, WriteFrameWithData) {
   auto information = NewSlabBuffer(kHelloFrameInformation.size());
   kHelloFrameInformation.Copy(information.get());
-  UserDataFrame frame(kHelloFrameRole, kHelloFrameCreditBasedFlow,
-                      kHelloFrameDLCI, std::move(information));
+  UserDataFrame frame(kHelloFrameRole, kHelloFrameCreditBasedFlow, kHelloFrameDLCI,
+                      std::move(information));
   DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
   EXPECT_EQ(14ul, frame.written_size());
@@ -268,8 +264,8 @@ TEST_F(RFCOMM_FrameTest, WriteFrameWithData) {
 TEST_F(RFCOMM_FrameTest, WriteFrameWithDataAndCredits) {
   auto information = NewSlabBuffer(kFuchsiaFrameInformation.size());
   kFuchsiaFrameInformation.Copy(information.get());
-  UserDataFrame frame(kFuchsiaFrameRole, kFuchsiaFrameCreditBasedFlow,
-                      kFuchsiaFrameDLCI, std::move(information));
+  UserDataFrame frame(kFuchsiaFrameRole, kFuchsiaFrameCreditBasedFlow, kFuchsiaFrameDLCI,
+                      std::move(information));
   frame.set_credits(kFuchsiaFrameCredits);
   DynamicByteBuffer buffer(frame.written_size());
   frame.Write(buffer.mutable_view());
@@ -278,10 +274,9 @@ TEST_F(RFCOMM_FrameTest, WriteFrameWithDataAndCredits) {
 }
 
 TEST_F(RFCOMM_FrameTest, WriteFrameWithMuxCommandAndCredits) {
-  auto mux_command = std::make_unique<TestCommand>(
-      kTestCommandFrameMuxCommandCR, kTestCommandFrameMuxCommandPattern);
-  MuxCommandFrame frame(kTestCommandFrameRole, kTestCommandCreditBasedFlow,
-                        std::move(mux_command));
+  auto mux_command = std::make_unique<TestCommand>(kTestCommandFrameMuxCommandCR,
+                                                   kTestCommandFrameMuxCommandPattern);
+  MuxCommandFrame frame(kTestCommandFrameRole, kTestCommandCreditBasedFlow, std::move(mux_command));
   frame.set_credits(kTestCommandFrameCredits);
   EXPECT_EQ(kTestCommandFrame.size(), frame.written_size());
   DynamicByteBuffer buffer(frame.written_size());
@@ -310,8 +305,7 @@ TEST_F(RFCOMM_FrameTest, WritePreMuxStartupDM) {
 }
 
 TEST_F(RFCOMM_FrameTest, WriteEmptyUserDataFrameWithCredits) {
-  UserDataFrame frame(kEmptyUserDataFrameRole,
-                      kEmptyUserDataFrameCreditBasedFlow,
+  UserDataFrame frame(kEmptyUserDataFrameRole, kEmptyUserDataFrameCreditBasedFlow,
                       kEmptyUserDataFrameDLCI, nullptr);
   frame.set_credits(kEmptyUserDataFrameCredits);
   EXPECT_EQ(kEmptyUserDataFrame.size(), frame.written_size());
@@ -321,8 +315,7 @@ TEST_F(RFCOMM_FrameTest, WriteEmptyUserDataFrameWithCredits) {
 }
 
 TEST_F(RFCOMM_FrameTest, ReadFrame) {
-  auto frame =
-      Frame::Parse(kEmptyFrameCreditBasedFlow, kEmptyFrameRole, kEmptyFrame);
+  auto frame = Frame::Parse(kEmptyFrameCreditBasedFlow, kEmptyFrameRole, kEmptyFrame);
   EXPECT_EQ(kEmptyFrameCR, frame->command_response());
   EXPECT_EQ(kEmptyFrameDLCI, frame->dlci());
   EXPECT_EQ((uint8_t)kEmptyFrameType, frame->control());
@@ -331,8 +324,7 @@ TEST_F(RFCOMM_FrameTest, ReadFrame) {
 }
 
 TEST_F(RFCOMM_FrameTest, ReadFrameWithData) {
-  auto frame =
-      Frame::Parse(kHelloFrameCreditBasedFlow, kHelloFrameRole, kHelloFrame);
+  auto frame = Frame::Parse(kHelloFrameCreditBasedFlow, kHelloFrameRole, kHelloFrame);
   EXPECT_EQ((uint8_t)kHelloFrameType, frame->control());
   auto user_data_frame = Frame::DowncastFrame<UserDataFrame>(std::move(frame));
   EXPECT_EQ(nullptr, frame);
@@ -346,8 +338,7 @@ TEST_F(RFCOMM_FrameTest, ReadFrameWithData) {
 }
 
 TEST_F(RFCOMM_FrameTest, ReadFrameWithDataAndCredits) {
-  auto frame = Frame::Parse(kFuchsiaFrameCreditBasedFlow, kFuchsiaFrameRole,
-                            kFuchsiaFrame);
+  auto frame = Frame::Parse(kFuchsiaFrameCreditBasedFlow, kFuchsiaFrameRole, kFuchsiaFrame);
   EXPECT_EQ((uint8_t)kFuchsiaFrameType, frame->control());
   auto user_data_frame = Frame::DowncastFrame<UserDataFrame>(std::move(frame));
   EXPECT_EQ(nullptr, frame);
@@ -361,20 +352,18 @@ TEST_F(RFCOMM_FrameTest, ReadFrameWithDataAndCredits) {
 }
 
 TEST_F(RFCOMM_FrameTest, ReadFrameWithMuxCommandAndCredits) {
-  auto frame = Frame::Parse(kTestCommandCreditBasedFlow, kTestCommandFrameRole,
-                            kTestCommandFrame);
+  auto frame = Frame::Parse(kTestCommandCreditBasedFlow, kTestCommandFrameRole, kTestCommandFrame);
   EXPECT_EQ(kTestCommandFrameCR, frame->command_response());
   EXPECT_EQ(kTestCommandFrameType, static_cast<FrameType>(frame->control()));
   EXPECT_EQ(kMuxControlDLCI, frame->dlci());
-  auto mux_command_frame =
-      Frame::DowncastFrame<MuxCommandFrame>(std::move(frame));
+  auto mux_command_frame = Frame::DowncastFrame<MuxCommandFrame>(std::move(frame));
   EXPECT_EQ(nullptr, frame);
   auto mux_command = mux_command_frame->TakeMuxCommand();
   EXPECT_EQ(kTestCommandFrameMuxCommandCR, mux_command->command_response());
   EXPECT_EQ(kTestCommandFrameMuxCommandType, mux_command->command_type());
   EXPECT_EQ(nullptr, mux_command_frame->TakeMuxCommand());
-  auto test_command = std::unique_ptr<TestCommand>(
-      static_cast<TestCommand*>(mux_command.release()));
+  auto test_command =
+      std::unique_ptr<TestCommand>(static_cast<TestCommand*>(mux_command.release()));
   EXPECT_EQ(kTestCommandFrameMuxCommandPattern, test_command->test_pattern());
 }
 
@@ -397,10 +386,9 @@ TEST_F(RFCOMM_FrameTest, ReadFramesPreMuxStartup) {
 }
 
 TEST_F(RFCOMM_FrameTest, ReadEmptyUserDataFrameWithCredits) {
-  auto frame = Frame::Parse(kEmptyUserDataFrameCreditBasedFlow,
-                            kEmptyUserDataFrameRole, kEmptyUserDataFrame);
-  EXPECT_EQ(FrameType::kUnnumberedInfoHeaderCheck,
-            static_cast<FrameType>(frame->control()));
+  auto frame = Frame::Parse(kEmptyUserDataFrameCreditBasedFlow, kEmptyUserDataFrameRole,
+                            kEmptyUserDataFrame);
+  EXPECT_EQ(FrameType::kUnnumberedInfoHeaderCheck, static_cast<FrameType>(frame->control()));
   EXPECT_EQ(kEmptyUserDataFrameDLCI, frame->dlci());
   auto user_data_frame = Frame::DowncastFrame<UserDataFrame>(std::move(frame));
   EXPECT_EQ(0, user_data_frame->length());

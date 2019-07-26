@@ -36,8 +36,7 @@ namespace internal {
 // specific thread.
 class RemoteServiceManager final {
  public:
-  RemoteServiceManager(std::unique_ptr<Client> client,
-                       async_dispatcher_t* gatt_dispatcher);
+  RemoteServiceManager(std::unique_ptr<Client> client, async_dispatcher_t* gatt_dispatcher);
   ~RemoteServiceManager();
 
   // Adds a handler to be notified when a new service is added.
@@ -54,8 +53,7 @@ class RemoteServiceManager final {
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.
   //
   // If called while uninitialized, |callback| will be run after initialization.
-  void ListServices(const std::vector<UUID>& uuids,
-                    ServiceListCallback callback);
+  void ListServices(const std::vector<UUID>& uuids, ServiceListCallback callback);
 
   // Returns the RemoteService with the requested range start |handle| or
   // nullptr if it is not recognized. This method may fail if called before or
@@ -68,8 +66,7 @@ class RemoteServiceManager final {
   // Used to represent a queued ListServices() request.
   class ServiceListRequest {
    public:
-    ServiceListRequest(ServiceListCallback callback,
-                       const std::vector<UUID>& uuids);
+    ServiceListRequest(ServiceListCallback callback, const std::vector<UUID>& uuids);
 
     ServiceListRequest() = default;
     ServiceListRequest(ServiceListRequest&&) = default;
@@ -89,8 +86,7 @@ class RemoteServiceManager final {
   void ClearServices();
 
   // Called by |client_| when a notification or indication is received.
-  void OnNotification(bool ind, att::Handle value_handle,
-                      const ByteBuffer& value);
+  void OnNotification(bool ind, att::Handle value_handle, const ByteBuffer& value);
 
   async_dispatcher_t* gatt_dispatcher_;
   std::unique_ptr<Client> client_;

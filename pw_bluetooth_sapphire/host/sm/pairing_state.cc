@@ -18,8 +18,7 @@ SecurityProperties FeaturesToProperties(const PairingFeatures& features) {
   return SecurityProperties(features.method == PairingMethod::kJustWorks
                                 ? SecurityLevel::kEncrypted
                                 : SecurityLevel::kAuthenticated,
-                            features.encryption_key_size,
-                            features.secure_connections);
+                            features.encryption_key_size, features.secure_connections);
 }
 
 }  // namespace
@@ -37,13 +36,9 @@ PairingState::LegacyState::LegacyState(uint64_t id)
       has_ltk(false),
       has_irk(false) {}
 
-bool PairingState::LegacyState::InPhase1() const {
-  return !features && !stk_encrypted;
-}
+bool PairingState::LegacyState::InPhase1() const { return !features && !stk_encrypted; }
 
-bool PairingState::LegacyState::InPhase2() const {
-  return features && has_tk && !stk_encrypted;
-}
+bool PairingState::LegacyState::InPhase2() const { return features && has_tk && !stk_encrypted; }
 
 bool PairingState::LegacyState::InPhase3() const {
   return features && stk_encrypted && !KeyExchangeComplete();
@@ -92,18 +87,12 @@ bool PairingState::LegacyState::ShouldSendIdentity() const {
   return (features->local_key_distribution & KeyDistGen::kIdKey);
 }
 
-PairingState::PendingRequest::PendingRequest(SecurityLevel level,
-                                             PairingCallback callback)
+PairingState::PendingRequest::PendingRequest(SecurityLevel level, PairingCallback callback)
     : level(level), callback(std::move(callback)) {}
 
-PairingState::PairingState(fxl::WeakPtr<hci::Connection> link,
-                           fbl::RefPtr<l2cap::Channel> smp,
-                           IOCapability io_capability,
-                           fxl::WeakPtr<Delegate> delegate)
-    : next_pairing_id_(0),
-      delegate_(delegate),
-      le_link_(link),
-      weak_ptr_factory_(this) {
+PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+                           IOCapability io_capability, fxl::WeakPtr<Delegate> delegate)
+    : next_pairing_id_(0), delegate_(delegate), le_link_(link), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(delegate_);
   ZX_DEBUG_ASSERT(le_link_);
   ZX_DEBUG_ASSERT(smp);
@@ -113,9 +102,8 @@ PairingState::PairingState(fxl::WeakPtr<hci::Connection> link,
 
   // Set up SMP data bearer.
   // TODO(armansito): Enable SC when we support it.
-  le_smp_ =
-      std::make_unique<Bearer>(std::move(smp), link->role(), false /* sc */,
-                               io_capability, weak_ptr_factory_.GetWeakPtr());
+  le_smp_ = std::make_unique<Bearer>(std::move(smp), link->role(), false /* sc */, io_capability,
+                                     weak_ptr_factory_.GetWeakPtr());
 
   // Set up HCI encryption event.
   le_link_->set_encryption_change_callback(
@@ -135,16 +123,14 @@ void PairingState::Reset(IOCapability io_capability) {
 
 bool PairingState::AssignLongTermKey(const LTK& ltk) {
   if (legacy_state_) {
-    bt_log(TRACE, "sm",
-           "Cannot directly assign LTK while pairing is in progress");
+    bt_log(TRACE, "sm", "Cannot directly assign LTK while pairing is in progress");
     return false;
   }
 
   AssignLongTermKeyInternal(ltk);
 
   // Try to initiate encryption if we are the master.
-  if (le_link_->role() == hci::Connection::Role::kMaster &&
-      !le_link_->StartEncryption()) {
+  if (le_link_->role() == hci::Connection::Role::kMaster && !le_link_->StartEncryption()) {
     bt_log(ERROR, "sm", "Failed to initiate authentication procedure");
     return false;
   }
@@ -152,8 +138,7 @@ bool PairingState::AssignLongTermKey(const LTK& ltk) {
   return true;
 }
 
-void PairingState::UpgradeSecurity(SecurityLevel level,
-                                   PairingCallback callback) {
+void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
   // If pairing is in progress then we queue the request.
   if (legacy_state_) {
     bt_log(SPEW, "sm", "LE legacy pairing in progress; request queued");
@@ -180,10 +165,8 @@ void PairingState::UpgradeSecurity(SecurityLevel level,
 
 void PairingState::SetSecurityProperties(const SecurityProperties& sec) {
   if (sec != le_sec_) {
-    bt_log(TRACE, "sm",
-           "security properties changed - handle: %#.4x, new: %s, old: %s",
-           le_link_->handle(), sec.ToString().c_str(),
-           le_sec_.ToString().c_str());
+    bt_log(TRACE, "sm", "security properties changed - handle: %#.4x, new: %s, old: %s",
+           le_link_->handle(), sec.ToString().c_str(), le_sec_.ToString().c_str());
     le_sec_ = sec;
     delegate_->OnNewSecurityProperties(le_sec_);
   }
@@ -220,8 +203,7 @@ void PairingState::Abort() {
   }
 }
 
-void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq,
-                                            const ByteBuffer& pres) {
+void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq, const ByteBuffer& pres) {
   ZX_DEBUG_ASSERT(legacy_state_);
   ZX_DEBUG_ASSERT(legacy_state_->WaitingForTK());
   ZX_DEBUG_ASSERT(!legacy_state_->features->secure_connections);
@@ -244,8 +226,7 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq,
 
     auto* state = self->legacy_state_.get();
     if (!state || id != state->id) {
-      bt_log(TRACE, "sm",
-             "ignoring TK callback for expired pairing: (id = %lu)", id);
+      bt_log(TRACE, "sm", "ignoring TK callback for expired pairing: (id = %lu)", id);
       return;
     }
 
@@ -288,8 +269,7 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq,
   };
 
   ZX_DEBUG_ASSERT(delegate_);
-  delegate_->OnTemporaryKeyRequest(legacy_state_->features->method,
-                                   std::move(tk_callback));
+  delegate_->OnTemporaryKeyRequest(legacy_state_->features->method, std::move(tk_callback));
 }
 
 void PairingState::LegacySendConfirmValue() {
@@ -320,8 +300,7 @@ void PairingState::EndLegacyPairingPhase2() {
   SetSecurityProperties(FeaturesToProperties(*legacy_state_->features));
 
   if (legacy_state_->InPhase3()) {
-    if (legacy_state_->features->initiator &&
-        !legacy_state_->RequestedKeysObtained()) {
+    if (legacy_state_->features->initiator && !legacy_state_->RequestedKeysObtained()) {
       ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kMaster);
       bt_log(TRACE, "sm", "waiting to receive keys from the responder");
       return;
@@ -464,8 +443,7 @@ void PairingState::OnPairingFailed(Status status) {
   }
 }
 
-void PairingState::OnFeatureExchange(const PairingFeatures& features,
-                                     const ByteBuffer& preq,
+void PairingState::OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
                                      const ByteBuffer& pres) {
   bt_log(SPEW, "sm", "obtained LE Pairing features");
 
@@ -501,8 +479,7 @@ void PairingState::OnPairingConfirm(const UInt128& confirm) {
   // Reject pairing if neither of these is true.
   if (!legacy_state_->InPhase2() &&
       (!legacy_state_->WaitingForTK() || legacy_state_->features->initiator)) {
-    bt_log(ERROR, "sm",
-           "abort pairing due to confirm value received outside phase 2");
+    bt_log(ERROR, "sm", "abort pairing due to confirm value received outside phase 2");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -518,8 +495,7 @@ void PairingState::OnPairingConfirm(const UInt128& confirm) {
   // The confirm value shouldn't be sent after the random value. (See Vol 3,
   // Part H, 2.3.5.5 and Appendix C.2.1.1 for the specific order of events.
   if (legacy_state_->has_peer_rand) {
-    bt_log(ERROR, "sm",
-           "\"Pairing Confirm\" expected before \"Pairing Random\"");
+    bt_log(ERROR, "sm", "\"Pairing Confirm\" expected before \"Pairing Random\"");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -554,8 +530,7 @@ void PairingState::OnPairingRandom(const UInt128& random) {
   }
 
   if (!legacy_state_->InPhase2()) {
-    bt_log(ERROR, "sm",
-           "abort pairing due to confirm value received outside phase 2");
+    bt_log(ERROR, "sm", "abort pairing due to confirm value received outside phase 2");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -612,8 +587,8 @@ void PairingState::OnPairingRandom(const UInt128& random) {
   const DeviceAddress *ia, *ra;
   LEPairingAddresses(&ia, &ra);
   UInt128 peer_confirm;
-  util::C1(legacy_state_->tk, legacy_state_->peer_rand, legacy_state_->preq,
-           legacy_state_->pres, *ia, *ra, &peer_confirm);
+  util::C1(legacy_state_->tk, legacy_state_->peer_rand, legacy_state_->preq, legacy_state_->pres,
+           *ia, *ra, &peer_confirm);
   if (peer_confirm != legacy_state_->peer_confirm) {
     bt_log(ERROR, "sm", "%sconfirm value does not match!",
            legacy_state_->features->initiator ? "S" : "M");
@@ -712,16 +687,14 @@ void PairingState::OnLongTermKey(const UInt128& ltk) {
 
 void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm",
-           "ignoring ediv/rand received while not in legacy pairing");
+    bt_log(TRACE, "sm", "ignoring ediv/rand received while not in legacy pairing");
     return;
   }
 
   if (!legacy_state_->InPhase3()) {
     // The link MUST be encrypted with the STK for the transfer of the LTK to be
     // secure.
-    bt_log(ERROR, "sm",
-           "abort pairing due to ediv/rand received outside phase 3");
+    bt_log(ERROR, "sm", "abort pairing due to ediv/rand received outside phase 3");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -756,8 +729,7 @@ void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
 
   // The security properties of the LTK are determined by the current link
   // properties (i.e. the properties of the STK).
-  AssignLongTermKeyInternal(
-      LTK(le_sec_, hci::LinkKey(legacy_state_->ltk_bytes, random, ediv)));
+  AssignLongTermKeyInternal(LTK(le_sec_, hci::LinkKey(legacy_state_->ltk_bytes, random, ediv)));
   legacy_state_->obtained_remote_keys |= KeyDistGen::kEncKey;
 
   // "EncKey" received. Complete pairing if possible.
@@ -800,16 +772,14 @@ void PairingState::OnIdentityResolvingKey(const UInt128& irk) {
 
 void PairingState::OnIdentityAddress(const DeviceAddress& identity_address) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm",
-           "ignoring identity address received while not in legacy pairing");
+    bt_log(TRACE, "sm", "ignoring identity address received while not in legacy pairing");
     return;
   }
 
   if (!legacy_state_->InPhase3()) {
     // The link must be encrypted with the STK for the transfer of the address
     // to be secure.
-    bt_log(ERROR, "sm",
-           "abort pairing due to identity address received outside phase 3");
+    bt_log(ERROR, "sm", "abort pairing due to identity address received outside phase 3");
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -861,8 +831,7 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
   // Connections we assume that no local LTK ever satisfies this. If the peer
   // requests SC, then we'll initiate pairing as normal and let the peer accept
   // or reject the request.
-  if (ltk_ && (ltk_->security().level() >= requested_level) &&
-      !(auth_req & AuthReq::kSC)) {
+  if (ltk_ && (ltk_->security().level() >= requested_level) && !(auth_req & AuthReq::kSC)) {
     // The existing key satisfies the security requirement.
     bt_log(TRACE, "sm", "responding to security request using existing LTK");
     ZX_DEBUG_ASSERT(le_link_->ltk());
@@ -873,8 +842,8 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
 
   // Initiate pairing.
   UpgradeSecurity(requested_level, [](Status status, const auto& security) {
-    bt_log(TRACE, "sm", "security request resolved - %s %s",
-           status.ToString().c_str(), security.ToString().c_str());
+    bt_log(TRACE, "sm", "security request resolved - %s %s", status.ToString().c_str(),
+           security.ToString().c_str());
   });
 }
 
@@ -894,8 +863,7 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   }
 
   if (!enabled) {
-    bt_log(TRACE, "sm", "encryption disabled (handle: %#.4x)",
-           le_link_->handle());
+    bt_log(TRACE, "sm", "encryption disabled (handle: %#.4x)", le_link_->handle());
     SetSecurityProperties(sm::SecurityProperties());
   } else if (!legacy_state_) {
     bt_log(TRACE, "sm", "encryption enabled while not pairing");

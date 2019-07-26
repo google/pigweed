@@ -66,8 +66,7 @@ class Adapter final {
   // asynchronous tasks.
   //
   // This will take ownership of |hci_device|.
-  explicit Adapter(fxl::RefPtr<hci::Transport> hci,
-                   fbl::RefPtr<data::Domain> data_domain,
+  explicit Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<data::Domain> data_domain,
                    fbl::RefPtr<gatt::GATT> gatt);
   ~Adapter();
 
@@ -85,8 +84,7 @@ class Adapter final {
   // reason). The implementation is responsible for cleaning up this adapter by
   // calling ShutDown().
   using InitializeCallback = fit::function<void(bool success)>;
-  bool Initialize(InitializeCallback callback,
-                  fit::closure transport_closed_callback);
+  bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback);
 
   // Shuts down this Adapter. Invokes |callback| when shut down has completed.
   // TODO(armansito): This needs to do several things to potentially preserve
@@ -117,9 +115,7 @@ class Adapter final {
   }
 
   // Returns this Adapter's BR/EDR discovery manager.
-  BrEdrDiscoveryManager* bredr_discovery_manager() const {
-    return bredr_discovery_manager_.get();
-  }
+  BrEdrDiscoveryManager* bredr_discovery_manager() const { return bredr_discovery_manager_.get(); }
 
   // Returns this Adapter's SDP server.
   sdp::Server* sdp_server() const { return sdp_server_.get(); }

@@ -16,8 +16,7 @@
 namespace bt {
 namespace l2cap {
 
-Channel::Channel(ChannelId id, ChannelId remote_id,
-                 hci::Connection::LinkType link_type,
+Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
                  hci::ConnectionHandle link_handle)
     : id_(id),
       remote_id_(remote_id),
@@ -35,8 +34,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id,
 
 namespace internal {
 
-ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
-                         fbl::RefPtr<internal::LogicalLink> link,
+ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
                          std::list<PDU> buffered_pdus)
     : Channel(id, remote_id, link->type(), link->handle()),
       active_(false),
@@ -67,8 +65,7 @@ const sm::SecurityProperties ChannelImpl::security() {
   return sm::SecurityProperties();
 }
 
-bool ChannelImpl::Activate(RxCallback rx_callback,
-                           ClosedCallback closed_callback,
+bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
                            async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(rx_callback);
   ZX_DEBUG_ASSERT(closed_callback);
@@ -95,8 +92,7 @@ bool ChannelImpl::Activate(RxCallback rx_callback,
     if (!pending_rx_sdus_.empty()) {
       run_task = true;
       dispatcher = dispatcher_;
-      task = [func = rx_cb_.share(),
-              pending = std::move(pending_rx_sdus_)]() mutable {
+      task = [func = rx_cb_.share(), pending = std::move(pending_rx_sdus_)]() mutable {
         while (!pending.empty()) {
           func(std::move(pending.front()));
           pending.pop();
@@ -168,8 +164,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   return tx_engine_->QueueSdu(std::move(sdu));
 }
 
-void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level,
-                                  sm::StatusCallback callback) {
+void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) {
   ZX_DEBUG_ASSERT(callback);
 
   std::lock_guard<std::mutex> lock(mtx_);
@@ -180,11 +175,10 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level,
   }
 
   ZX_DEBUG_ASSERT(dispatcher_);
-  async::PostTask(
-      link_->dispatcher(), [link = link_, level, callback = std::move(callback),
-                            dispatcher = dispatcher_]() mutable {
-        link->UpgradeSecurity(level, std::move(callback), dispatcher);
-      });
+  async::PostTask(link_->dispatcher(), [link = link_, level, callback = std::move(callback),
+                                        dispatcher = dispatcher_]() mutable {
+    link->UpgradeSecurity(level, std::move(callback), dispatcher);
+  });
 }
 
 void ChannelImpl::OnClosed() {
@@ -240,9 +234,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     }
 
     dispatcher = dispatcher_;
-    task = [func = rx_cb_.share(), sdu = std::move(sdu)]() mutable {
-      func(std::move(sdu));
-    };
+    task = [func = rx_cb_.share(), sdu = std::move(sdu)]() mutable { func(std::move(sdu)); };
 
     ZX_DEBUG_ASSERT(rx_cb_);
   }

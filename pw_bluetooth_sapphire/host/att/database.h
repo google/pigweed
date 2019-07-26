@@ -65,8 +65,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
     inline void MarkEnd() { grp_iter_ = grp_end_; }
 
     friend class Database;
-    Iterator(GroupingList* list, Handle start, Handle end, const UUID* type,
-             bool groups_only);
+    Iterator(GroupingList* list, Handle start, Handle end, const UUID* type, bool groups_only);
 
     Handle start_;
     Handle end_;
@@ -152,8 +151,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // ErrorCode::kNoError and should be ignored.
   using WriteCallback = fit::function<void(Handle, ErrorCode)>;
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
-                         const sm::SecurityProperties& security,
-                         WriteCallback callback);
+                         const sm::SecurityProperties& security, WriteCallback callback);
 
  private:
   FRIEND_REF_COUNTED_THREAD_SAFE(Database);

@@ -15,8 +15,7 @@ PDU::PDU() : fragment_count_(0u) {}
 // NOTE: The order in which these are initialized matters, as
 // other.ReleaseFragments() resets |other.fragment_count_|.
 PDU::PDU(PDU&& other)
-    : fragment_count_(other.fragment_count_),
-      fragments_(other.ReleaseFragments()) {}
+    : fragment_count_(other.fragment_count_), fragments_(other.ReleaseFragments()) {}
 
 PDU& PDU::operator=(PDU&& other) {
   // NOTE: The order in which these are initialized matters, as
@@ -39,8 +38,7 @@ size_t PDU::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
 
   bool found = false;
   size_t offset = 0u;
-  for (auto iter = fragments_.begin(); iter != fragments_.end() && remaining;
-       ++iter) {
+  for (auto iter = fragments_.begin(); iter != fragments_.end() && remaining; ++iter) {
     auto payload = iter->view().payload_data();
 
     // Skip the Basic L2CAP header for the first fragment.
@@ -97,8 +95,8 @@ const BasicHeader& PDU::basic_header() const {
 
 void PDU::AppendFragment(hci::ACLDataPacketPtr fragment) {
   ZX_DEBUG_ASSERT(fragment);
-  ZX_DEBUG_ASSERT(!is_valid() || fragments_.begin()->connection_handle() ==
-                                     fragment->connection_handle());
+  ZX_DEBUG_ASSERT(!is_valid() ||
+                  fragments_.begin()->connection_handle() == fragment->connection_handle());
   fragments_.push_back(std::move(fragment));
   fragment_count_++;
 }

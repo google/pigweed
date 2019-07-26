@@ -19,8 +19,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // per call from the fuzzer.
   const uint8_t num_pdus = data[0];
   bt::l2cap::internal::PduGenerator pdu_generator(data + 1, size - 1, num_pdus);
-  bt::l2cap::internal::EnhancedRetransmissionModeRxEngine rx_engine(
-      [](auto) {});
+  bt::l2cap::internal::EnhancedRetransmissionModeRxEngine rx_engine([](auto) {});
   while (auto pdu = pdu_generator.GetNextPdu()) {
     rx_engine.ProcessPdu(std::move(pdu.value()));
   }

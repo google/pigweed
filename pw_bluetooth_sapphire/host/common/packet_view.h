@@ -105,9 +105,7 @@ class PacketView {
   //
   // This performs runtime checks to make sure that the underlying buffer is
   // approriately sized.
-  void Resize(size_t payload_size) {
-    this->set_size(sizeof(HeaderType) + payload_size);
-  }
+  void Resize(size_t payload_size) { this->set_size(sizeof(HeaderType) + payload_size); }
 
  protected:
   void set_size(size_t size) {
@@ -129,23 +127,17 @@ class MutablePacketView : public PacketView<HeaderType> {
  public:
   MutablePacketView() = default;
 
-  explicit MutablePacketView(MutableByteBuffer* buffer,
-                             size_t payload_size = 0u)
+  explicit MutablePacketView(MutableByteBuffer* buffer, size_t payload_size = 0u)
       : PacketView<HeaderType>(buffer, payload_size) {}
 
-  MutableBufferView mutable_data() {
-    return mutable_buffer()->mutable_view(0, this->size());
-  }
+  MutableBufferView mutable_data() { return mutable_buffer()->mutable_view(0, this->size()); }
 
   MutableBufferView mutable_payload_data() const {
-    return mutable_buffer()->mutable_view(sizeof(HeaderType),
-                                          this->size() - sizeof(HeaderType));
+    return mutable_buffer()->mutable_view(sizeof(HeaderType), this->size() - sizeof(HeaderType));
   }
 
   uint8_t* mutable_payload_bytes() {
-    return this->payload_size()
-               ? mutable_buffer()->mutable_data() + sizeof(HeaderType)
-               : nullptr;
+    return this->payload_size() ? mutable_buffer()->mutable_data() + sizeof(HeaderType) : nullptr;
   }
 
   HeaderType* mutable_header() {
@@ -163,8 +155,7 @@ class MutablePacketView : public PacketView<HeaderType> {
     // Cast-away the const. This is OK in this case since we're storing our
     // buffer in the parent class instead of duplicating a non-const version in
     // this class.
-    return const_cast<MutableByteBuffer*>(
-        static_cast<const MutableByteBuffer*>(this->buffer()));
+    return const_cast<MutableByteBuffer*>(static_cast<const MutableByteBuffer*>(this->buffer()));
   }
 };
 

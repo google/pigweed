@@ -21,13 +21,13 @@ TEST_F(SDP_PDUTest, ErrorResponse) {
   ErrorResponse response;
   EXPECT_FALSE(response.complete());
 
-  auto kInvalidContState = CreateStaticByteBuffer(
-      0x01,        // opcode: kErrorResponse
-      0xDE, 0xAD,  // transaction ID: 0xDEAD
-      0x00, 0x02,  // parameter length: 2 bytes
-      0x00, 0x05,  // ErrorCode: Invalid Continuation State
-      0xFF, 0x00   // dummy extra bytes to cause an error
-  );
+  auto kInvalidContState =
+      CreateStaticByteBuffer(0x01,        // opcode: kErrorResponse
+                             0xDE, 0xAD,  // transaction ID: 0xDEAD
+                             0x00, 0x02,  // parameter length: 2 bytes
+                             0x00, 0x05,  // ErrorCode: Invalid Continuation State
+                             0xFF, 0x00   // dummy extra bytes to cause an error
+      );
 
   Status status = response.Parse(kInvalidContState.view(sizeof(Header)));
   EXPECT_FALSE(status);
@@ -87,11 +87,10 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestParse) {
       // ServiceSearchPattern
       0x35, 0x27,        // Sequence uint8 27 bytes
       0x19, 0x30, 0x01,  // 13 UUIDs in the search
-      0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05,
-      0x19, 0x30, 0x06, 0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09,
-      0x19, 0x30, 0x10, 0x19, 0x30, 0x11, 0x19, 0x30, 0x12, 0x19, 0x30, 0x13,
-      0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-      0x00         // Contunuation State: none
+      0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05, 0x19, 0x30, 0x06,
+      0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09, 0x19, 0x30, 0x10, 0x19, 0x30, 0x11,
+      0x19, 0x30, 0x12, 0x19, 0x30, 0x13, 0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
+      0x00                                             // Contunuation State: none
   );
 
   ServiceSearchRequest req3(kInvalidTooManyItems);
@@ -105,40 +104,38 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestGetPDU) {
   req.set_max_service_record_count(64);
 
   // Order is not specified, so there are two valid PDUs representing this.
-  const auto kExpected = CreateStaticByteBuffer(
-      kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
-      0x00, 0x0B,                         // Parameter length (11 bytes)
-      // ServiceSearchPattern
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x19, 0x00, 0x07,  // UUID (ATT)
-      0x19, 0x01, 0x00,  // UUID (L2CAP)
-      0x00, 0x40,        // MaximumServiceRecordCount: 64
-      0x00               // No continuation state
-  );
-  const auto kExpected2 = CreateStaticByteBuffer(
-      kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
-      0x00, 0x0B,                         // Parameter length (11 bytes)
-      // ServiceSearchPattern
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x19, 0x01, 0x00,  // UUID (L2CAP)
-      0x19, 0x00, 0x07,  // UUID (ATT)
-      0x00, 0x40,        // MaximumServiceRecordCount: 64
-      0x00               // No continuation state
-  );
+  const auto kExpected =
+      CreateStaticByteBuffer(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
+                             0x00, 0x0B,                         // Parameter length (11 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x19, 0x00, 0x07,  // UUID (ATT)
+                             0x19, 0x01, 0x00,  // UUID (L2CAP)
+                             0x00, 0x40,        // MaximumServiceRecordCount: 64
+                             0x00               // No continuation state
+      );
+  const auto kExpected2 =
+      CreateStaticByteBuffer(kServiceSearchRequest, 0x12, 0x34,  // Transaction ID
+                             0x00, 0x0B,                         // Parameter length (11 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x19, 0x01, 0x00,  // UUID (L2CAP)
+                             0x19, 0x00, 0x07,  // UUID (ATT)
+                             0x00, 0x40,        // MaximumServiceRecordCount: 64
+                             0x00               // No continuation state
+      );
 
   auto pdu = req.GetPDU(0x1234);
-  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) ||
-              ContainersEqual(kExpected2, *pdu));
+  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) || ContainersEqual(kExpected2, *pdu));
 };
 
 TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
-  const auto kValidResponse =
-      CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
-                             0x00, 0x02,  // Current service record count: 2
-                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
-                             0x00, 0x00, 0x00, 0x02,  // Service Handle 2
-                             0x00                     // No continuation state
-      );
+  const auto kValidResponse = CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
+                                                     0x00, 0x02,  // Current service record count: 2
+                                                     0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                                                     0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                                                     0x00  // No continuation state
+  );
 
   ServiceSearchResponse resp;
   auto status = resp.Parse(kValidResponse);
@@ -149,8 +146,8 @@ TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
   EXPECT_FALSE(status);
 
   const auto kNotEnoughRecords =
-      CreateStaticByteBuffer(0x00, 0x02,  // Total service record count: 2
-                             0x00, 0x02,  // Current service record count: 2
+      CreateStaticByteBuffer(0x00, 0x02,              // Total service record count: 2
+                             0x00, 0x02,              // Current service record count: 2
                              0x00, 0x00, 0x00, 0x01,  // Service Handle 1
                              0x00                     // No continuation state
       );
@@ -165,26 +162,25 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
   ServiceSearchResponse resp;
   resp.set_service_record_handle_list(results);
 
-  const auto kExpected =
-      CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
-                             0x01, 0x10,  // Transaction ID (0x0110)
-                             0x00, 0x0d,  // Parameter length: 13 bytes
-                             0x00, 0x02,  // Total service record count: 2
-                             0x00, 0x02,  // Current service record count: 2
-                             0x00, 0x00, 0x00, 0x01,  // Service record 1
-                             0x00, 0x00, 0x00, 0x02,  // Service record 2
-                             0x00                     // No continuation state
-      );
+  const auto kExpected = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
+                                                0x01, 0x10,  // Transaction ID (0x0110)
+                                                0x00, 0x0d,  // Parameter length: 13 bytes
+                                                0x00, 0x02,  // Total service record count: 2
+                                                0x00, 0x02,  // Current service record count: 2
+                                                0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                                0x00, 0x00, 0x00, 0x02,  // Service record 2
+                                                0x00                     // No continuation state
+  );
 
   auto pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 
   const auto kExpectedLimited =
-      CreateStaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
-                             0x01, 0x10,  // Transaction ID (0x0110)
-                             0x00, 0x09,  // Parameter length: 9
-                             0x00, 0x01,  // Total service record count: 1
-                             0x00, 0x01,  // Current service record count: 1
+      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
+                             0x01, 0x10,              // Transaction ID (0x0110)
+                             0x00, 0x09,              // Parameter length: 9
+                             0x00, 0x01,              // Total service record count: 1
+                             0x00, 0x01,              // Current service record count: 1
                              0x00, 0x00, 0x00, 0x01,  // Service record 1
                              0x00                     // No continuation state
       );
@@ -308,17 +304,17 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
   EXPECT_EQ(0xFFFF, req.attribute_ranges().front().end);
   EXPECT_EQ(61455, req.max_attribute_byte_count());
 
-  const auto kContinued = CreateStaticByteBuffer(
-      0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-      0x00, 0x0F,              // Maximum attribute byte count: (max = 15)
-      // Attribute ID List
-      0x35, 0x06,             // Sequence uint8 3 bytes
-      0x09,                   // uint16_t
-      0x00, 0x01,             // Attribute ID: 1
-      0x09,                   // uint16_t
-      0x00, 0x02,             // Attribute ID: 2
-      0x03, 0x12, 0x34, 0x56  // Continuation state
-  );
+  const auto kContinued =
+      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                             0x00, 0x0F,              // Maximum attribute byte count: (max = 15)
+                             // Attribute ID List
+                             0x35, 0x06,             // Sequence uint8 3 bytes
+                             0x09,                   // uint16_t
+                             0x00, 0x01,             // Attribute ID: 1
+                             0x09,                   // uint16_t
+                             0x00, 0x02,             // Attribute ID: 2
+                             0x03, 0x12, 0x34, 0x56  // Continuation state
+      );
 
   ServiceAttributeRequest req_cont_state(kContinued);
 
@@ -337,7 +333,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
 
   const auto kInvalidMaxBytes =
       CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-                             0x00, 0x04,  // Maximum attribute byte count (4)
+                             0x00, 0x04,              // Maximum attribute byte count (4)
                              // Attribute ID List
                              0x35, 0x03,        // Sequence uint8 3 bytes
                              0x09, 0x00, 0x02,  // uint16_t (2)
@@ -349,30 +345,30 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
   EXPECT_FALSE(req_minmax.valid());
 
   // Invalid order of the attributes.
-  const auto kInvalidAttributeListOrder = CreateStaticByteBuffer(
-      0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-      0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
-      // Attribute ID List
-      0x35, 0x06,        // Sequence uint8 5 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x09, 0x00, 0x01,  // uint16_t (1)
-      0x00               // No continuation state
-  );
+  const auto kInvalidAttributeListOrder =
+      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                             0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
+                             // Attribute ID List
+                             0x35, 0x06,        // Sequence uint8 5 bytes
+                             0x09, 0x00, 0x02,  // uint16_t (2)
+                             0x09, 0x00, 0x01,  // uint16_t (1)
+                             0x00               // No continuation state
+      );
 
   ServiceAttributeRequest req_order(kInvalidAttributeListOrder);
 
   EXPECT_FALSE(req_short.valid());
 
   // AttributeID List has invalid items
-  const auto kInvalidAttributeList = CreateStaticByteBuffer(
-      0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
-      0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
-      // Attribute ID List
-      0x35, 0x06,        // Sequence uint8 5 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x19, 0x00, 0x01,  // UUID (0x0001)
-      0x00               // No continuation state
-  );
+  const auto kInvalidAttributeList =
+      CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
+                             0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
+                             // Attribute ID List
+                             0x35, 0x06,        // Sequence uint8 5 bytes
+                             0x09, 0x00, 0x02,  // uint16_t (2)
+                             0x19, 0x00, 0x01,  // UUID (0x0001)
+                             0x00               // No continuation state
+      );
 
   ServiceAttributeRequest req_baditems(kInvalidAttributeList);
 
@@ -387,29 +383,28 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestGetPDU) {
   req.set_service_record_handle(0xEFFECACE);
   req.set_max_attribute_byte_count(32);
 
-  const auto kExpected = CreateStaticByteBuffer(
-      kServiceAttributeRequest, 0x12, 0x34,  // transaction id
-      0x00, 0x11,                            // Parameter Length (17 bytes)
-      0xEF, 0xFE, 0xCA, 0xCE,                // ServiceRecordHandle (0xEFFECACE)
-      0x00, 0x20,                            // MaxAttributeByteCount (32)
-      // Attribute ID list
-      0x35, 0x08,                    // Sequence uint8 8 bytes
-      0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-      0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-      0x00                           // No continuation state
-  );
+  const auto kExpected =
+      CreateStaticByteBuffer(kServiceAttributeRequest, 0x12, 0x34,  // transaction id
+                             0x00, 0x11,                            // Parameter Length (17 bytes)
+                             0xEF, 0xFE, 0xCA, 0xCE,  // ServiceRecordHandle (0xEFFECACE)
+                             0x00, 0x20,              // MaxAttributeByteCount (32)
+                             // Attribute ID list
+                             0x35, 0x08,                    // Sequence uint8 8 bytes
+                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                             0x00                           // No continuation state
+      );
 
   auto pdu = req.GetPDU(0x1234);
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 }
 
 TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
-  const auto kValidResponseEmpty =
-      CreateStaticByteBuffer(0x00, 0x02,  // AttributeListByteCount (2 bytes)
-                                          // Attribute List
-                             0x35, 0x00,  // Sequence uint8 0 bytes
-                             0x00         // No continuation state
-      );
+  const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListByteCount (2
+                                                                       // bytes) Attribute List
+                                                          0x35, 0x00,  // Sequence uint8 0 bytes
+                                                          0x00         // No continuation state
+  );
 
   ServiceAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
@@ -419,10 +414,10 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
   const auto kValidResponseItems = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
       // Attribute List
-      0x35, 0x10,        // Sequence uint8 16 bytes
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
       0x00                           // No continuation state
   );
@@ -442,10 +437,10 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
   const auto kInvalidItemsWrongOrder = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
       // Attribute List
-      0x35, 0x10,        // Sequence uint8 16 bytes
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
       0x00                           // No continuation state
   );
@@ -493,18 +488,18 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
   EXPECT_EQ(0xFFFF, req.attribute_ranges().front().end);
   EXPECT_EQ(61455, req.max_attribute_byte_count());
 
-  const auto kContinued = CreateStaticByteBuffer(
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0x00, 0x0F,        // Maximum attribute byte count: (max = 15)
-      // Attribute ID List
-      0x35, 0x06,             // Sequence uint8 6 bytes
-      0x09,                   // uint16_t
-      0x00, 0x01,             // Attribute ID: 1
-      0x09,                   // uint16_t
-      0x00, 0x02,             // Attribute ID: 2
-      0x03, 0x12, 0x34, 0x56  // Continuation state
-  );
+  const auto kContinued =
+      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0x00, 0x0F,        // Maximum attribute byte count: (max = 15)
+                             // Attribute ID List
+                             0x35, 0x06,             // Sequence uint8 6 bytes
+                             0x09,                   // uint16_t
+                             0x00, 0x01,             // Attribute ID: 1
+                             0x09,                   // uint16_t
+                             0x00, 0x02,             // Attribute ID: 2
+                             0x03, 0x12, 0x34, 0x56  // Continuation state
+      );
 
   ServiceSearchAttributeRequest req_cont_state(kContinued);
 
@@ -526,7 +521,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
   const auto kInvalidMaxBytes =
       CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
                              0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                             0x00, 0x04,  // Maximum attribute byte count (4)
+                             0x00, 0x04,        // Maximum attribute byte count (4)
                              // Attribute ID List
                              0x35, 0x03,        // Sequence uint8 3 bytes
                              0x09, 0x00, 0x02,  // uint16_t (2)
@@ -538,45 +533,45 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
   EXPECT_FALSE(req_minmax.valid());
 
   // Invalid order of the attributes.
-  const auto kInvalidAttributeListOrder = CreateStaticByteBuffer(
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
-      // Attribute ID List
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x09, 0x00, 0x01,  // uint16_t (1)
-      0x00               // No continuation state
-  );
+  const auto kInvalidAttributeListOrder =
+      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
+                             // Attribute ID List
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x09, 0x00, 0x02,  // uint16_t (2)
+                             0x09, 0x00, 0x01,  // uint16_t (1)
+                             0x00               // No continuation state
+      );
 
   ServiceSearchAttributeRequest req_order(kInvalidAttributeListOrder);
 
   EXPECT_FALSE(req_short.valid());
 
   // AttributeID List has invalid items
-  const auto kInvalidAttributeList = CreateStaticByteBuffer(
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-      0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
-      // Attribute ID List
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x19, 0x00, 0x01,  // UUID (0x0001)
-      0x00               // No continuation state
-  );
+  const auto kInvalidAttributeList =
+      CreateStaticByteBuffer(0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xFF, 0xFF,        // Maximum attribute byte count: (max = 65535)
+                             // Attribute ID List
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x09, 0x00, 0x02,  // uint16_t (2)
+                             0x19, 0x00, 0x01,  // UUID (0x0001)
+                             0x00               // No continuation state
+      );
 
   ServiceSearchAttributeRequest req_baditems(kInvalidAttributeList);
 
   EXPECT_FALSE(req_baditems.valid());
 
-  const auto kInvalidNoItems = CreateStaticByteBuffer(
-      0x35, 0x00,  // Sequence uint8 0 bytes
-      0xF0, 0x0F,  // Maximum attribute byte count (61455)
-      // Attribute ID List
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x00               // No continuation state
-  );
+  const auto kInvalidNoItems =
+      CreateStaticByteBuffer(0x35, 0x00,  // Sequence uint8 0 bytes
+                             0xF0, 0x0F,  // Maximum attribute byte count (61455)
+                             // Attribute ID List
+                             0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x09, 0x00, 0x02,  // uint16_t (2)
+                             0x00               // No continuation state
+      );
 
   ServiceSearchAttributeRequest req_noitems(kInvalidNoItems);
   EXPECT_FALSE(req_noitems.valid());
@@ -585,13 +580,12 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
       // ServiceSearchPattern
       0x35, 0x27,        // Sequence uint8 27 bytes
       0x19, 0x30, 0x01,  // 13 UUIDs in the search
-      0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05,
-      0x19, 0x30, 0x06, 0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09,
-      0x19, 0x30, 0x10, 0x19, 0x30, 0x11, 0x19, 0x30, 0x12, 0x19, 0x30, 0x13,
-      0xF0, 0x0F,        // Maximum attribute byte coutn (61455)
-      0x35, 0x03,        // Sequence uint8 3 bytes
-      0x09, 0x00, 0x02,  // uint16_t (2)
-      0x00               // No continuation state
+      0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05, 0x19, 0x30, 0x06,
+      0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09, 0x19, 0x30, 0x10, 0x19, 0x30, 0x11,
+      0x19, 0x30, 0x12, 0x19, 0x30, 0x13, 0xF0, 0x0F,  // Maximum attribute byte coutn (61455)
+      0x35, 0x03,                                      // Sequence uint8 3 bytes
+      0x09, 0x00, 0x02,                                // uint16_t (2)
+      0x00                                             // No continuation state
   );
 
   ServiceSearchAttributeRequest req_toomany(kInvalidTooManyItems);
@@ -606,48 +600,46 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestGetPDU) {
   req.set_search_pattern({protocol::kATT, protocol::kL2CAP});
   req.set_max_attribute_byte_count(32);
 
-  const auto kExpected = CreateStaticByteBuffer(
-      kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
-      0x00, 0x15,  // Parameter Length (21 bytes)
-      // ServiceSearchPattern
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x19, 0x00, 0x07,  // UUID (ATT)
-      0x19, 0x01, 0x00,  // UUID (L2CAP)
-      0x00, 0x20,        // MaxAttributeByteCount (32)
-      // Attribute ID list
-      0x35, 0x08,                    // Sequence uint8 8 bytes
-      0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-      0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-      0x00                           // No continuation state
-  );
+  const auto kExpected =
+      CreateStaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
+                             0x00, 0x15,  // Parameter Length (21 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x19, 0x00, 0x07,  // UUID (ATT)
+                             0x19, 0x01, 0x00,  // UUID (L2CAP)
+                             0x00, 0x20,        // MaxAttributeByteCount (32)
+                             // Attribute ID list
+                             0x35, 0x08,                    // Sequence uint8 8 bytes
+                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                             0x00                           // No continuation state
+      );
 
-  const auto kExpected2 = CreateStaticByteBuffer(
-      kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
-      0x00, 0x15,  // Parameter Length (21 bytes)
-      // ServiceSearchPattern
-      0x35, 0x06,        // Sequence uint8 6 bytes
-      0x19, 0x01, 0x00,  // UUID (L2CAP)
-      0x19, 0x00, 0x07,  // UUID (ATT)
-      0x00, 0x20,        // MaxAttributeByteCount (32)
-      // Attribute ID list
-      0x35, 0x08,                    // Sequence uint8 8 bytes
-      0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
-      0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
-      0x00                           // No continuation state
-  );
+  const auto kExpected2 =
+      CreateStaticByteBuffer(kServiceSearchAttributeRequest, 0x12, 0x34,  // transaction id
+                             0x00, 0x15,  // Parameter Length (21 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x06,        // Sequence uint8 6 bytes
+                             0x19, 0x01, 0x00,  // UUID (L2CAP)
+                             0x19, 0x00, 0x07,  // UUID (ATT)
+                             0x00, 0x20,        // MaxAttributeByteCount (32)
+                             // Attribute ID list
+                             0x35, 0x08,                    // Sequence uint8 8 bytes
+                             0x0A, 0x00, 0x01, 0xBE, 0xCA,  // uint32_t (0x0001BECA)
+                             0x09, 0xF0, 0x0F,              // uint16_t (0xF00F)
+                             0x00                           // No continuation state
+      );
 
   auto pdu = req.GetPDU(0x1234);
-  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) ||
-              ContainersEqual(kExpected2, *pdu));
+  EXPECT_TRUE(ContainersEqual(kExpected, *pdu) || ContainersEqual(kExpected2, *pdu));
 }
 
 TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
-  const auto kValidResponseEmpty =
-      CreateStaticByteBuffer(0x00, 0x02,  // AttributeListsByteCount (2 bytes)
-                                          // Attribute List
-                             0x35, 0x00,  // Sequence uint8 0 bytes
-                             0x00         // No continuation state
-      );
+  const auto kValidResponseEmpty = CreateStaticByteBuffer(0x00, 0x02,  // AttributeListsByteCount (2
+                                                                       // bytes) Attribute List
+                                                          0x35, 0x00,  // Sequence uint8 0 bytes
+                                                          0x00         // No continuation state
+  );
 
   ServiceSearchAttributeResponse resp;
   auto status = resp.Parse(kValidResponseEmpty);
@@ -661,10 +653,10 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
       // Attribute List
-      0x35, 0x10,        // Sequence uint8 16 bytes
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
       0x00                           // No continuation state
   );
@@ -688,14 +680,14 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
       // Wrapping Attribute List
       0x35, 0x1C,  // Sequence uint8 28 bytes
       // Attribute List 0 (first service)
-      0x35, 0x08,        // Sequence uint8 8 bytes
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x35, 0x08,                    // Sequence uint8 8 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
       // Attribute List 1 (second service)
-      0x35, 0x10,        // Sequence uint8 16 bytes
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xDB, 0xAC, 0x01,  // Element: uint32_t (0xFEDBAC01)
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
       0x00                           // No continuation state
   );
@@ -722,10 +714,10 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
       // Wrapping Attribute List
       0x35, 0x12,  // Sequence uint8 18 bytes
       // Attribute List
-      0x35, 0x10,        // Sequence uint8 16 bytes
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+      0x35, 0x10,                    // Sequence uint8 16 bytes
+      0x09, 0x00, 0x01,              // Handle: uint16_t (1 = kServiceClassIdList)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
-      0x09, 0x00, 0x00,  // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
       0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
       0x00                           // No continuation state
   );
@@ -766,10 +758,10 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRepsonseGetPDU) {
   const uint16_t kTransactionID = 0xfeed;
 
   const auto kExpected = CreateStaticByteBuffer(
-      0x07,  // ServiceSearchAttributeResponse
+      0x07,                                                  // ServiceSearchAttributeResponse
       UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
-      0x00, 0x25,  // Param Length (37 bytes)
-      0x00, 0x22,  // AttributeListsByteCount (34 bytes)
+      0x00, 0x25,                                            // Param Length (37 bytes)
+      0x00, 0x22,                                            // AttributeListsByteCount (34 bytes)
       // AttributeLists
       0x35, 0x20,                    // Sequence uint8 32 bytes
       0x35, 0x14,                    // Sequence uint8 20 bytes
@@ -816,10 +808,8 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
 
   rsp_search_attr.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
   rsp_search_attr.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
-  rsp_search_attr.SetAttribute(0, kServiceRecordHandle,
-                               DataElement(uint32_t(0)));
-  rsp_search_attr.SetAttribute(5, kServiceRecordHandle,
-                               DataElement(uint32_t(0x10002000)));
+  rsp_search_attr.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
+  rsp_search_attr.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
 
   buf = rsp_search_attr.GetPDU(0xFFFF, 0x0110, BufferView());
 

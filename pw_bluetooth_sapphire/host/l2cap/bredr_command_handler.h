@@ -196,14 +196,10 @@ class BrEdrCommandHandler final {
     BufferView data_;
   };
 
-  using ConnectionResponseCallback =
-      fit::function<bool(const ConnectionResponse& rsp)>;
-  using ConfigurationResponseCallback =
-      fit::function<bool(const ConfigurationResponse& rsp)>;
-  using DisconnectionResponseCallback =
-      fit::function<bool(const DisconnectionResponse& rsp)>;
-  using InformationResponseCallback =
-      fit::function<bool(const InformationResponse& rsp)>;
+  using ConnectionResponseCallback = fit::function<bool(const ConnectionResponse& rsp)>;
+  using ConfigurationResponseCallback = fit::function<bool(const ConfigurationResponse& rsp)>;
+  using DisconnectionResponseCallback = fit::function<bool(const DisconnectionResponse& rsp)>;
+  using InformationResponseCallback = fit::function<bool(const InformationResponse& rsp)>;
 
   // Base of response-sending objects passed to request delegates that they can
   // use to reply with a corresponding response or a rejection. This base
@@ -235,17 +231,14 @@ class BrEdrCommandHandler final {
 
   class ConnectionResponder : public Responder {
    public:
-    ConnectionResponder(SignalingChannel::Responder* sig_responder,
-                        ChannelId remote_cid);
+    ConnectionResponder(SignalingChannel::Responder* sig_responder, ChannelId remote_cid);
 
-    void Send(ChannelId local_cid, ConnectionResult result,
-              ConnectionStatus status);
+    void Send(ChannelId local_cid, ConnectionResult result, ConnectionStatus status);
   };
 
   class ConfigurationResponder : public Responder {
    public:
-    ConfigurationResponder(SignalingChannel::Responder* sig_responder,
-                           ChannelId local_cid);
+    ConfigurationResponder(SignalingChannel::Responder* sig_responder, ChannelId local_cid);
 
     void Send(ChannelId remote_cid, uint16_t flags, ConfigurationResult result,
               const ByteBuffer& data);
@@ -255,16 +248,15 @@ class BrEdrCommandHandler final {
 
   class DisconnectionResponder : public Responder {
    public:
-    DisconnectionResponder(SignalingChannel::Responder* sig_responder,
-                           ChannelId local_cid, ChannelId remote_cid);
+    DisconnectionResponder(SignalingChannel::Responder* sig_responder, ChannelId local_cid,
+                           ChannelId remote_cid);
 
     void Send();
   };
 
   class InformationResponder : public Responder {
    public:
-    InformationResponder(SignalingChannel::Responder* sig_responder,
-                         InformationType type);
+    InformationResponder(SignalingChannel::Responder* sig_responder, InformationType type);
 
     void SendNotSupported();
 
@@ -279,16 +271,15 @@ class BrEdrCommandHandler final {
     InformationType type_;
   };
 
-  using ConnectionRequestCallback = fit::function<void(
-      PSM psm, ChannelId remote_cid, ConnectionResponder* responder)>;
-  using ConfigurationRequestCallback = fit::function<void(
-      ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
-      ConfigurationResponder* responder)>;
-  using DisconnectionRequestCallback =
-      fit::function<void(ChannelId local_cid, ChannelId remote_cid,
-                         DisconnectionResponder* responder)>;
-  using InformationRequestCallback = fit::function<void(
-      InformationType type, InformationResponder* responder)>;
+  using ConnectionRequestCallback =
+      fit::function<void(PSM psm, ChannelId remote_cid, ConnectionResponder* responder)>;
+  using ConfigurationRequestCallback =
+      fit::function<void(ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
+                         ConfigurationResponder* responder)>;
+  using DisconnectionRequestCallback = fit::function<void(ChannelId local_cid, ChannelId remote_cid,
+                                                          DisconnectionResponder* responder)>;
+  using InformationRequestCallback =
+      fit::function<void(InformationType type, InformationResponder* responder)>;
 
   // |sig| must be valid for the lifetime of this object
   explicit BrEdrCommandHandler(SignalingChannelInterface* sig);
@@ -302,15 +293,12 @@ class BrEdrCommandHandler final {
   // Outbound request sending methods. Response callbacks are required to be
   // non-empty. The callbacks are wrapped and moved into the SignalingChannel
   // and may outlive BrEdrCommandHandler.
-  bool SendConnectionRequest(uint16_t psm, ChannelId local_cid,
-                             ConnectionResponseCallback cb);
-  bool SendConfigurationRequest(ChannelId remote_cid, uint16_t flags,
-                                const ByteBuffer& options,
+  bool SendConnectionRequest(uint16_t psm, ChannelId local_cid, ConnectionResponseCallback cb);
+  bool SendConfigurationRequest(ChannelId remote_cid, uint16_t flags, const ByteBuffer& options,
                                 ConfigurationResponseCallback cb);
   bool SendDisconnectionRequest(ChannelId remote_cid, ChannelId local_cid,
                                 DisconnectionResponseCallback cb);
-  bool SendInformationRequest(InformationType type,
-                              InformationResponseCallback cb);
+  bool SendInformationRequest(InformationType type, InformationResponseCallback cb);
 
   // Inbound request delegate registration methods. The callbacks are wrapped
   // and moved into the SignalingChannel and may outlive BrEdrCommandHandler. It

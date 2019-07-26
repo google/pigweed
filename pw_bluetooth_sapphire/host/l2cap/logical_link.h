@@ -47,10 +47,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
       fit::function<ChannelCallback(hci::ConnectionHandle handle, PSM psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
-  static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle,
-                                      hci::Connection::LinkType type,
-                                      hci::Connection::Role role,
-                                      async_dispatcher_t* dispatcher,
+  static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
+                                      hci::Connection::Role role, async_dispatcher_t* dispatcher,
                                       fxl::RefPtr<hci::Transport> hci,
                                       QueryServiceCallback query_service_cb);
 
@@ -72,8 +70,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // asynchronously via |callback| (posted on the given |dispatcher|).
   //
   // The link MUST not be closed when this is called.
-  void OpenChannel(PSM psm, ChannelCallback callback,
-                   async_dispatcher_t* dispatcher);
+  void OpenChannel(PSM psm, ChannelCallback callback, async_dispatcher_t* dispatcher);
 
   // Takes ownership of |packet| for PDU processing and routes it to its target
   // channel. This must be called on the HCI I/O thread.
@@ -103,8 +100,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
-  void set_error_callback(fit::closure callback,
-                          async_dispatcher_t* dispatcher);
+  void set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher);
 
   // Assigns the security upgrade delegate for this link.
   void set_security_upgrade_callback(SecurityUpgradeCallback callback,
@@ -132,8 +128,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
               hci::Connection::Role role, async_dispatcher_t* dispatcher,
-              fxl::RefPtr<hci::Transport> hci,
-              QueryServiceCallback query_service_cb);
+              fxl::RefPtr<hci::Transport> hci, QueryServiceCallback query_service_cb);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -176,8 +171,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // is null, then pass nullptr into |open_cb|.
   //
   // This MUST not be called on a closed link.
-  void CompleteDynamicOpen(const DynamicChannel* dyn_chan,
-                           ChannelCallback open_cb,
+  void CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb,
                            async_dispatcher_t* dispatcher);
 
   // Members that can be accessed from any thread.

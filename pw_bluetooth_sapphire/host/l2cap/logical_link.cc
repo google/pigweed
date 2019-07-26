@@ -48,22 +48,21 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 // static
-fbl::RefPtr<LogicalLink> LogicalLink::New(
-    hci::ConnectionHandle handle, hci::Connection::LinkType type,
-    hci::Connection::Role role, async_dispatcher_t* dispatcher,
-    fxl::RefPtr<hci::Transport> hci, QueryServiceCallback query_service_cb) {
-  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, dispatcher, hci,
-                                          std::move(query_service_cb)));
+fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle,
+                                          hci::Connection::LinkType type,
+                                          hci::Connection::Role role,
+                                          async_dispatcher_t* dispatcher,
+                                          fxl::RefPtr<hci::Transport> hci,
+                                          QueryServiceCallback query_service_cb) {
+  auto ll = fbl::AdoptRef(
+      new LogicalLink(handle, type, role, dispatcher, hci, std::move(query_service_cb)));
   ll->Initialize();
   return ll;
 }
 
-LogicalLink::LogicalLink(hci::ConnectionHandle handle,
-                         hci::Connection::LinkType type,
-                         hci::Connection::Role role,
-                         async_dispatcher_t* dispatcher,
-                         fxl::RefPtr<hci::Transport> hci,
-                         QueryServiceCallback query_service_cb)
+LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
+                         hci::Connection::Role role, async_dispatcher_t* dispatcher,
+                         fxl::RefPtr<hci::Transport> hci, QueryServiceCallback query_service_cb)
     : hci_(hci),
       dispatcher_(dispatcher),
       handle_(handle),
@@ -87,18 +86,17 @@ void LogicalLink::Initialize() {
     ZX_DEBUG_ASSERT(hci_->acl_data_channel()->GetLEBufferInfo().IsAvailable());
     fragmenter_.set_max_acl_payload_size(
         hci_->acl_data_channel()->GetLEBufferInfo().max_data_length());
-    signaling_channel_ = std::make_unique<LESignalingChannel>(
-        OpenFixedChannel(kLESignalingChannelId), role_);
+    signaling_channel_ =
+        std::make_unique<LESignalingChannel>(OpenFixedChannel(kLESignalingChannelId), role_);
     // TODO(armansito): Initialize LE registry when it exists.
   } else {
     ZX_DEBUG_ASSERT(hci_->acl_data_channel()->GetBufferInfo().IsAvailable());
     fragmenter_.set_max_acl_payload_size(
         hci_->acl_data_channel()->GetBufferInfo().max_data_length());
-    signaling_channel_ = std::make_unique<BrEdrSignalingChannel>(
-        OpenFixedChannel(kSignalingChannelId), role_);
+    signaling_channel_ =
+        std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
-        signaling_channel_.get(),
-        fit::bind_member(this, &LogicalLink::OnChannelDisconnectRequest),
+        signaling_channel_.get(), fit::bind_member(this, &LogicalLink::OnChannelDisconnectRequest),
         fit::bind_member(this, &LogicalLink::OnServiceRequest));
   }
 }
@@ -117,8 +115,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
 
   auto iter = channels_.find(id);
   if (iter != channels_.end()) {
-    bt_log(ERROR, "l2cap",
-           "channel is already open! (id: %#.4x, handle: %#.4x)", id, handle_);
+    bt_log(ERROR, "l2cap", "channel is already open! (id: %#.4x, handle: %#.4x)", id, handle_);
     return nullptr;
   }
 
@@ -130,16 +127,14 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   }
 
   // A fixed channel's endpoints have the same local and remote identifiers.
-  auto chan =
-      fbl::AdoptRef(new ChannelImpl(id /* id */, id /* remote_id */,
-                                    fbl::WrapRefPtr(this), std::move(pending)));
+  auto chan = fbl::AdoptRef(
+      new ChannelImpl(id /* id */, id /* remote_id */, fbl::WrapRefPtr(this), std::move(pending)));
   channels_[id] = chan;
 
   return chan;
 }
 
-void LogicalLink::OpenChannel(PSM psm, ChannelCallback callback,
-                              async_dispatcher_t* dispatcher) {
+void LogicalLink::OpenChannel(PSM psm, ChannelCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
@@ -197,8 +192,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
     // if that is necessary since hosts should not send data before a channel is
     // first configured.
     if (!AllowsFixedChannel(channel_id)) {
-      bt_log(WARN, "l2cap",
-             "Dropping PDU for nonexistent dynamic channel %#.4x on link %#.4x",
+      bt_log(WARN, "l2cap", "Dropping PDU for nonexistent dynamic channel %#.4x on link %#.4x",
              channel_id, handle_);
       return;
     }
@@ -215,16 +209,14 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   if (pp_iter != pending_pdus_.end()) {
     pp_iter->second.emplace_back(std::move(pdu));
 
-    bt_log(SPEW, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)",
-           channel_id, handle_);
+    bt_log(SPEW, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)", channel_id, handle_);
     return;
   }
 
   iter->second->HandleRxPdu(std::move(pdu));
 }
 
-void LogicalLink::UpgradeSecurity(sm::SecurityLevel level,
-                                  sm::StatusCallback callback,
+void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                                   async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(security_callback_);
@@ -235,8 +227,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level,
     return;
   }
 
-  auto status_cb = [dispatcher,
-                    f = std::move(callback)](sm::Status status) mutable {
+  auto status_cb = [dispatcher, f = std::move(callback)](sm::Status status) mutable {
     async::PostTask(dispatcher, [f = std::move(f), status] { f(status); });
   };
 
@@ -246,17 +237,14 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level,
     return;
   }
 
-  bt_log(TRACE, "l2cap", "Security upgrade requested (level = %s)",
-         sm::LevelToString(level));
-  async::PostTask(security_dispatcher_,
-                  [handle = handle_, level, f = security_callback_.share(),
-                   status_cb = std::move(status_cb)]() mutable {
-                    f(handle, level, std::move(status_cb));
-                  });
+  bt_log(TRACE, "l2cap", "Security upgrade requested (level = %s)", sm::LevelToString(level));
+  async::PostTask(security_dispatcher_, [handle = handle_, level, f = security_callback_.share(),
+                                         status_cb = std::move(status_cb)]() mutable {
+    f(handle, level, std::move(status_cb));
+  });
 }
 
-void LogicalLink::AssignSecurityProperties(
-    const sm::SecurityProperties& security) {
+void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& security) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
@@ -289,8 +277,7 @@ void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   hci_->acl_data_channel()->SendPackets(std::move(fragments), type_);
 }
 
-void LogicalLink::set_error_callback(fit::closure callback,
-                                     async_dispatcher_t* dispatcher) {
+void LogicalLink::set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
@@ -298,8 +285,8 @@ void LogicalLink::set_error_callback(fit::closure callback,
   link_error_dispatcher_ = dispatcher;
 }
 
-void LogicalLink::set_security_upgrade_callback(
-    SecurityUpgradeCallback callback, async_dispatcher_t* dispatcher) {
+void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback,
+                                                async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
@@ -314,9 +301,8 @@ LESignalingChannel* LogicalLink::le_signaling_channel() const {
 }
 
 bool LogicalLink::AllowsFixedChannel(ChannelId id) {
-  return (type_ == hci::Connection::LinkType::kLE)
-             ? IsValidLEFixedChannel(id)
-             : IsValidBREDRFixedChannel(id);
+  return (type_ == hci::Connection::LinkType::kLE) ? IsValidLEFixedChannel(id)
+                                                   : IsValidBREDRFixedChannel(id);
 }
 
 void LogicalLink::RemoveChannel(Channel* chan) {
@@ -376,8 +362,7 @@ void LogicalLink::Close() {
   }
 }
 
-DynamicChannelRegistry::DynamicChannelCallback LogicalLink::OnServiceRequest(
-    PSM psm) {
+DynamicChannelRegistry::DynamicChannelCallback LogicalLink::OnServiceRequest(PSM psm) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
@@ -387,8 +372,7 @@ DynamicChannelRegistry::DynamicChannelCallback LogicalLink::OnServiceRequest(
     return nullptr;
   }
 
-  return [this, chan_cb = std::move(chan_cb)](
-             const DynamicChannel* dyn_chan) mutable {
+  return [this, chan_cb = std::move(chan_cb)](const DynamicChannel* dyn_chan) mutable {
     CompleteDynamicOpen(dyn_chan, std::move(chan_cb), dispatcher_);
   };
 }
@@ -400,8 +384,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
 
   auto iter = channels_.find(dyn_chan->local_cid());
   if (iter == channels_.end()) {
-    bt_log(WARN, "l2cap",
-           "No ChannelImpl found for closing dynamic channel %#.4x",
+    bt_log(WARN, "l2cap", "No ChannelImpl found for closing dynamic channel %#.4x",
            dyn_chan->local_cid());
     return;
   }
@@ -414,8 +397,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   channel->OnClosed();
 }
 
-void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan,
-                                      ChannelCallback open_cb,
+void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb,
                                       async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
@@ -427,12 +409,10 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan,
 
   const ChannelId local_cid = dyn_chan->local_cid();
   const ChannelId remote_cid = dyn_chan->remote_cid();
-  bt_log(TRACE, "l2cap",
-         "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
+  bt_log(TRACE, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
          local_cid, remote_cid);
 
-  auto chan = fbl::AdoptRef(
-      new ChannelImpl(local_cid, remote_cid, fbl::WrapRefPtr(this), {}));
+  auto chan = fbl::AdoptRef(new ChannelImpl(local_cid, remote_cid, fbl::WrapRefPtr(this), {}));
   channels_[local_cid] = chan;
   async::PostTask(dispatcher, std::bind(std::move(open_cb), std::move(chan)));
 }

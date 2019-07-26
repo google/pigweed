@@ -11,10 +11,8 @@
 namespace bt {
 namespace att {
 
-ErrorCode CheckReadPermissions(const AccessRequirements&,
-                               const sm::SecurityProperties&);
-ErrorCode CheckWritePermissions(const AccessRequirements&,
-                                const sm::SecurityProperties&);
+ErrorCode CheckReadPermissions(const AccessRequirements&, const sm::SecurityProperties&);
+ErrorCode CheckWritePermissions(const AccessRequirements&, const sm::SecurityProperties&);
 
 }  // namespace att
 }  // namespace bt

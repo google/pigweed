@@ -11,10 +11,8 @@
 
 namespace bt {
 
-using SmallBufferTraits =
-    SlabBufferTraits<kSmallBufferSize, kSlabSize / kSmallBufferSize>;
-using LargeBufferTraits =
-    SlabBufferTraits<kLargeBufferSize, kSlabSize / kLargeBufferSize>;
+using SmallBufferTraits = SlabBufferTraits<kSmallBufferSize, kSlabSize / kSmallBufferSize>;
+using LargeBufferTraits = SlabBufferTraits<kLargeBufferSize, kSlabSize / kLargeBufferSize>;
 
 using SmallAllocator = fbl::SlabAllocator<SmallBufferTraits>;
 using LargeAllocator = fbl::SlabAllocator<LargeBufferTraits>;
@@ -33,7 +31,5 @@ MutableByteBufferPtr NewSlabBuffer(size_t size) {
 
 }  // namespace bt
 
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::LargeBufferTraits, bt::kMaxNumSlabs,
-                                      true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::SmallBufferTraits, bt::kMaxNumSlabs,
-                                      true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::LargeBufferTraits, bt::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::SmallBufferTraits, bt::kMaxNumSlabs, true);

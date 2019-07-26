@@ -105,11 +105,10 @@ std::string PairingMethodToString(PairingMethod method) {
   return "(unknown)";
 }
 
-PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob,
-                                  bool mitm_required, IOCapability local_ioc,
-                                  IOCapability peer_ioc, bool local_initiator) {
-  if ((sec_conn && (local_oob || peer_oob)) ||
-      (!sec_conn && local_oob && peer_oob)) {
+PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, bool mitm_required,
+                                  IOCapability local_ioc, IOCapability peer_ioc,
+                                  bool local_initiator) {
+  if ((sec_conn && (local_oob || peer_oob)) || (!sec_conn && local_oob && peer_oob)) {
     return PairingMethod::kOutOfBand;
   }
 
@@ -139,11 +138,9 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob,
     case IOCapability::kDisplayYesNo:
       switch (peer_ioc) {
         case IOCapability::kDisplayYesNo:
-          return sec_conn ? PairingMethod::kNumericComparison
-                          : PairingMethod::kJustWorks;
+          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kJustWorks;
         case IOCapability::kKeyboardDisplay:
-          return sec_conn ? PairingMethod::kNumericComparison
-                          : PairingMethod::kPasskeyEntryDisplay;
+          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kPasskeyEntryDisplay;
         case IOCapability::kKeyboardOnly:
           return PairingMethod::kPasskeyEntryDisplay;
         default:
@@ -161,8 +158,7 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob,
         case IOCapability::kDisplayOnly:
           return PairingMethod::kPasskeyEntryInput;
         case IOCapability::kDisplayYesNo:
-          return sec_conn ? PairingMethod::kNumericComparison
-                          : PairingMethod::kPasskeyEntryInput;
+          return sec_conn ? PairingMethod::kNumericComparison : PairingMethod::kPasskeyEntryInput;
         default:
           break;
       }
@@ -180,8 +176,7 @@ PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob,
   return PairingMethod::kJustWorks;
 }
 
-void Encrypt(const UInt128& key, const UInt128& plaintext_data,
-             UInt128* out_encrypted_data) {
+void Encrypt(const UInt128& key, const UInt128& plaintext_data, UInt128* out_encrypted_data) {
   // Swap the bytes since "the most significant octet of key corresponds to
   // key[0], the most significant octet of plaintextData corresponds to in[0]
   // and the most significant octet of encryptedData corresponds to out[0] using
@@ -198,9 +193,9 @@ void Encrypt(const UInt128& key, const UInt128& plaintext_data,
   Swap128(be_enc, out_encrypted_data);
 }
 
-void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq,
-        const ByteBuffer& pres, const DeviceAddress& initiator_addr,
-        const DeviceAddress& responder_addr, UInt128* out_confirm_value) {
+void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const ByteBuffer& pres,
+        const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
+        UInt128* out_confirm_value) {
   ZX_DEBUG_ASSERT(preq.size() == kPreqSize);
   ZX_DEBUG_ASSERT(pres.size() == kPreqSize);
   ZX_DEBUG_ASSERT(out_confirm_value);
@@ -212,7 +207,7 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq,
   hci::LEAddressType rat = hci::AddressTypeToHCI(responder_addr.type());
   p1[0] = static_cast<uint8_t>(iat);
   p1[1] = static_cast<uint8_t>(rat);
-  std::memcpy(p1.data() + 2, preq.data(), preq.size());  // Bytes [2-8]
+  std::memcpy(p1.data() + 2, preq.data(), preq.size());                // Bytes [2-8]
   std::memcpy(p1.data() + 2 + preq.size(), pres.data(), pres.size());  // [9-15]
 
   // Calculate p2 = padding || ia || ra
@@ -231,8 +226,7 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq,
   Encrypt(tk, tmp, out_confirm_value);
 }
 
-void S1(const UInt128& tk, const UInt128& r1, const UInt128& r2,
-        UInt128* out_stk) {
+void S1(const UInt128& tk, const UInt128& r1, const UInt128& r2, UInt128* out_stk) {
   ZX_DEBUG_ASSERT(out_stk);
 
   UInt128 r_prime;
@@ -310,8 +304,7 @@ DeviceAddress GenerateRpa(const UInt128& irk) {
   addr_bytes.Write(hash_bytes);
   addr_bytes.Write(prand_bytes, hash_bytes.size());
 
-  return DeviceAddress(DeviceAddress::Type::kLERandom,
-                       DeviceAddressBytes(addr_bytes));
+  return DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
 }
 
 DeviceAddress GenerateRandomAddress(bool is_static) {
@@ -332,8 +325,7 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
     addr_bytes[kDeviceAddressSize - 1] &= ~0b11000000;
   }
 
-  return DeviceAddress(DeviceAddress::Type::kLERandom,
-                       DeviceAddressBytes(addr_bytes));
+  return DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
 }
 
 }  // namespace util

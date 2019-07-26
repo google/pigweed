@@ -82,11 +82,9 @@ class Status {
       : error_(HostError::kProtocolError), protocol_error_(proto_code) {}
 
   // The result will carry a host error. Constructs a success result by default.
-  constexpr explicit Status(HostError ecode = HostError::kNoError)
-      : error_(ecode) {
-    ZX_DEBUG_ASSERT_MSG(
-        ecode != HostError::kProtocolError,
-        "HostError::kProtocolError not allowed in HostError constructor");
+  constexpr explicit Status(HostError ecode = HostError::kNoError) : error_(ecode) {
+    ZX_DEBUG_ASSERT_MSG(ecode != HostError::kProtocolError,
+                        "HostError::kProtocolError not allowed in HostError constructor");
   }
 
   // Returns true if this is a success result.
@@ -109,15 +107,13 @@ class Status {
   inline std::string ToString() const {
     return fxl::StringPrintf(
         "[status: %s]",
-        (is_protocol_error() ? ProtoTraits::ToString(protocol_error())
-                             : HostErrorToString(error()))
+        (is_protocol_error() ? ProtoTraits::ToString(protocol_error()) : HostErrorToString(error()))
             .c_str());
   }
 
   // Helper that returns true if this status represents an error and prints a
   // message containing a string representation of the status.
-  bool TestForErrorAndLog(LogSeverity severity, const char* tag,
-                          const std::string& msg) const {
+  bool TestForErrorAndLog(LogSeverity severity, const char* tag, const std::string& msg) const {
     bool is_error = !is_success();
     if (is_error && IsLogLevelEnabled(severity)) {
       LogMessage(severity, tag, "%s: %s", msg.c_str(), ToString().c_str());
@@ -125,8 +121,8 @@ class Status {
     return is_error;
   }
 
-  bool TestForErrorAndLogF(LogSeverity severity, const char* tag,
-                           const char* fmt, ...) const FXL_PRINTF_FORMAT(4, 5) {
+  bool TestForErrorAndLogF(LogSeverity severity, const char* tag, const char* fmt, ...) const
+      FXL_PRINTF_FORMAT(4, 5) {
     va_list args;
     va_start(args, fmt);
     std::string msg = fxl::StringVPrintf(fmt, args);

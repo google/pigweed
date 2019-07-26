@@ -66,9 +66,8 @@ TEST_F(SDP_DataElementTest, Read) {
 }
 
 TEST_F(SDP_DataElementTest, ReadUUID) {
-  auto buf = CreateStaticByteBuffer(
-      0x19,       // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
-      0x01, 0x00  // L2CAP
+  auto buf = CreateStaticByteBuffer(0x19,  // Type (3: UUID) & Size (1: two bytes) = 0b00011 001
+                                    0x01, 0x00  // L2CAP
   );
 
   DataElement elem;
@@ -76,31 +75,28 @@ TEST_F(SDP_DataElementTest, ReadUUID) {
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   EXPECT_EQ(UUID(uint16_t(0x0100)), *elem.Get<UUID>());
 
-  auto buf2 = CreateStaticByteBuffer(
-      0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
-      0x01, 0x02, 0x03, 0x04);
+  auto buf2 = CreateStaticByteBuffer(0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
+                                     0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(5u, DataElement::Read(&elem, buf2));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   EXPECT_EQ(UUID(uint32_t(0x01020304)), *elem.Get<UUID>());
 
-  auto buf3 = CreateStaticByteBuffer(
-      0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
-      0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04,
-      0x01, 0x02, 0x03, 0x04);
+  auto buf3 = CreateStaticByteBuffer(0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
+                                     0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02,
+                                     0x03, 0x04, 0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(0u, DataElement::Read(&elem, buf3));
 
-  auto buf4 = CreateStaticByteBuffer(
-      0x1C,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 100
-      0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
-      0x0D, 0x0E, 0x0F, 0x10);
+  auto buf4 = CreateStaticByteBuffer(0x1C,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 100
+                                     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+                                     0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10);
 
   EXPECT_EQ(17u, DataElement::Read(&elem, buf4));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
   // UInt128 in UUID is little-endian
-  EXPECT_EQ(UUID({0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07,
-                  0x06, 0x05, 0x04, 0x03, 0x02, 0x01}),
+  EXPECT_EQ(UUID({0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04,
+                  0x03, 0x02, 0x01}),
             *elem.Get<UUID>());
 }
 
@@ -214,19 +210,19 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
 }
 
 TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
-  auto buf = CreateStaticByteBuffer(
-      0x35, 0x1C,  // Sequence uint8 28 bytes
-      // Sequence 0
-      0x35, 0x08,                    // Sequence uint8 8 bytes
-      0x09, 0x00, 0x00,              // Element: uint16_t (0)
-      0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
-      // Sequence 1
-      0x35, 0x10,                    // Sequence uint8 16 bytes
-      0x09, 0x00, 0x00,              // Element: uint16_t (0)
-      0x0A, 0xFE, 0xDB, 0xAC, 0x01,  // Element: uint32_t (0xFEDBAC01)
-      0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
-      0x35, 0x03, 0x19, 0x11, 0x01  // Element: Sequence (3) { UUID(0x1101) }
-  );
+  auto buf =
+      CreateStaticByteBuffer(0x35, 0x1C,  // Sequence uint8 28 bytes
+                             // Sequence 0
+                             0x35, 0x08,                    // Sequence uint8 8 bytes
+                             0x09, 0x00, 0x00,              // Element: uint16_t (0)
+                             0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
+                             // Sequence 1
+                             0x35, 0x10,                    // Sequence uint8 16 bytes
+                             0x09, 0x00, 0x00,              // Element: uint16_t (0)
+                             0x0A, 0xFE, 0xDB, 0xAC, 0x01,  // Element: uint32_t (0xFEDBAC01)
+                             0x09, 0x00, 0x01,  // Handle: uint16_t (1 = kServiceClassIdList)
+                             0x35, 0x03, 0x19, 0x11, 0x01  // Element: Sequence (3) { UUID(0x1101) }
+      );
 
   DataElement elem;
   EXPECT_EQ(buf.size(), DataElement::Read(&elem, buf));
@@ -265,14 +261,10 @@ TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
 TEST_F(SDP_DataElementTest, ToString) {
   EXPECT_EQ("Null", DataElement().ToString());
   EXPECT_EQ("Boolean(true)", DataElement(true).ToString());
-  EXPECT_EQ("UnsignedInt:1(27)",
-            DataElement(static_cast<uint8_t>(27)).ToString());
-  EXPECT_EQ("SignedInt:4(-54321)",
-            DataElement(static_cast<int32_t>(-54321)).ToString());
-  EXPECT_EQ("UUID(00000100-0000-1000-8000-00805f9b34fb)",
-            DataElement(protocol::kL2CAP).ToString());
-  EXPECT_EQ("String(fuchsia💖)",
-            DataElement(std::string("fuchsia💖")).ToString());
+  EXPECT_EQ("UnsignedInt:1(27)", DataElement(static_cast<uint8_t>(27)).ToString());
+  EXPECT_EQ("SignedInt:4(-54321)", DataElement(static_cast<int32_t>(-54321)).ToString());
+  EXPECT_EQ("UUID(00000100-0000-1000-8000-00805f9b34fb)", DataElement(protocol::kL2CAP).ToString());
+  EXPECT_EQ("String(fuchsia💖)", DataElement(std::string("fuchsia💖")).ToString());
   std::vector<DataElement> strings;
   strings.emplace_back(std::string("hello"));
   strings.emplace_back(std::string("sapphire🔷"));
@@ -283,8 +275,7 @@ TEST_F(SDP_DataElementTest, ToString) {
   strings.emplace_back(std::string("hello"));
   strings.emplace_back(std::string("sapphire🔷"));
   alts.SetAlternative(std::move(strings));
-  EXPECT_EQ("Alternatives { String(hello) String(sapphire🔷) }",
-            alts.ToString());
+  EXPECT_EQ("Alternatives { String(hello) String(sapphire🔷) }", alts.ToString());
 }
 
 }  // namespace

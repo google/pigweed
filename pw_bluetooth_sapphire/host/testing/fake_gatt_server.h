@@ -23,12 +23,11 @@ class FakeGattServer final {
   void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
  private:
-  void HandleReadByGrpType(hci::ConnectionHandle conn,
-                           const ByteBuffer& params);
+  void HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& params);
 
   void Send(hci::ConnectionHandle conn, const ByteBuffer& pdu);
-  void SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode,
-                    att::Handle handle, att::ErrorCode ecode);
+  void SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode, att::Handle handle,
+                    att::ErrorCode ecode);
 
   // The fake device that owns this server. Must outlive this instance.
   FakePeer* dev_;

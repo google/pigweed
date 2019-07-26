@@ -18,13 +18,14 @@
 namespace bt {
 namespace hci {
 
-LowEnergyConnector::PendingRequest::PendingRequest(
-    const DeviceAddress& peer_address, StatusCallback status_callback)
+LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_address,
+                                                   StatusCallback status_callback)
     : peer_address(peer_address), status_callback(std::move(status_callback)) {}
 
-LowEnergyConnector::LowEnergyConnector(
-    fxl::RefPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
-    async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate)
+LowEnergyConnector::LowEnergyConnector(fxl::RefPtr<Transport> hci,
+                                       LocalAddressDelegate* local_addr_delegate,
+                                       async_dispatcher_t* dispatcher,
+                                       IncomingConnectionDelegate delegate)
     : dispatcher_(dispatcher),
       hci_(hci),
       local_addr_delegate_(local_addr_delegate),
@@ -51,11 +52,10 @@ LowEnergyConnector::~LowEnergyConnector() {
     Cancel();
 }
 
-bool LowEnergyConnector::CreateConnection(
-    bool use_whitelist, const DeviceAddress& peer_address,
-    uint16_t scan_interval, uint16_t scan_window,
-    const LEPreferredConnectionParameters& initial_parameters,
-    StatusCallback status_callback, zx::duration timeout) {
+bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddress& peer_address,
+                                          uint16_t scan_interval, uint16_t scan_window,
+                                          const LEPreferredConnectionParameters& initial_parameters,
+                                          StatusCallback status_callback, zx::duration timeout) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
@@ -68,27 +68,23 @@ bool LowEnergyConnector::CreateConnection(
   pending_request_ = PendingRequest(peer_address, std::move(status_callback));
 
   local_addr_delegate_->EnsureLocalAddress(
-      [this, use_whitelist, peer_address, scan_interval, scan_window,
-       initial_parameters, callback = std::move(status_callback),
-       timeout](const auto& address) mutable {
-        CreateConnectionInternal(address, use_whitelist, peer_address,
-                                 scan_interval, scan_window, initial_parameters,
-                                 std::move(callback), timeout);
+      [this, use_whitelist, peer_address, scan_interval, scan_window, initial_parameters,
+       callback = std::move(status_callback), timeout](const auto& address) mutable {
+        CreateConnectionInternal(address, use_whitelist, peer_address, scan_interval, scan_window,
+                                 initial_parameters, std::move(callback), timeout);
       });
 
   return true;
 }
 
 void LowEnergyConnector::CreateConnectionInternal(
-    const DeviceAddress& local_address, bool use_whitelist,
-    const DeviceAddress& peer_address, uint16_t scan_interval,
-    uint16_t scan_window,
-    const LEPreferredConnectionParameters& initial_parameters,
-    StatusCallback status_callback, zx::duration timeout) {
+    const DeviceAddress& local_address, bool use_whitelist, const DeviceAddress& peer_address,
+    uint16_t scan_interval, uint16_t scan_window,
+    const LEPreferredConnectionParameters& initial_parameters, StatusCallback status_callback,
+    zx::duration timeout) {
   // Check if the connection request was canceled via Cancel().
   if (!pending_request_ || pending_request_->canceled) {
-    bt_log(TRACE, "hci-le",
-           "connection request was canceled while obtaining local address");
+    bt_log(TRACE, "hci-le", "connection request was canceled while obtaining local address");
     pending_request_.reset();
     return;
   }
@@ -98,30 +94,25 @@ void LowEnergyConnector::CreateConnectionInternal(
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
 
-  auto request = CommandPacket::New(kLECreateConnection,
-                                    sizeof(LECreateConnectionCommandParams));
-  auto params = request->mutable_view()
-                    ->mutable_payload<LECreateConnectionCommandParams>();
+  auto request = CommandPacket::New(kLECreateConnection, sizeof(LECreateConnectionCommandParams));
+  auto params = request->mutable_view()->mutable_payload<LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy = use_whitelist
-                                        ? GenericEnableParam::kEnable
-                                        : GenericEnableParam::kDisable;
+  params->initiator_filter_policy =
+      use_whitelist ? GenericEnableParam::kEnable : GenericEnableParam::kDisable;
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =
       peer_address.IsPublic() ? LEAddressType::kPublic : LEAddressType::kRandom;
   params->peer_address = peer_address.value();
 
-  params->own_address_type = local_address.IsPublic()
-                                 ? LEOwnAddressType::kPublic
-                                 : LEOwnAddressType::kRandom;
+  params->own_address_type =
+      local_address.IsPublic() ? LEOwnAddressType::kPublic : LEOwnAddressType::kRandom;
 
   params->conn_interval_min = htole16(initial_parameters.min_interval());
   params->conn_interval_max = htole16(initial_parameters.max_interval());
   params->conn_latency = htole16(initial_parameters.max_latency());
-  params->supervision_timeout =
-      htole16(initial_parameters.supervision_timeout());
+  params->supervision_timeout = htole16(initial_parameters.supervision_timeout());
   params->minimum_ce_length = 0x0000;
   params->maximum_ce_length = 0x0000;
 
@@ -143,12 +134,11 @@ void LowEnergyConnector::CreateConnectionInternal(
     // timeout period. NOTE: The request will complete when the controller
     // asynchronously notifies us of with a LE Connection Complete event.
     self->request_timeout_task_.Cancel();
-    self->request_timeout_task_.PostDelayed(async_get_default_dispatcher(),
-                                            timeout);
+    self->request_timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
   };
 
-  hci_->command_channel()->SendCommand(std::move(request), dispatcher_,
-                                       complete_cb, kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(request), dispatcher_, complete_cb,
+                                       kCommandStatusEventCode);
 }
 
 void LowEnergyConnector::Cancel() { CancelInternal(false); }
@@ -175,15 +165,12 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   // request is outstanding. Otherwise there is no need to talk to the
   // controller.
   if (pending_request_->initiating) {
-    bt_log(TRACE, "hci-le",
-           "telling controller to cancel LE connection attempt");
+    bt_log(TRACE, "hci-le", "telling controller to cancel LE connection attempt");
     auto complete_cb = [](auto id, const EventPacket& event) {
-      hci_is_error(event, WARN, "hci-le",
-                   "failed to cancel connection request");
+      hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");
     };
     auto cancel = CommandPacket::New(kLECreateConnectionCancel);
-    hci_->command_channel()->SendCommand(std::move(cancel), dispatcher_,
-                                         complete_cb);
+    hci_->command_channel()->SendCommand(std::move(cancel), dispatcher_, complete_cb);
     return;
   }
 
@@ -200,8 +187,8 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   ZX_ASSERT(params);
 
   // First check if this event is related to the currently pending request.
-  const DeviceAddress peer_address(
-      AddressTypeFromHCI(params->peer_address_type), params->peer_address);
+  const DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type),
+                                   params->peer_address);
   bool matches_pending_request =
       pending_request_ && (pending_request_->peer_address == peer_address);
 
@@ -218,20 +205,18 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
       }
       OnCreateConnectionComplete(status, nullptr);
     } else {
-      bt_log(WARN, "hci-le",
-             "unexpected connection complete event with error received: %s",
+      bt_log(WARN, "hci-le", "unexpected connection complete event with error received: %s",
              status.ToString().c_str());
     }
     return;
   }
 
   ConnectionHandle handle = le16toh(params->connection_handle);
-  Connection::Role role = (params->role == ConnectionRole::kMaster)
-                              ? Connection::Role::kMaster
-                              : Connection::Role::kSlave;
-  LEConnectionParameters connection_params(
-      le16toh(params->conn_interval), le16toh(params->conn_latency),
-      le16toh(params->supervision_timeout));
+  Connection::Role role = (params->role == ConnectionRole::kMaster) ? Connection::Role::kMaster
+                                                                    : Connection::Role::kSlave;
+  LEConnectionParameters connection_params(le16toh(params->conn_interval),
+                                           le16toh(params->conn_latency),
+                                           le16toh(params->supervision_timeout));
 
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.
@@ -242,9 +227,8 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
 
   // A new link layer connection was created. Create an object to track this
   // connection. Destroying this object will disconnect the link.
-  auto connection =
-      Connection::CreateLE(handle, role, pending_request_->local_address,
-                           peer_address, connection_params, hci_);
+  auto connection = Connection::CreateLE(handle, role, pending_request_->local_address,
+                                         peer_address, connection_params, hci_);
 
   if (pending_request_->timed_out) {
     status = Status(HostError::kTimedOut);
@@ -262,12 +246,10 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   OnCreateConnectionComplete(status, std::move(connection));
 }
 
-void LowEnergyConnector::OnCreateConnectionComplete(Status status,
-                                                    ConnectionPtr link) {
+void LowEnergyConnector::OnCreateConnectionComplete(Status status, ConnectionPtr link) {
   ZX_DEBUG_ASSERT(pending_request_);
 
-  bt_log(TRACE, "hci-le", "connection complete - status: %s",
-         status.ToString().c_str());
+  bt_log(TRACE, "hci-le", "connection complete - status: %s", status.ToString().c_str());
 
   request_timeout_task_.Cancel();
 

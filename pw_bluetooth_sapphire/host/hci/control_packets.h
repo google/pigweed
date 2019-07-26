@@ -27,8 +27,7 @@ class Packet<CommandHeader> : public PacketBase<CommandHeader, CommandPacket> {
  public:
   // Slab-allocates a new CommandPacket with the given payload size and
   // initializes the packet's header field.
-  static std::unique_ptr<CommandPacket> New(OpCode opcode,
-                                            size_t payload_size = 0u);
+  static std::unique_ptr<CommandPacket> New(OpCode opcode, size_t payload_size = 0u);
 
   // Returns the HCI command opcode currently in this packet.
   OpCode opcode() const { return le16toh(view().header().opcode); }
@@ -65,8 +64,7 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
   template <typename ReturnParams>
   const ReturnParams* return_params() const {
     if (event_code() != kCommandCompleteEventCode ||
-        sizeof(ReturnParams) >
-            view().payload_size() - sizeof(CommandCompleteEventParams))
+        sizeof(ReturnParams) > view().payload_size() - sizeof(CommandCompleteEventParams))
       return nullptr;
     return reinterpret_cast<const ReturnParams*>(
         params<CommandCompleteEventParams>().return_parameters);
@@ -79,11 +77,9 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
   template <typename SubeventParams>
   const SubeventParams* le_event_params() const {
     if (event_code() != kLEMetaEventCode ||
-        sizeof(SubeventParams) >
-            view().payload_size() - sizeof(LEMetaEventParams))
+        sizeof(SubeventParams) > view().payload_size() - sizeof(LEMetaEventParams))
       return nullptr;
-    return reinterpret_cast<const SubeventParams*>(
-        params<LEMetaEventParams>().subevent_parameters);
+    return reinterpret_cast<const SubeventParams*>(params<LEMetaEventParams>().subevent_parameters);
   }
 
   // If this is an event packet with a standard status (See Vol 2, Part D), this
@@ -120,7 +116,6 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
 
 // Convenience macros to check and log any non-Success status of an event.
 // Evaluate to true if the event status is not success.
-#define hci_is_error(event, flag, tag, fmt...) \
-  bt_is_error(event.ToStatus(), flag, tag, fmt)
+#define hci_is_error(event, flag, tag, fmt...) bt_is_error(event.ToStatus(), flag, tag, fmt)
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_

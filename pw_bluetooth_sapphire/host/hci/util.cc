@@ -115,8 +115,7 @@ std::string StatusCodeToString(StatusCode code) {
 }
 // clang-format on
 
-bool DeviceAddressFromAdvReport(const LEAdvertisingReportData& report,
-                                DeviceAddress* out_address,
+bool DeviceAddressFromAdvReport(const LEAdvertisingReportData& report, DeviceAddress* out_address,
                                 bool* out_resolved) {
   ZX_DEBUG_ASSERT(out_address);
   ZX_DEBUG_ASSERT(out_resolved);

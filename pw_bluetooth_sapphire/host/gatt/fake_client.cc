@@ -19,9 +19,7 @@ FakeClient::FakeClient(async_dispatcher_t* dispatcher)
   ZX_DEBUG_ASSERT(dispatcher_);
 }
 
-fxl::WeakPtr<Client> FakeClient::AsWeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
+fxl::WeakPtr<Client> FakeClient::AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
 uint16_t FakeClient::mtu() const {
   // TODO(armansito): Return a configurable value.
@@ -29,8 +27,9 @@ uint16_t FakeClient::mtu() const {
 }
 
 void FakeClient::ExchangeMTU(MTUCallback callback) {
-  auto task = [status = exchange_mtu_status_, mtu = server_mtu_,
-               callback = std::move(callback)] { callback(status, mtu); };
+  auto task = [status = exchange_mtu_status_, mtu = server_mtu_, callback = std::move(callback)] {
+    callback(status, mtu);
+  };
   async::PostTask(dispatcher_, std::move(task));
 }
 
@@ -45,28 +44,26 @@ void FakeClient::DiscoverPrimaryServices(ServiceCallback svc_callback,
   });
 }
 
-void FakeClient::DiscoverCharacteristics(att::Handle range_start,
-                                         att::Handle range_end,
+void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                          CharacteristicCallback chrc_callback,
                                          StatusCallback status_callback) {
   last_chrc_discovery_start_handle_ = range_start;
   last_chrc_discovery_end_handle_ = range_end;
   chrc_discovery_count_++;
 
-  async::PostTask(dispatcher_, [this, range_start, range_end,
-                                chrc_callback = std::move(chrc_callback),
-                                status_callback = std::move(status_callback)] {
-    for (const auto& chrc : chrcs_) {
-      if (chrc.handle >= range_start && chrc.handle <= range_end) {
-        chrc_callback(chrc);
-      }
-    }
-    status_callback(chrc_discovery_status_);
-  });
+  async::PostTask(dispatcher_,
+                  [this, range_start, range_end, chrc_callback = std::move(chrc_callback),
+                   status_callback = std::move(status_callback)] {
+                    for (const auto& chrc : chrcs_) {
+                      if (chrc.handle >= range_start && chrc.handle <= range_end) {
+                        chrc_callback(chrc);
+                      }
+                    }
+                    status_callback(chrc_discovery_status_);
+                  });
 }
 
-void FakeClient::DiscoverDescriptors(att::Handle range_start,
-                                     att::Handle range_end,
+void FakeClient::DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                                      DescriptorCallback desc_callback,
                                      StatusCallback status_callback) {
   last_desc_discovery_start_handle_ = range_start;
@@ -74,21 +71,20 @@ void FakeClient::DiscoverDescriptors(att::Handle range_start,
   desc_discovery_count_++;
 
   att::Status status;
-  if (!desc_discovery_status_target_ ||
-      desc_discovery_count_ == desc_discovery_status_target_) {
+  if (!desc_discovery_status_target_ || desc_discovery_count_ == desc_discovery_status_target_) {
     status = desc_discovery_status_;
   }
 
-  async::PostTask(dispatcher_, [this, status, range_start, range_end,
-                                desc_callback = std::move(desc_callback),
-                                status_callback = std::move(status_callback)] {
-    for (const auto& desc : descs_) {
-      if (desc.handle >= range_start && desc.handle <= range_end) {
-        desc_callback(desc);
-      }
-    }
-    status_callback(status);
-  });
+  async::PostTask(dispatcher_,
+                  [this, status, range_start, range_end, desc_callback = std::move(desc_callback),
+                   status_callback = std::move(status_callback)] {
+                    for (const auto& desc : descs_) {
+                      if (desc.handle >= range_start && desc.handle <= range_end) {
+                        desc_callback(desc);
+                      }
+                    }
+                    status_callback(status);
+                  });
 }
 
 void FakeClient::ReadRequest(att::Handle handle, ReadCallback callback) {
@@ -97,8 +93,7 @@ void FakeClient::ReadRequest(att::Handle handle, ReadCallback callback) {
   }
 }
 
-void FakeClient::ReadBlobRequest(att::Handle handle, uint16_t offset,
-                                 ReadCallback callback) {
+void FakeClient::ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) {
   if (read_blob_request_callback_) {
     read_blob_request_callback_(handle, offset, std::move(callback));
   }
@@ -114,35 +109,29 @@ void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
 void FakeClient::ExecutePrepareWrites(att::PrepareWriteQueue write_queue,
                                       att::StatusCallback callback) {
   if (execute_prepare_writes_callback_) {
-    execute_prepare_writes_callback_(std::move(write_queue),
-                                     std::move(callback));
+    execute_prepare_writes_callback_(std::move(write_queue), std::move(callback));
   }
 }
 
 void FakeClient::PrepareWriteRequest(att::Handle handle, uint16_t offset,
-                                     const ByteBuffer& part_value,
-                                     PrepareCallback callback) {
+                                     const ByteBuffer& part_value, PrepareCallback callback) {
   if (prepare_write_request_callback_) {
-    prepare_write_request_callback_(handle, offset, part_value,
-                                    std::move(callback));
+    prepare_write_request_callback_(handle, offset, part_value, std::move(callback));
   }
 }
-void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag,
-                                     att::StatusCallback callback) {
+void FakeClient::ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) {
   if (execute_write_request_callback_) {
     execute_write_request_callback_(flag, std::move(callback));
   }
 }
 
-void FakeClient::WriteWithoutResponse(att::Handle handle,
-                                      const ByteBuffer& value) {
+void FakeClient::WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) {
   if (write_without_rsp_callback_) {
     write_without_rsp_callback_(handle, value);
   }
 }
 
-void FakeClient::SendNotification(bool indicate, att::Handle handle,
-                                  const ByteBuffer& value) {
+void FakeClient::SendNotification(bool indicate, att::Handle handle, const ByteBuffer& value) {
   if (notification_callback_) {
     notification_callback_(indicate, handle, value);
   }

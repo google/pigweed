@@ -14,8 +14,7 @@ namespace gatt {
 namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
-                     const WriteResponder&) {}
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
 void NopCCCallback(IdType, IdType, PeerId, bool notify, bool indicate) {}
 void NopSendIndication(PeerId, att::Handle, const ByteBuffer&) {}
 
@@ -28,16 +27,14 @@ constexpr uint16_t kEnableInd = 0x0002;
 
 class GATT_GenericAttributeServiceTest : public ::testing::Test {
  protected:
-  bool WriteServiceChangedCCC(PeerId peer_id, uint16_t ccc_value,
-                              att::ErrorCode* out_ecode) {
+  bool WriteServiceChangedCCC(PeerId peer_id, uint16_t ccc_value, att::ErrorCode* out_ecode) {
     ZX_DEBUG_ASSERT(out_ecode);
 
     auto* attr = mgr.database()->FindAttribute(kCCCHandle);
     ZX_DEBUG_ASSERT(attr);
     auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
     uint16_t value = htole16(ccc_value);
-    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)),
-                            result_cb);
+    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }
 
   LocalServiceManager mgr;
@@ -74,8 +71,7 @@ TEST_F(GATT_GenericAttributeServiceTest, RegisterUnregister) {
 // callback to send an indication to the "client."
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   int callback_count = 0;
-  auto send_indication = [&](PeerId peer_id, att::Handle handle,
-                             const ByteBuffer& value) {
+  auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
@@ -104,11 +100,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
-  auto service_id = mgr.RegisterService(std::move(service), NopReadHandler,
-                                        NopWriteHandler, NopCCCallback);
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
+  auto service_id =
+      mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
   EXPECT_NE(0u, service_id);
   EXPECT_EQ(1, callback_count);
 }
@@ -117,8 +112,7 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
 // the latter test service.
 TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   int callback_count = 0;
-  auto send_indication = [&](PeerId peer_id, att::Handle handle,
-                             const ByteBuffer& value) {
+  auto send_indication = [&](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(kChrcHandle, handle);
     ASSERT_EQ(4u, value.size());
@@ -142,11 +136,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   const att::AccessRequirements kReadReqs, kWriteReqs;
   const att::AccessRequirements kUpdateReqs(true, true, true);
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
-  auto service_id = mgr.RegisterService(std::move(service), NopReadHandler,
-                                        NopWriteHandler, NopCCCallback);
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
+  auto service_id =
+      mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, NopCCCallback);
   EXPECT_NE(0u, service_id);
 
   // Enable Service Changed indications for the test client.

@@ -19,96 +19,63 @@ TEST(GAP_DiscoveryFilterTest, Flags) {
   DiscoveryFilter filter;
 
   // Empty filter should match everything.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b100);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b001);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   // The following filters set multiple bits. As long as one of them is set, the
   // filter should match.
   filter.set_flags(0b101);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b111);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b011);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b010);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   // The following filters requre that *all* bits be present in the advertising
   // data.
   filter.set_flags(0b101, true);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b111, true);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b011, true);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 
   filter.set_flags(0b010, true);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidFlagsData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kValidFlagsData, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, Connectable) {
@@ -140,64 +107,39 @@ TEST(GAP_DiscoveryFilterTest, 16BitServiceUuids) {
   // "Complete" refers to "Complete Service UUIDs".
 
   const auto kIncompleteEmpty = CreateStaticByteBuffer(0x01, 0x02);
-  const auto kIncompleteNoMatch =
-      CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x03, 0x04);
-  const auto kIncompleteMatch1 =
-      CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x0d, 0x18);
-  const auto kIncompleteMatch2 =
-      CreateStaticByteBuffer(0x05, 0x02, 0x00, 0x18, 0x03, 0x04);
+  const auto kIncompleteNoMatch = CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x03, 0x04);
+  const auto kIncompleteMatch1 = CreateStaticByteBuffer(0x05, 0x02, 0x01, 0x02, 0x0d, 0x18);
+  const auto kIncompleteMatch2 = CreateStaticByteBuffer(0x05, 0x02, 0x00, 0x18, 0x03, 0x04);
   const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x03);
-  const auto kCompleteNoMatch =
-      CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x03, 0x04);
-  const auto kCompleteMatch1 =
-      CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x0d, 0x18);
-  const auto kCompleteMatch2 =
-      CreateStaticByteBuffer(0x05, 0x03, 0x00, 0x18, 0x03, 0x04);
+  const auto kCompleteNoMatch = CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x03, 0x04);
+  const auto kCompleteMatch1 = CreateStaticByteBuffer(0x05, 0x03, 0x01, 0x02, 0x0d, 0x18);
+  const auto kCompleteMatch2 = CreateStaticByteBuffer(0x05, 0x03, 0x00, 0x18, 0x03, 0x04);
 
   DiscoveryFilter filter;
 
   // An empty filter should match all payloads.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                          hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
   filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                           hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, 32BitServiceUuids) {
@@ -210,64 +152,45 @@ TEST(GAP_DiscoveryFilterTest, 32BitServiceUuids) {
   // "Complete" refers to "Complete Service UUIDs".
 
   const auto kIncompleteEmpty = CreateStaticByteBuffer(0x01, 0x04);
-  const auto kIncompleteNoMatch = CreateStaticByteBuffer(
-      0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-  const auto kIncompleteMatch1 = CreateStaticByteBuffer(
-      0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
-  const auto kIncompleteMatch2 = CreateStaticByteBuffer(
-      0x09, 0x04, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
+  const auto kIncompleteNoMatch =
+      CreateStaticByteBuffer(0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+  const auto kIncompleteMatch1 =
+      CreateStaticByteBuffer(0x09, 0x04, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
+  const auto kIncompleteMatch2 =
+      CreateStaticByteBuffer(0x09, 0x04, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
   const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x05);
-  const auto kCompleteNoMatch = CreateStaticByteBuffer(
-      0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
-  const auto kCompleteMatch1 = CreateStaticByteBuffer(
-      0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
-  const auto kCompleteMatch2 = CreateStaticByteBuffer(
-      0x09, 0x05, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
+  const auto kCompleteNoMatch =
+      CreateStaticByteBuffer(0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+  const auto kCompleteMatch1 =
+      CreateStaticByteBuffer(0x09, 0x05, 0x01, 0x02, 0x03, 0x04, 0x0d, 0x18, 0x00, 0x00);
+  const auto kCompleteMatch2 =
+      CreateStaticByteBuffer(0x09, 0x05, 0x00, 0x18, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04);
 
   DiscoveryFilter filter;
 
   // An empty filter should match all payloads.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                          hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
   filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                           hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, 128BitServiceUuids) {
@@ -284,153 +207,117 @@ TEST(GAP_DiscoveryFilterTest, 128BitServiceUuids) {
       CreateStaticByteBuffer(0x11, 0x06,
 
                              // UUID
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F);
   const auto kIncompleteMatch1 =
       CreateStaticByteBuffer(0x21, 0x06,
 
                              // UUID 1
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F,
 
                              // UUID 2
-                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
+                             0x0d, 0x18, 0x00, 0x00);
   const auto kIncompleteMatch2 =
       CreateStaticByteBuffer(0x21, 0x06,
 
                              // UUID 1
-                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
+                             0x00, 0x18, 0x00, 0x00,
 
                              // UUID 2
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F);
   const auto kCompleteEmpty = CreateStaticByteBuffer(0x01, 0x07);
   const auto kCompleteNoMatch =
       CreateStaticByteBuffer(0x11, 0x07,
 
                              // UUID
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F);
   const auto kCompleteMatch1 =
       CreateStaticByteBuffer(0x21, 0x07,
 
                              // UUID 1
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F,
 
                              // UUID 2
-                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0x0d, 0x18, 0x00, 0x00);
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
+                             0x0d, 0x18, 0x00, 0x00);
   const auto kCompleteMatch2 =
       CreateStaticByteBuffer(0x21, 0x07,
 
                              // UUID 1
-                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00,
+                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
+                             0x00, 0x18, 0x00, 0x00,
 
                              // UUID 2
-                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                             0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+                             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+                             0x0C, 0x0D, 0x0E, 0x0F);
 
   DiscoveryFilter filter;
 
   // An empty filter should match all payloads.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                          hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 
   // Filter for kUuid0 and kUuid1.
   filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false,
-                                           hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kIncompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kIncompleteMatch2, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteEmpty, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteNoMatch, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteMatch2, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, NameSubstring) {
   const BufferView kEmptyData;
-  const auto kShortenedName =
-      CreateStaticByteBuffer(0x05, 0x08, 'T', 'e', 's', 't');
-  const auto kCompleteName =
-      CreateStaticByteBuffer(0x0E, 0x09, 'T', 'e', 's', 't', ' ', 'C', 'o', 'm',
-                             'p', 'l', 'e', 't', 'e');
+  const auto kShortenedName = CreateStaticByteBuffer(0x05, 0x08, 'T', 'e', 's', 't');
+  const auto kCompleteName = CreateStaticByteBuffer(0x0E, 0x09, 'T', 'e', 's', 't', ' ', 'C', 'o',
+                                                    'm', 'p', 'l', 'e', 't', 'e');
 
   DiscoveryFilter filter;
 
   // An empty filter should match all payloads.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
 
   // Assigning an empty string for the name filter should have the same effect
   // as an empty filter.
   filter.set_name_substring("");
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
 
   filter.set_name_substring("foo");
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
 
   filter.set_name_substring("est");
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
 
   filter.set_name_substring("Compl");
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kShortenedName, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kCompleteName, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, RSSI) {
@@ -442,29 +329,24 @@ TEST(GAP_DiscoveryFilterTest, RSSI) {
 
   // |result| reports an invalid RSSI. This should fail to match even though the
   // value numerically satisfies the filter.
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
 
   filter.set_rssi(kRSSIThreshold);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
 
   EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold));
 
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
 
   // When a pathloss filter value is set and the scan result does not satisfy it
   // because it didn't include the transmission power level, the filter should
   // match since an RSSI value has been set which was used as a fallback.
   filter.set_pathloss(5);
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
 
   // Finally, an empty filter should always succeed.
   filter.Reset();
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, true, kRSSIThreshold + 1));
 }
 
 TEST(GAP_DiscoveryFilterTest, Pathloss) {
@@ -481,75 +363,57 @@ TEST(GAP_DiscoveryFilterTest, Pathloss) {
   filter.set_pathloss(kPathlossThreshold);
 
   // No Tx Power and no RSSI. Filter should not match.
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, true, hci::kRSSIInvalid));
 
   // Tx Power is reported but RSSI is unknown. Filter should not match.
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kDataWithTxPower, true, hci::kRSSIInvalid));
 
   // RSSI is known but Tx Power is not reported.
   EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, true, kMatchingRSSI));
 
   // RSSI and Tx Power are present and pathloss is within threshold.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, kMatchingRSSI));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kDataWithTxPower, true, kMatchingRSSI));
 
   // RSSI and Tx Power are present but RSSI is larger than Tx Power.
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, kTooLargeRSSI));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kDataWithTxPower, true, kTooLargeRSSI));
 
   // RSSI and Tx Power are present but pathloss is above threshold.
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
 
   // Assign a RSSI filter. Even though this field alone WOULD satisfy the
   // filter, the match function should not fall back to it when Tx Power is
   // present and the pathloss filter is unsatisfied.
   filter.set_rssi(kNotMatchingRSSI);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
   EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, true, kNotMatchingRSSI));
 
   // Finally, an empty filter should always succeed.
   filter.Reset();
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kDataWithTxPower, true, kNotMatchingRSSI));
 }
 
 TEST(GAP_DiscoveryFilterTest, ManufacturerCode) {
   const BufferView kEmptyData;
   const auto kValidData0 = CreateStaticByteBuffer(0x03, 0xFF, 0xE0, 0x00);
-  const auto kValidData1 =
-      CreateStaticByteBuffer(0x06, 0xFF, 0xE0, 0x00, 0x01, 0x02, 0x03);
+  const auto kValidData1 = CreateStaticByteBuffer(0x06, 0xFF, 0xE0, 0x00, 0x01, 0x02, 0x03);
   const auto kInvalidData0 = CreateStaticByteBuffer(0x02, 0xFF, 0xE0);
   const auto kInvalidData1 = CreateStaticByteBuffer(0x03, 0xFF, 0x4C, 0x00);
 
   DiscoveryFilter filter;
 
   // Empty filter should match everything.
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidData0, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidData1, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kInvalidData0, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kInvalidData1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidData0, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidData1, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kInvalidData0, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kInvalidData1, false, hci::kRSSIInvalid));
 
   filter.set_manufacturer_code(0x00E0);
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidData0, false, hci::kRSSIInvalid));
-  EXPECT_TRUE(
-      filter.MatchLowEnergyResult(kValidData1, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidData0, false, hci::kRSSIInvalid));
-  EXPECT_FALSE(
-      filter.MatchLowEnergyResult(kInvalidData1, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kEmptyData, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidData0, false, hci::kRSSIInvalid));
+  EXPECT_TRUE(filter.MatchLowEnergyResult(kValidData1, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidData0, false, hci::kRSSIInvalid));
+  EXPECT_FALSE(filter.MatchLowEnergyResult(kInvalidData1, false, hci::kRSSIInvalid));
 }
 
 TEST(GAP_DiscoveryFilterTest, Combined) {

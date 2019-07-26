@@ -18,8 +18,7 @@ constexpr OpCode kTestOpCode2 = 0xF00F;
 
 using bt::testing::CommandTransaction;
 
-using TestingBase =
-    bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 class SequentialCommandRunnerTest : public TestingBase {
  public:
@@ -267,13 +266,12 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   // Sequence 2: Sequence will be cancelled after first command. This tests
   // canceling a sequence from a CommandCompleteCallback.
-  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
-                          [&](const EventPacket& event) {
-                            bt_log(SPEW, "hci-test", "callback called");
-                            cmd_runner.Cancel();
-                            EXPECT_TRUE(cmd_runner.IsReady());
-                            EXPECT_FALSE(cmd_runner.HasQueuedCommands());
-                          });
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), [&](const EventPacket& event) {
+    bt_log(SPEW, "hci-test", "callback called");
+    cmd_runner.Cancel();
+    EXPECT_TRUE(cmd_runner.IsReady());
+    EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  });
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
                           cb);  // <-- Should not run
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -294,22 +292,21 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // Sequence 3: Sequence will be cancelled after first command and immediately
   // followed by a second command which will fail. This tests canceling a
   // sequence and initiating a new one from a CommandCompleteCallback.
-  cmd_runner.QueueCommand(
-      CommandPacket::New(kTestOpCode), [&](const EventPacket& event) {
-        cmd_runner.Cancel();
-        EXPECT_TRUE(cmd_runner.IsReady());
-        EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), [&](const EventPacket& event) {
+    cmd_runner.Cancel();
+    EXPECT_TRUE(cmd_runner.IsReady());
+    EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
-        EXPECT_EQ(2, status_cb_called);
-        EXPECT_EQ(HostError::kCanceled, status.error());
+    EXPECT_EQ(2, status_cb_called);
+    EXPECT_EQ(HostError::kCanceled, status.error());
 
-        // Queue multiple commands (only one will execute since TestController
-        // will send back an error status.
-        cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
-        cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
-                                cb);  // <-- Should not run
-        cmd_runner.RunCommands(status_cb);
-      });
+    // Queue multiple commands (only one will execute since TestController
+    // will send back an error status.
+    cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
+    cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
+                            cb);  // <-- Should not run
+    cmd_runner.RunCommands(status_cb);
+  });
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
                           cb);  // <-- Should not run
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -378,8 +375,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
   // command and command2 are answered in opposite order because they should be
   // sent simultaneously.
   test_device()->QueueCommandTransaction(CommandTransaction(command_bytes, {}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command2_bytes, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(command2_bytes, {}));
   test_device()->QueueCommandTransaction(
       CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
   test_device()->QueueCommandTransaction(
@@ -433,8 +429,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
   // If any simultaneous commands fail, the sequence fails and the command
   // sequence is terminated.
   test_device()->QueueCommandTransaction(CommandTransaction(command_bytes, {}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command2_bytes, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(command2_bytes, {}));
 
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, false);

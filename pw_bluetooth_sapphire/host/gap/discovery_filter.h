@@ -46,9 +46,7 @@ class DiscoveryFilter final {
   //
   // Passing an empty value for |service_uuids| effectively disables this
   // filter.
-  void set_service_uuids(const std::vector<UUID>& service_uuids) {
-    service_uuids_ = service_uuids;
-  }
+  void set_service_uuids(const std::vector<UUID>& service_uuids) { service_uuids_ = service_uuids; }
 
   // Sets a string to be matched against the device name. A scan result
   // satisifes this filter if part of the complete or shortened device name
@@ -56,9 +54,7 @@ class DiscoveryFilter final {
   //
   // Passing an empty value for |name_substring| effectively disables this
   // filter.
-  void set_name_substring(const std::string& name_substring) {
-    name_substring_ = name_substring;
-  }
+  void set_name_substring(const std::string& name_substring) { name_substring_ = name_substring; }
 
   // Sets a device to be filtered by the pathloss (in dBm) of the radio wave.
   // This value is calculated using the received signal strength (measured
@@ -91,9 +87,7 @@ class DiscoveryFilter final {
   // Sets a device to be filtered by manufacturer specific data. A scan result
   // satisfies this filter if it advertises manufacturer specific data
   // containing |manufacturer_code|.
-  void set_manufacturer_code(uint16_t manufacturer_code) {
-    manufacturer_code_ = manufacturer_code;
-  }
+  void set_manufacturer_code(uint16_t manufacturer_code) { manufacturer_code_ = manufacturer_code; }
 
   // Sets this filter up for the "General Discovery" procedure.
   void SetGeneralDiscoveryFlags();
@@ -101,8 +95,8 @@ class DiscoveryFilter final {
   // Returns true, if the given LE scan result satisfies this filter. Otherwise
   // returns false. |advertising_data| should include scan response data, if
   // any.
-  bool MatchLowEnergyResult(const ByteBuffer& advertising_data,
-                            bool connectable, int8_t rssi) const;
+  bool MatchLowEnergyResult(const ByteBuffer& advertising_data, bool connectable,
+                            int8_t rssi) const;
 
   // Clears all the fields of this filter.
   void Reset();

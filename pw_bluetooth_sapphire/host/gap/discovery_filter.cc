@@ -14,8 +14,7 @@ namespace bt {
 namespace gap {
 namespace {
 
-bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data,
-                size_t uuid_size) {
+bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data, size_t uuid_size) {
   if (data.size() % uuid_size) {
     bt_log(WARN, "gap", "malformed service UUIDs list");
     return false;
@@ -40,8 +39,7 @@ void DiscoveryFilter::SetGeneralDiscoveryFlags() {
             static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
 }
 
-bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data,
-                                           bool connectable,
+bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, bool connectable,
                                            int8_t rssi) const {
   // No need to iterate over |advertising_data| for the |connectable_| filter.
   if (connectable_ && *connectable_ != connectable)
@@ -83,8 +81,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data,
 
         // We check if all bits in |flags_| are present in the data.
         uint8_t masked_flags = data[0] & *flags_;
-        flags_ok =
-            all_flags_required_ ? (masked_flags == *flags_) : !!masked_flags;
+        flags_ok = all_flags_required_ ? (masked_flags == *flags_) : !!masked_flags;
 
         break;
       }
@@ -134,28 +131,24 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data,
         }
 
         manufacturer_ok =
-            (le16toh(*reinterpret_cast<const uint16_t*>(data.data())) ==
-             *manufacturer_code_);
+            (le16toh(*reinterpret_cast<const uint16_t*>(data.data())) == *manufacturer_code_);
         break;
       case DataType::kIncomplete16BitServiceUuids:
       case DataType::kComplete16BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok =
-              MatchUuids(service_uuids_, data, k16BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, k16BitUuidElemSize);
         }
         break;
       case DataType::kIncomplete32BitServiceUuids:
       case DataType::kComplete32BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok =
-              MatchUuids(service_uuids_, data, k32BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, k32BitUuidElemSize);
         }
         break;
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok =
-              MatchUuids(service_uuids_, data, k128BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, k128BitUuidElemSize);
         }
         break;
       default:

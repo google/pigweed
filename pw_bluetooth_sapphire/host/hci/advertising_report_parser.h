@@ -25,8 +25,7 @@ class AdvertisingReportParser final {
   // Returns the next LE Advertising report contained in this event in
   // |out_data| and the RSSI in |out_rssi|. Returns false if there were no
   // more reports to return or if a report is malformed.
-  bool GetNextReport(const LEAdvertisingReportData** out_data,
-                     int8_t* out_rssi);
+  bool GetNextReport(const LEAdvertisingReportData** out_data, int8_t* out_rssi);
 
   // Returns true if there are more reports to process.
   bool HasMoreReports();

@@ -11,16 +11,15 @@ namespace sdp {
 
 ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
 
-ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(
-    const UUID& uuid, std::unordered_set<AttributeId> attributes,
-    ResultCallback callback) {
+ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(const UUID& uuid,
+                                                         std::unordered_set<AttributeId> attributes,
+                                                         ResultCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   Search s;
   s.uuid = uuid;
   s.attributes = std::move(attributes);
   s.callback = std::move(callback);
-  ZX_DEBUG_ASSERT(next_id_ <
-                  std::numeric_limits<ServiceDiscoverer::SearchId>::max());
+  ZX_DEBUG_ASSERT(next_id_ < std::numeric_limits<ServiceDiscoverer::SearchId>::max());
   ServiceDiscoverer::SearchId id = next_id_++;
   auto [it, placed] = searches_.emplace(id, std::move(s));
   ZX_DEBUG_ASSERT_MSG(placed, "Should always be able to place new search");
@@ -40,8 +39,7 @@ bool ServiceDiscoverer::RemoveSearch(SearchId id) {
   return searches_.erase(id);
 }
 
-bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id,
-                                              std::unique_ptr<Client> client) {
+bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Client> client) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   // If discovery is already happening on this peer, then we can't start it
   // again.
@@ -66,9 +64,8 @@ bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id,
           it->second.callback(peer_id, attributes);
           return true;
         };
-    session.client->ServiceSearchAttributes(
-        {it.second.uuid}, it.second.attributes, std::move(result_cb),
-        async_get_default_dispatcher());
+    session.client->ServiceSearchAttributes({it.second.uuid}, it.second.attributes,
+                                            std::move(result_cb), async_get_default_dispatcher());
 
     session.active.emplace(it.first);
   }

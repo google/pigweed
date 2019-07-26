@@ -35,8 +35,7 @@ bool FakeControllerBase::StartCmdChannel(zx::channel chan) {
   zx_status_t status = cmd_channel_wait_.Begin(async_get_default_dispatcher());
   if (status != ZX_OK) {
     cmd_channel_.reset();
-    bt_log(WARN, "fake-hci", "failed to start command channel: %s",
-           zx_status_get_string(status));
+    bt_log(WARN, "fake-hci", "failed to start command channel: %s", zx_status_get_string(status));
     return false;
   }
   return true;
@@ -53,8 +52,7 @@ bool FakeControllerBase::StartAclChannel(zx::channel chan) {
   zx_status_t status = acl_channel_wait_.Begin(async_get_default_dispatcher());
   if (status != ZX_OK) {
     acl_channel_.reset();
-    bt_log(WARN, "fake-hci", "failed to start ACL channel: %s",
-           zx_status_get_string(status));
+    bt_log(WARN, "fake-hci", "failed to start ACL channel: %s", zx_status_get_string(status));
     return false;
   }
   return true;
@@ -74,10 +72,8 @@ void FakeControllerBase::Stop() {
   CloseSnoopChannel();
 }
 
-zx_status_t FakeControllerBase::SendCommandChannelPacket(
-    const ByteBuffer& packet) {
-  zx_status_t status =
-      cmd_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
+zx_status_t FakeControllerBase::SendCommandChannelPacket(const ByteBuffer& packet) {
+  zx_status_t status = cmd_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to control channel: %s",
            zx_status_get_string(status));
@@ -89,10 +85,8 @@ zx_status_t FakeControllerBase::SendCommandChannelPacket(
   return ZX_OK;
 }
 
-zx_status_t FakeControllerBase::SendACLDataChannelPacket(
-    const ByteBuffer& packet) {
-  zx_status_t status =
-      acl_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
+zx_status_t FakeControllerBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
+  zx_status_t status = acl_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to ACL data channel: %s",
            zx_status_get_string(status));
@@ -105,19 +99,16 @@ zx_status_t FakeControllerBase::SendACLDataChannelPacket(
 }
 
 void FakeControllerBase::SendSnoopChannelPacket(const ByteBuffer& packet,
-                                                bt_hci_snoop_type_t packet_type,
-                                                bool is_received) {
+                                                bt_hci_snoop_type_t packet_type, bool is_received) {
   if (snoop_channel_.is_valid()) {
     uint8_t snoop_buffer[packet.size() + 1];
     uint8_t flags = bt_hci_snoop_flags(packet_type, is_received);
 
     snoop_buffer[0] = flags;
     memcpy(snoop_buffer + 1, packet.data(), packet.size());
-    zx_status_t status =
-        snoop_channel_.write(0, snoop_buffer, packet.size() + 1, nullptr, 0);
+    zx_status_t status = snoop_channel_.write(0, snoop_buffer, packet.size() + 1, nullptr, 0);
     if (status != ZX_OK) {
-      bt_log(WARN, "fake-hci",
-             "cleaning up snoop channel after failed write: %s",
+      bt_log(WARN, "fake-hci", "cleaning up snoop channel after failed write: %s",
              zx_status_get_string(status));
       CloseSnoopChannel();
     }
@@ -146,22 +137,19 @@ void FakeControllerBase::CloseSnoopChannel() {
   }
 }
 
-void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
-                                             async::WaitBase* wait,
+void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                                              zx_status_t wait_status,
                                              const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
   zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), nullptr,
-                                         hci::kMaxCommandPacketPayloadSize, 0,
-                                         &read_size, nullptr);
+                                         hci::kMaxCommandPacketPayloadSize, 0, &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
       bt_log(INFO, "fake-hci", "command channel was closed");
     } else {
-      bt_log(ERROR, "fake-hci", "failed to read on cmd channel: %s",
-             zx_status_get_string(status));
+      bt_log(ERROR, "fake-hci", "failed to read on cmd channel: %s", zx_status_get_string(status));
     }
     CloseCommandChannel();
     return;
@@ -171,35 +159,31 @@ void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
     bt_log(ERROR, "fake-hci", "malformed command packet received");
   } else {
     MutableBufferView view(buffer.mutable_data(), read_size);
-    PacketView<hci::CommandHeader> packet(
-        &view, read_size - sizeof(hci::CommandHeader));
+    PacketView<hci::CommandHeader> packet(&view, read_size - sizeof(hci::CommandHeader));
     SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, false);
     OnCommandPacketReceived(packet);
   }
 
   status = wait->Begin(dispatcher);
   if (status != ZX_OK) {
-    bt_log(ERROR, "fake-hci", "failed to wait on cmd channel: %s",
-           zx_status_get_string(status));
+    bt_log(ERROR, "fake-hci", "failed to wait on cmd channel: %s", zx_status_get_string(status));
     CloseCommandChannel();
   }
 }
 
-void FakeControllerBase::HandleACLPacket(async_dispatcher_t* dispatcher,
-                                         async::WaitBase* wait,
+void FakeControllerBase::HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                                          zx_status_t wait_status,
                                          const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci::kMaxACLPayloadSize + sizeof(hci::ACLDataHeader)> buffer;
   uint32_t read_size;
-  zx_status_t status = acl_channel_.read(0u, buffer.mutable_data(), nullptr,
-                                         buffer.size(), 0, &read_size, nullptr);
+  zx_status_t status =
+      acl_channel_.read(0u, buffer.mutable_data(), nullptr, buffer.size(), 0, &read_size, nullptr);
   ZX_DEBUG_ASSERT(status == ZX_OK || status == ZX_ERR_PEER_CLOSED);
   if (status < 0) {
     if (status == ZX_ERR_PEER_CLOSED) {
       bt_log(INFO, "fake-hci", "ACL channel was closed");
     } else {
-      bt_log(ERROR, "fake-hci", "failed to read on ACL channel: %s",
-             zx_status_get_string(status));
+      bt_log(ERROR, "fake-hci", "failed to read on ACL channel: %s", zx_status_get_string(status));
     }
 
     CloseACLDataChannel();
@@ -212,8 +196,7 @@ void FakeControllerBase::HandleACLPacket(async_dispatcher_t* dispatcher,
 
   status = wait->Begin(dispatcher);
   if (status != ZX_OK) {
-    bt_log(ERROR, "fake-hci", "failed to wait on ACL channel: %s",
-           zx_status_get_string(status));
+    bt_log(ERROR, "fake-hci", "failed to wait on ACL channel: %s", zx_status_get_string(status));
     CloseACLDataChannel();
   }
 }

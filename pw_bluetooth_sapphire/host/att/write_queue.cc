@@ -7,8 +7,7 @@
 namespace bt {
 namespace att {
 
-QueuedWrite::QueuedWrite(Handle handle, uint16_t offset,
-                         const ByteBuffer& value)
+QueuedWrite::QueuedWrite(Handle handle, uint16_t offset, const ByteBuffer& value)
     : handle_(handle), offset_(offset), value_(value) {}
 
 }  // namespace att

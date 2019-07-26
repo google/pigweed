@@ -56,9 +56,7 @@ class LowEnergyConnectionRef final {
   bool active() const { return active_; }
 
   // Sets a callback to be called when the underlying connection is closed.
-  void set_closed_callback(fit::closure callback) {
-    closed_cb_ = std::move(callback);
-  }
+  void set_closed_callback(fit::closure callback) { closed_cb_ = std::move(callback); }
 
   PeerId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }
@@ -102,10 +100,8 @@ class LowEnergyConnectionManager final {
   // |gatt|: Used to interact with the GATT profile layer.
   LowEnergyConnectionManager(fxl::RefPtr<hci::Transport> hci,
                              hci::LocalAddressDelegate* addr_delegate,
-                             hci::LowEnergyConnector* connector,
-                             PeerCache* peer_cache,
-                             fbl::RefPtr<data::Domain> data_domain,
-                             fbl::RefPtr<gatt::GATT> gatt);
+                             hci::LowEnergyConnector* connector, PeerCache* peer_cache,
+                             fbl::RefPtr<data::Domain> data_domain, fbl::RefPtr<gatt::GATT> gatt);
   ~LowEnergyConnectionManager();
 
   // Allows a caller to claim shared ownership over a connection to the
@@ -128,14 +124,11 @@ class LowEnergyConnectionManager final {
   //     error.
   //
   // |callback| is posted on the creation thread's dispatcher.
-  using ConnectionResultCallback =
-      fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
+  using ConnectionResultCallback = fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
   bool Connect(PeerId peer_id, ConnectionResultCallback callback);
 
   PeerCache* peer_cache() { return peer_cache_; }
-  hci::LocalAddressDelegate* local_address_delegate() const {
-    return local_address_delegate_;
-  }
+  hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
 
   // Disconnects any existing LE connection to |peer_id|, invalidating all
   // active LowEnergyConnectionRefs. Returns false if the peer can not be
@@ -151,8 +144,7 @@ class LowEnergyConnectionManager final {
   // address that was connected to.
   //
   // A link with the given handle should not have been previously registered.
-  LowEnergyConnectionRefPtr RegisterRemoteInitiatedLink(
-      hci::ConnectionPtr link);
+  LowEnergyConnectionRefPtr RegisterRemoteInitiatedLink(hci::ConnectionPtr link);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
   PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
@@ -168,8 +160,7 @@ class LowEnergyConnectionManager final {
 
   // Called when the connection parameters on a link have been updated.
   using ConnectionParametersCallback = fit::function<void(const Peer&)>;
-  void SetConnectionParametersCallbackForTesting(
-      ConnectionParametersCallback callback);
+  void SetConnectionParametersCallbackForTesting(ConnectionParametersCallback callback);
 
   // Called when a link with the given handle gets disconnected. This event is
   // guaranteed to be called before invalidating connection references.
@@ -183,31 +174,24 @@ class LowEnergyConnectionManager final {
 
   // Sets the timeout interval to be used on future connect requests. The
   // default value is kLECreateConnectionTimeout.
-  void set_request_timeout_for_testing(zx::duration value) {
-    request_timeout_ = value;
-  }
+  void set_request_timeout_for_testing(zx::duration value) { request_timeout_ = value; }
 
  private:
   friend class LowEnergyConnectionRef;
 
   // Mapping from peer identifiers to open LE connections.
-  using ConnectionMap =
-      std::unordered_map<PeerId,
-                         std::unique_ptr<internal::LowEnergyConnection>>;
+  using ConnectionMap = std::unordered_map<PeerId, std::unique_ptr<internal::LowEnergyConnection>>;
 
   class PendingRequestData {
    public:
-    PendingRequestData(const DeviceAddress& address,
-                       ConnectionResultCallback first_callback);
+    PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback);
     PendingRequestData() = default;
     ~PendingRequestData() = default;
 
     PendingRequestData(PendingRequestData&&) = default;
     PendingRequestData& operator=(PendingRequestData&&) = default;
 
-    void AddCallback(ConnectionResultCallback cb) {
-      callbacks_.push_back(std::move(cb));
-    }
+    void AddCallback(ConnectionResultCallback cb) { callbacks_.push_back(std::move(cb)); }
 
     // Notifies all elements in |callbacks| with |status| and the result of
     // |func|.
@@ -236,8 +220,7 @@ class LowEnergyConnectionManager final {
   // Initializes the connection to the peer with the given identifier and
   // returns the initial reference to it. This method is responsible for setting
   // up all data bearers.
-  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id,
-                                                 hci::ConnectionPtr link);
+  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id, hci::ConnectionPtr link);
 
   // Adds a new connection reference to an existing connection to the peer
   // with the ID |peer_id| and returns it. Returns nullptr if
@@ -275,8 +258,7 @@ class LowEnergyConnectionManager final {
   Peer* UpdatePeerWithLink(const hci::Connection& link);
 
   // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(PeerId peer_id, hci::Status status,
-                       hci::ConnectionPtr link);
+  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link);
 
   // Event handler for the HCI Disconnection Complete event.
   // TODO(armansito): This needs to be shared between the BR/EDR and LE
@@ -305,15 +287,13 @@ class LowEnergyConnectionManager final {
   //
   // |peer_id| uniquely identifies the peer. |handle| represents
   // the logical link that |params| should be applied to.
-  void OnNewLEConnectionParams(
-      PeerId peer_id, hci::ConnectionHandle handle,
-      const hci::LEPreferredConnectionParameters& params);
+  void OnNewLEConnectionParams(PeerId peer_id, hci::ConnectionHandle handle,
+                               const hci::LEPreferredConnectionParameters& params);
 
   // Tells the controller to use the given connection |params| on the given
   // logical link |handle|.
-  void UpdateConnectionParams(
-      hci::ConnectionHandle handle,
-      const hci::LEPreferredConnectionParameters& params);
+  void UpdateConnectionParams(hci::ConnectionHandle handle,
+                              const hci::LEPreferredConnectionParameters& params);
 
   // Returns an iterator into |connections_| if a connection is found that
   // matches the given logical link |handle|. Otherwise, returns an iterator

@@ -51,10 +51,8 @@ class BrEdrInterrogator {
 
   // Starts interrogation. Calls |callback| when the sequence is completed or
   // abandoned.
-  using ResultCallback =
-      fit::function<void(hci::Status status, hci::ConnectionPtr conn_ptr)>;
-  void Start(PeerId peer_id, hci::ConnectionPtr conn_ptr,
-             ResultCallback callback);
+  using ResultCallback = fit::function<void(hci::Status status, hci::ConnectionPtr conn_ptr)>;
+  void Start(PeerId peer_id, hci::ConnectionPtr conn_ptr, ResultCallback callback);
 
   // Abandons any interrogation of |peer_id|.  Their callbacks will be called
   // with a Status of Canceled.
@@ -68,8 +66,7 @@ class BrEdrInterrogator {
   void Complete(PeerId peer_id, hci::Status status);
 
   // Reade the remote version information from the peer.
-  void ReadRemoteVersionInformation(PeerId peer_id,
-                                    hci::ConnectionHandle handle);
+  void ReadRemoteVersionInformation(PeerId peer_id, hci::ConnectionHandle handle);
 
   // Requests the name of the remote peer.
   void MakeRemoteNameRequest(PeerId peer_id);
@@ -78,8 +75,7 @@ class BrEdrInterrogator {
   void ReadRemoteFeatures(PeerId peer_id, hci::ConnectionHandle handle);
 
   // Reads the extended feature page |page| of |peer|.
-  void ReadRemoteExtendedFeatures(PeerId peer_id, hci::ConnectionHandle handle,
-                                  uint8_t page);
+  void ReadRemoteExtendedFeatures(PeerId peer_id, hci::ConnectionHandle handle, uint8_t page);
 
   using CancelableCommandCallback = fxl::CancelableCallback<void(
       hci::CommandChannel::TransactionId id, const hci::EventPacket& event)>;

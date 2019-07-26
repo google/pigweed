@@ -58,8 +58,7 @@ class Transport;
 // SequentialCommandRunner is being constructed.
 class SequentialCommandRunner final {
  public:
-  SequentialCommandRunner(async_dispatcher_t* dispatcher,
-                          fxl::RefPtr<Transport> transport);
+  SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::RefPtr<Transport> transport);
   ~SequentialCommandRunner();
 
   // Adds a HCI command packet to the queue.

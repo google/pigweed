@@ -23,8 +23,7 @@ class UUID final {
   // an unsupported size.
   static bool FromBytes(const ByteBuffer& bytes, UUID* out_uuid);
 
-  constexpr explicit UUID(const UInt128& uuid128)
-      : type_(Type::k128Bit), value_(uuid128) {
+  constexpr explicit UUID(const UInt128& uuid128) : type_(Type::k128Bit), value_(uuid128) {
     if (!IsValueCompressable())
       return;
 
@@ -38,8 +37,7 @@ class UUID final {
       : type_(Type::k16Bit), value_(BuildSIGUUID(uuid16)) {}
 
   constexpr explicit UUID(const uint32_t uuid32)
-      : type_(uuid32 > std::numeric_limits<uint16_t>::max() ? Type::k32Bit
-                                                            : Type::k16Bit),
+      : type_(uuid32 > std::numeric_limits<uint16_t>::max() ? Type::k32Bit : Type::k16Bit),
         value_(BuildSIGUUID(uuid32)) {}
 
   // The default constructor initializes all values to zero.
@@ -104,9 +102,8 @@ class UUID final {
   //    "00000000-0000-1000-8000-00805F9B34FB"
   //
   // (see Core Spec v5.0, Vol 3, Part B, Section 2.5.1)
-  static constexpr UInt128 kBaseUuid = {{0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00,
-                                         0x00, 0x80, 0x00, 0x10, 0x00, 0x00,
-                                         0x00, 0x00, 0x00, 0x00}};
+  static constexpr UInt128 kBaseUuid = {{0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
 
   // A 16-bit or 32-bit UUID can be converted to a 128-bit UUID using the
   // following formula:
@@ -134,14 +131,10 @@ class UUID final {
     // ugly hack by const_cast'ing the result of the "const" operator[] which is
     // constexpr friendly. Don't do this in C++17.
     const auto& const_result = result;
-    const_cast<uint8_t&>(const_result[kBaseOffset]) =
-        static_cast<uint8_t>(uuid32);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 1]) =
-        static_cast<uint8_t>(uuid32 >> 8);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 2]) =
-        static_cast<uint8_t>(uuid32 >> 16);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 3]) =
-        static_cast<uint8_t>(uuid32 >> 24);
+    const_cast<uint8_t&>(const_result[kBaseOffset]) = static_cast<uint8_t>(uuid32);
+    const_cast<uint8_t&>(const_result[kBaseOffset + 1]) = static_cast<uint8_t>(uuid32 >> 8);
+    const_cast<uint8_t&>(const_result[kBaseOffset + 2]) = static_cast<uint8_t>(uuid32 >> 16);
+    const_cast<uint8_t&>(const_result[kBaseOffset + 3]) = static_cast<uint8_t>(uuid32 >> 24);
 
     return result;
   }
@@ -201,17 +194,13 @@ inline bool operator==(uint16_t lhs, const UUID& rhs) { return rhs == lhs; }
 
 inline bool operator==(uint32_t lhs, const UUID& rhs) { return rhs == lhs; }
 
-inline bool operator==(const UInt128& lhs, const UUID& rhs) {
-  return rhs == lhs;
-}
+inline bool operator==(const UInt128& lhs, const UUID& rhs) { return rhs == lhs; }
 
 inline bool operator!=(uint16_t lhs, const UUID& rhs) { return rhs != lhs; }
 
 inline bool operator!=(uint32_t lhs, const UUID& rhs) { return rhs != lhs; }
 
-inline bool operator!=(const UInt128& lhs, const UUID& rhs) {
-  return rhs != lhs;
-}
+inline bool operator!=(const UInt128& lhs, const UUID& rhs) { return rhs != lhs; }
 
 }  // namespace bt
 

@@ -101,12 +101,10 @@ class CommandChannel final {
   //
   // See Bluetooth Core Spec v5.0, Volume 2, Part E, Section 4.4 "Command Flow
   // Control" for more information about the HCI command flow control.
-  using CommandCallback =
-      fit::function<void(TransactionId id, const EventPacket& event)>;
-  TransactionId SendCommand(
-      std::unique_ptr<CommandPacket> command_packet,
-      async_dispatcher_t* dispatcher, CommandCallback callback,
-      const EventCode complete_event_code = kCommandCompleteEventCode);
+  using CommandCallback = fit::function<void(TransactionId id, const EventPacket& event)>;
+  TransactionId SendCommand(std::unique_ptr<CommandPacket> command_packet,
+                            async_dispatcher_t* dispatcher, CommandCallback callback,
+                            const EventCode complete_event_code = kCommandCompleteEventCode);
 
   // As SendCommand, but will wait to run this command until there are no
   // commands with with opcodes specified in |exclude| from executing. This
@@ -114,9 +112,8 @@ class CommandChannel final {
   // concurrently (i.e. Inquiry and Connect).
   // Two commands with the same opcode will never run simultaneously.
   TransactionId SendExclusiveCommand(
-      std::unique_ptr<CommandPacket> command_packet,
-      async_dispatcher_t* dispatcher, CommandCallback callback,
-      const EventCode complete_event_code = kCommandCompleteEventCode,
+      std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
+      CommandCallback callback, const EventCode complete_event_code = kCommandCompleteEventCode,
       std::unordered_set<OpCode> exclusions = {});
 
   // Used to identify an individual HCI event handler that was registered with
@@ -161,8 +158,7 @@ class CommandChannel final {
   //    - HCI_Command_Complete event code
   //    - HCI_Command_Status event code
   //    - HCI_LE_Meta event code (use AddLEMetaEventHandler instead).
-  EventHandlerId AddEventHandler(EventCode event_code,
-                                 EventCallback event_callback,
+  EventHandlerId AddEventHandler(EventCode event_code, EventCallback event_callback,
                                  async_dispatcher_t* dispatcher);
 
   // Works just like AddEventHandler but the passed in event code is only valid
@@ -171,8 +167,7 @@ class CommandChannel final {
   // subevent code.
   //
   // |subevent_code| cannot be 0.
-  EventHandlerId AddLEMetaEventHandler(EventCode subevent_code,
-                                       EventCallback event_callback,
+  EventHandlerId AddLEMetaEventHandler(EventCode subevent_code, EventCallback event_callback,
                                        async_dispatcher_t* dispatcher);
 
   // Removes a previously registered event handler. Does nothing if an event
@@ -200,10 +195,9 @@ class CommandChannel final {
   // FIFO (but skipping commands that cannot be sent)
   class TransactionData {
    public:
-    TransactionData(TransactionId id, OpCode opcode,
-                    EventCode complete_event_code,
-                    std::unordered_set<OpCode> exclusions,
-                    CommandCallback callback, async_dispatcher_t* dispatcher);
+    TransactionData(TransactionId id, OpCode opcode, EventCode complete_event_code,
+                    std::unordered_set<OpCode> exclusions, CommandCallback callback,
+                    async_dispatcher_t* dispatcher);
     ~TransactionData();
 
     // Starts the transaction timer, which will call timeout_cb if it's not
@@ -221,9 +215,7 @@ class CommandChannel final {
     OpCode opcode() const { return opcode_; }
     TransactionId id() const { return id_; }
     // The set of opcodes in progress that will hold this transaction in queue.
-    const std::unordered_set<OpCode>& exclusions() const {
-      return exclusions_;
-    };
+    const std::unordered_set<OpCode>& exclusions() const { return exclusions_; };
 
     EventHandlerId handler_id() const { return handler_id_; }
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }
@@ -246,8 +238,7 @@ class CommandChannel final {
   // Adds an internal event handler for |data| if one does not exist yet and
   // another transaction is not waiting on the same event.
   // Used to add expiring event handlers for asynchronous commands.
-  void MaybeAddTransactionHandler(TransactionData* data)
-      __TA_REQUIRES(event_handler_mutex_);
+  void MaybeAddTransactionHandler(TransactionData* data) __TA_REQUIRES(event_handler_mutex_);
 
   // Represents a queued command packet.
   struct QueuedCommand {
@@ -276,32 +267,25 @@ class CommandChannel final {
     bool is_async() const { return pending_opcode != kNoOp; }
   };
 
-  void ShutDownInternal()
-      __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
+  void ShutDownInternal() __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
 
   // Finds the event handler for |code|.  Returns nullptr if one doesn't exist.
-  EventHandlerData* FindEventHandler(EventCode code)
-      __TA_REQUIRES(event_handler_mutex_);
+  EventHandlerData* FindEventHandler(EventCode code) __TA_REQUIRES(event_handler_mutex_);
 
   // Removes internal event handler structures for |id|.
-  void RemoveEventHandlerInternal(EventHandlerId id)
-      __TA_REQUIRES(event_handler_mutex_);
+  void RemoveEventHandlerInternal(EventHandlerId id) __TA_REQUIRES(event_handler_mutex_);
 
   // Sends any queued commands that can be processed unambiguously
   // and complete.
-  void TrySendQueuedCommands()
-      __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
+  void TrySendQueuedCommands() __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
 
   // Sends |command|, adding an internal event handler if asynchronous.
-  void SendQueuedCommand(QueuedCommand&& cmd)
-      __TA_REQUIRES(event_handler_mutex_);
+  void SendQueuedCommand(QueuedCommand&& cmd) __TA_REQUIRES(event_handler_mutex_);
 
   // Creates a new event handler entry in the event handler map and returns its
   // ID.
-  EventHandlerId NewEventHandler(EventCode event_code, bool is_le_meta,
-                                 OpCode pending_opcode,
-                                 EventCallback event_callback,
-                                 async_dispatcher_t* dispatcher)
+  EventHandlerId NewEventHandler(EventCode event_code, bool is_le_meta, OpCode pending_opcode,
+                                 EventCallback event_callback, async_dispatcher_t* dispatcher)
       __TA_REQUIRES(event_handler_mutex_);
 
   // Notifies any matching event handler for |event|.
@@ -313,14 +297,14 @@ class CommandChannel final {
   void UpdateTransaction(std::unique_ptr<EventPacket> event);
 
   // Read ready handler for |channel_|
-  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                      zx_status_t status, const zx_packet_signal_t* signal);
+  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                      const zx_packet_signal_t* signal);
 
   // Opcodes of commands that we have sent to the controller but not received a
   // status update from.  New commands with these opcodes can't be sent because
   // they are indistinguishable from ones we need to get the result of.
-  std::unordered_map<OpCode, std::unique_ptr<TransactionData>>
-      pending_transactions_ __TA_GUARDED(event_handler_mutex_);
+  std::unordered_map<OpCode, std::unique_ptr<TransactionData>> pending_transactions_
+      __TA_GUARDED(event_handler_mutex_);
 
   // TransactionId counter.
   std::atomic_size_t next_transaction_id_ __TA_GUARDED(send_queue_mutex_);
@@ -339,8 +323,7 @@ class CommandChannel final {
   zx::channel channel_;
 
   // Wait object for |channel_|
-  async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady>
-      channel_wait_{this};
+  async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};
 
   // True if this CommandChannel has been initialized through a call to
   // Initialize().

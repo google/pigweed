@@ -67,8 +67,7 @@ size_t WriteLength(MutableByteBuffer* buf, size_t length) {
 
 DataElement::DataElement() : type_(Type::kNull), size_(Size::kOneByte) {}
 
-DataElement::DataElement(const DataElement& other)
-    : type_(other.type_), size_(other.size_) {
+DataElement::DataElement(const DataElement& other) : type_(other.type_), size_(other.size_) {
   switch (type_) {
     case Type::kNull:
       return;
@@ -179,8 +178,7 @@ void DataElement::Set<std::string>(std::string value) {
 }
 
 template <>
-void DataElement::Set<std::vector<DataElement>>(
-    std::vector<DataElement> value) {
+void DataElement::Set<std::vector<DataElement>>(std::vector<DataElement> value) {
   type_ = Type::kSequence;
   aggregate_ = std::move(value);
   SetVariableSize(AggregateSize(aggregate_));
@@ -204,8 +202,7 @@ std::optional<uint8_t> DataElement::Get<uint8_t>() const {
 template <>
 std::optional<uint16_t> DataElement::Get<uint16_t>() const {
   std::optional<uint16_t> ret;
-  if (type_ == Type::kUnsignedInt &&
-      size_ == SizeToSizeType(sizeof(uint16_t))) {
+  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint16_t))) {
     ret = static_cast<uint16_t>(uint_value_);
   }
   return ret;
@@ -214,8 +211,7 @@ std::optional<uint16_t> DataElement::Get<uint16_t>() const {
 template <>
 std::optional<uint32_t> DataElement::Get<uint32_t>() const {
   std::optional<uint32_t> ret;
-  if (type_ == Type::kUnsignedInt &&
-      size_ == SizeToSizeType(sizeof(uint32_t))) {
+  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint32_t))) {
     ret = static_cast<uint32_t>(uint_value_);
   }
   return ret;
@@ -224,8 +220,7 @@ std::optional<uint32_t> DataElement::Get<uint32_t>() const {
 template <>
 std::optional<uint64_t> DataElement::Get<uint64_t>() const {
   std::optional<uint64_t> ret;
-  if (type_ == Type::kUnsignedInt &&
-      size_ == SizeToSizeType(sizeof(uint64_t))) {
+  if (type_ == Type::kUnsignedInt && size_ == SizeToSizeType(sizeof(uint64_t))) {
     ret = uint_value_;
   }
   return ret;
@@ -304,8 +299,7 @@ std::optional<UUID> DataElement::Get<UUID>() const {
 }
 
 template <>
-std::optional<std::vector<DataElement>>
-DataElement::Get<std::vector<DataElement>>() const {
+std::optional<std::vector<DataElement>> DataElement::Get<std::vector<DataElement>>() const {
   std::optional<std::vector<DataElement>> ret;
   if (type_ == Type::kSequence) {
     std::vector<DataElement> aggregate_copy;
@@ -504,20 +498,17 @@ size_t DataElement::WriteSize() const {
       return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + string_.size();
     case Type::kSequence:
     case Type::kAlternative:
-      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) +
-             AggregateSize(aggregate_);
+      return 1 + (1 << (static_cast<uint8_t>(size_) - 5)) + AggregateSize(aggregate_);
   }
 }
 
 size_t DataElement::Write(MutableByteBuffer* buffer) const {
   if (buffer->size() < WriteSize()) {
-    bt_log(SPEW, "sdp", "not enough space in buffer (%zu < %zu)",
-           buffer->size(), WriteSize());
+    bt_log(SPEW, "sdp", "not enough space in buffer (%zu < %zu)", buffer->size(), WriteSize());
     return 0;
   }
 
-  uint8_t type_and_size =
-      static_cast<uint8_t>(type_) | static_cast<uint8_t>(size_);
+  uint8_t type_and_size = static_cast<uint8_t>(type_) | static_cast<uint8_t>(size_);
   buffer->Write(&type_and_size, 1);
   size_t pos = 1;
 
@@ -581,8 +572,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
       size_t used = WriteLength(&cursor, string_.size());
       ZX_DEBUG_ASSERT(used);
       pos += used;
-      cursor.Write(reinterpret_cast<const uint8_t*>(string_.c_str()),
-                   string_.size(), used);
+      cursor.Write(reinterpret_cast<const uint8_t*>(string_.c_str()), string_.size(), used);
       pos += string_.size();
       return pos;
     }
@@ -608,8 +598,7 @@ size_t DataElement::Write(MutableByteBuffer* buffer) const {
 }
 
 const DataElement* DataElement::At(size_t idx) const {
-  if ((type_ != Type::kSequence && type_ != Type::kAlternative) ||
-      (idx >= aggregate_.size())) {
+  if ((type_ != Type::kSequence && type_ != Type::kAlternative) || (idx >= aggregate_.size())) {
     return nullptr;
   }
   return &aggregate_[idx];
@@ -622,11 +611,9 @@ std::string DataElement::ToString() const {
     case Type::kBoolean:
       return fxl::StringPrintf("Boolean(%s)", int_value_ ? "true" : "false");
     case Type::kUnsignedInt:
-      return fxl::StringPrintf("UnsignedInt:%zu(%lu)", WriteSize() - 1,
-                               uint_value_);
+      return fxl::StringPrintf("UnsignedInt:%zu(%lu)", WriteSize() - 1, uint_value_);
     case Type::kSignedInt:
-      return fxl::StringPrintf("SignedInt:%zu(%ld)", WriteSize() - 1,
-                               int_value_);
+      return fxl::StringPrintf("SignedInt:%zu(%ld)", WriteSize() - 1, int_value_);
     case Type::kUuid:
       return fxl::StringPrintf("UUID(%s)", uuid_.ToString().c_str());
     case Type::kString:

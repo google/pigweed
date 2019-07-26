@@ -16,8 +16,7 @@ namespace {
 
 using bt::testing::CommandTransaction;
 
-using TestingBase =
-    bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
@@ -76,8 +75,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     test_device()->QueueCommandTransaction(
         CommandTransaction(kWriteInquiryType, {&kWriteInquiryTypeRsp}));
 
-    discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(
-        transport(), mode, &peer_cache_);
+    discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(transport(), mode, &peer_cache_);
 
     RunLoopUntilIdle();
   }
@@ -85,9 +83,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   PeerCache* peer_cache() { return &peer_cache_; }
 
  protected:
-  BrEdrDiscoveryManager* discovery_manager() const {
-    return discovery_manager_.get();
-  }
+  BrEdrDiscoveryManager* discovery_manager() const { return discovery_manager_.get(); }
 
  private:
   PeerCache peer_cache_;
@@ -293,19 +289,16 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery(
-      [&session, &peers_found](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found](const auto&) { peers_found++; });
-        session = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
+    session = std::move(cb_session);
+  });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -344,19 +337,16 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery(
-      [&session1, &peers_found1](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found1](const auto&) { peers_found1++; });
-        session1 = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
+    session1 = std::move(cb_session);
+  });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -369,13 +359,11 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
 
-  discovery_manager()->RequestDiscovery(
-      [&session2, &peers_found2](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found2](const auto&) { peers_found2++; });
-        session2 = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
+    session2 = std::move(cb_session);
+  });
 
   RunLoopUntilIdle();
 
@@ -430,19 +418,16 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery(
-      [&session1, &peers_found1](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found1](const auto&) { peers_found1++; });
-        session1 = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
+    session1 = std::move(cb_session);
+  });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -458,13 +443,11 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
 
   std::unique_ptr<BrEdrDiscoverySession> session2;
   size_t peers_found2 = 0u;
-  discovery_manager()->RequestDiscovery(
-      [&session2, &peers_found2](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found2](const auto&) { peers_found2++; });
-        session2 = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session2, &peers_found2](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found2](const auto&) { peers_found2++; });
+    session2 = std::move(cb_session);
+  });
 
   // The new session should be started at this point, and inquiry results
   // returned.
@@ -513,18 +496,16 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRspError, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session;
 
-  discovery_manager()->RequestDiscovery(
-      [](auto status, auto cb_session) {
-        EXPECT_FALSE(status);
-        EXPECT_FALSE(cb_session);
-        EXPECT_EQ(HostError::kProtocolError, status.error());
-        EXPECT_EQ(hci::kHardwareFailure, status.protocol_error());
-      });
+  discovery_manager()->RequestDiscovery([](auto status, auto cb_session) {
+    EXPECT_FALSE(status);
+    EXPECT_FALSE(cb_session);
+    EXPECT_EQ(HostError::kProtocolError, status.error());
+    EXPECT_EQ(hci::kHardwareFailure, status.protocol_error());
+  });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -539,8 +520,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
@@ -549,10 +529,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   discovery_manager()->RequestDiscovery(
       [&session, &peers_found, &error_callback](auto status, auto cb_session) {
         EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found](const auto&) { peers_found++; });
-        cb_session->set_error_callback(
-            [&error_callback]() { error_callback = true; });
+        cb_session->set_result_callback([&peers_found](const auto&) { peers_found++; });
+        cb_session->set_error_callback([&error_callback]() { error_callback = true; });
         session = std::move(cb_session);
       });
 
@@ -579,8 +557,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
 // Test: requesting discoverable while discoverable is pending doesn't send
 // any more HCI commands
 TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
@@ -595,8 +572,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
   EXPECT_EQ(0u, sessions.size());
   EXPECT_FALSE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kWriteScanEnableInq, {}));
 
   test_device()->SendCommandChannelPacket(kReadScanEnableRspNone);
 
@@ -651,8 +627,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_EQ(1u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
 
   sessions.clear();
 
@@ -661,8 +636,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   // Request a new discovery before the procedure finishes.
   // This will queue another ReadScanEnable just in case the disable write is
   // in progress.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
   discovery_manager()->RequestDiscoverable(session_cb);
 
   test_device()->SendCommandChannelPacket(kReadScanEnableRspBoth);
@@ -704,22 +678,19 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiry) {
 
   test_device()->QueueCommandTransaction(
       CommandTransaction(kSetExtendedMode, {&kSetExtendedModeRsp}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest2,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
+      kRemoteNameRequest2, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
 
-  discovery_manager()->RequestDiscovery(
-      [&session1, &peers_found1](auto status, auto cb_session) {
-        EXPECT_TRUE(status);
-        cb_session->set_result_callback(
-            [&peers_found1](const auto&) { peers_found1++; });
-        session1 = std::move(cb_session);
-      });
+  discovery_manager()->RequestDiscovery([&session1, &peers_found1](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    cb_session->set_result_callback([&peers_found1](const auto&) { peers_found1++; });
+    session1 = std::move(cb_session);
+  });
 
   EXPECT_FALSE(discovery_manager()->discovering());
 
@@ -746,8 +717,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   EXPECT_FALSE(discovery_manager()->discovering());
 }
 
-TEST_F(GAP_BrEdrDiscoveryManagerTest,
-       InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
+TEST_F(GAP_BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress1, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
@@ -755,14 +725,12 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
   test_device()->QueueCommandTransaction(
       CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](
-                                            auto status, auto cb_session) {
+  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
     EXPECT_TRUE(status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);
@@ -779,8 +747,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
   RunLoopUntilIdle();
 }
 
-TEST_F(GAP_BrEdrDiscoveryManagerTest,
-       ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
+TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPeerToDualMode) {
   Peer* peer = peer_cache()->NewPeer(kLeAliasAddress2, true);
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
@@ -789,17 +756,15 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest,
 
   test_device()->QueueCommandTransaction(
       CommandTransaction(kSetExtendedMode, {&kSetExtendedModeRsp}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
   test_device()->QueueCommandTransaction(CommandTransaction(
-      kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest2,
-      {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
+      kRemoteNameRequest2, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
 
-  discovery_manager()->RequestDiscovery([&session, &peers_found](
-                                            auto status, auto cb_session) {
+  discovery_manager()->RequestDiscovery([&session, &peers_found](auto status, auto cb_session) {
     EXPECT_TRUE(status);
     cb_session->set_result_callback([&peers_found](auto&) { peers_found++; });
     session = std::move(cb_session);

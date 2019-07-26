@@ -16,36 +16,25 @@ const AccessRequirements kEncryptionReq(true, false, false);
 const AccessRequirements kAuthenticationReq(false, true, false);
 const AccessRequirements kAuthorizationReq(false, false, true);
 
-const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
-                                         false);
-const sm::SecurityProperties kEncrypted(sm::SecurityLevel::kEncrypted, 16,
-                                        false);
-const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated,
-                                            16, false);
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
+const sm::SecurityProperties kEncrypted(sm::SecurityLevel::kEncrypted, 16, false);
+const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated, 16, false);
 
 TEST(ATT_PermissionsTest, ReadNotPermittedWhenDisallowed) {
-  EXPECT_EQ(ErrorCode::kReadNotPermitted,
-            CheckReadPermissions(kDisallowed, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kReadNotPermitted,
-            CheckReadPermissions(kDisallowed, kEncrypted));
-  EXPECT_EQ(ErrorCode::kReadNotPermitted,
-            CheckReadPermissions(kDisallowed, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kNoSecurity));
+  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kEncrypted));
+  EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kAuthenticated));
 }
 
 TEST(ATT_PermissionsTest, WriteNotPermittedWhenDisallowed) {
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
-            CheckWritePermissions(kDisallowed, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
-            CheckWritePermissions(kDisallowed, kEncrypted));
-  EXPECT_EQ(ErrorCode::kWriteNotPermitted,
-            CheckWritePermissions(kDisallowed, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kNoSecurity));
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kEncrypted));
+  EXPECT_EQ(ErrorCode::kWriteNotPermitted, CheckWritePermissions(kDisallowed, kAuthenticated));
 }
 
 TEST(ATT_PermissionsTest, LinkNotSecure) {
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kNoSecurityReq, kNoSecurity));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kNoSecurityReq, kNoSecurity));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kNoSecurity));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kNoSecurity));
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
             CheckReadPermissions(kEncryptionReq, kNoSecurity));
@@ -64,15 +53,11 @@ TEST(ATT_PermissionsTest, LinkNotSecure) {
 }
 
 TEST(ATT_PermissionsTest, LinkEncrypted) {
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kNoSecurityReq, kEncrypted));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kNoSecurityReq, kEncrypted));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kEncrypted));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kEncrypted));
 
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kEncryptionReq, kEncrypted));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kEncryptionReq, kEncrypted));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kEncryptionReq, kEncrypted));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kEncryptionReq, kEncrypted));
 
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
             CheckReadPermissions(kAuthenticationReq, kEncrypted));
@@ -86,25 +71,17 @@ TEST(ATT_PermissionsTest, LinkEncrypted) {
 }
 
 TEST(ATT_PermissionsTest, LinkAuthenticated) {
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kNoSecurityReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kNoSecurityReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kNoSecurityReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kNoSecurityReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kEncryptionReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kEncryptionReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kEncryptionReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kEncryptionReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kAuthenticationReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kAuthenticationReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kAuthenticationReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kAuthenticationReq, kAuthenticated));
 
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckReadPermissions(kAuthorizationReq, kAuthenticated));
-  EXPECT_EQ(ErrorCode::kNoError,
-            CheckWritePermissions(kAuthorizationReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kAuthorizationReq, kAuthenticated));
+  EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kAuthorizationReq, kAuthenticated));
 }
 
 }  // namespace

@@ -65,36 +65,26 @@ constexpr size_t kMaxNumSlabs = 100;
 
 // The largest possible control packet size.
 constexpr size_t kLargeControlPayloadSize = kMaxCommandPacketPayloadSize;
-constexpr size_t kLargeControlPacketSize =
-    sizeof(CommandHeader) + kLargeControlPayloadSize;
-constexpr size_t kNumLargeControlPackets =
-    kMaxControlSlabSize / kLargeControlPacketSize;
+constexpr size_t kLargeControlPacketSize = sizeof(CommandHeader) + kLargeControlPayloadSize;
+constexpr size_t kNumLargeControlPackets = kMaxControlSlabSize / kLargeControlPacketSize;
 
 // The average HCI control packet payload size. Most packets are under 16 bytes.
 constexpr size_t kSmallControlPayloadSize = 16;
-constexpr size_t kSmallControlPacketSize =
-    sizeof(CommandHeader) + kSmallControlPayloadSize;
-constexpr size_t kNumSmallControlPackets =
-    kMaxControlSlabSize / kSmallControlPacketSize;
+constexpr size_t kSmallControlPacketSize = sizeof(CommandHeader) + kSmallControlPayloadSize;
+constexpr size_t kNumSmallControlPackets = kMaxControlSlabSize / kSmallControlPacketSize;
 
 // Large, medium, and small buffer sizes for ACL data packets.
 constexpr size_t kLargeACLDataPayloadSize = kMaxACLPayloadSize;
-constexpr size_t kLargeACLDataPacketSize =
-    sizeof(ACLDataHeader) + kLargeACLDataPayloadSize;
-constexpr size_t kNumLargeACLDataPackets =
-    kMaxACLSlabSize / kLargeACLDataPacketSize;
+constexpr size_t kLargeACLDataPacketSize = sizeof(ACLDataHeader) + kLargeACLDataPayloadSize;
+constexpr size_t kNumLargeACLDataPackets = kMaxACLSlabSize / kLargeACLDataPacketSize;
 
 constexpr size_t kMediumACLDataPayloadSize = 256;
-constexpr size_t kMediumACLDataPacketSize =
-    sizeof(ACLDataHeader) + kMediumACLDataPayloadSize;
-constexpr size_t kNumMediumACLDataPackets =
-    kMaxACLSlabSize / kMediumACLDataPacketSize;
+constexpr size_t kMediumACLDataPacketSize = sizeof(ACLDataHeader) + kMediumACLDataPayloadSize;
+constexpr size_t kNumMediumACLDataPackets = kMaxACLSlabSize / kMediumACLDataPacketSize;
 
 constexpr size_t kSmallACLDataPayloadSize = 64;
-constexpr size_t kSmallACLDataPacketSize =
-    sizeof(ACLDataHeader) + kSmallACLDataPayloadSize;
-constexpr size_t kNumSmallACLDataPackets =
-    kMaxACLSlabSize / kSmallACLDataPacketSize;
+constexpr size_t kSmallACLDataPacketSize = sizeof(ACLDataHeader) + kSmallACLDataPayloadSize;
+constexpr size_t kNumSmallACLDataPackets = kMaxACLSlabSize / kSmallACLDataPacketSize;
 
 namespace internal {
 
@@ -121,16 +111,15 @@ class SlabPacket;
 }  // namespace internal
 
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
-using PacketTraits = SlabAllocatorTraits<
-    internal::SlabPacket<HeaderType, BufferSize, NumBuffers>,
-    sizeof(internal::FixedSizePacket<HeaderType, BufferSize>), NumBuffers>;
+using PacketTraits =
+    SlabAllocatorTraits<internal::SlabPacket<HeaderType, BufferSize, NumBuffers>,
+                        sizeof(internal::FixedSizePacket<HeaderType, BufferSize>), NumBuffers>;
 
 namespace internal {
 
 template <typename HeaderType, size_t BufferSize, size_t NumBuffers>
 class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
-                   public fbl::SlabAllocated<
-                       PacketTraits<HeaderType, BufferSize, NumBuffers>> {
+                   public fbl::SlabAllocated<PacketTraits<HeaderType, BufferSize, NumBuffers>> {
  public:
   explicit SlabPacket(size_t payload_size = 0u)
       : FixedSizePacket<HeaderType, BufferSize>(payload_size) {}

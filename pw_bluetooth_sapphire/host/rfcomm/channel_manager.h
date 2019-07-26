@@ -53,39 +53,32 @@ class ChannelManager {
   // remote) and outgoing channels. Failure will be indicated by a value of
   // kInvalidServerChannel as the ServerChannel, and a nullptr as the Channel
   // pointer.
-  using ChannelOpenedCallback =
-      fit::function<void(fbl::RefPtr<Channel>, ServerChannel)>;
+  using ChannelOpenedCallback = fit::function<void(fbl::RefPtr<Channel>, ServerChannel)>;
 
   // Open an outgoing RFCOMM channel to the remote device represented by
   // |handle|. If a session corresponding to |handle| does not exist, a new
   // L2CAP connection to the RFCOMM PSM will be requested by invoking the
   // |l2cap_delegate| passed to the constructor.
-  void OpenRemoteChannel(hci::ConnectionHandle handle,
-                         ServerChannel server_channel,
-                         ChannelOpenedCallback channel_opened_cb,
-                         async_dispatcher_t* dispatcher);
+  void OpenRemoteChannel(hci::ConnectionHandle handle, ServerChannel server_channel,
+                         ChannelOpenedCallback channel_opened_cb, async_dispatcher_t* dispatcher);
 
   // Reserve an incoming RFCOMM channel, and get its Server Channel. Any
   // incoming RFCOMM channels opened with this Server Channel will be
   // given to |cb|. Returns the Server Channel allocated on success, and
   // kInvalidServerChannel otherwise.
-  ServerChannel AllocateLocalChannel(ChannelOpenedCallback cb,
-                                     async_dispatcher_t* dispatcher);
+  ServerChannel AllocateLocalChannel(ChannelOpenedCallback cb, async_dispatcher_t* dispatcher);
 
  private:
   // Calls the appropriate callback for |server_channel|, passing in
   // |rfcomm_channel|.
-  void ChannelOpened(fbl::RefPtr<Channel> rfcomm_channel,
-                     ServerChannel server_channel);
+  void ChannelOpened(fbl::RefPtr<Channel> rfcomm_channel, ServerChannel server_channel);
 
   // Holds callbacks for Server Channels allocated via AllocateLocalChannel.
-  std::unordered_map<ServerChannel,
-                     std::pair<ChannelOpenedCallback, async_dispatcher_t*>>
+  std::unordered_map<ServerChannel, std::pair<ChannelOpenedCallback, async_dispatcher_t*>>
       server_channels_;
 
   // Maps open connections to open RFCOMM sessions.
-  std::unordered_map<hci::ConnectionHandle, std::unique_ptr<Session>>
-      handle_to_session_;
+  std::unordered_map<hci::ConnectionHandle, std::unique_ptr<Session>> handle_to_session_;
 
   // The dispatcher which ChannelManager uses to run its own tasks.
   async_dispatcher_t* const dispatcher_;

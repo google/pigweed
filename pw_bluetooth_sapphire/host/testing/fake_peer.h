@@ -29,8 +29,7 @@ class FakePeer {
   // false. This is OK since we use |scannable| to drive the receipt of Scan
   // Response PDUs: we use this to test the condition in which the advertisement
   // is scannable but the host never receives a scan response.
-  explicit FakePeer(const DeviceAddress& address, bool connectable = true,
-                    bool scannable = true);
+  explicit FakePeer(const DeviceAddress& address, bool connectable = true, bool scannable = true);
 
   void SetAdvertisingData(const ByteBuffer& data);
 
@@ -91,21 +90,15 @@ class FakePeer {
   bool connected() const { return connected_; }
   void set_connected(bool connected) { connected_ = connected; }
 
-  void set_class_of_device(DeviceClass class_of_device) {
-    class_of_device_ = class_of_device;
-  }
+  void set_class_of_device(DeviceClass class_of_device) { class_of_device_ = class_of_device; }
 
   const hci::LEConnectionParameters& le_params() const { return le_params_; }
-  void set_le_params(const hci::LEConnectionParameters& value) {
-    le_params_ = value;
-  }
+  void set_le_params(const hci::LEConnectionParameters& value) { le_params_ = value; }
 
   // The response status that will be returned when this device receives a LE
   // Create Connection command.
   hci::StatusCode connect_response() const { return connect_response_; }
-  void set_connect_response(hci::StatusCode response) {
-    connect_response_ = response;
-  }
+  void set_connect_response(hci::StatusCode response) { connect_response_ = response; }
 
   // The status that will be returned in the Command Status event in response to
   // a LE Create Connection command. If this is set to anything other than

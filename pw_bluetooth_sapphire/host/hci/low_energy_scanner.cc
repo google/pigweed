@@ -17,22 +17,16 @@ namespace hci {
 void LowEnergyScanner::Delegate::OnPeerFound(const LowEnergyScanResult& result,
                                              const ByteBuffer& data) {}
 
-void LowEnergyScanner::Delegate::OnDirectedAdvertisement(
-    const LowEnergyScanResult& result) {}
+void LowEnergyScanner::Delegate::OnDirectedAdvertisement(const LowEnergyScanResult& result) {}
 
 LowEnergyScanResult::LowEnergyScanResult()
     : resolved(false), connectable(false), rssi(hci::kRSSIInvalid) {}
 
-LowEnergyScanResult::LowEnergyScanResult(const DeviceAddress& address,
-                                         bool resolved, bool connectable,
-                                         int8_t rssi)
-    : address(address),
-      resolved(resolved),
-      connectable(connectable),
-      rssi(rssi) {}
+LowEnergyScanResult::LowEnergyScanResult(const DeviceAddress& address, bool resolved,
+                                         bool connectable, int8_t rssi)
+    : address(address), resolved(resolved), connectable(connectable), rssi(rssi) {}
 
-LowEnergyScanner::LowEnergyScanner(fxl::RefPtr<Transport> hci,
-                                   async_dispatcher_t* dispatcher)
+LowEnergyScanner::LowEnergyScanner(fxl::RefPtr<Transport> hci, async_dispatcher_t* dispatcher)
     : state_(State::kIdle),
       active_scan_requested_(false),
       delegate_(nullptr),
@@ -41,8 +35,7 @@ LowEnergyScanner::LowEnergyScanner(fxl::RefPtr<Transport> hci,
   ZX_DEBUG_ASSERT(transport_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ =
-      std::make_unique<SequentialCommandRunner>(dispatcher_, transport_);
+  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(dispatcher_, transport_);
 }
 
 }  // namespace hci

@@ -33,14 +33,11 @@ std::string ConnectionStateToString(Peer::ConnectionState state) {
 }  // namespace
 
 Peer::LowEnergyData::LowEnergyData(Peer* owner)
-    : peer_(owner),
-      conn_state_(ConnectionState::kNotConnected),
-      adv_data_len_(0u) {
+    : peer_(owner), conn_state_(ConnectionState::kNotConnected), adv_data_len_(0u) {
   ZX_DEBUG_ASSERT(peer_);
 }
 
-void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi,
-                                             const ByteBuffer& adv) {
+void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
@@ -59,8 +56,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi,
   gap::DataType type;
   BufferView data;
   while (reader.GetNextField(&type, &data)) {
-    if (type == gap::DataType::kCompleteLocalName ||
-        type == gap::DataType::kShortenedLocalName) {
+    if (type == gap::DataType::kCompleteLocalName || type == gap::DataType::kShortenedLocalName) {
       // TODO(armansito): Parse more advertising data fields, such as preferred
       // connection parameters.
       // TODO(NET-607): SetName should be a no-op if a name was obtained via
@@ -78,8 +74,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi,
 }
 
 void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(peer_->connectable() ||
-                  state == ConnectionState::kNotConnected);
+  ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
     bt_log(TRACE, "gap-le", "LE connection state already \"%s\"!",
@@ -87,21 +82,17 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
     return;
   }
 
-  bt_log(TRACE, "gap-le",
-         "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
-         bt_str(peer_->identifier()),
-         ConnectionStateToString(connection_state()).c_str(),
+  bt_log(TRACE, "gap-le", "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
+         bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
   conn_state_ = state;
 
   // Become non-temporary if connected or a connection attempt is in progress.
   // Otherwise, become temporary again if the identity is unknown.
-  if (state == ConnectionState::kInitializing ||
-      state == ConnectionState::kConnected) {
+  if (state == ConnectionState::kInitializing || state == ConnectionState::kConnected) {
     peer_->TryMakeNonTemporary();
-  } else if (state == ConnectionState::kNotConnected &&
-             !peer_->identity_known()) {
+  } else if (state == ConnectionState::kNotConnected && !peer_->identity_known()) {
     bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*peer_));
     peer_->temporary_ = true;
   }
@@ -110,8 +101,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
   peer_->NotifyListeners();
 }
 
-void Peer::LowEnergyData::SetConnectionParameters(
-    const hci::LEConnectionParameters& params) {
+void Peer::LowEnergyData::SetConnectionParameters(const hci::LEConnectionParameters& params) {
   ZX_DEBUG_ASSERT(peer_->connectable());
   conn_params_ = params;
 }
@@ -133,8 +123,7 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   bond_data_ = bond_data;
 
   // Update to the new identity address if the current address is random.
-  if (peer_->address().type() == DeviceAddress::Type::kLERandom &&
-      bond_data.identity_address) {
+  if (peer_->address().type() == DeviceAddress::Type::kLERandom && bond_data.identity_address) {
     peer_->set_identity_known(true);
     peer_->set_address(*bond_data.identity_address);
   }
@@ -164,28 +153,24 @@ Peer::BrEdrData::BrEdrData(Peer* owner)
 
 void Peer::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
-  SetInquiryData(value.class_of_device, value.clock_offset,
-                 value.page_scan_repetition_mode);
+  SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode);
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci::InquiryResultRSSI& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
-  SetInquiryData(value.class_of_device, value.clock_offset,
-                 value.page_scan_repetition_mode, value.rssi);
+  SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode,
+                 value.rssi);
 }
 
-void Peer::BrEdrData::SetInquiryData(
-    const hci::ExtendedInquiryResultEventParams& value) {
+void Peer::BrEdrData::SetInquiryData(const hci::ExtendedInquiryResultEventParams& value) {
   ZX_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
-  SetInquiryData(value.class_of_device, value.clock_offset,
-                 value.page_scan_repetition_mode, value.rssi,
-                 BufferView(value.extended_inquiry_response,
-                            sizeof(value.extended_inquiry_response)));
+  SetInquiryData(
+      value.class_of_device, value.clock_offset, value.page_scan_repetition_mode, value.rssi,
+      BufferView(value.extended_inquiry_response, sizeof(value.extended_inquiry_response)));
 }
 
 void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
-  ZX_DEBUG_ASSERT(peer_->connectable() ||
-                  state == ConnectionState::kNotConnected);
+  ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
     bt_log(TRACE, "gap-bredr", "BR/EDR connection state already \"%s\"",
@@ -193,10 +178,8 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
     return;
   }
 
-  bt_log(TRACE, "gap-bredr",
-         "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
-         bt_str(peer_->identifier()),
-         ConnectionStateToString(connection_state()).c_str(),
+  bt_log(TRACE, "gap-bredr", "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
+         bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
   conn_state_ = state;
@@ -210,10 +193,9 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
   }
 }
 
-void Peer::BrEdrData::SetInquiryData(
-    DeviceClass device_class, uint16_t clock_offset,
-    hci::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
-    const BufferView& eir_data) {
+void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
+                                     hci::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
+                                     const BufferView& eir_data) {
   peer_->UpdateExpiry();
 
   bool notify_listeners = false;
@@ -223,8 +205,7 @@ void Peer::BrEdrData::SetInquiryData(
   peer_->SetRssiInternal(rssi);
 
   page_scan_rep_mode_ = page_scan_rep_mode;
-  clock_offset_ = static_cast<uint16_t>(hci::kClockOffsetValidFlagBit |
-                                        le16toh(clock_offset));
+  clock_offset_ = static_cast<uint16_t>(hci::kClockOffsetValidFlagBit | le16toh(clock_offset));
 
   if (!device_class_ || *device_class_ != device_class) {
     device_class_ = device_class;
@@ -283,17 +264,15 @@ void Peer::BrEdrData::ClearBondData() {
   link_key_ = std::nullopt;
 }
 
-Peer::Peer(DeviceCallback notify_listeners_callback,
-           DeviceCallback update_expiry_callback,
-           DeviceCallback dual_mode_callback, PeerId identifier,
-           const DeviceAddress& address, bool connectable)
+Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
+           DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
+           bool connectable)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
       identifier_(identifier),
-      technology_((address.type() == DeviceAddress::Type::kBREDR)
-                      ? TechnologyType::kClassic
-                      : TechnologyType::kLowEnergy),
+      technology_((address.type() == DeviceAddress::Type::kBREDR) ? TechnologyType::kClassic
+                                                                  : TechnologyType::kLowEnergy),
       address_(address),
       identity_known_(false),
       connectable_(connectable),
@@ -346,8 +325,7 @@ Peer::BrEdrData& Peer::MutBrEdr() {
 }
 
 std::string Peer::ToString() const {
-  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(identifier_),
-                           bt_str(address_));
+  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(identifier_), bt_str(address_));
 }
 
 void Peer::SetName(const std::string& name) {

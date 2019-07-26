@@ -13,10 +13,8 @@
 namespace bt {
 namespace l2cap {
 
-Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle,
-                       uint16_t max_acl_payload_size)
-    : connection_handle_(connection_handle),
-      max_acl_payload_size_(max_acl_payload_size) {
+Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
+    : connection_handle_(connection_handle), max_acl_payload_size_(max_acl_payload_size) {
   ZX_DEBUG_ASSERT(connection_handle_);
   ZX_DEBUG_ASSERT(connection_handle_ <= hci::kConnectionHandleMax);
   ZX_DEBUG_ASSERT(max_acl_payload_size_);
@@ -48,32 +46,29 @@ Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle,
 //     2. channel -> fragmenter ->(move) HCI layer ->(move) bt-hci driver
 //     if buffering is needed:
 //       3. bt-hci driver -> transport driver
-PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
-                                bool flushable) {
+PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data, bool flushable) {
   ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
   ZX_DEBUG_ASSERT(channel_id);
 
   const size_t frame_size = data.size() + sizeof(BasicHeader);
-  const size_t num_fragments = frame_size / max_acl_payload_size_ +
-                               (frame_size % max_acl_payload_size_ ? 1 : 0);
+  const size_t num_fragments =
+      frame_size / max_acl_payload_size_ + (frame_size % max_acl_payload_size_ ? 1 : 0);
 
   PDU pdu;
   size_t processed = 0;
   for (size_t i = 0; i < num_fragments; i++) {
     ZX_DEBUG_ASSERT(frame_size > processed);
 
-    const size_t fragment_size = std::min(
-        frame_size - processed, static_cast<size_t>(max_acl_payload_size_));
-    auto pbf =
-        (i ? hci::ACLPacketBoundaryFlag::kContinuingFragment
-           : (flushable ? hci::ACLPacketBoundaryFlag::kFirstFlushable
-                        : hci::ACLPacketBoundaryFlag::kFirstNonFlushable));
+    const size_t fragment_size =
+        std::min(frame_size - processed, static_cast<size_t>(max_acl_payload_size_));
+    auto pbf = (i ? hci::ACLPacketBoundaryFlag::kContinuingFragment
+                  : (flushable ? hci::ACLPacketBoundaryFlag::kFirstFlushable
+                               : hci::ACLPacketBoundaryFlag::kFirstNonFlushable));
 
     // TODO(armansito): allow passing Active Slave Broadcast flag when we
     // support it.
-    auto acl_packet = hci::ACLDataPacket::New(
-        connection_handle_, pbf, hci::ACLBroadcastFlag::kPointToPoint,
-        fragment_size);
+    auto acl_packet = hci::ACLDataPacket::New(connection_handle_, pbf,
+                                              hci::ACLBroadcastFlag::kPointToPoint, fragment_size);
     ZX_DEBUG_ASSERT(acl_packet);
 
     auto mut_payload = acl_packet->mutable_view()->mutable_payload_data();
@@ -87,11 +82,9 @@ PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
       header->length = htole16(static_cast<uint16_t>(data.size()));
       header->channel_id = htole16(channel_id);
 
-      mut_payload.Write(data.data(), fragment_size - sizeof(BasicHeader),
-                        sizeof(BasicHeader));
+      mut_payload.Write(data.data(), fragment_size - sizeof(BasicHeader), sizeof(BasicHeader));
     } else {
-      mut_payload.Write(data.data() + processed - sizeof(BasicHeader),
-                        fragment_size);
+      mut_payload.Write(data.data() + processed - sizeof(BasicHeader), fragment_size);
     }
 
     processed += fragment_size;

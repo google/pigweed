@@ -22,9 +22,7 @@ struct IdentifierTraits {
 // Specializations for integer types return a fixed-length string.
 template <>
 struct IdentifierTraits<uint64_t> {
-  static std::string ToString(uint64_t value) {
-    return fxl::StringPrintf("%.16lx", value);
-  }
+  static std::string ToString(uint64_t value) { return fxl::StringPrintf("%.16lx", value); }
 };
 
 // Opaque identifier type for host library layers.
@@ -42,12 +40,8 @@ class Identifier {
   T value() const { return value_; }
 
   // Comparison.
-  bool operator==(const Identifier& other) const {
-    return value_ == other.value_;
-  }
-  bool operator!=(const Identifier& other) const {
-    return value_ != other.value_;
-  }
+  bool operator==(const Identifier& other) const { return value_ == other.value_; }
+  bool operator!=(const Identifier& other) const { return value_ != other.value_; }
 
   // Returns a string representation of this identifier. This function allocates
   // memory.
@@ -79,9 +73,7 @@ namespace std {
 
 template <typename T>
 struct hash<bt::Identifier<T>> {
-  size_t operator()(const bt::Identifier<T>& id) const {
-    return std::hash<T>()(id.value());
-  }
+  size_t operator()(const bt::Identifier<T>& id) const { return std::hash<T>()(id.value()); }
 };
 
 template <>

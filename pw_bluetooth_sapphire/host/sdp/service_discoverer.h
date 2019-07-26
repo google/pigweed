@@ -48,10 +48,8 @@ class ServiceDiscoverer final {
   // Returns a SearchId can be used to remove the search later if successful,
   // or kInvalidSearchId if adding the search failed.
   // |callback| will be called on the creation thread of ServiceDiscoverer.
-  using ResultCallback =
-      fit::function<void(PeerId, const std::map<AttributeId, DataElement> &)>;
-  SearchId AddSearch(const UUID &uuid,
-                     std::unordered_set<AttributeId> attributes,
+  using ResultCallback = fit::function<void(PeerId, const std::map<AttributeId, DataElement> &)>;
+  SearchId AddSearch(const UUID &uuid, std::unordered_set<AttributeId> attributes,
                      ResultCallback callback);
 
   // Remove a search previously added with AddSearch().

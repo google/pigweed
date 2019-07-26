@@ -34,9 +34,7 @@ class AdapterState final {
   //     device's identity address. This value can be zero if a Public Device
   //     Address is not used.
   //   - On BR/EDR/LE this is the LE Public Device Address AND the BD_ADDR.
-  const DeviceAddressBytes& controller_address() const {
-    return controller_address_;
-  }
+  const DeviceAddressBytes& controller_address() const { return controller_address_; }
 
   TechnologyType type() const {
     // Note: we don't support BR/EDR only controllers.
@@ -60,8 +58,7 @@ class AdapterState final {
 
   // Returns true if |command_bit| in the given |octet| is set in the supported
   // command list.
-  inline bool IsCommandSupported(size_t octet,
-                                 hci::SupportedCommand command_bit) const {
+  inline bool IsCommandSupported(size_t octet, hci::SupportedCommand command_bit) const {
     ZX_DEBUG_ASSERT(octet < sizeof(supported_commands_));
     return supported_commands_[octet] & static_cast<uint8_t>(command_bit);
   }
@@ -70,9 +67,7 @@ class AdapterState final {
   const LowEnergyState& low_energy_state() const { return le_state_; }
 
   // Returns the BR/EDR ACL data buffer capacity.
-  const hci::DataBufferInfo& bredr_data_buffer_info() const {
-    return bredr_data_buffer_info_;
-  }
+  const hci::DataBufferInfo& bredr_data_buffer_info() const { return bredr_data_buffer_info_; }
 
   // Returns the BR/EDR local name
   const std::string local_name() const { return local_name_; }

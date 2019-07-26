@@ -19,8 +19,7 @@ namespace {
 
 constexpr PeerId kTestPeerId(1);
 constexpr UUID kTestType16((uint16_t)0xBEEF);
-constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                             15});
+constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');
 const auto kTestValue2 = CreateStaticByteBuffer('b', 'a', 'r');
@@ -594,8 +593,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle) {
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(UUID(), att::AccessRequirements(),
-                    att::AccessRequirements());
+  grp->AddAttribute(UUID(), att::AccessRequirements(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -623,8 +621,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeSingle128) {
 
   // Start: 1, end: 2
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(UUID(), att::AccessRequirements(),
-                    att::AccessRequirements());
+  grp->AddAttribute(UUID(), att::AccessRequirements(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -769,8 +766,7 @@ TEST_F(GATT_ServerTest, ReadByGroupTypeMultipleVaryingLengths) {
   db()->NewGrouping(types::kPrimaryService, 0, kTestValue1)->set_active(true);
 
   // Matching type but value of different size. The results will stop here.
-  db()->NewGrouping(types::kPrimaryService, 0, kTestValueLong)
-      ->set_active(true);
+  db()->NewGrouping(types::kPrimaryService, 0, kTestValueLong)->set_active(true);
 
   // Matching type and matching value length. This won't be included as the
   // request will terminate at the second attribute.
@@ -875,8 +871,7 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                    att::AccessRequirements());
+  grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -901,13 +896,12 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueNoHandler) {
 TEST_F(GATT_ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
-  attr->set_read_handler([attr](PeerId peer_id, auto handle, uint16_t offset,
-                                const auto& result_cb) {
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
-    result_cb(att::ErrorCode::kNoError,
-              CreateStaticByteBuffer('f', 'o', 'r', 'k'));
-  });
+  attr->set_read_handler(
+      [attr](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
+        result_cb(att::ErrorCode::kNoError, CreateStaticByteBuffer('f', 'o', 'r', 'k'));
+      });
 
   // Add a second dynamic attribute, which should be omitted.
   attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
@@ -941,12 +935,10 @@ TEST_F(GATT_ServerTest, ReadByTypeDynamicValueError) {
   const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
-  attr->set_read_handler(
-      [](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
-        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-      });
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler([](PeerId peer_id, auto handle, uint16_t offset, const auto& result_cb) {
+    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1002,8 +994,7 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
   const auto kTestValue2 = CreateStaticByteBuffer('t', 'e', 's', 't');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  grp->AddAttribute(kTestType128, AllowedNoSecurity(),
-                    att::AccessRequirements())
+  grp->AddAttribute(kTestType128, AllowedNoSecurity(), att::AccessRequirements())
       ->SetValue(kTestValue2);
   grp->set_active(true);
 
@@ -1029,8 +1020,8 @@ TEST_F(GATT_ServerTest, ReadByTypeSingle128) {
 }
 
 TEST_F(GATT_ServerTest, ReadByTypeSingleTruncated) {
-  const auto kVeryLongValue = CreateStaticByteBuffer(
-      't', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
+  const auto kVeryLongValue =
+      CreateStaticByteBuffer('t', 'e', 's', 't', 'i', 'n', 'g', ' ', 'i', 's', ' ', 'f', 'u', 'n');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements())
@@ -1358,8 +1349,7 @@ TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
-  grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                    AllowedNoSecurity());
+  grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
   grp->set_active(true);
 
   // clang-format off
@@ -1384,17 +1374,14 @@ TEST_F(GATT_ServerTest, WriteRequestNoHandler) {
 TEST_F(GATT_ServerTest, WriteRequestError) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(
-        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
     result_cb(att::ErrorCode::kUnlikelyError);
   });
@@ -1422,17 +1409,14 @@ TEST_F(GATT_ServerTest, WriteRequestError) {
 TEST_F(GATT_ServerTest, WriteRequestSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(
-        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
 
     result_cb(att::ErrorCode::kNoError);
   });
@@ -1459,17 +1443,14 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
 TEST_F(GATT_ServerTest, WriteCommandSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
-  attr->set_write_handler([&](PeerId peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  attr->set_write_handler([&](PeerId peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
-    EXPECT_TRUE(
-        ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
+    EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer('t', 'e', 's', 't'), value));
   });
   grp->set_active(true);
 
@@ -1546,8 +1527,7 @@ TEST_F(GATT_ServerTest, ReadRequestCached) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kDeclValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->SetValue(kTestValue);
   grp->set_active(true);
 
@@ -1578,8 +1558,7 @@ TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
-  grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                    att::AccessRequirements());
+  grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   grp->set_active(true);
 
   // clang-format off
@@ -1602,16 +1581,15 @@ TEST_F(GATT_ServerTest, ReadRequestNoHandler) {
 TEST_F(GATT_ServerTest, ReadRequestError) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
 
-    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-  });
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1649,25 +1627,22 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidPDU) {
 TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
 
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(22u, offset);
-    result_cb(att::ErrorCode::kNoError,
-              CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-                                     'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
-                                     't', 't', 'r', 'i', 'b', 'u'));
-  });
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(22u, offset);
+        result_cb(att::ErrorCode::kNoError,
+                  CreateStaticByteBuffer('e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o',
+                                         'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u'));
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1689,20 +1664,18 @@ TEST_F(GATT_ServerTest, ReadBlobRequestDynamicSuccess) {
 
 TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-  });
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1724,10 +1697,9 @@ TEST_F(GATT_ServerTest, ReadBlobDynamicRequestError) {
 
 TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
@@ -1750,8 +1722,7 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticSuccess) {
 }
 
 TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
-  const auto kTestValue =
-      CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
+  const auto kTestValue = CreateStaticByteBuffer('s', 'h', 'o', 'r', 't', 'e', 'r');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
@@ -1775,10 +1746,9 @@ TEST_F(GATT_ServerTest, ReadBlobRequestStaticOverflowError) {
 
 TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 0, kTestValue);
   grp->set_active(true);
 
@@ -1801,20 +1771,19 @@ TEST_F(GATT_ServerTest, ReadBlobRequestInvalidHandleError) {
 
 TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
                                  att::AccessRequirements(true, false, false));
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kUnlikelyError, BufferView());
-  });
+        result_cb(att::ErrorCode::kUnlikelyError, BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1836,21 +1805,19 @@ TEST_F(GATT_ServerTest, ReadBlobRequestNotPermitedError) {
 
 TEST_F(GATT_ServerTest, ReadBlobRequestInvalidOffsetError) {
   const auto kTestValue = CreateStaticByteBuffer(
-      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v',
-      'i', 'c', 'e', ' ', 'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ',
-      'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A', 't', 't', 'r', 'i', 'b', 'u', 't',
-      'e');
+      'A', ' ', 'V', 'e', 'r', 'y', ' ', 'L', 'o', 'n', 'g', ' ', 'D', 'e', 'v', 'i', 'c', 'e', ' ',
+      'N', 'a', 'm', 'e', ' ', 'U', 's', 'i', 'n', 'g', ' ', 'A', ' ', 'L', 'o', 'n', 'g', ' ', 'A',
+      't', 't', 'r', 'i', 'b', 'u', 't', 'e');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
 
-    result_cb(att::ErrorCode::kInvalidOffset, BufferView());
-  });
+        result_cb(att::ErrorCode::kInvalidOffset, BufferView());
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1874,16 +1841,15 @@ TEST_F(GATT_ServerTest, ReadRequestSuccess) {
   const auto kDeclValue = CreateStaticByteBuffer('d', 'e', 'c', 'l');
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
-  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(),
-                                 att::AccessRequirements());
-  attr->set_read_handler([&](PeerId peer_id, att::Handle handle,
-                             uint16_t offset, const auto& result_cb) {
-    EXPECT_EQ(kTestPeerId, peer_id);
-    EXPECT_EQ(attr->handle(), handle);
-    EXPECT_EQ(0u, offset);
+  auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity(), att::AccessRequirements());
+  attr->set_read_handler(
+      [&](PeerId peer_id, att::Handle handle, uint16_t offset, const auto& result_cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(attr->handle(), handle);
+        EXPECT_EQ(0u, offset);
 
-    result_cb(att::ErrorCode::kNoError, kTestValue);
-  });
+        result_cb(att::ErrorCode::kNoError, kTestValue);
+      });
   grp->set_active(true);
 
   // clang-format off
@@ -1948,8 +1914,8 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestSucceeds) {
   grp->set_active(true);
 
   int write_count = 0;
-  attr->set_write_handler([&](PeerId, att::Handle, uint16_t, const auto&,
-                              const auto&) { write_count++; });
+  attr->set_write_handler(
+      [&](PeerId, att::Handle, uint16_t, const auto&, const auto&) { write_count++; });
 
   ASSERT_EQ(0x0002, attr->handle());
 
@@ -1979,9 +1945,8 @@ TEST_F(GATT_ServerTest, PrepareWriteRequestPrepareQueueFull) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
 
   // No security requirement
-  const auto* attr =
-      grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                        att::AccessRequirements(false, false, false));
+  const auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
+                                       att::AccessRequirements(false, false, false));
   grp->set_active(true);
 
   ASSERT_EQ(0x0002, attr->handle());
@@ -2073,11 +2038,9 @@ TEST_F(GATT_ServerTest, ExecuteWriteSuccess) {
   auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
@@ -2158,11 +2121,9 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
   auto buffer = CreateStaticByteBuffer('x', 'x', 'x', 'x', 'x', 'x');
 
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
 
@@ -2233,13 +2194,11 @@ TEST_F(GATT_ServerTest, ExecuteWriteError) {
 TEST_F(GATT_ServerTest, ExecuteWriteAbort) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue1);
   // |attr| has handle "2".
-  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(),
-                                 AllowedNoSecurity());
+  auto* attr = grp->AddAttribute(kTestType16, att::AccessRequirements(), AllowedNoSecurity());
 
   int write_count = 0;
-  attr->set_write_handler([&](const auto& peer_id, att::Handle handle,
-                              uint16_t offset, const auto& value,
-                              const auto& result_cb) {
+  attr->set_write_handler([&](const auto& peer_id, att::Handle handle, uint16_t offset,
+                              const auto& value, const auto& result_cb) {
     write_count++;
 
     EXPECT_EQ(kTestPeerId, peer_id);
@@ -2325,9 +2284,7 @@ TEST_F(GATT_ServerTest, SendNotificationEmpty) {
   );
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(kHandle, kTestValue, false);
-  });
+  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, false); });
 
   EXPECT_TRUE(Expect(kExpected));
 }
@@ -2344,9 +2301,7 @@ TEST_F(GATT_ServerTest, SendNotification) {
   );
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(kHandle, kTestValue, false);
-  });
+  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, false); });
 
   EXPECT_TRUE(Expect(kExpected));
 }
@@ -2362,9 +2317,7 @@ TEST_F(GATT_ServerTest, SendIndicationEmpty) {
   );
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(kHandle, kTestValue, true);
-  });
+  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, true); });
 
   EXPECT_TRUE(Expect(kExpected));
 }
@@ -2381,9 +2334,7 @@ TEST_F(GATT_ServerTest, SendIndication) {
   );
   // clang-format on
 
-  async::PostTask(dispatcher(), [=] {
-    server()->SendNotification(kHandle, kTestValue, true);
-  });
+  async::PostTask(dispatcher(), [=] { server()->SendNotification(kHandle, kTestValue, true); });
 
   EXPECT_TRUE(Expect(kExpected));
 }
@@ -2399,10 +2350,8 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
 
     not_permitted_attr_ = grp->AddAttribute(kTestType16);
     encryption_required_attr_ = grp->AddAttribute(kTestType16, encryption);
-    authentication_required_attr_ =
-        grp->AddAttribute(kTestType16, authentication);
-    authorization_required_attr_ =
-        grp->AddAttribute(kTestType16, authorization);
+    authentication_required_attr_ = grp->AddAttribute(kTestType16, authentication);
+    authorization_required_attr_ = grp->AddAttribute(kTestType16, authorization);
 
     // Assigns all tests attributes a static value. Intended to be used by read
     // requests. (Note: assigning a static value makes an attribute
@@ -2423,8 +2372,8 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
     const att::AccessRequirements authentication(false, true, false);
     const att::AccessRequirements authorization(false, false, true);
 
-    auto write_handler = [this](const auto&, att::Handle, uint16_t,
-                                const auto& value, auto responder) {
+    auto write_handler = [this](const auto&, att::Handle, uint16_t, const auto& value,
+                                auto responder) {
       write_count_++;
       if (responder) {
         responder(att::ErrorCode::kNoError);
@@ -2438,12 +2387,12 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
         grp->AddAttribute(kTestType16, att::AccessRequirements(), encryption);
     encryption_required_attr_->set_write_handler(write_handler);
 
-    authentication_required_attr_ = grp->AddAttribute(
-        kTestType16, att::AccessRequirements(), authentication);
+    authentication_required_attr_ =
+        grp->AddAttribute(kTestType16, att::AccessRequirements(), authentication);
     authentication_required_attr_->set_write_handler(write_handler);
 
-    authorization_required_attr_ = grp->AddAttribute(
-        kTestType16, att::AccessRequirements(), authorization);
+    authorization_required_attr_ =
+        grp->AddAttribute(kTestType16, att::AccessRequirements(), authorization);
     authorization_required_attr_->set_write_handler(write_handler);
 
     grp->set_active(true);
@@ -2451,8 +2400,7 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
 
   // Blocks until an ATT Error Response PDU with the given parameters is
   // received from the fake channel (i.e. received FROM the ATT bearer).
-  bool ExpectAttError(att::OpCode request, att::Handle handle,
-                      att::ErrorCode ecode) {
+  bool ExpectAttError(att::OpCode request, att::Handle handle, att::ErrorCode ecode) {
     // clang-format off
     return Expect(CreateStaticByteBuffer(
         0x01,                                 // opcode: error response
@@ -2466,28 +2414,25 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   // Helpers for emulating the receipt of an ATT read/write request PDU and
   // expecting back a security error. Expects a valid response if
   // |expected_ecode| is att::ErrorCode::kNoError.
-  bool EmulateReadByTypeRequest(att::Handle handle,
-                                att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x08,                                  // opcode: read by type
-        LowerBits(handle), UpperBits(handle),  // start handle
-        LowerBits(handle), UpperBits(handle),  // end handle
-        0xEF, 0xBE                             // type: 0xBEEF, i.e. kTestType16
-        ));
+  bool EmulateReadByTypeRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+    fake_chan()->Receive(CreateStaticByteBuffer(0x08,  // opcode: read by type
+                                                LowerBits(handle),
+                                                UpperBits(handle),  // start handle
+                                                LowerBits(handle), UpperBits(handle),  // end handle
+                                                0xEF, 0xBE  // type: 0xBEEF, i.e. kTestType16
+                                                ));
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(
-          0x09,  // opcode: read by type response
-          0x05,  // length: 5 (strlen("foo") + 2)
-          LowerBits(handle), UpperBits(handle),  // handle
-          'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-          ));
+      return Expect(CreateStaticByteBuffer(0x09,  // opcode: read by type response
+                                           0x05,  // length: 5 (strlen("foo") + 2)
+                                           LowerBits(handle), UpperBits(handle),  // handle
+                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                           ));
     } else {
       return ExpectAttError(0x08, handle, expected_ecode);
     }
   }
 
-  bool EmulateReadBlobRequest(att::Handle handle,
-                              att::ErrorCode expected_ecode) {
+  bool EmulateReadBlobRequest(att::Handle handle, att::ErrorCode expected_ecode) {
     // clang-format off
     fake_chan()->Receive(CreateStaticByteBuffer(
         0x0C,                                  // opcode: read blob
@@ -2496,10 +2441,9 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
         ));
     // clang-format on
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(
-          0x0D,          // opcode: read blob response
-          'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-          ));
+      return Expect(CreateStaticByteBuffer(0x0D,          // opcode: read blob response
+                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                           ));
     } else {
       return ExpectAttError(0x0C, handle, expected_ecode);
     }
@@ -2513,21 +2457,19 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
         ));
     // clang-format on
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(
-          0x0B,          // opcode: read response
-          'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-          ));
+      return Expect(CreateStaticByteBuffer(0x0B,          // opcode: read response
+                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                           ));
     } else {
       return ExpectAttError(0x0A, handle, expected_ecode);
     }
   }
 
   bool EmulateWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x12,                                  // opcode: write request
-        LowerBits(handle), UpperBits(handle),  // handle
-        't', 'e', 's', 't'                     // value: "test"
-        ));
+    fake_chan()->Receive(CreateStaticByteBuffer(0x12,  // opcode: write request
+                                                LowerBits(handle), UpperBits(handle),  // handle
+                                                't', 'e', 's', 't'  // value: "test"
+                                                ));
     if (expected_ecode == att::ErrorCode::kNoError) {
       return Expect(CreateStaticByteBuffer(0x13  // write response
                                            ));
@@ -2536,14 +2478,12 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
     }
   }
 
-  bool EmulatePrepareWriteRequest(att::Handle handle,
-                                  att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x16,                                  // opcode: prepare write request
-        LowerBits(handle), UpperBits(handle),  // handle
-        0x00, 0x00,                            // offset: 0
-        't', 'e', 's', 't'                     // value: "test"
-        ));
+  bool EmulatePrepareWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
+    fake_chan()->Receive(CreateStaticByteBuffer(0x16,  // opcode: prepare write request
+                                                LowerBits(handle), UpperBits(handle),  // handle
+                                                0x00, 0x00,                            // offset: 0
+                                                't', 'e', 's', 't'  // value: "test"
+                                                ));
     if (expected_ecode == att::ErrorCode::kNoError) {
       // clang-format off
       return Expect(CreateStaticByteBuffer(
@@ -2561,55 +2501,42 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   // Emulates the receipt of a Write Command. The expected error code parameter
   // is unused since ATT commands do not have a response.
   bool EmulateWriteCommand(att::Handle handle, att::ErrorCode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x52,                                  // opcode: write command
-        LowerBits(handle), UpperBits(handle),  // handle
-        't', 'e', 's', 't'                     // value: "test"
-        ));
+    fake_chan()->Receive(CreateStaticByteBuffer(0x52,  // opcode: write command
+                                                LowerBits(handle), UpperBits(handle),  // handle
+                                                't', 'e', 's', 't'  // value: "test"
+                                                ));
     RunLoopUntilIdle();
     return true;
   }
 
-  template <bool (GATT_ServerTest_Security::*EmulateMethod)(att::Handle,
-                                                            att::ErrorCode),
+  template <bool (GATT_ServerTest_Security::*EmulateMethod)(att::Handle, att::ErrorCode),
             bool IsWrite>
   void RunTest() {
     const att::ErrorCode kNotPermittedError =
-        IsWrite ? att::ErrorCode::kWriteNotPermitted
-                : att::ErrorCode::kReadNotPermitted;
+        IsWrite ? att::ErrorCode::kWriteNotPermitted : att::ErrorCode::kReadNotPermitted;
 
     // No security.
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
-                                       kNotPermittedError));
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(encryption_required_attr()->handle(),
-                               att::ErrorCode::kInsufficientAuthentication));
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(authentication_required_attr()->handle(),
-                               att::ErrorCode::kInsufficientAuthentication));
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(authorization_required_attr()->handle(),
-                               att::ErrorCode::kInsufficientAuthentication));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
+    EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
+                                       att::ErrorCode::kInsufficientAuthentication));
+    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
+                                       att::ErrorCode::kInsufficientAuthentication));
+    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
+                                       att::ErrorCode::kInsufficientAuthentication));
 
     // Link encrypted.
-    fake_chan()->set_security(
-        sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
-                                       kNotPermittedError));
+    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
                                        att::ErrorCode::kNoError));  // success
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(authentication_required_attr()->handle(),
-                               att::ErrorCode::kInsufficientAuthentication));
-    EXPECT_TRUE(
-        (this->*EmulateMethod)(authorization_required_attr()->handle(),
-                               att::ErrorCode::kInsufficientAuthentication));
+    EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
+                                       att::ErrorCode::kInsufficientAuthentication));
+    EXPECT_TRUE((this->*EmulateMethod)(authorization_required_attr()->handle(),
+                                       att::ErrorCode::kInsufficientAuthentication));
 
     // Link encrypted w/ MITM.
-    fake_chan()->set_security(
-        sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, false));
-    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(),
-                                       kNotPermittedError));
+    fake_chan()->set_security(sm::SecurityProperties(sm::SecurityLevel::kAuthenticated, 16, false));
+    EXPECT_TRUE((this->*EmulateMethod)(not_permitted_attr()->handle(), kNotPermittedError));
     EXPECT_TRUE((this->*EmulateMethod)(encryption_required_attr()->handle(),
                                        att::ErrorCode::kNoError));  // success
     EXPECT_TRUE((this->*EmulateMethod)(authentication_required_attr()->handle(),
@@ -2621,34 +2548,20 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
   void RunReadByTypeTest() {
     RunTest<&GATT_ServerTest_Security::EmulateReadByTypeRequest, false>();
   }
-  void RunReadBlobTest() {
-    RunTest<&GATT_ServerTest_Security::EmulateReadBlobRequest, false>();
-  }
-  void RunReadRequestTest() {
-    RunTest<&GATT_ServerTest_Security::EmulateReadRequest, false>();
-  }
-  void RunWriteRequestTest() {
-    RunTest<&GATT_ServerTest_Security::EmulateWriteRequest, true>();
-  }
+  void RunReadBlobTest() { RunTest<&GATT_ServerTest_Security::EmulateReadBlobRequest, false>(); }
+  void RunReadRequestTest() { RunTest<&GATT_ServerTest_Security::EmulateReadRequest, false>(); }
+  void RunWriteRequestTest() { RunTest<&GATT_ServerTest_Security::EmulateWriteRequest, true>(); }
   void RunPrepareWriteRequestTest() {
     RunTest<&GATT_ServerTest_Security::EmulatePrepareWriteRequest, true>();
   }
-  void RunWriteCommandTest() {
-    RunTest<&GATT_ServerTest_Security::EmulateWriteCommand, true>();
-  }
+  void RunWriteCommandTest() { RunTest<&GATT_ServerTest_Security::EmulateWriteCommand, true>(); }
 
-  const att::Attribute* not_permitted_attr() const {
-    return not_permitted_attr_;
-  }
-  const att::Attribute* encryption_required_attr() const {
-    return encryption_required_attr_;
-  }
+  const att::Attribute* not_permitted_attr() const { return not_permitted_attr_; }
+  const att::Attribute* encryption_required_attr() const { return encryption_required_attr_; }
   const att::Attribute* authentication_required_attr() const {
     return authentication_required_attr_;
   }
-  const att::Attribute* authorization_required_attr() const {
-    return authorization_required_attr_;
-  }
+  const att::Attribute* authorization_required_attr() const { return authorization_required_attr_; }
 
   size_t write_count() const { return write_count_; }
 

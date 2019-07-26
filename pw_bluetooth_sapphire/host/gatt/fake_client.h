@@ -17,29 +17,17 @@ class FakeClient final : public Client {
   ~FakeClient() override = default;
 
   void set_server_mtu(uint16_t mtu) { server_mtu_ = mtu; }
-  void set_exchage_mtu_status(att::Status status) {
-    exchange_mtu_status_ = status;
-  }
+  void set_exchage_mtu_status(att::Status status) { exchange_mtu_status_ = status; }
 
-  void set_primary_services(std::vector<ServiceData> services) {
-    services_ = std::move(services);
-  }
+  void set_primary_services(std::vector<ServiceData> services) { services_ = std::move(services); }
 
-  void set_service_discovery_status(att::Status status) {
-    service_discovery_status_ = status;
-  }
+  void set_service_discovery_status(att::Status status) { service_discovery_status_ = status; }
 
-  void set_characteristics(std::vector<CharacteristicData> chrcs) {
-    chrcs_ = std::move(chrcs);
-  }
+  void set_characteristics(std::vector<CharacteristicData> chrcs) { chrcs_ = std::move(chrcs); }
 
-  void set_descriptors(std::vector<DescriptorData> descs) {
-    descs_ = std::move(descs);
-  }
+  void set_descriptors(std::vector<DescriptorData> descs) { descs_ = std::move(descs); }
 
-  void set_characteristic_discovery_status(att::Status status) {
-    chrc_discovery_status_ = status;
-  }
+  void set_characteristic_discovery_status(att::Status status) { chrc_discovery_status_ = status; }
 
   // If |count| is set to a non-zero value, |status| only applies to |count|th
   // request and all other requests will succeed. Otherwise, |status| applies to
@@ -49,21 +37,13 @@ class FakeClient final : public Client {
     desc_discovery_status_ = status;
   }
 
-  att::Handle last_chrc_discovery_start_handle() const {
-    return last_chrc_discovery_start_handle_;
-  }
+  att::Handle last_chrc_discovery_start_handle() const { return last_chrc_discovery_start_handle_; }
 
-  att::Handle last_chrc_discovery_end_handle() const {
-    return last_chrc_discovery_end_handle_;
-  }
+  att::Handle last_chrc_discovery_end_handle() const { return last_chrc_discovery_end_handle_; }
 
-  att::Handle last_desc_discovery_start_handle() const {
-    return last_desc_discovery_start_handle_;
-  }
+  att::Handle last_desc_discovery_start_handle() const { return last_desc_discovery_start_handle_; }
 
-  att::Handle last_desc_discovery_end_handle() const {
-    return last_desc_discovery_end_handle_;
-  }
+  att::Handle last_desc_discovery_end_handle() const { return last_desc_discovery_end_handle_; }
 
   size_t chrc_discovery_count() const { return chrc_discovery_count_; }
   size_t desc_discovery_count() const { return desc_discovery_count_; }
@@ -75,8 +55,7 @@ class FakeClient final : public Client {
   }
 
   // Sets a callback which will run when ReadBlobRequest gets called.
-  using ReadBlobRequestCallback =
-      fit::function<void(att::Handle, uint16_t offset, ReadCallback)>;
+  using ReadBlobRequestCallback = fit::function<void(att::Handle, uint16_t offset, ReadCallback)>;
   void set_read_blob_request_callback(ReadBlobRequestCallback callback) {
     read_blob_request_callback_ = std::move(callback);
   }
@@ -88,39 +67,34 @@ class FakeClient final : public Client {
     write_request_callback_ = std::move(callback);
   }
 
-  using ExecutePrepareWritesCallback = fit::function<void(
-      att::PrepareWriteQueue prep_write_queue, att::StatusCallback)>;
-  void set_execute_prepare_writes_callback(
-      ExecutePrepareWritesCallback callback) {
+  using ExecutePrepareWritesCallback =
+      fit::function<void(att::PrepareWriteQueue prep_write_queue, att::StatusCallback)>;
+  void set_execute_prepare_writes_callback(ExecutePrepareWritesCallback callback) {
     execute_prepare_writes_callback_ = std::move(callback);
   }
 
   // Sets a callback which will run when PrepareWriteRequest gets called.
-  using PrepareWriteRequestCallback = fit::function<void(
-      att::Handle, uint16_t offset, const ByteBuffer&, PrepareCallback)>;
-  void set_prepare_write_request_callback(
-      PrepareWriteRequestCallback callback) {
+  using PrepareWriteRequestCallback =
+      fit::function<void(att::Handle, uint16_t offset, const ByteBuffer&, PrepareCallback)>;
+  void set_prepare_write_request_callback(PrepareWriteRequestCallback callback) {
     prepare_write_request_callback_ = std::move(callback);
   }
 
   // Sets a callback which will run when ExecuteWriteRequest gets called.
   using ExecuteWriteRequestCallback =
       fit::function<void(att::ExecuteWriteFlag flag, att::StatusCallback)>;
-  void set_execute_write_request_callback(
-      ExecuteWriteRequestCallback callback) {
+  void set_execute_write_request_callback(ExecuteWriteRequestCallback callback) {
     execute_write_request_callback_ = std::move(callback);
   }
 
   // Sets a callback which will run when WriteWithoutResponse gets called.
-  using WriteWithoutResponseCallback =
-      fit::function<void(att::Handle, const ByteBuffer&)>;
+  using WriteWithoutResponseCallback = fit::function<void(att::Handle, const ByteBuffer&)>;
   void set_write_without_rsp_callback(WriteWithoutResponseCallback callback) {
     write_without_rsp_callback_ = std::move(callback);
   }
 
   // Emulates the receipt of a notification or indication PDU.
-  void SendNotification(bool indicate, att::Handle handle,
-                        const ByteBuffer& value);
+  void SendNotification(bool indicate, att::Handle handle, const ByteBuffer& value);
 
  private:
   // Client overrides:
@@ -136,19 +110,15 @@ class FakeClient final : public Client {
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
-  void ReadBlobRequest(att::Handle handle, uint16_t offset,
-                       ReadCallback callback) override;
+  void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override;
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;
   void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
                             att::StatusCallback callback) override;
-  void PrepareWriteRequest(att::Handle handle, uint16_t offset,
-                           const ByteBuffer& part_value,
+  void PrepareWriteRequest(att::Handle handle, uint16_t offset, const ByteBuffer& part_value,
                            PrepareCallback callback) override;
-  void ExecuteWriteRequest(att::ExecuteWriteFlag flag,
-                           att::StatusCallback callback) override;
-  void WriteWithoutResponse(att::Handle handle,
-                            const ByteBuffer& value) override;
+  void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) override;
+  void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) override;
   void SetNotificationHandler(NotificationCallback callback) override;
 
   // All callbacks will be posted on this dispatcher to emulate asynchronous

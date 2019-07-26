@@ -47,8 +47,8 @@ class Server final {
   // service with a connected socket, the connection handle the channel was
   // opened on, and the descriptor list for the endpoint which was connected.
   // TODO: possibly combine these into a struct later
-  using ConnectCallback = fit::function<void(zx::socket, hci::ConnectionHandle,
-                                             const DataElement&)>;
+  using ConnectCallback =
+      fit::function<void(zx::socket, hci::ConnectionHandle, const DataElement&)>;
   ServiceHandle RegisterService(ServiceRecord record, ConnectCallback conn_cb);
 
   // Unregister a service from the database. Idempotent.
@@ -61,13 +61,12 @@ class Server final {
 
   // Performs a Service Search, returning any service record that contains
   // all UUID from the |search_pattern|
-  ServiceSearchResponse SearchServices(
-      const std::unordered_set<UUID>& pattern) const;
+  ServiceSearchResponse SearchServices(const std::unordered_set<UUID>& pattern) const;
 
   // Gets Service Attributes in the |attribute_ranges| from the service record
   // with |handle|.
-  ServiceAttributeResponse GetServiceAttributes(
-      ServiceHandle handle, const std::list<AttributeRange>& ranges) const;
+  ServiceAttributeResponse GetServiceAttributes(ServiceHandle handle,
+                                                const std::list<AttributeRange>& ranges) const;
 
   // Retrieves Service Attributes in the |attribute_ranges|, using the pattern
   // to search for the services that contain all UUIDs from the |search_pattern|
@@ -89,8 +88,7 @@ class Server final {
   // Which PSMs are registered to services.
   std::unordered_map<l2cap::PSM, ServiceHandle> psm_to_service_;
   // The set of PSMs that are registered to a service.
-  std::unordered_map<ServiceHandle, std::unordered_set<l2cap::PSM>>
-      service_to_psms_;
+  std::unordered_map<ServiceHandle, std::unordered_set<l2cap::PSM>> service_to_psms_;
 
   // The next available ServiceHandle.
   ServiceHandle next_handle_;

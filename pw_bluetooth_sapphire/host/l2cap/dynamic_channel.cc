@@ -12,8 +12,8 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm,
-                               ChannelId local_cid, ChannelId remote_cid)
+DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
+                               ChannelId remote_cid)
     : registry_(registry),
       psm_(psm),
       local_cid_(local_cid),
@@ -22,9 +22,7 @@ DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm,
   ZX_DEBUG_ASSERT(registry_);
 }
 
-void DynamicChannel::OnDisconnected() {
-  registry_->OnChannelDisconnected(this);
-}
+void DynamicChannel::OnDisconnected() { registry_->OnChannelDisconnected(this); }
 
 }  // namespace internal
 }  // namespace l2cap

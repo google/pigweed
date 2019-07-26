@@ -22,8 +22,7 @@ void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
   DataElement::Type type = elem.type();
   if (type == DataElement::Type::kUuid) {
     out->emplace(*elem.Get<UUID>());
-  } else if (type == DataElement::Type::kSequence ||
-             type == DataElement::Type::kAlternative) {
+  } else if (type == DataElement::Type::kSequence || type == DataElement::Type::kAlternative) {
     const DataElement* it;
     for (size_t idx = 0; nullptr != (it = elem.At(idx)); idx++) {
       AddAllUUIDs(*it, out);
@@ -50,9 +49,7 @@ const DataElement& ServiceRecord::GetAttribute(AttributeId id) const {
   return it->second;
 }
 
-bool ServiceRecord::HasAttribute(AttributeId id) const {
-  return attributes_.count(id) == 1;
-}
+bool ServiceRecord::HasAttribute(AttributeId id) const { return attributes_.count(id) == 1; }
 
 void ServiceRecord::RemoveAttribute(AttributeId id) { attributes_.erase(id); }
 
@@ -61,14 +58,14 @@ void ServiceRecord::SetHandle(ServiceHandle handle) {
   SetAttribute(kServiceRecordHandle, DataElement(uint32_t(handle_)));
 }
 
-std::set<AttributeId> ServiceRecord::GetAttributesInRange(
-    AttributeId start, AttributeId end) const {
+std::set<AttributeId> ServiceRecord::GetAttributesInRange(AttributeId start,
+                                                          AttributeId end) const {
   std::set<AttributeId> attrs;
   if (start > end) {
     return attrs;
   }
-  for (auto it = attributes_.lower_bound(start);
-       it != attributes_.end() && (it->first <= end); ++it) {
+  for (auto it = attributes_.lower_bound(start); it != attributes_.end() && (it->first <= end);
+       ++it) {
     attrs.emplace(it->first);
   }
 
@@ -101,8 +98,7 @@ void ServiceRecord::SetServiceClassUUIDs(const std::vector<UUID>& classes) {
   SetAttribute(kServiceClassIdList, std::move(class_id_list_val));
 }
 
-void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
-                                          const UUID& uuid,
+void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid,
                                           DataElement params) {
   std::vector<DataElement> seq;
   if (id == kPrimaryProtocolList) {
@@ -121,8 +117,7 @@ void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
   if (params.type() == DataElement::Type::kSequence) {
     auto v = params.Get<std::vector<DataElement>>();
     auto param_seq = std::move(*v);
-    std::move(std::begin(param_seq), std::end(param_seq),
-              std::back_inserter(protocol_desc));
+    std::move(std::begin(param_seq), std::end(param_seq), std::back_inserter(protocol_desc));
   } else if (params.type() != DataElement::Type::kNull) {
     protocol_desc.emplace_back(std::move(params));
   }
@@ -140,8 +135,7 @@ void ServiceRecord::AddProtocolDescriptor(const ProtocolListId id,
       addl_protocol_seq.emplace_back(it.second.Clone());
     }
 
-    SetAttribute(kAdditionalProtocolDescriptorList,
-                 DataElement(std::move(addl_protocol_seq)));
+    SetAttribute(kAdditionalProtocolDescriptorList, DataElement(std::move(addl_protocol_seq)));
   }
 }
 
@@ -164,12 +158,9 @@ void ServiceRecord::AddProfile(const UUID& uuid, uint8_t major, uint8_t minor) {
   SetAttribute(kBluetoothProfileDescriptorList, DataElement(std::move(seq)));
 }
 
-bool ServiceRecord::AddInfo(const std::string& language_code,
-                            const std::string& name,
-                            const std::string& description,
-                            const std::string& provider) {
-  if ((name.empty() && description.empty() && provider.empty()) ||
-      (language_code.size() != 2)) {
+bool ServiceRecord::AddInfo(const std::string& language_code, const std::string& name,
+                            const std::string& description, const std::string& provider) {
+  if ((name.empty() && description.empty() && provider.empty()) || (language_code.size() != 2)) {
     return false;
   }
   AttributeId base_attrid = 0x0100;
@@ -208,15 +199,13 @@ bool ServiceRecord::AddInfo(const std::string& language_code,
     SetAttribute(base_attrid + kServiceNameOffset, DataElement(name));
   }
   if (!description.empty()) {
-    SetAttribute(base_attrid + kServiceDescriptionOffset,
-                 DataElement(description));
+    SetAttribute(base_attrid + kServiceDescriptionOffset, DataElement(description));
   }
   if (!provider.empty()) {
     SetAttribute(base_attrid + kProviderNameOffset, DataElement(provider));
   }
 
-  SetAttribute(kLanguageBaseAttributeIdList,
-               DataElement(std::move(base_attr_list)));
+  SetAttribute(kLanguageBaseAttributeIdList, DataElement(std::move(base_attr_list)));
   return true;
 }
 

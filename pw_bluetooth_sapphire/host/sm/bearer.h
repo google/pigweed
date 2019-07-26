@@ -66,8 +66,7 @@ class Bearer final {
     //
     // The Pairing Feature Exchange procedures will fail if no feature exchange
     // callback is assigned.
-    virtual void OnFeatureExchange(const PairingFeatures& features,
-                                   const ByteBuffer& preq,
+    virtual void OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
                                    const ByteBuffer& pres) = 0;
 
     // Called when a "confirm value" is received from the peer during Legacy
@@ -180,10 +179,8 @@ class Bearer final {
   // parameters should be accepted and returns the final values in
   // |out_features|. Returns an error code if the parameters have been rejected
   // and pairing should be aborted.
-  ErrorCode ResolveFeatures(bool local_initiator,
-                            const PairingRequestParams& preq,
-                            const PairingResponseParams& pres,
-                            PairingFeatures* out_features);
+  ErrorCode ResolveFeatures(bool local_initiator, const PairingRequestParams& preq,
+                            const PairingResponseParams& pres, PairingFeatures* out_features);
 
   // Populates a pairing request/response structure based on features that we
   // support and request. Used to build a SMP PairingRequest and PairingResponse
@@ -194,8 +191,7 @@ class Bearer final {
   // are provided in |out_local_keys| and |out_remote_keys|. The caller is
   // responsible for calculating the appropriate dist/gen values that are
   // suitable for |params| depending on context.
-  void BuildPairingParameters(PairingRequestParams* params,
-                              KeyDistGenField* out_local_keys,
+  void BuildPairingParameters(PairingRequestParams* params, KeyDistGenField* out_local_keys,
                               KeyDistGenField* out_remote_keys);
 
   // Called for SMP commands that are sent by the peer.
@@ -230,13 +226,11 @@ class Bearer final {
   // We use this buffer to store pairing request and response PDUs as they are
   // needed to complete the feature exchange (i.e. the "preq" and "pres"
   // payloads needed for Phase 2 (see Vol 3, Part H, 2.2.3 for example).
-  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)>
-      pairing_payload_buffer_;
+  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)> pairing_payload_buffer_;
 
   // Task used to drive the "SMP Timeout" (Vol 3, Part H, 3.4). The timer is
   // started when pairing is initiated.
-  async::TaskClosureMethod<Bearer, &Bearer::OnPairingTimeout> timeout_task_{
-      this};
+  async::TaskClosureMethod<Bearer, &Bearer::OnPairingTimeout> timeout_task_{this};
 
   // True if a pairing feature exchange has been initiated and waiting for a
   // response.

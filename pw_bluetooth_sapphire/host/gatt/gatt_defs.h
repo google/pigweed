@@ -41,8 +41,7 @@ constexpr UUID kCharacteristicAggregateFormat(kCharacteristicAggregateFormat16);
 
 // Defined Generic Attribute Profile Service (Vol 3, Part G, 7)
 constexpr bt::UUID kGenericAttributeService(kGenericAttributeService16);
-constexpr bt::UUID kServiceChangedCharacteristic(
-    kServiceChangedCharacteristic16);
+constexpr bt::UUID kServiceChangedCharacteristic(kServiceChangedCharacteristic16);
 
 }  // namespace types
 
@@ -93,8 +92,8 @@ struct ServiceData {
 
 struct CharacteristicData {
   CharacteristicData() = default;
-  CharacteristicData(Properties props, att::Handle handle,
-                     att::Handle value_handle, const UUID& type);
+  CharacteristicData(Properties props, att::Handle handle, att::Handle value_handle,
+                     const UUID& type);
 
   Properties properties;
   att::Handle handle;

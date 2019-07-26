@@ -70,8 +70,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // if scan, legacy advertising, and/or initiation procedures are in progress.
   using StateQueryDelegate = fit::function<bool()>;
 
-  LowEnergyAddressManager(const DeviceAddress& public_address,
-                          StateQueryDelegate delegate,
+  LowEnergyAddressManager(const DeviceAddress& public_address, StateQueryDelegate delegate,
                           fxl::RefPtr<hci::Transport> hci);
   ~LowEnergyAddressManager();
 

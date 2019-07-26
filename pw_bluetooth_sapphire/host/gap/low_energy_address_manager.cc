@@ -12,9 +12,9 @@
 namespace bt {
 namespace gap {
 
-LowEnergyAddressManager::LowEnergyAddressManager(
-    const DeviceAddress& public_address, StateQueryDelegate delegate,
-    fxl::RefPtr<hci::Transport> hci)
+LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
+                                                 StateQueryDelegate delegate,
+                                                 fxl::RefPtr<hci::Transport> hci)
     : delegate_(std::move(delegate)),
       hci_(std::move(hci)),
       privacy_enabled_(false),
@@ -31,8 +31,7 @@ LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
 
 void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
   if (enabled == privacy_enabled_) {
-    bt_log(TRACE, "gap-le", "privacy already %s",
-           (enabled ? "enabled" : "disabled"));
+    bt_log(TRACE, "gap-le", "privacy already %s", (enabled ? "enabled" : "disabled"));
     return;
   }
 
@@ -74,8 +73,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
   }
 
   if (!CanUpdateRandomAddress()) {
-    bt_log(TRACE, "gap-le",
-           "deferring local address refresh due to ongoing procedures");
+    bt_log(TRACE, "gap-le", "deferring local address refresh due to ongoing procedures");
     // Don't stall procedures that requested the current address while in this
     // state.
     ResolveAddressRequests();
@@ -92,15 +90,13 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     random_addr = sm::util::GenerateRandomAddress(false /* is_static */);
   }
 
-  auto cmd = hci::CommandPacket::New(
-      hci::kLESetRandomAddress, sizeof(hci::LESetRandomAddressCommandParams));
-  auto params = cmd->mutable_view()
-                    ->mutable_payload<hci::LESetRandomAddressCommandParams>();
+  auto cmd = hci::CommandPacket::New(hci::kLESetRandomAddress,
+                                     sizeof(hci::LESetRandomAddressCommandParams));
+  auto params = cmd->mutable_view()->mutable_payload<hci::LESetRandomAddressCommandParams>();
   params->random_address = random_addr.value();
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto cmd_complete_cb = [self, this, random_addr](
-                             auto id, const hci::EventPacket& event) {
+  auto cmd_complete_cb = [self, this, random_addr](auto id, const hci::EventPacket& event) {
     if (!self) {
       return;
     }
@@ -108,26 +104,22 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     refreshing_ = false;
 
     if (!privacy_enabled_) {
-      bt_log(TRACE, "gap-le",
-             "ignore random address result while privacy is disabled");
+      bt_log(TRACE, "gap-le", "ignore random address result while privacy is disabled");
       return;
     }
 
-    if (!hci_is_error(event, TRACE, "gap-le",
-                      "failed to update random address")) {
+    if (!hci_is_error(event, TRACE, "gap-le", "failed to update random address")) {
       needs_refresh_ = false;
       random_ = random_addr;
-      bt_log(TRACE, "gap-le", "random address updated: %s",
-             random_->ToString().c_str());
+      bt_log(TRACE, "gap-le", "random address updated: %s", random_->ToString().c_str());
 
       // Set the new random address to expire in kPrivateAddressTimeout.
-      random_address_expiry_task_.set_handler(
-          [this](auto*, auto*, zx_status_t status) {
-            if (status == ZX_OK) {
-              needs_refresh_ = true;
-              TryRefreshRandomAddress();
-            }
-          });
+      random_address_expiry_task_.set_handler([this](auto*, auto*, zx_status_t status) {
+        if (status == ZX_OK) {
+          needs_refresh_ = true;
+          TryRefreshRandomAddress();
+        }
+      });
       random_address_expiry_task_.PostDelayed(async_get_default_dispatcher(),
                                               kPrivateAddressTimeout);
     }
@@ -135,8 +127,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     ResolveAddressRequests();
   };
 
-  hci_->command_channel()->SendCommand(std::move(cmd),
-                                       async_get_default_dispatcher(),
+  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
                                        std::move(cmd_complete_cb));
 }
 
@@ -146,9 +137,7 @@ void LowEnergyAddressManager::CleanUpPrivacyState() {
   CancelExpiry();
 }
 
-void LowEnergyAddressManager::CancelExpiry() {
-  random_address_expiry_task_.Cancel();
-}
+void LowEnergyAddressManager::CancelExpiry() { random_address_expiry_task_.Cancel(); }
 
 bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
   ZX_DEBUG_ASSERT(delegate_);
@@ -157,8 +146,7 @@ bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
 
 void LowEnergyAddressManager::ResolveAddressRequests() {
   auto q = std::move(address_callbacks_);
-  bt_log(TRACE, "gap-le", "using local address %s",
-         current_address().ToString().c_str());
+  bt_log(TRACE, "gap-le", "using local address %s", current_address().ToString().c_str());
   while (!q.empty()) {
     q.front()(current_address());
     q.pop();

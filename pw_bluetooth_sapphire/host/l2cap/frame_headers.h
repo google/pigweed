@@ -44,19 +44,15 @@ struct EnhancedControlField {
 
   EnhancedControlField() : raw_value(0) {}
 
-  bool designates_information_frame() const {
-    return !(le16toh(raw_value) & 0b1);
-  }
+  bool designates_information_frame() const { return !(le16toh(raw_value) & 0b1); }
   bool designates_supervisory_frame() const { return le16toh(raw_value) & 0x1; }
   bool designates_start_of_segmented_sdu() const {
-    return designates_information_frame() &&
-           ((le16toh(raw_value) & (0b11 << 14)) == (0b01 << 14));
+    return designates_information_frame() && ((le16toh(raw_value) & (0b11 << 14)) == (0b01 << 14));
   }
   // Returns true for all segmented frames, including the start-of-segment frame
   // (even though the start-of-segment frame has a different header format).
   bool designates_part_of_segmented_sdu() const {
-    return designates_information_frame() &&
-           (le16toh(raw_value) & (0b11 << 14));
+    return designates_information_frame() && (le16toh(raw_value) & (0b11 << 14));
   }
 
   void set_supervisory_frame() {
@@ -142,8 +138,7 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
     ZX_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
     // See Vol 3, Part A, Table 3.2.
-    raw_value =
-        htole16(le16toh(raw_value) | (static_cast<uint8_t>(sfunc) << 2));
+    raw_value = htole16(le16toh(raw_value) | (static_cast<uint8_t>(sfunc) << 2));
   }
 
   bool is_poll_request() const {
@@ -174,8 +169,7 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
 } __PACKED;
 
 struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
-  SimpleReceiverReadyFrame()
-      : SimpleSupervisoryFrame(SupervisoryFunction::ReceiverReady) {}
+  SimpleReceiverReadyFrame() : SimpleSupervisoryFrame(SupervisoryFunction::ReceiverReady) {}
 } __PACKED;
 
 }  // namespace internal

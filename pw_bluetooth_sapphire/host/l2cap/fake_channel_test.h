@@ -31,8 +31,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
  protected:
   struct ChannelOptions {
     explicit ChannelOptions(ChannelId id) : ChannelOptions(id, id) {}
-    ChannelOptions(ChannelId id, ChannelId remote_id)
-        : id(id), remote_id(remote_id) {}
+    ChannelOptions(ChannelId id, ChannelId remote_id) : id(id), remote_id(remote_id) {}
 
     ChannelId id;
     ChannelId remote_id;
@@ -64,8 +63,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   //
   // NOTE: This overwrites the underlying FakeChannel's "send callback" by
   // calling FakeChannel::SetSendCallback().
-  bool ReceiveAndExpect(const ByteBuffer& packet,
-                        const ByteBuffer& expected_response);
+  bool ReceiveAndExpect(const ByteBuffer& packet, const ByteBuffer& expected_response);
 
   fxl::WeakPtr<FakeChannel> fake_chan() const { return fake_chan_; }
 

@@ -19,22 +19,20 @@ namespace gap {
 namespace {
 
 template <typename EventParamType, typename ResultType>
-std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache,
-                                               const hci::EventPacket& event) {
+std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::EventPacket& event) {
   std::unordered_set<Peer*> updated;
   bt_log(SPEW, "gap-bredr", "inquiry result received");
 
   size_t result_size = event.view().payload_size() - sizeof(EventParamType);
   if ((result_size % sizeof(ResultType)) != 0) {
-    bt_log(INFO, "gap-bredr", "ignoring wrong size result (%zu %% %zu != 0)",
-           result_size, sizeof(ResultType));
+    bt_log(INFO, "gap-bredr", "ignoring wrong size result (%zu %% %zu != 0)", result_size,
+           sizeof(ResultType));
     return updated;
   }
 
   const auto& result = event.params<EventParamType>();
   for (int i = 0; i < result.num_responses; i++) {
-    DeviceAddress addr(DeviceAddress::Type::kBREDR,
-                       result.responses[i].bd_addr);
+    DeviceAddress addr(DeviceAddress::Type::kBREDR, result.responses[i].bd_addr);
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
       peer = cache->NewPeer(addr, true);
@@ -49,8 +47,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache,
 
 }  // namespace
 
-BrEdrDiscoverySession::BrEdrDiscoverySession(
-    fxl::WeakPtr<BrEdrDiscoveryManager> manager)
+BrEdrDiscoverySession::BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
     : manager_(manager) {}
 
 BrEdrDiscoverySession::~BrEdrDiscoverySession() {
@@ -70,8 +67,7 @@ void BrEdrDiscoverySession::NotifyError() const {
   }
 }
 
-BrEdrDiscoverableSession::BrEdrDiscoverableSession(
-    fxl::WeakPtr<BrEdrDiscoveryManager> manager)
+BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
     : manager_(manager) {}
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
@@ -79,8 +75,7 @@ BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
   manager_->RemoveDiscoverableSession(this);
 }
 
-BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
-                                             hci::InquiryMode mode,
+BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci, hci::InquiryMode mode,
                                              PeerCache* peer_cache)
     : hci_(hci),
       dispatcher_(async_get_default_dispatcher()),
@@ -94,19 +89,16 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
   ZX_DEBUG_ASSERT(dispatcher_);
 
   result_handler_id_ = hci_->command_channel()->AddEventHandler(
-      hci::kInquiryResultEventCode,
-      fit::bind_member(this, &BrEdrDiscoveryManager::InquiryResult),
+      hci::kInquiryResultEventCode, fit::bind_member(this, &BrEdrDiscoveryManager::InquiryResult),
       dispatcher_);
   ZX_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci::kInquiryResultWithRSSIEventCode,
-      fbl::BindMember(this, &BrEdrDiscoveryManager::InquiryResult),
-      dispatcher_);
+      fbl::BindMember(this, &BrEdrDiscoveryManager::InquiryResult), dispatcher_);
   ZX_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ = hci_->command_channel()->AddEventHandler(
       hci::kExtendedInquiryResultEventCode,
-      fbl::BindMember(this, &BrEdrDiscoveryManager::ExtendedInquiryResult),
-      dispatcher_);
+      fbl::BindMember(this, &BrEdrDiscoveryManager::ExtendedInquiryResult), dispatcher_);
   ZX_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
@@ -157,11 +149,10 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
-    auto packet = hci::CommandPacket::New(
-        hci::kWriteInquiryMode, sizeof(hci::WriteInquiryModeCommandParams));
-    packet->mutable_view()
-        ->mutable_payload<hci::WriteInquiryModeCommandParams>()
-        ->inquiry_mode = desired_inquiry_mode_;
+    auto packet =
+        hci::CommandPacket::New(hci::kWriteInquiryMode, sizeof(hci::WriteInquiryModeCommandParams));
+    packet->mutable_view()->mutable_payload<hci::WriteInquiryModeCommandParams>()->inquiry_mode =
+        desired_inquiry_mode_;
     hci_->command_channel()->SendCommand(
         std::move(packet), dispatcher_,
         [self, mode = desired_inquiry_mode_](auto, const auto& event) {
@@ -169,17 +160,14 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
             return;
           }
 
-          if (!hci_is_error(event, ERROR, "gap-bredr",
-                            "write inquiry mode failed")) {
+          if (!hci_is_error(event, ERROR, "gap-bredr", "write inquiry mode failed")) {
             self->current_inquiry_mode_ = mode;
           }
         });
   }
 
-  auto inquiry =
-      hci::CommandPacket::New(hci::kInquiry, sizeof(hci::InquiryCommandParams));
-  auto params =
-      inquiry->mutable_view()->mutable_payload<hci::InquiryCommandParams>();
+  auto inquiry = hci::CommandPacket::New(hci::kInquiry, sizeof(hci::InquiryCommandParams));
+  auto params = inquiry->mutable_view()->mutable_payload<hci::InquiryCommandParams>();
   params->lap = hci::kGIAC;
   params->inquiry_length = kInquiryLengthDefault;
   params->num_responses = 0;
@@ -242,12 +230,10 @@ void BrEdrDiscoveryManager::StopInquiry() {
 void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
   std::unordered_set<Peer*> peers;
   if (event.event_code() == hci::kInquiryResultEventCode) {
-    peers =
-        ProcessInquiryResult<hci::InquiryResultEventParams, hci::InquiryResult>(
-            cache_, event);
+    peers = ProcessInquiryResult<hci::InquiryResultEventParams, hci::InquiryResult>(cache_, event);
   } else if (event.event_code() == hci::kInquiryResultWithRSSIEventCode) {
-    peers = ProcessInquiryResult<hci::InquiryResultWithRSSIEventParams,
-                                 hci::InquiryResultRSSI>(cache_, event);
+    peers = ProcessInquiryResult<hci::InquiryResultWithRSSIEventParams, hci::InquiryResultRSSI>(
+        cache_, event);
   } else {
     bt_log(ERROR, "gap-bredr", "unsupported inquiry result type");
     return;
@@ -263,15 +249,12 @@ void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
   }
 }
 
-void BrEdrDiscoveryManager::ExtendedInquiryResult(
-    const hci::EventPacket& event) {
+void BrEdrDiscoveryManager::ExtendedInquiryResult(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kExtendedInquiryResultEventCode);
 
   bt_log(SPEW, "gap-bredr", "ExtendedInquiryResult received");
-  if (event.view().payload_size() !=
-      sizeof(hci::ExtendedInquiryResultEventParams)) {
-    bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)",
-           event.view().payload_size());
+  if (event.view().payload_size() != sizeof(hci::ExtendedInquiryResultEventParams)) {
+    bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)", event.view().payload_size());
     return;
   }
   const auto& result = event.params<hci::ExtendedInquiryResultEventParams>();
@@ -300,26 +283,22 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   }
   Peer* peer = cache_->FindById(id);
   if (!peer) {
-    bt_log(WARN, "gap-bredr", "cannot request name, unknown id: %s",
-           bt_str(id));
+    bt_log(WARN, "gap-bredr", "cannot request name, unknown id: %s", bt_str(id));
     return;
   }
-  auto packet = hci::CommandPacket::New(
-      hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
+  auto packet =
+      hci::CommandPacket::New(hci::kRemoteNameRequest, sizeof(hci::RemoteNameRequestCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_view()
-                    ->mutable_payload<hci::RemoteNameRequestCommandParams>();
+  auto params = packet->mutable_view()->mutable_payload<hci::RemoteNameRequestCommandParams>();
   ZX_DEBUG_ASSERT(peer->bredr());
   ZX_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
   params->bd_addr = peer->address().value();
-  params->page_scan_repetition_mode =
-      *(peer->bredr()->page_scan_repetition_mode());
+  params->page_scan_repetition_mode = *(peer->bredr()->page_scan_repetition_mode());
   if (peer->bredr()->clock_offset()) {
     params->clock_offset = htole16(*(peer->bredr()->clock_offset()));
   }
 
-  auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto,
-                                                        const auto& event) {
+  auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto, const auto& event) {
     if (!self) {
       return;
     }
@@ -332,19 +311,15 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
       return;
     }
 
-    ZX_DEBUG_ASSERT(event.event_code() ==
-                    hci::kRemoteNameRequestCompleteEventCode);
+    ZX_DEBUG_ASSERT(event.event_code() == hci::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
-    const auto& params =
-        event.view()
-            .template payload<hci::RemoteNameRequestCompleteEventParams>();
+    const auto& params = event.view().template payload<hci::RemoteNameRequestCompleteEventParams>();
     for (size_t len = 0; len <= hci::kMaxNameLength; len++) {
       if (params.remote_name[len] == 0 || len == hci::kMaxNameLength) {
         Peer* peer = self->cache_->FindById(id);
         if (peer) {
-          peer->SetName(
-              std::string(params.remote_name, params.remote_name + len));
+          peer->SetName(std::string(params.remote_name, params.remote_name + len));
         }
         return;
       }
@@ -352,8 +327,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   };
 
   auto cmd_id = hci_->command_channel()->SendExclusiveCommand(
-      std::move(packet), dispatcher_, std::move(cb),
-      hci::kRemoteNameRequestCompleteEventCode, {hci::kInquiry});
+      std::move(packet), dispatcher_, std::move(cb), hci::kRemoteNameRequestCompleteEventCode,
+      {hci::kInquiry});
   if (cmd_id) {
     requesting_names_.insert(id);
   }
@@ -390,8 +365,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
 void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
-  bt_log(SPEW, "gap-bredr", "%s inquiry scan",
-         (enable ? "enabling" : "disabling"));
+  bt_log(SPEW, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
@@ -412,16 +386,13 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       return;
     }
 
-    bool enable =
-        !self->discoverable_.empty() || !self->pending_discoverable_.empty();
+    bool enable = !self->discoverable_.empty() || !self->pending_discoverable_.empty();
     auto params = event.return_params<hci::ReadScanEnableReturnParams>();
     uint8_t scan_type = params->scan_enable;
-    bool enabled =
-        scan_type & static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
+    bool enabled = scan_type & static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
 
     if (enable == enabled) {
-      bt_log(INFO, "gap-bredr", "inquiry scan already %s",
-             (enable ? "enabled" : "disabled"));
+      bt_log(INFO, "gap-bredr", "inquiry scan already %s", (enable ? "enabled" : "disabled"));
       return;
     }
 
@@ -430,15 +401,14 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     } else {
       scan_type &= ~static_cast<uint8_t>(hci::ScanEnableBit::kInquiry);
     }
-    auto write_enable = hci::CommandPacket::New(
-        hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
+    auto write_enable =
+        hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
     write_enable->mutable_view()
         ->mutable_payload<hci::WriteScanEnableCommandParams>()
         ->scan_enable = scan_type;
     resolve_pending.cancel();
     self->hci_->command_channel()->SendCommand(
-        std::move(write_enable), self->dispatcher_,
-        [self](auto, const hci::EventPacket& event) {
+        std::move(write_enable), self->dispatcher_, [self](auto, const hci::EventPacket& event) {
           if (!self) {
             return;
           }
@@ -459,52 +429,41 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
                                        std::move(scan_enable_cb));
 }
 
-void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
-                                                     uint16_t window,
+void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t window,
                                                      bool interlaced) {
   // TODO(jamuraa): add a callback for success or failure?
-  auto write_activity = hci::CommandPacket::New(
-      hci::kWriteInquiryScanActivity,
-      sizeof(hci::WriteInquiryScanActivityCommandParams));
+  auto write_activity = hci::CommandPacket::New(hci::kWriteInquiryScanActivity,
+                                                sizeof(hci::WriteInquiryScanActivityCommandParams));
   auto* activity_params =
-      write_activity->mutable_view()
-          ->mutable_payload<hci::WriteInquiryScanActivityCommandParams>();
+      write_activity->mutable_view()->mutable_payload<hci::WriteInquiryScanActivityCommandParams>();
   activity_params->inquiry_scan_interval = htole16(interval);
   activity_params->inquiry_scan_window = htole16(window);
 
   hci_->command_channel()->SendCommand(
-      std::move(write_activity), dispatcher_,
-      [](auto id, const hci::EventPacket& event) {
-        if (hci_is_error(event, WARN, "gap-bredr",
-                         "write inquiry scan activity failed")) {
+      std::move(write_activity), dispatcher_, [](auto id, const hci::EventPacket& event) {
+        if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan activity failed")) {
           return;
         }
         bt_log(SPEW, "gap-bredr", "inquiry scan activity updated");
       });
 
-  auto write_type =
-      hci::CommandPacket::New(hci::kWriteInquiryScanType,
-                              sizeof(hci::WriteInquiryScanTypeCommandParams));
+  auto write_type = hci::CommandPacket::New(hci::kWriteInquiryScanType,
+                                            sizeof(hci::WriteInquiryScanTypeCommandParams));
   auto* type_params =
-      write_type->mutable_view()
-          ->mutable_payload<hci::WriteInquiryScanTypeCommandParams>();
+      write_type->mutable_view()->mutable_payload<hci::WriteInquiryScanTypeCommandParams>();
   type_params->inquiry_scan_type =
-      (interlaced ? hci::InquiryScanType::kInterlacedScan
-                  : hci::InquiryScanType::kStandardScan);
+      (interlaced ? hci::InquiryScanType::kInterlacedScan : hci::InquiryScanType::kStandardScan);
 
   hci_->command_channel()->SendCommand(
-      std::move(write_type), dispatcher_,
-      [](auto id, const hci::EventPacket& event) {
-        if (hci_is_error(event, WARN, "gap-bredr",
-                         "write inquiry scan type failed")) {
+      std::move(write_type), dispatcher_, [](auto id, const hci::EventPacket& event) {
+        if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan type failed")) {
           return;
         }
         bt_log(SPEW, "gap-bredr", "inquiry scan type updated");
       });
 }
 
-std::unique_ptr<BrEdrDiscoverySession>
-BrEdrDiscoveryManager::AddDiscoverySession() {
+std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySession() {
   bt_log(SPEW, "gap-bredr", "adding discovery session");
 
   // Cannot use make_unique here since BrEdrDiscoverySession has a private
@@ -516,8 +475,7 @@ BrEdrDiscoveryManager::AddDiscoverySession() {
   return session;
 }
 
-void BrEdrDiscoveryManager::RemoveDiscoverySession(
-    BrEdrDiscoverySession* session) {
+void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* session) {
   bt_log(SPEW, "gap-bredr", "removing discovery session");
 
   auto removed = discovering_.erase(session);
@@ -527,8 +485,7 @@ void BrEdrDiscoveryManager::RemoveDiscoverySession(
   }
 }
 
-std::unique_ptr<BrEdrDiscoverableSession>
-BrEdrDiscoveryManager::AddDiscoverableSession() {
+std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverableSession() {
   bt_log(SPEW, "gap-bredr", "adding discoverable session");
 
   // Cannot use make_unique here since BrEdrDiscoverableSession has a private
@@ -540,8 +497,7 @@ BrEdrDiscoveryManager::AddDiscoverableSession() {
   return session;
 }
 
-void BrEdrDiscoveryManager::RemoveDiscoverableSession(
-    BrEdrDiscoverableSession* session) {
+void BrEdrDiscoveryManager::RemoveDiscoverableSession(BrEdrDiscoverableSession* session) {
   bt_log(SPEW, "gap-bredr", "removing discoverable session");
   discoverable_.erase(session);
   if (discoverable_.empty()) {

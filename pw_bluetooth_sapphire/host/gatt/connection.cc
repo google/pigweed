@@ -16,8 +16,7 @@ namespace gatt {
 namespace internal {
 
 Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
-                       fxl::RefPtr<att::Database> local_db,
-                       RemoteServiceWatcher svc_watcher,
+                       fxl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
                        async_dispatcher_t* gatt_dispatcher)
     : att_(att_bearer) {
   ZX_DEBUG_ASSERT(att_bearer);
@@ -26,8 +25,8 @@ Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
   ZX_DEBUG_ASSERT(gatt_dispatcher);
 
   server_ = std::make_unique<gatt::Server>(peer_id, local_db, att_);
-  remote_service_manager_ = std::make_unique<RemoteServiceManager>(
-      gatt::Client::Create(att_), gatt_dispatcher);
+  remote_service_manager_ =
+      std::make_unique<RemoteServiceManager>(gatt::Client::Create(att_), gatt_dispatcher);
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 

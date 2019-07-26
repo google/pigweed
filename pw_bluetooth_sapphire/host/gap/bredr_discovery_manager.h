@@ -60,9 +60,7 @@ class BrEdrDiscoverySession final {
 
   // Set a callback to be notified if the session becomes inactive because
   // of internal errors.
-  void set_error_callback(fit::closure callback) {
-    error_callback_ = std::move(callback);
-  }
+  void set_error_callback(fit::closure callback) { error_callback_ = std::move(callback); }
 
  private:
   friend class BrEdrDiscoveryManager;
@@ -94,8 +92,7 @@ class BrEdrDiscoverableSession final {
   friend class BrEdrDiscoveryManager;
 
   // Used by the BrEdrDiscoveryManager to create a session.
-  explicit BrEdrDiscoverableSession(
-      fxl::WeakPtr<BrEdrDiscoveryManager> manager);
+  explicit BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager);
 
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
   fxl::ThreadChecker thread_checker_;
@@ -114,9 +111,8 @@ class BrEdrDiscoveryManager final {
   // Starts discovery and reports the status via |callback|. If discovery has
   // been successfully started, the callback will receive a session object that
   // it owns. If no sessions are owned, peer discovery is stopped.
-  using DiscoveryCallback =
-      fit::function<void(const hci::Status& status,
-                         std::unique_ptr<BrEdrDiscoverySession> session)>;
+  using DiscoveryCallback = fit::function<void(const hci::Status& status,
+                                               std::unique_ptr<BrEdrDiscoverySession> session)>;
   void RequestDiscovery(DiscoveryCallback callback);
 
   // Returns whether a discovery session is active.
@@ -124,9 +120,8 @@ class BrEdrDiscoveryManager final {
 
   // Requests this device be discoverable. We are discoverable as long as
   // anyone holds a discoverable session.
-  using DiscoverableCallback =
-      fit::function<void(const hci::Status& status,
-                         std::unique_ptr<BrEdrDiscoverableSession> session)>;
+  using DiscoverableCallback = fit::function<void(
+      const hci::Status& status, std::unique_ptr<BrEdrDiscoverableSession> session)>;
   void RequestDiscoverable(DiscoverableCallback callback);
 
   bool discoverable() const { return !discoverable_.empty(); }
@@ -163,8 +158,7 @@ class BrEdrDiscoveryManager final {
   // Writes the Inquiry Scan Settings to the controller.
   // If |interlaced| is true, and the controller does not supoport interlaces
   // inquiry scan mode, standard mode is used.
-  void WriteInquiryScanSettings(uint16_t interval, uint16_t window,
-                                bool interlaced);
+  void WriteInquiryScanSettings(uint16_t interval, uint16_t window, bool interlaced);
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<BrEdrDiscoverableSession> AddDiscoverableSession();

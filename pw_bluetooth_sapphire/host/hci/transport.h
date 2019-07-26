@@ -40,8 +40,7 @@ class DeviceWrapper;
 // clean up (and also NET-388).
 class Transport final : public fxl::RefCountedThreadSafe<Transport> {
  public:
-  static fxl::RefPtr<Transport> Create(
-      std::unique_ptr<DeviceWrapper> hci_device);
+  static fxl::RefPtr<Transport> Create(std::unique_ptr<DeviceWrapper> hci_device);
 
   // Initializes the HCI command channel and starts the I/O event loop.
   // I/O events are run on the dispatcher given, or a new I/O thread
@@ -93,8 +92,7 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   // packet processing is no longer guaranteed to work. It is the responsibility
   // of the callback implementation to clean up this Transport instance by
   // calling ShutDown() and/or deleting it.
-  void SetTransportClosedCallback(fit::closure callback,
-                                  async_dispatcher_t* dispatcher);
+  void SetTransportClosedCallback(fit::closure callback, async_dispatcher_t* dispatcher);
 
  private:
   FRIEND_REF_COUNTED_THREAD_SAFE(Transport);
@@ -103,8 +101,8 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   ~Transport();
 
   // Channel closed callback.
-  void OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                       zx_status_t status, const zx_packet_signal_t* signal);
+  void OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                       const zx_packet_signal_t* signal);
   using Waiter = async::WaitMethod<Transport, &Transport::OnChannelClosed>;
 
   // Sets up a wait to watch for |channel| to close and calls OnChannelClosed

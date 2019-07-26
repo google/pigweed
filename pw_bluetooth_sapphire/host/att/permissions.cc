@@ -8,10 +8,8 @@ namespace bt {
 namespace att {
 namespace {
 
-ErrorCode CheckSecurity(const AccessRequirements& reqs,
-                        const sm::SecurityProperties& security) {
-  if (reqs.encryption_required() &&
-      security.level() < sm::SecurityLevel::kEncrypted) {
+ErrorCode CheckSecurity(const AccessRequirements& reqs, const sm::SecurityProperties& security) {
+  if (reqs.encryption_required() && security.level() < sm::SecurityLevel::kEncrypted) {
     // If the peer is bonded but the link is not encrypted the "Insufficient
     // Encryption" error should be sent. Our GAP layer always keeps the link
     // encrypted so the authentication procedure needs to fail during

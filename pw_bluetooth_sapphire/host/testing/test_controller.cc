@@ -13,16 +13,16 @@
 namespace bt {
 namespace testing {
 
-CommandTransaction::CommandTransaction(
-    const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
+CommandTransaction::CommandTransaction(const ByteBuffer& expected,
+                                       const std::vector<const ByteBuffer*>& replies)
     : prefix_(false), expected_(expected) {
   for (const auto* buffer : replies) {
     replies_.push(DynamicByteBuffer(*buffer));
   }
 }
 
-CommandTransaction::CommandTransaction(
-    hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies)
+CommandTransaction::CommandTransaction(hci::OpCode expected_opcode,
+                                       const std::vector<const ByteBuffer*>& replies)
     : prefix_(true) {
   hci::OpCode le_opcode = htole16(expected_opcode);
   const BufferView expected(&le_opcode, sizeof(expected_opcode));
@@ -33,14 +33,11 @@ CommandTransaction::CommandTransaction(
 }
 
 bool CommandTransaction::Match(const BufferView& cmd) {
-  return ContainersEqual(expected_,
-                         (prefix_ ? cmd.view(0, expected_.size()) : cmd));
+  return ContainersEqual(expected_, (prefix_ ? cmd.view(0, expected_.size()) : cmd));
 }
 
 TestController::TestController()
-    : FakeControllerBase(),
-      data_dispatcher_(nullptr),
-      transaction_dispatcher_(nullptr) {}
+    : FakeControllerBase(), data_dispatcher_(nullptr), transaction_dispatcher_(nullptr) {}
 
 TestController::~TestController() {
   EXPECT_EQ(0u, cmd_transactions_.size()) << "Not all transactions resolved!";
@@ -51,13 +48,12 @@ void TestController::QueueCommandTransaction(CommandTransaction transaction) {
   cmd_transactions_.push(std::move(transaction));
 }
 
-void TestController::QueueCommandTransaction(
-    const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies) {
+void TestController::QueueCommandTransaction(const ByteBuffer& expected,
+                                             const std::vector<const ByteBuffer*>& replies) {
   QueueCommandTransaction(CommandTransaction(expected, replies));
 }
 
-void TestController::SetDataCallback(DataCallback callback,
-                                     async_dispatcher_t* dispatcher) {
+void TestController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);
   ZX_DEBUG_ASSERT(!data_callback_);
@@ -72,10 +68,8 @@ void TestController::ClearDataCallback() {
   data_callback_ = nullptr;
 }
 
-void TestController::SetTransactionCallback(fit::closure callback,
-                                            async_dispatcher_t* dispatcher) {
-  SetTransactionCallback([f = std::move(callback)](const auto&) { f(); },
-                         dispatcher);
+void TestController::SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher) {
+  SetTransactionCallback([f = std::move(callback)](const auto&) { f(); }, dispatcher);
 }
 
 void TestController::SetTransactionCallback(TransactionCallback callback,
@@ -94,8 +88,7 @@ void TestController::ClearTransactionCallback() {
   transaction_callback_ = nullptr;
 }
 
-void TestController::OnCommandPacketReceived(
-    const PacketView<hci::CommandHeader>& command_packet) {
+void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   uint16_t opcode = command_packet.header().opcode;
   uint8_t ogf = hci::GetOGF(opcode);
   uint16_t ocf = hci::GetOCF(opcode);
@@ -103,8 +96,8 @@ void TestController::OnCommandPacketReceived(
   // Note: we upcast ogf to uint16_t so that it does not get interpreted as a
   // char for printing
   ASSERT_FALSE(cmd_transactions_.empty())
-      << "Received unexpected command packet with OGF: 0x" << std::hex
-      << static_cast<uint16_t>(ogf) << ", OCF: 0x" << std::hex << ocf;
+      << "Received unexpected command packet with OGF: 0x" << std::hex << static_cast<uint16_t>(ogf)
+      << ", OCF: 0x" << std::hex << ocf;
 
   auto& current = cmd_transactions_.front();
   ASSERT_TRUE(current.Match(command_packet.data()));
@@ -112,29 +105,25 @@ void TestController::OnCommandPacketReceived(
   while (!current.replies_.empty()) {
     auto& reply = current.replies_.front();
     auto status = SendCommandChannelPacket(reply);
-    ASSERT_EQ(ZX_OK, status)
-        << "Failed to send reply: " << zx_status_get_string(status);
+    ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
     current.replies_.pop();
   }
   cmd_transactions_.pop();
 
   if (transaction_callback_) {
     DynamicByteBuffer rx(command_packet.data());
-    async::PostTask(
-        transaction_dispatcher_,
-        [rx = std::move(rx), f = transaction_callback_.share()] { f(rx); });
+    async::PostTask(transaction_dispatcher_,
+                    [rx = std::move(rx), f = transaction_callback_.share()] { f(rx); });
   }
 }
 
-void TestController::OnACLDataPacketReceived(
-    const ByteBuffer& acl_data_packet) {
+void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
   if (!data_callback_)
     return;
 
   DynamicByteBuffer packet_copy(acl_data_packet);
-  async::PostTask(data_dispatcher_,
-                  [packet_copy = std::move(packet_copy),
-                   cb = data_callback_.share()]() mutable { cb(packet_copy); });
+  async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
+                                     cb = data_callback_.share()]() mutable { cb(packet_copy); });
 }
 
 }  // namespace testing

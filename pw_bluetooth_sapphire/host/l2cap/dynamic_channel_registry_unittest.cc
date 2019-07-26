@@ -15,16 +15,15 @@ namespace internal {
 namespace {
 
 constexpr int kNumChannelsAllowed = 256;
-constexpr ChannelId kLargestChannelId =
-    kFirstDynamicChannelId + kNumChannelsAllowed - 1;
+constexpr ChannelId kLargestChannelId = kFirstDynamicChannelId + kNumChannelsAllowed - 1;
 constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
 
 class FakeDynamicChannel final : public DynamicChannel {
  public:
-  FakeDynamicChannel(DynamicChannelRegistry* registry, PSM psm,
-                     ChannelId local_cid, ChannelId remote_cid)
+  FakeDynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
+                     ChannelId remote_cid)
       : DynamicChannel(registry, psm, local_cid, remote_cid) {}
   ~FakeDynamicChannel() override { EXPECT_FALSE(IsConnected()); }
 
@@ -54,25 +53,18 @@ class FakeDynamicChannel final : public DynamicChannel {
   // After calling |set_defer_disconnect_callback|, this returns the callback
   // passed to |Disconnect|, or an empty callback if |Disconnect| hasn't been
   // called.
-  DisconnectDoneCallback& disconnect_done_callback() {
-    return disconnect_done_callback_;
-  }
+  DisconnectDoneCallback& disconnect_done_callback() { return disconnect_done_callback_; }
 
-  void set_defer_disconnect_done_callback() {
-    defer_disconnect_done_callback_ = true;
-  }
+  void set_defer_disconnect_done_callback() { defer_disconnect_done_callback_ = true; }
 
  private:
   // DynamicChannel overrides
-  void Open(fit::closure open_result_cb) override {
-    open_result_cb_ = std::move(open_result_cb);
-  }
+  void Open(fit::closure open_result_cb) override { open_result_cb_ = std::move(open_result_cb); }
   void Disconnect(DisconnectDoneCallback done_cb) override {
     open_ = false;
     connected_ = false;
 
-    bt_log(TRACE, "l2cap", "Got Disconnect %#.4x callback: %d", local_cid(),
-           psm());
+    bt_log(TRACE, "l2cap", "Got Disconnect %#.4x callback: %d", local_cid(), psm());
 
     ASSERT_FALSE(disconnect_done_callback_);
     if (defer_disconnect_done_callback_) {
@@ -116,17 +108,15 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
     return MakeChannelInternal(psm, local_cid, kInvalidChannelId);
   }
 
-  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid,
-                                ChannelId remote_cid) override {
+  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid) override {
     auto channel = MakeChannelInternal(psm, local_cid, remote_cid);
     channel->DoConnect(remote_cid);
     return channel;
   }
 
-  std::unique_ptr<FakeDynamicChannel> MakeChannelInternal(
-      PSM psm, ChannelId local_cid, ChannelId remote_cid) {
-    auto channel =
-        std::make_unique<FakeDynamicChannel>(this, psm, local_cid, remote_cid);
+  std::unique_ptr<FakeDynamicChannel> MakeChannelInternal(PSM psm, ChannelId local_cid,
+                                                          ChannelId remote_cid) {
+    auto channel = std::make_unique<FakeDynamicChannel>(this, psm, local_cid, remote_cid);
     last_channel_ = channel.get();
     return channel;
   }
@@ -138,9 +128,7 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
 void DoNothing(const DynamicChannel* channel) {}
 
 // ServiceRequestCallback static handler
-DynamicChannelRegistry::DynamicChannelCallback RejectAllServices(PSM psm) {
-  return nullptr;
-}
+DynamicChannelRegistry::DynamicChannelCallback RejectAllServices(PSM psm) { return nullptr; }
 
 TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
   bool close_cb_called = false;
@@ -183,9 +171,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
 
 TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
   bool close_cb_called = false;
-  auto close_cb = [&close_cb_called](const DynamicChannel* chan) {
-    close_cb_called = true;
-  };
+  auto close_cb = [&close_cb_called](const DynamicChannel* chan) { close_cb_called = true; };
 
   TestDynamicChannelRegistry registry(std::move(close_cb), RejectAllServices);
 
@@ -243,8 +229,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
 
   bool service_request_cb_called = false;
   DynamicChannelRegistry::ServiceRequestCallback service_request_cb =
-      [&service_request_cb_called,
-       open_result_cb = std::move(open_result_cb)](PSM psm) mutable {
+      [&service_request_cb_called, open_result_cb = std::move(open_result_cb)](PSM psm) mutable {
         EXPECT_FALSE(service_request_cb_called);
         EXPECT_EQ(kPsm, psm);
         service_request_cb_called = true;
@@ -266,14 +251,11 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
 TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
   bool open_result_cb_called = false;
   DynamicChannelRegistry::DynamicChannelCallback open_result_cb =
-      [&open_result_cb_called](const DynamicChannel* chan) {
-        open_result_cb_called = true;
-      };
+      [&open_result_cb_called](const DynamicChannel* chan) { open_result_cb_called = true; };
 
   bool service_request_cb_called = false;
   DynamicChannelRegistry::ServiceRequestCallback service_request_cb =
-      [&service_request_cb_called,
-       open_result_cb = std::move(open_result_cb)](PSM psm) mutable {
+      [&service_request_cb_called, open_result_cb = std::move(open_result_cb)](PSM psm) mutable {
         EXPECT_FALSE(service_request_cb_called);
         EXPECT_EQ(kPsm, psm);
         service_request_cb_called = true;
@@ -297,9 +279,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
 
 TEST(L2CAP_DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
   bool close_cb_called = false;
-  auto close_cb = [&close_cb_called](const DynamicChannel* chan) {
-    close_cb_called = true;
-  };
+  auto close_cb = [&close_cb_called](const DynamicChannel* chan) { close_cb_called = true; };
 
   TestDynamicChannelRegistry registry(std::move(close_cb), RejectAllServices);
 
@@ -374,11 +354,10 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
   EXPECT_EQ(kInvalidChannelId, registry.FindAvailableChannelId());
 
   // This callback expects the channel to fail creation.
-  auto fail_open_result_cb =
-      [&open_result_cb_count](const DynamicChannel* chan) {
-        EXPECT_FALSE(chan);
-        open_result_cb_count++;
-      };
+  auto fail_open_result_cb = [&open_result_cb_count](const DynamicChannel* chan) {
+    EXPECT_FALSE(chan);
+    open_result_cb_count++;
+  };
 
   // Try to open a new channel.
   registry.OpenOutbound(kPsm, std::move(fail_open_result_cb));
@@ -398,8 +377,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
   EXPECT_EQ(1, close_cb_count);
 }
 
-TEST(L2CAP_DynamicChannelRegistryTest,
-     ChannelIdNotReusedUntilDisconnectionCompletes) {
+TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
   TestDynamicChannelRegistry registry(DoNothing, RejectAllServices);
 
   registry.OpenOutbound(kPsm, DoNothing);

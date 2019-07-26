@@ -58,8 +58,7 @@ class GATT : public fbl::RefCounted<GATT> {
   // |att_chan|: The ATT fixed channel over which the ATT protocol bearer will
   //             operate. The bearer will be associated with the link that
   //             underlies this channel.
-  virtual void AddConnection(PeerId peer_id,
-                             fbl::RefPtr<l2cap::Channel> att_chan) = 0;
+  virtual void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) = 0;
 
   // Unregisters the GATT profile connection to the peer with Id |peer_id|.
   virtual void RemoveConnection(PeerId peer_id) = 0;
@@ -92,8 +91,7 @@ class GATT : public fbl::RefCounted<GATT> {
   // characteristics or descriptors with repeated IDs.
   using ServiceIdCallback = fit::function<void(IdType)>;
   virtual void RegisterService(ServicePtr service, ServiceIdCallback callback,
-                               ReadHandler read_handler,
-                               WriteHandler write_handler,
+                               ReadHandler read_handler, WriteHandler write_handler,
                                ClientConfigCallback ccc_callback) = 0;
 
   // Unregisters the GATT service hierarchy identified by |service_id|. Has no
@@ -115,9 +113,8 @@ class GATT : public fbl::RefCounted<GATT> {
   // TODO(armansito): Revise this API to involve fewer lookups (NET-483).
   // TODO(armansito): Fix this to notify all registered peers when |peer_id| is
   // empty (NET-589).
-  virtual void SendNotification(IdType service_id, IdType chrc_id,
-                                PeerId peer_id, ::std::vector<uint8_t> value,
-                                bool indicate) = 0;
+  virtual void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
+                                ::std::vector<uint8_t> value, bool indicate) = 0;
 
   // ===============
   // Remote Services
@@ -138,9 +135,8 @@ class GATT : public fbl::RefCounted<GATT> {
   // for synchronization.
   using RemoteServiceWatcher =
       fit::function<void(PeerId peer_id, fbl::RefPtr<RemoteService> service)>;
-  virtual void RegisterRemoteServiceWatcher(
-      RemoteServiceWatcher watcher,
-      async_dispatcher_t* dispatcher = nullptr) = 0;
+  virtual void RegisterRemoteServiceWatcher(RemoteServiceWatcher watcher,
+                                            async_dispatcher_t* dispatcher = nullptr) = 0;
 
   // Returns the list of remote services that were found on the device with
   // |peer_id|. If |peer_id| was registered but DiscoverServices() has not been
@@ -156,8 +152,7 @@ class GATT : public fbl::RefCounted<GATT> {
   // |callback| will be run on the given task runner.
   //
   // TODO(armansito): Change this to ConnectToService().
-  virtual void FindService(PeerId peer_id, IdType service_id,
-                           RemoteServiceCallback callback) = 0;
+  virtual void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) = 0;
 
  protected:
   friend class fbl::RefPtr<GATT>;

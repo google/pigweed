@@ -49,8 +49,7 @@ class PairingState final : public Bearer::Listener {
     //   3. If |method| is kPasskeyEntryInput, the user should be prompted to
     //   enter a 6-digit passkey. The |tk| should be set to this passkey.
     using TkResponse = fit::function<void(bool success, uint32_t tk)>;
-    virtual void OnTemporaryKeyRequest(PairingMethod method,
-                                       TkResponse response) = 0;
+    virtual void OnTemporaryKeyRequest(PairingMethod method, TkResponse response) = 0;
 
     // Called to obtain the local identity information to distribute to the
     // peer. The delegate should return std::nullopt if there is no identity
@@ -80,9 +79,8 @@ class PairingState final : public Bearer::Listener {
   // |ioc|: The initial I/O capability.
   // |delegate|: Delegate responsible for handling authentication challenges and
   //             storing pairing information.
-  PairingState(fxl::WeakPtr<hci::Connection> link,
-               fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-               fxl::WeakPtr<Delegate> delegate);
+  PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate);
   ~PairingState() override;
 
   // Returns the current security properties of the LE link.
@@ -120,8 +118,7 @@ class PairingState final : public Bearer::Listener {
   //
   // If pairing fails |callback| will be called with a |status| that represents
   // the error.
-  using PairingCallback =
-      fit::function<void(Status status, const SecurityProperties& sec_props)>;
+  using PairingCallback = fit::function<void(Status status, const SecurityProperties& sec_props)>;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback);
 
   // Assign I/O capabilities. This aborts any ongoing pairing procedure and sets
@@ -133,8 +130,7 @@ class PairingState final : public Bearer::Listener {
   void Abort();
 
  private:
-  static constexpr size_t kPairingRequestSize =
-      sizeof(Header) + sizeof(PairingRequestParams);
+  static constexpr size_t kPairingRequestSize = sizeof(Header) + sizeof(PairingRequestParams);
 
   // Represents the state for LE legacy pairing.
   struct LegacyState final {
@@ -166,9 +162,7 @@ class PairingState final : public Bearer::Listener {
     // to the peer.
     bool LocalKeysSent() const;
 
-    bool KeyExchangeComplete() const {
-      return RequestedKeysObtained() && LocalKeysSent();
-    }
+    bool KeyExchangeComplete() const { return RequestedKeysObtained() && LocalKeysSent(); }
 
     bool ShouldReceiveLTK() const;       // True if peer should send the LTK
     bool ShouldReceiveIdentity() const;  // True if peer should send identity
@@ -267,8 +261,7 @@ class PairingState final : public Bearer::Listener {
 
   // Bearer::Listener overrides:
   void OnPairingFailed(Status status) override;
-  void OnFeatureExchange(const PairingFeatures& features,
-                         const ByteBuffer& preq,
+  void OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
                          const ByteBuffer& pres) override;
   void OnPairingConfirm(const UInt128& confirm) override;
   void OnPairingRandom(const UInt128& random) override;
@@ -290,8 +283,7 @@ class PairingState final : public Bearer::Listener {
 
   // Returns pointers to the initiator and responder addresses. This can be
   // called after pairing Phase 1.
-  void LEPairingAddresses(const DeviceAddress** out_initiator,
-                          const DeviceAddress** out_responder);
+  void LEPairingAddresses(const DeviceAddress** out_initiator, const DeviceAddress** out_responder);
 
   // The ID that will be assigned to the next pairing state.
   unsigned int next_pairing_id_;
@@ -301,7 +293,7 @@ class PairingState final : public Bearer::Listener {
   // Data for the currently registered LE-U link, if any.
   fxl::WeakPtr<hci::Connection> le_link_;
   std::unique_ptr<Bearer> le_smp_;  // SMP data bearer for the LE-U link.
-  SecurityProperties le_sec_;  // Current security properties of the LE-U link.
+  SecurityProperties le_sec_;       // Current security properties of the LE-U link.
 
   // The current LTK assigned to this connection. This can be assigned directly
   // by calling AssignLongTermKey() or as a result of a pairing procedure.

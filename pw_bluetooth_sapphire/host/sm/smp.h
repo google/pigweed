@@ -33,9 +33,8 @@ constexpr uint8_t kMaxEncryptionKeySize = 16;
 // These are the sample ltk and random from (Vol 6, Part C, 1), they are
 // delcared so that PairingState can reject any peers using them and prevent
 // a mitm.
-constexpr UInt128 kSpecSampleLtk = {0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC,
-                                    0x36, 0xD8, 0x74, 0xF5, 0x39, 0x41, 0x38,
-                                    0x68, 0x4C};
+constexpr UInt128 kSpecSampleLtk = {0xBF, 0x01, 0xFB, 0x9D, 0x4E, 0xF3, 0xBC, 0x36,
+                                    0xD8, 0x74, 0xF5, 0x39, 0x41, 0x38, 0x68, 0x4C};
 constexpr uint64_t kSpecSampleRandom = 0xABCDEF1234567890;
 
 // The field that identifies the type of a command.

@@ -33,8 +33,7 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
   // initializes the packet's header field with the given data.
   static ACLDataPacketPtr New(ConnectionHandle connection_handle,
                               ACLPacketBoundaryFlag packet_boundary_flag,
-                              ACLBroadcastFlag broadcast_flag,
-                              uint16_t payload_size = 0u);
+                              ACLBroadcastFlag broadcast_flag, uint16_t payload_size = 0u);
 
   // Getters for the header fields.
   ConnectionHandle connection_handle() const;
@@ -50,8 +49,7 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
 
  private:
   // Writes the given header fields into the underlying buffer.
-  void WriteHeader(ConnectionHandle connection_handle,
-                   ACLPacketBoundaryFlag packet_boundary_flag,
+  void WriteHeader(ConnectionHandle connection_handle, ACLPacketBoundaryFlag packet_boundary_flag,
                    ACLBroadcastFlag broadcast_flag);
 };
 

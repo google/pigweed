@@ -50,8 +50,7 @@ class ServiceRecord {
   // the range |start| - |end| inclusive.
   // If |start| > |end| or no attributes are present, returns a
   // an empty set.
-  std::set<AttributeId> GetAttributesInRange(AttributeId start,
-                                             AttributeId end) const;
+  std::set<AttributeId> GetAttributesInRange(AttributeId start, AttributeId end) const;
 
   // Returns true if any value of the attributes in this service contain all
   // of the |uuids| given.  The uuids need not be in any specific attribute
@@ -75,8 +74,7 @@ class ServiceRecord {
   //   - a single DataElement parameter
   // kPrimaryProtocolList is presented as the primary protocol.
   // Other protocol will be added to the addiitonal protocol lists,
-  void AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid,
-                             DataElement params);
+  void AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid, DataElement params);
 
   // Adds a profile to the bluetooth profile descrpitor list attribute.
   // |uuid| is the UUID of the profile. |major| and |minor| are the major and
@@ -94,9 +92,7 @@ class ServiceRecord {
 
   // Set the security level required to connect to this service.
   // See v5.0, Vol 3, Part C, Section 5.2.2.8
-  void set_security_level(SecurityLevel security_level) {
-    security_level_ = security_level;
-  }
+  void set_security_level(SecurityLevel security_level) { security_level_ = security_level; }
   SecurityLevel security_level() const { return security_level_; }
 
  private:

@@ -26,8 +26,7 @@ namespace {
 // required if the returned value equals sm::SecurityLevel::kNoSecurity.
 // TODO(armansito): Supporting requesting Secure Connections in addition to the
 // encrypted/MITM dimensions.
-sm::SecurityLevel CheckSecurity(ErrorCode ecode,
-                                const sm::SecurityProperties& security) {
+sm::SecurityLevel CheckSecurity(ErrorCode ecode, const sm::SecurityProperties& security) {
   bool encrypted = (security.level() != sm::SecurityLevel::kNoSecurity);
 
   switch (ecode) {
@@ -51,8 +50,7 @@ sm::SecurityLevel CheckSecurity(ErrorCode ecode,
       if (security.authenticated()) {
         return sm::SecurityLevel::kNoSecurity;
       }
-      return encrypted ? sm::SecurityLevel::kAuthenticated
-                       : sm::SecurityLevel::kEncrypted;
+      return encrypted ? sm::SecurityLevel::kAuthenticated : sm::SecurityLevel::kEncrypted;
 
     // Our SMP implementation always claims to support the maximum encryption
     // key size. If the key size is too small then the peer must support a
@@ -169,10 +167,8 @@ fxl::RefPtr<Bearer> Bearer::Create(fbl::RefPtr<l2cap::Channel> chan) {
   return bearer->Activate() ? bearer : nullptr;
 }
 
-Bearer::PendingTransaction::PendingTransaction(OpCode opcode,
-                                               TransactionCallback callback,
-                                               ErrorCallback error_callback,
-                                               ByteBufferPtr pdu)
+Bearer::PendingTransaction::PendingTransaction(OpCode opcode, TransactionCallback callback,
+                                               ErrorCallback error_callback, ByteBufferPtr pdu)
     : opcode(opcode),
       callback(std::move(callback)),
       error_callback(std::move(error_callback)),
@@ -183,8 +179,7 @@ Bearer::PendingTransaction::PendingTransaction(OpCode opcode,
   ZX_DEBUG_ASSERT(this->pdu);
 }
 
-Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id,
-                                                           OpCode opcode)
+Bearer::PendingRemoteTransaction::PendingRemoteTransaction(TransactionId id, OpCode opcode)
     : id(id), opcode(opcode) {}
 
 Bearer::TransactionQueue::TransactionQueue(TransactionQueue&& other)
@@ -207,8 +202,7 @@ void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
   queue_.push_back(std::move(transaction));
 }
 
-void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan,
-                                           async::Task::Handler timeout_cb,
+void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb,
                                            zx::duration timeout) {
   ZX_DEBUG_ASSERT(chan);
 
@@ -338,8 +332,7 @@ bool Bearer::StartTransaction(ByteBufferPtr pdu, TransactionCallback callback,
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(error_callback);
 
-  return SendInternal(std::move(pdu), std::move(callback),
-                      std::move(error_callback));
+  return SendInternal(std::move(pdu), std::move(callback), std::move(error_callback));
 }
 
 bool Bearer::SendWithoutResponse(ByteBufferPtr pdu) {
@@ -393,9 +386,8 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
     return false;
   }
 
-  tq->Enqueue(std::make_unique<PendingTransaction>(
-      reader.opcode(), std::move(callback), std::move(error_callback),
-      std::move(pdu)));
+  tq->Enqueue(std::make_unique<PendingTransaction>(reader.opcode(), std::move(callback),
+                                                   std::move(error_callback), std::move(pdu)));
   TryStartNextTransaction(tq);
 
   return true;
@@ -408,8 +400,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
     return kInvalidHandlerId;
 
   if (handlers_.find(opcode) != handlers_.end()) {
-    bt_log(TRACE, "att", "can only register one handler per opcode (%#.2x)",
-           opcode);
+    bt_log(TRACE, "att", "can only register one handler per opcode (%#.2x)", opcode);
     return kInvalidHandlerId;
   }
 
@@ -468,8 +459,8 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
 
   OpCode pending_opcode = (*pending)->opcode;
   if (pending_opcode != MatchingTransactionCode(reader.opcode())) {
-    bt_log(TRACE, "att", "opcodes do not match (pending: %#.2x, given: %#.2x)",
-           pending_opcode, reader.opcode());
+    bt_log(TRACE, "att", "opcodes do not match (pending: %#.2x, given: %#.2x)", pending_opcode,
+           reader.opcode());
     return false;
   }
 
@@ -479,8 +470,7 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
   return true;
 }
 
-bool Bearer::ReplyWithError(TransactionId id, Handle handle,
-                            ErrorCode error_code) {
+bool Bearer::ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   RemoteTransaction* pending = FindRemoteTransaction(id);
@@ -536,15 +526,13 @@ void Bearer::SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
   chan_->Send(std::move(buffer));
 }
 
-void Bearer::HandleEndTransaction(TransactionQueue* tq,
-                                  const PacketReader& packet) {
+void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& packet) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(tq);
 
   if (!tq->current()) {
-    bt_log(TRACE, "att", "received unexpected transaction PDU (opcode: %#.2x)",
-           packet.opcode());
+    bt_log(TRACE, "att", "received unexpected transaction PDU (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
@@ -578,8 +566,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
   ZX_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
 
   if (tq->current()->opcode != target_opcode) {
-    bt_log(TRACE, "att", "received bad transaction PDU (opcode: %#.2x)",
-           packet.opcode());
+    bt_log(TRACE, "att", "received bad transaction PDU (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
@@ -588,8 +575,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
   auto transaction = tq->ClearCurrent();
   ZX_DEBUG_ASSERT(transaction);
 
-  sm::SecurityLevel security_requirement =
-      CheckSecurity(error_code, chan_->security());
+  sm::SecurityLevel security_requirement = CheckSecurity(error_code, chan_->security());
   if (transaction->security_retry_level >= security_requirement ||
       security_requirement <= chan_->security().level()) {
     // Resolve the transaction.
@@ -610,8 +596,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq,
          error_code, sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
-      [self = weak_ptr_factory_.GetWeakPtr(), error_code, attr_in_error,
-       security_requirement,
+      [self = weak_ptr_factory_.GetWeakPtr(), error_code, attr_in_error, security_requirement,
        t = std::move(transaction)](sm::Status status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
@@ -667,16 +652,14 @@ void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
   ZX_DEBUG_ASSERT(currently_pending);
 
   if (currently_pending->has_value()) {
-    bt_log(TRACE, "att", "A transaction is already pending! (opcode: %#.2x)",
-           packet.opcode());
+    bt_log(TRACE, "att", "A transaction is already pending! (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
 
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(TRACE, "att", "no handler registered for opcode %#.2x",
-           packet.opcode());
+    bt_log(TRACE, "att", "no handler registered for opcode %#.2x", packet.opcode());
     SendErrorResponse(packet.opcode(), 0, ErrorCode::kRequestNotSupported);
     return;
   }
@@ -707,8 +690,7 @@ void Bearer::HandlePDUWithoutResponse(const PacketReader& packet) {
 
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(TRACE, "att", "dropping unhandled packet (opcode: %#.2x)",
-           packet.opcode());
+    bt_log(TRACE, "att", "dropping unhandled packet (opcode: %#.2x)", packet.opcode());
     return;
   }
 

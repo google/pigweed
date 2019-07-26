@@ -53,8 +53,7 @@ class ChannelManager final {
  public:
   using LinkErrorCallback = fit::closure;
 
-  ChannelManager(fxl::RefPtr<hci::Transport> hci,
-                 async_dispatcher_t* l2cap_dispatcher);
+  ChannelManager(fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
   // Registers the ACL connection with the L2CAP layer. L2CAP channels can be
@@ -73,8 +72,7 @@ class ChannelManager final {
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
   void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
-                   LinkErrorCallback link_error_callback,
-                   SecurityUpgradeCallback security_callback,
+                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,
                    async_dispatcher_t* dispatcher);
 
   // Registers a LE connection with the L2CAP layer. L2CAP channels can be
@@ -99,8 +97,7 @@ class ChannelManager final {
       internal::LESignalingChannel::ConnectionParameterUpdateCallback;
   void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
                   LEConnectionParameterUpdateCallback conn_param_callback,
-                  LinkErrorCallback link_error_callback,
-                  SecurityUpgradeCallback security_callback,
+                  LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,
                   async_dispatcher_t* dispatcher);
 
   // Removes a previously registered connection. All corresponding Channels will
@@ -114,8 +111,7 @@ class ChannelManager final {
 
   // Assigns the security level of a logical link. Has no effect if |handle| has
   // not been previously registered or the link is closed.
-  void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
-                                    sm::SecurityProperties security);
+  void AssignLinkSecurityProperties(hci::ConnectionHandle handle, sm::SecurityProperties security);
 
   // Opens the L2CAP fixed channel with |channel_id| over the logical link
   // identified by |connection_handle| and starts routing packets. Returns
@@ -128,8 +124,7 @@ class ChannelManager final {
                    async_dispatcher_t* dispatcher);
 
   // Register/Unregister a callback for incoming service connections.
-  bool RegisterService(PSM psm, ChannelCallback cb,
-                       async_dispatcher_t* dispatcher);
+  bool RegisterService(PSM psm, ChannelCallback cb, async_dispatcher_t* dispatcher);
   void UnregisterService(PSM psm);
 
  private:
@@ -153,8 +148,7 @@ class ChannelManager final {
   fxl::RefPtr<hci::Transport> hci_;
   async_dispatcher_t* l2cap_dispatcher_;
 
-  using LinkMap = std::unordered_map<hci::ConnectionHandle,
-                                     fbl::RefPtr<internal::LogicalLink>>;
+  using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
   LinkMap ll_map_;
 
   // Stores packets received on a connection handle before a link for it has

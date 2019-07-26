@@ -13,15 +13,11 @@ using hci::AuthRequirements;
 using hci::IOCapability;
 
 PairingState::PairingState(hci::Connection* link, StatusCallback status_cb)
-    : link_(link),
-      initiator_(false),
-      state_(State::kIdle),
-      status_callback_(std::move(status_cb)) {
+    : link_(link), initiator_(false), state_(State::kIdle), status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
   ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
   ZX_ASSERT(status_callback_);
-  link_->set_encryption_change_callback(
-      fit::bind_member(this, &PairingState::OnEncryptionChange));
+  link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));
 }
 
 PairingState::InitiatorAction PairingState::InitiatePairing() {
@@ -66,8 +62,7 @@ void PairingState::OnIoCapabilityResponse(hci::IOCapability peer_iocap) {
   }
 }
 
-void PairingState::OnUserConfirmationRequest(uint32_t numeric_value,
-                                             UserConfirmationCallback cb) {
+void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirmationCallback cb) {
   if (state() != State::kWaitPairingEvent) {
     FailWithUnexpectedEvent(__func__);
     cb(false);
@@ -111,8 +106,7 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
   state_ = State::kWaitLinkKey;
 }
 
-void PairingState::OnLinkKeyNotification(const UInt128& link_key,
-                                         hci::LinkKeyType key_type) {
+void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type) {
   if (state() != State::kWaitLinkKey) {
     FailWithUnexpectedEvent(__func__);
     return;
@@ -127,8 +121,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key,
 }
 
 void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
-  if (state() != State::kInitiatorPairingStarted &&
-      state() != State::kInitiatorWaitAuthComplete) {
+  if (state() != State::kInitiatorPairingStarted && state() != State::kInitiatorWaitAuthComplete) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
@@ -142,8 +135,7 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (state() != State::kWaitEncryption) {
     // Ignore encryption changes when not expecting them because they may be
     // triggered by the peer at any time (v5.0 Vol 2, Part F, Sec 4.4).
-    bt_log(INFO, "gap-bredr",
-           "%s(%s, %s) in state \"%s\", before pairing completed", __func__,
+    bt_log(INFO, "gap-bredr", "%s(%s, %s) in state \"%s\", before pairing completed", __func__,
            bt_str(status), enabled ? "true" : "false", ToString(state()));
     return;
   }
@@ -151,8 +143,7 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (status && !enabled) {
     // With Secure Connections, encryption should never be disabled (v5.0 Vol 2,
     // Part E, Sec 7.1.16) at all.
-    bt_log(WARN, "gap-bredr",
-           "Pairing failed due to encryption disable on link %#.04x",
+    bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.04x",
            link_->handle());
     status = hci::Status(HostError::kFailed);
   }
@@ -200,8 +191,7 @@ const char* PairingState::ToString(PairingState::State state) {
 
 void PairingState::EnableEncryption() {
   if (!link_->StartEncryption()) {
-    bt_log(ERROR, "gap-bredr", "Failed to enable encryption (state \"%s\")",
-           ToString(state()));
+    bt_log(ERROR, "gap-bredr", "Failed to enable encryption (state \"%s\")", ToString(state()));
     status_callback_(link_->handle(), hci::Status(HostError::kFailed));
     state_ = State::kFailed;
     return;
@@ -210,14 +200,13 @@ void PairingState::EnableEncryption() {
 }
 
 void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
-  bt_log(ERROR, "gap-bredr", "Unexpected event %s while in state \"%s\"",
-         handler_name, ToString(state()));
+  bt_log(ERROR, "gap-bredr", "Unexpected event %s while in state \"%s\"", handler_name,
+         ToString(state()));
   status_callback_(link_->handle(), hci::Status(HostError::kNotSupported));
   state_ = State::kFailed;
 }
 
-PairingAction GetInitiatorPairingAction(IOCapability initiator_cap,
-                                        IOCapability responder_cap) {
+PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {
   if (initiator_cap == IOCapability::kNoInputNoOutput) {
     return PairingAction::kAutomatic;
   }
@@ -239,8 +228,7 @@ PairingAction GetInitiatorPairingAction(IOCapability initiator_cap,
   return PairingAction::kDisplayPasskey;
 }
 
-PairingAction GetResponderPairingAction(IOCapability initiator_cap,
-                                        IOCapability responder_cap) {
+PairingAction GetResponderPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {
   if (initiator_cap == IOCapability::kNoInputNoOutput &&
       responder_cap == IOCapability::kKeyboardOnly) {
     return PairingAction::kGetConsent;
@@ -253,8 +241,7 @@ PairingAction GetResponderPairingAction(IOCapability initiator_cap,
 }
 
 hci::EventCode GetExpectedEvent(IOCapability local_cap, IOCapability peer_cap) {
-  if (local_cap == IOCapability::kNoInputNoOutput ||
-      peer_cap == IOCapability::kNoInputNoOutput) {
+  if (local_cap == IOCapability::kNoInputNoOutput || peer_cap == IOCapability::kNoInputNoOutput) {
     return hci::kUserConfirmationRequestEventCode;
   }
   if (local_cap == IOCapability::kKeyboardOnly) {
@@ -267,16 +254,13 @@ hci::EventCode GetExpectedEvent(IOCapability local_cap, IOCapability peer_cap) {
 }
 
 bool IsPairingAuthenticated(IOCapability local_cap, IOCapability peer_cap) {
-  if (local_cap == IOCapability::kNoInputNoOutput ||
-      peer_cap == IOCapability::kNoInputNoOutput) {
+  if (local_cap == IOCapability::kNoInputNoOutput || peer_cap == IOCapability::kNoInputNoOutput) {
     return false;
   }
-  if (local_cap == IOCapability::kDisplayYesNo &&
-      peer_cap == IOCapability::kDisplayYesNo) {
+  if (local_cap == IOCapability::kDisplayYesNo && peer_cap == IOCapability::kDisplayYesNo) {
     return true;
   }
-  if (local_cap == IOCapability::kKeyboardOnly ||
-      peer_cap == IOCapability::kKeyboardOnly) {
+  if (local_cap == IOCapability::kKeyboardOnly || peer_cap == IOCapability::kKeyboardOnly) {
     return true;
   }
   return false;
@@ -289,8 +273,7 @@ AuthRequirements GetInitiatorAuthRequirements(IOCapability local_cap) {
   return AuthRequirements::kMITMGeneralBonding;
 }
 
-AuthRequirements GetResponderAuthRequirements(IOCapability local_cap,
-                                              IOCapability peer_cap) {
+AuthRequirements GetResponderAuthRequirements(IOCapability local_cap, IOCapability peer_cap) {
   if (IsPairingAuthenticated(local_cap, peer_cap)) {
     return AuthRequirements::kMITMGeneralBonding;
   }

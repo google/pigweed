@@ -24,12 +24,10 @@ namespace testing {
 class CommandTransaction final {
  public:
   CommandTransaction() = default;
-  CommandTransaction(const ByteBuffer& expected,
-                     const std::vector<const ByteBuffer*>& replies);
+  CommandTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies);
 
   // Match by opcode only.
-  CommandTransaction(hci::OpCode expected_opcode,
-                     const std::vector<const ByteBuffer*>& replies);
+  CommandTransaction(hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies);
 
   // Move constructor and assignment operator.
   CommandTransaction(CommandTransaction&& other) = default;
@@ -76,16 +74,13 @@ class TestController : public FakeControllerBase {
   // ensure that a callback with a reference to test case variables is not
   // invoked when tearing down.
   using TransactionCallback = fit::function<void(const ByteBuffer& rx)>;
-  void SetTransactionCallback(TransactionCallback callback,
-                              async_dispatcher_t* dispatcher);
-  void SetTransactionCallback(fit::closure callback,
-                              async_dispatcher_t* dispatcher);
+  void SetTransactionCallback(TransactionCallback callback, async_dispatcher_t* dispatcher);
+  void SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher);
   void ClearTransactionCallback();
 
  private:
   // FakeControllerBase overrides:
-  void OnCommandPacketReceived(
-      const PacketView<hci::CommandHeader>& command_packet) override;
+  void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 
   std::queue<CommandTransaction> cmd_transactions_;

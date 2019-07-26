@@ -71,16 +71,14 @@ class Client {
   // Performs the "Discover All Characteristics of a Service" procedure defined
   // in v5.0, Vol 3, Part G, 4.6.1.
   using CharacteristicCallback = fit::function<void(const CharacteristicData&)>;
-  virtual void DiscoverCharacteristics(att::Handle range_start,
-                                       att::Handle range_end,
+  virtual void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                        CharacteristicCallback chrc_callback,
                                        att::StatusCallback status_callback) = 0;
 
   // Performs the "Discover All Characteristic Descriptors" procedure defined in
   // Vol 3, Part G, 4.7.1.
   using DescriptorCallback = fit::function<void(const DescriptorData&)>;
-  virtual void DiscoverDescriptors(att::Handle range_start,
-                                   att::Handle range_end,
+  virtual void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                                    DescriptorCallback desc_callback,
                                    att::StatusCallback status_callback) = 0;
 
@@ -97,8 +95,7 @@ class Client {
   // returns the result value in |callback|. This can be called multiple times
   // to read the value of a characteristic that is larger than the ATT_MTU.
   // (Vol 3, Part G, 4.8.3)
-  virtual void ReadBlobRequest(att::Handle handle, uint16_t offset,
-                               ReadCallback callback) = 0;
+  virtual void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) = 0;
 
   // Sends an ATT Write Request with the requested attribute |handle| and
   // |value|. This can be used to send a write request to any attribute.
@@ -132,27 +129,24 @@ class Client {
   // write in a single ATT request.
   using PrepareCallback = fit::function<void(att::Status, const ByteBuffer&)>;
   virtual void PrepareWriteRequest(att::Handle handle, uint16_t offset,
-                                   const ByteBuffer& part_value,
-                                   PrepareCallback callback) = 0;
+                                   const ByteBuffer& part_value, PrepareCallback callback) = 0;
 
   // Following a series of Prepare Write Requests, this will write the series if
   // the input is kWritePending, or cancel all pending if it is kCancelAll.
   // (Vol 3, Part G, 4.9.4)
   //
   // Reports the status of the procedure in |callback|.
-  virtual void ExecuteWriteRequest(att::ExecuteWriteFlag flag,
-                                   att::StatusCallback callback) = 0;
+  virtual void ExecuteWriteRequest(att::ExecuteWriteFlag flag, att::StatusCallback callback) = 0;
 
   // Sends an ATT Write Command with the requested |handle| and |value|. This
   // should only be used with characteristics that support the "Write Without
   // Response" property.
-  virtual void WriteWithoutResponse(att::Handle handle,
-                                    const ByteBuffer& value) = 0;
+  virtual void WriteWithoutResponse(att::Handle handle, const ByteBuffer& value) = 0;
 
   // Assigns a callback that will be called when a notification or indication
   // PDU is received.
-  using NotificationCallback = fit::function<void(
-      bool indication, att::Handle handle, const ByteBuffer& value)>;
+  using NotificationCallback =
+      fit::function<void(bool indication, att::Handle handle, const ByteBuffer& value)>;
   virtual void SetNotificationHandler(NotificationCallback handler) = 0;
 };
 

@@ -46,8 +46,7 @@ class ServerBase : public Server, public Interface {
       : ServerBase(impl, request.TakeChannel()) {}
 
   // Constructs a FIDL server by binding a zx::channel.
-  ServerBase(Interface* impl, zx::channel channel)
-      : binding_(impl, std::move(channel)) {
+  ServerBase(Interface* impl, zx::channel channel) : binding_(impl, std::move(channel)) {
     ZX_DEBUG_ASSERT(binding_.is_bound());
   }
 
@@ -76,8 +75,7 @@ class AdapterServerBase : public ServerBase<Interface> {
                     fidl::InterfaceRequest<Interface> request)
       : AdapterServerBase(adapter, impl, request.TakeChannel()) {}
 
-  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl,
-                    zx::channel channel)
+  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl, zx::channel channel)
       : ServerBase<Interface>(impl, std::move(channel)), adapter_(adapter) {
     ZX_DEBUG_ASSERT(adapter_);
   }

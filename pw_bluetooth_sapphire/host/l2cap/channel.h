@@ -82,9 +82,8 @@ class Channel : public fbl::RefCounted<Channel> {
   // channels even if their ids match.
   using UniqueId = uint64_t;
   UniqueId unique_id() const {
-    static_assert(
-        sizeof(UniqueId) >= sizeof(hci::ConnectionHandle) + sizeof(ChannelId),
-        "UniqueId needs to be large enough to make unique IDs");
+    static_assert(sizeof(UniqueId) >= sizeof(hci::ConnectionHandle) + sizeof(ChannelId),
+                  "UniqueId needs to be large enough to make unique IDs");
     return (link_handle() << (sizeof(ChannelId) * CHAR_BIT)) | id();
   }
 
@@ -139,8 +138,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // requested |level| and reports the result via |callback|. |callback| will be
   // run on the dispatcher that the channel was activated on. Has no effect if
   // the channel is not active.
-  virtual void UpgradeSecurity(sm::SecurityLevel level,
-                               sm::StatusCallback callback) = 0;
+  virtual void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) = 0;
 
   // Queue the given SDU payload for transmission over this channel, taking
   // ownership of |sdu|. Returns true if the SDU was queued successfully, and
@@ -154,8 +152,7 @@ class Channel : public fbl::RefCounted<Channel> {
 
  protected:
   friend class fbl::RefPtr<Channel>;
-  Channel(ChannelId id, ChannelId remote_id,
-          hci::Connection::LinkType link_type,
+  Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
           hci::ConnectionHandle link_handle);
   virtual ~Channel() = default;
 
@@ -185,15 +182,13 @@ class ChannelImpl : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level,
-                       sm::StatusCallback callback) override;
+  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) override;
 
  private:
   friend class fbl::RefPtr<ChannelImpl>;
   friend class internal::LogicalLink;
 
-  ChannelImpl(ChannelId id, ChannelId remote_id,
-              fbl::RefPtr<internal::LogicalLink> link,
+  ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
               std::list<PDU> buffered_pdus);
   ~ChannelImpl() override = default;
 
@@ -236,8 +231,7 @@ class ChannelImpl : public Channel {
   // TODO(armansito): We should avoid STL containers for data packets as they
   // all implicitly allocate. This is a reminder to fix this elsewhere
   // (especially in the HCI layer).
-  std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_
-      __TA_GUARDED(mtx_);
+  std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_ __TA_GUARDED(mtx_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };

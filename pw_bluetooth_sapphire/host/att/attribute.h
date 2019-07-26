@@ -30,14 +30,10 @@ class AccessRequirements final {
   AccessRequirements(bool encryption, bool authentication, bool authorization);
 
   // Returns true if this attribute can be accessed at all.
-  inline bool allowed() const {
-    return value_ & kAttributePermissionBitAllowed;
-  }
+  inline bool allowed() const { return value_ & kAttributePermissionBitAllowed; }
 
   // Returns true if no security is required.
-  inline bool allowed_without_security() const {
-    return value_ == kAttributePermissionBitAllowed;
-  }
+  inline bool allowed_without_security() const { return value_ == kAttributePermissionBitAllowed; }
 
   // The following getters return the security requirements of this attribute:
 
@@ -53,9 +49,7 @@ class AccessRequirements final {
     return value_ & kAttributePermissionBitAuthorizationRequired;
   }
 
-  inline bool operator==(const AccessRequirements& other) const {
-    return value_ == other.value_;
-  }
+  inline bool operator==(const AccessRequirements& other) const { return value_ == other.value_; }
 
  private:
   uint8_t value_;
@@ -112,29 +106,22 @@ class Attribute final {
   // Handlers for reading and writing and attribute value asynchronously. A
   // handler must call the provided the |result_callback| to signal the end of
   // the operation.
-  using ReadResultCallback =
-      fit::function<void(ErrorCode status, const ByteBuffer& value)>;
-  using ReadHandler =
-      fit::function<void(PeerId peer_id, Handle handle, uint16_t offset,
-                         ReadResultCallback result_callback)>;
-  void set_read_handler(ReadHandler read_handler) {
-    read_handler_ = std::move(read_handler);
-  }
+  using ReadResultCallback = fit::function<void(ErrorCode status, const ByteBuffer& value)>;
+  using ReadHandler = fit::function<void(PeerId peer_id, Handle handle, uint16_t offset,
+                                         ReadResultCallback result_callback)>;
+  void set_read_handler(ReadHandler read_handler) { read_handler_ = std::move(read_handler); }
 
   // An "ATT Write Command" will trigger WriteHandler with
   // a null |result_callback|
   using WriteResultCallback = fit::function<void(ErrorCode status)>;
-  using WriteHandler = fit::function<void(
-      PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
-      WriteResultCallback result_callback)>;
-  void set_write_handler(WriteHandler write_handler) {
-    write_handler_ = std::move(write_handler);
-  }
+  using WriteHandler =
+      fit::function<void(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
+                         WriteResultCallback result_callback)>;
+  void set_write_handler(WriteHandler write_handler) { write_handler_ = std::move(write_handler); }
 
   // Initiates an asynchronous read of the attribute value. Returns false if
   // this attribute is not dynamic.
-  bool ReadAsync(PeerId peer_id, uint16_t offset,
-                 ReadResultCallback result_callback) const;
+  bool ReadAsync(PeerId peer_id, uint16_t offset, ReadResultCallback result_callback) const;
 
   // Initiates an asynchronous write of the attribute value. Returns false if
   // this attribute is not dynamic.
@@ -149,8 +136,7 @@ class Attribute final {
   // This is intended for STL containers.
   Attribute();
   Attribute(AttributeGrouping* group, Handle handle, const UUID& type,
-            const AccessRequirements& read_reqs,
-            const AccessRequirements& write_reqs);
+            const AccessRequirements& read_reqs, const AccessRequirements& write_reqs);
 
   AttributeGrouping* group_;  // The group that owns this Attribute.
   Handle handle_;
@@ -183,8 +169,8 @@ class AttributeGrouping final {
   //
   // Note: |attr_count| should not cause the group end handle to exceed
   // att::kHandleMax.
-  AttributeGrouping(const UUID& group_type, Handle start_handle,
-                    size_t attr_count, const ByteBuffer& decl_value);
+  AttributeGrouping(const UUID& group_type, Handle start_handle, size_t attr_count,
+                    const ByteBuffer& decl_value);
 
   // Inserts a new attribute into this grouping using the given parameters and
   // returns a pointer to it. Returns nullptr if the grouping is out of handles
@@ -192,15 +178,12 @@ class AttributeGrouping final {
   //
   // The caller should not hold on to the returned pointer as the Attribute
   // object is owned and managed by this AttributeGrouping.
-  Attribute* AddAttribute(
-      const UUID& type,
-      const AccessRequirements& read_reqs = AccessRequirements(),
-      const AccessRequirements& write_reqs = AccessRequirements());
+  Attribute* AddAttribute(const UUID& type,
+                          const AccessRequirements& read_reqs = AccessRequirements(),
+                          const AccessRequirements& write_reqs = AccessRequirements());
 
   // Returns true if all attributes of this grouping have been populated.
-  bool complete() const {
-    return attributes_.size() == (end_handle_ - start_handle_ + 1);
-  }
+  bool complete() const { return attributes_.size() == (end_handle_ - start_handle_ + 1); }
 
   const UUID& group_type() const {
     ZX_DEBUG_ASSERT(!attributes_.empty());
@@ -220,8 +203,7 @@ class AttributeGrouping final {
 
   bool active() const { return active_; }
   void set_active(bool active) {
-    ZX_DEBUG_ASSERT_MSG(complete(),
-                        "set_active() called on incomplete grouping!");
+    ZX_DEBUG_ASSERT_MSG(complete(), "set_active() called on incomplete grouping!");
     active_ = active;
   }
 

@@ -12,8 +12,7 @@ namespace bt {
 namespace l2cap {
 namespace testing {
 
-FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id,
-                         hci::ConnectionHandle handle,
+FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
                          hci::Connection::LinkType link_type)
     : Channel(id, remote_id, link_type, handle),
       handle_(handle),
@@ -35,24 +34,20 @@ void FakeChannel::Receive(const ByteBuffer& data) {
   pdu.Copy(sdu.get());
   if (dispatcher_) {
     async::PostTask(dispatcher_,
-                    [cb = rx_cb_.share(), sdu = std::move(sdu)]() mutable {
-                      cb(std::move(sdu));
-                    });
+                    [cb = rx_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); });
   } else {
     pending_rx_sdus_.push(std::move(sdu));
   }
 }
 
-void FakeChannel::SetSendCallback(SendCallback callback,
-                                  async_dispatcher_t* dispatcher) {
+void FakeChannel::SetSendCallback(SendCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
   send_cb_ = std::move(callback);
   send_dispatcher_ = dispatcher;
 }
 
-void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback,
-                                       async_dispatcher_t* dispatcher) {
+void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
   link_err_cb_ = std::move(callback);
@@ -72,8 +67,7 @@ void FakeChannel::Close() {
     closed_cb_();
 }
 
-bool FakeChannel::Activate(RxCallback rx_callback,
-                           ClosedCallback closed_callback,
+bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
                            async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(rx_callback);
   ZX_DEBUG_ASSERT(closed_callback);
@@ -116,28 +110,23 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
     return false;
 
   if (sdu->size() > tx_mtu()) {
-    bt_log(ERROR, "l2cap",
-           "Dropping oversized SDU (sdu->size()=%zu, tx_mtu()=%u)", sdu->size(),
+    bt_log(ERROR, "l2cap", "Dropping oversized SDU (sdu->size()=%zu, tx_mtu()=%u)", sdu->size(),
            tx_mtu());
     return false;
   }
 
   ZX_DEBUG_ASSERT(send_dispatcher_);
   async::PostTask(send_dispatcher_,
-                  [cb = send_cb_.share(), sdu = std::move(sdu)]() mutable {
-                    cb(std::move(sdu));
-                  });
+                  [cb = send_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); });
 
   return true;
 }
 
-void FakeChannel::UpgradeSecurity(sm::SecurityLevel level,
-                                  sm::StatusCallback callback) {
+void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) {
   ZX_DEBUG_ASSERT(security_dispatcher_);
-  async::PostTask(
-      security_dispatcher_,
-      [cb = std::move(callback), f = security_cb_.share(), handle = handle_,
-       level]() mutable { f(handle, level, std::move(cb)); });
+  async::PostTask(security_dispatcher_,
+                  [cb = std::move(callback), f = security_cb_.share(), handle = handle_,
+                   level]() mutable { f(handle, level, std::move(cb)); });
 }
 
 }  // namespace testing

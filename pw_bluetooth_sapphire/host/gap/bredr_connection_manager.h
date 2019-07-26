@@ -57,8 +57,7 @@ class BrEdrConnection final {
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
-                         DeviceAddress local_address,
-                         fbl::RefPtr<data::Domain> data_domain,
+                         DeviceAddress local_address, fbl::RefPtr<data::Domain> data_domain,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
 
@@ -92,8 +91,7 @@ class BrEdrConnectionManager final {
   // TODO(BT-785): Make identifcal searches just search once
   using SearchCallback = sdp::ServiceDiscoverer::ResultCallback;
   using SearchId = sdp::ServiceDiscoverer::SearchId;
-  SearchId AddServiceSearch(const UUID& uuid,
-                            std::unordered_set<sdp::AttributeId> attributes,
+  SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
                             SearchCallback callback);
 
   // Remove a search previously added with AddServiceSearch()
@@ -101,8 +99,7 @@ class BrEdrConnectionManager final {
   // This function is idempotent.
   bool RemoveServiceSearch(SearchId id);
 
-  using ConnectResultCallback =
-      fit::function<void(hci::Status, BrEdrConnection*)>;
+  using ConnectResultCallback = fit::function<void(hci::Status, BrEdrConnection*)>;
 
   // Initiates an outgoing Create Connection Request to attempt to connect to
   // the peer identified by |peer_id|. Returns false if the connection
@@ -112,8 +109,7 @@ class BrEdrConnectionManager final {
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
   // Intialize a GAP-level ACL connection from the hci connection_handle
-  void InitializeConnection(DeviceAddress addr,
-                            hci::ConnectionHandle connection_handle);
+  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle);
 
   // Called when an outgoing connection fails to establish
   void OnConnectFailure(hci::Status status, PeerId peer_id);
@@ -132,17 +128,17 @@ class BrEdrConnectionManager final {
   // Writes page scan parameters to the controller.
   // If |interlaced| is true, and the controller does not support interlaced
   // page scan mode, standard mode is used.
-  void WritePageScanSettings(uint16_t interval, uint16_t window,
-                             bool interlaced, hci::StatusCallback cb);
+  void WritePageScanSettings(uint16_t interval, uint16_t window, bool interlaced,
+                             hci::StatusCallback cb);
 
   // Helper to register an event handler to run.
-  hci::CommandChannel::EventHandlerId AddEventHandler(
-      const hci::EventCode& code, hci::CommandChannel::EventCallback cb);
+  hci::CommandChannel::EventHandlerId AddEventHandler(const hci::EventCode& code,
+                                                      hci::CommandChannel::EventCallback cb);
 
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.
-  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
-  FindConnectionById(PeerId peer_id);
+  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionById(
+      PeerId peer_id);
 
   // Callbacks for registered events
   void OnConnectionRequest(const hci::EventPacket& event);
@@ -174,11 +170,9 @@ class BrEdrConnectionManager final {
   // peer's BR/EDR cache state as disconnected. Takes ownership of |conn| and
   // destroys it. If |close_link| is true, this results in an HCI Disconnect
   // command.
-  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn,
-                         bool close_link);
+  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn, bool close_link);
 
-  using ConnectionMap =
-      std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
+  using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 
   fxl::RefPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
@@ -212,8 +206,7 @@ class BrEdrConnectionManager final {
   bool use_interlaced_scan_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<PeerId, ConnectionRequest<BrEdrConnection*>>
-      connection_requests_;
+  std::unordered_map<PeerId, ConnectionRequest<BrEdrConnection*>> connection_requests_;
 
   std::optional<hci::BrEdrConnectionRequest> pending_request_;
 

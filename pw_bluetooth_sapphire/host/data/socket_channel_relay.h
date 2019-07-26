@@ -61,8 +61,7 @@ class SocketChannelRelay final {
   // serialized even in the multi-threaded case.
   SocketChannelRelay(zx::socket socket, fbl::RefPtr<ChannelT> channel,
                      DeactivationCallback deactivation_cb,
-                     size_t socket_write_queue_max_frames =
-                         kDefaultSocketWriteQueueLimitFrames);
+                     size_t socket_write_queue_max_frames = kDefaultSocketWriteQueueLimitFrames);
   ~SocketChannelRelay();
 
   // Enables read and close callbacks for the zx::socket and the

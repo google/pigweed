@@ -21,13 +21,11 @@ using bt::LowerBits;
 using bt::UpperBits;
 using bt::testing::CommandTransaction;
 
-using TestingBase =
-    bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.
-class TestCallbackObject
-    : public fxl::RefCountedThreadSafe<TestCallbackObject> {
+class TestCallbackObject : public fxl::RefCountedThreadSafe<TestCallbackObject> {
  public:
   explicit TestCallbackObject(fit::closure deletion_callback)
       : deletion_cb_(std::move(deletion_callback)) {}
@@ -66,25 +64,20 @@ TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
   // Send a HCI_Reset command. We attach an instance of TestCallbackObject to
   // the callbacks to verify that it gets cleaned up as expected.
   bool test_obj_deleted = false;
-  auto test_obj = fxl::MakeRefCounted<TestCallbackObject>(
-      [&test_obj_deleted] { test_obj_deleted = true; });
+  auto test_obj =
+      fxl::MakeRefCounted<TestCallbackObject>([&test_obj_deleted] { test_obj_deleted = true; });
 
   auto reset = CommandPacket::New(kReset);
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(
       std::move(reset), dispatcher(),
-      [&id, test_obj](CommandChannel::TransactionId callback_id,
-                      const EventPacket& event) {
+      [&id, test_obj](CommandChannel::TransactionId callback_id, const EventPacket& event) {
         EXPECT_EQ(id, callback_id);
         EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
         EXPECT_EQ(4, event.view().header().parameter_total_size);
-        EXPECT_EQ(1, event.view()
-                         .payload<CommandCompleteEventParams>()
-                         .num_hci_command_packets);
-        EXPECT_EQ(kReset, le16toh(event.view()
-                                      .payload<CommandCompleteEventParams>()
-                                      .command_opcode));
-        EXPECT_EQ(StatusCode::kHardwareFailure,
-                  event.return_params<SimpleReturnParams>()->status);
+        EXPECT_EQ(1, event.view().payload<CommandCompleteEventParams>().num_hci_command_packets);
+        EXPECT_EQ(kReset,
+                  le16toh(event.view().payload<CommandCompleteEventParams>().command_opcode));
+        EXPECT_EQ(StatusCode::kHardwareFailure, event.return_params<SimpleReturnParams>()->status);
       });
 
   test_obj = nullptr;
@@ -121,15 +114,13 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
       0x01,  // parameter_total_size (1 byte payload)
       StatusCode::kSuccess);
   // clang-format on
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req, {&rsp0, &rsp1}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req, {&rsp0, &rsp1}));
   StartTestDevice();
 
   // Send HCI_Inquiry
   CommandChannel::TransactionId id;
   int cb_count = 0;
-  auto cb = [&cb_count, &id](CommandChannel::TransactionId callback_id,
-                             const EventPacket& event) {
+  auto cb = [&cb_count, &id](CommandChannel::TransactionId callback_id, const EventPacket& event) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
@@ -149,8 +140,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
   params->lap = kGIAC;
   params->inquiry_length = 1;
   params->num_responses = 0;
-  id = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb,
-                                  kInquiryCompleteEventCode);
+  id = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb, kInquiryCompleteEventCode);
   RunLoopUntilIdle();
   EXPECT_EQ(2, cb_count);
 }
@@ -176,17 +166,12 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
 
   // Send HCI_Reset
   CommandChannel::TransactionId id;
-  auto complete_cb = [&id](CommandChannel::TransactionId callback_id,
-                           const EventPacket& event) {
+  auto complete_cb = [&id](CommandChannel::TransactionId callback_id, const EventPacket& event) {
     EXPECT_EQ(callback_id, id);
     EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-    EXPECT_EQ(StatusCode::kSuccess,
-              event.params<CommandStatusEventParams>().status);
-    EXPECT_EQ(1, event.view()
-                     .payload<CommandStatusEventParams>()
-                     .num_hci_command_packets);
-    EXPECT_EQ(kReset,
-              le16toh(event.params<CommandStatusEventParams>().command_opcode));
+    EXPECT_EQ(StatusCode::kSuccess, event.params<CommandStatusEventParams>().status);
+    EXPECT_EQ(1, event.view().payload<CommandStatusEventParams>().num_hci_command_packets);
+    EXPECT_EQ(kReset, le16toh(event.params<CommandStatusEventParams>().command_opcode));
   };
 
   auto reset = CommandPacket::New(kReset);
@@ -237,11 +222,10 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
   size_t cb_event_count = 0u;
   size_t transaction_count = 0u;
 
-  test_device()->SetTransactionCallback(
-      [&transaction_count]() { transaction_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
 
-  auto cb = [&cb_event_count](CommandChannel::TransactionId,
-                              const EventPacket& event) {
+  auto cb = [&cb_event_count](CommandChannel::TransactionId, const EventPacket& event) {
     EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
     OpCode expected_opcode;
     if (cb_event_count == 0u) {
@@ -249,9 +233,7 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
     } else {
       expected_opcode = kInquiryCancel;
     }
-    EXPECT_EQ(
-        expected_opcode,
-        le16toh(event.params<CommandCompleteEventParams>().command_opcode));
+    EXPECT_EQ(expected_opcode, le16toh(event.params<CommandCompleteEventParams>().command_opcode));
     cb_event_count++;
   };
 
@@ -311,22 +293,20 @@ TEST_F(HCI_CommandChannelTest, QueuedCommands) {
   // We handle our own responses to make sure commands are queued.
   test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
   test_device()->QueueCommandTransaction(CommandTransaction(req_inqcancel, {}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_reset, {&rsp_reset}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_reset}));
   StartTestDevice();
 
   size_t transaction_count = 0u;
   size_t reset_count = 0u;
   size_t cancel_count = 0u;
 
-  test_device()->SetTransactionCallback(
-      [&transaction_count]() { transaction_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
 
   auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
                                           const EventPacket& event) {
     EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
-    auto opcode =
-        le16toh(event.params<CommandCompleteEventParams>().command_opcode);
+    auto opcode = le16toh(event.params<CommandCompleteEventParams>().command_opcode);
     if (opcode == kReset) {
       reset_count++;
     } else if (opcode == kInquiryCancel) {
@@ -405,18 +385,15 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
       );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_reset, {&rsp_resetstatus}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_inqcancel, {&rsp_inqstatus}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req_inqcancel, {&rsp_inqstatus}));
   StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
   size_t cb_count = 0u;
 
-  auto cb = [&id1, &id2, &cb_count, kTestEventCode0](
-                CommandChannel::TransactionId callback_id,
-                const EventPacket& event) {
+  auto cb = [&id1, &id2, &cb_count, kTestEventCode0](CommandChannel::TransactionId callback_id,
+                                                     const EventPacket& event) {
     if (cb_count < 2) {
       EXPECT_EQ(id1, callback_id);
     } else {
@@ -433,8 +410,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
   };
 
   auto packet = CommandPacket::New(kReset);
-  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb,
-                                   kTestEventCode0);
+  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb, kTestEventCode0);
 
   RunLoopUntilIdle();
 
@@ -444,8 +420,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
   // Setting another event up with different opcode will still queue the command
   // because we don't want to have two commands waiting on an event.
   packet = CommandPacket::New(kInquiryCancel);
-  id2 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb,
-                                   kTestEventCode0);
+  id2 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb, kTestEventCode0);
   RunLoopUntilIdle();
 
   EXPECT_EQ(1u, cb_count);
@@ -508,8 +483,8 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 
   size_t transaction_count = 0u;
 
-  test_device()->SetTransactionCallback(
-      [&transaction_count]() { transaction_count++; }, dispatcher());
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
 
   test_device()->QueueCommandTransaction(
       CommandTransaction(req_reset, {&rsp_resetstatus, &rsp_bogocomplete}));
@@ -521,8 +496,8 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 
   CommandChannel::TransactionId id;
   size_t cb_count = 0;
-  auto cb = [&cb_count, &id, kTestEventCode0](
-      CommandChannel::TransactionId callback_id, const EventPacket& event) {
+  auto cb = [&cb_count, &id, kTestEventCode0](CommandChannel::TransactionId callback_id,
+                                              const EventPacket& event) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
@@ -536,8 +511,7 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
   };
 
   auto packet = CommandPacket::New(kReset);
-  id = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb,
-                                  kTestEventCode0);
+  id = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb, kTestEventCode0);
 
   RunLoopUntilIdle();
 
@@ -568,10 +542,8 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
   constexpr EventCode kTestEventCode0 = 0xFE;
   constexpr EventCode kTestEventCode1 = 0xFF;
-  auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00,
-                                           0x01, 0x00, 0x00);
-  auto cmd_complete =
-      CreateStaticByteBuffer(kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
+  auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
+  auto cmd_complete = CreateStaticByteBuffer(kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
   auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
   auto event1 = CreateStaticByteBuffer(kTestEventCode1, 0x00);
 
@@ -582,41 +554,31 @@ TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [
-    &event_count1,
-    kTestEventCode0
-  ](const EventPacket& event) {
+  auto event_cb1 = [&event_count1, kTestEventCode0](const EventPacket& event) {
     event_count1++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
   };
 
   int event_count2 = 0;
-  auto event_cb2 = [
-    &event_count2,
-    kTestEventCode1
-  ](const EventPacket& event) {
+  auto event_cb2 = [&event_count2, kTestEventCode1](const EventPacket& event) {
     event_count2++;
     EXPECT_EQ(kTestEventCode1, event.event_code());
   };
-  auto id0 =
-      cmd_channel()->AddEventHandler(kTestEventCode0, event_cb0, dispatcher());
+  auto id0 = cmd_channel()->AddEventHandler(kTestEventCode0, event_cb0, dispatcher());
   EXPECT_NE(0u, id0);
 
   // Can register a handler for the same event code more than once.
-  auto id1 =
-      cmd_channel()->AddEventHandler(kTestEventCode0, event_cb1, dispatcher());
+  auto id1 = cmd_channel()->AddEventHandler(kTestEventCode0, event_cb1, dispatcher());
   EXPECT_NE(0u, id1);
   EXPECT_NE(id0, id1);
 
   // Add a handler for a different event code.
-  auto id2 =
-      cmd_channel()->AddEventHandler(kTestEventCode1, event_cb2, dispatcher());
+  auto id2 = cmd_channel()->AddEventHandler(kTestEventCode1, event_cb2, dispatcher());
   EXPECT_NE(0u, id2);
 
   auto reset = CommandPacket::New(kReset);
   auto transaction_id = cmd_channel()->SendCommand(
-      std::move(reset), dispatcher(), [](auto, const auto&) {},
-      kTestEventCode0);
+      std::move(reset), dispatcher(), [](auto, const auto&) {}, kTestEventCode0);
 
   EXPECT_EQ(0u, transaction_id);
 
@@ -704,15 +666,11 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // We will send the HCI_Reset command with kTestEventCode as the completion
   // event. The event handler we register below should only get invoked once and
   // after the pending transaction completes.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req, {&req_complete, &event, &event}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req, {&req_complete, &event, &event}));
   StartTestDevice();
 
   int event_count = 0;
-  auto event_cb = [
-    &event_count,
-    kTestEventCode
-  ](const EventPacket& event) {
+  auto event_cb = [&event_count, kTestEventCode](const EventPacket& event) {
     event_count++;
     EXPECT_EQ(kTestEventCode, event.event_code());
     EXPECT_EQ(1u, event.view().header().parameter_total_size);
@@ -722,8 +680,8 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   cmd_channel()->AddEventHandler(kTestEventCode, event_cb, dispatcher());
 
   auto reset = CommandPacket::New(kReset);
-  CommandChannel::TransactionId id = cmd_channel()->SendCommand(
-      std::move(reset), dispatcher(), nullptr, kTestEventCode);
+  CommandChannel::TransactionId id =
+      cmd_channel()->SendCommand(std::move(reset), dispatcher(), nullptr, kTestEventCode);
   EXPECT_EQ(0u, id);
 
   reset = CommandPacket::New(kReset);
@@ -744,40 +702,29 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
       CreateStaticByteBuffer(hci::kLEMetaEventCode, 0x01, kTestSubeventCode1);
 
   int event_count0 = 0;
-  auto event_cb0 = [
-    &event_count0,
-    kTestSubeventCode0
-  ](const EventPacket& event) {
+  auto event_cb0 = [&event_count0, kTestSubeventCode0](const EventPacket& event) {
     event_count0++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
-    EXPECT_EQ(kTestSubeventCode0,
-              event.params<LEMetaEventParams>().subevent_code);
+    EXPECT_EQ(kTestSubeventCode0, event.params<LEMetaEventParams>().subevent_code);
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [
-    &event_count1,
-    kTestSubeventCode1
-  ](const EventPacket& event) {
+  auto event_cb1 = [&event_count1, kTestSubeventCode1](const EventPacket& event) {
     event_count1++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
-    EXPECT_EQ(kTestSubeventCode1,
-              event.params<LEMetaEventParams>().subevent_code);
+    EXPECT_EQ(kTestSubeventCode1, event.params<LEMetaEventParams>().subevent_code);
   };
 
-  auto id0 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0,
-                                                  dispatcher());
+  auto id0 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0, dispatcher());
   EXPECT_NE(0u, id0);
 
   // Can register a handler for the same event code more than once.
-  auto id1 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0,
-                                                  dispatcher());
+  auto id1 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0, dispatcher());
   EXPECT_NE(0u, id1);
   EXPECT_NE(id0, id1);
 
   // Add a handler for a different event code.
-  auto id2 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode1, event_cb1,
-                                                  dispatcher());
+  auto id2 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode1, event_cb1, dispatcher());
   EXPECT_NE(0u, id2);
 
   StartTestDevice();
@@ -810,11 +757,9 @@ TEST_F(HCI_CommandChannelTest, EventHandlerIdsDontCollide) {
   // Add a LE Meta event handler and a event handler and make sure that IDs are
   // generated correctly across the two methods.
   EXPECT_EQ(1u, cmd_channel()->AddLEMetaEventHandler(
-                    hci::kLEConnectionCompleteSubeventCode, [](const auto&) {},
-                    dispatcher()));
+                    hci::kLEConnectionCompleteSubeventCode, [](const auto&) {}, dispatcher()));
   EXPECT_EQ(2u, cmd_channel()->AddEventHandler(
-                    hci::kDisconnectionCompleteEventCode, [](const auto&) {},
-                    dispatcher()));
+                    hci::kDisconnectionCompleteEventCode, [](const auto&) {}, dispatcher()));
 }
 
 // Tests:
@@ -830,8 +775,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerRestrictions) {
 
 // Tests that an asynchronous command with a completion event code does not
 // remove an existing handler for colliding LE meta subevent code.
-TEST_F(HCI_CommandChannelTest,
-       AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfere) {
+TEST_F(HCI_CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfere) {
   // Set up expectations for the asynchronous command and its corresponding
   // command status event.
   // clang-format off
@@ -847,8 +791,7 @@ TEST_F(HCI_CommandChannelTest,
   );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(cmd, {&cmd_status}));
+  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status}));
   StartTestDevice();
 
   constexpr EventCode kTestEventCode = 0x01;
@@ -860,8 +803,8 @@ TEST_F(HCI_CommandChannelTest,
     EXPECT_EQ(kTestEventCode, event.params<LEMetaEventParams>().subevent_code);
     le_event_count++;
   };
-  cmd_channel()->AddLEMetaEventHandler(kLEConnectionCompleteSubeventCode,
-                                       std::move(le_event_cb), dispatcher());
+  cmd_channel()->AddLEMetaEventHandler(kLEConnectionCompleteSubeventCode, std::move(le_event_cb),
+                                       dispatcher());
 
   // Initiate the async transaction with kTestEventCode as its completion code
   // (we use kInquiry as a dummy opcode).
@@ -875,8 +818,8 @@ TEST_F(HCI_CommandChannelTest,
     async_cmd_cb_count++;
   };
   auto packet = CommandPacket::New(kInquiry, 0);
-  cmd_channel()->SendCommand(std::move(packet), dispatcher(),
-                             std::move(async_cmd_cb), kTestEventCode);
+  cmd_channel()->SendCommand(std::move(packet), dispatcher(), std::move(async_cmd_cb),
+                             kTestEventCode);
 
   // clang-format off
   auto event_bytes = CreateStaticByteBuffer(
@@ -921,8 +864,7 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
   transport()->SetTransportClosedCallback(closed_cb, dispatcher());
 
-  async::PostTask(dispatcher(),
-                  [this] { test_device()->CloseCommandChannel(); });
+  async::PostTask(dispatcher(), [this] { test_device()->CloseCommandChannel(); });
   RunLoopUntilIdle();
   EXPECT_TRUE(closed_cb_called);
 }
@@ -930,9 +872,8 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
 TEST_F(HCI_CommandChannelTest, CommandTimeout) {
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
-  auto req_reset = CreateStaticByteBuffer(
-      LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
-      0x00                                   // parameter_total_size
+  auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
+                                          0x00  // parameter_total_size
   );
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
@@ -1006,19 +947,16 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
       );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_reset, {&rsp_resetstatus}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_reset, {&rsp_resetstatus}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
   StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
   CommandChannel::CommandCallback cb;
   size_t cb_count = 0u;
 
-  cb = [&cb, cmd_channel = cmd_channel(), dispatcher = dispatcher(), &id1, &id2,
-        &cb_count, kTestEventCode0](CommandChannel::TransactionId callback_id,
-                                    const EventPacket& event) {
+  cb = [&cb, cmd_channel = cmd_channel(), dispatcher = dispatcher(), &id1, &id2, &cb_count,
+        kTestEventCode0](CommandChannel::TransactionId callback_id, const EventPacket& event) {
     if (cb_count < kExpectedCallbacksPerCommand) {
       EXPECT_EQ(id1, callback_id);
     } else {
@@ -1035,16 +973,14 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
       if (cb_count < 2) {
         // Add the second command when the first one completes.
         auto packet = CommandPacket::New(kReset);
-        id2 = cmd_channel->SendCommand(std::move(packet), dispatcher,
-                                       cb.share(), kTestEventCode0);
+        id2 = cmd_channel->SendCommand(std::move(packet), dispatcher, cb.share(), kTestEventCode0);
       }
     }
     cb_count++;
   };
 
   auto packet = CommandPacket::New(kReset);
-  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb.share(),
-                                   kTestEventCode0);
+  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb.share(), kTestEventCode0);
 
   RunLoopUntilIdle();
 
@@ -1087,53 +1023,50 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
   auto excl_one_cmd = CreateStaticByteBuffer(
       LowerBits(kExclusiveOne), UpperBits(kExclusiveOne), 0x00  // (no payload)
   );
-  auto rsp_excl_one_status = CreateStaticByteBuffer(
-      kCommandStatusEventCode,
-      0x04,                        // parameter_total_size (4 byte payload)
-      StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
-      LowerBits(kExclusiveOne),
-      UpperBits(kExclusiveOne)  // HCI opcode
-  );
-  auto rsp_one_complete = CreateStaticByteBuffer(
-      kExclOneCompleteEvent, 0x00  // parameter_total_size (no payload)
-  );
+  auto rsp_excl_one_status =
+      CreateStaticByteBuffer(kCommandStatusEventCode,
+                             0x04,                        // parameter_total_size (4 byte payload)
+                             StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+                             LowerBits(kExclusiveOne),
+                             UpperBits(kExclusiveOne)  // HCI opcode
+      );
+  auto rsp_one_complete =
+      CreateStaticByteBuffer(kExclOneCompleteEvent, 0x00  // parameter_total_size (no payload)
+      );
 
   auto excl_two_cmd = CreateStaticByteBuffer(
       LowerBits(kExclusiveTwo), UpperBits(kExclusiveTwo), 0x00  // (no payload)
   );
-  auto rsp_excl_two_status = CreateStaticByteBuffer(
-      kCommandStatusEventCode,
-      0x04,                        // parameter_total_size (4 byte payload)
-      StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
-      LowerBits(kExclusiveTwo),
-      UpperBits(kExclusiveTwo)  // HCI opcode
-  );
-  auto rsp_two_complete = CreateStaticByteBuffer(
-      kExclTwoCompleteEvent, 0x00  // parameter_total_size (no payload)
-  );
+  auto rsp_excl_two_status =
+      CreateStaticByteBuffer(kCommandStatusEventCode,
+                             0x04,                        // parameter_total_size (4 byte payload)
+                             StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+                             LowerBits(kExclusiveTwo),
+                             UpperBits(kExclusiveTwo)  // HCI opcode
+      );
+  auto rsp_two_complete =
+      CreateStaticByteBuffer(kExclTwoCompleteEvent, 0x00  // parameter_total_size (no payload)
+      );
 
-  auto nonexclusive_cmd = CreateStaticByteBuffer(
-      LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
-      0x00  // parameter_total_size (no payload)
-  );
-  auto nonexclusive_complete = CreateStaticByteBuffer(
-      kCommandCompleteEventCode,
-      0x04,  // parameter_total_size (4 byte payload)
-      0xFA,  // num_hci_command_packets (250)
-      LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
-      StatusCode::kSuccess                                 // Command succeeded
-  );
+  auto nonexclusive_cmd =
+      CreateStaticByteBuffer(LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
+                             0x00  // parameter_total_size (no payload)
+      );
+  auto nonexclusive_complete =
+      CreateStaticByteBuffer(kCommandCompleteEventCode,
+                             0x04,  // parameter_total_size (4 byte payload)
+                             0xFA,  // num_hci_command_packets (250)
+                             LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
+                             StatusCode::kSuccess  // Command succeeded
+      );
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
+  test_device()->QueueCommandTransaction(CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
   test_device()->QueueCommandTransaction(
       CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(excl_two_cmd, {&rsp_excl_two_status}));
+  test_device()->QueueCommandTransaction(CommandTransaction(excl_two_cmd, {&rsp_excl_two_status}));
   test_device()->QueueCommandTransaction(
       CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
+  test_device()->QueueCommandTransaction(CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
   test_device()->QueueCommandTransaction(
       CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
 
@@ -1150,88 +1083,82 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
         nonexclusive_cb_count++;
       };
 
-  exclusive_cb =
-      [&exclusive_cb, &nonexclusive_cb, cmd_channel = cmd_channel(),
-       dispatcher = dispatcher(), &id1, &id2, &id3, &exclusive_cb_count,
-       kExclOneCompleteEvent, kExclTwoCompleteEvent](
-          CommandChannel::TransactionId callback_id, const EventPacket& event) {
-        // Expected event -> Action in response
-        // 0. Status for kExclusiveOne -> Send a kExclusiveTwo
-        // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and
-        // kNonExclusive
-        // 2. Status for kExclusiveTwo -> Nothing
-        // 3. Complete for kExclusiveTwo -> Nothing
-        // 4. Status for kExclusiveOne -> Nothing
-        // 5. Complete for kExclusiveOne -> Nothing
-        switch (exclusive_cb_count) {
-          case 0: {
-            // Status for kExclusiveOne -> Send kExclusiveTwo (queued)
-            EXPECT_EQ(id1, callback_id);
-            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.params<CommandStatusEventParams>();
-            EXPECT_EQ(StatusCode::kSuccess, params.status);
-            auto packet = CommandPacket::New(kExclusiveTwo);
-            id2 = cmd_channel->SendExclusiveCommand(
-                std::move(packet), dispatcher, exclusive_cb.share(),
-                kExclTwoCompleteEvent, {kExclusiveOne});
-            std::cout << "queued Exclusive Two: " << id2 << std::endl;
-            break;
-          }
-          case 1: {
-            // Complete for kExclusiveOne -> Resend kExclusiveOne
-            EXPECT_EQ(id1, callback_id);
-            EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
-            // Add the second command when the first one completes.
-            auto packet = CommandPacket::New(kExclusiveOne);
-            id3 = cmd_channel->SendExclusiveCommand(
-                std::move(packet), dispatcher, exclusive_cb.share(),
-                kExclOneCompleteEvent, {kExclusiveTwo});
-            std::cout << "queued Second Exclusive One: " << id3 << std::endl;
-            packet = CommandPacket::New(kNonExclusive);
-            cmd_channel->SendCommand(std::move(packet), dispatcher,
-                                     nonexclusive_cb.share());
+  exclusive_cb = [&exclusive_cb, &nonexclusive_cb, cmd_channel = cmd_channel(),
+                  dispatcher = dispatcher(), &id1, &id2, &id3, &exclusive_cb_count,
+                  kExclOneCompleteEvent, kExclTwoCompleteEvent](
+                     CommandChannel::TransactionId callback_id, const EventPacket& event) {
+    // Expected event -> Action in response
+    // 0. Status for kExclusiveOne -> Send a kExclusiveTwo
+    // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and
+    // kNonExclusive
+    // 2. Status for kExclusiveTwo -> Nothing
+    // 3. Complete for kExclusiveTwo -> Nothing
+    // 4. Status for kExclusiveOne -> Nothing
+    // 5. Complete for kExclusiveOne -> Nothing
+    switch (exclusive_cb_count) {
+      case 0: {
+        // Status for kExclusiveOne -> Send kExclusiveTwo (queued)
+        EXPECT_EQ(id1, callback_id);
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        auto params = event.params<CommandStatusEventParams>();
+        EXPECT_EQ(StatusCode::kSuccess, params.status);
+        auto packet = CommandPacket::New(kExclusiveTwo);
+        id2 = cmd_channel->SendExclusiveCommand(std::move(packet), dispatcher, exclusive_cb.share(),
+                                                kExclTwoCompleteEvent, {kExclusiveOne});
+        std::cout << "queued Exclusive Two: " << id2 << std::endl;
+        break;
+      }
+      case 1: {
+        // Complete for kExclusiveOne -> Resend kExclusiveOne
+        EXPECT_EQ(id1, callback_id);
+        EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
+        // Add the second command when the first one completes.
+        auto packet = CommandPacket::New(kExclusiveOne);
+        id3 = cmd_channel->SendExclusiveCommand(std::move(packet), dispatcher, exclusive_cb.share(),
+                                                kExclOneCompleteEvent, {kExclusiveTwo});
+        std::cout << "queued Second Exclusive One: " << id3 << std::endl;
+        packet = CommandPacket::New(kNonExclusive);
+        cmd_channel->SendCommand(std::move(packet), dispatcher, nonexclusive_cb.share());
 
-            break;
-          }
-          case 2: {  // Status for kExclusiveTwo
-            EXPECT_EQ(id2, callback_id);
-            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.params<CommandStatusEventParams>();
-            EXPECT_EQ(StatusCode::kSuccess, params.status);
-            break;
-          }
-          case 3: {  // Complete for kExclusiveTwo
-            EXPECT_EQ(id2, callback_id);
-            EXPECT_EQ(kExclTwoCompleteEvent, event.event_code());
-            break;
-          }
-          case 4: {  // Status for Second kExclusiveOne
-            EXPECT_EQ(id3, callback_id);
-            EXPECT_EQ(kCommandStatusEventCode, event.event_code());
-            auto params = event.params<CommandStatusEventParams>();
-            EXPECT_EQ(StatusCode::kSuccess, params.status);
-            break;
-          }
-          case 5: {  // Complete for Second kExclusiveOne
-            EXPECT_EQ(id3, callback_id);
-            EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
-            break;
-          }
-          default: {
-            ASSERT_TRUE(false);  // Should never be called more than 6 times.
-            break;
-          }
-        }
-        exclusive_cb_count++;
-      };
+        break;
+      }
+      case 2: {  // Status for kExclusiveTwo
+        EXPECT_EQ(id2, callback_id);
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        auto params = event.params<CommandStatusEventParams>();
+        EXPECT_EQ(StatusCode::kSuccess, params.status);
+        break;
+      }
+      case 3: {  // Complete for kExclusiveTwo
+        EXPECT_EQ(id2, callback_id);
+        EXPECT_EQ(kExclTwoCompleteEvent, event.event_code());
+        break;
+      }
+      case 4: {  // Status for Second kExclusiveOne
+        EXPECT_EQ(id3, callback_id);
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        auto params = event.params<CommandStatusEventParams>();
+        EXPECT_EQ(StatusCode::kSuccess, params.status);
+        break;
+      }
+      case 5: {  // Complete for Second kExclusiveOne
+        EXPECT_EQ(id3, callback_id);
+        EXPECT_EQ(kExclOneCompleteEvent, event.event_code());
+        break;
+      }
+      default: {
+        ASSERT_TRUE(false);  // Should never be called more than 6 times.
+        break;
+      }
+    }
+    exclusive_cb_count++;
+  };
 
   auto packet = CommandPacket::New(kExclusiveOne);
-  id1 = cmd_channel()->SendExclusiveCommand(
-      std::move(packet), dispatcher(), exclusive_cb.share(),
-      kExclOneCompleteEvent, {kExclusiveTwo});
+  id1 = cmd_channel()->SendExclusiveCommand(std::move(packet), dispatcher(), exclusive_cb.share(),
+                                            kExclOneCompleteEvent, {kExclusiveTwo});
   packet = CommandPacket::New(kNonExclusive);
-  cmd_channel()->SendCommand(std::move(packet), dispatcher(),
-                             nonexclusive_cb.share());
+  cmd_channel()->SendCommand(std::move(packet), dispatcher(), nonexclusive_cb.share());
 
   RunLoopUntilIdle();
 
@@ -1250,8 +1177,7 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
   // Finish out the ExclusiveTwo
   test_device()->SendCommandChannelPacket(rsp_two_complete);
   packet = CommandPacket::New(kNonExclusive);
-  cmd_channel()->SendCommand(std::move(packet), dispatcher(),
-                             nonexclusive_cb.share());
+  cmd_channel()->SendCommand(std::move(packet), dispatcher(), nonexclusive_cb.share());
   RunLoopUntilIdle();
 
   EXPECT_EQ(5u, exclusive_cb_count);

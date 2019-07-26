@@ -34,8 +34,7 @@ TEST(L2CAP_FragmenterTest, EmptyPayload) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(
-      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, SingleFragment) {
@@ -56,8 +55,7 @@ TEST(L2CAP_FragmenterTest, SingleFragment) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(
-      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
@@ -79,8 +77,7 @@ TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(
-      ContainersEqual(expected_fragment, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment, fragments.begin()->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
@@ -110,16 +107,13 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(
-      ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1,
-                              (++fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
-  ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0,
-                      "test payload size should be even");
+  ZX_DEBUG_ASSERT_MSG(payload.size() % 2 == 0, "test payload size should be even");
 
   auto expected_fragment0 = CreateStaticByteBuffer(
       // ACL data header
@@ -138,25 +132,21 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
   // Make the fragment limit large enough to fit exactly half a B-frame
   // containing |payload|. The frame should be evenly divided across two
   // fragments.
-  Fragmenter fragmenter(kTestHandle,
-                        (payload.size() + sizeof(BasicHeader)) / 2);
+  Fragmenter fragmenter(kTestHandle, (payload.size() + sizeof(BasicHeader)) / 2);
   PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(2u, pdu.fragment_count());
 
   auto fragments = pdu.ReleaseFragments();
 
-  EXPECT_TRUE(
-      ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
-  EXPECT_TRUE(ContainersEqual(expected_fragment1,
-                              (++fragments.begin())->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment0, fragments.begin()->view().data()));
+  EXPECT_TRUE(ContainersEqual(expected_fragment1, (++fragments.begin())->view().data()));
 }
 
 TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
   constexpr size_t kMaxFragmentPayloadSize = 5;
   constexpr size_t kExpectedFragmentCount = 4;
-  constexpr size_t kFrameSize =
-      (kExpectedFragmentCount - 1) * kMaxFragmentPayloadSize + 1;
+  constexpr size_t kFrameSize = (kExpectedFragmentCount - 1) * kMaxFragmentPayloadSize + 1;
 
   StaticByteBuffer<kFrameSize - sizeof(BasicHeader)> payload;
   payload.Fill('X');

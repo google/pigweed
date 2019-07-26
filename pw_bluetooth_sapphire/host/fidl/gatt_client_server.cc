@@ -21,12 +21,9 @@ using fuchsia::bluetooth::gatt::ServiceInfoPtr;
 
 namespace bthost {
 
-GattClientServer::GattClientServer(bt::gatt::PeerId peer_id,
-                                   fbl::RefPtr<bt::gatt::GATT> gatt,
+GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
                                    fidl::InterfaceRequest<Client> request)
-    : GattServerBase(gatt, this, std::move(request)),
-      peer_id_(peer_id),
-      weak_ptr_factory_(this) {}
+    : GattServerBase(gatt, this, std::move(request)), peer_id_(peer_id), weak_ptr_factory_(this) {}
 
 void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
@@ -37,21 +34,18 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
     uuids.resize(fidl_uuids->size());
     for (size_t i = 0; i < uuids.size(); ++i) {
       if (!StringToUuid(fidl_uuids.get()[i], &uuids[i])) {
-        callback(
-            fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                       "Invalid UUID: " + fidl_uuids.get()[i]),
-            std::vector<ServiceInfo>((size_t)0u));
+        callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
+                                            "Invalid UUID: " + fidl_uuids.get()[i]),
+                 std::vector<ServiceInfo>((size_t)0u));
         return;
       }
     }
   }
 
-  auto cb = [callback = std::move(callback)](bt::att::Status status,
-                                             auto services) {
+  auto cb = [callback = std::move(callback)](bt::att::Status status, auto services) {
     std::vector<ServiceInfo> out;
     if (!status) {
-      auto fidl_status =
-          fidl_helpers::StatusToFidl(status, "Failed to discover services");
+      auto fidl_status = fidl_helpers::StatusToFidl(status, "Failed to discover services");
       callback(std::move(fidl_status), std::move(out));
       return;
     }
@@ -72,8 +66,8 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
   gatt()->ListServices(peer_id_, std::move(uuids), std::move(cb));
 }
 
-void GattClientServer::ConnectToService(
-    uint64_t id, ::fidl::InterfaceRequest<RemoteService> service) {
+void GattClientServer::ConnectToService(uint64_t id,
+                                        ::fidl::InterfaceRequest<RemoteService> service) {
   if (connected_services_.count(id)) {
     bt_log(TRACE, "bt-host", "service already requested");
     return;
@@ -83,8 +77,7 @@ void GattClientServer::ConnectToService(
   connected_services_[id] = nullptr;
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto callback = [self, id,
-                   request = std::move(service)](auto service) mutable {
+  auto callback = [self, id, request = std::move(service)](auto service) mutable {
     if (!self)
       return;
 
@@ -92,8 +85,7 @@ void GattClientServer::ConnectToService(
     ZX_DEBUG_ASSERT(self->connected_services_.count(id));
 
     // Automatically called on failure.
-    auto fail_cleanup =
-        fit::defer([self, id] { self->connected_services_.erase(id); });
+    auto fail_cleanup = fit::defer([self, id] { self->connected_services_.erase(id); });
 
     if (!service) {
       bt_log(TRACE, "bt-host", "failed to connect to service");
@@ -116,10 +108,9 @@ void GattClientServer::ConnectToService(
 
     fail_cleanup.cancel();
 
-    auto server = std::make_unique<GattRemoteServiceServer>(
-        std::move(service), self->gatt(), std::move(request));
-    server->set_error_handler(
-        [cb = std::move(error_cb)](zx_status_t status) { cb(); });
+    auto server = std::make_unique<GattRemoteServiceServer>(std::move(service), self->gatt(),
+                                                            std::move(request));
+    server->set_error_handler([cb = std::move(error_cb)](zx_status_t status) { cb(); });
 
     self->connected_services_[id] = std::move(server);
   };

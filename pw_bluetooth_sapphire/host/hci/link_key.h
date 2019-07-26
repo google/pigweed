@@ -28,8 +28,7 @@ class LinkKey final {
   uint16_t ediv() const { return ediv_; }
 
   bool operator==(const LinkKey& other) const {
-    return value() == other.value() && rand() == other.rand() &&
-           ediv() == other.ediv();
+    return value() == other.value() && rand() == other.rand() && ediv() == other.ediv();
   }
 
  private:

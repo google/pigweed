@@ -67,8 +67,7 @@ TEST(ATT_AttributeTest, GroupingDeclAttr) {
   EXPECT_EQ(1u, group.attributes().size());
 
   // The grouping is already complete.
-  EXPECT_FALSE(group.AddAttribute(kTestType2, AccessRequirements(),
-                                  AccessRequirements()));
+  EXPECT_FALSE(group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements()));
 
   const Attribute& decl_attr = group.attributes()[0];
   EXPECT_EQ(kTestHandle, decl_attr.handle());
@@ -91,8 +90,7 @@ TEST(ATT_AttributeTest, GroupingAddAttribute) {
   EXPECT_EQ(kTestHandle, group.start_handle());
   EXPECT_EQ(kTestHandle + kAttrCount, group.end_handle());
 
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(),
-                                       AccessRequirements());
+  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   ASSERT_TRUE(attr);
   EXPECT_EQ(kTestType2, attr->type());
   EXPECT_EQ(kTestHandle + 1, attr->handle());
@@ -108,8 +106,7 @@ TEST(ATT_AttributeTest, GroupingAddAttribute) {
   EXPECT_FALSE(group.complete());
   EXPECT_EQ(2u, group.attributes().size());
 
-  attr = group.AddAttribute(kTestType3, AccessRequirements(),
-                            AccessRequirements());
+  attr = group.AddAttribute(kTestType3, AccessRequirements(), AccessRequirements());
   ASSERT_TRUE(attr);
   EXPECT_EQ(kTestType3, attr->type());
 
@@ -117,23 +114,20 @@ TEST(ATT_AttributeTest, GroupingAddAttribute) {
   EXPECT_EQ(group.end_handle(), attr->handle());
   EXPECT_EQ(3u, group.attributes().size());
 
-  EXPECT_FALSE(group.AddAttribute(kTestType4, AccessRequirements(),
-                                  AccessRequirements()));
+  EXPECT_FALSE(group.AddAttribute(kTestType4, AccessRequirements(), AccessRequirements()));
 }
 
 TEST(ATT_AttributeTest, ReadAsyncReadNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(),
-                                       AccessRequirements());
+  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
 TEST(ATT_AttributeTest, ReadAsyncReadNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(
-      kTestType2,
-      AccessRequirements(false, false, false),  // read (no security)
-      AccessRequirements());                    // write not allowed
+  Attribute* attr =
+      group.AddAttribute(kTestType2, AccessRequirements(false, false, false),  // read (no security)
+                         AccessRequirements());                                // write not allowed
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, [](auto, const auto&) {}));
 }
 
@@ -142,10 +136,9 @@ TEST(ATT_AttributeTest, ReadAsync) {
   constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(
-      kTestType2,
-      AccessRequirements(false, false, false),  // read (no security)
-      AccessRequirements());                    // write not allowed
+  Attribute* attr =
+      group.AddAttribute(kTestType2, AccessRequirements(false, false, false),  // read (no security)
+                         AccessRequirements());                                // write not allowed
 
   bool callback_called = false;
   auto callback = [&](ErrorCode status, const auto& value) {
@@ -154,8 +147,7 @@ TEST(ATT_AttributeTest, ReadAsync) {
     callback_called = true;
   };
 
-  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset,
-                     const auto& result_cb) {
+  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
@@ -171,17 +163,16 @@ TEST(ATT_AttributeTest, ReadAsync) {
 
 TEST(ATT_AttributeTest, WriteAsyncWriteNotAllowed) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(),
-                                       AccessRequirements());
+  Attribute* attr = group.AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
 TEST(ATT_AttributeTest, WriteAsyncWriteNoHandler) {
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(
-      kTestType2,
-      AccessRequirements(),                      // read not allowed
-      AccessRequirements(false, false, false));  // write no security
+  Attribute* attr =
+      group.AddAttribute(kTestType2,
+                         AccessRequirements(),                      // read not allowed
+                         AccessRequirements(false, false, false));  // write no security
   EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, BufferView(), [](auto) {}));
 }
 
@@ -190,10 +181,10 @@ TEST(ATT_AttributeTest, WriteAsync) {
   constexpr ErrorCode kTestStatus = ErrorCode::kNoError;
 
   AttributeGrouping group(kTestType1, kTestHandle, 1, kTestValue);
-  Attribute* attr = group.AddAttribute(
-      kTestType2,
-      AccessRequirements(),                      // read not allowed
-      AccessRequirements(false, false, false));  // write no security
+  Attribute* attr =
+      group.AddAttribute(kTestType2,
+                         AccessRequirements(),                      // read not allowed
+                         AccessRequirements(false, false, false));  // write no security
 
   bool callback_called = false;
   auto callback = [&](ErrorCode status) {
@@ -201,8 +192,8 @@ TEST(ATT_AttributeTest, WriteAsync) {
     callback_called = true;
   };
 
-  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset,
-                     const auto& value, const auto& result_cb) {
+  auto handler = [&](PeerId peer_id, Handle handle, uint16_t offset, const auto& value,
+                     const auto& result_cb) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(kTestOffset, offset);
@@ -213,8 +204,8 @@ TEST(ATT_AttributeTest, WriteAsync) {
   };
 
   attr->set_write_handler(handler);
-  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kTestOffset,
-                               CreateStaticByteBuffer('h', 'i'), callback));
+  EXPECT_TRUE(
+      attr->WriteAsync(kTestPeerId, kTestOffset, CreateStaticByteBuffer('h', 'i'), callback));
   EXPECT_TRUE(callback_called);
 }
 

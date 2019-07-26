@@ -142,8 +142,7 @@ class PeerCache final {
   class PeerRecord final {
    public:
     PeerRecord(std::unique_ptr<Peer> peer, fbl::Closure remove_peer_callback)
-        : peer_(std::move(peer)),
-          removal_task_(std::move(remove_peer_callback)) {}
+        : peer_(std::move(peer)), removal_task_(std::move(remove_peer_callback)) {}
 
     // The copy and move ctors cannot be implicitly defined, since
     // async::TaskClosure does not support those operations. Nor is any
@@ -166,8 +165,7 @@ class PeerCache final {
   // |address|, and connectability (|connectable|). Returns a pointer to the
   // inserted peer or nullptr if |identifier| or |address| already exists in
   // the cache.
-  Peer* InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
-                         bool connectable);
+  Peer* InsertPeerRecord(PeerId identifier, const DeviceAddress& address, bool connectable);
 
   // Notifies interested parties that |peer| has bonded
   // |peer| must already exist in the cache.

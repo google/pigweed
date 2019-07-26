@@ -165,17 +165,15 @@ bool CommandLengthValid(MuxCommandType type, size_t length) {
 
 }  // namespace
 
-MuxCommand::MuxCommand(MuxCommandType command_type,
-                       CommandResponse command_response)
+MuxCommand::MuxCommand(MuxCommandType command_type, CommandResponse command_response)
     : command_type_(command_type), command_response_(command_response) {}
 
 std::unique_ptr<MuxCommand> MuxCommand::Parse(const ByteBuffer& buffer) {
   ZX_DEBUG_ASSERT_MSG(buffer.size() >= kMinHeaderSize,
                       "buffer must contain at least a type and length octet");
 
-  CommandResponse command_response = (buffer[kTypeIndex] & kCRMask)
-                                         ? CommandResponse::kCommand
-                                         : CommandResponse::kResponse;
+  CommandResponse command_response =
+      (buffer[kTypeIndex] & kCRMask) ? CommandResponse::kCommand : CommandResponse::kResponse;
   MuxCommandType type = (MuxCommandType)(buffer[kTypeIndex] & kTypeMask);
 
   // Read the (potentially numerous) length octets.
@@ -202,8 +200,7 @@ std::unique_ptr<MuxCommand> MuxCommand::Parse(const ByteBuffer& buffer) {
   }
 
   if (!CommandLengthValid(MuxCommandType(type), length)) {
-    bt_log(ERROR, "rfcomm",
-           "unexpected length %zu for multiplexer command of type %u", length,
+    bt_log(ERROR, "rfcomm", "unexpected length %zu for multiplexer command of type %u", length,
            static_cast<unsigned>(type));
     return nullptr;
   }
@@ -228,8 +225,7 @@ std::unique_ptr<MuxCommand> MuxCommand::Parse(const ByteBuffer& buffer) {
       return NonSupportedCommandResponse::Parse(command_response, buffer);
 
     case MuxCommandType::kRemotePortNegotiationCommand:
-      return RemotePortNegotiationCommand::Parse(command_response, length,
-                                                 buffer);
+      return RemotePortNegotiationCommand::Parse(command_response, length, buffer);
 
     case MuxCommandType::kRemoteLineStatusCommand:
       return RemoteLineStatusCommand::Parse(command_response, buffer);
@@ -242,17 +238,15 @@ std::unique_ptr<MuxCommand> MuxCommand::Parse(const ByteBuffer& buffer) {
   return std::unique_ptr<MuxCommand>(nullptr);
 }
 
-TestCommand::TestCommand(CommandResponse command_response,
-                         const ByteBuffer& test_pattern)
+TestCommand::TestCommand(CommandResponse command_response, const ByteBuffer& test_pattern)
     : MuxCommand(MuxCommandType::kTestCommand, command_response) {
   test_pattern_ = DynamicByteBuffer(test_pattern.size());
   test_pattern.Copy(&test_pattern_, 0, test_pattern.size());
 }
 
-std::unique_ptr<TestCommand> TestCommand::Parse(
-    CommandResponse command_response, size_t length, const ByteBuffer& buffer) {
-  return std::make_unique<TestCommand>(command_response,
-                                       buffer.view(2, length));
+std::unique_ptr<TestCommand> TestCommand::Parse(CommandResponse command_response, size_t length,
+                                                const ByteBuffer& buffer) {
+  return std::make_unique<TestCommand>(command_response, buffer.view(2, length));
 }
 
 void TestCommand::Write(MutableBufferView buffer) const {
@@ -317,17 +311,16 @@ FlowControlOffCommand::FlowControlOffCommand(CommandResponse command_response)
 
 size_t FlowControlOffCommand::written_size() const { return 2ul + kFConLength; }
 
-ModemStatusCommand::ModemStatusCommand(CommandResponse command_response,
-                                       DLCI dlci,
-                                       ModemStatusCommandSignals signals,
-                                       BreakValue break_value)
+ModemStatusCommand::ModemStatusCommand(CommandResponse command_response, DLCI dlci,
+                                       ModemStatusCommandSignals signals, BreakValue break_value)
     : MuxCommand(MuxCommandType::kModemStatusCommand, command_response),
       dlci_(dlci),
       signals_(signals),
       break_value_(break_value) {}
 
-std::unique_ptr<ModemStatusCommand> ModemStatusCommand::Parse(
-    CommandResponse command_response, size_t length, const ByteBuffer& buffer) {
+std::unique_ptr<ModemStatusCommand> ModemStatusCommand::Parse(CommandResponse command_response,
+                                                              size_t length,
+                                                              const ByteBuffer& buffer) {
   DLCI dlci = buffer[2] >> kMSCDLCIShift;
   ModemStatusCommandSignals signals;
   BreakValue break_value = kDefaultInvalidBreakValue;
@@ -347,8 +340,7 @@ std::unique_ptr<ModemStatusCommand> ModemStatusCommand::Parse(
   signals.data_valid            = buffer[3] & kMSCDataValidMask;
   // clang-format on
 
-  return std::make_unique<ModemStatusCommand>(command_response, dlci, signals,
-                                              break_value);
+  return std::make_unique<ModemStatusCommand>(command_response, dlci, signals, break_value);
 }
 
 void ModemStatusCommand::Write(MutableBufferView buffer) const {
@@ -356,8 +348,7 @@ void ModemStatusCommand::Write(MutableBufferView buffer) const {
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
   buffer[kLengthIndex] =
-      ((has_break_signal() ? kMSCWithBreakLength : kMSCWithoutBreakLength)
-       << kLengthShift) |
+      ((has_break_signal() ? kMSCWithBreakLength : kMSCWithoutBreakLength) << kLengthShift) |
       kEAMask;
   // EA bit = 1, bit 2 = 1.
   buffer[2] = kEAMask | (1 << 1) | (dlci_ << kMSCDLCIShift);
@@ -377,37 +368,33 @@ void ModemStatusCommand::Write(MutableBufferView buffer) const {
 }
 
 size_t ModemStatusCommand::written_size() const {
-  return 2ul +
-         (has_break_signal() ? kMSCWithBreakLength : kMSCWithoutBreakLength);
+  return 2ul + (has_break_signal() ? kMSCWithBreakLength : kMSCWithoutBreakLength);
 }
 
-RemotePortNegotiationCommand::RemotePortNegotiationCommand(
-    CommandResponse command_response, DLCI dlci)
-    : MuxCommand(MuxCommandType::kRemotePortNegotiationCommand,
-                 command_response),
+RemotePortNegotiationCommand::RemotePortNegotiationCommand(CommandResponse command_response,
+                                                           DLCI dlci)
+    : MuxCommand(MuxCommandType::kRemotePortNegotiationCommand, command_response),
       short_RPN_command_(true),
       dlci_(dlci),
       params_(kDefaultRemotePortNegotiationParams),
       mask_(kDefaultRemotePortNegotiationMaskBitfield) {}
 
-RemotePortNegotiationCommand::RemotePortNegotiationCommand(
-    CommandResponse command_response, DLCI dlci,
-    RemotePortNegotiationParams params, RemotePortNegotiationMaskBitfield mask)
-    : MuxCommand(MuxCommandType::kRemotePortNegotiationCommand,
-                 command_response),
+RemotePortNegotiationCommand::RemotePortNegotiationCommand(CommandResponse command_response,
+                                                           DLCI dlci,
+                                                           RemotePortNegotiationParams params,
+                                                           RemotePortNegotiationMaskBitfield mask)
+    : MuxCommand(MuxCommandType::kRemotePortNegotiationCommand, command_response),
       short_RPN_command_(false),
       dlci_(dlci),
       params_(params),
       mask_(mask) {}
 
-std::unique_ptr<RemotePortNegotiationCommand>
-RemotePortNegotiationCommand::Parse(CommandResponse command_response,
-                                    size_t length, const ByteBuffer& buffer) {
+std::unique_ptr<RemotePortNegotiationCommand> RemotePortNegotiationCommand::Parse(
+    CommandResponse command_response, size_t length, const ByteBuffer& buffer) {
   DLCI dlci = buffer[2] >> kRPNDLCIShift;
 
   if (length == kRPNShortLength) {
-    return std::make_unique<RemotePortNegotiationCommand>(command_response,
-                                                          dlci);
+    return std::make_unique<RemotePortNegotiationCommand>(command_response, dlci);
   }
 
   RemotePortNegotiationParams params;
@@ -416,18 +403,17 @@ RemotePortNegotiationCommand::Parse(CommandResponse command_response,
   // TODO(gusss): again, this kind of casting is probably not a good idea.
   params.baud = static_cast<Baud>(buffer[3]);
   params.data_bits = static_cast<DataBits>(buffer[4] & kRPNDataBitsMask);
-  params.stop_bits =
-      static_cast<StopBits>(buffer[4] >> kRPNStopBitsShift & kRPNStopBitsMask);
+  params.stop_bits = static_cast<StopBits>(buffer[4] >> kRPNStopBitsShift & kRPNStopBitsMask);
   params.parity = buffer[4] & kRPNParityMask << kRPNParityShift;
-  params.parity_type = static_cast<ParityType>(
-      buffer[4] >> kRPNParityTypeShift & kRPNParityTypeMask);
+  params.parity_type =
+      static_cast<ParityType>(buffer[4] >> kRPNParityTypeShift & kRPNParityTypeMask);
   params.flow_control = buffer[5];
   params.xon_character = buffer[6];
   params.xoff_character = buffer[7];
   mask = buffer[8] << 8 | buffer[9];
 
-  return std::make_unique<RemotePortNegotiationCommand>(
-      command_response, dlci, std::move(params), std::move(mask));
+  return std::make_unique<RemotePortNegotiationCommand>(command_response, dlci, std::move(params),
+                                                        std::move(mask));
 }
 
 void RemotePortNegotiationCommand::Write(MutableBufferView buffer) const {
@@ -435,9 +421,7 @@ void RemotePortNegotiationCommand::Write(MutableBufferView buffer) const {
   buffer[kTypeIndex] = type_field_octet();
   // EA bit = 1.
   buffer[kLengthIndex] =
-      ((short_RPN_command_ ? kRPNShortLength : kRPNLongLength)
-       << kLengthShift) |
-      kEAMask;
+      ((short_RPN_command_ ? kRPNShortLength : kRPNLongLength) << kLengthShift) | kEAMask;
   // EA bit = 1, bit 2 = 1.
   buffer[2] = kEAMask | (1 << 1) | (dlci_ << kRPNDLCIShift);
 
@@ -449,8 +433,7 @@ void RemotePortNegotiationCommand::Write(MutableBufferView buffer) const {
   buffer[4] = static_cast<uint8_t>(params_.data_bits);
   buffer[4] |= (static_cast<bool>(params_.stop_bits) << kRPNStopBitsShift);
   buffer[4] |= (params_.parity << kRPNParityShift);
-  buffer[4] |=
-      (static_cast<uint8_t>(params_.parity_type) << kRPNParityTypeShift);
+  buffer[4] |= (static_cast<uint8_t>(params_.parity_type) << kRPNParityTypeShift);
   buffer[5] = params_.flow_control;
   buffer[6] = params_.xon_character;
   buffer[7] = params_.xoff_character;
@@ -462,9 +445,8 @@ size_t RemotePortNegotiationCommand::written_size() const {
   return 2ul + (short_RPN_command_ ? kRPNShortLength : kRPNLongLength);
 }
 
-RemoteLineStatusCommand::RemoteLineStatusCommand(
-    CommandResponse command_response, DLCI dlci, bool error_occurred,
-    LineError error)
+RemoteLineStatusCommand::RemoteLineStatusCommand(CommandResponse command_response, DLCI dlci,
+                                                 bool error_occurred, LineError error)
     : MuxCommand(MuxCommandType::kRemoteLineStatusCommand, command_response),
       dlci_(dlci),
       error_occurred_(error_occurred),
@@ -475,11 +457,9 @@ std::unique_ptr<RemoteLineStatusCommand> RemoteLineStatusCommand::Parse(
   DLCI dlci = buffer[2] >> kRLSDLCIShift;
   bool error_occurred = buffer[3] & kRLSErrorOccurredMask;
   // TODO(gusss)
-  LineError error =
-      static_cast<LineError>(buffer[3] >> kRLSErrorShift & kRLSErrorMask);
+  LineError error = static_cast<LineError>(buffer[3] >> kRLSErrorShift & kRLSErrorMask);
 
-  return std::make_unique<RemoteLineStatusCommand>(command_response, dlci,
-                                                   error_occurred, error);
+  return std::make_unique<RemoteLineStatusCommand>(command_response, dlci, error_occurred, error);
 }
 
 void RemoteLineStatusCommand::Write(MutableBufferView buffer) const {
@@ -489,32 +469,25 @@ void RemoteLineStatusCommand::Write(MutableBufferView buffer) const {
   buffer[kLengthIndex] = (kRLSLength << kLengthShift) | kEAMask;
   // EA bit = 1, bit 2 = 1.
   buffer[2] = kEAMask | (1 << 1) | (dlci_ << kRLSDLCIShift);
-  buffer[3] =
-      error_occurred_ | (static_cast<uint8_t>(error_) << kRLSErrorShift);
+  buffer[3] = error_occurred_ | (static_cast<uint8_t>(error_) << kRLSErrorShift);
 }
 
-size_t RemoteLineStatusCommand::written_size() const {
-  return 2ul + kRLSLength;
-}
+size_t RemoteLineStatusCommand::written_size() const { return 2ul + kRLSLength; }
 
-NonSupportedCommandResponse::NonSupportedCommandResponse(
-    CommandResponse incoming_command_response,
-    uint8_t incoming_non_supported_command)
-    : MuxCommand(MuxCommandType::kNonSupportedCommandResponse,
-                 CommandResponse::kResponse),
+NonSupportedCommandResponse::NonSupportedCommandResponse(CommandResponse incoming_command_response,
+                                                         uint8_t incoming_non_supported_command)
+    : MuxCommand(MuxCommandType::kNonSupportedCommandResponse, CommandResponse::kResponse),
       incoming_command_response_(incoming_command_response),
       incoming_non_supported_command_(incoming_non_supported_command) {}
 
 std::unique_ptr<NonSupportedCommandResponse> NonSupportedCommandResponse::Parse(
     CommandResponse command_response, const ByteBuffer& buffer) {
-  CommandResponse incoming_command_response = buffer[2] & kCRMask
-                                                  ? CommandResponse::kCommand
-                                                  : CommandResponse::kResponse;
-  uint8_t incoming_non_supported_command =
-      buffer[2] >> kNSCNotSupportedCommandShift;
+  CommandResponse incoming_command_response =
+      buffer[2] & kCRMask ? CommandResponse::kCommand : CommandResponse::kResponse;
+  uint8_t incoming_non_supported_command = buffer[2] >> kNSCNotSupportedCommandShift;
 
-  return std::make_unique<NonSupportedCommandResponse>(
-      incoming_command_response, incoming_non_supported_command);
+  return std::make_unique<NonSupportedCommandResponse>(incoming_command_response,
+                                                       incoming_non_supported_command);
 }
 
 void NonSupportedCommandResponse::Write(MutableBufferView buffer) const {
@@ -523,34 +496,28 @@ void NonSupportedCommandResponse::Write(MutableBufferView buffer) const {
   // EA bit = 1.
   buffer[kLengthIndex] = (kNSCLength << kLengthShift) | kEAMask;
   buffer[2] = kEAMask |
-              (incoming_command_response_ == CommandResponse::kCommand ? 1 : 0)
-                  << kNSCCRShift |
+              (incoming_command_response_ == CommandResponse::kCommand ? 1 : 0) << kNSCCRShift |
               incoming_non_supported_command_ << kNSCNotSupportedCommandShift;
 }
 
-size_t NonSupportedCommandResponse::written_size() const {
-  return 2ul + kNSCLength;
-}
+size_t NonSupportedCommandResponse::written_size() const { return 2ul + kNSCLength; }
 
-DLCParameterNegotiationCommand::DLCParameterNegotiationCommand(
-    CommandResponse command_response, ParameterNegotiationParams params)
-    : MuxCommand(MuxCommandType::kDLCParameterNegotiation, command_response),
-      params_(params) {}
+DLCParameterNegotiationCommand::DLCParameterNegotiationCommand(CommandResponse command_response,
+                                                               ParameterNegotiationParams params)
+    : MuxCommand(MuxCommandType::kDLCParameterNegotiation, command_response), params_(params) {}
 
-std::unique_ptr<DLCParameterNegotiationCommand>
-DLCParameterNegotiationCommand::Parse(CommandResponse command_response,
-                                      const ByteBuffer& buffer) {
+std::unique_ptr<DLCParameterNegotiationCommand> DLCParameterNegotiationCommand::Parse(
+    CommandResponse command_response, const ByteBuffer& buffer) {
   ParameterNegotiationParams params;
 
   params.dlci = buffer[2];
-  params.credit_based_flow_handshake = static_cast<CreditBasedFlowHandshake>(
-      buffer[3] >> kPNCreditBasedFlowHandshakeShift);
+  params.credit_based_flow_handshake =
+      static_cast<CreditBasedFlowHandshake>(buffer[3] >> kPNCreditBasedFlowHandshakeShift);
   params.priority = buffer[4];
   params.maximum_frame_size = buffer[6] | buffer[7] << 8;
   params.initial_credits = buffer[9];
 
-  return std::make_unique<DLCParameterNegotiationCommand>(command_response,
-                                                          params);
+  return std::make_unique<DLCParameterNegotiationCommand>(command_response, params);
 }
 
 void DLCParameterNegotiationCommand::Write(MutableBufferView buffer) const {
@@ -570,9 +537,7 @@ void DLCParameterNegotiationCommand::Write(MutableBufferView buffer) const {
   buffer[9] = params_.initial_credits & kPNInitialCreditsMask;
 }
 
-size_t DLCParameterNegotiationCommand::written_size() const {
-  return 2ul + kPNLength;
-}
+size_t DLCParameterNegotiationCommand::written_size() const { return 2ul + kPNLength; }
 
 }  // namespace rfcomm
 }  // namespace bt

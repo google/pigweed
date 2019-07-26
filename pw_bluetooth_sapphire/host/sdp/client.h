@@ -38,12 +38,12 @@ class Client {
   //     be called.
   //   - when no more services remain, the result_cb status will be
   //     HostError::kNotFound. The return value is ignored.
-  using SearchResultCallback = fit::function<bool(
-      sdp::Status, const std::map<AttributeId, DataElement>&)>;
-  virtual void ServiceSearchAttributes(
-      std::unordered_set<UUID> search_pattern,
-      const std::unordered_set<AttributeId>& req_attributes,
-      SearchResultCallback result_cb, async_dispatcher_t* cb_dispatcher) = 0;
+  using SearchResultCallback =
+      fit::function<bool(sdp::Status, const std::map<AttributeId, DataElement>&)>;
+  virtual void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
+                                       const std::unordered_set<AttributeId>& req_attributes,
+                                       SearchResultCallback result_cb,
+                                       async_dispatcher_t* cb_dispatcher) = 0;
 };
 
 }  // namespace sdp

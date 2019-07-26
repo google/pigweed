@@ -21,10 +21,8 @@ class L2CAP_BrEdrSignalingChannelTest : public testing::FakeChannelTest {
   L2CAP_BrEdrSignalingChannelTest() = default;
   ~L2CAP_BrEdrSignalingChannelTest() override = default;
 
-  L2CAP_BrEdrSignalingChannelTest(const L2CAP_BrEdrSignalingChannelTest&) =
-      delete;
-  L2CAP_BrEdrSignalingChannelTest& operator=(
-      const L2CAP_BrEdrSignalingChannelTest&) = delete;
+  L2CAP_BrEdrSignalingChannelTest(const L2CAP_BrEdrSignalingChannelTest&) = delete;
+  L2CAP_BrEdrSignalingChannelTest& operator=(const L2CAP_BrEdrSignalingChannelTest&) = delete;
 
  protected:
   void SetUp() override {
@@ -32,8 +30,7 @@ class L2CAP_BrEdrSignalingChannelTest : public testing::FakeChannelTest {
     options.conn_handle = kTestHandle;
 
     auto fake_chan = CreateFakeChannel(options);
-    sig_ = std::make_unique<BrEdrSignalingChannel>(std::move(fake_chan),
-                                                   kDeviceRole);
+    sig_ = std::make_unique<BrEdrSignalingChannel>(std::move(fake_chan), kDeviceRole);
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -66,14 +63,13 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RegisterRequestResponder) {
 
   // Register the handler.
   bool cb_called = false;
-  sig()->ServeRequest(
-      kDisconnectionRequest,
-      [&cb_called, &expected_payload](const ByteBuffer& req_payload,
-                                      SignalingChannel::Responder* responder) {
-        cb_called = true;
-        EXPECT_TRUE(ContainersEqual(expected_payload, req_payload));
-        responder->Send(req_payload);
-      });
+  sig()->ServeRequest(kDisconnectionRequest,
+                      [&cb_called, &expected_payload](const ByteBuffer& req_payload,
+                                                      SignalingChannel::Responder* responder) {
+                        cb_called = true;
+                        EXPECT_TRUE(ContainersEqual(expected_payload, req_payload));
+                        responder->Send(req_payload);
+                      });
 
   const ByteBuffer& local_rsp = CreateStaticByteBuffer(
       // Disconnection Response.
@@ -232,8 +228,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, HandleMultipleCommands) {
       0x09, kTestId2, 0x00, 0x00);
 
   int cb_times_called = 0;
-  auto send_cb = [&echo_rsp0, &reject_rsp1, &echo_rsp2,
-                  &cb_times_called](auto packet) {
+  auto send_cb = [&echo_rsp0, &reject_rsp1, &echo_rsp2, &cb_times_called](auto packet) {
     if (cb_times_called == 0) {
       EXPECT_TRUE(ContainersEqual(echo_rsp0, *packet));
     } else if (cb_times_called == 1) {
@@ -278,10 +273,9 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, SendAndReceiveEcho) {
   const BufferView rsp_data = expected_rsp.view(4, 4);
 
   bool rx_success = false;
-  EXPECT_TRUE(
-      sig()->TestLink(req_data, [&rx_success, &rsp_data](const auto& data) {
-        rx_success = ContainersEqual(rsp_data, data);
-      }));
+  EXPECT_TRUE(sig()->TestLink(req_data, [&rx_success, &rsp_data](const auto& data) {
+    rx_success = ContainersEqual(rsp_data, data);
+  }));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
@@ -329,12 +323,10 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseInvalidId) {
   const BufferView req_data = rsp_invalid_id.view(4, 4);
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
-                               dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
   bool echo_cb_called = false;
-  EXPECT_TRUE(sig()->TestLink(
-      req_data, [&echo_cb_called](auto&) { echo_cb_called = true; }));
+  EXPECT_TRUE(sig()->TestLink(req_data, [&echo_cb_called](auto&) { echo_cb_called = true; }));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
@@ -370,12 +362,10 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectRemoteResponseWrongType) {
   const ByteBuffer& req_data = CreateStaticByteBuffer('P', 'W', 'N');
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
-                               dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
   bool echo_cb_called = false;
-  EXPECT_TRUE(sig()->TestLink(
-      req_data, [&echo_cb_called](auto&) { echo_cb_called = true; }));
+  EXPECT_TRUE(sig()->TestLink(req_data, [&echo_cb_called](auto&) { echo_cb_called = true; }));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
@@ -416,8 +406,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, ReuseCommandIds) {
   };
   fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
 
-  const ByteBuffer& req_data =
-      CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
+  const ByteBuffer& req_data = CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
 
   for (int i = 0; i < 255; i++) {
     EXPECT_TRUE(sig()->TestLink(req_data, [](auto&) {}));
@@ -455,8 +444,7 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, EchoRemoteRejection) {
       0x00, 0x00);
 
   bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
-                               dispatcher());
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
 
   const ByteBuffer& req_data = CreateStaticByteBuffer('h', 'i');
   bool rx_success = false;

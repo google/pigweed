@@ -19,8 +19,8 @@ namespace hci {
 class ConnectionImpl final : public Connection {
  public:
   ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
-                 const DeviceAddress& local_address,
-                 const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci);
+                 const DeviceAddress& local_address, const DeviceAddress& peer_address,
+                 fxl::RefPtr<Transport> hci);
   ~ConnectionImpl() override;
 
   // Connection overrides:
@@ -85,8 +85,7 @@ std::string LinkTypeToString(Connection::LinkType type) {
 }
 
 template <void (ConnectionImpl::*EventHandlerMethod)(const EventPacket&)>
-CommandChannel::EventCallback BindEventHandler(
-    fxl::WeakPtr<ConnectionImpl> conn) {
+CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn) {
   return [conn](const auto& event) {
     if (conn) {
       ((conn.get())->*EventHandlerMethod)(event);
@@ -99,32 +98,33 @@ CommandChannel::EventCallback BindEventHandler(
 // ====== Connection member methods  =====
 
 // static
-std::unique_ptr<Connection> Connection::CreateLE(
-    ConnectionHandle handle, Role role, const DeviceAddress& local_address,
-    const DeviceAddress& peer_address, const LEConnectionParameters& params,
-    fxl::RefPtr<Transport> hci) {
+std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role role,
+                                                 const DeviceAddress& local_address,
+                                                 const DeviceAddress& peer_address,
+                                                 const LEConnectionParameters& params,
+                                                 fxl::RefPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
-  auto conn = std::make_unique<ConnectionImpl>(
-      handle, LinkType::kLE, role, local_address, peer_address, hci);
+  auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kLE, role, local_address,
+                                               peer_address, hci);
   conn->set_low_energy_parameters(params);
   return conn;
 }
 
 // static
-std::unique_ptr<Connection> Connection::CreateACL(
-    ConnectionHandle handle, Role role, const DeviceAddress& local_address,
-    const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci) {
+std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role role,
+                                                  const DeviceAddress& local_address,
+                                                  const DeviceAddress& peer_address,
+                                                  fxl::RefPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  auto conn = std::make_unique<ConnectionImpl>(
-      handle, LinkType::kACL, role, local_address, peer_address, hci);
+  auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kACL, role, local_address,
+                                               peer_address, hci);
   return conn;
 }
 
 Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
-                       const DeviceAddress& local_address,
-                       const DeviceAddress& peer_address)
+                       const DeviceAddress& local_address, const DeviceAddress& peer_address)
     : ll_type_(ll_type),
       handle_(handle),
       role_(role),
@@ -147,10 +147,9 @@ std::string Connection::ToString() const {
 
 // ====== ConnectionImpl member methods ======
 
-ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type,
-                               Role role, const DeviceAddress& local_address,
-                               const DeviceAddress& peer_address,
-                               fxl::RefPtr<Transport> hci)
+ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
+                               const DeviceAddress& local_address,
+                               const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
       hci_(hci),
       weak_ptr_factory_(this) {
@@ -159,14 +158,12 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type,
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   enc_change_id_ = hci_->command_channel()->AddEventHandler(
-      kEncryptionChangeEventCode,
-      BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self),
+      kEncryptionChangeEventCode, BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self),
       async_get_default_dispatcher());
 
   enc_key_refresh_cmpl_id_ = hci_->command_channel()->AddEventHandler(
       kEncryptionKeyRefreshCompleteEventCode,
-      BindEventHandler<&ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent>(
-          self),
+      BindEventHandler<&ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent>(self),
       async_get_default_dispatcher());
 
   le_ltk_request_id_ = hci_->command_channel()->AddLEMetaEventHandler(
@@ -188,9 +185,7 @@ ConnectionImpl::~ConnectionImpl() {
   Close(StatusCode::kRemoteUserTerminatedConnection);
 }
 
-fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
+fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
 void ConnectionImpl::Close(StatusCode reason) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -213,21 +208,17 @@ void ConnectionImpl::Close(StatusCode reason) {
     ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
     const auto& params = event.params<CommandStatusEventParams>();
     if (params.status != StatusCode::kSuccess) {
-      bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x",
-             params.status);
+      bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x", params.status);
     }
   };
 
-  auto disconn =
-      CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
-  auto params =
-      disconn->mutable_view()->mutable_payload<DisconnectCommandParams>();
+  auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
+  auto params = disconn->mutable_view()->mutable_payload<DisconnectCommandParams>();
   params->connection_handle = htole16(handle());
   params->reason = reason;
 
-  hci_->command_channel()->SendCommand(
-      std::move(disconn), async_get_default_dispatcher(), std::move(status_cb),
-      kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
+                                       std::move(status_cb), kCommandStatusEventCode);
 }
 
 bool ConnectionImpl::StartEncryption() {
@@ -262,10 +253,8 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
 
   // TODO(BT-208): Tell the data channel to stop data flow.
 
-  auto cmd = CommandPacket::New(kLEStartEncryption,
-                                sizeof(LEStartEncryptionCommandParams));
-  auto* params =
-      cmd->mutable_view()->mutable_payload<LEStartEncryptionCommandParams>();
+  auto cmd = CommandPacket::New(kLEStartEncryption, sizeof(LEStartEncryptionCommandParams));
+  auto* params = cmd->mutable_view()->mutable_payload<LEStartEncryptionCommandParams>();
   params->connection_handle = htole16(handle());
   params->random_number = htole64(ltk.rand());
   params->encrypted_diversifier = htole16(ltk.ediv());
@@ -283,16 +272,14 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
       return;
     }
 
-    bt_log(ERROR, "hci", "failed to start LE authentication: %s",
-           status.ToString().c_str());
+    bt_log(ERROR, "hci", "failed to start LE authentication: %s", status.ToString().c_str());
     if (self->encryption_change_callback()) {
       self->encryption_change_callback()(status, false);
     }
   };
 
-  return hci_->command_channel()->SendCommand(
-             std::move(cmd), async_get_default_dispatcher(),
-             std::move(status_cb), kCommandStatusEventCode) != 0u;
+  return hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
+                                              std::move(status_cb), kCommandStatusEventCode) != 0u;
 }
 
 void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
@@ -311,53 +298,45 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   }
 
   if (!encryption_change_callback()) {
-    bt_log(TRACE, "hci", "%#.4x: no encryption status callback assigned",
-           handle());
+    bt_log(TRACE, "hci", "%#.4x: no encryption status callback assigned", handle());
     return;
   }
 
   encryption_change_callback()(status, enabled);
 }
 
-void ConnectionImpl::ValidateAclEncryptionKeySize(
-    hci::StatusCallback key_size_validity_cb) {
+void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb) {
   ZX_ASSERT(ll_type() == LinkType::kACL);
   ZX_ASSERT(is_open());
 
-  auto cmd = CommandPacket::New(kReadEncryptionKeySize,
-                                sizeof(ReadEncryptionKeySizeParams));
-  auto* params =
-      cmd->mutable_view()->mutable_payload<ReadEncryptionKeySizeParams>();
+  auto cmd = CommandPacket::New(kReadEncryptionKeySize, sizeof(ReadEncryptionKeySizeParams));
+  auto* params = cmd->mutable_view()->mutable_payload<ReadEncryptionKeySizeParams>();
   params->connection_handle = htole16(handle());
 
   auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(),
-                    valid_cb = std::move(key_size_validity_cb)](
-                       auto, const EventPacket& event) {
+                    valid_cb = std::move(key_size_validity_cb)](auto, const EventPacket& event) {
     if (!self) {
       return;
     }
 
     Status status = event.ToStatus();
-    if (!bt_is_error(status, ERROR, "hci",
-                     "Could not read ACL encryption key size on %#.4x",
+    if (!bt_is_error(status, ERROR, "hci", "Could not read ACL encryption key size on %#.4x",
                      self->handle())) {
-      const auto& return_params =
-          *event.return_params<ReadEncryptionKeySizeReturnParams>();
+      const auto& return_params = *event.return_params<ReadEncryptionKeySizeReturnParams>();
       const auto key_size = return_params.key_size;
-      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu", self->handle(),
-             key_size);
+      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu", self->handle(), key_size);
 
       if (key_size < hci::kMinEncryptionKeySize) {
-        bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient",
-               self->handle(), key_size);
+        bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient", self->handle(),
+               key_size);
         status = Status(HostError::kInsufficientSecurity);
       }
     }
     valid_cb(status);
   };
 
-  hci_->command_channel()->SendCommand(
-      std::move(cmd), async_get_default_dispatcher(), std::move(status_cb));
+  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
+                                       std::move(status_cb));
 }
 
 void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
@@ -385,8 +364,8 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
   Status status(params.status);
   bool enabled = params.encryption_enabled != 0;
 
-  bt_log(TRACE, "hci", "encryption change (%s) %s",
-         enabled ? "enabled" : "disabled", status.ToString().c_str());
+  bt_log(TRACE, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
+         status.ToString().c_str());
 
   if (ll_type() == LinkType::kACL && status && enabled) {
     ValidateAclEncryptionKeySize([this](const Status& key_valid_status) {
@@ -398,13 +377,11 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
   HandleEncryptionStatus(status, enabled);
 }
 
-void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
-    const EventPacket& event) {
+void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionKeyRefreshCompleteEventCode);
 
-  if (event.view().payload_size() !=
-      sizeof(EncryptionKeyRefreshCompleteEventParams)) {
+  if (event.view().payload_size() != sizeof(EncryptionKeyRefreshCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed encryption key refresh complete event");
     return;
   }
@@ -457,34 +434,29 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   uint64_t rand = le64toh(params->random_number);
   uint16_t ediv = le16toh(params->encrypted_diversifier);
 
-  bt_log(TRACE, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv,
-         rand);
+  bt_log(TRACE, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     cmd = CommandPacket::New(kLELongTermKeyRequestReply,
                              sizeof(LELongTermKeyRequestReplyCommandParams));
-    auto* params =
-        cmd->mutable_view()
-            ->mutable_payload<LELongTermKeyRequestReplyCommandParams>();
+    auto* params = cmd->mutable_view()->mutable_payload<LELongTermKeyRequestReplyCommandParams>();
 
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
   } else {
     bt_log(TRACE, "hci-le", "LTK request rejected");
 
-    cmd = CommandPacket::New(
-        kLELongTermKeyRequestNegativeReply,
-        sizeof(LELongTermKeyRequestNegativeReplyCommandParams));
+    cmd = CommandPacket::New(kLELongTermKeyRequestNegativeReply,
+                             sizeof(LELongTermKeyRequestNegativeReplyCommandParams));
     auto* params =
-        cmd->mutable_view()
-            ->mutable_payload<LELongTermKeyRequestNegativeReplyCommandParams>();
+        cmd->mutable_view()->mutable_payload<LELongTermKeyRequestNegativeReplyCommandParams>();
     params->connection_handle = htole16(handle);
   }
 
   auto status_cb = [](auto id, const EventPacket& event) {
     hci_is_error(event, TRACE, "hci-le", "failed to reply to LTK request");
   };
-  hci_->command_channel()->SendCommand(
-      std::move(cmd), async_get_default_dispatcher(), std::move(status_cb));
+  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
+                                       std::move(status_cb));
 }
 
 }  // namespace hci

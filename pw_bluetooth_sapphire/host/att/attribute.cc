@@ -9,8 +9,7 @@ namespace att {
 
 AccessRequirements::AccessRequirements() : value_(0u) {}
 
-AccessRequirements::AccessRequirements(bool encryption, bool authentication,
-                                       bool authorization)
+AccessRequirements::AccessRequirements(bool encryption, bool authentication, bool authorization)
     : value_(kAttributePermissionBitAllowed) {
   if (encryption) {
     value_ |= kAttributePermissionBitEncryptionRequired;
@@ -24,13 +23,8 @@ AccessRequirements::AccessRequirements(bool encryption, bool authentication,
 }
 
 Attribute::Attribute(AttributeGrouping* group, Handle handle, const UUID& type,
-                     const AccessRequirements& read_reqs,
-                     const AccessRequirements& write_reqs)
-    : group_(group),
-      handle_(handle),
-      type_(type),
-      read_reqs_(read_reqs),
-      write_reqs_(write_reqs) {
+                     const AccessRequirements& read_reqs, const AccessRequirements& write_reqs)
+    : group_(group), handle_(handle), type_(type), read_reqs_(read_reqs), write_reqs_(write_reqs) {
   ZX_DEBUG_ASSERT(group_);
   ZX_DEBUG_ASSERT(is_initialized());
 }
@@ -56,8 +50,7 @@ bool Attribute::ReadAsync(PeerId peer_id, uint16_t offset,
   return true;
 }
 
-bool Attribute::WriteAsync(PeerId peer_id, uint16_t offset,
-                           const ByteBuffer& value,
+bool Attribute::WriteAsync(PeerId peer_id, uint16_t offset, const ByteBuffer& value,
                            WriteResultCallback result_callback) const {
   if (!is_initialized() || !write_handler_)
     return false;
@@ -65,13 +58,11 @@ bool Attribute::WriteAsync(PeerId peer_id, uint16_t offset,
   if (!write_reqs_.allowed())
     return false;
 
-  write_handler_(peer_id, handle_, offset, std::move(value),
-                 std::move(result_callback));
+  write_handler_(peer_id, handle_, offset, std::move(value), std::move(result_callback));
   return true;
 }
 
-AttributeGrouping::AttributeGrouping(const UUID& group_type,
-                                     Handle start_handle, size_t attr_count,
+AttributeGrouping::AttributeGrouping(const UUID& group_type, Handle start_handle, size_t attr_count,
                                      const ByteBuffer& decl_value)
     : start_handle_(start_handle), active_(false) {
   ZX_DEBUG_ASSERT(start_handle_ != kInvalidHandle);
@@ -82,17 +73,16 @@ AttributeGrouping::AttributeGrouping(const UUID& group_type,
   attributes_.reserve(attr_count + 1);
 
   // TODO(armansito): Allow callers to require at most encryption.
-  attributes_.push_back(Attribute(
-      this, start_handle, group_type,
-      AccessRequirements(false, false, false),  // read allowed, no security
-      AccessRequirements()));                   // write disallowed
+  attributes_.push_back(
+      Attribute(this, start_handle, group_type,
+                AccessRequirements(false, false, false),  // read allowed, no security
+                AccessRequirements()));                   // write disallowed
 
   attributes_[0].SetValue(decl_value);
 }
 
-Attribute* AttributeGrouping::AddAttribute(
-    const UUID& type, const AccessRequirements& read_reqs,
-    const AccessRequirements& write_reqs) {
+Attribute* AttributeGrouping::AddAttribute(const UUID& type, const AccessRequirements& read_reqs,
+                                           const AccessRequirements& write_reqs) {
   if (complete())
     return nullptr;
 

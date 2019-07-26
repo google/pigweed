@@ -12,20 +12,17 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-BrEdrSignalingChannel::BrEdrSignalingChannel(fbl::RefPtr<Channel> chan,
-                                             hci::Connection::Role role)
+BrEdrSignalingChannel::BrEdrSignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role)
     : SignalingChannel(std::move(chan), role) {
   set_mtu(kDefaultMTU);
 
   // Add default handler for incoming Echo Request commands.
-  ServeRequest(kEchoRequest,
-               [](const ByteBuffer& req_payload, Responder* responder) {
-                 responder->Send(req_payload);
-               });
+  ServeRequest(kEchoRequest, [](const ByteBuffer& req_payload, Responder* responder) {
+    responder->Send(req_payload);
+  });
 }
 
-bool BrEdrSignalingChannel::SendRequest(CommandCode req_code,
-                                        const ByteBuffer& payload,
+bool BrEdrSignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
                                         ResponseHandler cb) {
   ZX_DEBUG_ASSERT(cb);
   const CommandId id = EnqueueResponse(req_code + 1, std::move(cb));
@@ -36,8 +33,7 @@ bool BrEdrSignalingChannel::SendRequest(CommandCode req_code,
   return SendPacket(req_code, id, payload);
 }
 
-void BrEdrSignalingChannel::ServeRequest(CommandCode req_code,
-                                         RequestDelegate cb) {
+void BrEdrSignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
   ZX_DEBUG_ASSERT(!IsSupportedResponse(req_code));
   ZX_DEBUG_ASSERT(cb);
   inbound_handlers_[req_code] = std::move(cb);
@@ -47,20 +43,18 @@ void BrEdrSignalingChannel::ServeRequest(CommandCode req_code,
 // used for testing the link or for passing vendor specific information using
 // the optional data field."
 bool BrEdrSignalingChannel::TestLink(const ByteBuffer& data, DataCallback cb) {
-  return SendRequest(
-      kEchoRequest, data,
-      [cb = std::move(cb)](Status status, const ByteBuffer& rsp_payload) {
-        if (status == Status::kSuccess) {
-          cb(rsp_payload);
-        } else {
-          cb(BufferView());
-        }
-        return false;
-      });
+  return SendRequest(kEchoRequest, data,
+                     [cb = std::move(cb)](Status status, const ByteBuffer& rsp_payload) {
+                       if (status == Status::kSuccess) {
+                         cb(rsp_payload);
+                       } else {
+                         cb(BufferView());
+                       }
+                       return false;
+                     });
 }
 
-void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
-                                         const SignalingPacketHandler& cb) {
+void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) {
   // "Multiple commands may be sent in a single C-frame over Fixed Channel CID
   // 0x0001 (ACL-U) (v5.0, Vol 3, Part A, Section 4)"
   ZX_DEBUG_ASSERT(sdu);
@@ -75,18 +69,15 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu,
     SignalingPacket packet(&header_data);
 
     uint16_t expected_payload_length = le16toh(packet.header().length);
-    size_t remaining_sdu_length =
-        sdu->size() - sdu_offset - sizeof(CommandHeader);
+    size_t remaining_sdu_length = sdu->size() - sdu_offset - sizeof(CommandHeader);
     if (remaining_sdu_length < expected_payload_length) {
       bt_log(TRACE, "l2cap-bredr", "sig: expected more bytes (%zu < %u); drop",
              remaining_sdu_length, expected_payload_length);
-      SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                        BufferView());
+      SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
       return;
     }
 
-    auto& packet_data =
-        sdu->view(sdu_offset, sizeof(CommandHeader) + expected_payload_length);
+    auto& packet_data = sdu->view(sdu_offset, sizeof(CommandHeader) + expected_payload_length);
     cb(SignalingPacket(&packet_data, expected_payload_length));
 
     sdu_offset += packet_data.size();
@@ -114,14 +105,12 @@ bool BrEdrSignalingChannel::HandlePacket(const SignalingPacket& packet) {
     return true;
   }
 
-  bt_log(TRACE, "l2cap-bredr", "sig: ignoring unsupported code %#.2x",
-         packet.header().code);
+  bt_log(TRACE, "l2cap-bredr", "sig: ignoring unsupported code %#.2x", packet.header().code);
 
   return false;
 }
 
-CommandId BrEdrSignalingChannel::EnqueueResponse(CommandCode expected_code,
-                                                 ResponseHandler cb) {
+CommandId BrEdrSignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseHandler cb) {
   ZX_DEBUG_ASSERT(IsSupportedResponse(expected_code));
 
   // Command identifiers for pending requests are assumed to be unique across
@@ -172,10 +161,8 @@ bool BrEdrSignalingChannel::IsCommandPending(CommandId id) const {
 void BrEdrSignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   auto iter = pending_commands_.find(packet.header().id);
   if (iter == pending_commands_.end()) {
-    bt_log(SPEW, "l2cap-bredr", "sig: ignoring unexpected response, id %#.2x",
-           packet.header().id);
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      BufferView());
+    bt_log(SPEW, "l2cap-bredr", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
 
@@ -185,11 +172,9 @@ void BrEdrSignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   } else if (packet.header().code == kCommandRejectCode) {
     status = Status::kReject;
   } else {
-    bt_log(ERROR, "l2cap-bredr",
-           "sig: response (id %#.2x) has unexpected code %#.2x",
+    bt_log(ERROR, "l2cap-bredr", "sig: response (id %#.2x) has unexpected code %#.2x",
            packet.header().id, packet.header().code);
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      BufferView());
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
 

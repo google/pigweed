@@ -17,40 +17,33 @@
 namespace bt {
 namespace gatt {
 
-Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database,
-               fxl::RefPtr<att::Bearer> bearer)
+Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database, fxl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(db_);
   ZX_DEBUG_ASSERT(att_);
 
-  exchange_mtu_id_ = att_->RegisterHandler(
-      att::kExchangeMTURequest, fit::bind_member(this, &Server::OnExchangeMTU));
-  find_information_id_ =
-      att_->RegisterHandler(att::kFindInformationRequest,
-                            fit::bind_member(this, &Server::OnFindInformation));
-  read_by_group_type_id_ =
-      att_->RegisterHandler(att::kReadByGroupTypeRequest,
-                            fit::bind_member(this, &Server::OnReadByGroupType));
-  read_by_type_id_ = att_->RegisterHandler(
-      att::kReadByTypeRequest, fit::bind_member(this, &Server::OnReadByType));
-  read_req_id_ = att_->RegisterHandler(
-      att::kReadRequest, fit::bind_member(this, &Server::OnReadRequest));
-  write_req_id_ = att_->RegisterHandler(
-      att::kWriteRequest, fit::bind_member(this, &Server::OnWriteRequest));
-  write_cmd_id_ = att_->RegisterHandler(
-      att::kWriteCommand, fit::bind_member(this, &Server::OnWriteCommand));
-  read_blob_req_id_ =
-      att_->RegisterHandler(att::kReadBlobRequest,
-                            fit::bind_member(this, &Server::OnReadBlobRequest));
+  exchange_mtu_id_ = att_->RegisterHandler(att::kExchangeMTURequest,
+                                           fit::bind_member(this, &Server::OnExchangeMTU));
+  find_information_id_ = att_->RegisterHandler(att::kFindInformationRequest,
+                                               fit::bind_member(this, &Server::OnFindInformation));
+  read_by_group_type_id_ = att_->RegisterHandler(
+      att::kReadByGroupTypeRequest, fit::bind_member(this, &Server::OnReadByGroupType));
+  read_by_type_id_ =
+      att_->RegisterHandler(att::kReadByTypeRequest, fit::bind_member(this, &Server::OnReadByType));
+  read_req_id_ =
+      att_->RegisterHandler(att::kReadRequest, fit::bind_member(this, &Server::OnReadRequest));
+  write_req_id_ =
+      att_->RegisterHandler(att::kWriteRequest, fit::bind_member(this, &Server::OnWriteRequest));
+  write_cmd_id_ =
+      att_->RegisterHandler(att::kWriteCommand, fit::bind_member(this, &Server::OnWriteCommand));
+  read_blob_req_id_ = att_->RegisterHandler(att::kReadBlobRequest,
+                                            fit::bind_member(this, &Server::OnReadBlobRequest));
   find_by_type_value_id_ = att_->RegisterHandler(
-      att::kFindByTypeValueRequest,
-      fit::bind_member(this, &Server::OnFindByTypeValueRequest));
-  prepare_write_id_ = att_->RegisterHandler(
-      att::kPrepareWriteRequest,
-      fit::bind_member(this, &Server::OnPrepareWriteRequest));
-  exec_write_id_ = att_->RegisterHandler(
-      att::kExecuteWriteRequest,
-      fit::bind_member(this, &Server::OnExecuteWriteRequest));
+      att::kFindByTypeValueRequest, fit::bind_member(this, &Server::OnFindByTypeValueRequest));
+  prepare_write_id_ = att_->RegisterHandler(att::kPrepareWriteRequest,
+                                            fit::bind_member(this, &Server::OnPrepareWriteRequest));
+  exec_write_id_ = att_->RegisterHandler(att::kExecuteWriteRequest,
+                                         fit::bind_member(this, &Server::OnExecuteWriteRequest));
 }
 
 Server::~Server() {
@@ -67,14 +60,11 @@ Server::~Server() {
   att_->UnregisterHandler(exchange_mtu_id_);
 }
 
-void Server::SendNotification(att::Handle handle, const ByteBuffer& value,
-                              bool indicate) {
-  auto buffer =
-      NewSlabBuffer(sizeof(att::Header) + sizeof(handle) + value.size());
+void Server::SendNotification(att::Handle handle, const ByteBuffer& value, bool indicate) {
+  auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(handle) + value.size());
   ZX_ASSERT(buffer);
 
-  att::PacketWriter writer(indicate ? att::kIndication : att::kNotification,
-                           buffer.get());
+  att::PacketWriter writer(indicate ? att::kIndication : att::kNotification, buffer.get());
   auto rsp_params = writer.mutable_payload<att::AttributeData>();
   rsp_params->handle = htole16(handle);
   writer.mutable_payload_data().Write(value, sizeof(att::AttributeData));
@@ -85,16 +75,14 @@ void Server::SendNotification(att::Handle handle, const ByteBuffer& value,
   }
 
   att_->StartTransaction(
-      std::move(buffer),
-      [](const auto&) { bt_log(SPEW, "gatt", "got confirmation!"); },
+      std::move(buffer), [](const auto&) { bt_log(SPEW, "gatt", "got confirmation!"); },
       [](att::Status status, att::Handle handle) {
         bt_log(TRACE, "gatt", "indication failed (result %s, handle: %#.4x)",
                status.ToString().c_str(), handle);
       });
 }
 
-void Server::OnExchangeMTU(att::Bearer::TransactionId tid,
-                           const att::PacketReader& packet) {
+void Server::OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kExchangeMTURequest);
 
   if (packet.payload_size() != sizeof(att::ExchangeMTURequestParams)) {
@@ -106,8 +94,7 @@ void Server::OnExchangeMTU(att::Bearer::TransactionId tid,
   uint16_t client_mtu = le16toh(params.client_rx_mtu);
   uint16_t server_mtu = att_->preferred_mtu();
 
-  auto buffer = NewSlabBuffer(sizeof(att::Header) +
-                              sizeof(att::ExchangeMTUResponseParams));
+  auto buffer = NewSlabBuffer(sizeof(att::Header) + sizeof(att::ExchangeMTUResponseParams));
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kExchangeMTUResponse, buffer.get());
@@ -123,8 +110,7 @@ void Server::OnExchangeMTU(att::Bearer::TransactionId tid,
   att_->set_mtu(std::max(att::kLEMinMTU, std::min(client_mtu, server_mtu)));
 }
 
-void Server::OnFindInformation(att::Bearer::TransactionId tid,
-                               const att::PacketReader& packet) {
+void Server::OnFindInformation(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kFindInformationRequest);
 
   if (packet.payload_size() != sizeof(att::FindInformationRequestParams)) {
@@ -182,17 +168,14 @@ void Server::OnFindInformation(att::Bearer::TransactionId tid,
   ZX_ASSERT(buffer);
 
   att::PacketWriter writer(att::kFindInformationResponse, buffer.get());
-  auto rsp_params =
-      writer.mutable_payload<att::FindInformationResponseParams>();
-  rsp_params->format =
-      (entry_size == 4) ? att::UUIDType::k16Bit : att::UUIDType::k128Bit;
+  auto rsp_params = writer.mutable_payload<att::FindInformationResponseParams>();
+  rsp_params->format = (entry_size == 4) ? att::UUIDType::k16Bit : att::UUIDType::k128Bit;
 
   // |out_entries| initially references |params->information_data|. The loop
   // below modifies it as entries are written into the list.
   auto out_entries = writer.mutable_payload_data().mutable_view(kRspStructSize);
   for (const auto& attr : results) {
-    *reinterpret_cast<att::Handle*>(out_entries.mutable_data()) =
-        htole16(attr->handle());
+    *reinterpret_cast<att::Handle*>(out_entries.mutable_data()) = htole16(attr->handle());
     auto uuid_view = out_entries.mutable_view(sizeof(att::Handle));
     attr->type().ToBytes(&uuid_view, false /* allow32_bit */);
 
@@ -218,19 +201,16 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
   UUID type(params.type);
   constexpr size_t kParamsSize = sizeof(att::FindByTypeValueRequestParams);
 
-  BufferView value = packet.payload_data().view(
-      kParamsSize, packet.payload_size() - kParamsSize);
+  BufferView value = packet.payload_data().view(kParamsSize, packet.payload_size() - kParamsSize);
 
   if (start == att::kInvalidHandle || start > end) {
-    att_->ReplyWithError(tid, att::kInvalidHandle,
-                         att::ErrorCode::kInvalidHandle);
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidHandle);
     return;
   }
 
   auto iter = db_->GetIterator(start, end, &type, false);
   if (iter.AtEnd()) {
-    att_->ReplyWithError(tid, att::kInvalidHandle,
-                         att::ErrorCode::kAttributeNotFound);
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
     return;
   }
 
@@ -251,8 +231,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
 
   // No attributes match the value
   if (results.size() == 0) {
-    att_->ReplyWithError(tid, att::kInvalidHandle,
-                         att::ErrorCode::kAttributeNotFound);
+    att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kAttributeNotFound);
     return;
   }
 
@@ -266,8 +245,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
   // Points to the next entry in the target PDU.
   auto next_entry = writer.mutable_payload_data();
   for (const auto& attr : results) {
-    auto* entry = reinterpret_cast<att::HandlesInformationList*>(
-        next_entry.mutable_data());
+    auto* entry = reinterpret_cast<att::HandlesInformationList*>(next_entry.mutable_data());
     entry->handle = htole16(attr->handle());
     if (attr->group().active()) {
       entry->group_end_handle = htole16(attr->group().end_handle());
@@ -280,8 +258,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
   att_->Reply(tid, std::move(buffer));
 }
 
-void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
-                               const att::PacketReader& packet) {
+void Server::OnReadByGroupType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByGroupTypeRequest);
 
   att::Handle start, end;
@@ -303,8 +280,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
     return;
   }
 
-  if (group_type != types::kPrimaryService &&
-      group_type != types::kSecondaryService) {
+  if (group_type != types::kPrimaryService && group_type != types::kSecondaryService) {
     att_->ReplyWithError(tid, start, att::ErrorCode::kUnsupportedGroupType);
     return;
   }
@@ -315,10 +291,9 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
 
   size_t value_size;
   std::list<const att::Attribute*> results;
-  auto error_code = ReadByTypeHelper(
-      start, end, group_type, true /* group_type */, att_->mtu() - kHeaderSize,
-      att::kMaxReadByGroupTypeValueLength, sizeof(att::AttributeGroupDataEntry),
-      &value_size, &results);
+  auto error_code = ReadByTypeHelper(start, end, group_type, true /* group_type */,
+                                     att_->mtu() - kHeaderSize, att::kMaxReadByGroupTypeValueLength,
+                                     sizeof(att::AttributeGroupDataEntry), &value_size, &results);
   if (error_code != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, start, error_code);
     return;
@@ -342,8 +317,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
   // Points to the next entry in the target PDU.
   auto next_entry = writer.mutable_payload_data().mutable_view(kRspStructSize);
   for (const auto& attr : results) {
-    auto* entry = reinterpret_cast<att::AttributeGroupDataEntry*>(
-        next_entry.mutable_data());
+    auto* entry = reinterpret_cast<att::AttributeGroupDataEntry*>(next_entry.mutable_data());
     entry->start_handle = htole16(attr->group().start_handle());
     entry->group_end_handle = htole16(attr->group().end_handle());
     next_entry.Write(attr->group().decl_value().view(0, value_size),
@@ -355,8 +329,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid,
   att_->Reply(tid, std::move(buffer));
 }
 
-void Server::OnReadByType(att::Bearer::TransactionId tid,
-                          const att::PacketReader& packet) {
+void Server::OnReadByType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByTypeRequest);
 
   att::Handle start, end;
@@ -384,10 +357,9 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
 
   size_t value_size;
   std::list<const att::Attribute*> results;
-  auto error_code = ReadByTypeHelper(
-      start, end, type, false /* group_type */, att_->mtu() - kHeaderSize,
-      att::kMaxReadByTypeValueLength, sizeof(att::AttributeData), &value_size,
-      &results);
+  auto error_code = ReadByTypeHelper(start, end, type, false /* group_type */,
+                                     att_->mtu() - kHeaderSize, att::kMaxReadByTypeValueLength,
+                                     sizeof(att::AttributeData), &value_size, &results);
   if (error_code != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, start, error_code);
     return;
@@ -399,14 +371,12 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
   if (!results.front()->value()) {
     ZX_DEBUG_ASSERT(results.size() == 1u);
 
-    const size_t kMaxValueSize =
-        std::min(att_->mtu() - kHeaderSize - sizeof(att::AttributeData),
-                 static_cast<size_t>(att::kMaxReadByTypeValueLength));
+    const size_t kMaxValueSize = std::min(att_->mtu() - kHeaderSize - sizeof(att::AttributeData),
+                                          static_cast<size_t>(att::kMaxReadByTypeValueLength));
 
     att::Handle handle = results.front()->handle();
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto result_cb = [self, tid, handle, kMaxValueSize](att::ErrorCode ecode,
-                                                        const auto& value) {
+    auto result_cb = [self, tid, handle, kMaxValueSize](att::ErrorCode ecode, const auto& value) {
       if (!self)
         return;
 
@@ -424,8 +394,8 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
       auto params = writer.mutable_payload<att::ReadByTypeResponseParams>();
       params->length = static_cast<uint8_t>(entry_size);
       params->attribute_data_list->handle = htole16(handle);
-      writer.mutable_payload_data().Write(
-          value.data(), value_size, sizeof(params->length) + sizeof(handle));
+      writer.mutable_payload_data().Write(value.data(), value_size,
+                                          sizeof(params->length) + sizeof(handle));
 
       self->att_->Reply(tid, std::move(buffer));
     };
@@ -453,8 +423,7 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
   // Points to the next entry in the target PDU.
   auto next_entry = writer.mutable_payload_data().mutable_view(kRspStructSize);
   for (const auto& attr : results) {
-    auto* entry =
-        reinterpret_cast<att::AttributeData*>(next_entry.mutable_data());
+    auto* entry = reinterpret_cast<att::AttributeData*>(next_entry.mutable_data());
     entry->handle = htole16(attr->handle());
     next_entry.Write(attr->value()->view(0, value_size), sizeof(entry->handle));
 
@@ -464,8 +433,7 @@ void Server::OnReadByType(att::Bearer::TransactionId tid,
   att_->Reply(tid, std::move(buffer));
 }
 
-void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
-                               const att::PacketReader& packet) {
+void Server::OnReadBlobRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadBlobRequest);
 
   if (packet.payload_size() != sizeof(att::ReadBlobRequestParams)) {
@@ -483,8 +451,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  att::ErrorCode ecode =
-      att::CheckReadPermissions(attr->read_reqs(), att_->security());
+  att::ErrorCode ecode = att::CheckReadPermissions(attr->read_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -518,8 +485,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
       att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidOffset);
       return;
     }
-    size_t value_size =
-        std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
+    size_t value_size = std::min(attr->value()->size(), self->att_->mtu() - kHeaderSize);
     callback(att::ErrorCode::kNoError, attr->value()->view(offset, value_size));
     return;
   }
@@ -530,8 +496,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid,
   }
 }
 
-void Server::OnReadRequest(att::Bearer::TransactionId tid,
-                           const att::PacketReader& packet) {
+void Server::OnReadRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadRequest);
 
   if (packet.payload_size() != sizeof(att::ReadRequestParams)) {
@@ -548,8 +513,7 @@ void Server::OnReadRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  att::ErrorCode ecode =
-      att::CheckReadPermissions(attr->read_reqs(), att_->security());
+  att::ErrorCode ecode = att::CheckReadPermissions(attr->read_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -588,8 +552,7 @@ void Server::OnReadRequest(att::Bearer::TransactionId tid,
   }
 }
 
-void Server::OnWriteCommand(att::Bearer::TransactionId tid,
-                            const att::PacketReader& packet) {
+void Server::OnWriteCommand(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kWriteCommand);
 
   if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
@@ -606,8 +569,7 @@ void Server::OnWriteCommand(att::Bearer::TransactionId tid,
     return;
   }
 
-  att::ErrorCode ecode =
-      att::CheckWritePermissions(attr->write_reqs(), att_->security());
+  att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     return;
   }
@@ -626,8 +588,7 @@ void Server::OnWriteCommand(att::Bearer::TransactionId tid,
   attr->WriteAsync(peer_id_, 0, value_view, nullptr);
 }
 
-void Server::OnWriteRequest(att::Bearer::TransactionId tid,
-                            const att::PacketReader& packet) {
+void Server::OnWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kWriteRequest);
 
   if (packet.payload_size() < sizeof(att::WriteRequestParams)) {
@@ -644,8 +605,7 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  att::ErrorCode ecode =
-      att::CheckWritePermissions(attr->write_reqs(), att_->security());
+  att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -659,8 +619,7 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
 
   auto value_view = packet.payload_data().view(sizeof(params.handle));
   if (value_view.size() > att::kMaxAttributeValueLength) {
-    att_->ReplyWithError(tid, handle,
-                         att::ErrorCode::kInvalidAttributeValueLength);
+    att_->ReplyWithError(tid, handle, att::ErrorCode::kInvalidAttributeValueLength);
     return;
   }
 
@@ -684,10 +643,11 @@ void Server::OnWriteRequest(att::Bearer::TransactionId tid,
   }
 }
 
-att::ErrorCode Server::ReadByTypeHelper(
-    att::Handle start, att::Handle end, const UUID& type, bool group_type,
-    size_t max_data_list_size, size_t max_value_size, size_t entry_prefix_size,
-    size_t* out_value_size, std::list<const att::Attribute*>* out_results) {
+att::ErrorCode Server::ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
+                                        bool group_type, size_t max_data_list_size,
+                                        size_t max_value_size, size_t entry_prefix_size,
+                                        size_t* out_value_size,
+                                        std::list<const att::Attribute*>* out_results) {
   ZX_DEBUG_ASSERT(out_results);
   ZX_DEBUG_ASSERT(out_value_size);
 
@@ -709,8 +669,7 @@ att::ErrorCode Server::ReadByTypeHelper(
     const auto* attr = iter.get();
     ZX_DEBUG_ASSERT(attr);
 
-    att::ErrorCode security_result =
-        att::CheckReadPermissions(attr->read_reqs(), att_->security());
+    att::ErrorCode security_result = att::CheckReadPermissions(attr->read_reqs(), att_->security());
     if (security_result != att::ErrorCode::kNoError) {
       // Return error only if this is the first result that matched. We simply
       // stop the search otherwise.
@@ -731,8 +690,7 @@ att::ErrorCode Server::ReadByTypeHelper(
 
       value_size = attr->value()->size();  // untruncated value size
       entry_size =
-          std::min(std::min(value_size, max_value_size) + entry_prefix_size,
-                   max_data_list_size);
+          std::min(std::min(value_size, max_value_size) + entry_prefix_size, max_data_list_size);
 
       // Actual value size to include in a PDU.
       *out_value_size = entry_size - entry_prefix_size;
@@ -770,8 +728,7 @@ void Server::OnPrepareWriteRequest(att::Bearer::TransactionId tid,
   const auto& params = packet.payload<att::PrepareWriteRequestParams>();
   att::Handle handle = le16toh(params.handle);
   uint16_t offset = le16toh(params.offset);
-  auto value_view =
-      packet.payload_data().view(sizeof(params.handle) + sizeof(params.offset));
+  auto value_view = packet.payload_data().view(sizeof(params.handle) + sizeof(params.offset));
 
   if (prepare_queue_.size() >= att::kPrepareQueueMaxCapacity) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kPrepareQueueFull);
@@ -786,8 +743,7 @@ void Server::OnPrepareWriteRequest(att::Bearer::TransactionId tid,
     return;
   }
 
-  att::ErrorCode ecode =
-      att::CheckWritePermissions(attr->write_reqs(), att_->security());
+  att::ErrorCode ecode = att::CheckWritePermissions(attr->write_reqs(), att_->security());
   if (ecode != att::ErrorCode::kNoError) {
     att_->ReplyWithError(tid, handle, ecode);
     return;
@@ -828,8 +784,7 @@ void Server::OnExecuteWriteRequest(att::Bearer::TransactionId tid,
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto result_cb = [self, tid](att::Handle handle,
-                               att::ErrorCode ecode) mutable {
+  auto result_cb = [self, tid](att::Handle handle, att::ErrorCode ecode) mutable {
     if (!self)
       return;
 

@@ -22,8 +22,7 @@ SocketFactory<ChannelT>::~SocketFactory() {
 }
 
 template <typename ChannelT>
-zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
-    fbl::RefPtr<ChannelT> channel) {
+zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> channel) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (!channel) {
@@ -32,14 +31,13 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
 
   const auto unique_id = channel->unique_id();
   if (channel_to_relay_.find(unique_id) != channel_to_relay_.end()) {
-    bt_log(ERROR, "l2cap", "channel %u @ %u is already bound to a socket",
-           channel->link_handle(), channel->id());
+    bt_log(ERROR, "l2cap", "channel %u @ %u is already bound to a socket", channel->link_handle(),
+           channel->id());
     return zx::socket();
   }
 
   zx::socket local_socket, remote_socket;
-  const auto status =
-      zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
+  const auto status = zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
   if (status != ZX_OK) {
     bt_log(ERROR, "l2cap", "Failed to create socket for channel %u @ %u: %s",
            channel->link_handle(), channel->id(), zx_status_get_string(status));
@@ -52,15 +50,13 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(
           [self = weak_ptr_factory_.GetWeakPtr(), id = unique_id]() mutable {
             ZX_DEBUG_ASSERT_MSG(self, "(unique_id=%lu)", id);
             size_t n_erased = self->channel_to_relay_.erase(id);
-            ZX_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%lu)",
-                                n_erased, id);
+            ZX_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%lu)", n_erased, id);
           }));
 
   // Note: Activate() may abort, if |channel| has been Activated() without
   // going through this SocketFactory.
   if (!relay->Activate()) {
-    bt_log(ERROR, "l2cap", "Failed to Activate() relay for channel %u",
-           channel->id());
+    bt_log(ERROR, "l2cap", "Failed to Activate() relay for channel %u", channel->id());
     return zx::socket();
   }
 

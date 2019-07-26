@@ -34,8 +34,7 @@ class PairingDelegate {
 
   // Ask the user to confirm the 6-digit |passkey| and report status by invoking
   // |confirm|.
-  virtual void DisplayPasskey(PeerId peer_id, uint32_t passkey,
-                              ConfirmCallback confirm) = 0;
+  virtual void DisplayPasskey(PeerId peer_id, uint32_t passkey, ConfirmCallback confirm) = 0;
 
   // Ask the user to enter a 6-digit passkey or reject pairing. Report the
   // result by invoking |respond|.
@@ -43,8 +42,7 @@ class PairingDelegate {
   // A valid |passkey| must be a non-negative integer. Pass a negative value to
   // reject pairing.
   using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
-  virtual void RequestPasskey(PeerId peer_id,
-                              PasskeyResponseCallback respond) = 0;
+  virtual void RequestPasskey(PeerId peer_id, PasskeyResponseCallback respond) = 0;
 
  protected:
   PairingDelegate() = default;

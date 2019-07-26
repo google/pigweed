@@ -52,9 +52,8 @@ void PeerCache::ForEach(PeerCallback f) {
 bool PeerCache::AddBondedPeer(BondingData bd) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!bd.le_pairing_data.identity_address ||
-          bd.address.value() == bd.le_pairing_data.identity_address->value());
-  ZX_DEBUG_ASSERT(bd.address.type() !=
-                  DeviceAddress::Type::kLEAnonymous);
+                  bd.address.value() == bd.le_pairing_data.identity_address->value());
+  ZX_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
   const bool bond_le = bd.le_pairing_data.ltk || bd.le_pairing_data.csrk;
   const bool bond_bredr = bd.bredr_link_key.has_value();
@@ -68,8 +67,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   }
 
   if (bd.address.IsBrEdr() && !bond_bredr) {
-    bt_log(ERROR, "gap-bredr", "mandatory link key missing (id: %s)",
-           bt_str(bd.identifier));
+    bt_log(ERROR, "gap-bredr", "mandatory link key missing (id: %s)", bt_str(bd.identifier));
     return false;
   }
 
@@ -106,8 +104,8 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 
   ZX_DEBUG_ASSERT(!peer->temporary());
   ZX_DEBUG_ASSERT(peer->bonded());
-  bt_log(SPEW, "gap", "restored bonded peer: %s, id: %s",
-         bt_str(bd.address), bt_str(bd.identifier));
+  bt_log(SPEW, "gap", "restored bonded peer: %s, id: %s", bt_str(bd.address),
+         bt_str(bd.identifier));
 
   // Don't call UpdateExpiry(). Since a bonded peer starts out as
   // non-temporary it is not necessary to ever set up the expiration callback.
@@ -115,21 +113,18 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   return true;
 }
 
-bool PeerCache::StoreLowEnergyBond(PeerId identifier,
-                                   const sm::PairingData& bond_data) {
+bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bond_data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* peer = FindById(identifier);
   if (!peer) {
-    bt_log(TRACE, "gap-le", "failed to store bond for unknown peer: %s",
-           bt_str(identifier));
+    bt_log(TRACE, "gap-le", "failed to store bond for unknown peer: %s", bt_str(identifier));
     return false;
   }
 
   // Either a LTK or CSRK is mandatory for bonding (the former is needed for LE
   // Security Mode 1 and the latter is needed for Mode 2).
   if (!bond_data.ltk && !bond_data.csrk) {
-    bt_log(TRACE, "gap-le", "mandatory keys missing: no IRK or CSRK (id: %s)",
-           bt_str(identifier));
+    bt_log(TRACE, "gap-le", "mandatory keys missing: no IRK or CSRK (id: %s)", bt_str(identifier));
     return false;
   }
 
@@ -142,10 +137,8 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
       // TODO(armansito): Maybe expire the old address after a while?
       address_map_[*bond_data.identity_address] = identifier;
     } else if (*existing_id != identifier) {
-      bt_log(TRACE, "gap-le",
-             "identity address %s for peer %s belongs to another peer %s!",
-             bt_str(*bond_data.identity_address), bt_str(identifier),
-             bt_str(*existing_id));
+      bt_log(TRACE, "gap-le", "identity address %s for peer %s belongs to another peer %s!",
+             bt_str(*bond_data.identity_address), bt_str(identifier), bt_str(*existing_id));
       return false;
     }
     // We have either created a new mapping or the identity address already
@@ -170,8 +163,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
   return true;
 }
 
-bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
-                               const sm::LTK& link_key) {
+bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
@@ -277,8 +269,7 @@ Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
 
 // Private methods below.
 
-Peer* PeerCache::InsertPeerRecord(PeerId identifier,
-                                  const DeviceAddress& address,
+Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
                                   bool connectable) {
   if (FindIdByAddress(address)) {
     bt_log(WARN, "gap", "tried to insert peer with existing address: %s",
@@ -286,19 +277,16 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier,
     return nullptr;
   }
 
-  std::unique_ptr<Peer> peer(
-      new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
-               fit::bind_member(this, &PeerCache::UpdateExpiry),
-               fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
-               address, connectable));
+  std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
+                                      fit::bind_member(this, &PeerCache::UpdateExpiry),
+                                      fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
+                                      address, connectable));
   // Note: we must construct the PeerRecord in-place, because it doesn't
   // support copy or move.
-  auto [iter, inserted] =
-      peers_.try_emplace(peer->identifier(), std::move(peer),
-                         [this, p = peer.get()] { RemovePeer(p); });
+  auto [iter, inserted] = peers_.try_emplace(peer->identifier(), std::move(peer),
+                                             [this, p = peer.get()] { RemovePeer(p); });
   if (!inserted) {
-    bt_log(WARN, "gap", "tried to insert peer with existing ID: %s",
-           bt_str(identifier));
+    bt_log(WARN, "gap", "tried to insert peer with existing ID: %s", bt_str(identifier));
     return nullptr;
   }
 
@@ -309,8 +297,7 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier,
 void PeerCache::NotifyPeerBonded(const Peer& peer) {
   ZX_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
   ZX_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
-  ZX_DEBUG_ASSERT_MSG(peer.identity_known(),
-                      "peers not allowed to bond with unknown identity!");
+  ZX_DEBUG_ASSERT_MSG(peer.identity_known(), "peers not allowed to bond with unknown identity!");
 
   bt_log(INFO, "gap", "peer bonded %s", peer.ToString().c_str());
   if (peer_bonded_callback_) {
@@ -338,8 +325,8 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
   // Previous expiry task has been canceled. Re-schedule only if the peer is
   // temporary.
   if (peer.temporary()) {
-    const auto schedule_res = peer_record.removal_task()->PostDelayed(
-        async_get_default_dispatcher(), kCacheTimeout);
+    const auto schedule_res =
+        peer_record.removal_task()->PostDelayed(async_get_default_dispatcher(), kCacheTimeout);
     ZX_DEBUG_ASSERT(schedule_res == ZX_OK || schedule_res == ZX_ERR_BAD_STATE);
   }
 }
@@ -347,12 +334,10 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
 void PeerCache::MakeDualMode(const Peer& peer) {
   ZX_DEBUG_ASSERT(address_map_.at(peer.address()) == peer.identifier());
   const auto address_alias = GetAliasAddress(peer.address());
-  auto [iter, inserted] =
-      address_map_.try_emplace(address_alias, peer.identifier());
+  auto [iter, inserted] = address_map_.try_emplace(address_alias, peer.identifier());
   ZX_DEBUG_ASSERT_MSG(inserted || iter->second == peer.identifier(),
-                      "%s can't become dual-mode because %s maps to %s",
-                      bt_str(peer.identifier()), bt_str(address_alias),
-                      bt_str(iter->second));
+                      "%s can't become dual-mode because %s maps to %s", bt_str(peer.identifier()),
+                      bt_str(address_alias), bt_str(iter->second));
 
   // The peer became dual mode in lieu of adding a new peer but is as
   // significant, so notify listeners of the change.
@@ -381,8 +366,7 @@ void PeerCache::RemovePeer(Peer* peer) {
   }
 }
 
-std::optional<PeerId> PeerCache::FindIdByAddress(
-    const DeviceAddress& address) const {
+std::optional<PeerId> PeerCache::FindIdByAddress(const DeviceAddress& address) const {
   auto iter = address_map_.find(address);
   if (iter == address_map_.end()) {
     // Search again using the other technology's address. This is necessary when

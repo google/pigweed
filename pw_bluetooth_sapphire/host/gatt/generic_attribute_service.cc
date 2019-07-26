@@ -17,14 +17,12 @@ namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
 
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
-                     const WriteResponder&) {}
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
 
 }  // namespace
 
-GenericAttributeService::GenericAttributeService(
-    LocalServiceManager* local_service_manager,
-    SendIndicationCallback send_indication_callback)
+GenericAttributeService::GenericAttributeService(LocalServiceManager* local_service_manager,
+                                                 SendIndicationCallback send_indication_callback)
     : local_service_manager_(local_service_manager),
       send_indication_callback_(std::move(send_indication_callback)) {
   ZX_DEBUG_ASSERT(local_service_manager != nullptr);
@@ -42,30 +40,26 @@ GenericAttributeService::~GenericAttributeService() {
 void GenericAttributeService::Register() {
   const att::AccessRequirements kDisallowed;
   const att::AccessRequirements kAllowedNoSecurity(false, false, false);
-  CharacteristicPtr service_changed_chr = std::make_unique<Characteristic>(
-      0,                                     // id
-      types::kServiceChangedCharacteristic,  // type
-      Property::kIndicate,                   // properties
-      0u,                                    // extended_properties
-      kDisallowed,                           // read
-      kDisallowed,                           // write
-      kAllowedNoSecurity);                   // update
-  auto service =
-      std::make_unique<Service>(true, types::kGenericAttributeService);
+  CharacteristicPtr service_changed_chr =
+      std::make_unique<Characteristic>(0,                                     // id
+                                       types::kServiceChangedCharacteristic,  // type
+                                       Property::kIndicate,                   // properties
+                                       0u,                                    // extended_properties
+                                       kDisallowed,                           // read
+                                       kDisallowed,                           // write
+                                       kAllowedNoSecurity);                   // update
+  auto service = std::make_unique<Service>(true, types::kGenericAttributeService);
   service->AddCharacteristic(std::move(service_changed_chr));
 
-  ClientConfigCallback ccc_callback = [this](IdType service_id, IdType chrc_id,
-                                             PeerId peer_id, bool notify,
-                                             bool indicate) {
+  ClientConfigCallback ccc_callback = [this](IdType service_id, IdType chrc_id, PeerId peer_id,
+                                             bool notify, bool indicate) {
     ZX_DEBUG_ASSERT(chrc_id == 0u);
 
     // Discover the handle assigned to this characteristic if necessary.
     if (svc_changed_handle_ == att::kInvalidHandle) {
       LocalServiceManager::ClientCharacteristicConfig config;
-      if (!local_service_manager_->GetCharacteristicConfig(service_id, chrc_id,
-                                                           peer_id, &config)) {
-        bt_log(TRACE, "gatt",
-               "service: Peer has not configured characteristic: %s",
+      if (!local_service_manager_->GetCharacteristicConfig(service_id, chrc_id, peer_id, &config)) {
+        bt_log(TRACE, "gatt", "service: Peer has not configured characteristic: %s",
                bt_str(peer_id));
         return;
       }
@@ -73,25 +67,21 @@ void GenericAttributeService::Register() {
     }
     if (indicate) {
       subscribed_peers_.insert(peer_id);
-      bt_log(SPEW, "gatt", "service: Service Changed enabled for peer %s",
-             bt_str(peer_id));
+      bt_log(SPEW, "gatt", "service: Service Changed enabled for peer %s", bt_str(peer_id));
     } else {
       subscribed_peers_.erase(peer_id);
-      bt_log(SPEW, "gatt", "service: Service Changed disabled for peer %s",
-             bt_str(peer_id));
+      bt_log(SPEW, "gatt", "service: Service Changed disabled for peer %s", bt_str(peer_id));
     }
   };
 
-  service_id_ = local_service_manager_->RegisterService(
-      std::move(service), NopReadHandler, NopWriteHandler,
-      std::move(ccc_callback));
+  service_id_ = local_service_manager_->RegisterService(std::move(service), NopReadHandler,
+                                                        NopWriteHandler, std::move(ccc_callback));
   ZX_DEBUG_ASSERT(service_id_ != kInvalidId);
   local_service_manager_->set_service_changed_callback(
       fit::bind_member(this, &GenericAttributeService::OnServiceChanged));
 }
 
-void GenericAttributeService::OnServiceChanged(IdType service_id,
-                                               att::Handle start,
+void GenericAttributeService::OnServiceChanged(IdType service_id, att::Handle start,
                                                att::Handle end) {
   // Service Changed not yet configured for indication.
   if (svc_changed_handle_ == att::kInvalidHandle) {

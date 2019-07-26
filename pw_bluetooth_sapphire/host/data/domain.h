@@ -30,13 +30,12 @@ class Domain : public fbl::RefCounted<Domain> {
  public:
   // Constructs an uninitialized data domain that can be used in production.
   // This spawns a thread on which data-domain tasks will be scheduled.
-  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci,
-                                    std::string thread_name);
+  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, std::string thread_name);
 
   // Constructs an instance using the given |dispatcher| instead of spawning a
   // thread. This is intended for unit tests.
-  static fbl::RefPtr<Domain> CreateWithDispatcher(
-      fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
+  static fbl::RefPtr<Domain> CreateWithDispatcher(fxl::RefPtr<hci::Transport> hci,
+                                                  async_dispatcher_t* dispatcher);
 
   // These send an Initialize/ShutDown message to the data task runner. It is
   // safe for the caller to drop its Domain reference after ShutDown is called.
@@ -57,11 +56,10 @@ class Domain : public fbl::RefCounted<Domain> {
   // service-level client via Channel::UpgradeSecurity().
   //
   // Has no effect if this Domain is uninitialized or shut down.
-  virtual void AddACLConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
-      l2cap::LinkErrorCallback link_error_callback,
-      l2cap::SecurityUpgradeCallback security_callback,
-      async_dispatcher_t* dispatcher) = 0;
+  virtual void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                                l2cap::LinkErrorCallback link_error_callback,
+                                l2cap::SecurityUpgradeCallback security_callback,
+                                async_dispatcher_t* dispatcher) = 0;
 
   // Registers an LE connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this
@@ -81,13 +79,12 @@ class Domain : public fbl::RefCounted<Domain> {
   // with the ATT and SMP fixed channels.
   //
   // Has no effect if this Domain is uninitialized or shut down.
-  virtual void AddLEConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
-      l2cap::LinkErrorCallback link_error_callback,
-      l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
-      l2cap::LEFixedChannelsCallback channel_callback,
-      l2cap::SecurityUpgradeCallback security_callback,
-      async_dispatcher_t* dispatcher) = 0;
+  virtual void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                               l2cap::LinkErrorCallback link_error_callback,
+                               l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+                               l2cap::LEFixedChannelsCallback channel_callback,
+                               l2cap::SecurityUpgradeCallback security_callback,
+                               async_dispatcher_t* dispatcher) = 0;
 
   // Removes a previously registered connection. All corresponding Channels will
   // be closed and all incoming data packets on this link will be dropped.
@@ -102,8 +99,8 @@ class Domain : public fbl::RefCounted<Domain> {
 
   // Assigns the security level of a logical link. Has no effect if |handle| has
   // not been previously registered or the link is closed.
-  virtual void AssignLinkSecurityProperties(
-      hci::ConnectionHandle handle, sm::SecurityProperties security) = 0;
+  virtual void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
+                                            sm::SecurityProperties security) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
   // Multiplexing (PSM) code |psm| on a link identified by |handle|.
@@ -113,8 +110,7 @@ class Domain : public fbl::RefCounted<Domain> {
   //
   // Has no effect if this Domain is uninitialized or shut down.
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                l2cap::ChannelCallback cb,
-                                async_dispatcher_t* dispatcher) = 0;
+                                l2cap::ChannelCallback cb, async_dispatcher_t* dispatcher) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
   // Multiplexing (PSM) code |psm| on a link identified by |handle|.
@@ -127,11 +123,9 @@ class Domain : public fbl::RefCounted<Domain> {
   // |handle| argument.
   //
   // Has no effect if this Domain is uninitialized or shut down.
-  using SocketCallback =
-      fit::function<void(zx::socket, hci::ConnectionHandle link_handle)>;
+  using SocketCallback = fit::function<void(zx::socket, hci::ConnectionHandle link_handle)>;
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                SocketCallback socket_callback,
-                                async_dispatcher_t* dispatcher) = 0;
+                                SocketCallback socket_callback, async_dispatcher_t* dispatcher) = 0;
 
   // Registers a handler for peer-initiated dynamic channel requests that have
   // the Protocol/Service Multiplexing (PSM) code |psm|.

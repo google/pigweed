@@ -43,8 +43,7 @@ class LESignalingChannelTest : public testing::FakeChannelTest {
 
 using L2CAP_LESignalingChannelTest = LESignalingChannelTest<>;
 
-using L2CAP_LESignalingChannelSlaveTest =
-    LESignalingChannelTest<hci::Connection::Role::kSlave>;
+using L2CAP_LESignalingChannelSlaveTest = LESignalingChannelTest<hci::Connection::Role::kSlave>;
 
 TEST_F(L2CAP_LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
@@ -139,8 +138,7 @@ TEST_F(L2CAP_LESignalingChannelTest, DefaultMTU) {
 TEST_F(L2CAP_LESignalingChannelTest, UnknownCommand) {
   // All unsupported commands must be rejected.
   const std::set<CommandCode> supported{kConnectionParameterUpdateRequest};
-  for (CommandCode code = 0; code < std::numeric_limits<CommandCode>::max();
-       code++) {
+  for (CommandCode code = 0; code < std::numeric_limits<CommandCode>::max(); code++) {
     // Skip supported commands as they are tested separately.
     if (supported.count(code))
       continue;

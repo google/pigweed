@@ -39,19 +39,15 @@ class FakeChannel : public Channel {
 
   // Sets a callback to emulate the result of "SignalLinkError()". In
   // production, this callback is invoked by the link.
-  void SetLinkErrorCallback(LinkErrorCallback callback,
-                            async_dispatcher_t* dispatcher);
+  void SetLinkErrorCallback(LinkErrorCallback callback, async_dispatcher_t* dispatcher);
 
   // Sets a callback to emulate the result of "UpgradeSecurity()".
-  void SetSecurityCallback(SecurityUpgradeCallback callback,
-                           async_dispatcher_t* dispatcher);
+  void SetSecurityCallback(SecurityUpgradeCallback callback, async_dispatcher_t* dispatcher);
 
   // Emulates channel closure.
   void Close();
 
-  fxl::WeakPtr<FakeChannel> AsWeakPtr() {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
+  fxl::WeakPtr<FakeChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // Activate() always fails if true.
   void set_activate_fails(bool value) { activate_fails_ = value; }
@@ -63,9 +59,7 @@ class FakeChannel : public Channel {
   bool activated() const { return static_cast<bool>(rx_cb_); }
 
   // Assigns a link security level.
-  void set_security(const sm::SecurityProperties& sec_props) {
-    security_ = sec_props;
-  }
+  void set_security(const sm::SecurityProperties& sec_props) { security_ = sec_props; }
 
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
@@ -74,8 +68,7 @@ class FakeChannel : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level,
-                       sm::StatusCallback callback) override;
+  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) override;
 
  private:
   hci::ConnectionHandle handle_;

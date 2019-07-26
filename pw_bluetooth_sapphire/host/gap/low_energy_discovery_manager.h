@@ -125,9 +125,7 @@ class LowEnergyDiscoverySession final {
 
   // Sets a callback to get notified when the session becomes inactive due to an
   // internal error.
-  void set_error_callback(fit::closure callback) {
-    error_callback_ = std::move(callback);
-  }
+  void set_error_callback(fit::closure callback) { error_callback_ = std::move(callback); }
 
   // Returns the filter that belongs to this session. The caller may modify the
   // filter as desired. By default no peers are filtered.
@@ -148,8 +146,7 @@ class LowEnergyDiscoverySession final {
   friend class LowEnergyDiscoveryManager;
 
   // Called by LowEnergyDiscoveryManager.
-  explicit LowEnergyDiscoverySession(
-      fxl::WeakPtr<LowEnergyDiscoveryManager> manager);
+  explicit LowEnergyDiscoverySession(fxl::WeakPtr<LowEnergyDiscoveryManager> manager);
 
   // Called by LowEnergyDiscoveryManager on newly discovered scan results.
   void NotifyDiscoveryResult(const Peer& peer) const;
@@ -173,8 +170,7 @@ using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
 class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  public:
   // |peer_cache| MUST out-live this LowEnergyDiscoveryManager.
-  LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
-                            hci::LowEnergyScanner* scanner,
+  LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci, hci::LowEnergyScanner* scanner,
                             PeerCache* peer_cache);
   virtual ~LowEnergyDiscoveryManager();
 
@@ -205,8 +201,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // Note: this callback can be triggered during a background scan as well as
   // general discovery.
   using BondedPeerConnectableCallback = fit::function<void(PeerId id)>;
-  void set_bonded_peer_connectable_callback(
-      BondedPeerConnectableCallback callback) {
+  void set_bonded_peer_connectable_callback(BondedPeerConnectableCallback callback) {
     bonded_conn_cb_ = std::move(callback);
   }
 
@@ -215,9 +210,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   const PeerCache* peer_cache() const { return peer_cache_; }
 
-  const std::unordered_set<PeerId>& cached_scan_results() const {
-    return cached_scan_results_;
-  }
+  const std::unordered_set<PeerId>& cached_scan_results() const { return cached_scan_results_; }
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<LowEnergyDiscoverySession> AddSession();
@@ -227,8 +220,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   void RemoveSession(LowEnergyDiscoverySession* session);
 
   // hci::LowEnergyScanner::Delegate override:
-  void OnPeerFound(const hci::LowEnergyScanResult& result,
-                   const ByteBuffer& data) override;
+  void OnPeerFound(const hci::LowEnergyScanResult& result, const ByteBuffer& data) override;
   void OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) override;
 
   // Called by hci::LowEnergyScanner

@@ -42,8 +42,7 @@ TEST(HCI_SlabAllocatorsTest, CommandPacketFallBack) {
     num_packets++;
   }
 
-  EXPECT_EQ(kMaxNumSlabs * kNumSmallControlPackets +
-                kMaxNumSlabs * kNumLargeControlPackets,
+  EXPECT_EQ(kMaxNumSlabs * kNumSmallControlPackets + kMaxNumSlabs * kNumLargeControlPackets,
             num_packets);
 }
 
@@ -75,8 +74,7 @@ TEST(HCI_SlabAllocatorsTest, ACLDataPacketFallBack) {
     num_packets++;
   }
 
-  EXPECT_EQ(kMaxNumSlabs * kNumSmallACLDataPackets +
-                kMaxNumSlabs * kNumMediumACLDataPackets +
+  EXPECT_EQ(kMaxNumSlabs * kNumSmallACLDataPackets + kMaxNumSlabs * kNumMediumACLDataPackets +
                 kMaxNumSlabs * kNumLargeACLDataPackets,
             num_packets);
 }

@@ -28,9 +28,8 @@ MutableByteBufferPtr NewPDU(size_t param_size) {
 
 }  // namespace
 
-Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role,
-               bool sc_supported, IOCapability io_capability,
-               fxl::WeakPtr<Listener> listener)
+Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role, bool sc_supported,
+               IOCapability io_capability, fxl::WeakPtr<Listener> listener)
     : chan_(std::move(chan)),
       role_(role),
       oob_available_(false),
@@ -42,8 +41,7 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role,
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(chan_);
   ZX_DEBUG_ASSERT(listener_);
-  ZX_DEBUG_ASSERT_MSG(async_get_default_dispatcher(),
-                      "default dispatcher required!");
+  ZX_DEBUG_ASSERT_MSG(async_get_default_dispatcher(), "default dispatcher required!");
 
   if (chan_->link_type() == hci::Connection::LinkType::kLE) {
     ZX_DEBUG_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
@@ -90,8 +88,7 @@ bool Bearer::InitiateFeatureExchange() {
 
   PacketWriter writer(kPairingRequest, pdu.get());
   auto* params = writer.mutable_payload<PairingRequestParams>();
-  BuildPairingParameters(params, &params->initiator_key_dist_gen,
-                         &params->responder_key_dist_gen);
+  BuildPairingParameters(params, &params->initiator_key_dist_gen, &params->responder_key_dist_gen);
 
   // Cache the pairing request. This will be used as the |preq| parameter for
   // crypto functions later (e.g. during confirm value generation in legacy
@@ -226,9 +223,8 @@ bool Bearer::SendIdentityInfo(const IdentityInfo& id_info) {
   {
     PacketWriter writer(kIdentityAddressInformation, id_addr_info_pdu.get());
     auto* params = writer.mutable_payload<IdentityAddressInformationParams>();
-    params->type = (id_info.address.IsStaticRandom())
-                       ? AddressType::kStaticRandom
-                       : AddressType::kPublic;
+    params->type =
+        (id_info.address.IsStaticRandom()) ? AddressType::kStaticRandom : AddressType::kPublic;
     params->bd_addr = id_info.address.value();
     chan_->Send(std::move(id_addr_info_pdu));
   }
@@ -240,8 +236,7 @@ void Bearer::StopTimer() {
   if (timeout_task_.is_pending()) {
     zx_status_t status = timeout_task_.Cancel();
     if (status != ZX_OK) {
-      bt_log(SPEW, "sm", "smp: failed to stop timer: %s",
-             zx_status_get_string(status));
+      bt_log(SPEW, "sm", "smp: failed to stop timer: %s", zx_status_get_string(status));
     }
   }
 }
@@ -277,8 +272,7 @@ void Bearer::OnPairingTimeout() {
   OnFailure(Status(HostError::kTimedOut));
 }
 
-ErrorCode Bearer::ResolveFeatures(bool local_initiator,
-                                  const PairingRequestParams& preq,
+ErrorCode Bearer::ResolveFeatures(bool local_initiator, const PairingRequestParams& preq,
                                   const PairingResponseParams& pres,
                                   PairingFeatures* out_features) {
   ZX_DEBUG_ASSERT(pairing_started());
@@ -286,16 +280,14 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator,
 
   // Select the smaller of the initiator and responder max. encryption key size
   // values (Vol 3, Part H, 2.3.4).
-  uint8_t enc_key_size =
-      std::min(preq.max_encryption_key_size, pres.max_encryption_key_size);
+  uint8_t enc_key_size = std::min(preq.max_encryption_key_size, pres.max_encryption_key_size);
   if (enc_key_size < kMinEncryptionKeySize) {
     bt_log(TRACE, "sm", "encryption key size too small! (%u)", enc_key_size);
     return ErrorCode::kEncryptionKeySize;
   }
 
   bool sc = (preq.auth_req & AuthReq::kSC) && (pres.auth_req & AuthReq::kSC);
-  bool mitm =
-      (preq.auth_req & AuthReq::kMITM) || (pres.auth_req & AuthReq::kMITM);
+  bool mitm = (preq.auth_req & AuthReq::kMITM) || (pres.auth_req & AuthReq::kMITM);
   bool init_oob = preq.oob_data_flag == OOBDataFlag::kPresent;
   bool rsp_oob = pres.oob_data_flag == OOBDataFlag::kPresent;
 
@@ -308,8 +300,8 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator,
     peer_ioc = preq.io_capability;
   }
 
-  PairingMethod method = util::SelectPairingMethod(
-      sc, init_oob, rsp_oob, mitm, local_ioc, peer_ioc, local_initiator);
+  PairingMethod method =
+      util::SelectPairingMethod(sc, init_oob, rsp_oob, mitm, local_ioc, peer_ioc, local_initiator);
 
   // If MITM protection is required but the pairing method cannot provide MITM,
   // then reject the pairing.
@@ -343,14 +335,13 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator,
     ZX_DEBUG_ASSERT((preq.responder_key_dist_gen & local_keys) == local_keys);
   }
 
-  *out_features = PairingFeatures(local_initiator, sc, method, enc_key_size,
-                                  local_keys, remote_keys);
+  *out_features =
+      PairingFeatures(local_initiator, sc, method, enc_key_size, local_keys, remote_keys);
 
   return ErrorCode::kNoError;
 }
 
-void Bearer::BuildPairingParameters(PairingRequestParams* params,
-                                    KeyDistGenField* out_local_keys,
+void Bearer::BuildPairingParameters(PairingRequestParams* params, KeyDistGenField* out_local_keys,
                                     KeyDistGenField* out_remote_keys) {
   ZX_DEBUG_ASSERT(params);
   ZX_DEBUG_ASSERT(out_local_keys);
@@ -368,8 +359,7 @@ void Bearer::BuildPairingParameters(PairingRequestParams* params,
   params->io_capability = io_capability_;
   params->auth_req = auth_req;
   params->max_encryption_key_size = kMaxEncryptionKeySize;
-  params->oob_data_flag =
-      oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
+  params->oob_data_flag = oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
 
   // We always request identity information from the remote.
   *out_remote_keys = KeyDistGen::kIdKey;
@@ -451,14 +441,12 @@ void Bearer::OnPairingRequest(const PacketReader& reader) {
 
   // The keys that will be exchanged correspond to the intersection of what the
   // initiator requests and we support.
-  rsp_params->initiator_key_dist_gen =
-      remote_keys & req_params.initiator_key_dist_gen;
-  rsp_params->responder_key_dist_gen =
-      local_keys & req_params.responder_key_dist_gen;
+  rsp_params->initiator_key_dist_gen = remote_keys & req_params.initiator_key_dist_gen;
+  rsp_params->responder_key_dist_gen = local_keys & req_params.responder_key_dist_gen;
 
   PairingFeatures features;
-  ErrorCode ecode = ResolveFeatures(false /* local_initiator */, req_params,
-                                    *rsp_params, &features);
+  ErrorCode ecode =
+      ResolveFeatures(false /* local_initiator */, req_params, *rsp_params, &features);
   feature_exchange_pending_ = false;
   if (ecode != ErrorCode::kNoError) {
     bt_log(TRACE, "sm", "rejecting pairing features");
@@ -476,8 +464,7 @@ void Bearer::OnPairingRequest(const PacketReader& reader) {
   chan_->Send(std::move(pdu));
 
   ZX_DEBUG_ASSERT(listener_);
-  listener_->OnFeatureExchange(features, reader.data(),
-                               pairing_payload_buffer_);
+  listener_->OnFeatureExchange(features, reader.data(), pairing_payload_buffer_);
 }
 
 void Bearer::OnPairingResponse(const PacketReader& reader) {
@@ -499,10 +486,10 @@ void Bearer::OnPairingResponse(const PacketReader& reader) {
   }
 
   PairingFeatures features;
-  ErrorCode ecode = ResolveFeatures(
-      true /* local_initiator */,
-      pairing_payload_buffer_.view(sizeof(Code)).As<PairingRequestParams>(),
-      reader.payload<PairingResponseParams>(), &features);
+  ErrorCode ecode =
+      ResolveFeatures(true /* local_initiator */,
+                      pairing_payload_buffer_.view(sizeof(Code)).As<PairingRequestParams>(),
+                      reader.payload<PairingResponseParams>(), &features);
   feature_exchange_pending_ = false;
 
   if (ecode != ErrorCode::kNoError) {
@@ -511,8 +498,7 @@ void Bearer::OnPairingResponse(const PacketReader& reader) {
   }
 
   ZX_DEBUG_ASSERT(listener_);
-  listener_->OnFeatureExchange(features, pairing_payload_buffer_,
-                               reader.data());
+  listener_->OnFeatureExchange(features, pairing_payload_buffer_, reader.data());
 }
 
 void Bearer::OnPairingConfirm(const PacketReader& reader) {
@@ -572,8 +558,7 @@ void Bearer::OnEncryptionInformation(const PacketReader& reader) {
 
   // Only allowed on the LE transport.
   if (chan_->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm",
-           "\"Encryption Information\" over BR/EDR not supported!");
+    bt_log(TRACE, "sm", "\"Encryption Information\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -645,11 +630,10 @@ void Bearer::OnIdentityAddressInformation(const PacketReader& reader) {
 
   const auto& params = reader.payload<IdentityAddressInformationParams>();
   ZX_DEBUG_ASSERT(listener_);
-  listener_->OnIdentityAddress(
-      DeviceAddress(params.type == AddressType::kStaticRandom
-                        ? DeviceAddress::Type::kLERandom
-                        : DeviceAddress::Type::kLEPublic,
-                    params.bd_addr));
+  listener_->OnIdentityAddress(DeviceAddress(params.type == AddressType::kStaticRandom
+                                                 ? DeviceAddress::Type::kLERandom
+                                                 : DeviceAddress::Type::kLEPublic,
+                                             params.bd_addr));
 }
 
 void Bearer::OnSecurityRequest(const PacketReader& reader) {

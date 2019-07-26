@@ -77,8 +77,7 @@ DeviceClass::DeviceClass(uint32_t value) {
   };
 }
 
-void DeviceClass::SetServiceClasses(
-    const std::unordered_set<ServiceClass>& classes) {
+void DeviceClass::SetServiceClasses(const std::unordered_set<ServiceClass>& classes) {
   for (const auto& c : classes) {
     uint8_t bit = static_cast<uint8_t>(c);
     if (bit >= 16) {
@@ -89,8 +88,7 @@ void DeviceClass::SetServiceClasses(
   }
 }
 
-std::unordered_set<DeviceClass::ServiceClass> DeviceClass::GetServiceClasses()
-    const {
+std::unordered_set<DeviceClass::ServiceClass> DeviceClass::GetServiceClasses() const {
   std::unordered_set<ServiceClass> classes;
   for (uint8_t bit_no = 16; bit_no < 24; bit_no++) {
     if (bytes_[2] & (0x01 << (bit_no - 16))) {

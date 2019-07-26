@@ -17,14 +17,12 @@
 namespace bthost {
 
 // Implements the gatt::Server FIDL interface.
-class GattServerServer
-    : public GattServerBase<fuchsia::bluetooth::gatt::Server> {
+class GattServerServer : public GattServerBase<fuchsia::bluetooth::gatt::Server> {
  public:
   // |adapter_manager| is used to lazily request a handle to the corresponding
   // adapter. It MUST out-live this GattServerServer instance.
-  GattServerServer(
-      fbl::RefPtr<bt::gatt::GATT> gatt,
-      fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request);
+  GattServerServer(fbl::RefPtr<bt::gatt::GATT> gatt,
+                   fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request);
 
   ~GattServerServer() override;
 
@@ -39,27 +37,22 @@ class GattServerServer
   // ::fuchsia::bluetooth::gatt::Server overrides:
   void PublishService(
       fuchsia::bluetooth::gatt::ServiceInfo service_info,
-      fidl::InterfaceHandle<fuchsia::bluetooth::gatt::LocalServiceDelegate>
-          delegate,
-      fidl::InterfaceRequest<fuchsia::bluetooth::gatt::LocalService>
-          service_iface,
+      fidl::InterfaceHandle<fuchsia::bluetooth::gatt::LocalServiceDelegate> delegate,
+      fidl::InterfaceRequest<fuchsia::bluetooth::gatt::LocalService> service_iface,
       PublishServiceCallback callback) override;
 
   // Called when a remote device issues a read request to one of our services.
-  void OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
-                     uint16_t offset, bt::gatt::ReadResponder responder);
+  void OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdType id, uint16_t offset,
+                     bt::gatt::ReadResponder responder);
 
   // Called when a remote device issues a write request to one of our services.
-  void OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
-                      uint16_t offset, const bt::ByteBuffer& value,
-                      bt::gatt::WriteResponder responder);
+  void OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdType id, uint16_t offset,
+                      const bt::ByteBuffer& value, bt::gatt::WriteResponder responder);
 
   // Called when a remote device has configured notifications or indications on
   // a local characteristic.
-  void OnCharacteristicConfig(bt::gatt::IdType service_id,
-                              bt::gatt::IdType chrc_id,
-                              bt::gatt::PeerId peer_id, bool notify,
-                              bool indicate);
+  void OnCharacteristicConfig(bt::gatt::IdType service_id, bt::gatt::IdType chrc_id,
+                              bt::gatt::PeerId peer_id, bool notify, bool indicate);
 
   // The mapping between service identifiers and FIDL Service implementations.
   // TODO(armansito): Consider using fbl::HashTable.

@@ -105,8 +105,7 @@ class TaskDomain {
   }
 
   virtual ~TaskDomain() {
-    ZX_DEBUG_ASSERT_MSG(!alive_,
-                        "ScheduleCleanUp() must be called before destruction");
+    ZX_DEBUG_ASSERT_MSG(!alive_, "ScheduleCleanUp() must be called before destruction");
   }
 
   // Runs the object's CleanUp() handler on the domain's dispatcher. Quits the
@@ -133,8 +132,7 @@ class TaskDomain {
   void PostMessage(fit::closure func) {
     // |objref| is captured here to make sure |obj_| stays alive until |func|
     // has run.
-    async::PostTask(dispatcher_, [this, func = std::move(func),
-                                  objref = fbl::WrapRefPtr(obj_)] {
+    async::PostTask(dispatcher_, [this, func = std::move(func), objref = fbl::WrapRefPtr(obj_)] {
       if (alive_) {
         func();
       }
@@ -165,8 +163,7 @@ class TaskDomain {
                   "T must support fbl::RefPtr");
     static_assert(std::is_base_of<TaskDomain<T, RefCountedType>, T>::value,
                   "TaskDomain can only be used as a mixin");
-    static_assert(internal::has_clean_up<T>::value,
-                  "T must provide a CleanUp() method");
+    static_assert(internal::has_clean_up<T>::value, "T must provide a CleanUp() method");
   }
 
   T* obj_;

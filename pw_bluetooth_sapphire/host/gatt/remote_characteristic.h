@@ -54,8 +54,7 @@ class Client;
 class RemoteCharacteristic final {
  public:
   using ValueCallback = fit::function<void(const ByteBuffer&)>;
-  using NotifyStatusCallback =
-      fit::function<void(att::Status, IdType handler_id)>;
+  using NotifyStatusCallback = fit::function<void(att::Status, IdType handler_id)>;
 
   // Represents a "Characteristic Descriptor" (Vol 3, Part G, 3.3.3).
   class Descriptor final {
@@ -72,8 +71,7 @@ class RemoteCharacteristic final {
 
   using DescriptorList = std::vector<Descriptor>;
 
-  RemoteCharacteristic(fxl::WeakPtr<Client> client, IdType id,
-                       const CharacteristicData& info);
+  RemoteCharacteristic(fxl::WeakPtr<Client> client, IdType id, const CharacteristicData& info);
   ~RemoteCharacteristic() = default;
 
   // The move constructor allows this move-only type to be stored in a vector
@@ -114,8 +112,7 @@ class RemoteCharacteristic final {
   void DiscoverDescriptors(att::Handle range_end, att::StatusCallback callback);
 
   // (See RemoteService::NotifyCharacteristic in remote_service.h).
-  void EnableNotifications(ValueCallback value_callback,
-                           NotifyStatusCallback status_callback,
+  void EnableNotifications(ValueCallback value_callback, NotifyStatusCallback status_callback,
                            async_dispatcher_t* dispatcher = nullptr);
   bool DisableNotifications(IdType handler_id);
 
@@ -143,8 +140,7 @@ class RemoteCharacteristic final {
 
   // Represents a pending request to subscribe to notifications or indications.
   struct PendingNotifyRequest {
-    PendingNotifyRequest(async_dispatcher_t* dispatcher,
-                         ValueCallback value_callback,
+    PendingNotifyRequest(async_dispatcher_t* dispatcher, ValueCallback value_callback,
                          NotifyStatusCallback status_callback);
 
     PendingNotifyRequest() = default;

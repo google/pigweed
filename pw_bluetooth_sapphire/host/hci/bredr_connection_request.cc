@@ -16,13 +16,10 @@ namespace bt {
 namespace hci {
 
 std::unique_ptr<CommandPacket> CreateConnectionPacket(
-    DeviceAddress address,
-    std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
+    DeviceAddress address, std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = CommandPacket::New(kCreateConnection,
-                                    sizeof(CreateConnectionCommandParams));
-  auto params =
-      request->mutable_view()->mutable_payload<CreateConnectionCommandParams>();
+  auto request = CommandPacket::New(kCreateConnection, sizeof(CreateConnectionCommandParams));
+  auto params = request->mutable_view()->mutable_payload<CreateConnectionCommandParams>();
 
   params->bd_addr = address.value();
   params->packet_type = htole16(kEnableAllPacketTypes);
@@ -33,8 +30,7 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
   if (page_scan_repetition_mode)
     params->page_scan_repetition_mode = *page_scan_repetition_mode;
   else
-    params->page_scan_repetition_mode =
-        PageScanRepetitionMode::kR2;  // Every 2.56 seconds
+    params->page_scan_repetition_mode = PageScanRepetitionMode::kR2;  // Every 2.56 seconds
 
   params->reserved = 0;  // Reserved, must be set to 0.
 
@@ -46,8 +42,8 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
   else
     params->clock_offset = 0x0000;
 
-  params->allow_role_switch = static_cast<uint8_t>(
-      RoleSwitchBits::kDisallowRoleSwitch);  // Do not allow role switch
+  params->allow_role_switch =
+      static_cast<uint8_t>(RoleSwitchBits::kDisallowRoleSwitch);  // Do not allow role switch
 
   return request;
 }
@@ -55,15 +51,15 @@ std::unique_ptr<CommandPacket> CreateConnectionPacket(
 void BrEdrConnectionRequest::CreateConnection(
     CommandChannel* command_channel, async_dispatcher_t* dispatcher,
     std::optional<uint16_t> clock_offset,
-    std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
-    zx::duration timeout, OnCompleteDelegate on_command_fail) {
+    std::optional<PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
+    OnCompleteDelegate on_command_fail) {
   ZX_DEBUG_ASSERT(timeout > zx::msec(0));
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto complete_cb = [self, timeout, peer_id = peer_id_,
-                      on_command_fail = std::move(on_command_fail)](
-                         auto, const EventPacket& event) {
+                      on_command_fail = std::move(on_command_fail)](auto,
+                                                                    const EventPacket& event) {
     ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
 
     if (!self)
@@ -80,17 +76,15 @@ void BrEdrConnectionRequest::CreateConnection(
     }
   };
 
-  auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode,
-                                       clock_offset);
+  auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode, clock_offset);
 
-  command_channel->SendCommand(std::move(packet), dispatcher,
-                               std::move(complete_cb), kCommandStatusEventCode);
+  command_channel->SendCommand(std::move(packet), dispatcher, std::move(complete_cb),
+                               kCommandStatusEventCode);
 }
 
 // Status is either a Success or an Error value
 Status BrEdrConnectionRequest::CompleteRequest(Status status) {
-  bt_log(TRACE, "hci-bredr", "connection complete - status: %s",
-         bt_str(status));
+  bt_log(TRACE, "hci-bredr", "connection complete - status: %s", bt_str(status));
   timeout_task_.Cancel();
 
   if (!status.is_success()) {

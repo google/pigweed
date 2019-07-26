@@ -25,8 +25,8 @@ bool EndLessThan(const AttributeGrouping& grp, const Handle handle) {
 
 }  // namespace
 
-Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end,
-                             const UUID* type, bool groups_only)
+Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end, const UUID* type,
+                             bool groups_only)
     : start_(start), end_(end), grp_only_(groups_only), attr_offset_(0u) {
   ZX_DEBUG_ASSERT(list);
   grp_end_ = list->end();
@@ -38,8 +38,8 @@ Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end,
   // If we were asked to iterate over groupings only, then look strictly within
   // the range. Otherwise we allow the first grouping to partially overlap the
   // range.
-  grp_iter_ = std::lower_bound(list->begin(), grp_end_, start_,
-                               grp_only_ ? StartLessThan : EndLessThan);
+  grp_iter_ =
+      std::lower_bound(list->begin(), grp_end_, start_, grp_only_ ? StartLessThan : EndLessThan);
 
   if (AtEnd())
     return;
@@ -57,8 +57,7 @@ Database::Iterator::Iterator(GroupingList* list, Handle start, Handle end,
   // If the first is inactive or if it doesn't match the current filter then
   // skip ahead.
   if (!grp_iter_->active() ||
-      (type_filter_ &&
-       grp_iter_->attributes()[attr_offset_].type() != *type_filter_)) {
+      (type_filter_ && grp_iter_->attributes()[attr_offset_].type() != *type_filter_)) {
     Advance();
   }
 }
@@ -137,8 +136,8 @@ Database::Database(Handle range_start, Handle range_end)
   ZX_DEBUG_ASSERT(range_end_ <= kHandleMax);
 }
 
-Database::Iterator Database::GetIterator(Handle start, Handle end,
-                                         const UUID* type, bool groups_only) {
+Database::Iterator Database::GetIterator(Handle start, Handle end, const UUID* type,
+                                         bool groups_only) {
   ZX_DEBUG_ASSERT(start >= range_start_);
   ZX_DEBUG_ASSERT(end <= range_end_);
   ZX_DEBUG_ASSERT(start <= end);
@@ -146,8 +145,7 @@ Database::Iterator Database::GetIterator(Handle start, Handle end,
   return Iterator(&groupings_, start, end, type, groups_only);
 }
 
-AttributeGrouping* Database::NewGrouping(const UUID& group_type,
-                                         size_t attr_count,
+AttributeGrouping* Database::NewGrouping(const UUID& group_type, size_t attr_count,
                                          const ByteBuffer& decl_value) {
   // This method looks for a |pos| before which to insert the new grouping.
   Handle start_handle;
@@ -190,16 +188,14 @@ AttributeGrouping* Database::NewGrouping(const UUID& group_type,
     start_handle = prev->end_handle() + 1;
   }
 
-  auto iter =
-      groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
+  auto iter = groupings_.emplace(pos, group_type, start_handle, attr_count, decl_value);
   ZX_DEBUG_ASSERT(iter != groupings_.end());
 
   return &*iter;
 }
 
 bool Database::RemoveGrouping(Handle start_handle) {
-  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(),
-                               start_handle, StartLessThan);
+  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(), start_handle, StartLessThan);
 
   if (iter == groupings_.end() || iter->start_handle() != start_handle)
     return false;
@@ -213,8 +209,7 @@ const Attribute* Database::FindAttribute(Handle handle) {
     return nullptr;
 
   // Do a binary search to find the grouping that this handle is in.
-  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(), handle,
-                               EndLessThan);
+  auto iter = std::lower_bound(groupings_.begin(), groupings_.end(), handle, EndLessThan);
   if (iter == groupings_.end() || iter->start_handle() > handle)
     return nullptr;
 
@@ -228,8 +223,7 @@ const Attribute* Database::FindAttribute(Handle handle) {
 }
 
 void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
-                                 const sm::SecurityProperties& security,
-                                 WriteCallback callback) {
+                                 const sm::SecurityProperties& security, WriteCallback callback) {
   ZX_DEBUG_ASSERT(callback);
 
   // Send a response without writing to any attributes if the queue is empty
@@ -243,8 +237,7 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
   // is called once |count| reaches 0 or an error is received.
   WriteCallback f = [cb = std::move(callback), count = write_queue.size()](
                         Handle handle, ErrorCode ecode) mutable {
-    bt_log(TRACE, "att", "execute write result - handle: %#.4x, error: %#.2hhx",
-           handle, ecode);
+    bt_log(TRACE, "att", "execute write result - handle: %#.4x, error: %#.2hhx", handle, ecode);
     if (!cb) {
       bt_log(SPEW, "att", "ignore execute write result - already responded");
       return;
@@ -284,9 +277,9 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
     // TODO(armansito): Consider removing the boolean return value in favor of
     // always reporting errors using the callback. That would simplify the
     // pattern here.
-    if (!attr->WriteAsync(peer_id, next.offset(), next.value(),
-                          [handle = next.handle(), f = f.share()](
-                              ErrorCode ecode) { f(handle, ecode); })) {
+    if (!attr->WriteAsync(
+            peer_id, next.offset(), next.value(),
+            [handle = next.handle(), f = f.share()](ErrorCode ecode) { f(handle, ecode); })) {
       f(next.handle(), ErrorCode::kWriteNotPermitted);
       break;
     }

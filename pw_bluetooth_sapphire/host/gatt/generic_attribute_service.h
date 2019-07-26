@@ -19,8 +19,8 @@ namespace gatt {
 // Callback called to signal that an indication payload should be sent. Used to
 // inject the GATT object's notification sending functionality (avoiding this
 // service from carrying a reference to GATT or Server).
-using SendIndicationCallback = fit::function<void(
-    PeerId peer_id, att::Handle handle, const ByteBuffer& value)>;
+using SendIndicationCallback =
+    fit::function<void(PeerId peer_id, att::Handle handle, const ByteBuffer& value)>;
 
 // Implements the "Generic Attribute Profile Service" containing the "Service
 // Changed" characteristic that is "...used to indicate to connected devices

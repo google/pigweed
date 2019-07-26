@@ -18,25 +18,21 @@
 namespace bthost {
 
 // Implements the bredr::Profile FIDL interface.
-class ProfileServer
-    : public AdapterServerBase<fuchsia::bluetooth::bredr::Profile> {
+class ProfileServer : public AdapterServerBase<fuchsia::bluetooth::bredr::Profile> {
  public:
-  ProfileServer(
-      fxl::WeakPtr<bt::gap::Adapter> adapter,
-      fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
+  ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+                fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
   ~ProfileServer() override;
 
  private:
   // fuchsia::bluetooth::bredr::Profile overrides:
   void AddService(fuchsia::bluetooth::bredr::ServiceDefinition definition,
-                  fuchsia::bluetooth::bredr::SecurityLevel sec_level,
-                  bool devices, AddServiceCallback callback) override;
-  void AddSearch(
-      fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
-      std::vector<uint16_t> attr_ids) override;
+                  fuchsia::bluetooth::bredr::SecurityLevel sec_level, bool devices,
+                  AddServiceCallback callback) override;
+  void AddSearch(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
+                 std::vector<uint16_t> attr_ids) override;
   void RemoveService(uint64_t service_id) override;
-  void ConnectL2cap(std::string peer_id, uint16_t psm,
-                    ConnectL2capCallback callback) override;
+  void ConnectL2cap(std::string peer_id, uint16_t psm, ConnectL2capCallback callback) override;
 
   // Callback for incoming connections
   void OnChannelConnected(uint64_t service_id, zx::socket connection,
@@ -44,9 +40,8 @@ class ProfileServer
                           const bt::sdp::DataElement& protocol_list);
 
   // Callback for services found on connected device
-  void OnServiceFound(
-      bt::PeerId peer_id,
-      const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
+  void OnServiceFound(bt::PeerId peer_id,
+                      const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
   // Registered service IDs handed out, correlated with Service Handles.
   std::map<uint64_t, bt::sdp::ServiceHandle> registered_;

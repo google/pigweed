@@ -37,15 +37,13 @@ class TestSignalingChannel : public SignalingChannel {
 
  private:
   // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
-                   ResponseHandler cb) override {
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override {
     return false;
   }
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override {}
 
   // SignalingChannel overrides
-  void DecodeRxUnit(ByteBufferPtr sdu,
-                    const SignalingPacketHandler& cb) override {
+  void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override {
     ZX_DEBUG_ASSERT(sdu);
     if (sdu->size()) {
       cb(SignalingPacket(sdu.get(), sdu->size() - sizeof(CommandHeader)));
@@ -193,8 +191,7 @@ TEST_F(L2CAP_SignalingChannelTest, RejectInvalidCIdWithResponder) {
       0x02, 0x00,
 
       // Data (Channel IDs),
-      LowerBits(kLocalCId), UpperBits(kLocalCId), LowerBits(kRemoteCId),
-      UpperBits(kRemoteCId));
+      LowerBits(kLocalCId), UpperBits(kLocalCId), LowerBits(kRemoteCId), UpperBits(kRemoteCId));
 
   bool cb_called = false;
   auto send_cb = [&expected, &cb_called](auto packet) {

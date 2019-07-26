@@ -17,9 +17,9 @@ namespace data {
 namespace internal {
 
 template <typename ChannelT>
-SocketChannelRelay<ChannelT>::SocketChannelRelay(
-    zx::socket socket, fbl::RefPtr<ChannelT> channel,
-    DeactivationCallback deactivation_cb, size_t socket_write_queue_max_frames)
+SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<ChannelT> channel,
+                                                 DeactivationCallback deactivation_cb,
+                                                 size_t socket_write_queue_max_frames)
     : state_(RelayState::kActivating),
       socket_(std::move(socket)),
       channel_(channel),
@@ -35,8 +35,7 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(
   // of a lambda which verifies that |this| hasn't been destroyed.
   BindWait(ZX_SOCKET_READABLE, "socket read waiter", &sock_read_waiter_,
            fit::bind_member(this, &SocketChannelRelay::OnSocketReadable));
-  BindWait(ZX_SOCKET_WRITE_THRESHOLD, "socket write waiter",
-           &sock_write_waiter_,
+  BindWait(ZX_SOCKET_WRITE_THRESHOLD, "socket write waiter", &sock_write_waiter_,
            fit::bind_member(this, &SocketChannelRelay::OnSocketWritable));
   BindWait(ZX_SOCKET_PEER_CLOSED, "socket close waiter", &sock_close_waiter_,
            fit::bind_member(this, &SocketChannelRelay::OnSocketClosed));
@@ -79,8 +78,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
         if (self) {
           self->OnChannelDataReceived(std::move(rx_data));
         } else {
-          bt_log(DEBUG, "l2cap",
-                 "Ignoring data received on destroyed relay (channel_id=%#.4x)",
+          bt_log(DEBUG, "l2cap", "Ignoring data received on destroyed relay (channel_id=%#.4x)",
                  channel_id);
         }
       },
@@ -88,10 +86,8 @@ bool SocketChannelRelay<ChannelT>::Activate() {
         if (self) {
           self->OnChannelClosed();
         } else {
-          bt_log(
-              DEBUG, "l2cap",
-              "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
-              channel_id);
+          bt_log(DEBUG, "l2cap", "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
+                 channel_id);
         }
       },
       dispatcher_);
@@ -109,8 +105,7 @@ void SocketChannelRelay<ChannelT>::Deactivate() {
 
   state_ = RelayState::kDeactivating;
   if (!socket_write_queue_.empty()) {
-    bt_log(TRACE, "l2cap",
-           "Dropping %zu packets from channel %u due to channel closure",
+    bt_log(TRACE, "l2cap", "Dropping %zu packets from channel %u due to channel closure",
            socket_write_queue_.size(), channel_->id());
     socket_write_queue_.clear();
   }
@@ -145,8 +140,7 @@ void SocketChannelRelay<ChannelT>::DeactivateAndRequestDestruction() {
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnSocketReadable(zx_status_t status) {
   ZX_DEBUG_ASSERT(state_ == RelayState::kActivated);
-  if (!CopyFromSocketToChannel() ||
-      !BeginWait("socket read waiter", &sock_read_waiter_)) {
+  if (!CopyFromSocketToChannel() || !BeginWait("socket read waiter", &sock_read_waiter_)) {
     DeactivateAndRequestDestruction();
   }
 }
@@ -165,24 +159,21 @@ void SocketChannelRelay<ChannelT>::OnSocketClosed(zx_status_t status) {
 }
 
 template <typename ChannelT>
-void SocketChannelRelay<ChannelT>::OnChannelDataReceived(
-    ByteBufferPtr rx_data) {
+void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
 
   if (state_ == RelayState::kDeactivating) {
-    bt_log(TRACE, "l2cap",
-           "Ignoring %s on socket for channel %u while deactivating", __func__,
+    bt_log(TRACE, "l2cap", "Ignoring %s on socket for channel %u while deactivating", __func__,
            channel_->id());
     return;
   }
 
   ZX_DEBUG_ASSERT(rx_data);
   if (rx_data->size() == 0) {
-    bt_log(TRACE, "l2cap", "Ignoring empty %s on socket on channel %u", __func__,
-        channel_->id());
+    bt_log(TRACE, "l2cap", "Ignoring empty %s on socket on channel %u", __func__, channel_->id());
     return;
   }
 
@@ -206,8 +197,7 @@ void SocketChannelRelay<ChannelT>::OnChannelClosed() {
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
 
   if (state_ == RelayState::kDeactivating) {
-    bt_log(TRACE, "l2cap",
-           "Ignorning %s on socket for channel %u while deactivating", __func__,
+    bt_log(TRACE, "l2cap", "Ignorning %s on socket for channel %u while deactivating", __func__,
            channel_->id());
     return;
   }
@@ -234,21 +224,20 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
   do {
     size_t n_bytes_read = 0;
     read_res = socket_.read(0, read_buf, read_buf_size, &n_bytes_read);
-    ZX_DEBUG_ASSERT_MSG(read_res == ZX_OK || read_res == ZX_ERR_SHOULD_WAIT ||
-                            read_res == ZX_ERR_PEER_CLOSED,
-                        "%s", zx_status_get_string(read_res));
-    ZX_DEBUG_ASSERT_MSG(n_bytes_read <= read_buf_size,
-                        "(n_bytes_read=%zu, read_buf_size=%zu)", n_bytes_read,
-                        read_buf_size);
+    ZX_DEBUG_ASSERT_MSG(
+        read_res == ZX_OK || read_res == ZX_ERR_SHOULD_WAIT || read_res == ZX_ERR_PEER_CLOSED, "%s",
+        zx_status_get_string(read_res));
+    ZX_DEBUG_ASSERT_MSG(n_bytes_read <= read_buf_size, "(n_bytes_read=%zu, read_buf_size=%zu)",
+                        n_bytes_read, read_buf_size);
     if (read_res == ZX_ERR_SHOULD_WAIT) {
-      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s",
-             channel_->id(), zx_status_get_string(read_res));
+      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
+             zx_status_get_string(read_res));
       return true;
     }
 
     if (read_res == ZX_ERR_PEER_CLOSED) {
-      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s",
-             channel_->id(), zx_status_get_string(read_res));
+      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
+             zx_status_get_string(read_res));
       return false;
     }
 
@@ -259,11 +248,11 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
 
     // TODO(NET-1391): For low latency and low jitter, IWBN to avoid allocating
     // dynamic memory on every read.
-    bool write_success = channel_->Send(std::make_unique<DynamicByteBuffer>(
-        BufferView(read_buf, n_bytes_read)));
+    bool write_success =
+        channel_->Send(std::make_unique<DynamicByteBuffer>(BufferView(read_buf, n_bytes_read)));
     if (!write_success) {
-      bt_log(DEBUG, "l2cap", "Failed to write %zu bytes to channel %u",
-             n_bytes_read, channel_->id());
+      bt_log(DEBUG, "l2cap", "Failed to write %zu bytes to channel %u", n_bytes_read,
+             channel_->id());
     }
   } while (read_res == ZX_OK);
 
@@ -286,21 +275,19 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
     ZX_DEBUG_ASSERT_MSG(rx_data.size(), "Zero-length message on write queue");
 
     size_t n_bytes_written = 0;
-    write_res =
-        socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);
-    ZX_DEBUG_ASSERT_MSG(write_res == ZX_OK || write_res == ZX_ERR_SHOULD_WAIT ||
-                            write_res == ZX_ERR_PEER_CLOSED,
-                        "%s", zx_status_get_string(write_res));
+    write_res = socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);
+    ZX_DEBUG_ASSERT_MSG(
+        write_res == ZX_OK || write_res == ZX_ERR_SHOULD_WAIT || write_res == ZX_ERR_PEER_CLOSED,
+        "%s", zx_status_get_string(write_res));
     if (write_res != ZX_OK) {
       ZX_DEBUG_ASSERT(n_bytes_written == 0);
-      bt_log(SPEW, "l2cap",
-             "Failed to write %zu bytes to socket for channel %u: %s",
+      bt_log(SPEW, "l2cap", "Failed to write %zu bytes to socket for channel %u: %s",
              rx_data.size(), channel_->id(), zx_status_get_string(write_res));
       break;
     }
     ZX_DEBUG_ASSERT_MSG(n_bytes_written == rx_data.size(),
-                        "(n_bytes_written=%zu, rx_data.size()=%zu)",
-                        n_bytes_written, rx_data.size());
+                        "(n_bytes_written=%zu, rx_data.size()=%zu)", n_bytes_written,
+                        rx_data.size());
     socket_write_queue_.pop_front();
   } while (write_res == ZX_OK && !socket_write_queue_.empty());
 
@@ -313,8 +300,8 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
     // because we will only be woken if we also have an active Wait for
     // ZX_SOCKET_WRITE_THRESHOLD, and Waits are one-shot.
     const size_t rx_data_len = socket_write_queue_.front()->size();
-    const auto prop_set_res = socket_.set_property(
-        ZX_PROP_SOCKET_TX_THRESHOLD, &rx_data_len, sizeof(rx_data_len));
+    const auto prop_set_res =
+        socket_.set_property(ZX_PROP_SOCKET_TX_THRESHOLD, &rx_data_len, sizeof(rx_data_len));
     switch (prop_set_res) {
       case ZX_OK:
         if (!BeginWait("socket write waiter", &sock_write_waiter_)) {
@@ -334,46 +321,41 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
 }
 
 template <typename ChannelT>
-void SocketChannelRelay<ChannelT>::BindWait(
-    zx_signals_t trigger, const char* wait_name, async::Wait* wait,
-    fit::function<void(zx_status_t)> handler) {
+void SocketChannelRelay<ChannelT>::BindWait(zx_signals_t trigger, const char* wait_name,
+                                            async::Wait* wait,
+                                            fit::function<void(zx_status_t)> handler) {
   wait->set_object(socket_.get());
   wait->set_trigger(trigger);
-  wait->set_handler([self = weak_ptr_factory_.GetWeakPtr(),
-                     channel_id = channel_->id(), wait_name,
+  wait->set_handler([self = weak_ptr_factory_.GetWeakPtr(), channel_id = channel_->id(), wait_name,
                      expected_wait = wait, handler = std::move(handler)](
-                        async_dispatcher_t* actual_dispatcher,
-                        async::WaitBase* actual_wait, zx_status_t status,
-                        const zx_packet_signal_t* signal) {
+                        async_dispatcher_t* actual_dispatcher, async::WaitBase* actual_wait,
+                        zx_status_t status, const zx_packet_signal_t* signal) {
     ZX_DEBUG_ASSERT_MSG(self, "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(actual_dispatcher == self->dispatcher_,
-                        "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(actual_wait == expected_wait, "(%s, channel_id=%u)",
+    ZX_DEBUG_ASSERT_MSG(actual_dispatcher == self->dispatcher_, "(%s, channel_id=%u)", wait_name,
+                        channel_id);
+    ZX_DEBUG_ASSERT_MSG(actual_wait == expected_wait, "(%s, channel_id=%u)", wait_name, channel_id);
+    ZX_DEBUG_ASSERT_MSG(status == ZX_OK || status == ZX_ERR_CANCELED, "(%s, channel_id=%u)",
                         wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(status == ZX_OK || status == ZX_ERR_CANCELED,
-                        "(%s, channel_id=%u)", wait_name, channel_id);
 
     if (status == ZX_ERR_CANCELED) {  // Dispatcher is shutting down.
-      bt_log(TRACE, "l2cap", "%s canceled on socket for channel %u", wait_name,
-             channel_id);
+      bt_log(TRACE, "l2cap", "%s canceled on socket for channel %u", wait_name, channel_id);
       self->DeactivateAndRequestDestruction();
       return;
     }
 
     ZX_DEBUG_ASSERT_MSG(signal, "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(signal->trigger == expected_wait->trigger(),
-                        "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(self->thread_checker_.IsCreationThreadCurrent(),
-                        "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kActivating,
-                        "(%s, channel_id=%u)", wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kDeactivated,
-                        "(%s, channel_id=%u)", wait_name, channel_id);
+    ZX_DEBUG_ASSERT_MSG(signal->trigger == expected_wait->trigger(), "(%s, channel_id=%u)",
+                        wait_name, channel_id);
+    ZX_DEBUG_ASSERT_MSG(self->thread_checker_.IsCreationThreadCurrent(), "(%s, channel_id=%u)",
+                        wait_name, channel_id);
+    ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kActivating, "(%s, channel_id=%u)", wait_name,
+                        channel_id);
+    ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kDeactivated, "(%s, channel_id=%u)", wait_name,
+                        channel_id);
 
     if (self->state_ == RelayState::kDeactivating) {
-      bt_log(TRACE, "l2cap",
-             "Ignorning %s on socket for channel %u while deactivating",
-             wait_name, channel_id);
+      bt_log(TRACE, "l2cap", "Ignorning %s on socket for channel %u while deactivating", wait_name,
+             channel_id);
       return;
     }
     handler(status);
@@ -381,8 +363,7 @@ void SocketChannelRelay<ChannelT>::BindWait(
 }
 
 template <typename ChannelT>
-bool SocketChannelRelay<ChannelT>::BeginWait(const char* wait_name,
-                                             async::Wait* wait) {
+bool SocketChannelRelay<ChannelT>::BeginWait(const char* wait_name, async::Wait* wait) {
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivating);
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
 
@@ -409,8 +390,8 @@ void SocketChannelRelay<ChannelT>::UnbindAndCancelWait(async::Wait* wait) {
   zx_status_t cancel_res;
   wait->set_handler(nullptr);
   cancel_res = wait->Cancel();
-  ZX_DEBUG_ASSERT_MSG(cancel_res == ZX_OK || cancel_res == ZX_ERR_NOT_FOUND,
-                      "Cancel failed: %s", zx_status_get_string(cancel_res));
+  ZX_DEBUG_ASSERT_MSG(cancel_res == ZX_OK || cancel_res == ZX_ERR_NOT_FOUND, "Cancel failed: %s",
+                      zx_status_get_string(cancel_res));
 }
 
 }  // namespace internal

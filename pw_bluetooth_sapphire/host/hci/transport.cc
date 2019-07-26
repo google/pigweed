@@ -17,8 +17,7 @@ namespace bt {
 namespace hci {
 
 // static
-fxl::RefPtr<Transport> Transport::Create(
-    std::unique_ptr<DeviceWrapper> hci_device) {
+fxl::RefPtr<Transport> Transport::Create(std::unique_ptr<DeviceWrapper> hci_device) {
   return AdoptRef(new Transport(std::move(hci_device)));
 }
 
@@ -67,9 +66,8 @@ bool Transport::Initialize(async_dispatcher_t* dispatcher) {
   return true;
 }
 
-bool Transport::InitializeACLDataChannel(
-    const DataBufferInfo& bredr_buffer_info,
-    const DataBufferInfo& le_buffer_info) {
+bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
+                                         const DataBufferInfo& le_buffer_info) {
   ZX_DEBUG_ASSERT(hci_device_);
   ZX_DEBUG_ASSERT(IsInitialized());
 
@@ -83,16 +81,13 @@ bool Transport::InitializeACLDataChannel(
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, acl_channel_wait_);
 
-  acl_data_channel_ =
-      std::make_unique<ACLDataChannel>(this, std::move(channel));
+  acl_data_channel_ = std::make_unique<ACLDataChannel>(this, std::move(channel));
   acl_data_channel_->Initialize(bredr_buffer_info, le_buffer_info);
 
   return true;
 }
 
-void Transport::SetTransportClosedCallback(
-    fit::closure callback,
-    async_dispatcher_t* dispatcher) {
+void Transport::SetTransportClosedCallback(fit::closure callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);
   ZX_DEBUG_ASSERT(!closed_cb_);
@@ -141,30 +136,22 @@ void Transport::ShutDown() {
   bt_log(INFO, "hci", "I/O loop exited");
 }
 
-bool Transport::IsInitialized() const {
-  return is_initialized_;
+bool Transport::IsInitialized() const { return is_initialized_; }
+
+void Transport::WatchChannelClosed(const zx::channel& channel, Waiter& wait) {
+  async::PostTask(io_dispatcher_, [handle = channel.get(), &wait, ref = fxl::Ref(this)] {
+    wait.set_object(handle);
+    wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
+    zx_status_t status = wait.Begin(async_get_default_dispatcher());
+    if (status != ZX_OK) {
+      bt_log(ERROR, "hci", "failed to set up closed handler: %s", zx_status_get_string(status));
+      wait.set_object(ZX_HANDLE_INVALID);
+    }
+  });
 }
 
-void Transport::WatchChannelClosed(const zx::channel& channel,
-                                   Waiter& wait) {
-  async::PostTask(
-      io_dispatcher_, [ handle = channel.get(), &wait, ref = fxl::Ref(this) ] {
-        wait.set_object(handle);
-        wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
-        zx_status_t status = wait.Begin(async_get_default_dispatcher());
-        if (status != ZX_OK) {
-          bt_log(ERROR, "hci", "failed to set up closed handler: %s",
-                 zx_status_get_string(status));
-          wait.set_object(ZX_HANDLE_INVALID);
-        }
-      });
-}
-
-void Transport::OnChannelClosed(
-    async_dispatcher_t* dispatcher,
-    async::WaitBase* wait,
-    zx_status_t status,
-    const zx_packet_signal_t* signal) {
+void Transport::OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                                zx_status_t status, const zx_packet_signal_t* signal) {
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
   } else {

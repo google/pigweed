@@ -33,8 +33,7 @@ ServiceRecord MakeServiceDiscoveryService() {
 
   // The VersionNumberList attribute. See v5.0, Vol 3, Part B, Sec 5.2.3
   // Version 1.0
-  sdp.SetAttribute(kSDP_VersionNumberList,
-                   DataElement(std::vector<DataElement>{kVersion}));
+  sdp.SetAttribute(kSDP_VersionNumberList, DataElement(std::vector<DataElement>{kVersion}));
 
   // ServiceDatabaseState attribute. Changes when a service gets added or
   // removed.
@@ -43,8 +42,7 @@ ServiceRecord MakeServiceDiscoveryService() {
   return sdp;
 }
 
-void SendErrorResponse(l2cap::Channel* chan, TransactionId tid,
-                       ErrorCode code) {
+void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, ErrorCode code) {
   ErrorResponse response(code);
   chan->Send(response.GetPDU(0 /* ignored */, tid, BufferView()));
 }
@@ -52,8 +50,7 @@ void SendErrorResponse(l2cap::Channel* chan, TransactionId tid,
 // Finds the PSM that is specified in a ProtocolDescriptorList
 // Returns l2cap::kInvalidPSM if none is found or the list is invalid
 l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
-  bt_log(SPEW, "sdp", "Trying to find PSM from %s",
-         protocol_list.ToString().c_str());
+  bt_log(SPEW, "sdp", "Trying to find PSM from %s", protocol_list.ToString().c_str());
   const auto* l2cap_protocol = protocol_list.At(0);
   ZX_DEBUG_ASSERT(l2cap_protocol);
   const auto* prot_uuid = l2cap_protocol->At(0);
@@ -78,8 +75,7 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
     return l2cap::kInvalidPSM;
   }
   const auto* next_protocol_uuid = next_protocol->At(0);
-  if (!next_protocol_uuid ||
-      next_protocol_uuid->type() != DataElement::Type::kUuid) {
+  if (!next_protocol_uuid || next_protocol_uuid->type() != DataElement::Type::kUuid) {
     bt_log(SPEW, "sdp", "L2CAP has no PSM and additional protocol invalid");
     return l2cap::kInvalidPSM;
   }
@@ -93,8 +89,7 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
 }
 
 // Writes the RFCOMM channel into a ProtocolDescriptorList
-DataElement WriteRFCOMMChannel(const DataElement& protocol_list,
-                               rfcomm::ServerChannel channel) {
+DataElement WriteRFCOMMChannel(const DataElement& protocol_list, rfcomm::ServerChannel channel) {
   return protocol_list.Clone();
 }
 
@@ -156,8 +151,7 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   return true;
 }
 
-ServiceHandle Server::RegisterService(ServiceRecord record,
-                                      ConnectCallback conn_cb) {
+ServiceHandle Server::RegisterService(ServiceRecord record, ConnectCallback conn_cb) {
   ServiceHandle next = GetNextHandle();
   if (!next) {
     return 0;
@@ -248,14 +242,13 @@ ServiceHandle Server::RegisterService(ServiceRecord record,
         psm_to_service_.emplace(psm, next);
         data_domain_->RegisterService(
             psm,
-            [psm, protocol = primary_list.Clone(),
-             conn_cb = std::move(conn_cb)](auto socket, auto handle) mutable {
+            [psm, protocol = primary_list.Clone(), conn_cb = std::move(conn_cb)](
+                auto socket, auto handle) mutable {
               bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
               conn_cb(std::move(socket), handle, std::move(protocol));
             },
             async_get_default_dispatcher());
-        auto psm_place =
-            service_to_psms_.emplace(next, std::unordered_set<l2cap::PSM>{psm});
+        auto psm_place = service_to_psms_.emplace(next, std::unordered_set<l2cap::PSM>{psm});
         if (!psm_place.second) {
           psm_place.first->second.insert(psm);
         }
@@ -266,9 +259,7 @@ ServiceHandle Server::RegisterService(ServiceRecord record,
   auto placement = records_.emplace(next, std::move(record));
   ZX_DEBUG_ASSERT(placement.second);
   bt_log(SPEW, "sdp", "registered service %#.8x, classes: %s", next,
-         placement.first->second.GetAttribute(kServiceClassIdList)
-             .ToString()
-             .c_str());
+         placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
   return next;
 }
 
@@ -311,8 +302,7 @@ ServiceHandle Server::GetNextHandle() {
   return next_handle_++;
 }
 
-ServiceSearchResponse Server::SearchServices(
-    const std::unordered_set<UUID>& pattern) const {
+ServiceSearchResponse Server::SearchServices(const std::unordered_set<UUID>& pattern) const {
   ServiceSearchResponse resp;
   std::vector<ServiceHandle> matched;
   for (const auto& it : records_) {
@@ -335,8 +325,7 @@ ServiceAttributeResponse Server::GetServiceAttributes(
       resp.set_attribute(attr, record.GetAttribute(attr).Clone());
     }
   }
-  bt_log(SPEW, "sdp", "ServiceAttribute %zu attributes",
-         resp.attributes().size());
+  bt_log(SPEW, "sdp", "ServiceAttribute %zu attributes", resp.attributes().size());
   return resp;
 }
 
@@ -356,17 +345,13 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
     }
   }
 
-  bt_log(SPEW, "sdp", "ServiceSearchAttribute %zu records",
-         resp.num_attribute_lists());
+  bt_log(SPEW, "sdp", "ServiceSearchAttribute %zu records", resp.num_attribute_lists());
   return resp;
 }
 
-void Server::OnChannelClosed(const hci::ConnectionHandle& handle) {
-  channels_.erase(handle);
-}
+void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.erase(handle); }
 
-void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
-                        ByteBufferPtr sdu) {
+void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
@@ -386,8 +371,8 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
   uint16_t param_length = betoh16(packet.header().param_length);
 
   if (param_length != (sdu->size() - sizeof(Header))) {
-    bt_log(SPEW, "sdp", "request isn't the correct size (%hu != %zu)",
-           param_length, sdu->size() - sizeof(Header));
+    bt_log(SPEW, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
+           sdu->size() - sizeof(Header));
     SendErrorResponse(chan, tid, ErrorCode::kInvalidSize);
     return;
   }
@@ -403,8 +388,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
         return;
       }
       auto resp = SearchServices(request.service_search_pattern());
-      chan->Send(
-          resp.GetPDU(request.max_service_record_count(), tid, BufferView()));
+      chan->Send(resp.GetPDU(request.max_service_record_count(), tid, BufferView()));
       return;
     }
     case kServiceAttributeRequest: {
@@ -416,14 +400,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
       }
       auto handle = request.service_record_handle();
       if (records_.find(handle) == records_.end()) {
-        bt_log(SPEW, "sdp", "ServiceAttributeRequest can't find handle %#.8x",
-               handle);
+        bt_log(SPEW, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
         SendErrorResponse(chan, tid, ErrorCode::kInvalidRecordHandle);
         return;
       }
       auto resp = GetServiceAttributes(handle, request.attribute_ranges());
-      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid,
-                               request.ContinuationState());
+      auto bytes =
+          resp.GetPDU(request.max_attribute_byte_count(), tid, request.ContinuationState());
       if (!bytes) {
         SendErrorResponse(chan, tid, ErrorCode::kInvalidContinuationState);
         return;
@@ -438,10 +421,10 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle,
         SendErrorResponse(chan, tid, ErrorCode::kInvalidRequestSyntax);
         return;
       }
-      auto resp = SearchAllServiceAttributes(request.service_search_pattern(),
-                                             request.attribute_ranges());
-      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid,
-                               request.ContinuationState());
+      auto resp =
+          SearchAllServiceAttributes(request.service_search_pattern(), request.attribute_ranges());
+      auto bytes =
+          resp.GetPDU(request.max_attribute_byte_count(), tid, request.ContinuationState());
       if (!bytes) {
         SendErrorResponse(chan, tid, ErrorCode::kInvalidContinuationState);
         return;

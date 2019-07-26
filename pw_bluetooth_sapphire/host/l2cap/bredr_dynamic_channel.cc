@@ -13,9 +13,9 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(
-    SignalingChannelInterface* sig, DynamicChannelCallback close_cb,
-    ServiceRequestCallback service_request_cb)
+BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig,
+                                                         DynamicChannelCallback close_cb,
+                                                         ServiceRequestCallback service_request_cb)
     : DynamicChannelRegistry(kLastACLDynamicChannelId, std::move(close_cb),
                              std::move(service_request_cb)),
       sig_(sig) {
@@ -31,22 +31,18 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(
       fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxInfoReq));
 }
 
-DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(
-    PSM psm, ChannelId local_cid) {
+DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(PSM psm, ChannelId local_cid) {
   return BrEdrDynamicChannel::MakeOutbound(this, sig_, psm, local_cid);
 }
 
-DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeInbound(
-    PSM psm, ChannelId local_cid, ChannelId remote_cid) {
-  return BrEdrDynamicChannel::MakeInbound(this, sig_, psm, local_cid,
-                                          remote_cid);
+DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeInbound(PSM psm, ChannelId local_cid,
+                                                           ChannelId remote_cid) {
+  return BrEdrDynamicChannel::MakeInbound(this, sig_, psm, local_cid, remote_cid);
 }
 
-void BrEdrDynamicChannelRegistry::OnRxConnReq(
-    PSM psm, ChannelId remote_cid,
-    BrEdrCommandHandler::ConnectionResponder* responder) {
-  bt_log(SPEW, "l2cap-bredr",
-         "Got Connection Request for PSM %#.4x from channel %#.4x", psm,
+void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
+                                              BrEdrCommandHandler::ConnectionResponder* responder) {
+  bt_log(SPEW, "l2cap-bredr", "Got Connection Request for PSM %#.4x from channel %#.4x", psm,
          remote_cid);
 
   // TODO(NET-1320): Check if remote ID is already in use and if so, respond
@@ -55,8 +51,7 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(
   ChannelId local_cid = FindAvailableChannelId();
   if (local_cid == kInvalidChannelId) {
     bt_log(TRACE, "l2cap-bredr",
-           "Out of IDs; rejecting connection for PSM %#.4x from channel %#.4x",
-           psm, remote_cid);
+           "Out of IDs; rejecting connection for PSM %#.4x from channel %#.4x", psm, remote_cid);
     responder->Send(kInvalidChannelId, ConnectionResult::kNoResources,
                     ConnectionStatus::kNoInfoAvailable);
     return;
@@ -65,15 +60,13 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(
   auto dyn_chan = RequestService(psm, local_cid, remote_cid);
   if (!dyn_chan) {
     bt_log(TRACE, "l2cap-bredr",
-           "Rejecting connection for unsupported PSM %#.4x from channel %#.4x",
-           psm, remote_cid);
+           "Rejecting connection for unsupported PSM %#.4x from channel %#.4x", psm, remote_cid);
     responder->Send(kInvalidChannelId, ConnectionResult::kPSMNotSupported,
                     ConnectionStatus::kNoInfoAvailable);
     return;
   }
 
-  static_cast<BrEdrDynamicChannel*>(dyn_chan)->CompleteInboundConnection(
-      responder);
+  static_cast<BrEdrDynamicChannel*>(dyn_chan)->CompleteInboundConnection(responder);
 }
 
 void BrEdrDynamicChannelRegistry::OnRxConfigReq(
@@ -81,8 +74,7 @@ void BrEdrDynamicChannelRegistry::OnRxConfigReq(
     BrEdrCommandHandler::ConfigurationResponder* responder) {
   auto channel = static_cast<BrEdrDynamicChannel*>(FindChannel(local_cid));
   if (channel == nullptr) {
-    bt_log(WARN, "l2cap-bredr", "ID %#.4x not found for Configuration Request",
-           local_cid);
+    bt_log(WARN, "l2cap-bredr", "ID %#.4x not found for Configuration Request", local_cid);
     responder->RejectInvalidChannelId();
     return;
   }
@@ -95,8 +87,7 @@ void BrEdrDynamicChannelRegistry::OnRxDisconReq(
     BrEdrCommandHandler::DisconnectionResponder* responder) {
   auto channel = static_cast<BrEdrDynamicChannel*>(FindChannel(local_cid));
   if (channel == nullptr || channel->remote_cid() != remote_cid) {
-    bt_log(WARN, "l2cap-bredr",
-           "ID %#.4x not found for Disconnection Request (remote ID %#.4x)",
+    bt_log(WARN, "l2cap-bredr", "ID %#.4x not found for Disconnection Request (remote ID %#.4x)",
            local_cid, remote_cid);
     responder->RejectInvalidChannelId();
     return;
@@ -106,8 +97,7 @@ void BrEdrDynamicChannelRegistry::OnRxDisconReq(
 }
 
 void BrEdrDynamicChannelRegistry::OnRxInfoReq(
-    InformationType type,
-    BrEdrCommandHandler::InformationResponder* responder) {
+    InformationType type, BrEdrCommandHandler::InformationResponder* responder) {
   bt_log(SPEW, "l2cap-bredr", "Got Information Request for type %#.4hx", type);
 
   // TODO(NET-1074): The responses here will likely remain hardcoded magics, but
@@ -119,8 +109,7 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     }
 
     case InformationType::kExtendedFeaturesSupported: {
-      const ExtendedFeatures extended_features =
-          kExtendedFeaturesBitFixedChannels;
+      const ExtendedFeatures extended_features = kExtendedFeaturesBitFixedChannels;
 
       // Express support for the Fixed Channel Supported feature
       responder->SendExtendedFeaturesSupported(extended_features);
@@ -128,8 +117,7 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     }
 
     case InformationType::kFixedChannelsSupported: {
-      const FixedChannelsSupported channels_supported =
-          kFixedChannelsSupportedBitSignaling;
+      const FixedChannelsSupported channels_supported = kFixedChannelsSupportedBitSignaling;
 
       // Express support for the ACL-U Signaling Channel (as required)
       // TODO(NET-1074): Set the bit for SM's fixed channel
@@ -139,25 +127,22 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
 
     default:
       responder->RejectNotUnderstood();
-      bt_log(TRACE, "l2cap-bredr", "Rejecting Information Request type %#.4hx",
-             type);
+      bt_log(TRACE, "l2cap-bredr", "Rejecting Information Request type %#.4hx", type);
   }
 }
 
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeOutbound(
-    DynamicChannelRegistry* registry,
-    SignalingChannelInterface* signaling_channel, PSM psm,
+    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
     ChannelId local_cid) {
-  return std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
-      registry, signaling_channel, psm, local_cid, kInvalidChannelId));
+  return std::unique_ptr<BrEdrDynamicChannel>(
+      new BrEdrDynamicChannel(registry, signaling_channel, psm, local_cid, kInvalidChannelId));
 }
 
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeInbound(
-    DynamicChannelRegistry* registry,
-    SignalingChannelInterface* signaling_channel, PSM psm, ChannelId local_cid,
-    ChannelId remote_cid) {
-  auto channel = std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
-      registry, signaling_channel, psm, local_cid, remote_cid));
+    DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
+    ChannelId local_cid, ChannelId remote_cid) {
+  auto channel = std::unique_ptr<BrEdrDynamicChannel>(
+      new BrEdrDynamicChannel(registry, signaling_channel, psm, local_cid, remote_cid));
   channel->state_ |= kConnRequested;
   return channel;
 }
@@ -171,16 +156,13 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
   if (!cmd_handler.SendConnectionRequest(
-          psm(), local_cid(),
-          fit::bind_member(this, &BrEdrDynamicChannel::OnRxConnRsp))) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: Failed to send Connection Request", local_cid());
+          psm(), local_cid(), fit::bind_member(this, &BrEdrDynamicChannel::OnRxConnRsp))) {
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Connection Request", local_cid());
     PassOpenError();
     return;
   }
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Connection Request",
-         local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Connection Request", local_cid());
 
   state_ |= kConnRequested;
 }
@@ -203,17 +185,15 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
 
   // TODO(BT-331): Call |done_cb| after RTX timeout to avoid zombie channels.
   auto on_discon_rsp =
-      [local_cid = local_cid(), remote_cid = remote_cid(),
-       self = weak_ptr_factory_.GetWeakPtr(), done_cb = done_cb.share()](
-          const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
+      [local_cid = local_cid(), remote_cid = remote_cid(), self = weak_ptr_factory_.GetWeakPtr(),
+       done_cb = done_cb.share()](const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
         if (rsp.local_cid() != local_cid || rsp.remote_cid() != remote_cid) {
           bt_log(WARN, "l2cap-bredr",
                  "Channel %#.4x: Got Disconnection Response with ID %#.4x/"
                  "remote ID %#.4x on channel with remote ID %#.4x",
                  local_cid, rsp.local_cid(), rsp.remote_cid(), remote_cid);
         } else {
-          bt_log(SPEW, "l2cap-bredr",
-                 "Channel %#.4x: Got Disconnection Response", local_cid);
+          bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Disconnection Response", local_cid);
         }
 
         if (self) {
@@ -224,16 +204,14 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
       };
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
-  if (!cmd_handler.SendDisconnectionRequest(remote_cid(), local_cid(),
-                                            std::move(on_discon_rsp))) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: Failed to send Disconnection Request", local_cid());
+  if (!cmd_handler.SendDisconnectionRequest(remote_cid(), local_cid(), std::move(on_discon_rsp))) {
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Disconnection Request",
+           local_cid());
     done_cb();
     return;
   }
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Disconnection Request",
-         local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Disconnection Request", local_cid());
 }
 
 bool BrEdrDynamicChannel::IsConnected() const {
@@ -243,37 +221,30 @@ bool BrEdrDynamicChannel::IsConnected() const {
 }
 
 bool BrEdrDynamicChannel::IsOpen() const {
-  return IsConnected() && (state_ & kLocalConfigAccepted) &&
-         (state_ & kRemoteConfigAccepted);
+  return IsConnected() && (state_ & kLocalConfigAccepted) && (state_ & kRemoteConfigAccepted);
 }
 
-void BrEdrDynamicChannel::OnRxConfigReq(
-    uint16_t flags, const ByteBuffer& options,
-    BrEdrCommandHandler::ConfigurationResponder* responder) {
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request",
-         local_cid());
+void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, const ByteBuffer& options,
+                                        BrEdrCommandHandler::ConfigurationResponder* responder) {
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request", local_cid());
 
   if (!IsConnected()) {
-    bt_log(WARN, "l2cap-bredr",
-           "Channel %#.4x: Unexpected Configuration Request, state %x",
+    bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Unexpected Configuration Request, state %x",
            local_cid(), state_);
     return;
   }
 
   if (state_ & kRemoteConfigReceived) {
-    bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Reconfiguring, state %x",
-           local_cid(), state_);
+    bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Reconfiguring, state %x", local_cid(), state_);
   }
 
   state_ |= kRemoteConfigReceived;
 
   // TODO(NET-1084): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
-  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess,
-                  BufferView());
+  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, BufferView());
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response",
-         local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response", local_cid());
 
   if (IsOpen()) {
     set_opened();
@@ -281,18 +252,15 @@ void BrEdrDynamicChannel::OnRxConfigReq(
   }
 }
 
-void BrEdrDynamicChannel::OnRxDisconReq(
-    BrEdrCommandHandler::DisconnectionResponder* responder) {
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Disconnection Request",
-         local_cid());
+void BrEdrDynamicChannel::OnRxDisconReq(BrEdrCommandHandler::DisconnectionResponder* responder) {
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Disconnection Request", local_cid());
 
   // Unconnected channels only exist if they are waiting for a Connection
   // Response from the peer or are disconnected yet undestroyed for some reason.
   // Getting a Disconnection Request implies some error condition or misbehavior
   // but the reaction should still be to terminate this channel.
   if (!IsConnected()) {
-    bt_log(WARN, "l2cap-bredr",
-           "Channel %#.4x: Unexpected Disconnection Request", local_cid());
+    bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Unexpected Disconnection Request", local_cid());
   }
 
   state_ |= kDisconnected;
@@ -306,22 +274,18 @@ void BrEdrDynamicChannel::OnRxDisconReq(
 
 void BrEdrDynamicChannel::CompleteInboundConnection(
     BrEdrCommandHandler::ConnectionResponder* responder) {
-  bt_log(TRACE, "l2cap-bredr",
-         "Channel %#.4x: connected for PSM %#.4x from remote channel %#.4x",
+  bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: connected for PSM %#.4x from remote channel %#.4x",
          local_cid(), psm(), remote_cid());
 
-  responder->Send(local_cid(), ConnectionResult::kSuccess,
-                  ConnectionStatus::kNoInfoAvailable);
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Connection Response",
-         local_cid());
+  responder->Send(local_cid(), ConnectionResult::kSuccess, ConnectionStatus::kNoInfoAvailable);
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Connection Response", local_cid());
   state_ |= kConnResponded;
   TrySendLocalConfig();
 }
 
-BrEdrDynamicChannel::BrEdrDynamicChannel(
-    DynamicChannelRegistry* registry,
-    SignalingChannelInterface* signaling_channel, PSM psm, ChannelId local_cid,
-    ChannelId remote_cid)
+BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
+                                         SignalingChannelInterface* signaling_channel, PSM psm,
+                                         ChannelId local_cid, ChannelId remote_cid)
     : DynamicChannel(registry, psm, local_cid, remote_cid),
       signaling_channel_(signaling_channel),
       state_(0u),
@@ -353,64 +317,57 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
   }
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
-  if (!cmd_handler.SendConfigurationRequest(
-          remote_cid(), 0, BufferView(),
-          [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
-            if (self) {
-              return self->OnRxConfigRsp(rsp);
-            }
-            return false;
-          })) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: Failed to send Configuration Request", local_cid());
+  if (!cmd_handler.SendConfigurationRequest(remote_cid(), 0, BufferView(),
+                                            [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
+                                              if (self) {
+                                                return self->OnRxConfigRsp(rsp);
+                                              }
+                                              return false;
+                                            })) {
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Configuration Request",
+           local_cid());
     PassOpenError();
     return;
   }
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Request",
-         local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Request", local_cid());
 
   state_ |= kLocalConfigSent;
 }
 
-bool BrEdrDynamicChannel::OnRxConnRsp(
-    const BrEdrCommandHandler::ConnectionResponse& rsp) {
+bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: Connection Request rejected reason %#.4hx",
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Connection Request rejected reason %#.4hx",
            local_cid(), rsp.reject_reason());
     PassOpenError();
     return false;
   }
 
   if (rsp.local_cid() != local_cid()) {
-    bt_log(
-        ERROR, "l2cap-bredr",
-        "Channel %#.4x: Got Connection Response for another channel ID %#.4x",
-        local_cid(), rsp.local_cid());
+    bt_log(ERROR, "l2cap-bredr",
+           "Channel %#.4x: Got Connection Response for another channel ID %#.4x", local_cid(),
+           rsp.local_cid());
     PassOpenError();
     return false;
   }
 
   if ((state_ & kConnResponded) || !(state_ & kConnRequested)) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: Unexpected Connection Response, state %#x",
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Unexpected Connection Response, state %#x",
            local_cid(), state_);
     PassOpenError();
     return false;
   }
 
   if (rsp.result() == ConnectionResult::kPending) {
-    bt_log(SPEW, "l2cap-bredr",
-           "Channel %#.4x: Remote is pending open, status %#.4hx", local_cid(),
+    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Remote is pending open, status %#.4hx", local_cid(),
            rsp.conn_status());
 
     // If the remote provides a channel ID, then we store it. It can be used for
     // disconnection from this point forward.
     if (rsp.remote_cid() != kInvalidChannelId) {
       set_remote_cid(rsp.remote_cid());
-      bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x",
-             local_cid(), remote_cid());
+      bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
+             remote_cid());
     }
     return true;  // Final connection result still expected
   }
@@ -449,15 +406,14 @@ bool BrEdrDynamicChannel::OnRxConnRsp(
   state_ |= kConnResponded;
   set_remote_cid(rsp.remote_cid());
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x",
-         local_cid(), remote_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
+         remote_cid());
 
   TrySendLocalConfig();
   return false;
 }
 
-bool BrEdrDynamicChannel::OnRxConfigRsp(
-    const BrEdrCommandHandler::ConfigurationResponse& rsp) {
+bool BrEdrDynamicChannel::OnRxConfigRsp(const BrEdrCommandHandler::ConfigurationResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(ERROR, "l2cap-bredr",
            "Channel %#.4x: Configuration Request rejected, reason %#.4hx, "
@@ -471,22 +427,19 @@ bool BrEdrDynamicChannel::OnRxConfigRsp(
   }
 
   if (rsp.result() == ConfigurationResult::kPending) {
-    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: remote pending config",
-           local_cid());
+    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: remote pending config", local_cid());
     return true;
   }
 
   if (rsp.result() != ConfigurationResult::kSuccess) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: unsuccessful config reason %#.4hx", local_cid(),
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: unsuccessful config reason %#.4hx", local_cid(),
            rsp.result());
     PassOpenError();
     return false;
   }
 
   if (rsp.local_cid() != local_cid()) {
-    bt_log(ERROR, "l2cap-bredr",
-           "Channel %#.4x: dropping Configuration Response for %#.4x",
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: dropping Configuration Response for %#.4x",
            local_cid(), rsp.local_cid());
     PassOpenError();
     return false;
@@ -494,8 +447,7 @@ bool BrEdrDynamicChannel::OnRxConfigRsp(
 
   state_ |= kLocalConfigAccepted;
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Response",
-         local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Response", local_cid());
 
   if (IsOpen()) {
     set_opened();

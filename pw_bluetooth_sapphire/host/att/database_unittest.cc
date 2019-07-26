@@ -21,8 +21,7 @@ constexpr UUID kTestType2((uint16_t)2);
 constexpr UUID kTestType3((uint16_t)3);
 
 const AccessRequirements kAllowed(false, false, false);
-const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16,
-                                         false);
+const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
 
 // Values with different lengths
 const auto kTestValue1 = CreateStaticByteBuffer('x', 'x');
@@ -201,8 +200,7 @@ TEST(ATT_DatabaseTest, FindAttributeIndexIntoGrouping) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   auto* grp = db->NewGrouping(kTestType1, 1, kTestValue1);
-  auto* attr =
-      grp->AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
+  auto* attr = grp->AddAttribute(kTestType2, AccessRequirements(), AccessRequirements());
   grp->set_active(true);
 
   EXPECT_EQ(attr, db->FindAttribute(grp->end_handle()));
@@ -224,8 +222,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingleInactive) {
   db->NewGrouping(kTestType1, 0, kTestValue1);
 
   // |grp| is not active
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr,
-                              true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 }
@@ -236,13 +233,12 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingle) {
   grp->set_active(true);
 
   // Not within range.
-  auto iter = db->GetIterator(grp->start_handle() + 1, kTestRangeEnd, nullptr,
-                              true /* groups_only */);
+  auto iter =
+      db->GetIterator(grp->start_handle() + 1, kTestRangeEnd, nullptr, true /* groups_only */);
   EXPECT_TRUE(iter.AtEnd());
   EXPECT_FALSE(iter.get());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr,
-                         true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -262,8 +258,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyMultiple) {
   grp3->set_active(true);
   grp4->set_active(true);
 
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr,
-                              true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, nullptr, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   // |grp2| should be omitted.
@@ -276,8 +271,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyMultiple) {
   grp2->set_active(true);
 
   // Pick a narrow range that excludes |grp1| and |grp4|.
-  iter = db->GetIterator(grp2->start_handle(), grp3->end_handle(), nullptr,
-                         true /* groups_only */);
+  iter = db->GetIterator(grp2->start_handle(), grp3->end_handle(), nullptr, true /* groups_only */);
   handles = IterHandles(&iter);
   ASSERT_EQ(2u, handles.size());
   EXPECT_EQ(grp2->start_handle(), handles[0]);
@@ -291,12 +285,10 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlySingleWithFilter) {
   grp->set_active(true);
 
   // No match.
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2,
-                              true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, true /* groups_only */);
   EXPECT_TRUE(iter.AtEnd());
 
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1,
-                         true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -308,7 +300,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   auto db = Database::Create(kTestRangeStart, kTestRangeEnd);
 
   auto grp1 = db->NewGrouping(kTestType1, 1, kTestValue1);  // match
-  grp1->AddAttribute(kTestType1);  // match but skipped - not group decl.
+  grp1->AddAttribute(kTestType1);                           // match but skipped - not group decl.
   grp1->set_active(true);
 
   // Matching but inactive.
@@ -326,8 +318,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   grp6->set_active(true);
 
   // Filter by |kTestType1|
-  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1,
-                              true /* groups_only */);
+  auto iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType1, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   auto handles = IterHandles(&iter);
@@ -337,8 +328,7 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp6->start_handle(), handles[2]);
 
   // Filter by |kTestType2|
-  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2,
-                         true /* groups_only */);
+  iter = db->GetIterator(kTestRangeStart, kTestRangeEnd, &kTestType2, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -348,8 +338,8 @@ TEST(ATT_DatabaseTest, IteratorGroupOnlyManyWithFilter) {
   EXPECT_EQ(grp5->start_handle(), handles[2]);
 
   // Search narrower range.
-  iter = db->GetIterator(grp1->end_handle(), grp5->end_handle(), &kTestType1,
-                         true /* groups_only */);
+  iter =
+      db->GetIterator(grp1->end_handle(), grp5->end_handle(), &kTestType1, true /* groups_only */);
   EXPECT_FALSE(iter.AtEnd());
 
   handles = IterHandles(&iter);
@@ -438,8 +428,7 @@ TEST_F(ATT_DatabaseIteratorManyTest, NoFilter) {
   auto handles = IterHandles(&iter);
 
   // All active attribute handles.
-  const std::array<Handle, kActiveAttrCount> kExpected = {1, 2, 3, 4,
-                                                          5, 6, 7, 10};
+  const std::array<Handle, kActiveAttrCount> kExpected = {1, 2, 3, 4, 5, 6, 7, 10};
   ASSERT_EQ(kExpected.size(), handles.size());
 
   for (size_t i = 0; i < handles.size(); i++) {
@@ -540,18 +529,15 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
     Attribute::WriteResultCallback result_callback;
   };
 
-  void SetUp() override {
-    db_ = Database::Create(kTestRangeStart, kTestRangeEnd);
-  }
+  void SetUp() override { db_ = Database::Create(kTestRangeStart, kTestRangeEnd); }
 
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue wq,
                          const sm::SecurityProperties& security = kNoSecurity) {
-    db_->ExecuteWriteQueue(peer_id, std::move(wq), security,
-                           [this](Handle h, ErrorCode e) {
-                             callback_count_++;
-                             ecode_ = e;
-                             handle_in_error_ = h;
-                           });
+    db_->ExecuteWriteQueue(peer_id, std::move(wq), security, [this](Handle h, ErrorCode e) {
+      callback_count_++;
+      ecode_ = e;
+      handle_in_error_ = h;
+    });
   }
 
   // Sets up an attribute grouping with 4 attributes.
@@ -559,20 +545,19 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
     auto* grp = db()->NewGrouping(kTestType1, 3, kTestValue1);  // handle: 1
     group_decl_handle_ = grp->start_handle();
 
-    auto* attr =
-        grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
-    attr->set_write_handler(fit::bind_member(
-        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    auto* attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
+    attr->set_write_handler(
+        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
     test_handle1_ = attr->handle();
 
     attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 3
-    attr->set_write_handler(fit::bind_member(
-        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    attr->set_write_handler(
+        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
     test_handle2_ = attr->handle();
 
     attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 4
-    attr->set_write_handler(fit::bind_member(
-        this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    attr->set_write_handler(
+        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
     test_handle3_ = attr->handle();
 
     grp->set_active(true);
@@ -595,15 +580,12 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
   Handle test_handle2() const { return test_handle2_; }
   Handle test_handle3() const { return test_handle3_; }
 
-  const std::queue<PendingWrite>& pending_writes() const {
-    return pending_writes_;
-  }
+  const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
 
   Database* db() { return db_.get(); }
 
  private:
-  void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset,
-                    const ByteBuffer& value,
+  void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,
                     Attribute::WriteResultCallback result_callback) {
     PendingWrite pw;
     pw.peer_id = peer_id;
@@ -656,8 +638,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, ValueLength) {
   grp->set_active(true);
 
   PrepareWriteQueue wq;
-  wq.push(QueuedWrite(attr->handle(), 0,
-                      DynamicByteBuffer(kMaxAttributeValueLength + 1)));
+  wq.push(QueuedWrite(attr->handle(), 0, DynamicByteBuffer(kMaxAttributeValueLength + 1)));
 
   ExecuteWriteQueue(kPeerId, std::move(wq));
   EXPECT_EQ(1, callback_count());
@@ -683,8 +664,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
   auto* grp = db()->NewGrouping(kTestType1, 1, kTestValue1);
   auto* attr =
       grp->AddAttribute(kTestType2, att::AccessRequirements(),
-                        att::AccessRequirements(
-                            true, false, false));  // write requires encryption
+                        att::AccessRequirements(true, false, false));  // write requires encryption
   grp->set_active(true);
 
   PrepareWriteQueue wq;
@@ -696,9 +676,8 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
   EXPECT_EQ(attr->handle(), handle_in_error());
 
   // Request should succeed with an encrypted link.
-  ExecuteWriteQueue(
-      kPeerId, std::move(wq),
-      sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  ExecuteWriteQueue(kPeerId, std::move(wq),
+                    sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
   EXPECT_EQ(2, callback_count());
   EXPECT_EQ(ErrorCode::kNoError, ecode());
 }

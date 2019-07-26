@@ -67,19 +67,16 @@ SecurityProperties::SecurityProperties(SecurityLevel level, size_t enc_key_size,
 // points, are stored in 128 bits, according to Core Spec v5.0, Vol 2, Part H
 // Section 3.1 "Key Types."
 SecurityProperties::SecurityProperties(hci::LinkKeyType lk_type)
-    : SecurityProperties(SecurityLevelFromLinkKey(lk_type),
-                         kMaxEncryptionKeySize,
+    : SecurityProperties(SecurityLevelFromLinkKey(lk_type), kMaxEncryptionKeySize,
                          IsSecureConnectionsKey(lk_type)) {
-  ZX_DEBUG_ASSERT_MSG(
-      lk_type != hci::LinkKeyType::kChangedCombination,
-      "Can't infer security information from a Changed Combination Key");
+  ZX_DEBUG_ASSERT_MSG(lk_type != hci::LinkKeyType::kChangedCombination,
+                      "Can't infer security information from a Changed Combination Key");
 }
 
 std::string SecurityProperties::ToString() const {
-  return fxl::StringPrintf(
-      "[security: %s, key size: %lu, %s]", LevelToString(level()),
-      enc_key_size(),
-      secure_connections() ? "secure connections" : "legacy authentication");
+  return fxl::StringPrintf("[security: %s, key size: %lu, %s]", LevelToString(level()),
+                           enc_key_size(),
+                           secure_connections() ? "secure connections" : "legacy authentication");
 }
 
 LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)

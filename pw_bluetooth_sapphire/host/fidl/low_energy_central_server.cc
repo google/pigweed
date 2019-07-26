@@ -18,9 +18,9 @@ using fuchsia::bluetooth::le::ScanFilterPtr;
 
 namespace bthost {
 
-LowEnergyCentralServer::LowEnergyCentralServer(
-    fxl::WeakPtr<bt::gap::Adapter> adapter,
-    fidl::InterfaceRequest<Central> request, fbl::RefPtr<GattHost> gatt_host)
+LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+                                               fidl::InterfaceRequest<Central> request,
+                                               fbl::RefPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(request)),
       gatt_host_(gatt_host),
       requesting_scan_(false),
@@ -32,9 +32,8 @@ LowEnergyCentralServer::~LowEnergyCentralServer() {
   gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this));
 }
 
-void LowEnergyCentralServer::GetPeripherals(
-    ::fidl::VectorPtr<::std::string> service_uuids,
-    GetPeripheralsCallback callback) {
+void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
+                                            GetPeripheralsCallback callback) {
   // TODO:
   bt_log(ERROR, "bt-host", "GetPeripherals() not implemented");
 }
@@ -45,14 +44,12 @@ void LowEnergyCentralServer::GetPeripheral(::std::string identifier,
   bt_log(ERROR, "bt-host", "GetPeripheral() not implemented");
 }
 
-void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
-                                       StartScanCallback callback) {
+void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback callback) {
   bt_log(TRACE, "bt-host", "StartScan()");
 
   if (requesting_scan_) {
     bt_log(TRACE, "bt-host", "scan request already in progress");
-    callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS,
-                                        "Scan request in progress"));
+    callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS, "Scan request in progress"));
     return;
   }
 
@@ -72,41 +69,40 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
   }
 
   requesting_scan_ = true;
-  adapter()->le_discovery_manager()->StartDiscovery(
-      [self = weak_ptr_factory_.GetWeakPtr(), filter = std::move(filter),
-       callback = std::move(callback)](auto session) {
-        if (!self)
-          return;
+  adapter()->le_discovery_manager()->StartDiscovery([self = weak_ptr_factory_.GetWeakPtr(),
+                                                     filter = std::move(filter),
+                                                     callback = std::move(callback)](auto session) {
+    if (!self)
+      return;
 
-        self->requesting_scan_ = false;
+    self->requesting_scan_ = false;
 
-        if (!session) {
-          bt_log(TRACE, "bt-host", "failed to start discovery session");
-          callback(fidl_helpers::NewFidlError(
-              ErrorCode::FAILED, "Failed to start discovery session"));
-          return;
-        }
+    if (!session) {
+      bt_log(TRACE, "bt-host", "failed to start discovery session");
+      callback(fidl_helpers::NewFidlError(ErrorCode::FAILED, "Failed to start discovery session"));
+      return;
+    }
 
-        // Assign the filter contents if a filter was provided.
-        if (filter)
-          fidl_helpers::PopulateDiscoveryFilter(*filter, session->filter());
+    // Assign the filter contents if a filter was provided.
+    if (filter)
+      fidl_helpers::PopulateDiscoveryFilter(*filter, session->filter());
 
-        session->SetResultCallback([self](const auto& peer) {
-          if (self)
-            self->OnScanResult(peer);
-        });
+    session->SetResultCallback([self](const auto& peer) {
+      if (self)
+        self->OnScanResult(peer);
+    });
 
-        session->set_error_callback([self] {
-          if (self) {
-            // Clean up the session and notify the delegate.
-            self->StopScan();
-          }
-        });
+    session->set_error_callback([self] {
+      if (self) {
+        // Clean up the session and notify the delegate.
+        self->StopScan();
+      }
+    });
 
-        self->scan_session_ = std::move(session);
-        self->NotifyScanStateChanged(true);
-        callback(Status());
-      });
+    self->scan_session_ = std::move(session);
+    self->NotifyScanStateChanged(true);
+    callback(Status());
+  });
 }
 
 void LowEnergyCentralServer::StopScan() {
@@ -121,50 +117,45 @@ void LowEnergyCentralServer::StopScan() {
   NotifyScanStateChanged(false);
 }
 
-void LowEnergyCentralServer::ConnectPeripheral(
-    ::std::string identifier, ::fidl::InterfaceRequest<Client> client_request,
-    ConnectPeripheralCallback callback) {
+void LowEnergyCentralServer::ConnectPeripheral(::std::string identifier,
+                                               ::fidl::InterfaceRequest<Client> client_request,
+                                               ConnectPeripheralCallback callback) {
   bt_log(TRACE, "bt-host", "ConnectPeripheral()");
 
   auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "invalid peer ID"));
+    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
   }
 
   auto iter = connections_.find(*peer_id);
   if (iter != connections_.end()) {
     if (iter->second) {
-      callback(fidl_helpers::NewFidlError(
-          ErrorCode::ALREADY, "Already connected to requested peer"));
+      callback(
+          fidl_helpers::NewFidlError(ErrorCode::ALREADY, "Already connected to requested peer"));
     } else {
-      callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS,
-                                          "Connect request pending"));
+      callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS, "Connect request pending"));
     }
     return;
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto conn_cb = [self, callback = callback.share(), peer_id = *peer_id,
-                  request = std::move(client_request)](auto status,
-                                                       auto conn_ref) mutable {
+                  request = std::move(client_request)](auto status, auto conn_ref) mutable {
     if (!self)
       return;
 
     auto iter = self->connections_.find(peer_id);
     if (iter == self->connections_.end()) {
       bt_log(TRACE, "bt-host", "connect request canceled");
-      auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED,
-                                              "Connect request canceled");
+      auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED, "Connect request canceled");
       callback(std::move(error));
       return;
     }
 
     if (!status) {
       ZX_DEBUG_ASSERT(!conn_ref);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)",
-             bt_str(peer_id));
+      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
       callback(fidl_helpers::StatusToFidl(status, "failed to connect"));
       return;
     }
@@ -197,33 +188,27 @@ void LowEnergyCentralServer::ConnectPeripheral(
     callback(Status());
   };
 
-  if (!adapter()->le_connection_manager()->Connect(*peer_id,
-                                                   std::move(conn_cb))) {
-    bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)",
-           identifier.c_str());
-    callback(
-        fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
+  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb))) {
+    bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
+    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;
   }
 
   connections_[*peer_id] = nullptr;
 }
 
-void LowEnergyCentralServer::DisconnectPeripheral(
-    ::std::string identifier, DisconnectPeripheralCallback callback) {
+void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
+                                                  DisconnectPeripheralCallback callback) {
   auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "invalid peer ID"));
+    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
   }
 
   auto iter = connections_.find(*peer_id);
   if (iter == connections_.end()) {
-    bt_log(TRACE, "bt-host", "client not connected to peer (id: %s)",
-           identifier.c_str());
-    callback(
-        fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "peer not connected"));
+    bt_log(TRACE, "bt-host", "client not connected to peer (id: %s)", identifier.c_str());
+    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "peer not connected"));
     return;
   }
 

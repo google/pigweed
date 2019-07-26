@@ -20,8 +20,8 @@ std::optional<T> TryCopyFromPdu(const PDU& pdu) {
   return buf.template As<T>();
 }
 
-std::variant<std::monostate, const SimpleInformationFrameHeader,
-             const SimpleStartOfSduFrameHeader, const SimpleSupervisoryFrame>
+std::variant<std::monostate, const SimpleInformationFrameHeader, const SimpleStartOfSduFrameHeader,
+             const SimpleSupervisoryFrame>
 GetFrameHeaderFromPdu(const PDU& pdu) {
   const auto control_field_opt = TryCopyFromPdu<EnhancedControlField>(pdu);
   if (!control_field_opt) {
@@ -65,10 +65,8 @@ bool IsMpsValid(const PDU& pdu) {
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
-Engine::EnhancedRetransmissionModeRxEngine(
-    SendBasicFrameCallback send_basic_frame_callback)
-    : next_seqnum_(0),
-      send_basic_frame_callback_(std::move(send_basic_frame_callback)) {}
+Engine::EnhancedRetransmissionModeRxEngine(SendBasicFrameCallback send_basic_frame_callback)
+    : next_seqnum_(0), send_basic_frame_callback_(std::move(send_basic_frame_callback)) {}
 
 ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   // A note on validation (see Vol 3, Part A, 3.3.7):
@@ -93,15 +91,12 @@ ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   }
 
   auto header = GetFrameHeaderFromPdu(pdu);
-  return std::visit(
-      [this, pdu = std::move(pdu)](auto&& header) mutable {
-        return ProcessFrame(header, std::move(pdu));
-      },
-      header);
+  return std::visit([this, pdu = std::move(pdu)](
+                        auto&& header) mutable { return ProcessFrame(header, std::move(pdu)); },
+                    header);
 }
 
-ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header,
-                                   PDU pdu) {
+ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PDU pdu) {
   if (header.tx_seq() != next_seqnum_) {
     // TODO(quiche): Send REJ frame.
     // TODO(quiche): Add histogram for |header.tx_seq() - next_seqnum_|. This
@@ -121,8 +116,8 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header,
 
   SimpleReceiverReadyFrame ack_frame;
   ack_frame.set_request_seq_num(next_seqnum_);
-  send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(
-      BufferView(&ack_frame, sizeof(ack_frame))));
+  send_basic_frame_callback_(
+      std::make_unique<DynamicByteBuffer>(BufferView(&ack_frame, sizeof(ack_frame))));
 
   const auto header_len = sizeof(header);
   const auto payload_len = pdu.length() - header_len;
@@ -136,10 +131,8 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
   return nullptr;
 }
 
-ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe,
-                                   PDU pdu) {
-  if (sframe.function() == SupervisoryFunction::ReceiverReady &&
-      sframe.is_poll_request()) {
+ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu) {
+  if (sframe.function() == SupervisoryFunction::ReceiverReady && sframe.is_poll_request()) {
     // TODO(quiche): Propagate ReqSeq to the transmit engine.
     // See Core Spec, v5, Vol 3, Part A, Table 8.6, "Recv RR(P=1)".
     //
@@ -149,8 +142,8 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe,
     SimpleReceiverReadyFrame poll_response;
     poll_response.set_is_poll_response();
     poll_response.set_request_seq_num(next_seqnum_);
-    send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(
-        BufferView(&poll_response, sizeof(poll_response))));
+    send_basic_frame_callback_(
+        std::make_unique<DynamicByteBuffer>(BufferView(&poll_response, sizeof(poll_response))));
     return nullptr;
   }
 

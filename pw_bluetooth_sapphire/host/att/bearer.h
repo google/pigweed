@@ -138,8 +138,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   //     require a response which can be sent by calling Reply().
   using TransactionId = size_t;
   static constexpr TransactionId kInvalidTransactionId = 0u;
-  using Handler =
-      fit::function<void(TransactionId tid, const PacketReader& packet)>;
+  using Handler = fit::function<void(TransactionId tid, const PacketReader& packet)>;
 
   // Handler: called when |pdu| does not need flow control. This will be
   // called for commands and notifications.
@@ -169,8 +168,8 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
 
   // Represents a locally initiated pending request or indication transaction.
   struct PendingTransaction : LinkedListable<PendingTransaction> {
-    PendingTransaction(OpCode opcode, TransactionCallback callback,
-                       ErrorCallback error_callback, ByteBufferPtr pdu);
+    PendingTransaction(OpCode opcode, TransactionCallback callback, ErrorCallback error_callback,
+                       ByteBufferPtr pdu);
 
     // Required fields
     OpCode opcode;
@@ -225,8 +224,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
 
     // Tries to initiate the next transaction. Sends the PDU over |chan| if
     // successful.
-    void TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb,
-                     zx::duration timeout);
+    void TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb, zx::duration timeout);
 
     // Adds |next| to the transaction queue.
     void Enqueue(PendingTransactionPtr transaction);
@@ -243,8 +241,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
     async::Task timeout_task_;
   };
 
-  bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
-                    ErrorCallback error_callback);
+  bool SendInternal(ByteBufferPtr pdu, TransactionCallback callback, ErrorCallback error_callback);
 
   // Shuts down the link.
   void ShutDownInternal(bool due_to_timeout);
@@ -256,8 +253,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   void TryStartNextTransaction(TransactionQueue* tq);
 
   // Sends out an immediate error response.
-  void SendErrorResponse(OpCode request_opcode, Handle attribute_handle,
-                         ErrorCode error_code);
+  void SendErrorResponse(OpCode request_opcode, Handle attribute_handle, ErrorCode error_code);
 
   // Called when the peer sends us a response or confirmation PDU.
   void HandleEndTransaction(TransactionQueue* tq, const PacketReader& packet);
@@ -271,8 +267,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   using RemoteTransaction = std::optional<PendingRemoteTransaction>;
 
   // Called when the peer initiates a request or indication transaction.
-  void HandleBeginTransaction(RemoteTransaction* currently_pending,
-                              const PacketReader& packet);
+  void HandleBeginTransaction(RemoteTransaction* currently_pending, const PacketReader& packet);
 
   // Returns any pending peer-initiated transaction that matches |id|. Returns
   // nullptr otherwise.

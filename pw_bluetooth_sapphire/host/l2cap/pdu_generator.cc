@@ -21,12 +21,11 @@ constexpr static ChannelId kTestChannelId = 0x0001;
 
 }  // namespace
 
-PduGenerator::PduGenerator(const uint8_t* input_buf, size_t buflen,
-                           size_t num_pdus)
+PduGenerator::PduGenerator(const uint8_t* input_buf, size_t buflen, size_t num_pdus)
     : input_buf_(input_buf),
       buf_len_bytes_(buflen),
-      pdu_len_bytes_(std::min<size_t>(num_pdus ? buflen / num_pdus : buflen + 1,
-                                      kMaxBasicFramePayloadSize)),
+      pdu_len_bytes_(
+          std::min<size_t>(num_pdus ? buflen / num_pdus : buflen + 1, kMaxBasicFramePayloadSize)),
       fragmenter_(kTestHandle),
       input_pos_(0) {
   ZX_ASSERT(input_buf_);
@@ -47,8 +46,8 @@ std::optional<PDU> PduGenerator::GetNextPdu() {
 
   // For the rationale behind using a Fragmenter to build the PDU, see the
   // comment in basic_mode_rx_engine_fuzztest.cc.
-  auto pdu = fragmenter_.BuildBasicFrame(
-      kTestChannelId, BufferView(input_buf_ + input_pos_, pdu_len_bytes_));
+  auto pdu = fragmenter_.BuildBasicFrame(kTestChannelId,
+                                         BufferView(input_buf_ + input_pos_, pdu_len_bytes_));
   input_pos_ += pdu_len_bytes_;
   return std::move(pdu);
 }

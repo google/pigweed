@@ -49,8 +49,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestBase overrides:
   void SetUp() override {
-    transport_ = hci::Transport::Create(
-        FakeControllerTest<FakeControllerType>::SetUpTestDevice());
+    transport_ = hci::Transport::Create(FakeControllerTest<FakeControllerType>::SetUpTestDevice());
     transport_->Initialize(dispatcher());
   }
 
@@ -74,12 +73,10 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   // If data buffer information isn't provided, the ACLDataChannel will be
   // initialized with shared BR/EDR/LE buffers using the constants declared
   // above.
-  bool InitializeACLDataChannel(
-      const hci::DataBufferInfo& bredr_buffer_info = hci::DataBufferInfo(
-          kDefaultMaxDataPacketLength, kDefaultMaxPacketCount),
-      const hci::DataBufferInfo& le_buffer_info = hci::DataBufferInfo()) {
-    if (!transport_->InitializeACLDataChannel(bredr_buffer_info,
-                                              le_buffer_info)) {
+  bool InitializeACLDataChannel(const hci::DataBufferInfo& bredr_buffer_info = hci::DataBufferInfo(
+                                    kDefaultMaxDataPacketLength, kDefaultMaxPacketCount),
+                                const hci::DataBufferInfo& le_buffer_info = hci::DataBufferInfo()) {
+    if (!transport_->InitializeACLDataChannel(bredr_buffer_info, le_buffer_info)) {
       return false;
     }
 
@@ -97,18 +94,13 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   //
   // InitializeACLDataChannel() must be called once and its data rx handler must
   // not be overridden by tests for |callback| to work.
-  void set_data_received_callback(
-      hci::ACLDataChannel::DataReceivedCallback callback) {
+  void set_data_received_callback(hci::ACLDataChannel::DataReceivedCallback callback) {
     data_received_callback_ = std::move(callback);
   }
 
   fxl::RefPtr<hci::Transport> transport() const { return transport_; }
-  hci::CommandChannel* cmd_channel() const {
-    return transport_->command_channel();
-  }
-  hci::ACLDataChannel* acl_data_channel() const {
-    return transport_->acl_data_channel();
-  }
+  hci::CommandChannel* cmd_channel() const { return transport_->command_channel(); }
+  hci::ACLDataChannel* acl_data_channel() const { return transport_->acl_data_channel(); }
 
   // Deletes |test_device_| and resets the pointer.
   void DeleteTestDevice() { test_device_ = nullptr; }
@@ -141,8 +133,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     status = zx::channel::create(0, &acl0, &acl1_);
     ZX_DEBUG_ASSERT(ZX_OK == status);
 
-    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0),
-                                                             std::move(acl0));
+    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0), std::move(acl0));
     test_device_ = std::make_unique<FakeControllerType>();
 
     return hci_dev;
@@ -154,10 +145,9 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     if (!data_received_callback_)
       return;
 
-    async::PostTask(dispatcher(),
-                    [this, packet = std::move(data_packet)]() mutable {
-                      data_received_callback_(std::move(packet));
-                    });
+    async::PostTask(dispatcher(), [this, packet = std::move(data_packet)]() mutable {
+      data_received_callback_(std::move(packet));
+    });
   }
 
   std::unique_ptr<FakeControllerType> test_device_;
@@ -165,9 +155,8 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   hci::ACLDataChannel::DataReceivedCallback data_received_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerTest);
-  static_assert(
-      std::is_base_of<FakeControllerBase, FakeControllerType>::value,
-      "TestBase must be used with a derivative of FakeControllerBase");
+  static_assert(std::is_base_of<FakeControllerBase, FakeControllerType>::value,
+                "TestBase must be used with a derivative of FakeControllerBase");
 };
 
 }  // namespace testing

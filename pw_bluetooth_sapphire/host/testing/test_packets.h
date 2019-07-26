@@ -17,18 +17,16 @@ namespace testing {
 // given transactions such as connection establishment or discovery
 
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
-DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address,
-                                           hci::ConnectionHandle conn);
+DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
 DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address);
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
-    hci::ConnectionHandle conn);
+DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
-DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
-    hci::ConnectionHandle conn, bool extended_features);
+DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
+                                                            bool extended_features);
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);

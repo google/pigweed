@@ -24,11 +24,9 @@ size_t Channel::tx_mtu() const { return session_->GetMaximumUserDataLength(); }
 
 namespace internal {
 
-ChannelImpl::ChannelImpl(DLCI dlci, Session* session)
-    : Channel(dlci, session) {}
+ChannelImpl::ChannelImpl(DLCI dlci, Session* session) : Channel(dlci, session) {}
 
-bool ChannelImpl::Activate(RxCallback rx_callback,
-                           ClosedCallback closed_callback,
+bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
                            async_dispatcher_t* dispatcher) {
   rx_callback_ = std::move(rx_callback);
   closed_callback_ = std::move(closed_callback_);
@@ -36,9 +34,8 @@ bool ChannelImpl::Activate(RxCallback rx_callback,
 
   while (!pending_rxed_frames_.empty()) {
     auto& data = pending_rxed_frames_.front();
-    async::PostTask(dispatcher_, [this, data_ = std::move(data)]() mutable {
-      rx_callback_(std::move(data_));
-    });
+    async::PostTask(dispatcher_,
+                    [this, data_ = std::move(data)]() mutable { rx_callback_(std::move(data_)); });
     pending_rxed_frames_.pop();
   }
 
@@ -54,9 +51,8 @@ bool ChannelImpl::Send(ByteBufferPtr data) {
 
 void ChannelImpl::Receive(ByteBufferPtr data) {
   if (rx_callback_) {
-    async::PostTask(dispatcher_, [this, data_ = std::move(data)]() mutable {
-      rx_callback_(std::move(data_));
-    });
+    async::PostTask(dispatcher_,
+                    [this, data_ = std::move(data)]() mutable { rx_callback_(std::move(data_)); });
   } else {
     pending_rxed_frames_.push(std::move(data));
   }

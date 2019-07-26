@@ -17,8 +17,7 @@ namespace {
 std::atomic_int g_printf_min_severity(-1);
 
 uint32_t kDdkSeverities[kNumLogSeverities] = {
-    DDK_LOG_ERROR, DDK_LOG_WARN, DDK_LOG_INFO,
-    DDK_LOG_TRACE, DDK_LOG_SPEW, DDK_LOG_DEBUG1,
+    DDK_LOG_ERROR, DDK_LOG_WARN, DDK_LOG_INFO, DDK_LOG_TRACE, DDK_LOG_SPEW, DDK_LOG_DEBUG1,
 };
 
 const char* const kLogSeverityNames[kNumLogSeverities] = {
@@ -62,8 +61,6 @@ void LogMessage(LogSeverity severity, const char* tag, const char* fmt, ...) {
   }
 }
 
-void UsePrintf(LogSeverity min_severity) {
-  g_printf_min_severity = static_cast<int>(min_severity);
-}
+void UsePrintf(LogSeverity min_severity) { g_printf_min_severity = static_cast<int>(min_severity); }
 
 }  // namespace bt

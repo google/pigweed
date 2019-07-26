@@ -38,8 +38,7 @@ bool Host::Initialize(InitCallback callback) {
   if (!gatt_host_)
     return false;
 
-  gap_ =
-      std::make_unique<gap::Adapter>(hci, data_domain_, gatt_host_->profile());
+  gap_ = std::make_unique<gap::Adapter>(hci, data_domain_, gatt_host_->profile());
   if (!gap_)
     return false;
 
@@ -50,10 +49,8 @@ bool Host::Initialize(InitCallback callback) {
   // initial setup in GAP. The data domain will be initialized by GAP because it
   // both sets up the HCI ACL data channel that L2CAP relies on and registers
   // L2CAP services.
-  auto gap_init_callback = [gatt_host = gatt_host_,
-                            callback = std::move(callback)](bool success) {
-    bt_log(TRACE, "bt-host", "GAP init complete (%s)",
-           (success ? "success" : "failure"));
+  auto gap_init_callback = [gatt_host = gatt_host_, callback = std::move(callback)](bool success) {
+    bt_log(TRACE, "bt-host", "GAP init complete (%s)", (success ? "success" : "failure"));
 
     if (success) {
       gatt_host->Initialize();
@@ -63,9 +60,8 @@ bool Host::Initialize(InitCallback callback) {
   };
 
   bt_log(TRACE, "bt-host", "initializing GAP");
-  return gap_->Initialize(std::move(gap_init_callback), [] {
-    bt_log(TRACE, "bt-host", "bt-host: HCI transport has closed");
-  });
+  return gap_->Initialize(std::move(gap_init_callback),
+                          [] { bt_log(TRACE, "bt-host", "bt-host: HCI transport has closed"); });
 }
 
 void Host::ShutDown() {
@@ -102,8 +98,7 @@ void Host::BindHostInterface(zx::channel channel) {
   ZX_DEBUG_ASSERT(gap_);
   ZX_DEBUG_ASSERT(gatt_host_);
 
-  host_server_ = std::make_unique<HostServer>(std::move(channel),
-                                              gap_->AsWeakPtr(), gatt_host_);
+  host_server_ = std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_host_);
   host_server_->set_error_handler([this](zx_status_t status) {
     ZX_DEBUG_ASSERT(host_server_);
     bt_log(TRACE, "bt-host", "Host interface disconnected");

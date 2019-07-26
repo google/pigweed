@@ -27,8 +27,7 @@ class Expecter : public SignalingChannel::Responder {
     ADD_FAILURE() << "Unexpected local rejection, \"Not Understood\"";
   }
 
-  void RejectInvalidChannelId(ChannelId local_cid,
-                              ChannelId remote_cid) override {
+  void RejectInvalidChannelId(ChannelId local_cid, ChannelId remote_cid) override {
     ADD_FAILURE() << fxl::StringPrintf(
         "Unexpected local rejection, \"Invalid Channel ID\" local: %#.4x "
         "remote: %#.4x",
@@ -46,8 +45,7 @@ class Expecter : public SignalingChannel::Responder {
 
 class ResponseExpecter : public Expecter {
  public:
-  explicit ResponseExpecter(const ByteBuffer& expected_rsp)
-      : expected_rsp_(expected_rsp) {}
+  explicit ResponseExpecter(const ByteBuffer& expected_rsp) : expected_rsp_(expected_rsp) {}
 
   void Send(const ByteBuffer& rsp_payload) override {
     set_called(true);
@@ -68,8 +66,7 @@ class RejectInvalidChannelIdExpecter : public Expecter {
   RejectInvalidChannelIdExpecter(ChannelId local_cid, ChannelId remote_cid)
       : local_cid_(local_cid), remote_cid_(remote_cid) {}
 
-  void RejectInvalidChannelId(ChannelId local_cid,
-                              ChannelId remote_cid) override {
+  void RejectInvalidChannelId(ChannelId local_cid, ChannelId remote_cid) override {
     set_called(true);
     EXPECT_EQ(local_cid_, local_cid);
     EXPECT_EQ(remote_cid_, remote_cid);
@@ -91,17 +88,15 @@ FakeSignalingChannel::~FakeSignalingChannel() {
   // Add a test failure for each expected request that wasn't received
   for (size_t i = expected_transaction_index_; i < transactions_.size(); i++) {
     ADD_FAILURE_AT(transactions_[i].file, transactions_[i].line)
-        << "Outbound request [" << i << "] expected "
-        << transactions_[i].responses.size() << " responses";
+        << "Outbound request [" << i << "] expected " << transactions_[i].responses.size()
+        << " responses";
   }
 }
 
-bool FakeSignalingChannel::SendRequest(CommandCode req_code,
-                                       const ByteBuffer& payload,
+bool FakeSignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
                                        SignalingChannel::ResponseHandler cb) {
   if (expected_transaction_index_ >= transactions_.size()) {
-    ADD_FAILURE() << "Received unexpected outbound command after handling "
-                  << transactions_.size();
+    ADD_FAILURE() << "Received unexpected outbound command after handling " << transactions_.size();
     return false;
   }
 
@@ -116,8 +111,7 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
   // Simulate the remote's response(s)
   async::PostTask(dispatcher_, [this, index = expected_transaction_index_]() {
     Transaction& transaction = transactions_[index];
-    transaction.responses_handled =
-        TriggerResponses(transaction, transaction.responses);
+    transaction.responses_handled = TriggerResponses(transaction, transaction.responses);
   });
 
   expected_transaction_index_++;
@@ -125,8 +119,7 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
 }
 
 void FakeSignalingChannel::ReceiveResponses(
-    TransactionId id,
-    const std::vector<FakeSignalingChannel::Response>& responses) {
+    TransactionId id, const std::vector<FakeSignalingChannel::Response>& responses) {
   if (id >= transactions_.size()) {
     FAIL() << "Can't trigger response to unknown outbound request " << id;
   }
@@ -151,28 +144,27 @@ void FakeSignalingChannel::ServeRequest(CommandCode req_code,
 FakeSignalingChannel::TransactionId FakeSignalingChannel::AddOutbound(
     const char* file, int line, CommandCode req_code, BufferView req_payload,
     std::vector<FakeSignalingChannel::Response> responses) {
-  transactions_.push_back(Transaction{file, line, req_code,
-                                      std::move(req_payload),
-                                      std::move(responses), nullptr});
+  transactions_.push_back(
+      Transaction{file, line, req_code, std::move(req_payload), std::move(responses), nullptr});
   return transactions_.size() - 1;
 }
 
-void FakeSignalingChannel::ReceiveExpect(CommandCode req_code,
-                                         const ByteBuffer& req_payload,
+void FakeSignalingChannel::ReceiveExpect(CommandCode req_code, const ByteBuffer& req_payload,
                                          const ByteBuffer& rsp_payload) {
   ResponseExpecter expecter(rsp_payload);
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
 
-void FakeSignalingChannel::ReceiveExpectRejectNotUnderstood(
-    CommandCode req_code, const ByteBuffer& req_payload) {
+void FakeSignalingChannel::ReceiveExpectRejectNotUnderstood(CommandCode req_code,
+                                                            const ByteBuffer& req_payload) {
   RejectNotUnderstoodExpecter expecter;
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
 
-void FakeSignalingChannel::ReceiveExpectRejectInvalidChannelId(
-    CommandCode req_code, const ByteBuffer& req_payload, ChannelId local_cid,
-    ChannelId remote_cid) {
+void FakeSignalingChannel::ReceiveExpectRejectInvalidChannelId(CommandCode req_code,
+                                                               const ByteBuffer& req_payload,
+                                                               ChannelId local_cid,
+                                                               ChannelId remote_cid) {
   RejectInvalidChannelIdExpecter expecter(local_cid, remote_cid);
   ReceiveExpectInternal(req_code, req_payload, &expecter);
 }
@@ -185,8 +177,7 @@ size_t FakeSignalingChannel::TriggerResponses(
   size_t responses_handled = 0;
   for (auto& [status, payload] : responses) {
     responses_handled++;
-    if (!transaction.response_callback(status, payload) ||
-        ::testing::Test::HasFatalFailure()) {
+    if (!transaction.response_callback(status, payload) || ::testing::Test::HasFatalFailure()) {
       break;
     }
   }

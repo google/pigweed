@@ -55,8 +55,7 @@ TEST(L2CAP_BasicModeTxEngineTest, QueueSduDropsOversizedSdu) {
 
   constexpr size_t kMtu = 1;
   BasicModeTxEngine(kTestChannelId, kMtu, tx_callback)
-      .QueueSdu(
-          std::make_unique<DynamicByteBuffer>(CreateStaticByteBuffer(1, 2)));
+      .QueueSdu(std::make_unique<DynamicByteBuffer>(CreateStaticByteBuffer(1, 2)));
   EXPECT_EQ(0u, n_pdus);
 }
 

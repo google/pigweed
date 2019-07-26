@@ -35,9 +35,7 @@ class Request {
   // Returns a view with the current continuation state.
   // In a response packet with more than one packet, this contains the most
   // recent continuaton state (so it can be read to request a continuation).
-  const BufferView ContinuationState() const {
-    return cont_state_.view(1, cont_info_size());
-  }
+  const BufferView ContinuationState() const { return cont_state_.view(1, cont_info_size()); }
 
   // Sets the continuation state for this request.
   void SetContinuationState(const ByteBuffer& buf);
@@ -144,21 +142,13 @@ class ServiceSearchRequest : public Request {
   // specific attribute or in any particular order, and extraneous UUIDs are
   // allowed to exist in the attribute value.
   // See v5.0, Volume 3, Part B, Sec 2.5.2
-  void set_search_pattern(std::unordered_set<UUID> pattern) {
-    service_search_pattern_ = pattern;
-  }
-  const std::unordered_set<UUID>& service_search_pattern() const {
-    return service_search_pattern_;
-  }
+  void set_search_pattern(std::unordered_set<UUID> pattern) { service_search_pattern_ = pattern; }
+  const std::unordered_set<UUID>& service_search_pattern() const { return service_search_pattern_; }
 
   // The maximum count of records that should be included in any
   // response.
-  void set_max_service_record_count(uint16_t count) {
-    max_service_record_count_ = count;
-  }
-  uint16_t max_service_record_count() const {
-    return max_service_record_count_;
-  }
+  void set_max_service_record_count(uint16_t count) { max_service_record_count_ = count; }
+  uint16_t max_service_record_count() const { return max_service_record_count_; }
 
  private:
   std::unordered_set<UUID> service_search_pattern_;
@@ -223,9 +213,7 @@ class ServiceAttributeRequest : public Request {
   bool valid() const override;
   ByteBufferPtr GetPDU(TransactionId tid) const override;
 
-  void set_service_record_handle(ServiceHandle handle) {
-    service_record_handle_ = handle;
-  }
+  void set_service_record_handle(ServiceHandle handle) { service_record_handle_ = handle; }
   ServiceHandle service_record_handle() const { return service_record_handle_; }
 
   // Set the maximum size allowed in the response in the Attribute list
@@ -234,9 +222,7 @@ class ServiceAttributeRequest : public Request {
     ZX_DEBUG_ASSERT(count >= kMinMaximumAttributeByteCount);
     max_attribute_byte_count_ = count;
   }
-  uint16_t max_attribute_byte_count() const {
-    return max_attribute_byte_count_;
-  }
+  uint16_t max_attribute_byte_count() const { return max_attribute_byte_count_; }
 
   // Adds a single attribute to the requested IDs. Used to ensure a specific
   // attribute is requested.
@@ -249,9 +235,7 @@ class ServiceAttributeRequest : public Request {
   // save bytes in the resulting request.
   void AddAttributeRange(AttributeId start, AttributeId end);
 
-  const std::list<AttributeRange>& attribute_ranges() {
-    return attribute_ranges_;
-  }
+  const std::list<AttributeRange>& attribute_ranges() { return attribute_ranges_; }
 
  private:
   // The service record handle for which attributes should be retrieved.
@@ -285,9 +269,7 @@ class ServiceAttributeResponse : public Response {
   void set_attribute(AttributeId id, DataElement value) {
     attributes_.emplace(id, std::move(value));
   }
-  const std::map<AttributeId, DataElement>& attributes() const {
-    return attributes_;
-  }
+  const std::map<AttributeId, DataElement>& attributes() const { return attributes_; }
 
  private:
   // The list of attributes that matched the search and their values.
@@ -326,12 +308,8 @@ class ServiceSearchAttributeRequest : public Request {
   // specific attribute or in any particular order, and extraneous UUIDs are
   // allowed to exist in the attribute value.
   // See v5.0, Volume 3, Part B, Sec 2.5.2.
-  void set_search_pattern(std::unordered_set<UUID> pattern) {
-    service_search_pattern_ = pattern;
-  }
-  const std::unordered_set<UUID>& service_search_pattern() const {
-    return service_search_pattern_;
-  }
+  void set_search_pattern(std::unordered_set<UUID> pattern) { service_search_pattern_ = pattern; }
+  const std::unordered_set<UUID>& service_search_pattern() const { return service_search_pattern_; }
 
   // Set the maximum size allowed in the response in the Attribute list
   // Not allowed to be lower than kMinMaximumAttributeByteCount (7)
@@ -339,9 +317,7 @@ class ServiceSearchAttributeRequest : public Request {
     ZX_DEBUG_ASSERT(count >= kMinMaximumAttributeByteCount);
     max_attribute_byte_count_ = count;
   }
-  uint16_t max_attribute_byte_count() const {
-    return max_attribute_byte_count_;
-  }
+  uint16_t max_attribute_byte_count() const { return max_attribute_byte_count_; }
 
   // Adds a single attribute to the requested IDs
   void AddAttribute(AttributeId id);
@@ -349,9 +325,7 @@ class ServiceSearchAttributeRequest : public Request {
   // Adds a range of attributes to the requested IDs.
   void AddAttributeRange(AttributeId start, AttributeId end);
 
-  const std::list<AttributeRange>& attribute_ranges() {
-    return attribute_ranges_;
-  }
+  const std::list<AttributeRange>& attribute_ranges() { return attribute_ranges_; }
 
  private:
   // The service search pattern to match services.

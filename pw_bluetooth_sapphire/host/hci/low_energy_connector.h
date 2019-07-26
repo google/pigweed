@@ -53,14 +53,11 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //   - |delegate|: The delegate that will be notified when a new logical link
   //     is established due to an incoming request (remote initiated).
-  using IncomingConnectionDelegate =
-      fit::function<void(ConnectionHandle handle, Connection::Role role,
-                         const DeviceAddress& peer_address,
-                         const LEConnectionParameters& conn_params)>;
-  LowEnergyConnector(fxl::RefPtr<Transport> hci,
-                     LocalAddressDelegate* local_addr_delegate,
-                     async_dispatcher_t* dispatcher,
-                     IncomingConnectionDelegate delegate);
+  using IncomingConnectionDelegate = fit::function<void(
+      ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
+      const LEConnectionParameters& conn_params)>;
+  LowEnergyConnector(fxl::RefPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
+                     async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate);
 
   // Deleting an instance cancels any pending connection request.
   ~LowEnergyConnector();
@@ -80,11 +77,10 @@ class LowEnergyConnector : public LocalAddressClient {
   // When a request to create connection times out, |status_callback| will be
   // called with a null |link| and a |status| with error Host::Error::kTimedOut.
   using StatusCallback = fit::function<void(Status status, ConnectionPtr link)>;
-  bool CreateConnection(
-      bool use_whitelist, const DeviceAddress& peer_address,
-      uint16_t scan_interval, uint16_t scan_window,
-      const LEPreferredConnectionParameters& initial_parameters,
-      StatusCallback status_callback, zx::duration timeout);
+  bool CreateConnection(bool use_whitelist, const DeviceAddress& peer_address,
+                        uint16_t scan_interval, uint16_t scan_window,
+                        const LEPreferredConnectionParameters& initial_parameters,
+                        StatusCallback status_callback, zx::duration timeout);
 
   // Cancels the currently pending connection attempt.
   void Cancel();
@@ -104,8 +100,7 @@ class LowEnergyConnector : public LocalAddressClient {
  private:
   struct PendingRequest {
     PendingRequest() = default;
-    PendingRequest(const DeviceAddress& peer_address,
-                   StatusCallback status_callback);
+    PendingRequest(const DeviceAddress& peer_address, StatusCallback status_callback);
 
     bool initiating = false;  // True if the HCI command has been sent.
     bool canceled = false;
@@ -117,12 +112,11 @@ class LowEnergyConnector : public LocalAddressClient {
 
   // Called by CreateConnection() after the local device address has been
   // obtained.
-  void CreateConnectionInternal(
-      const DeviceAddress& local_address, bool use_whitelist,
-      const DeviceAddress& peer_address, uint16_t scan_interval,
-      uint16_t scan_window,
-      const LEPreferredConnectionParameters& initial_parameters,
-      StatusCallback status_callback, zx::duration timeout);
+  void CreateConnectionInternal(const DeviceAddress& local_address, bool use_whitelist,
+                                const DeviceAddress& peer_address, uint16_t scan_interval,
+                                uint16_t scan_window,
+                                const LEPreferredConnectionParameters& initial_parameters,
+                                StatusCallback status_callback, zx::duration timeout);
 
   // Called by Cancel() and by OnCreateConnectionTimeout().
   void CancelInternal(bool timed_out = false);
@@ -155,8 +149,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // Task that runs when a request to create connection times out. We do not
   // rely on CommandChannel's timer since that request completes when we receive
   // the HCI Command Status event.
-  async::TaskClosureMethod<LowEnergyConnector,
-                           &LowEnergyConnector::OnCreateConnectionTimeout>
+  async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::OnCreateConnectionTimeout>
       request_timeout_task_{this};
 
   // Our event handle ID for the LE Connection Complete event.

@@ -36,14 +36,14 @@ TEST_F(RFCOMM_MuxCommandTest, TestCommand) {
 
   DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b00100011, 0b00001111, 'f', 'u',
-                                           'c', 'h', 's', 'i', 'a'));
+  ASSERT_EQ(buffer,
+            CreateStaticByteBuffer(0b00100011, 0b00001111, 'f', 'u', 'c', 'h', 's', 'i', 'a'));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
   ASSERT_EQ(read_command->command_type(), MuxCommandType::kTestCommand);
-  auto test_command = std::unique_ptr<TestCommand>(
-      static_cast<TestCommand*>(read_command.release()));
+  auto test_command =
+      std::unique_ptr<TestCommand>(static_cast<TestCommand*>(read_command.release()));
   EXPECT_EQ(test_command->test_pattern(), test_pattern);
 }
 
@@ -72,8 +72,7 @@ TEST_F(RFCOMM_MuxCommandTest, FconCommand) {
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kFlowControlOnCommand);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kFlowControlOnCommand);
 }
 
 // Manual contruction of multiplexer command for this test:
@@ -101,8 +100,7 @@ TEST_F(RFCOMM_MuxCommandTest, FcoffCommand) {
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kFlowControlOffCommand);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kFlowControlOffCommand);
 }
 
 // Manual contruction of multiplexer command for this test:
@@ -132,20 +130,19 @@ TEST_F(RFCOMM_MuxCommandTest, FcoffCommand) {
 TEST_F(RFCOMM_MuxCommandTest, ModemStatusCommand) {
   ModemStatusCommandSignals signals = {true, false, true, false, true};
   BreakValue break_value = 0b1010;
-  ModemStatusCommand command(CommandResponse::kCommand, 0x23, signals,
-                             break_value);
+  ModemStatusCommand command(CommandResponse::kCommand, 0x23, signals, break_value);
   ASSERT_EQ(command.written_size(), 5ul);
 
   DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b11100011, 0b00000111, 0b10001111,
-                                           0b10001010, 0b10100011));
+  ASSERT_EQ(buffer,
+            CreateStaticByteBuffer(0b11100011, 0b00000111, 0b10001111, 0b10001010, 0b10100011));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
   ASSERT_EQ(read_command->command_type(), MuxCommandType::kModemStatusCommand);
-  auto msc = std::unique_ptr<ModemStatusCommand>(
-      static_cast<ModemStatusCommand*>(read_command.release()));
+  auto msc =
+      std::unique_ptr<ModemStatusCommand>(static_cast<ModemStatusCommand*>(read_command.release()));
   EXPECT_EQ(msc->dlci(), 0x23);
   EXPECT_EQ(msc->signals().flow_control, signals.flow_control);
   EXPECT_EQ(msc->signals().ready_to_communicate, signals.ready_to_communicate);
@@ -172,29 +169,23 @@ TEST_F(RFCOMM_MuxCommandTest, RemotePortNegotiationCommand8Octets) {
   params.xoff_character = 0xDA;
 
   RemotePortNegotiationMaskBitfield mask;
-  mask = RemotePortNegotiationMask::kBitRate |
-         RemotePortNegotiationMask::kStopBits |
-         RemotePortNegotiationMask::kParityType |
-         RemotePortNegotiationMask::kXOFFCharacter |
-         RemotePortNegotiationMask::kXonXoffInput |
-         RemotePortNegotiationMask::kXonXoffOutput |
-         RemotePortNegotiationMask::kRTROutput |
-         RemotePortNegotiationMask::kRTCInput;
+  mask = RemotePortNegotiationMask::kBitRate | RemotePortNegotiationMask::kStopBits |
+         RemotePortNegotiationMask::kParityType | RemotePortNegotiationMask::kXOFFCharacter |
+         RemotePortNegotiationMask::kXonXoffInput | RemotePortNegotiationMask::kXonXoffOutput |
+         RemotePortNegotiationMask::kRTROutput | RemotePortNegotiationMask::kRTCInput;
 
-  RemotePortNegotiationCommand command(CommandResponse::kCommand, 61, params,
-                                       mask);
+  RemotePortNegotiationCommand command(CommandResponse::kCommand, 61, params, mask);
   EXPECT_EQ(command.written_size(), 10ul);
 
   DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  EXPECT_EQ(buffer, CreateStaticByteBuffer(0b10010011, 0b00010001, 0b11110111,
-                                           0b00000111, 0b00001101, 0b00010101,
-                                           0x23, 0xDA, 0b01010101, 0b00011011));
+  EXPECT_EQ(buffer,
+            CreateStaticByteBuffer(0b10010011, 0b00010001, 0b11110111, 0b00000111, 0b00001101,
+                                   0b00010101, 0x23, 0xDA, 0b01010101, 0b00011011));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
-  EXPECT_EQ(read_command->command_type(),
-            MuxCommandType::kRemotePortNegotiationCommand);
+  EXPECT_EQ(read_command->command_type(), MuxCommandType::kRemotePortNegotiationCommand);
   auto rpn_command = std::unique_ptr<RemotePortNegotiationCommand>(
       static_cast<RemotePortNegotiationCommand*>(read_command.release()));
   EXPECT_EQ(rpn_command->dlci(), 61);
@@ -218,27 +209,23 @@ TEST_F(RFCOMM_MuxCommandTest, RemotePortNegotiationCommand1Octet) {
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kRemotePortNegotiationCommand);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kRemotePortNegotiationCommand);
   auto rpn_command = std::unique_ptr<RemotePortNegotiationCommand>(
       static_cast<RemotePortNegotiationCommand*>(read_command.release()));
   EXPECT_EQ(rpn_command->dlci(), 61);
 }
 
 TEST_F(RFCOMM_MuxCommandTest, RemoteLineStatusCommand) {
-  RemoteLineStatusCommand command(CommandResponse::kCommand, 61, true,
-                                  LineError::kFramingError);
+  RemoteLineStatusCommand command(CommandResponse::kCommand, 61, true, LineError::kFramingError);
   ASSERT_EQ(command.written_size(), 4ul);
 
   DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b01010011, 0b00000101, 0b11110111,
-                                           0b00001001));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b01010011, 0b00000101, 0b11110111, 0b00001001));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kCommand);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kRemoteLineStatusCommand);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kRemoteLineStatusCommand);
   auto rpn_command = std::unique_ptr<RemoteLineStatusCommand>(
       static_cast<RemoteLineStatusCommand*>(read_command.release()));
   EXPECT_EQ(rpn_command->dlci(), 61);
@@ -256,20 +243,17 @@ TEST_F(RFCOMM_MuxCommandTest, NonSupportedCommandResponse) {
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kNonSupportedCommandResponse);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kNonSupportedCommandResponse);
   auto nsc_response = std::unique_ptr<NonSupportedCommandResponse>(
       static_cast<NonSupportedCommandResponse*>(read_command.release()));
-  EXPECT_EQ(nsc_response->incoming_command_response(),
-            CommandResponse::kResponse);
+  EXPECT_EQ(nsc_response->incoming_command_response(), CommandResponse::kResponse);
   EXPECT_EQ(nsc_response->incoming_non_supported_command(), 0b00101001);
 }
 
 TEST_F(RFCOMM_MuxCommandTest, DLCParameterNegotiationCommand) {
   ParameterNegotiationParams params;
   params.dlci = 61;
-  params.credit_based_flow_handshake =
-      CreditBasedFlowHandshake::kSupportedResponse;
+  params.credit_based_flow_handshake = CreditBasedFlowHandshake::kSupportedResponse;
   params.priority = kMaxPriority;
   params.maximum_frame_size = 0x1234;
   params.initial_credits = kMaxInitialCredits;
@@ -279,14 +263,12 @@ TEST_F(RFCOMM_MuxCommandTest, DLCParameterNegotiationCommand) {
 
   DynamicByteBuffer buffer(command.written_size());
   command.Write(buffer.mutable_view());
-  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b10000001, 0b00010001, 0b00111101,
-                                           0xE0, kMaxPriority, 0, 0x34, 0x12, 0,
-                                           kMaxInitialCredits));
+  ASSERT_EQ(buffer, CreateStaticByteBuffer(0b10000001, 0b00010001, 0b00111101, 0xE0, kMaxPriority,
+                                           0, 0x34, 0x12, 0, kMaxInitialCredits));
 
   auto read_command = MuxCommand::Parse(buffer);
   EXPECT_EQ(read_command->command_response(), CommandResponse::kResponse);
-  ASSERT_EQ(read_command->command_type(),
-            MuxCommandType::kDLCParameterNegotiation);
+  ASSERT_EQ(read_command->command_type(), MuxCommandType::kDLCParameterNegotiation);
   auto pn_command = std::unique_ptr<DLCParameterNegotiationCommand>(
       static_cast<DLCParameterNegotiationCommand*>(read_command.release()));
   EXPECT_EQ(pn_command->params().dlci, 61);

@@ -32,10 +32,8 @@ inline att::AccessRequirements AllowedNoSecurity() {
 }
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
-void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&,
-                     const WriteResponder&) {}
-void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id,
-                   bool notify, bool indicate) {}
+void NopWriteHandler(IdType, IdType, uint16_t, const ByteBuffer&, const WriteResponder&) {}
+void NopCCCallback(IdType service_id, IdType chrc_id, PeerId peer_id, bool notify, bool indicate) {}
 
 // Convenience function that registers |service| with |mgr| using the NOP
 // handlers above by default.
@@ -43,8 +41,7 @@ IdType RegisterService(LocalServiceManager* mgr, ServicePtr service,
                        ReadHandler read_handler = NopReadHandler,
                        WriteHandler write_handler = NopWriteHandler,
                        ClientConfigCallback ccc_callback = NopCCCallback) {
-  return mgr->RegisterService(std::move(service), std::move(read_handler),
-                              std::move(write_handler),
+  return mgr->RegisterService(std::move(service), std::move(read_handler), std::move(write_handler),
                               std::move(ccc_callback));
 }
 
@@ -69,8 +66,7 @@ TEST(GATT_LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0001, iter->start_handle());
   EXPECT_EQ(0x0001, iter->end_handle());
   EXPECT_EQ(types::kPrimaryService, iter->group_type());
-  EXPECT_TRUE(
-      ContainersEqual(CreateStaticByteBuffer(0xad, 0xde), iter->decl_value()));
+  EXPECT_TRUE(ContainersEqual(CreateStaticByteBuffer(0xad, 0xde), iter->decl_value()));
 
   iter++;
 
@@ -80,10 +76,10 @@ TEST(GATT_LocalServiceManagerTest, EmptyService) {
   EXPECT_EQ(0x0002, iter->start_handle());
   EXPECT_EQ(0x0002, iter->end_handle());
   EXPECT_EQ(types::kSecondaryService, iter->group_type());
-  EXPECT_TRUE(ContainersEqual(
-      CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde),
-      iter->decl_value()));
+  EXPECT_TRUE(
+      ContainersEqual(CreateStaticByteBuffer(0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00,
+                                             0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde),
+                      iter->decl_value()));
 }
 
 TEST(GATT_LocalServiceManagerTest, UnregisterService) {
@@ -115,9 +111,8 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic) {
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
 
@@ -167,9 +162,8 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
 
@@ -190,13 +184,12 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic32) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue =
-      CreateStaticByteBuffer(0x02,        // properties
-                             0x03, 0x00,  // value handle
+  const auto kDeclValue = CreateStaticByteBuffer(0x02,        // properties
+                                                 0x03, 0x00,  // value handle
 
-                             // The 32-bit UUID will be stored as 128-bit
-                             0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
-                             0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde);
+                                                 // The 32-bit UUID will be stored as 128-bit
+                                                 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80,
+                                                 0x00, 0x10, 0x00, 0x00, 0xef, 0xbe, 0xad, 0xde);
   EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
@@ -215,15 +208,13 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
   UUID kTestChrcType;
-  EXPECT_TRUE(
-      StringToUuid("00112233-4455-6677-8899-AABBCCDDEEFF", &kTestChrcType));
+  EXPECT_TRUE(StringToUuid("00112233-4455-6677-8899-AABBCCDDEEFF", &kTestChrcType));
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
 
@@ -244,13 +235,12 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristic128) {
   EXPECT_EQ(att::AccessRequirements(), attrs[1].write_reqs());
   EXPECT_TRUE(attrs[1].value());
 
-  const auto kDeclValue =
-      CreateStaticByteBuffer(0x02,        // properties
-                             0x03, 0x00,  // value handle
+  const auto kDeclValue = CreateStaticByteBuffer(0x02,        // properties
+                                                 0x03, 0x00,  // value handle
 
-                             // 128-bit UUID
-                             0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
-                             0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
+                                                 // 128-bit UUID
+                                                 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88,
+                                                 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00);
   EXPECT_TRUE(ContainersEqual(kDeclValue, *attrs[1].value()));
 
   // Characteristic value
@@ -273,9 +263,8 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetSuccess) {
 
   constexpr uint8_t kChrcProps = Property::kRead;
   constexpr uint8_t kExtChrcProps = ExtendedProperty::kReliableWrite;
-  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, kChrcProps,
-                                               kExtChrcProps, kReadReqs,
-                                               kWriteReqs, kUpdateReqs);
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, kChrcProps, kExtChrcProps,
+                                               kReadReqs, kWriteReqs, kUpdateReqs);
   service->AddCharacteristic(std::move(chrc));
 
   ASSERT_TRUE(RegisterService(&mgr, std::move(service)));
@@ -297,10 +286,9 @@ TEST(GATT_LocalServiceManagerTest, ExtPropSetFailure) {
   constexpr UUID kDescType16((uint16_t)0x2900);  // UUID for Ext Prop
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
-                                               kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
+  auto chrc =
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   EXPECT_EQ(false, RegisterService(&mgr, std::move(service)));
@@ -323,14 +311,14 @@ TEST(GATT_LocalServiceManagerTest, RegisterCharacteristicSorted) {
   constexpr uint8_t kChrcProps3 = 3;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId0, kType128, kChrcProps0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId1, kType16, kChrcProps1, 0, kReadReqs, kWriteReqs, kUpdateReqs));
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId2, kType128, kChrcProps2, 0, kReadReqs, kWriteReqs, kUpdateReqs));
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId3, kType16, kChrcProps3, 0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId0, kType128, kChrcProps0, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId1, kType16, kChrcProps1, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId2, kType128, kChrcProps2, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId3, kType16, kChrcProps3, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
   auto id1 = RegisterService(&mgr, std::move(service));
   EXPECT_NE(0u, id1);
 
@@ -361,10 +349,9 @@ TEST(GATT_LocalServiceManagerTest, RegisterDescriptor) {
   constexpr UUID kDescType16((uint16_t)0x5678);
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
-                                               kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
+  auto chrc =
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   EXPECT_NE(0u, RegisterService(&mgr, std::move(service)));
@@ -389,10 +376,10 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcIds) {
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
   // Use same characteristic ID twice.
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
 }
@@ -407,12 +394,10 @@ TEST(GATT_LocalServiceManagerTest, DuplicateDescIds) {
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
   // Use same descriptor ID twice.
-  auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
-                                               kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
+  auto chrc =
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
+  chrc->AddDescriptor(std::make_unique<Descriptor>(1, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
@@ -428,10 +413,9 @@ TEST(GATT_LocalServiceManagerTest, DuplicateChrcAndDescIds) {
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
 
   // Use same descriptor ID twice.
-  auto chrc = std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs,
-                                               kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(0, kDescType16, kReadReqs, kWriteReqs));
+  auto chrc =
+      std::make_unique<Characteristic>(0, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(0, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   EXPECT_EQ(0u, RegisterService(&mgr, std::move(service)));
@@ -444,9 +428,8 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   constexpr IdType kChrcId = 5;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kChrcType16, Property::kRead, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(
+      kChrcId, kChrcType16, Property::kRead, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
   auto read_cb = [&called](auto, auto, auto, auto) { called = true; };
@@ -458,9 +441,7 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadPermission) {
   EXPECT_EQ(kChrcType16, attr->type());
 
   bool result_called = false;
-  auto result_cb = [&result_called](auto, const auto&) {
-    result_called = true;
-  };
+  auto result_cb = [&result_called](auto, const auto&) { result_called = true; };
 
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
   EXPECT_FALSE(called);
@@ -477,8 +458,8 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristicNoReadProperty) {
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs,
+                                                              kWriteReqs, kUpdateReqs));
 
   bool called = false;
   auto read_cb = [&called](auto, auto, auto, auto) { called = true; };
@@ -511,9 +492,8 @@ TEST(GATT_LocalServiceManagerTest, ReadCharacteristic) {
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kChrcType16, Property::kRead, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(
+      kChrcId, kChrcType16, Property::kRead, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
   IdType svc_id;
@@ -552,15 +532,13 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   const BufferView kTestValue;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kChrcType16, Property::kWrite,
-                                       0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(
+      kChrcId, kChrcType16, Property::kWrite, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
   auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
 
-  EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler,
-                                std::move(write_cb)));
+  EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb)));
 
   auto* attr = mgr.database()->FindAttribute(kFirstChrcValueHandle);
   ASSERT_TRUE(attr);
@@ -569,8 +547,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWritePermission) {
   bool result_called = false;
   auto result_cb = [&result_called](auto) { result_called = true; };
 
-  EXPECT_FALSE(
-      attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
+  EXPECT_FALSE(attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
   EXPECT_FALSE(called);
   EXPECT_FALSE(result_called);
 }
@@ -585,14 +562,13 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   auto kWriteReqs = AllowedNoSecurity();
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs,
+                                                              kWriteReqs, kUpdateReqs));
 
   bool called = false;
   auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
 
-  EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler,
-                                std::move(write_cb)));
+  EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb)));
 
   auto* attr = mgr.database()->FindAttribute(kFirstChrcValueHandle);
   ASSERT_TRUE(attr);
@@ -601,8 +577,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristicNoWriteProperty) {
   att::ErrorCode ecode = att::ErrorCode::kNoError;
   auto result_cb = [&ecode](auto code) { ecode = code; };
 
-  EXPECT_TRUE(
-      attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
+  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, 0, kTestValue, std::move(result_cb)));
 
   // The error should be handled internally and not reach |write_cb|.
   EXPECT_FALSE(called);
@@ -621,14 +596,12 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
   auto kWriteReqs = AllowedNoSecurity();
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kChrcType16, Property::kWrite,
-                                       0, kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(
+      kChrcId, kChrcType16, Property::kWrite, 0, kReadReqs, kWriteReqs, kUpdateReqs));
 
   bool called = false;
   IdType svc_id;
-  auto write_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& value,
-                      auto responder) {
+  auto write_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& value, auto responder) {
     called = true;
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kChrcId, id);
@@ -637,8 +610,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
     responder(att::ErrorCode::kNoError);
   };
 
-  svc_id = RegisterService(&mgr, std::move(service), NopReadHandler,
-                           std::move(write_cb));
+  svc_id = RegisterService(&mgr, std::move(service), NopReadHandler, std::move(write_cb));
   ASSERT_NE(0u, svc_id);
 
   auto* attr = mgr.database()->FindAttribute(kFirstChrcValueHandle);
@@ -648,8 +620,7 @@ TEST(GATT_LocalServiceManagerTest, WriteCharacteristic) {
   att::ErrorCode ecode = att::ErrorCode::kUnlikelyError;
   auto result_cb = [&ecode](auto code) { ecode = code; };
 
-  EXPECT_TRUE(
-      attr->WriteAsync(kTestPeerId, kOffset, kTestValue, std::move(result_cb)));
+  EXPECT_TRUE(attr->WriteAsync(kTestPeerId, kOffset, kTestValue, std::move(result_cb)));
 
   EXPECT_TRUE(called);
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
@@ -664,10 +635,9 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   constexpr IdType kDescId = 1;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16,
-                                                   kReadReqs, kWriteReqs));
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
+                                               kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
@@ -680,9 +650,7 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptorNoReadPermission) {
   EXPECT_EQ(kDescType16, attr->type());
 
   bool result_called = false;
-  auto result_cb = [&result_called](auto, const auto&) {
-    result_called = true;
-  };
+  auto result_cb = [&result_called](auto, const auto&) { result_called = true; };
 
   EXPECT_FALSE(attr->ReadAsync(kTestPeerId, 0, std::move(result_cb)));
   EXPECT_FALSE(called);
@@ -703,16 +671,14 @@ TEST(GATT_LocalServiceManagerTest, ReadDescriptor) {
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(
-      std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kReadReqs));
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
+                                               kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kReadReqs));
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
   IdType svc_id;
-  auto read_cb = [&](auto cb_svc_id, auto id, auto offset,
-                     const auto& responder) {
+  auto read_cb = [&](auto cb_svc_id, auto id, auto offset, const auto& responder) {
     called = true;
     EXPECT_EQ(svc_id, cb_svc_id);
     EXPECT_EQ(kDescId, id);
@@ -749,17 +715,15 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptorNoWritePermission) {
   const BufferView kTestValue;
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16,
-                                                   kReadReqs, kWriteReqs));
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
+                                               kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
   auto write_cb = [&called](auto, auto, auto, auto&, auto) { called = true; };
 
-  EXPECT_NE(
-      0u, RegisterService(&mgr, std::move(service), NopReadHandler, write_cb));
+  EXPECT_NE(0u, RegisterService(&mgr, std::move(service), NopReadHandler, write_cb));
 
   auto* attr = mgr.database()->FindAttribute(kFirstDescrHandle);
   ASSERT_TRUE(attr);
@@ -787,10 +751,9 @@ TEST(GATT_LocalServiceManagerTest, WriteDescriptor) {
   auto kWriteReqs = AllowedNoSecurity();
 
   auto service = std::make_unique<Service>(true /* primary */, kTestType16);
-  auto chrc = std::make_unique<Characteristic>(
-      kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs, kUpdateReqs);
-  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16,
-                                                   kReadReqs, kWriteReqs));
+  auto chrc = std::make_unique<Characteristic>(kChrcId, kChrcType16, 0, 0, kReadReqs, kWriteReqs,
+                                               kUpdateReqs);
+  chrc->AddDescriptor(std::make_unique<Descriptor>(kDescId, kDescType16, kReadReqs, kWriteReqs));
   service->AddCharacteristic(std::move(chrc));
 
   bool called = false;
@@ -825,13 +788,13 @@ TEST(GATT_LocalServiceManagerTest, ServiceChanged) {
   IdType expected_id;
   att::Handle expected_start, expected_end;
   int callback_count = 0;
-  ServiceChangedCallback service_changed_callback =
-      [&](IdType id, att::Handle start, att::Handle end) {
-        callback_count++;
-        EXPECT_EQ(expected_id, id);
-        EXPECT_EQ(expected_start, start);
-        EXPECT_EQ(expected_end, end);
-      };
+  ServiceChangedCallback service_changed_callback = [&](IdType id, att::Handle start,
+                                                        att::Handle end) {
+    callback_count++;
+    EXPECT_EQ(expected_id, id);
+    EXPECT_EQ(expected_start, start);
+    EXPECT_EQ(expected_end, end);
+  };
 
   LocalServiceManager mgr;
 
@@ -856,9 +819,8 @@ TEST(GATT_LocalServiceManagerTest, ServiceChanged) {
   constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
-  service->AddCharacteristic(
-      std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
-                                       kReadReqs, kWriteReqs, kUpdateReqs));
+  service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestChrcType, kChrcProps, 0,
+                                                              kReadReqs, kWriteReqs, kUpdateReqs));
   expected_id = 2u;
   expected_start = 2u;
   expected_end = 4u;
@@ -908,12 +870,11 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
   void BuildService(uint8_t props, const att::AccessRequirements& update_reqs) {
     const att::AccessRequirements kReqs;
-    auto service =
-        std::make_unique<Service>(true /* is_primary */, kTestType16);
-    service->AddCharacteristic(std::make_unique<Characteristic>(
-        kChrcId, kTestType32, props, 0, kReqs, kReqs, update_reqs));
-    auto ccc_callback = [this](IdType cb_svc_id, IdType id, PeerId peer_id,
-                               bool notify, bool indicate) {
+    auto service = std::make_unique<Service>(true /* is_primary */, kTestType16);
+    service->AddCharacteristic(std::make_unique<Characteristic>(kChrcId, kTestType32, props, 0,
+                                                                kReqs, kReqs, update_reqs));
+    auto ccc_callback = [this](IdType cb_svc_id, IdType id, PeerId peer_id, bool notify,
+                               bool indicate) {
       ccc_callback_count++;
       EXPECT_EQ(last_service_id, cb_svc_id);
       EXPECT_EQ(kChrcId, id);
@@ -923,14 +884,14 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
     };
 
     const size_t last_service_count = mgr.database()->groupings().size();
-    last_service_id = mgr.RegisterService(std::move(service), NopReadHandler,
-                                          NopWriteHandler, ccc_callback);
+    last_service_id =
+        mgr.RegisterService(std::move(service), NopReadHandler, NopWriteHandler, ccc_callback);
     EXPECT_NE(0u, last_service_id);
     EXPECT_EQ(last_service_count + 1u, mgr.database()->groupings().size());
   }
 
-  bool ReadCCC(const att::Attribute* attr, PeerId peer_id,
-               att::ErrorCode* out_ecode, uint16_t* out_value) {
+  bool ReadCCC(const att::Attribute* attr, PeerId peer_id, att::ErrorCode* out_ecode,
+               uint16_t* out_value) {
     ZX_DEBUG_ASSERT(attr);
     ZX_DEBUG_ASSERT(out_ecode);
     ZX_DEBUG_ASSERT(out_value);
@@ -954,8 +915,7 @@ class GATT_LocalClientCharacteristicConfigurationTest : public ::testing::Test {
 
     auto result_cb = [&out_ecode](auto cb_code) { *out_ecode = cb_code; };
     uint16_t value = htole16(ccc_value);
-    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)),
-                            result_cb);
+    return attr->WriteAsync(peer_id, 0u, BufferView(&value, sizeof(value)), result_cb);
   }
 };
 
@@ -974,8 +934,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, UpdatePermissions) {
   EXPECT_TRUE(attr->write_reqs().authentication_required());
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest,
-       IndicationNotSupported) {
+TEST_F(GATT_LocalClientCharacteristicConfigurationTest, IndicationNotSupported) {
   // No security required to enable notifications.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kNotify;
@@ -999,8 +958,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest,
   EXPECT_EQ(0x0000, ccc_value);
 }
 
-TEST_F(GATT_LocalClientCharacteristicConfigurationTest,
-       NotificationNotSupported) {
+TEST_F(GATT_LocalClientCharacteristicConfigurationTest, NotificationNotSupported) {
   // No security.
   auto kUpdateReqs = AllowedNoSecurity();
   constexpr uint8_t kProps = Property::kIndicate;
@@ -1035,8 +993,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
   LocalServiceManager::ClientCharacteristicConfig config;
-  EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                           kTestPeerId, &config));
+  EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
 
   att::ErrorCode ecode;
   EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));
@@ -1049,8 +1006,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(kEnableNot, ccc_value);
 
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId,
-                                          &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_TRUE(config.notify);
   EXPECT_FALSE(config.indicate);
@@ -1062,8 +1018,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableNotify) {
 
   // A set configurations now exists for |kChrcId| but kTestPeerId2 should
   // appear as unsubscribed.
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestPeerId2, &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId2, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_FALSE(config.indicate);
@@ -1103,8 +1058,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableIndicate) {
   EXPECT_EQ(kEnableInd, ccc_value);
 
   LocalServiceManager::ClientCharacteristicConfig config;
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId,
-                                          &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_TRUE(config.indicate);
@@ -1116,8 +1070,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, EnableIndicate) {
 
   // A set configurations now exists for |kChrcId| but kTestPeerId2 should
   // appear as unsubscribed.
-  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                          kTestPeerId2, &config));
+  EXPECT_TRUE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId2, &config));
   EXPECT_EQ(kChrcHandle, config.handle);
   EXPECT_FALSE(config.notify);
   EXPECT_FALSE(config.indicate);
@@ -1146,8 +1099,7 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
   EXPECT_EQ(types::kClientCharacteristicConfig, attr->type());
 
   LocalServiceManager::ClientCharacteristicConfig config;
-  EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId,
-                                           kTestPeerId, &config));
+  EXPECT_FALSE(mgr.GetCharacteristicConfig(last_service_id, kChrcId, kTestPeerId, &config));
 
   att::ErrorCode ecode;
   EXPECT_TRUE(WriteCCC(attr, kTestPeerId, kEnableNot, &ecode));

@@ -16,16 +16,14 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan,
-                                   hci::Connection::Role role)
+SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role)
     : is_open_(true),
       chan_(std::move(chan)),
       role_(role),
       next_cmd_id_(0x01),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(chan_);
-  ZX_DEBUG_ASSERT(chan_->id() == kSignalingChannelId ||
-                  chan_->id() == kLESignalingChannelId);
+  ZX_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);
 
   // Note: No need to guard against out-of-thread access as these callbacks are
   // called on the L2CAP thread.
@@ -42,12 +40,10 @@ SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan,
       async_get_default_dispatcher());
 }
 
-SignalingChannel::~SignalingChannel() {
-  ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
-}
+SignalingChannel::~SignalingChannel() { ZX_DEBUG_ASSERT(IsCreationThreadCurrent()); }
 
-SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig,
-                                               CommandCode code, CommandId id)
+SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig, CommandCode code,
+                                               CommandId id)
     : sig_(sig), code_(code), id_(id) {
   ZX_DEBUG_ASSERT(sig_);
 }
@@ -60,17 +56,15 @@ void SignalingChannel::ResponderImpl::RejectNotUnderstood() {
   sig()->SendCommandReject(id_, RejectReason::kNotUnderstood, BufferView());
 }
 
-void SignalingChannel::ResponderImpl::RejectInvalidChannelId(
-    ChannelId local_cid, ChannelId remote_cid) {
+void SignalingChannel::ResponderImpl::RejectInvalidChannelId(ChannelId local_cid,
+                                                             ChannelId remote_cid) {
   uint16_t ids[2];
   ids[0] = htole16(local_cid);
   ids[1] = htole16(remote_cid);
-  sig()->SendCommandReject(id_, RejectReason::kInvalidCID,
-                           BufferView(ids, sizeof(ids)));
+  sig()->SendCommandReject(id_, RejectReason::kInvalidCID, BufferView(ids, sizeof(ids)));
 }
 
-bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier,
-                                  const ByteBuffer& data) {
+bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
   return Send(BuildPacket(code, identifier, data));
 }
@@ -87,8 +81,7 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   // Section 4) we don't assert that here. When we receive a command that uses
   // 0 as the identifier, we reject the command and use that identifier in the
   // response rather than assert and crash.
-  __UNUSED SignalingPacket reply(packet.get(),
-                                 packet->size() - sizeof(CommandHeader));
+  __UNUSED SignalingPacket reply(packet.get(), packet->size() - sizeof(CommandHeader));
   ZX_DEBUG_ASSERT(reply.header().code);
   ZX_DEBUG_ASSERT(reply.payload_size() == le16toh(reply.header().length));
   ZX_DEBUG_ASSERT(chan_);
@@ -96,8 +89,7 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   return chan_->Send(std::move(packet));
 }
 
-ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
-                                            uint8_t identifier,
+ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code, uint8_t identifier,
                                             const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= std::numeric_limits<uint16_t>::max());
 
@@ -113,13 +105,11 @@ ByteBufferPtr SignalingChannel::BuildPacket(CommandCode code,
   return buffer;
 }
 
-bool SignalingChannel::SendCommandReject(uint8_t identifier,
-                                         RejectReason reason,
+bool SignalingChannel::SendCommandReject(uint8_t identifier, RejectReason reason,
                                          const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= kCommandRejectMaxDataLength);
 
-  constexpr size_t kMaxPayloadLength =
-      sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
+  constexpr size_t kMaxPayloadLength = sizeof(CommandRejectPayload) + kCommandRejectMaxDataLength;
   StaticByteBuffer<kMaxPayloadLength> rej_buf;
 
   MutablePacketView<CommandRejectPayload> reject(&rej_buf, data.size());
@@ -153,9 +143,7 @@ void SignalingChannel::OnRxBFrame(ByteBufferPtr sdu) {
   if (!is_open())
     return;
 
-  DecodeRxUnit(
-      std::move(sdu),
-      fit::bind_member(this, &SignalingChannel::CheckAndDispatchPacket));
+  DecodeRxUnit(std::move(sdu), fit::bind_member(this, &SignalingChannel::CheckAndDispatchPacket));
 }
 
 void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
@@ -163,17 +151,14 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
     // Respond with our signaling MTU.
     uint16_t rsp_mtu = htole16(mtu());
     BufferView rej_data(&rsp_mtu, sizeof(rsp_mtu));
-    SendCommandReject(packet.header().id, RejectReason::kSignalingMTUExceeded,
-                      rej_data);
+    SendCommandReject(packet.header().id, RejectReason::kSignalingMTUExceeded, rej_data);
   } else if (!packet.header().id) {
     // "Signaling identifier 0x00 is an illegal identifier and shall never be
     // used in any command" (v5.0, Vol 3, Part A, Section 4).
     bt_log(TRACE, "l2cap", "illegal signaling cmd ID: 0x00; reject");
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      BufferView());
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
   } else if (!HandlePacket(packet)) {
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood,
-                      BufferView());
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
   }
 }
 

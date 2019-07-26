@@ -22,8 +22,7 @@ using ConnectionState = Peer::ConnectionState;
 namespace {
 
 void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
-                        async_dispatcher_t* dispatcher,
-                        hci::StatusCallback cb) {
+                        async_dispatcher_t* dispatcher, hci::StatusCallback cb) {
   ZX_DEBUG_ASSERT(cb);
   auto read_enable = hci::CommandPacket::New(hci::kReadScanEnable);
   auto finish_enable_cb = [enabled, dispatcher, hci, finish_cb = std::move(cb)](
@@ -40,16 +39,14 @@ void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
     } else {
       scan_type &= ~static_cast<uint8_t>(hci::ScanEnableBit::kPage);
     }
-    auto write_enable = hci::CommandPacket::New(
-        hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
+    auto write_enable =
+        hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
     write_enable->mutable_view()
         ->mutable_payload<hci::WriteScanEnableCommandParams>()
         ->scan_enable = scan_type;
     hci->command_channel()->SendCommand(
         std::move(write_enable), dispatcher,
-        [cb = std::move(finish_cb)](auto, const hci::EventPacket& event) {
-          cb(event.ToStatus());
-        });
+        [cb = std::move(finish_cb)](auto, const hci::EventPacket& event) { cb(event.ToStatus()); });
   };
   hci->command_channel()->SendCommand(std::move(read_enable), dispatcher,
                                       std::move(finish_enable_cb));
@@ -73,10 +70,10 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
   return event_id;
 }
 
-BrEdrConnectionManager::BrEdrConnectionManager(
-    fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
-    DeviceAddress local_address, fbl::RefPtr<data::Domain> data_domain,
-    bool use_interlaced_scan)
+BrEdrConnectionManager::BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci,
+                                               PeerCache* peer_cache, DeviceAddress local_address,
+                                               fbl::RefPtr<data::Domain> data_domain,
+                                               bool use_interlaced_scan)
     : hci_(hci),
       cache_(peer_cache),
       local_address_(local_address),
@@ -93,32 +90,23 @@ BrEdrConnectionManager::BrEdrConnectionManager(
   ZX_DEBUG_ASSERT(data_domain_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ =
-      std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
+  hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
 
   // Register event handlers
-  AddEventHandler(
-      hci::kConnectionCompleteEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnConnectionComplete));
-  AddEventHandler(
-      hci::kConnectionRequestEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnConnectionRequest));
-  AddEventHandler(
-      hci::kDisconnectionCompleteEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnDisconnectionComplete));
-  AddEventHandler(
-      hci::kLinkKeyRequestEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnLinkKeyRequest));
-  AddEventHandler(
-      hci::kLinkKeyNotificationEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnLinkKeyNotification));
-  AddEventHandler(
-      hci::kIOCapabilityRequestEventCode,
-      fbl::BindMember(this, &BrEdrConnectionManager::OnIOCapabilitiesRequest));
-  AddEventHandler(
-      hci::kUserConfirmationRequestEventCode,
-      fbl::BindMember(this,
-                      &BrEdrConnectionManager::OnUserConfirmationRequest));
+  AddEventHandler(hci::kConnectionCompleteEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnConnectionComplete));
+  AddEventHandler(hci::kConnectionRequestEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnConnectionRequest));
+  AddEventHandler(hci::kDisconnectionCompleteEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnDisconnectionComplete));
+  AddEventHandler(hci::kLinkKeyRequestEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnLinkKeyRequest));
+  AddEventHandler(hci::kLinkKeyNotificationEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnLinkKeyNotification));
+  AddEventHandler(hci::kIOCapabilityRequestEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnIOCapabilitiesRequest));
+  AddEventHandler(hci::kUserConfirmationRequestEventCode,
+                  fbl::BindMember(this, &BrEdrConnectionManager::OnUserConfirmationRequest));
 }
 
 BrEdrConnectionManager::~BrEdrConnectionManager() {
@@ -135,12 +123,10 @@ BrEdrConnectionManager::~BrEdrConnectionManager() {
   }
 }
 
-void BrEdrConnectionManager::SetConnectable(bool connectable,
-                                            hci::StatusCallback status_cb) {
+void BrEdrConnectionManager::SetConnectable(bool connectable, hci::StatusCallback status_cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (!connectable) {
-    auto not_connectable_cb = [self,
-                               cb = std::move(status_cb)](const auto& status) {
+    auto not_connectable_cb = [self, cb = std::move(status_cb)](const auto& status) {
       if (self) {
         self->page_scan_interval_ = 0;
         self->page_scan_window_ = 0;
@@ -157,8 +143,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable,
   WritePageScanSettings(
       hci::kPageScanR1Interval, hci::kPageScanR1Window, use_interlaced_scan_,
       [self, cb = std::move(status_cb)](const auto& status) mutable {
-        if (bt_is_error(status, WARN, "gap-bredr",
-                        "Write Page Scan Settings failed")) {
+        if (bt_is_error(status, WARN, "gap-bredr", "Write Page Scan Settings failed")) {
           cb(status);
           return;
         }
@@ -170,8 +155,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable,
       });
 }
 
-void BrEdrConnectionManager::SetPairingDelegate(
-    fxl::WeakPtr<PairingDelegate> delegate) {
+void BrEdrConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
   // TODO(armansito): implement
 }
 
@@ -186,22 +170,19 @@ PeerId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   return peer->identifier();
 }
 
-bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
-                                              SocketCallback cb,
+bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, SocketCallback cb,
                                               async_dispatcher_t* dispatcher) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
-    bt_log(SPEW, "gap-bredr", "can't open l2cap %s: connection not found",
-           bt_str(peer_id));
+    bt_log(SPEW, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
     return false;
   }
   auto& [handle, connection] = *conn_pair;
 
   if (!connection->link().ltk()) {
     // Connection doesn't have a key, initiate an authentication request.
-    auto auth_request = hci::CommandPacket::New(
-        hci::kAuthenticationRequested,
-        sizeof(hci::AuthenticationRequestedCommandParams));
+    auto auth_request = hci::CommandPacket::New(hci::kAuthenticationRequested,
+                                                sizeof(hci::AuthenticationRequestedCommandParams));
     auth_request->mutable_view()
         ->mutable_payload<hci::AuthenticationRequestedCommandParams>()
         ->connection_handle = htole16(handle);
@@ -210,8 +191,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     auto retry_cb = [peer_id, psm, cb = std::move(cb), dispatcher, self](
                         auto, const auto& event) mutable {
       if (hci_is_error(event, SPEW, "gap-bredr", "auth request failed")) {
-        async::PostTask(dispatcher,
-                        [cb = std::move(cb)]() { cb(zx::socket()); });
+        async::PostTask(dispatcher, [cb = std::move(cb)]() { cb(zx::socket()); });
         if (self) {
           self->Disconnect(peer_id);
         }
@@ -228,28 +208,22 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
       }
     };
 
-    bt_log(SPEW, "gap-bredr", "sending auth request to peer %s",
-           bt_str(peer_id));
-    hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_,
-                                         std::move(retry_cb),
+    bt_log(SPEW, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
+    hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_, std::move(retry_cb),
                                          hci::kAuthenticationCompleteEventCode);
     return true;
   }
 
-  bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm,
-         bt_str(peer_id));
+  bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id));
   data_domain_->OpenL2capChannel(
-      handle, psm,
-      [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); },
-      dispatcher);
+      handle, psm, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
   return true;
 }
 
 BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
     const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
     BrEdrConnectionManager::SearchCallback callback) {
-  return discoverer_.AddSearch(uuid, std::move(attributes),
-                               std::move(callback));
+  return discoverer_.AddSearch(uuid, std::move(attributes), std::move(callback));
 }
 
 bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
@@ -258,16 +232,14 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
 
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
   if (connection_requests_.find(peer_id) != connection_requests_.end()) {
-    bt_log(WARN, "gap-bredr",
-           "Can't disconnect peer %s because it's being connected to",
+    bt_log(WARN, "gap-bredr", "Can't disconnect peer %s because it's being connected to",
            bt_str(peer_id));
     return false;
   }
 
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
-    bt_log(INFO, "gap-bredr",
-           "No need to disconnect peer (id: %s): It is not connected",
+    bt_log(INFO, "gap-bredr", "No need to disconnect peer (id: %s): It is not connected",
            bt_str(peer_id));
     return true;
   }
@@ -278,10 +250,8 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
   return true;
 }
 
-void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
-                                                   uint16_t window,
-                                                   bool interlaced,
-                                                   hci::StatusCallback cb) {
+void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t window,
+                                                   bool interlaced, hci::StatusCallback cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (!hci_cmd_runner_->IsReady()) {
     // TODO(jamuraa): could run the three "settings" commands in parallel and
@@ -290,20 +260,16 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
     return;
   }
 
-  auto write_activity =
-      hci::CommandPacket::New(hci::kWritePageScanActivity,
-                              sizeof(hci::WritePageScanActivityCommandParams));
+  auto write_activity = hci::CommandPacket::New(hci::kWritePageScanActivity,
+                                                sizeof(hci::WritePageScanActivityCommandParams));
   auto* activity_params =
-      write_activity->mutable_view()
-          ->mutable_payload<hci::WritePageScanActivityCommandParams>();
+      write_activity->mutable_view()->mutable_payload<hci::WritePageScanActivityCommandParams>();
   activity_params->page_scan_interval = htole16(interval);
   activity_params->page_scan_window = htole16(window);
 
   hci_cmd_runner_->QueueCommand(
-      std::move(write_activity),
-      [self, interval, window](const hci::EventPacket& event) {
-        if (!self || hci_is_error(event, WARN, "gap-bredr",
-                                  "write page scan activity failed")) {
+      std::move(write_activity), [self, interval, window](const hci::EventPacket& event) {
+        if (!self || hci_is_error(event, WARN, "gap-bredr", "write page scan activity failed")) {
           return;
         }
 
@@ -313,23 +279,21 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
         bt_log(SPEW, "gap-bredr", "page scan activity updated");
       });
 
-  auto write_type = hci::CommandPacket::New(
-      hci::kWritePageScanType, sizeof(hci::WritePageScanTypeCommandParams));
+  auto write_type =
+      hci::CommandPacket::New(hci::kWritePageScanType, sizeof(hci::WritePageScanTypeCommandParams));
   auto* type_params =
-      write_type->mutable_view()
-          ->mutable_payload<hci::WritePageScanTypeCommandParams>();
-  type_params->page_scan_type = (interlaced ? hci::PageScanType::kInterlacedScan
-                                            : hci::PageScanType::kStandardScan);
+      write_type->mutable_view()->mutable_payload<hci::WritePageScanTypeCommandParams>();
+  type_params->page_scan_type =
+      (interlaced ? hci::PageScanType::kInterlacedScan : hci::PageScanType::kStandardScan);
 
   hci_cmd_runner_->QueueCommand(
       std::move(write_type), [self, interlaced](const hci::EventPacket& event) {
-        if (!self || hci_is_error(event, WARN, "gap-bredr",
-                                  "write page scan type failed")) {
+        if (!self || hci_is_error(event, WARN, "gap-bredr", "write page scan type failed")) {
           return;
         }
 
-        self->page_scan_type_ = (interlaced ? hci::PageScanType::kInterlacedScan
-                                            : hci::PageScanType::kStandardScan);
+        self->page_scan_type_ =
+            (interlaced ? hci::PageScanType::kInterlacedScan : hci::PageScanType::kStandardScan);
 
         bt_log(SPEW, "gap-bredr", "page scan type updated");
       });
@@ -339,9 +303,8 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
 
 std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>>
 BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
-  auto it = std::find_if(
-      connections_.begin(), connections_.end(),
-      [peer_id](const auto& c) { return c.second.peer_id() == peer_id; });
+  auto it = std::find_if(connections_.begin(), connections_.end(),
+                         [peer_id](const auto& c) { return c.second.peer_id() == peer_id; });
 
   if (it == connections_.end()) {
     return std::nullopt;
@@ -353,16 +316,13 @@ BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
   return std::pair(handle, &conn);
 }
 
-void BrEdrConnectionManager::OnConnectionRequest(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnConnectionRequest(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionRequestEventCode);
   const auto& params = event.params<hci::ConnectionRequestEventParams>();
-  std::string link_type_str =
-      params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
+  std::string link_type_str = params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
 
-  bt_log(TRACE, "gap-bredr", "%s conn request from %s (%s)",
-         link_type_str.c_str(), params.bd_addr.ToString().c_str(),
-         params.class_of_device.ToString().c_str());
+  bt_log(TRACE, "gap-bredr", "%s conn request from %s (%s)", link_type_str.c_str(),
+         params.bd_addr.ToString().c_str(), params.class_of_device.ToString().c_str());
 
   if (params.link_type == hci::LinkType::kACL) {
     // Accept the connection, performing a role switch. We receive a
@@ -370,29 +330,25 @@ void BrEdrConnectionManager::OnConnectionRequest(
     // the link then.
     bt_log(INFO, "gap-bredr", "accept incoming connection");
 
-    auto accept = hci::CommandPacket::New(
-        hci::kAcceptConnectionRequest,
-        sizeof(hci::AcceptConnectionRequestCommandParams));
+    auto accept = hci::CommandPacket::New(hci::kAcceptConnectionRequest,
+                                          sizeof(hci::AcceptConnectionRequestCommandParams));
     auto accept_params =
-        accept->mutable_view()
-            ->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
+        accept->mutable_view()->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
     accept_params->bd_addr = params.bd_addr;
     accept_params->role = hci::ConnectionRole::kMaster;
 
-    hci_->command_channel()->SendCommand(std::move(accept), dispatcher_,
-                                         nullptr, hci::kCommandStatusEventCode);
+    hci_->command_channel()->SendCommand(std::move(accept), dispatcher_, nullptr,
+                                         hci::kCommandStatusEventCode);
     return;
   }
 
   // Reject this connection.
   bt_log(INFO, "gap-bredr", "reject unsupported connection");
 
-  auto reject = hci::CommandPacket::New(
-      hci::kRejectConnectionRequest,
-      sizeof(hci::RejectConnectionRequestCommandParams));
+  auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,
+                                        sizeof(hci::RejectConnectionRequestCommandParams));
   auto reject_params =
-      reject->mutable_view()
-          ->mutable_payload<hci::RejectConnectionRequestCommandParams>();
+      reject->mutable_view()->mutable_payload<hci::RejectConnectionRequestCommandParams>();
   reject_params->bd_addr = params.bd_addr;
   reject_params->reason = hci::StatusCode::kConnectionRejectedBadBdAddr;
 
@@ -409,16 +365,14 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
   return peer;
 }
 
-void BrEdrConnectionManager::OnConnectionComplete(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnConnectionComplete(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionCompleteEventCode);
 
   const auto& params = event.params<hci::ConnectionCompleteEventParams>();
   auto connection_handle = letoh16(params.connection_handle);
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
-  bt_log(TRACE, "gap-bredr",
-         "%s connection complete (status %#.2x, handle: %#.4x)",
+  bt_log(TRACE, "gap-bredr", "%s connection complete (status %#.2x, handle: %#.4x)",
          bt_str(params.bd_addr), params.status, connection_handle);
 
   if (pending_request_ && pending_request_->peer_address() == addr) {
@@ -442,11 +396,9 @@ void BrEdrConnectionManager::OnConnectionComplete(
 // Initialize a full Br/Edr connection from the hci::Connection |link|
 // Initialization begins the interrogation process, once completed we establish
 // a fully usable Br/Edr connection
-void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
-                                                  uint16_t connection_handle) {
+void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr, uint16_t connection_handle) {
   // TODO(BT-288): support non-master connections.
-  auto link = hci::Connection::CreateACL(connection_handle,
-                                         hci::Connection::Role::kMaster,
+  auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
                                          local_address_, addr, hci_);
 
   Peer* peer = FindOrInitPeer(addr);
@@ -457,13 +409,10 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   // Interrogate this peer to find out its version/capabilities.
   auto self = weak_ptr_factory_.GetWeakPtr();
   interrogator_.Start(
-      peer->identifier(), std::move(link),
-      [peer, self](auto status, auto conn_ptr) {
-        if (bt_is_error(status, WARN, "gap-bredr",
-                        "interrogate failed, dropping connection"))
+      peer->identifier(), std::move(link), [peer, self](auto status, auto conn_ptr) {
+        if (bt_is_error(status, WARN, "gap-bredr", "interrogate failed, dropping connection"))
           return;
-        bt_log(SPEW, "gap-bredr", "interrogation complete for %#.4x",
-               conn_ptr->handle());
+        bt_log(SPEW, "gap-bredr", "interrogation complete for %#.4x", conn_ptr->handle());
         if (!self)
           return;
         self->EstablishConnection(peer, status, std::move(conn_ptr));
@@ -471,8 +420,8 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 }
 
 // Establish a full BrEdrConnection for a link that has been interrogated
-void BrEdrConnectionManager::EstablishConnection(
-    Peer* peer, hci::Status status, unique_ptr<hci::Connection> connection) {
+void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
+                                                 unique_ptr<hci::Connection> connection) {
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   auto error_handler = [self, connection = connection->WeakPtr()] {
@@ -487,24 +436,18 @@ void BrEdrConnectionManager::EstablishConnection(
   };
 
   // TODO(armansito): Implement this callback.
-  auto security_callback = [](hci::ConnectionHandle handle,
-                              sm::SecurityLevel level, auto cb) {
-    bt_log(INFO, "gap-bredr",
-           "Ignoring security upgrade request; not implemented");
+  auto security_callback = [](hci::ConnectionHandle handle, sm::SecurityLevel level, auto cb) {
+    bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
     cb(sm::Status(HostError::kNotSupported));
   };
 
   // Register with L2CAP to handle services on the ACL signaling channel.
-  data_domain_->AddACLConnection(connection->handle(), connection->role(),
-                                 error_handler, std::move(security_callback),
-                                 dispatcher_);
+  data_domain_->AddACLConnection(connection->handle(), connection->role(), error_handler,
+                                 std::move(security_callback), dispatcher_);
 
   auto handle = connection->handle();
 
-  auto conn =
-      connections_
-          .try_emplace(handle, peer->identifier(), std::move(connection))
-          .first;
+  auto conn = connections_.try_emplace(handle, peer->identifier(), std::move(connection)).first;
   peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 
   if (discoverer_.search_count()) {
@@ -523,8 +466,7 @@ void BrEdrConnectionManager::EstablishConnection(
   auto request = connection_requests_.extract(peer->identifier());
   if (request) {
     auto conn_ptr = &(conn->second);
-    request.mapped().NotifyCallbacks(hci::Status(),
-                                     [conn_ptr] { return conn_ptr; });
+    request.mapped().NotifyCallbacks(hci::Status(), [conn_ptr] { return conn_ptr; });
     // If this was our in-flight request, close it
     if (peer->address() == pending_request_->peer_address()) {
       pending_request_.reset();
@@ -533,14 +475,12 @@ void BrEdrConnectionManager::EstablishConnection(
   }
 }
 
-void BrEdrConnectionManager::OnDisconnectionComplete(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnDisconnectionComplete(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
   const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
 
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
-  if (hci_is_error(event, WARN, "gap-bredr",
-                   "HCI disconnection error handle %#.4x", handle)) {
+  if (hci_is_error(event, WARN, "gap-bredr", "HCI disconnection error handle %#.4x", handle)) {
     return;
   }
 
@@ -551,17 +491,13 @@ void BrEdrConnectionManager::OnDisconnectionComplete(
   }
 
   auto* peer = cache_->FindByAddress(it->second.link().peer_address());
-  bt_log(INFO, "gap-bredr",
-         "%s disconnected - %s, handle: %#.4x, reason: %#.2x",
-         bt_str(peer->identifier()), bt_str(event.ToStatus()), handle,
-         params.reason);
+  bt_log(INFO, "gap-bredr", "%s disconnected - %s, handle: %#.4x, reason: %#.2x",
+         bt_str(peer->identifier()), bt_str(event.ToStatus()), handle, params.reason);
 
-  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()),
-                    false /* close_link */);
+  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()), false /* close_link */);
 }
 
-void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle,
-                                               BrEdrConnection conn,
+void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn,
                                                bool close_link) {
   auto* peer = cache_->FindByAddress(conn.link().peer_address());
   ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
@@ -585,32 +521,26 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
 
   auto* peer = cache_->FindByAddress(addr);
   if (!peer || !peer->bredr() || !peer->bredr()->bonded()) {
-    bt_log(INFO, "gap-bredr", "no bonded peer with address %s found",
-           addr.ToString().c_str());
+    bt_log(INFO, "gap-bredr", "no bonded peer with address %s found", addr.ToString().c_str());
 
-    auto reply = hci::CommandPacket::New(
-        hci::kLinkKeyRequestNegativeReply,
-        sizeof(hci::LinkKeyRequestNegativeReplyCommandParams));
+    auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestNegativeReply,
+                                         sizeof(hci::LinkKeyRequestNegativeReplyCommandParams));
     auto reply_params =
-        reply->mutable_view()
-            ->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
+        reply->mutable_view()->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
 
     reply_params->bd_addr = params.bd_addr;
 
-    hci_->command_channel()->SendCommand(std::move(reply), dispatcher_,
-                                         nullptr);
+    hci_->command_channel()->SendCommand(std::move(reply), dispatcher_, nullptr);
     return;
   }
 
   auto peer_id = peer->identifier();
-  bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s",
-         bt_str(peer_id));
+  bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer_id));
 
-  auto reply = hci::CommandPacket::New(
-      hci::kLinkKeyRequestReply, sizeof(hci::LinkKeyRequestReplyCommandParams));
+  auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestReply,
+                                       sizeof(hci::LinkKeyRequestReplyCommandParams));
   auto reply_params =
-      reply->mutable_view()
-          ->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
+      reply->mutable_view()->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
   const sm::LTK& link_key = *peer->bredr()->link_key();
@@ -621,8 +551,7 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
 
   auto handle = FindConnectionById(peer_id);
   if (!handle) {
-    bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)",
-           bt_str(peer_id));
+    bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)", bt_str(peer_id));
   } else {
     handle->second->link().set_link_key(hci_key);
   }
@@ -633,20 +562,18 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
       });
 }
 
-void BrEdrConnectionManager::OnLinkKeyNotification(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnLinkKeyNotification(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLinkKeyNotificationEventCode);
   const auto& params = event.params<hci::LinkKeyNotificationEventParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
-  bt_log(TRACE, "gap-bredr", "got link key (type %u) for address %s",
-         params.key_type, addr.ToString().c_str());
+  bt_log(TRACE, "gap-bredr", "got link key (type %u) for address %s", params.key_type,
+         addr.ToString().c_str());
 
   auto* peer = cache_->FindByAddress(addr);
   if (!peer) {
-    bt_log(WARN, "gap-bredr",
-           "no known peer with address %s found; link key not stored",
+    bt_log(WARN, "gap-bredr", "no known peer with address %s found; link key not stored",
            addr.ToString().c_str());
     return;
   }
@@ -670,43 +597,36 @@ void BrEdrConnectionManager::OnLinkKeyNotification(
   auto peer_id = peer->identifier();
 
   if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
-    bt_log(WARN, "gap-bredr",
-           "link key for peer %s has insufficient security; not stored",
+    bt_log(WARN, "gap-bredr", "link key for peer %s has insufficient security; not stored",
            bt_str(peer_id));
     return;
   }
 
   UInt128 key_value;
-  std::copy(params.link_key, &params.link_key[key_value.size()],
-            key_value.begin());
+  std::copy(params.link_key, &params.link_key[key_value.size()], key_value.begin());
   hci::LinkKey hci_key(key_value, 0, 0);
   sm::LTK key(sec_props, hci_key);
 
   auto handle = FindConnectionById(peer_id);
   if (!handle) {
-    bt_log(WARN, "gap-bredr", "can't find current connection for ltk (id: %s)",
-           bt_str(peer_id));
+    bt_log(WARN, "gap-bredr", "can't find current connection for ltk (id: %s)", bt_str(peer_id));
   } else {
     handle->second->link().set_link_key(hci_key);
   }
 
   if (!cache_->StoreBrEdrBond(addr, key)) {
-    bt_log(ERROR, "gap-bredr", "failed to cache bonding data (id: %s)",
-           bt_str(peer_id));
+    bt_log(ERROR, "gap-bredr", "failed to cache bonding data (id: %s)", bt_str(peer_id));
   }
 }
 
-void BrEdrConnectionManager::OnIOCapabilitiesRequest(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnIOCapabilitiesRequest(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kIOCapabilityRequestEventCode);
   const auto& params = event.params<hci::IOCapabilityRequestEventParams>();
 
-  auto reply = hci::CommandPacket::New(
-      hci::kIOCapabilityRequestReply,
-      sizeof(hci::IOCapabilityRequestReplyCommandParams));
+  auto reply = hci::CommandPacket::New(hci::kIOCapabilityRequestReply,
+                                       sizeof(hci::IOCapabilityRequestReplyCommandParams));
   auto reply_params =
-      reply->mutable_view()
-          ->mutable_payload<hci::IOCapabilityRequestReplyCommandParams>();
+      reply->mutable_view()->mutable_payload<hci::IOCapabilityRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
   // TODO(jamuraa, BT-169): ask the PairingDelegate if it's set what the IO
@@ -720,31 +640,27 @@ void BrEdrConnectionManager::OnIOCapabilitiesRequest(
   hci_->command_channel()->SendCommand(std::move(reply), dispatcher_, nullptr);
 }
 
-void BrEdrConnectionManager::OnUserConfirmationRequest(
-    const hci::EventPacket& event) {
+void BrEdrConnectionManager::OnUserConfirmationRequest(const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kUserConfirmationRequestEventCode);
   const auto& params = event.params<hci::UserConfirmationRequestEventParams>();
 
-  bt_log(INFO, "gap-bredr", "auto-confirming pairing from %s (%u)",
-         bt_str(params.bd_addr), params.numeric_value);
+  bt_log(INFO, "gap-bredr", "auto-confirming pairing from %s (%u)", bt_str(params.bd_addr),
+         params.numeric_value);
 
   // TODO(jamuraa, BT-169): if we are not NoInput/NoOutput then we need to ask
   // the pairing delegate.  This currently will auto accept any pairing
   // (JustWorks)
-  auto reply = hci::CommandPacket::New(
-      hci::kUserConfirmationRequestReply,
-      sizeof(hci::UserConfirmationRequestReplyCommandParams));
+  auto reply = hci::CommandPacket::New(hci::kUserConfirmationRequestReply,
+                                       sizeof(hci::UserConfirmationRequestReplyCommandParams));
   auto reply_params =
-      reply->mutable_view()
-          ->mutable_payload<hci::UserConfirmationRequestReplyCommandParams>();
+      reply->mutable_view()->mutable_payload<hci::UserConfirmationRequestReplyCommandParams>();
 
   reply_params->bd_addr = params.bd_addr;
 
   hci_->command_channel()->SendCommand(std::move(reply), dispatcher_, nullptr);
 }
 
-bool BrEdrConnectionManager::Connect(
-    PeerId peer_id, ConnectResultCallback on_connection_result) {
+bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_connection_result) {
   Peer* peer = cache_->FindById(peer_id);
   if (!peer) {
     bt_log(WARN, "gap-bredr", "peer not found (id: %s)", bt_str(peer_id));
@@ -752,8 +668,7 @@ bool BrEdrConnectionManager::Connect(
   }
 
   if (peer->technology() == TechnologyType::kLowEnergy) {
-    bt_log(ERROR, "gap-bredr", "peer does not support BrEdr: %s",
-           peer->ToString().c_str());
+    bt_log(ERROR, "gap-bredr", "peer does not support BrEdr: %s", peer->ToString().c_str());
     return false;
   }
 
@@ -764,8 +679,7 @@ bool BrEdrConnectionManager::Connect(
   auto conn = FindConnectionById(peer_id);
   if (conn) {
     async::PostTask(dispatcher_,
-                    [conn = conn->second,
-                     on_result = std::move(on_connection_result)]() mutable {
+                    [conn = conn->second, on_result = std::move(on_connection_result)]() mutable {
                       on_result(hci::Status(), conn);
                     });
     return true;
@@ -781,8 +695,7 @@ bool BrEdrConnectionManager::Connect(
   }
   // If we are not already connected or pending, initiate a new connection
   peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-  connection_requests_.try_emplace(peer_id, peer->address(),
-                                   std::move(on_connection_result));
+  connection_requests_.try_emplace(peer_id, peer->address(), std::move(on_connection_result));
 
   TryCreateNextConnection();
 
@@ -821,8 +734,7 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
     pending_request_.emplace(peer->identifier(), peer->address(), on_timeout);
     pending_request_->CreateConnection(
         hci_->command_channel(), dispatcher_, peer->bredr()->clock_offset(),
-        peer->bredr()->page_scan_repetition_mode(), request_timeout_,
-        on_failure);
+        peer->bredr()->page_scan_repetition_mode(), request_timeout_, on_failure);
   } else {
     // If there are no pending requests for peers which are in the cache, try
     // to connect to a peer which has left the cache, in case it is still
@@ -833,18 +745,15 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
       auto address = request->second.address();
 
       pending_request_.emplace(identifier, address, on_timeout);
-      pending_request_->CreateConnection(hci_->command_channel(), dispatcher_,
-                                         std::nullopt, std::nullopt,
-                                         request_timeout_, on_failure);
+      pending_request_->CreateConnection(hci_->command_channel(), dispatcher_, std::nullopt,
+                                         std::nullopt, request_timeout_, on_failure);
     }
   }
 }
 
-void BrEdrConnectionManager::OnConnectFailure(hci::Status status,
-                                              PeerId peer_id) {
+void BrEdrConnectionManager::OnConnectFailure(hci::Status status, PeerId peer_id) {
   // The request failed or timed out.
-  bt_log(ERROR, "gap-bredr", "failed to connect to peer (id: %s)",
-         bt_str(peer_id));
+  bt_log(ERROR, "gap-bredr", "failed to connect to peer (id: %s)", bt_str(peer_id));
   Peer* peer = cache_->FindById(peer_id);
   // The peer may no longer be in the cache by the time this function is called
   if (peer) {
@@ -869,19 +778,14 @@ void BrEdrConnectionManager::OnRequestTimeout() {
   }
 }
 
-void BrEdrConnectionManager::SendCreateConnectionCancelCommand(
-    DeviceAddress addr) {
-  auto cancel =
-      hci::CommandPacket::New(hci::kCreateConnectionCancel,
-                              sizeof(hci::CreateConnectionCancelCommandParams));
-  auto params =
-      cancel->mutable_view()
-          ->mutable_payload<hci::CreateConnectionCancelCommandParams>();
+void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress addr) {
+  auto cancel = hci::CommandPacket::New(hci::kCreateConnectionCancel,
+                                        sizeof(hci::CreateConnectionCancelCommandParams));
+  auto params = cancel->mutable_view()->mutable_payload<hci::CreateConnectionCancelCommandParams>();
   params->bd_addr = addr.value();
   hci_->command_channel()->SendCommand(
       std::move(cancel), dispatcher_, [](auto, const hci::EventPacket& event) {
-        hci_is_error(event, WARN, "hci-bredr",
-                     "failed to cancel connection request");
+        hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
       });
 }
 

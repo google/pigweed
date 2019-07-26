@@ -52,11 +52,9 @@ class Session {
   // channel fails. |channel_opened_cb| will be called whenever a new channel is
   // opened on this session. The callback will be dispatched onto the thread on
   // which Session was created.
-  using ChannelOpenedCallback =
-      fit::function<void(fbl::RefPtr<Channel>, ServerChannel)>;
-  static std::unique_ptr<Session> Create(
-      fbl::RefPtr<l2cap::Channel> l2cap_channel,
-      ChannelOpenedCallback channel_opened_cb);
+  using ChannelOpenedCallback = fit::function<void(fbl::RefPtr<Channel>, ServerChannel)>;
+  static std::unique_ptr<Session> Create(fbl::RefPtr<l2cap::Channel> l2cap_channel,
+                                         ChannelOpenedCallback channel_opened_cb);
 
   // Should only be called from Create().
   Session(ChannelOpenedCallback channel_opened_cb);
@@ -68,8 +66,7 @@ class Session {
   bool SetL2CAPChannel(fbl::RefPtr<l2cap::Channel> l2cap_channel);
 
   // Opens a remote channel and delivers it via |channel_opened_cb|.
-  void OpenRemoteChannel(ServerChannel server_channel,
-                         ChannelOpenedCallback channel_opened_cb);
+  void OpenRemoteChannel(ServerChannel server_channel, ChannelOpenedCallback channel_opened_cb);
 
   // l2cap::Channel callbacks.
   void RxCallback(ByteBufferPtr sdu);
@@ -211,15 +208,13 @@ class Session {
   // The TimeoutCallback is called when the timeout elapses before a response is
   // received.
   using OutstandingMuxCommand = std::pair<MuxCommandType, DLCI>;
-  using MuxResponseCallbacks =
-      std::pair<MuxResponseCallback, std::unique_ptr<TimeoutCallback>>;
+  using MuxResponseCallbacks = std::pair<MuxResponseCallback, std::unique_ptr<TimeoutCallback>>;
   struct outstanding_mux_commands_hash {
     inline size_t operator()(OutstandingMuxCommand key) const {
       return ((uint8_t)std::get<0>(key) << 8) | std::get<1>(key);
     }
   };
-  std::unordered_map<OutstandingMuxCommand, MuxResponseCallbacks,
-                     outstanding_mux_commands_hash>
+  std::unordered_map<OutstandingMuxCommand, MuxResponseCallbacks, outstanding_mux_commands_hash>
       outstanding_mux_commands_;
 
   // Tracks whether the initial parameter negotiation has completed. RFCOMM

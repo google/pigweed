@@ -25,9 +25,7 @@ class LowEnergyState final {
   }
 
   // Returns the LE ACL data buffer capacity.
-  const hci::DataBufferInfo& data_buffer_info() const {
-    return data_buffer_info_;
-  }
+  const hci::DataBufferInfo& data_buffer_info() const { return data_buffer_info_; }
 
  private:
   friend class Adapter;

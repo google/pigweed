@@ -20,8 +20,7 @@ TEST(DeviceClassTest, CastFromBytes) {
 
   auto* test_payload = reinterpret_cast<TestPayload*>(bytes.data());
   EXPECT_EQ(10, test_payload->arg0);
-  EXPECT_EQ(DeviceClass::MajorClass::kPhone,
-            test_payload->class_of_device.major_class());
+  EXPECT_EQ(DeviceClass::MajorClass::kPhone, test_payload->class_of_device.major_class());
   std::unordered_set<DeviceClass::ServiceClass> srvs_expected = {
       DeviceClass::ServiceClass::kNetworking};
   EXPECT_EQ(srvs_expected, test_payload->class_of_device.GetServiceClasses());
@@ -32,8 +31,7 @@ TEST(DeviceClassTest, CastFromBytes) {
 
   test_payload = reinterpret_cast<TestPayload*>(no_srv_bytes.data());
   EXPECT_EQ(0xBA, test_payload->arg0);
-  EXPECT_EQ(DeviceClass::MajorClass::kComputer,
-            test_payload->class_of_device.major_class());
+  EXPECT_EQ(DeviceClass::MajorClass::kComputer, test_payload->class_of_device.major_class());
   srvs_expected = {};
   EXPECT_EQ(srvs_expected, test_payload->class_of_device.GetServiceClasses());
 
@@ -43,10 +41,8 @@ TEST(DeviceClassTest, CastFromBytes) {
 
   test_payload = reinterpret_cast<TestPayload*>(two_srv_bytes.data());
   EXPECT_EQ(0xA0, test_payload->arg0);
-  EXPECT_EQ(DeviceClass::MajorClass::kWearable,
-            test_payload->class_of_device.major_class());
-  srvs_expected = {DeviceClass::ServiceClass::kAudio,
-                   DeviceClass::ServiceClass::kPositioning};
+  EXPECT_EQ(DeviceClass::MajorClass::kWearable, test_payload->class_of_device.major_class());
+  srvs_expected = {DeviceClass::ServiceClass::kAudio, DeviceClass::ServiceClass::kPositioning};
   EXPECT_EQ(srvs_expected, test_payload->class_of_device.GetServiceClasses());
 }
 
@@ -54,8 +50,7 @@ TEST(DeviceClassTest, ConstructFromUInt32) {
   // AudioVideo -- headset with Rendering and Audio services
   DeviceClass class_of_device(0x240404);
 
-  EXPECT_EQ(DeviceClass::MajorClass::kAudioVideo,
-            class_of_device.major_class());
+  EXPECT_EQ(DeviceClass::MajorClass::kAudioVideo, class_of_device.major_class());
 
   const uint8_t WEARABLE_HEADSET_DEVICE_MINOR_CLASS = 1;
   EXPECT_EQ(WEARABLE_HEADSET_DEVICE_MINOR_CLASS, class_of_device.minor_class());

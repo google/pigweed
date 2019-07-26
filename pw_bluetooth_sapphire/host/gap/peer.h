@@ -56,34 +56,27 @@ class Peer final {
 
     // Current connection state.
     ConnectionState connection_state() const { return conn_state_; }
-    bool connected() const {
-      return connection_state() == ConnectionState::kConnected;
-    }
+    bool connected() const { return connection_state() == ConnectionState::kConnected; }
     bool bonded() const { return bond_data_.has_value(); }
 
     // Advertising (and optionally scan response) data obtained during
     // discovery.
-    const BufferView advertising_data() const {
-      return adv_data_buffer_.view(0, adv_data_len_);
-    }
+    const BufferView advertising_data() const { return adv_data_buffer_.view(0, adv_data_len_); }
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
-    const std::optional<hci::LEConnectionParameters>& connection_parameters()
-        const {
+    const std::optional<hci::LEConnectionParameters>& connection_parameters() const {
       return conn_params_;
     }
 
     // Preferred LE connection parameters as reported by the peer.
-    const std::optional<hci::LEPreferredConnectionParameters>&
-    preferred_connection_parameters() const {
+    const std::optional<hci::LEPreferredConnectionParameters>& preferred_connection_parameters()
+        const {
       return preferred_conn_params_;
     }
 
     // This peer's LE bond data, if bonded.
-    const std::optional<sm::PairingData>& bond_data() const {
-      return bond_data_;
-    }
+    const std::optional<sm::PairingData>& bond_data() const { return bond_data_; }
 
     // Setters:
 
@@ -99,8 +92,7 @@ class Peer final {
     // Modify the current or preferred connection parameters.
     // The device must be connectable.
     void SetConnectionParameters(const hci::LEConnectionParameters& value);
-    void SetPreferredConnectionParameters(
-        const hci::LEPreferredConnectionParameters& value);
+    void SetPreferredConnectionParameters(const hci::LEPreferredConnectionParameters& value);
 
     // Stores LE bonding data and makes this "bonded."
     // Marks as non-temporary if necessary.
@@ -136,22 +128,17 @@ class Peer final {
 
     // Current connection state.
     ConnectionState connection_state() const { return conn_state_; }
-    bool connected() const {
-      return connection_state() == ConnectionState::kConnected;
-    }
+    bool connected() const { return connection_state() == ConnectionState::kConnected; }
     bool bonded() const { return link_key_.has_value(); }
 
     // Returns the peer's BD_ADDR.
     const DeviceAddress& address() const { return address_; }
 
     // Returns the device class reported by the peer, if it is known.
-    const std::optional<DeviceClass>& device_class() const {
-      return device_class_;
-    }
+    const std::optional<DeviceClass>& device_class() const { return device_class_; }
 
     // Returns the page scan repetition mode of the peer, if known.
-    const std::optional<hci::PageScanRepetitionMode>&
-    page_scan_repetition_mode() const {
+    const std::optional<hci::PageScanRepetitionMode>& page_scan_repetition_mode() const {
       return page_scan_rep_mode_;
     }
 
@@ -159,12 +146,8 @@ class Peer final {
     // clock offset will have the highest-order bit set and the rest represent
     // bits 16-2 of CLKNslave-CLK (see hci::kClockOffsetFlagBit in
     // hci/hci_constants.h).
-    const std::optional<uint16_t>& clock_offset() const {
-      return clock_offset_;
-    }
-    const BufferView extended_inquiry_response() const {
-      return eir_buffer_.view(0, eir_len_);
-    }
+    const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
+    const BufferView extended_inquiry_response() const { return eir_buffer_.view(0, eir_len_); }
 
     const std::optional<sm::LTK>& link_key() const { return link_key_; }
 
@@ -198,8 +181,7 @@ class Peer final {
     // received from the controller.
     void SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
                         hci::PageScanRepetitionMode page_scan_rep_mode,
-                        int8_t rssi = hci::kRSSIInvalid,
-                        const BufferView& eir_data = BufferView());
+                        int8_t rssi = hci::kRSSIInvalid, const BufferView& eir_data = BufferView());
 
     // Updates the EIR data field and returns true if any properties changed.
     bool SetEirData(const ByteBuffer& data);
@@ -261,9 +243,7 @@ class Peer final {
   }
 
   // Returns true if this device has been bonded over BR/EDR or LE transports.
-  bool bonded() const {
-    return (le() && le()->bonded()) || (bredr() && bredr()->bonded());
-  }
+  bool bonded() const { return (le() && le()->bonded()) || (bredr() && bredr()->bonded()); }
 
   // Returns the most recently observed RSSI for this peer. Returns
   // hci::kRSSIInvalid if the value is unknown.
@@ -317,17 +297,12 @@ class Peer final {
   void SetName(const std::string& name);
 
   // Sets the value of the LMP |features| for the given |page| number.
-  void SetFeaturePage(size_t page, uint64_t features) {
-    lmp_features_.SetPage(page, features);
-  }
+  void SetFeaturePage(size_t page, uint64_t features) { lmp_features_.SetPage(page, features); }
 
   // Sets the last available LMP feature |page| number for this device.
-  void set_last_page_number(uint8_t page) {
-    lmp_features_.set_last_page_number(page);
-  }
+  void set_last_page_number(uint8_t page) { lmp_features_.set_last_page_number(page); }
 
-  void set_version(hci::HCIVersion version, uint16_t manufacturer,
-                   uint16_t subversion) {
+  void set_version(hci::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
     lmp_version_ = version;
     lmp_manufacturer_ = manufacturer;
     lmp_subversion_ = subversion;
@@ -342,9 +317,9 @@ class Peer final {
   // Expanding access would a) violate the constraint that all Peers
   // are created through a PeerCache, and b) introduce lifetime issues
   // (do the callbacks outlive |this|?).
-  Peer(DeviceCallback notify_listeners_callback,
-       DeviceCallback update_expiry_callback, DeviceCallback dual_mode_callback,
-       PeerId identifier, const DeviceAddress& address, bool connectable);
+  Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
+       DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
+       bool connectable);
 
   // Marks this device's identity as known. Called by PeerCache when
   // initializing a bonded device and by LowEnergyData when setting bond data

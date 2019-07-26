@@ -42,11 +42,10 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
 
 }  // namespace
 
-LegacyLowEnergyScanner::LegacyLowEnergyScanner(
-    LocalAddressDelegate* local_addr_delegate, fxl::RefPtr<Transport> hci,
-    async_dispatcher_t* dispatcher)
-    : LowEnergyScanner(hci, dispatcher),
-      local_addr_delegate_(local_addr_delegate) {
+LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
+                                               fxl::RefPtr<Transport> hci,
+                                               async_dispatcher_t* dispatcher)
+    : LowEnergyScanner(hci, dispatcher), local_addr_delegate_(local_addr_delegate) {
   ZX_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       kLEAdvertisingReportSubeventCode,
@@ -60,19 +59,14 @@ LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
   transport()->command_channel()->RemoveEventHandler(event_handler_id_);
 }
 
-bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
-                                       uint16_t scan_window,
-                                       bool filter_duplicates,
-                                       LEScanFilterPolicy filter_policy,
-                                       zx::duration period,
-                                       ScanStatusCallback callback) {
+bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval, uint16_t scan_window,
+                                       bool filter_duplicates, LEScanFilterPolicy filter_policy,
+                                       zx::duration period, ScanStatusCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(period == kPeriodInfinite || period.get() > 0);
-  ZX_DEBUG_ASSERT(scan_interval <= kLEScanIntervalMax &&
-                  scan_interval >= kLEScanIntervalMin);
-  ZX_DEBUG_ASSERT(scan_window <= kLEScanIntervalMax &&
-                  scan_window >= kLEScanIntervalMin);
+  ZX_DEBUG_ASSERT(scan_interval <= kLEScanIntervalMax && scan_interval >= kLEScanIntervalMin);
+  ZX_DEBUG_ASSERT(scan_window <= kLEScanIntervalMax && scan_window >= kLEScanIntervalMin);
   ZX_DEBUG_ASSERT(scan_window < scan_interval);
 
   if (state() != State::kIdle) {
@@ -92,40 +86,34 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval,
 
   // Obtain the local address type.
   local_addr_delegate_->EnsureLocalAddress(
-      [this, active, scan_interval, scan_window, filter_duplicates,
-       filter_policy, period,
+      [this, active, scan_interval, scan_window, filter_duplicates, filter_policy, period,
        callback = std::move(callback)](const auto& address) mutable {
-        StartScanInternal(address, active, scan_interval, scan_window,
-                          filter_duplicates, filter_policy, period,
-                          std::move(callback));
+        StartScanInternal(address, active, scan_interval, scan_window, filter_duplicates,
+                          filter_policy, period, std::move(callback));
       });
 
   return true;
 }
 
-void LegacyLowEnergyScanner::StartScanInternal(
-    const DeviceAddress& local_address, bool active, uint16_t scan_interval,
-    uint16_t scan_window, bool filter_duplicates,
-    LEScanFilterPolicy filter_policy, zx::duration period,
-    ScanStatusCallback callback) {
+void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_address, bool active,
+                                               uint16_t scan_interval, uint16_t scan_window,
+                                               bool filter_duplicates,
+                                               LEScanFilterPolicy filter_policy,
+                                               zx::duration period, ScanStatusCallback callback) {
   // Check if the scan request was canceled by StopScan() while we were waiting
   // for the local address.
   if (state() != State::kInitiating) {
-    bt_log(TRACE, "hci-le",
-           "scan request was canceled while obtaining local address");
+    bt_log(TRACE, "hci-le", "scan request was canceled while obtaining local address");
     return;
   }
 
-  bt_log(TRACE, "hci-le",
-         "requesting scan (%s, address: %s, interval: %#.4x, window: %#.4x)",
-         (active ? "active" : "passive"), local_address.ToString().c_str(),
-         scan_interval, scan_window);
+  bt_log(TRACE, "hci-le", "requesting scan (%s, address: %s, interval: %#.4x, window: %#.4x)",
+         (active ? "active" : "passive"), local_address.ToString().c_str(), scan_interval,
+         scan_window);
 
   // HCI_LE_Set_Scan_Parameters
-  auto command = CommandPacket::New(kLESetScanParameters,
-                                    sizeof(LESetScanParametersCommandParams));
-  auto scan_params = command->mutable_view()
-                         ->mutable_payload<LESetScanParametersCommandParams>();
+  auto command = CommandPacket::New(kLESetScanParameters, sizeof(LESetScanParametersCommandParams));
+  auto scan_params = command->mutable_view()->mutable_payload<LESetScanParametersCommandParams>();
   scan_params->scan_type = active ? LEScanType::kActive : LEScanType::kPassive;
   scan_params->scan_interval = htole16(scan_interval);
   scan_params->scan_window = htole16(scan_window);
@@ -139,14 +127,11 @@ void LegacyLowEnergyScanner::StartScanInternal(
   hci_cmd_runner()->QueueCommand(std::move(command));
 
   // HCI_LE_Set_Scan_Enable
-  command = CommandPacket::New(kLESetScanEnable,
-                               sizeof(LESetScanEnableCommandParams));
-  auto enable_params =
-      command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
+  command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
+  auto enable_params = command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
   enable_params->scanning_enabled = GenericEnableParam::kEnable;
-  enable_params->filter_duplicates = filter_duplicates
-                                         ? GenericEnableParam::kEnable
-                                         : GenericEnableParam::kDisable;
+  enable_params->filter_duplicates =
+      filter_duplicates ? GenericEnableParam::kEnable : GenericEnableParam::kDisable;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, period](Status status) {
@@ -164,8 +149,7 @@ void LegacyLowEnergyScanner::StartScanInternal(
       ZX_DEBUG_ASSERT(!scan_cb_);
       set_state(State::kIdle);
 
-      bt_log(ERROR, "hci-le", "failed to start scan: %s",
-             status.ToString().c_str());
+      bt_log(ERROR, "hci-le", "failed to start scan: %s", status.ToString().c_str());
       cb(ScanStatus::kFailed);
       return;
     }
@@ -222,8 +206,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   if (!stopped) {
     for (auto& result : pending_results_) {
       auto& pending = result.second;
-      NotifyPeerFound(pending.result,
-                      pending.data.view(0, pending.adv_data_len));
+      NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len));
     }
   }
 
@@ -233,10 +216,8 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   ZX_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
-  auto command = CommandPacket::New(kLESetScanEnable,
-                                    sizeof(LESetScanEnableCommandParams));
-  auto enable_params =
-      command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
+  auto command = CommandPacket::New(kLESetScanEnable, sizeof(LESetScanEnableCommandParams));
+  auto enable_params = command->mutable_view()->mutable_payload<LESetScanEnableCommandParams>();
   enable_params->scanning_enabled = GenericEnableParam::kDisable;
   enable_params->filter_duplicates = GenericEnableParam::kDisable;
 
@@ -246,8 +227,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
     ZX_DEBUG_ASSERT(state() == State::kStopping);
 
     if (!status) {
-      bt_log(WARN, "hci-le", "failed to stop scan: %s",
-             status.ToString().c_str());
+      bt_log(WARN, "hci-le", "failed to stop scan: %s", status.ToString().c_str());
       // Something went wrong but there isn't really a meaningful way to
       // recover, so we just fall through and notify the caller with
       // ScanStatus::kFailed instead.
@@ -256,13 +236,11 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
     auto cb = std::move(scan_cb_);
     set_state(State::kIdle);
 
-    cb(!status ? ScanStatus::kFailed
-               : (stopped ? ScanStatus::kStopped : ScanStatus::kComplete));
+    cb(!status ? ScanStatus::kFailed : (stopped ? ScanStatus::kStopped : ScanStatus::kComplete));
   });
 }
 
-void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
-    const EventPacket& event) {
+void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
   bt_log(DEBUG, "hci-le", "received advertising report");
 
   // Drop the event if not requested to scan.
@@ -329,8 +307,8 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
   }
 }
 
-void LegacyLowEnergyScanner::HandleScanResponse(
-    const LEAdvertisingReportData& report, int8_t rssi) {
+void LegacyLowEnergyScanner::HandleScanResponse(const LEAdvertisingReportData& report,
+                                                int8_t rssi) {
   DeviceAddress address;
   bool resolved;
   if (!DeviceAddressFromAdvReport(report, &address, &resolved))
@@ -356,8 +334,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(
   // Append the scan response to the pending advertising data.
   pending.data.Write(report.data, report.length_data, pending.adv_data_len);
 
-  NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len +
-                                                           report.length_data));
+  NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len + report.length_data));
   pending_results_.erase(iter);
 }
 

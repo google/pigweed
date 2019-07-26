@@ -12,8 +12,7 @@ namespace {
 
 TEST(HCI_UtilTest, DeviceAddressFromAdvReportParsesAddress) {
   StaticByteBuffer<sizeof(LEAdvertisingReportData)> buffer;
-  auto* report =
-      reinterpret_cast<LEAdvertisingReportData*>(buffer.mutable_data());
+  auto* report = reinterpret_cast<LEAdvertisingReportData*>(buffer.mutable_data());
   report->address = DeviceAddressBytes({0, 1, 2, 3, 4, 5});
   report->address_type = LEAddressType::kPublicIdentity;
 

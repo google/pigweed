@@ -14,28 +14,27 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kCreateConnection), UpperBits(hci::kCreateConnection),
-      0x0d,  // parameter_total_size (13 bytes)
+      0x0d,                                                  // parameter_total_size (13 bytes)
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
-      LowerBits(hci::kEnableAllPacketTypes),  // allowable packet types
-      UpperBits(hci::kEnableAllPacketTypes),  // allowable packet types
-      0x02,                                   // page_scan_repetition_mode (R2)
-      0x00,                                   // reserved
-      0x00, 0x00,                             // clock_offset
-      0x00                                    // allow_role_switch (don't)
+      LowerBits(hci::kEnableAllPacketTypes),                 // allowable packet types
+      UpperBits(hci::kEnableAllPacketTypes),                 // allowable packet types
+      0x02,                                                  // page_scan_repetition_mode (R2)
+      0x00,                                                  // reserved
+      0x00, 0x00,                                            // clock_offset
+      0x00                                                   // allow_role_switch (don't)
       ));
 }
 
-DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address,
-                                           hci::ConnectionHandle conn) {
+DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kConnectionCompleteEventCode,
-      0x0B,                       // parameter_total_size (11 byte payload)
-      hci::StatusCode::kSuccess,  // status
+      0x0B,                              // parameter_total_size (11 byte payload)
+      hci::StatusCode::kSuccess,         // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
       0x01,                                                  // link_type (ACL)
-      0x00  // encryption not enabled
+      0x00                                                   // encryption not enabled
       ));
 }
 
@@ -55,7 +54,7 @@ DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn) {
       0x04,                              // parameter_total_size (4 bytes)
       hci::StatusCode::kSuccess,         // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
-      0x13  // Reason (Remote User Terminated Connection)
+      0x13                               // Reason (Remote User Terminated Connection)
       ));
 }
 
@@ -63,11 +62,11 @@ DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kRemoteNameRequest), UpperBits(hci::kRemoteNameRequest),
-      0x0a,  // parameter_total_size (10 bytes)
+      0x0a,                                                  // parameter_total_size (10 bytes)
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
-      0x00,       // page_scan_repetition_mode (R0)
-      0x00,       // reserved
-      0x00, 0x00  // clock_offset
+      0x00,                                                  // page_scan_repetition_mode (R0)
+      0x00,                                                  // reserved
+      0x00, 0x00                                             // clock_offset
       ));
 }
 
@@ -75,11 +74,11 @@ DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kRemoteNameRequestCompleteEventCode,
-      0x20,                       // parameter_total_size (32)
-      hci::StatusCode::kSuccess,  // status
+      0x20,                                                  // parameter_total_size (32)
+      hci::StatusCode::kSuccess,                             // status
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
-      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96, 0x00, 0x14,
-      0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
+      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96, 0x00, 0x14, 0x15, 0x16, 0x17, 0x18,
+      0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
       // remote name (Fuchsia 💖)
       // Everything after the 0x00 should be ignored.
       ));
@@ -87,15 +86,13 @@ DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address) {
 
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
-      LowerBits(hci::kReadRemoteVersionInfo),
-      UpperBits(hci::kReadRemoteVersionInfo),
+      LowerBits(hci::kReadRemoteVersionInfo), UpperBits(hci::kReadRemoteVersionInfo),
       0x02,                             // Parameter_total_size (2 bytes)
       LowerBits(conn), UpperBits(conn)  // Little-Endian Connection_handle
       ));
 }
 
-DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
-    hci::ConnectionHandle conn) {
+DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kReadRemoteVersionInfoCompleteEventCode,
       0x08,                              // parameter_total_size (8 bytes)
@@ -107,25 +104,22 @@ DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(
       ));
 }
 
-DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(
-    hci::ConnectionHandle conn) {
+DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
-      LowerBits(hci::kReadRemoteSupportedFeatures),
-      UpperBits(hci::kReadRemoteSupportedFeatures),
+      LowerBits(hci::kReadRemoteSupportedFeatures), UpperBits(hci::kReadRemoteSupportedFeatures),
       0x02,             // parameter_total_size (2 bytes)
       LowerBits(conn),  // Little-Endian Connection_handle
       UpperBits(conn)));
 }
 
-DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
-    hci::ConnectionHandle conn, bool extended_features) {
+DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
+                                                            bool extended_features) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kReadRemoteSupportedFeaturesCompleteEventCode,
       0x0B,                              // parameter_total_size (11 bytes)
       hci::StatusCode::kSuccess,         // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
-      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
-      (extended_features ? 0x80 : 0x00)
+      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, (extended_features ? 0x80 : 0x00)
       // lmp_features
       // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
       // Role Switch, Hold Mode, Sniff Mode, LE Supported
@@ -135,8 +129,7 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(
 
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
-      LowerBits(hci::kReadRemoteExtendedFeatures),
-      UpperBits(hci::kReadRemoteExtendedFeatures),
+      LowerBits(hci::kReadRemoteExtendedFeatures), UpperBits(hci::kReadRemoteExtendedFeatures),
       0x03,             // parameter_total_size (3 bytes)
       LowerBits(conn),  // Little-Endian Connection_handle
       UpperBits(conn),
@@ -144,8 +137,7 @@ DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn) {
       ));
 }
 
-DynamicByteBuffer ReadRemoteExtended1CompletePacket(
-    hci::ConnectionHandle conn) {
+DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kReadRemoteExtendedFeaturesCompleteEventCode,
       0x0D,                              // parameter_total_size (13 bytes)
@@ -162,16 +154,14 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(
 
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
-      LowerBits(hci::kReadRemoteExtendedFeatures),
-      UpperBits(hci::kReadRemoteExtendedFeatures),
+      LowerBits(hci::kReadRemoteExtendedFeatures), UpperBits(hci::kReadRemoteExtendedFeatures),
       0x03,                              // parameter_total_size (3 bytes)
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
       0x02                               // page_number (2)
       ));
 }
 
-DynamicByteBuffer ReadRemoteExtended2CompletePacket(
-    hci::ConnectionHandle conn) {
+DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kReadRemoteExtendedFeaturesCompleteEventCode,
       0x0D,                              // parameter_total_size (13 bytes)

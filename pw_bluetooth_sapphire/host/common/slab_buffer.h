@@ -29,9 +29,7 @@ class SlabBuffer : public MutableByteBuffer {
 
   // MutableByteBuffer overrides:
   uint8_t* mutable_data() override { return buffer_.mutable_data(); }
-  void Fill(uint8_t value) override {
-    buffer_.mutable_view(0, size_).Fill(value);
-  }
+  void Fill(uint8_t value) override { buffer_.mutable_view(0, size_).Fill(value); }
 
  private:
   size_t size_;
@@ -51,16 +49,14 @@ class SlabBufferImpl;
 }  // namespace internal
 
 template <size_t BufferSize, size_t NumBuffers>
-using SlabBufferTraits =
-    SlabAllocatorTraits<internal::SlabBufferImpl<BufferSize, NumBuffers>,
-                        sizeof(SlabBuffer<BufferSize>), NumBuffers>;
+using SlabBufferTraits = SlabAllocatorTraits<internal::SlabBufferImpl<BufferSize, NumBuffers>,
+                                             sizeof(SlabBuffer<BufferSize>), NumBuffers>;
 
 namespace internal {
 
 template <size_t BufferSize, size_t NumBuffers>
-class SlabBufferImpl
-    : public SlabBuffer<BufferSize>,
-      public fbl::SlabAllocated<SlabBufferTraits<BufferSize, NumBuffers>> {
+class SlabBufferImpl : public SlabBuffer<BufferSize>,
+                       public fbl::SlabAllocated<SlabBufferTraits<BufferSize, NumBuffers>> {
  public:
   explicit SlabBufferImpl(size_t size) : SlabBuffer<BufferSize>(size) {}
 

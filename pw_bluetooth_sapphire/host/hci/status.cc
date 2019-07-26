@@ -9,8 +9,7 @@
 namespace bt {
 
 // static
-std::string ProtocolErrorTraits<hci::StatusCode>::ToString(
-    hci::StatusCode ecode) {
+std::string ProtocolErrorTraits<hci::StatusCode>::ToString(hci::StatusCode ecode) {
   return fxl::StringPrintf("%s (HCI %#.2x)", StatusCodeToString(ecode).c_str(),
                            static_cast<unsigned int>(ecode));
 }

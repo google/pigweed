@@ -25,8 +25,7 @@ class Transport;
 // Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
   LowEnergyScanResult();
-  LowEnergyScanResult(const DeviceAddress& address, bool resolved,
-                      bool connectable, int8_t rssi);
+  LowEnergyScanResult(const DeviceAddress& address, bool resolved, bool connectable, int8_t rssi);
 
   // The device address of the remote peer.
   DeviceAddress address;
@@ -81,8 +80,7 @@ class LowEnergyScanner : public LocalAddressClient {
 
     // Called when a peer is found. |data| contains the advertising data, as
     // well as any scan response data that was received during an active scan.
-    virtual void OnPeerFound(const LowEnergyScanResult& result,
-                             const ByteBuffer& data);
+    virtual void OnPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data);
 
     // Called when a directed advertising report is received from the peer
     // with the given address.
@@ -159,10 +157,9 @@ class LowEnergyScanner : public LocalAddressClient {
     kStopped,
   };
   using ScanStatusCallback = fit::function<void(ScanStatus)>;
-  virtual bool StartScan(bool active, uint16_t scan_interval,
-                         uint16_t scan_window, bool filter_duplicates,
-                         LEScanFilterPolicy filter_policy, zx::duration period,
-                         ScanStatusCallback callback) = 0;
+  virtual bool StartScan(bool active, uint16_t scan_interval, uint16_t scan_window,
+                         bool filter_duplicates, LEScanFilterPolicy filter_policy,
+                         zx::duration period, ScanStatusCallback callback) = 0;
 
   // Stops a previously started scan. Returns false if a scan is not in
   // progress. Otherwise, cancels any in progress scan procedure and returns
@@ -175,9 +172,7 @@ class LowEnergyScanner : public LocalAddressClient {
  protected:
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
   Transport* transport() const { return transport_.get(); }
-  SequentialCommandRunner* hci_cmd_runner() const {
-    return hci_cmd_runner_.get();
-  }
+  SequentialCommandRunner* hci_cmd_runner() const { return hci_cmd_runner_.get(); }
   Delegate* delegate() const {
     ZX_DEBUG_ASSERT(delegate_);
     return delegate_;

@@ -27,8 +27,7 @@ using fuchsia::bluetooth::gatt::ServiceInfo;
 namespace bthost {
 namespace {
 
-bt::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code,
-                                         bool is_read) {
+bt::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code, bool is_read) {
   switch (error_code) {
     case GattErrorCode::NO_ERROR:
       return bt::att::ErrorCode::kNoError;
@@ -46,13 +45,11 @@ bt::att::ErrorCode GattErrorCodeFromFidl(GattErrorCode error_code,
   return bt::att::ErrorCode::kUnlikelyError;
 }
 
-bt::att::AccessRequirements ParseSecurityRequirements(
-    const SecurityRequirementsPtr& reqs) {
+bt::att::AccessRequirements ParseSecurityRequirements(const SecurityRequirementsPtr& reqs) {
   if (!reqs) {
     return bt::att::AccessRequirements();
   }
-  return bt::att::AccessRequirements(reqs->encryption_required,
-                                     reqs->authentication_required,
+  return bt::att::AccessRequirements(reqs->encryption_required, reqs->authentication_required,
                                      reqs->authorization_required);
 }
 
@@ -61,8 +58,7 @@ bt::att::AccessRequirements ParseSecurityRequirements(
 template <typename Result, typename Error = std::string,
           typename = std::enable_if_t<!std::is_same<Result, Error>::value>>
 struct MaybeResult final {
-  explicit MaybeResult(Result&& result)
-      : result(std::forward<Result>(result)) {}
+  explicit MaybeResult(Result&& result) : result(std::forward<Result>(result)) {}
 
   explicit MaybeResult(Error&& error) : error(std::forward<Error>(error)) {}
 
@@ -82,8 +78,8 @@ DescriptorResult NewDescriptor(const Descriptor& fidl_desc) {
     return DescriptorResult("Invalid descriptor UUID");
   }
 
-  return DescriptorResult(std::make_unique<bt::gatt::Descriptor>(
-      fidl_desc.id, type, read_reqs, write_reqs));
+  return DescriptorResult(
+      std::make_unique<bt::gatt::Descriptor>(fidl_desc.id, type, read_reqs, write_reqs));
 }
 
 using CharacteristicResult = MaybeResult<bt::gatt::CharacteristicPtr>;
@@ -95,12 +91,11 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
     return CharacteristicResult("Characteristic permissions missing");
   }
 
-  bool supports_update = (props & bt::gatt::Property::kNotify) ||
-                         (props & bt::gatt::Property::kIndicate);
+  bool supports_update =
+      (props & bt::gatt::Property::kNotify) || (props & bt::gatt::Property::kIndicate);
   if (supports_update != static_cast<bool>(fidl_chrc.permissions->update)) {
-    return CharacteristicResult(
-        supports_update ? "Characteristic update permission required"
-                        : "Characteristic update permission must be null");
+    return CharacteristicResult(supports_update ? "Characteristic update permission required"
+                                                : "Characteristic update permission must be null");
   }
 
   auto read_reqs = ParseSecurityRequirements(fidl_chrc.permissions->read);
@@ -112,8 +107,8 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
     return CharacteristicResult("Invalid characteristic UUID");
   }
 
-  auto chrc = std::make_unique<bt::gatt::Characteristic>(
-      fidl_chrc.id, type, props, ext_props, read_reqs, write_reqs, update_reqs);
+  auto chrc = std::make_unique<bt::gatt::Characteristic>(fidl_chrc.id, type, props, ext_props,
+                                                         read_reqs, write_reqs, update_reqs);
   if (fidl_chrc.descriptors && !fidl_chrc.descriptors->empty()) {
     for (const auto& fidl_desc : *fidl_chrc.descriptors) {
       auto desc_result = NewDescriptor(fidl_desc);
@@ -135,8 +130,7 @@ CharacteristicResult NewCharacteristic(const Characteristic& fidl_chrc) {
 class GattServerServer::LocalServiceImpl
     : public GattServerBase<fuchsia::bluetooth::gatt::LocalService> {
  public:
-  LocalServiceImpl(GattServerServer* owner, uint64_t id,
-                   LocalServiceDelegatePtr delegate,
+  LocalServiceImpl(GattServerServer* owner, uint64_t id, LocalServiceDelegatePtr delegate,
                    ::fidl::InterfaceRequest<LocalService> request)
       : GattServerBase(owner->gatt(), this, std::move(request)),
         owner_(owner),
@@ -165,12 +159,11 @@ class GattServerServer::LocalServiceImpl
     owner_->RemoveService(id_);
   }
 
-  void NotifyValue(uint64_t characteristic_id, ::std::string peer_id,
-                   ::std::vector<uint8_t> value, bool confirm) override {
+  void NotifyValue(uint64_t characteristic_id, ::std::string peer_id, ::std::vector<uint8_t> value,
+                   bool confirm) override {
     auto id = fidl_helpers::PeerIdFromString(std::move(peer_id));
     if (id) {
-      gatt()->SendNotification(id_, characteristic_id, *id, std::move(value),
-                               confirm);
+      gatt()->SendNotification(id_, characteristic_id, *id, std::move(value), confirm);
     }
   }
 
@@ -192,9 +185,8 @@ class GattServerServer::LocalServiceImpl
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceImpl);
 };
 
-GattServerServer::GattServerServer(
-    fbl::RefPtr<bt::gatt::GATT> gatt,
-    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request)
+GattServerServer::GattServerServer(fbl::RefPtr<bt::gatt::GATT> gatt,
+                                   fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request)
     : GattServerBase(gatt, this, std::move(request)), weak_ptr_factory_(this) {}
 
 GattServerServer::~GattServerServer() {
@@ -210,42 +202,37 @@ void GattServerServer::RemoveService(uint64_t id) {
   }
 }
 
-void GattServerServer::PublishService(
-    ServiceInfo service_info,
-    fidl::InterfaceHandle<LocalServiceDelegate> delegate,
-    fidl::InterfaceRequest<LocalService> service_iface,
-    PublishServiceCallback callback) {
+void GattServerServer::PublishService(ServiceInfo service_info,
+                                      fidl::InterfaceHandle<LocalServiceDelegate> delegate,
+                                      fidl::InterfaceRequest<LocalService> service_iface,
+                                      PublishServiceCallback callback) {
   if (!delegate) {
-    auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                            "A delegate is required");
+    auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "A delegate is required");
     callback(std::move(error));
     return;
   }
 
   if (!service_iface) {
-    auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                            "Service interface is required");
+    auto error =
+        fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Service interface is required");
     callback(std::move(error));
     return;
   }
 
   bt::UUID service_type;
   if (!bt::StringToUuid(service_info.type, &service_type)) {
-    auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                            "Invalid service UUID");
+    auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Invalid service UUID");
     callback(std::move(error));
     return;
   }
 
   // Process the FIDL service tree.
-  auto service =
-      std::make_unique<bt::gatt::Service>(service_info.primary, service_type);
+  auto service = std::make_unique<bt::gatt::Service>(service_info.primary, service_type);
   if (service_info.characteristics) {
     for (const auto& fidl_chrc : *service_info.characteristics) {
       auto chrc_result = NewCharacteristic(fidl_chrc);
       if (chrc_result.is_error()) {
-        auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                                chrc_result.error);
+        auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, chrc_result.error);
         callback(std::move(error));
         return;
       }
@@ -257,30 +244,28 @@ void GattServerServer::PublishService(
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   // Set up event handlers.
-  auto read_handler = [self](auto svc_id, auto id, auto offset,
-                             auto responder) mutable {
+  auto read_handler = [self](auto svc_id, auto id, auto offset, auto responder) mutable {
     if (self) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
       responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     }
   };
-  auto write_handler = [self](auto svc_id, auto id, auto offset,
-                              const auto& value, auto responder) mutable {
+  auto write_handler = [self](auto svc_id, auto id, auto offset, const auto& value,
+                              auto responder) mutable {
     if (self) {
       self->OnWriteRequest(svc_id, id, offset, value, std::move(responder));
     } else {
       responder(bt::att::ErrorCode::kUnlikelyError);
     }
   };
-  auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::PeerId peer_id,
-                             bool notify, bool indicate) {
+  auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::PeerId peer_id, bool notify,
+                             bool indicate) {
     if (self)
       self->OnCharacteristicConfig(svc_id, id, peer_id, notify, indicate);
   };
 
-  auto id_cb = [self, delegate = std::move(delegate),
-                service_iface = std::move(service_iface),
+  auto id_cb = [self, delegate = std::move(delegate), service_iface = std::move(service_iface),
                 callback = std::move(callback)](bt::gatt::IdType id) mutable {
     if (!self)
       return;
@@ -288,8 +273,7 @@ void GattServerServer::PublishService(
     if (!id) {
       // TODO(armansito): Report a more detailed string if registration
       // fails due to duplicate ids.
-      auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED,
-                                              "Failed to publish service");
+      auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED, "Failed to publish service");
       callback(std::move(error));
       return;
     }
@@ -315,22 +299,19 @@ void GattServerServer::PublishService(
     callback(Status());
   };
 
-  gatt()->RegisterService(std::move(service), std::move(id_cb),
-                          std::move(read_handler), std::move(write_handler),
-                          std::move(ccc_callback));
+  gatt()->RegisterService(std::move(service), std::move(id_cb), std::move(read_handler),
+                          std::move(write_handler), std::move(ccc_callback));
 }
 
-void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
-                                     bt::gatt::IdType id, uint16_t offset,
-                                     bt::gatt::ReadResponder responder) {
+void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
+                                     uint16_t offset, bt::gatt::ReadResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
     responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     return;
   }
 
-  auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> value,
-                                               auto error_code) {
+  auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> value, auto error_code) {
     responder(GattErrorCodeFromFidl(error_code, true /* is_read */),
               bt::BufferView(value->data(), value->size()));
   };
@@ -340,9 +321,8 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id,
   delegate->OnReadValue(id, offset, std::move(cb));
 }
 
-void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
-                                      bt::gatt::IdType id, uint16_t offset,
-                                      const bt::ByteBuffer& value,
+void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdType id,
+                                      uint16_t offset, const bt::ByteBuffer& value,
                                       bt::gatt::WriteResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
@@ -366,16 +346,14 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id,
   delegate->OnWriteValue(id, offset, std::move(fidl_value), std::move(cb));
 }
 
-void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id,
-                                              bt::gatt::IdType chrc_id,
-                                              bt::gatt::PeerId peer_id,
-                                              bool notify, bool indicate) {
+void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id, bt::gatt::IdType chrc_id,
+                                              bt::gatt::PeerId peer_id, bool notify,
+                                              bool indicate) {
   auto iter = services_.find(service_id);
   if (iter != services_.end()) {
     auto* delegate = iter->second->delegate();
     ZX_DEBUG_ASSERT(delegate);
-    delegate->OnCharacteristicConfiguration(chrc_id, peer_id.ToString(), notify,
-                                            indicate);
+    delegate->OnCharacteristicConfiguration(chrc_id, peer_id.ToString(), notify, indicate);
   }
 }
 

@@ -47,9 +47,7 @@ class LMPFeatureSet {
   }
 
   // Returns true if the feature page |page| has been set.
-  inline bool HasPage(size_t page) const {
-    return (page < kMaxPages) && valid_pages_[page];
-  }
+  inline bool HasPage(size_t page) const { return (page < kMaxPages) && valid_pages_[page]; }
 
   inline void set_last_page_number(uint8_t page) {
     last_page_number_ = page > kMaxLastPageNumber ? kMaxLastPageNumber : page;

@@ -27,8 +27,7 @@ using SignalingPacket = PacketView<CommandHeader>;
 using MutableSignalingPacket = MutablePacketView<CommandHeader>;
 
 using DataCallback = fit::function<void(const ByteBuffer& data)>;
-using SignalingPacketHandler =
-    fit::function<void(const SignalingPacket& packet)>;
+using SignalingPacketHandler = fit::function<void(const SignalingPacket& packet)>;
 
 // SignalingChannelInterface contains the procedures that command flows use to
 // send and receive signaling channel transactions.
@@ -44,16 +43,14 @@ class SignalingChannelInterface {
   // Callback invoked to handle a response received from the remote. If |status|
   // is kSuccess or kReject, then |rsp_payload| will contain any payload
   // received. Return true if an additional response is expected.
-  using ResponseHandler =
-      fit::function<bool(Status status, const ByteBuffer& rsp_payload)>;
+  using ResponseHandler = fit::function<bool(Status status, const ByteBuffer& rsp_payload)>;
 
   // Initiate an outbound transaction. The signaling channel will send a request
   // then expect reception of one or more responses with a code one greater than
   // the request. Each response or rejection received invokes |cb|. When |cb|
   // returns false, it will be removed. Returns false if the request failed to
   // send.
-  virtual bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
-                           ResponseHandler cb) = 0;
+  virtual bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) = 0;
 
   // Send a command packet in response to an incoming request.
   class Responder {
@@ -65,8 +62,7 @@ class SignalingChannelInterface {
     virtual void RejectNotUnderstood() = 0;
 
     // Reject request non-existent or otherwise invalid channel ID(s)
-    virtual void RejectInvalidChannelId(ChannelId local_cid,
-                                        ChannelId remote_cid) = 0;
+    virtual void RejectInvalidChannelId(ChannelId local_cid, ChannelId remote_cid) = 0;
 
    protected:
     virtual ~Responder() = default;
@@ -76,8 +72,7 @@ class SignalingChannelInterface {
   // |req_payload| contains any payload received, without the command header.
   // The callee can use |responder| to respond or reject. Parameters passed to
   // this handler are only guaranteed to be valid while the handler is running.
-  using RequestDelegate =
-      fit::function<void(const ByteBuffer& req_payload, Responder* responder)>;
+  using RequestDelegate = fit::function<void(const ByteBuffer& req_payload, Responder* responder)>;
 
   // Register a handler for all inbound transactions matching |req_code|, which
   // should be the code of a request. |cb| will be called with request payloads
@@ -114,8 +109,7 @@ class SignalingChannel : public SignalingChannelInterface {
     ResponderImpl(SignalingChannel* sig, CommandCode code, CommandId id);
     void Send(const ByteBuffer& rsp_payload) override;
     void RejectNotUnderstood() override;
-    void RejectInvalidChannelId(ChannelId local_cid,
-                                ChannelId remote_cid) override;
+    void RejectInvalidChannelId(ChannelId local_cid, ChannelId remote_cid) override;
 
    private:
     SignalingChannel* sig() const { return sig_; }
@@ -133,8 +127,7 @@ class SignalingChannel : public SignalingChannelInterface {
   // a valid payload length, send a Command Reject packet for each packet with
   // an intact ID in its header but invalid payload length, and drop any other
   // incoming data.
-  virtual void DecodeRxUnit(ByteBufferPtr sdu,
-                            const SignalingPacketHandler& cb) = 0;
+  virtual void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) = 0;
 
   // Called when a new signaling packet has been received. Returns false if
   // |packet| is rejected. Otherwise returns true and sends a response packet.
@@ -144,14 +137,11 @@ class SignalingChannel : public SignalingChannelInterface {
   virtual bool HandlePacket(const SignalingPacket& packet) = 0;
 
   // Sends out a command reject packet with the given parameters.
-  bool SendCommandReject(uint8_t identifier, RejectReason reason,
-                         const ByteBuffer& data);
+  bool SendCommandReject(uint8_t identifier, RejectReason reason, const ByteBuffer& data);
 
   // Returns true if called on this SignalingChannel's creation thread. Mainly
   // intended for debug assertions.
-  bool IsCreationThreadCurrent() const {
-    return thread_checker_.IsCreationThreadCurrent();
-  }
+  bool IsCreationThreadCurrent() const { return thread_checker_.IsCreationThreadCurrent(); }
 
   // Returns the logical link that signaling channel is operating on.
   hci::Connection::Role role() const { return role_; }
@@ -174,8 +164,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Builds a signaling packet with the given parameters and payload. The
   // backing buffer is slab allocated.
-  ByteBufferPtr BuildPacket(CommandCode code, uint8_t identifier,
-                            const ByteBuffer& data);
+  ByteBufferPtr BuildPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data);
 
   // Channel callbacks:
   void OnChannelClosed();

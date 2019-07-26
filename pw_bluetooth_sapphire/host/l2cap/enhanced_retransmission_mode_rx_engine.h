@@ -23,8 +23,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
  public:
   using SendBasicFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
 
-  EnhancedRetransmissionModeRxEngine(
-      SendBasicFrameCallback send_basic_frame_callback);
+  EnhancedRetransmissionModeRxEngine(SendBasicFrameCallback send_basic_frame_callback);
   virtual ~EnhancedRetransmissionModeRxEngine() = default;
 
   ByteBufferPtr ProcessPdu(PDU) override;

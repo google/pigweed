@@ -24,28 +24,23 @@ namespace testing {
 // layers for unit testing.
 class FakeDomain final : public Domain {
  public:
-  inline static fbl::RefPtr<FakeDomain> Create() {
-    return fbl::AdoptRef(new FakeDomain());
-  }
+  inline static fbl::RefPtr<FakeDomain> Create() { return fbl::AdoptRef(new FakeDomain()); }
 
   // Triggers a LE connection parameter update callback on the given link.
-  void TriggerLEConnectionParameterUpdate(
-      hci::ConnectionHandle handle,
-      const hci::LEPreferredConnectionParameters& params);
+  void TriggerLEConnectionParameterUpdate(hci::ConnectionHandle handle,
+                                          const hci::LEPreferredConnectionParameters& params);
 
   // Sets up the expectation that an outbound dynamic channel will be opened
   // on the given link. Each call will expect one dyanmic channel to be
   // created.  If a call to OpenL2capChannel is made without expectation, it
   // will assert.
   // Multiple expectations for the same PSM should be queued in FIFO order.
-  void ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelId id,
+  void ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelId id,
                                   l2cap::ChannelId remote_id);
 
   // Triggers the creation of an inbound dynamic channel on the given link. The
   // channels created will be provided to handlers passed to RegisterService.
-  void TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelId id,
+  void TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelId id,
                                   l2cap::ChannelId remote_id);
 
   // Triggers a link error callback on the given link.
@@ -54,27 +49,23 @@ class FakeDomain final : public Domain {
   // Domain overrides:
   void Initialize() override;
   void ShutDown() override;
-  void AddACLConnection(hci::ConnectionHandle handle,
-                        hci::Connection::Role role,
+  void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                         l2cap::LinkErrorCallback link_error_callback,
                         l2cap::SecurityUpgradeCallback security_callback,
                         async_dispatcher_t* dispatcher) override;
-  void AddLEConnection(
-      hci::ConnectionHandle handle, hci::Connection::Role role,
-      l2cap::LinkErrorCallback link_error_callback,
-      l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
-      l2cap::LEFixedChannelsCallback channel_callback,
-      l2cap::SecurityUpgradeCallback security_callback,
-      async_dispatcher_t* dispatcher) override;
+  void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                       l2cap::LinkErrorCallback link_error_callback,
+                       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+                       l2cap::LEFixedChannelsCallback channel_callback,
+                       l2cap::SecurityUpgradeCallback security_callback,
+                       async_dispatcher_t* dispatcher) override;
   void RemoveConnection(hci::ConnectionHandle handle) override;
   void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelCallback cb,
+  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        SocketCallback socket_callback,
-                        async_dispatcher_t* dispatcher) override;
+                        SocketCallback socket_callback, async_dispatcher_t* dispatcher) override;
   void RegisterService(l2cap::PSM psm, l2cap::ChannelCallback channel_callback,
                        async_dispatcher_t* dispatcher) override;
   void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
@@ -83,11 +74,8 @@ class FakeDomain final : public Domain {
 
   // Called when a new channel gets opened. Tests can use this to obtain a
   // reference to all channels.
-  using FakeChannelCallback =
-      fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
-  void set_channel_callback(FakeChannelCallback callback) {
-    chan_cb_ = std::move(callback);
-  }
+  using FakeChannelCallback = fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
+  void set_channel_callback(FakeChannelCallback callback) { chan_cb_ = std::move(callback); }
 
  private:
   friend class fbl::RefPtr<FakeDomain>;
@@ -108,8 +96,7 @@ class FakeDomain final : public Domain {
 
     // Dual-mode callbacks
     l2cap::LinkErrorCallback link_error_cb;
-    std::unordered_map<l2cap::PSM, std::queue<ChannelIdPair>>
-        expected_outbound_conns;
+    std::unordered_map<l2cap::PSM, std::queue<ChannelIdPair>> expected_outbound_conns;
 
     // LE-only callbacks
     l2cap::LEConnectionParameterUpdateCallback le_conn_param_cb;
@@ -118,15 +105,14 @@ class FakeDomain final : public Domain {
   FakeDomain() = default;
   ~FakeDomain() override;
 
-  LinkData* RegisterInternal(hci::ConnectionHandle handle,
-                             hci::Connection::Role role,
+  LinkData* RegisterInternal(hci::ConnectionHandle handle, hci::Connection::Role role,
                              hci::Connection::LinkType link_type,
                              l2cap::LinkErrorCallback link_error_callback,
                              async_dispatcher_t* dispatcher);
-  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(
-      LinkData* link, l2cap::ChannelId id, l2cap::ChannelId remote_id);
-  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeFixedChannel(
-      LinkData* link, l2cap::ChannelId id);
+  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
+                                                           l2cap::ChannelId remote_id);
+  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeFixedChannel(LinkData* link,
+                                                                l2cap::ChannelId id);
 
   // Gets the link data for |handle|, creating it if necessary.
   LinkData& GetLinkData(hci::ConnectionHandle handle);
@@ -138,8 +124,7 @@ class FakeDomain final : public Domain {
   std::unordered_map<hci::ConnectionHandle, LinkData> links_;
   FakeChannelCallback chan_cb_;
 
-  using ChannelDelivery =
-      std::pair<l2cap::ChannelCallback, async_dispatcher_t*>;
+  using ChannelDelivery = std::pair<l2cap::ChannelCallback, async_dispatcher_t*>;
   std::unordered_map<l2cap::PSM, ChannelDelivery> inbound_conn_cbs_;
 
   // Makes sockets for RegisterService

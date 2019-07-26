@@ -8,21 +8,17 @@ namespace bt {
 namespace hci {
 namespace testing {
 
-FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type,
-                               Role role, const DeviceAddress& local_address,
+FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
+                               const DeviceAddress& local_address,
                                const DeviceAddress& peer_address)
-    : Connection(handle, ll_type, role, local_address, peer_address),
-      weak_ptr_factory_(this) {}
+    : Connection(handle, ll_type, role, local_address, peer_address), weak_ptr_factory_(this) {}
 
-void FakeConnection::TriggerEncryptionChangeCallback(Status status,
-                                                     bool enabled) {
+void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled) {
   ZX_DEBUG_ASSERT(encryption_change_callback());
   encryption_change_callback()(status, enabled);
 }
 
-fxl::WeakPtr<Connection> FakeConnection::WeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
+fxl::WeakPtr<Connection> FakeConnection::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
 void FakeConnection::Close(StatusCode reason) {
   // TODO(armansito): implement

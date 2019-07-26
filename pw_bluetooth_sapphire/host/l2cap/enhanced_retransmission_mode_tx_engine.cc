@@ -29,11 +29,10 @@ uint8_t NumFramesBetween(uint8_t low, uint8_t high) {
 
 }  // namespace
 
-Engine::EnhancedRetransmissionModeTxEngine(
-    ChannelId channel_id, uint16_t tx_mtu, uint8_t max_transmissions,
-    uint8_t n_frames_in_tx_window,
-    SendBasicFrameCallback send_basic_frame_callback,
-    ConnectionFailureCallback connection_failure_callback)
+Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
+                                           uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
+                                           SendBasicFrameCallback send_basic_frame_callback,
+                                           ConnectionFailureCallback connection_failure_callback)
     : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
@@ -47,36 +46,31 @@ Engine::EnhancedRetransmissionModeTxEngine(
       weak_factory_(this) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
   receiver_ready_poll_task_.set_handler(
-      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task,
-                                               zx_status_t status) {
+      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task, zx_status_t status) {
         if (status == ZX_OK && weak_self) {
           weak_self->SendReceiverReadyPoll();
           weak_self->StartMonitorTimer();
         }
       });
-  monitor_task_.set_handler([weak_self = weak_factory_.GetWeakPtr()](
-                                auto dispatcher, auto task,
-                                zx_status_t status) {
-    if (status == ZX_OK && weak_self) {
-      if (weak_self->max_transmissions_ == 0 ||
-          weak_self->n_receiver_ready_polls_sent_ <
-              weak_self->max_transmissions_) {
-        weak_self->SendReceiverReadyPoll();
-        weak_self->StartMonitorTimer();
-      } else {
-        weak_self
-            ->connection_failure_callback_();  // May invalidate |weak_self|.
-      }
-    }
-  });
+  monitor_task_.set_handler(
+      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task, zx_status_t status) {
+        if (status == ZX_OK && weak_self) {
+          if (weak_self->max_transmissions_ == 0 ||
+              weak_self->n_receiver_ready_polls_sent_ < weak_self->max_transmissions_) {
+            weak_self->SendReceiverReadyPoll();
+            weak_self->StartMonitorTimer();
+          } else {
+            weak_self->connection_failure_callback_();  // May invalidate |weak_self|.
+          }
+        }
+      });
 }
 
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   // TODO(BT-440): Add support for segmentation
   if (sdu->size() > tx_mtu_) {
-    bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)",
-           channel_id_);
+    bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
   }
 
@@ -99,8 +93,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
   ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
                       "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
                       "expected_ack_seq_ = %u, last_tx_seq_ = %u)",
-                      NumUnackedFrames(), n_frames_in_tx_window_,
-                      expected_ack_seq_, last_tx_seq_);
+                      NumUnackedFrames(), n_frames_in_tx_window_, expected_ack_seq_, last_tx_seq_);
 
   const auto n_frames_acked = NumFramesBetween(expected_ack_seq_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
@@ -165,12 +158,10 @@ void Engine::MaybeSendQueuedData() {
   //   constraints).
   //
   // TODO(quiche): Consider if there's a way to do this that isn't O(n).
-  auto it = std::find_if(
-      pending_pdus_.begin(), pending_pdus_.end(),
-      [](const auto& pending_pdu) { return pending_pdu.tx_count == 0; });
+  auto it = std::find_if(pending_pdus_.begin(), pending_pdus_.end(),
+                         [](const auto& pending_pdu) { return pending_pdu.tx_count == 0; });
 
-  while (it != pending_pdus_.end() &&
-         NumUnackedFrames() < n_frames_in_tx_window_) {
+  while (it != pending_pdus_.end() && NumUnackedFrames() < n_frames_in_tx_window_) {
     ZX_DEBUG_ASSERT(it->tx_count == 0);
     SendPdu(&*it);
     last_tx_seq_ = it->buf.As<SimpleInformationFrameHeader>().tx_seq();
@@ -189,8 +180,7 @@ void Engine::StartReceiverReadyPollTimer() {
 void Engine::StartMonitorTimer() {
   ZX_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
   monitor_task_.Cancel();
-  monitor_task_.PostDelayed(async_get_default_dispatcher(),
-                            kMonitorTimerDuration);
+  monitor_task_.PostDelayed(async_get_default_dispatcher(), kMonitorTimerDuration);
 }
 
 void Engine::SendReceiverReadyPoll() {
@@ -198,8 +188,7 @@ void Engine::SendReceiverReadyPoll() {
   frame.set_request_seq_num(req_seqnum_);
   frame.set_is_poll_request();
   ++n_receiver_ready_polls_sent_;
-  ZX_ASSERT_MSG(max_transmissions_ == 0 ||
-                    n_receiver_ready_polls_sent_ <= max_transmissions_,
+  ZX_ASSERT_MSG(max_transmissions_ == 0 || n_receiver_ready_polls_sent_ <= max_transmissions_,
                 "(n_receiver_ready_polls_sent_ = %u, "
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_, max_transmissions_);
@@ -228,17 +217,15 @@ uint8_t Engine::NumUnackedFrames() {
   } else {
     // Having ascertained that some data _is_ in flight, the number of frames in
     // flight is given by the expression below.
-    return NumFramesBetween(
-        expected_ack_seq_,
-        last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
+    return NumFramesBetween(expected_ack_seq_,
+                            last_tx_seq_ + 1  // Include frame with |last_tx_seq_| in count
     );
   }
 }
 
 void Engine::SendPdu(PendingPdu* pdu) {
   ZX_DEBUG_ASSERT(pdu);
-  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_request_seq_num(
-      req_seqnum_);
+  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_request_seq_num(req_seqnum_);
   pdu->tx_count++;
   StartReceiverReadyPollTimer();
   send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));

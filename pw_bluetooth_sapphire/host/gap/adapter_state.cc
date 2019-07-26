@@ -7,9 +7,7 @@
 namespace bt {
 namespace gap {
 
-AdapterState::AdapterState() {
-  std::memset(supported_commands_, 0, sizeof(supported_commands_));
-}
+AdapterState::AdapterState() { std::memset(supported_commands_, 0, sizeof(supported_commands_)); }
 
 }  // namespace gap
 }  // namespace bt

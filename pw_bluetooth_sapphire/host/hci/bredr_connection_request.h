@@ -67,11 +67,10 @@ class BrEdrConnectionRequest final {
   // |timeout| is the command timeout; this is how long we give from the point
   // we receive the CommandStatus response from the controller until we cancel
   // the procedure if we have not received ConnectionComplete
-  void CreateConnection(
-      CommandChannel* command_channel, async_dispatcher_t* dispatcher,
-      std::optional<uint16_t> clock_offset,
-      std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
-      zx::duration timeout, OnCompleteDelegate on_command_fail);
+  void CreateConnection(CommandChannel* command_channel, async_dispatcher_t* dispatcher,
+                        std::optional<uint16_t> clock_offset,
+                        std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
+                        zx::duration timeout, OnCompleteDelegate on_command_fail);
 
   PeerId peer_id() const { return peer_id_; }
   DeviceAddress peer_address() const { return peer_address_; }

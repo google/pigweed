@@ -144,8 +144,7 @@ class PairingState final {
   // Used to report the status of each pairing procedure on this link. |status|
   // will contain HostError::kNotSupported if the pairing procedure does not
   // proceed in the order of events expected.
-  using StatusCallback =
-      fit::function<void(hci::ConnectionHandle, hci::Status)>;
+  using StatusCallback = fit::function<void(hci::ConnectionHandle, hci::Status)>;
 
   // Constructs a PairingState for the ACL connection |link|. This object will
   // receive its "encryption change" callbacks. Successful pairing is reported
@@ -187,14 +186,12 @@ class PairingState final {
   // for to send User Confirmation Request Negative Reply. It may not be called
   // from the same thread that called OnUserConfirmationRequest.
   using UserConfirmationCallback = fit::callback<void(bool confirm)>;
-  void OnUserConfirmationRequest(uint32_t numeric_value,
-                                 UserConfirmationCallback cb);
+  void OnUserConfirmationRequest(uint32_t numeric_value, UserConfirmationCallback cb);
 
   // |cb| is called with: passkey value to send User Passkey Request Reply, else
   // std::nullopt to send User Passkey Request Negative Reply. It may not be
   // called from the same thread that called OnUserPasskeyRequest.
-  using UserPasskeyCallback =
-      fit::callback<void(std::optional<uint32_t> passkey)>;
+  using UserPasskeyCallback = fit::callback<void(std::optional<uint32_t> passkey)>;
   void OnUserPasskeyRequest(UserPasskeyCallback cb);
 
   // Caller is not expected to send a response.
@@ -204,8 +201,7 @@ class PairingState final {
   void OnSimplePairingComplete(hci::StatusCode status_code);
 
   // Caller is not expected to send a response.
-  void OnLinkKeyNotification(const UInt128& link_key,
-                             hci::LinkKeyType key_type);
+  void OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type);
 
   // Caller is not expected to send a response.
   void OnAuthenticationComplete(hci::StatusCode status_code);
@@ -279,10 +275,8 @@ PairingAction GetInitiatorPairingAction(hci::IOCapability initiator_cap,
                                         hci::IOCapability responder_cap);
 PairingAction GetResponderPairingAction(hci::IOCapability initiator_cap,
                                         hci::IOCapability responder_cap);
-hci::EventCode GetExpectedEvent(hci::IOCapability local_cap,
-                                hci::IOCapability peer_cap);
-bool IsPairingAuthenticated(hci::IOCapability local_cap,
-                            hci::IOCapability peer_cap);
+hci::EventCode GetExpectedEvent(hci::IOCapability local_cap, hci::IOCapability peer_cap);
+bool IsPairingAuthenticated(hci::IOCapability local_cap, hci::IOCapability peer_cap);
 
 // Get the Authentication Requirements for a locally-initiated pairing according
 // to Core Spec v5.0, Vol 2, Part E, Sec 7.1.29.
@@ -303,8 +297,8 @@ hci::AuthRequirements GetInitiatorAuthRequirements(hci::IOCapability local_cap);
 // Bonding over BR/EDR are not supported, so this always returns
 // kMITMGeneralBonding if this pairing can result in an authenticated link key,
 // kGeneralBonding otherwise.
-hci::AuthRequirements GetResponderAuthRequirements(
-    hci::IOCapability local_cap, hci::IOCapability remote_cap);
+hci::AuthRequirements GetResponderAuthRequirements(hci::IOCapability local_cap,
+                                                   hci::IOCapability remote_cap);
 
 }  // namespace gap
 }  // namespace bt

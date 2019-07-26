@@ -44,8 +44,7 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
 
   if (uuid_string.length() == 4) {
     // Possibly a 16-bit short UUID, parse it in context of the Base UUID.
-    return ParseUuidString(
-        "0000" + uuid_string + "-0000-1000-8000-00805F9B34FB", out_bytes);
+    return ParseUuidString("0000" + uuid_string + "-0000-1000-8000-00805F9B34FB", out_bytes);
   }
 
   // This is a 36 character string, including 4 "-" characters and two
@@ -53,13 +52,12 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
   if (uuid_string.length() != 36)
     return false;
 
-  int result = std::sscanf(
-      uuid_string.c_str(), kScanUuidFormatString, out_bytes->data() + 15,
-      out_bytes->data() + 14, out_bytes->data() + 13, out_bytes->data() + 12,
-      out_bytes->data() + 11, out_bytes->data() + 10, out_bytes->data() + 9,
-      out_bytes->data() + 8, out_bytes->data() + 7, out_bytes->data() + 6,
-      out_bytes->data() + 5, out_bytes->data() + 4, out_bytes->data() + 3,
-      out_bytes->data() + 2, out_bytes->data() + 1, out_bytes->data());
+  int result = std::sscanf(uuid_string.c_str(), kScanUuidFormatString, out_bytes->data() + 15,
+                           out_bytes->data() + 14, out_bytes->data() + 13, out_bytes->data() + 12,
+                           out_bytes->data() + 11, out_bytes->data() + 10, out_bytes->data() + 9,
+                           out_bytes->data() + 8, out_bytes->data() + 7, out_bytes->data() + 6,
+                           out_bytes->data() + 5, out_bytes->data() + 4, out_bytes->data() + 3,
+                           out_bytes->data() + 2, out_bytes->data() + 1, out_bytes->data());
 
   return (result > 0) && (static_cast<size_t>(result) == out_bytes->size());
 }
@@ -76,12 +74,10 @@ constexpr size_t UUID::kBaseOffset;
 bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   switch (bytes.size()) {
     case k16BitSize:
-      *out_uuid =
-          UUID(le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
+      *out_uuid = UUID(le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
       return true;
     case k32BitSize:
-      *out_uuid =
-          UUID(le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
+      *out_uuid = UUID(le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
       return true;
     case k128BitSize:
       *out_uuid = UUID(*reinterpret_cast<const UInt128*>(bytes.data()));
@@ -111,18 +107,14 @@ bool UUID::operator==(uint32_t uuid32) const {
   return *this == UUID(uuid32);
 }
 
-bool UUID::operator==(const UInt128& uuid128) const {
-  return value_ == uuid128;
-}
+bool UUID::operator==(const UInt128& uuid128) const { return value_ == uuid128; }
 
 bool UUID::CompareBytes(const ByteBuffer& bytes) const {
   switch (bytes.size()) {
     case k16BitSize:
-      return (*this ==
-              le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
+      return (*this == le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
     case k32BitSize:
-      return (*this ==
-              le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
+      return (*this == le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
     case k128BitSize:
       return (*this == *reinterpret_cast<const UInt128*>(bytes.data()));
   }
@@ -131,11 +123,10 @@ bool UUID::CompareBytes(const ByteBuffer& bytes) const {
 }
 
 std::string UUID::ToString() const {
-  return fxl::StringPrintf(
-      "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-      value_[15], value_[14], value_[13], value_[12], value_[11], value_[10],
-      value_[9], value_[8], value_[7], value_[6], value_[5], value_[4],
-      value_[3], value_[2], value_[1], value_[0]);
+  return fxl::StringPrintf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                           value_[15], value_[14], value_[13], value_[12], value_[11], value_[10],
+                           value_[9], value_[8], value_[7], value_[6], value_[5], value_[4],
+                           value_[3], value_[2], value_[1], value_[0]);
 }
 
 size_t UUID::CompactSize(bool allow_32bit) const {
@@ -171,8 +162,7 @@ std::size_t UUID::Hash() const {
   ZX_DEBUG_ASSERT(sizeof(value_) % sizeof(size_t) == 0);
   size_t hash = 0;
   for (size_t i = 0; i < (sizeof(value_) / sizeof(size_t)); i++) {
-    hash ^=
-        *reinterpret_cast<const size_t*>(value_.data() + (i * sizeof(size_t)));
+    hash ^= *reinterpret_cast<const size_t*>(value_.data() + (i * sizeof(size_t)));
   }
   return hash;
 }
@@ -188,15 +178,13 @@ std::optional<uint16_t> UUID::As16Bit() const {
 uint16_t UUID::ValueAs16Bit() const {
   ZX_DEBUG_ASSERT(type_ == Type::k16Bit);
 
-  return le16toh(
-      *reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
+  return le16toh(*reinterpret_cast<const uint16_t*>(value_.data() + kBaseOffset));
 }
 
 uint32_t UUID::ValueAs32Bit() const {
   ZX_DEBUG_ASSERT(type_ != Type::k128Bit);
 
-  return le32toh(
-      *reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
+  return le32toh(*reinterpret_cast<const uint32_t*>(value_.data() + kBaseOffset));
 }
 
 bool IsStringValidUuid(const std::string& uuid_string) {

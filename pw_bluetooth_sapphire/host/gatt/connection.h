@@ -42,8 +42,7 @@ class Connection final {
   // operate on.
   // |att_bearer| is the ATT protocol data transport for this connection.
   Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
-             fxl::RefPtr<att::Database> local_db,
-             RemoteServiceWatcher svc_watcher,
+             fxl::RefPtr<att::Database> local_db, RemoteServiceWatcher svc_watcher,
              async_dispatcher_t* gatt_dispatcher);
   ~Connection() = default;
 
@@ -52,9 +51,7 @@ class Connection final {
   Connection& operator=(Connection&&) = default;
 
   Server* server() const { return server_.get(); }
-  RemoteServiceManager* remote_service_manager() const {
-    return remote_service_manager_.get();
-  }
+  RemoteServiceManager* remote_service_manager() const { return remote_service_manager_.get(); }
 
   // Initiate MTU exchange followed by primary service discovery. On failure,
   // signals a link error through the ATT channel (which is expected to

@@ -20,28 +20,23 @@
 namespace bthost {
 
 // Implements the low_energy::Central FIDL interface.
-class LowEnergyCentralServer
-    : public AdapterServerBase<fuchsia::bluetooth::le::Central> {
+class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::Central> {
  public:
-  LowEnergyCentralServer(
-      fxl::WeakPtr<bt::gap::Adapter> adapter,
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
-      fbl::RefPtr<GattHost> gatt_host);
+  LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+                         ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
+                         fbl::RefPtr<GattHost> gatt_host);
   ~LowEnergyCentralServer() override;
 
  private:
   // fuchsia::bluetooth::le::Central overrides:
   void GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
                       GetPeripheralsCallback callback) override;
-  void GetPeripheral(::std::string identifier,
-                     GetPeripheralCallback callback) override;
-  void StartScan(fuchsia::bluetooth::le::ScanFilterPtr filter,
-                 StartScanCallback callback) override;
+  void GetPeripheral(::std::string identifier, GetPeripheralCallback callback) override;
+  void StartScan(fuchsia::bluetooth::le::ScanFilterPtr filter, StartScanCallback callback) override;
   void StopScan() override;
-  void ConnectPeripheral(
-      ::std::string identifier,
-      ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> client_request,
-      ConnectPeripheralCallback callback) override;
+  void ConnectPeripheral(::std::string identifier,
+                         ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> client_request,
+                         ConnectPeripheralCallback callback) override;
   void DisconnectPeripheral(::std::string identifier,
                             DisconnectPeripheralCallback callback) override;
 
@@ -68,8 +63,7 @@ class LowEnergyCentralServer
   //   a. nullptr, if a connect request to this device is currently pending.
   //   b. a valid reference if this Central is holding a connection reference to
   //   this device.
-  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr>
-      connections_;
+  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr> connections_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

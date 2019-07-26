@@ -24,27 +24,23 @@ namespace internal {
 // Must be run only on the L2CAP thread.
 class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
  public:
-  BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig,
-                              DynamicChannelCallback close_cb,
+  BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig, DynamicChannelCallback close_cb,
                               ServiceRequestCallback service_request_cb);
   ~BrEdrDynamicChannelRegistry() override = default;
 
  private:
   // DynamicChannelRegistry override
   DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid) override;
-  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid,
-                                ChannelId remote_cid) override;
+  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid) override;
 
   // Signaling channel request handlers
   void OnRxConnReq(PSM psm, ChannelId remote_cid,
                    BrEdrCommandHandler::ConnectionResponder* responder);
-  void OnRxConfigReq(ChannelId local_cid, uint16_t flags,
-                     const ByteBuffer& options,
+  void OnRxConfigReq(ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(ChannelId local_cid, ChannelId remote_cid,
                      BrEdrCommandHandler::DisconnectionResponder* responder);
-  void OnRxInfoReq(InformationType type,
-                   BrEdrCommandHandler::InformationResponder* responder);
+  void OnRxInfoReq(InformationType type, BrEdrCommandHandler::InformationResponder* responder);
 
   SignalingChannelInterface* const sig_;
 };
@@ -66,15 +62,13 @@ using BrEdrDynamicChannelPtr = std::unique_ptr<BrEdrDynamicChannel>;
 // Must be run only on the L2CAP thread.
 class BrEdrDynamicChannel final : public DynamicChannel {
  public:
-  static BrEdrDynamicChannelPtr MakeOutbound(
-      DynamicChannelRegistry* registry,
-      SignalingChannelInterface* signaling_channel, PSM psm,
-      ChannelId local_cid);
+  static BrEdrDynamicChannelPtr MakeOutbound(DynamicChannelRegistry* registry,
+                                             SignalingChannelInterface* signaling_channel, PSM psm,
+                                             ChannelId local_cid);
 
-  static BrEdrDynamicChannelPtr MakeInbound(
-      DynamicChannelRegistry* registry,
-      SignalingChannelInterface* signaling_channel, PSM psm,
-      ChannelId local_cid, ChannelId remote_cid);
+  static BrEdrDynamicChannelPtr MakeInbound(DynamicChannelRegistry* registry,
+                                            SignalingChannelInterface* signaling_channel, PSM psm,
+                                            ChannelId local_cid, ChannelId remote_cid);
 
   // DynamicChannel overrides
   ~BrEdrDynamicChannel() override = default;
@@ -97,8 +91,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   void OnRxDisconReq(BrEdrCommandHandler::DisconnectionResponder* responder);
 
   // Reply with affirmative connection response and begin configuration.
-  void CompleteInboundConnection(
-      BrEdrCommandHandler::ConnectionResponder* responder);
+  void CompleteInboundConnection(BrEdrCommandHandler::ConnectionResponder* responder);
 
  private:
   // The channel configuration state is described in v5.0 Vol 3 Part A Sec 6 (in
@@ -137,8 +130,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // controller configuration)
 
   BrEdrDynamicChannel(DynamicChannelRegistry* registry,
-                      SignalingChannelInterface* signaling_channel, PSM psm,
-                      ChannelId local_cid, ChannelId remote_cid);
+                      SignalingChannelInterface* signaling_channel, PSM psm, ChannelId local_cid,
+                      ChannelId remote_cid);
 
   // Deliver the result of channel connection and configuration to the |Open|
   // originator. Can be called multiple times but only the first invocation

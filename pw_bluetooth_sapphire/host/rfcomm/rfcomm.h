@@ -31,9 +31,8 @@ enum class Role { kUnassigned, kNegotiating, kInitiator, kResponder };
 // Unassigned role is Unassigned. This is used to get our peer's role when we
 // know our own.
 inline constexpr Role OppositeRole(Role role) {
-  return role == Role::kUnassigned
-             ? Role::kUnassigned
-             : role == Role::kInitiator ? Role::kResponder : Role::kInitiator;
+  return role == Role::kUnassigned ? Role::kUnassigned
+                                   : role == Role::kInitiator ? Role::kResponder : Role::kInitiator;
 }
 
 // This function defines what it means for a multiplexer to be started: namely,
@@ -53,13 +52,9 @@ constexpr DLCI kMuxControlDLCI = 0;
 constexpr DLCI kMinUserDLCI = 2;
 constexpr DLCI kMaxUserDLCI = 61;
 
-constexpr bool IsUserDLCI(DLCI dlci) {
-  return dlci >= kMinUserDLCI && dlci <= kMaxUserDLCI;
-}
+constexpr bool IsUserDLCI(DLCI dlci) { return dlci >= kMinUserDLCI && dlci <= kMaxUserDLCI; }
 
-constexpr bool IsValidDLCI(DLCI dlci) {
-  return dlci == kMuxControlDLCI || IsUserDLCI(dlci);
-}
+constexpr bool IsValidDLCI(DLCI dlci) { return dlci == kMuxControlDLCI || IsUserDLCI(dlci); }
 
 // Server Channels are 5 bits wide; they are the 5 most significant bits of the
 // DLCI. Server Channels are exposed to the outside world; a user who is
@@ -72,8 +67,7 @@ constexpr ServerChannel kMaxServerChannel = 30;
 constexpr ServerChannel kInvalidServerChannel = 0;
 
 constexpr bool IsValidServerChannel(ServerChannel server_channel) {
-  return server_channel >= kMinServerChannel &&
-         server_channel <= kMaxServerChannel;
+  return server_channel >= kMinServerChannel && server_channel <= kMaxServerChannel;
 }
 
 // Used to convert between Server Channel and DLCI. See RFCOMM 5.4 for the
@@ -85,12 +79,10 @@ inline constexpr ServerChannel DLCIToServerChannel(DLCI dlci) {
   return dlci >> kServerChannelShift;
 }
 
-inline constexpr DLCI ServerChannelToDLCI(ServerChannel server_channel,
-                                          Role role) {
+inline constexpr DLCI ServerChannelToDLCI(ServerChannel server_channel, Role role) {
   ZX_DEBUG_ASSERT(role == Role::kInitiator || role == Role::kResponder);
   ZX_DEBUG_ASSERT(IsValidServerChannel(server_channel));
-  return (server_channel << kServerChannelShift) |
-         (role == Role::kInitiator ? 1 : 0);
+  return (server_channel << kServerChannelShift) | (role == Role::kInitiator ? 1 : 0);
 }
 
 // The length field encodes the length of the information (payload) field. The
@@ -132,16 +124,11 @@ enum class FrameType : uint8_t {
 constexpr bool IsMuxStartupFrame(FrameType type, DLCI dlci) {
   return dlci == kMuxControlDLCI &&
          (type == FrameType::kSetAsynchronousBalancedMode ||
-          type == FrameType::kUnnumberedAcknowledgement ||
-          type == FrameType::kDisconnectedMode);
+          type == FrameType::kUnnumberedAcknowledgement || type == FrameType::kDisconnectedMode);
 }
 
 // The negotiation state of parameters for each channel (or initial parameters)
-enum class ParameterNegotiationState {
-  kNotNegotiated,
-  kNegotiating,
-  kNegotiated
-};
+enum class ParameterNegotiationState { kNotNegotiated, kNegotiating, kNegotiated };
 
 }  // namespace rfcomm
 }  // namespace bt

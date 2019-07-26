@@ -47,8 +47,7 @@ class DATA_DomainTest : public TestingBase {
 
   // TODO(armansito): Move this to the testing library. This should set up
   // expectations on the TestController and not just transmit.
-  void EmulateIncomingChannelCreation(hci::ConnectionHandle link_handle,
-                                      l2cap::ChannelId src_id,
+  void EmulateIncomingChannelCreation(hci::ConnectionHandle link_handle, l2cap::ChannelId src_id,
                                       l2cap::ChannelId dst_id, l2cap::PSM psm) {
     // clang-format off
     test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
@@ -94,10 +93,8 @@ class DATA_DomainTest : public TestingBase {
     RunLoopUntilIdle();
   }
 
-  void ExpectOutgoingChannelCreation(hci::ConnectionHandle link_handle,
-                                     l2cap::ChannelId remote_id,
-                                     l2cap::ChannelId expected_local_cid,
-                                     l2cap::PSM psm) {
+  void ExpectOutgoingChannelCreation(hci::ConnectionHandle link_handle, l2cap::ChannelId remote_id,
+                                     l2cap::ChannelId expected_local_cid, l2cap::PSM psm) {
     auto response_cb = [=](const auto& bytes) {
       ASSERT_LE(10u, bytes.size());
       EXPECT_EQ(LowerBits(link_handle), bytes[0]);
@@ -141,8 +138,7 @@ class DATA_DomainTest : public TestingBase {
               // Configuration Response (0x04), id: (match request) length 10
               l2cap::kConfigurationResponse, id, 0x0a, 0x00,
               // Source CID, Flags (same as req)
-              LowerBits(expected_local_cid), UpperBits(expected_local_cid),
-              bytes[14], bytes[15],
+              LowerBits(expected_local_cid), UpperBits(expected_local_cid), bytes[14], bytes[15],
               // Result (success)
               0x00, 0x00,
               // Config option: MTU, length 2, MTU 1024
@@ -157,9 +153,8 @@ class DATA_DomainTest : public TestingBase {
 
               // Configuration Request (ID: 6, length: 8, |dst_id|, flags: 0,
               // options: [type: MTU, length: 2, MTU: 1024])
-              l2cap::kConfigurationRequest, 0x06, 0x08, 0x00,
-              LowerBits(expected_local_cid), UpperBits(expected_local_cid),
-              0x00, 0x00, 0x01, 0x02, 0x00, 0x04));
+              l2cap::kConfigurationRequest, 0x06, 0x08, 0x00, LowerBits(expected_local_cid),
+              UpperBits(expected_local_cid), 0x00, 0x00, 0x01, 0x02, 0x00, 0x04));
           return;
         }
         case l2cap::kConfigurationResponse: {
@@ -193,8 +188,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
 
   // Register a fake link.
   domain()->AddACLConnection(
-      kLinkHandle, hci::Connection::Role::kMaster, [] {},
-      [](auto, auto, auto) {}, dispatcher());
+      kLinkHandle, hci::Connection::Role::kMaster, [] {}, [](auto, auto, auto) {}, dispatcher());
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -225,8 +219,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   // 4).
   StaticByteBuffer<10> socket_bytes;
   size_t bytes_read;
-  zx_status_t status = sock.read(0, socket_bytes.mutable_data(),
-                                 socket_bytes.size(), &bytes_read);
+  zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
@@ -240,8 +233,7 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
 
   // Register a fake link.
   domain()->AddACLConnection(
-      kLinkHandle, hci::Connection::Role::kMaster, [] {},
-      [](auto, auto, auto) {}, dispatcher());
+      kLinkHandle, hci::Connection::Role::kMaster, [] {}, [](auto, auto, auto) {}, dispatcher());
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -250,8 +242,7 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
     sock = std::move(cb_sock);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb),
-                             dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb), dispatcher());
 
   // Expect the CHANNEL opening stuff here
   ExpectOutgoingChannelCreation(kLinkHandle, kRemoteId, kLocalId, kPSM);
@@ -276,8 +267,7 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   // 4).
   StaticByteBuffer<10> socket_bytes;
   size_t bytes_read;
-  zx_status_t status = sock.read(0, socket_bytes.mutable_data(),
-                                 socket_bytes.size(), &bytes_read);
+  zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
@@ -289,15 +279,13 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
 
   // Don't register any links. This should cause outbound channels to fail.
   bool sock_cb_called = false;
-  auto sock_cb = [&sock_cb_called, kLinkHandle](zx::socket cb_sock,
-                                                hci::ConnectionHandle handle) {
+  auto sock_cb = [&sock_cb_called, kLinkHandle](zx::socket cb_sock, hci::ConnectionHandle handle) {
     sock_cb_called = true;
     EXPECT_FALSE(cb_sock);
     EXPECT_EQ(kLinkHandle, handle);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb),
-                             dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb), dispatcher());
 
   RunLoopUntilIdle();
 

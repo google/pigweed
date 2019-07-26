@@ -102,8 +102,7 @@ class TestCommand : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| and |length| are
   // parameters which have already been parsed from |buffer|.
-  static std::unique_ptr<TestCommand> Parse(CommandResponse command_response,
-                                            size_t length,
+  static std::unique_ptr<TestCommand> Parse(CommandResponse command_response, size_t length,
                                             const ByteBuffer& buffer);
 
   inline BufferView test_pattern() const { return test_pattern_.view(); }
@@ -124,8 +123,7 @@ class FlowControlOnCommand : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
-  static std::unique_ptr<FlowControlOnCommand> Parse(
-      CommandResponse command_response);
+  static std::unique_ptr<FlowControlOnCommand> Parse(CommandResponse command_response);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -140,8 +138,7 @@ class FlowControlOffCommand : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
-  static std::unique_ptr<FlowControlOffCommand> Parse(
-      CommandResponse command_response);
+  static std::unique_ptr<FlowControlOffCommand> Parse(CommandResponse command_response);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -167,15 +164,13 @@ constexpr BreakValue kDefaultInvalidBreakValue = 0xFF;
 // This command conveys the virtual V.24 signals. See GSM 5.4.6.3.7.
 class ModemStatusCommand : public MuxCommand {
  public:
-  ModemStatusCommand(CommandResponse command_response, DLCI dlci,
-                     ModemStatusCommandSignals signals,
+  ModemStatusCommand(CommandResponse command_response, DLCI dlci, ModemStatusCommandSignals signals,
                      BreakValue break_value = kDefaultInvalidBreakValue);
 
   // Returns nullptr if parse fails. |command_response| and |length| are
   // parameters which have already been parsed from |buffer|.
-  static std::unique_ptr<ModemStatusCommand> Parse(
-      CommandResponse command_response, size_t length,
-      const ByteBuffer& buffer);
+  static std::unique_ptr<ModemStatusCommand> Parse(CommandResponse command_response, size_t length,
+                                                   const ByteBuffer& buffer);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -216,12 +211,7 @@ enum class Baud : uint8_t {
 constexpr Baud kDefaultBaud = Baud::k9600;
 
 // GSM 5.4.6.3.9 (below table 12)
-enum class DataBits : uint8_t {
-  k5Bits = 0,
-  k6Bits = 2,
-  k7Bits = 1,
-  k8Bits = 3
-};
+enum class DataBits : uint8_t { k5Bits = 0, k6Bits = 2, k7Bits = 1, k8Bits = 3 };
 constexpr DataBits kDefaultDataBits = DataBits::k8Bits;
 
 // GSM 5.4.6.3.9 (below table 12)
@@ -276,9 +266,8 @@ struct RemotePortNegotiationParams {
 constexpr uint8_t kDefaultXONCharacter = 0x01;   // DC1
 constexpr uint8_t kDefaultXOFFCharacter = 0x03;  // DC3
 constexpr RemotePortNegotiationParams kDefaultRemotePortNegotiationParams = {
-    kDefaultBaud,         kDefaultDataBits,     kDefaultStopBits,
-    kDefaultParity,       kDefaultParityType,   kDefaultFlowControlFlags,
-    kDefaultXONCharacter, kDefaultXOFFCharacter};
+    kDefaultBaud,       kDefaultDataBits,         kDefaultStopBits,     kDefaultParity,
+    kDefaultParityType, kDefaultFlowControlFlags, kDefaultXONCharacter, kDefaultXOFFCharacter};
 
 // GSM 5.4.6.3.9 (below table 12)
 // clang-format off
@@ -300,8 +289,7 @@ enum RemotePortNegotiationMask : uint16_t {
 // clang-format on
 using RemotePortNegotiationMaskBitfield = uint16_t;
 // This default is not defined in the spec.
-constexpr RemotePortNegotiationMaskBitfield
-    kDefaultRemotePortNegotiationMaskBitfield = 0;
+constexpr RemotePortNegotiationMaskBitfield kDefaultRemotePortNegotiationMaskBitfield = 0;
 
 // This command is used to negotiate port settings such as baud rate. See GSM
 // 5.4.6.3.9.
@@ -319,9 +307,9 @@ class RemotePortNegotiationCommand : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| and |length| are
   // parameters which have already been parsed from |buffer|.
-  static std::unique_ptr<RemotePortNegotiationCommand> Parse(
-      CommandResponse command_response, size_t length,
-      const ByteBuffer& buffer);
+  static std::unique_ptr<RemotePortNegotiationCommand> Parse(CommandResponse command_response,
+                                                             size_t length,
+                                                             const ByteBuffer& buffer);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -361,13 +349,13 @@ enum class LineError : uint8_t {
 // 5.4.6.3.10.
 class RemoteLineStatusCommand : public MuxCommand {
  public:
-  RemoteLineStatusCommand(CommandResponse command_response, DLCI dlci,
-                          bool error_occurred, LineError error);
+  RemoteLineStatusCommand(CommandResponse command_response, DLCI dlci, bool error_occurred,
+                          LineError error);
 
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
-  static std::unique_ptr<RemoteLineStatusCommand> Parse(
-      CommandResponse command_response, const ByteBuffer& buffer);
+  static std::unique_ptr<RemoteLineStatusCommand> Parse(CommandResponse command_response,
+                                                        const ByteBuffer& buffer);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -420,8 +408,8 @@ class DLCParameterNegotiationCommand : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
-  static std::unique_ptr<DLCParameterNegotiationCommand> Parse(
-      CommandResponse command_response, const ByteBuffer& buffer);
+  static std::unique_ptr<DLCParameterNegotiationCommand> Parse(CommandResponse command_response,
+                                                               const ByteBuffer& buffer);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
@@ -444,19 +432,15 @@ class NonSupportedCommandResponse : public MuxCommand {
 
   // Returns nullptr if parse fails. |command_response| is a parameter which has
   // already been parsed from |buffer|.
-  static std::unique_ptr<NonSupportedCommandResponse> Parse(
-      CommandResponse command_response, const ByteBuffer& buffer);
+  static std::unique_ptr<NonSupportedCommandResponse> Parse(CommandResponse command_response,
+                                                            const ByteBuffer& buffer);
 
   // MuxCommand overrides
   void Write(MutableBufferView buffer) const override;
   size_t written_size() const override;
 
-  inline CommandResponse incoming_command_response() const {
-    return incoming_command_response_;
-  }
-  inline uint8_t incoming_non_supported_command() const {
-    return incoming_non_supported_command_;
-  }
+  inline CommandResponse incoming_command_response() const { return incoming_command_response_; }
+  inline uint8_t incoming_non_supported_command() const { return incoming_non_supported_command_; }
 
  private:
   CommandResponse incoming_command_response_;

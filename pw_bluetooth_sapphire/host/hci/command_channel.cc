@@ -29,18 +29,18 @@ bool IsAsync(EventCode code) {
 
 }  //  namespace
 
-CommandChannel::QueuedCommand::QueuedCommand(
-    std::unique_ptr<CommandPacket> command_packet,
-    std::unique_ptr<TransactionData> transaction_data)
+CommandChannel::QueuedCommand::QueuedCommand(std::unique_ptr<CommandPacket> command_packet,
+                                             std::unique_ptr<TransactionData> transaction_data)
     : packet(std::move(command_packet)), data(std::move(transaction_data)) {
   ZX_DEBUG_ASSERT(data);
   ZX_DEBUG_ASSERT(packet);
 }
 
-CommandChannel::TransactionData::TransactionData(
-    TransactionId id, OpCode opcode, EventCode complete_event_code,
-    std::unordered_set<OpCode> exclusions, CommandCallback callback,
-    async_dispatcher_t* dispatcher)
+CommandChannel::TransactionData::TransactionData(TransactionId id, OpCode opcode,
+                                                 EventCode complete_event_code,
+                                                 std::unordered_set<OpCode> exclusions,
+                                                 CommandCallback callback,
+                                                 async_dispatcher_t* dispatcher)
     : id_(id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
@@ -58,12 +58,10 @@ CommandChannel::TransactionData::~TransactionData() {
     return;
   }
 
-  bt_log(TRACE, "hci",
-         "sending kUnspecifiedError for unfinished transaction %zu", id_);
+  bt_log(TRACE, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
   auto event = EventPacket::New(sizeof(CommandStatusEventParams));
   auto* header = event->mutable_view()->mutable_header();
-  auto* params =
-      event->mutable_view()->mutable_payload<CommandStatusEventParams>();
+  auto* params = event->mutable_view()->mutable_payload<CommandStatusEventParams>();
 
   // TODO(armansito): Instead of lying about receiving a Command Status event,
   // report this error in a different way. This can be highly misleading during
@@ -76,8 +74,7 @@ CommandChannel::TransactionData::~TransactionData() {
   Complete(std::move(event));
 }
 
-void CommandChannel::TransactionData::Start(fit::closure timeout_cb,
-                                            zx::duration timeout) {
+void CommandChannel::TransactionData::Start(fit::closure timeout_cb, zx::duration timeout) {
   // Transactions should only ever be started once.
   ZX_DEBUG_ASSERT(!timeout_task_.is_pending());
 
@@ -85,27 +82,22 @@ void CommandChannel::TransactionData::Start(fit::closure timeout_cb,
   timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
 }
 
-void CommandChannel::TransactionData::Complete(
-    std::unique_ptr<EventPacket> event) {
+void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {
   timeout_task_.Cancel();
   if (!callback_) {
     return;
   }
-  async::PostTask(
-      dispatcher_,
-      [event = std::move(event), callback = std::move(callback_),
-       transaction_id = id_]() mutable { callback(transaction_id, *event); });
+  async::PostTask(dispatcher_,
+                  [event = std::move(event), callback = std::move(callback_),
+                   transaction_id = id_]() mutable { callback(transaction_id, *event); });
   callback_ = nullptr;
 }
 
 CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
-  return [id = id_, cb = callback_.share()](const EventPacket& event) {
-    cb(id, event);
-  };
+  return [id = id_, cb = callback_.share()](const EventPacket& event) { cb(id, event); };
 }
 
-CommandChannel::CommandChannel(Transport* transport,
-                               zx::channel hci_command_channel)
+CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
       transport_(transport),
@@ -129,8 +121,7 @@ void CommandChannel::Initialize() {
   auto setup_handler_task = [this] {
     zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
     if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed channel setup: %s",
-             zx_status_get_string(status));
+      bt_log(ERROR, "hci", "failed channel setup: %s", zx_status_get_string(status));
       channel_wait_.set_object(ZX_HANDLE_INVALID);
       return;
     }
@@ -168,8 +159,7 @@ void CommandChannel::ShutDownInternal() {
   // Stop listening for HCI events.
   zx_status_t status = channel_wait_.Cancel();
   if (status != ZX_OK) {
-    bt_log(WARN, "hci", "could not cancel wait on channel: %s",
-           zx_status_get_string(status));
+    bt_log(WARN, "hci", "could not cancel wait on channel: %s", zx_status_get_string(status));
   }
 
   // Drop all queued commands and event handlers. Pending HCI commands will be
@@ -188,18 +178,15 @@ void CommandChannel::ShutDownInternal() {
 }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
-    std::unique_ptr<CommandPacket> command_packet,
-    async_dispatcher_t* dispatcher, CommandCallback callback,
-    const EventCode complete_event_code) {
-  return SendExclusiveCommand(std::move(command_packet), dispatcher,
-                              std::move(callback), complete_event_code,
-                              std::unordered_set<OpCode>());
+    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
+    CommandCallback callback, const EventCode complete_event_code) {
+  return SendExclusiveCommand(std::move(command_packet), dispatcher, std::move(callback),
+                              complete_event_code, std::unordered_set<OpCode>());
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    std::unique_ptr<CommandPacket> command_packet,
-    async_dispatcher_t* dispatcher, CommandCallback callback,
-    const EventCode complete_event_code,
+    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
+    CommandCallback callback, const EventCode complete_event_code,
     std::unordered_set<OpCode> exclusions) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "can't send commands while uninitialized");
@@ -233,9 +220,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
   }
 
   TransactionId id = next_transaction_id_++;
-  auto data = std::make_unique<TransactionData>(
-      id, command_packet->opcode(), complete_event_code, std::move(exclusions),
-      std::move(callback), dispatcher);
+  auto data =
+      std::make_unique<TransactionData>(id, command_packet->opcode(), complete_event_code,
+                                        std::move(exclusions), std::move(callback), dispatcher);
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 
@@ -245,17 +232,15 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
   }
 
   send_queue_.push_back(std::move(command));
-  async::PostTask(io_dispatcher_,
-                  std::bind(&CommandChannel::TrySendQueuedCommands, this));
+  async::PostTask(io_dispatcher_, std::bind(&CommandChannel::TrySendQueuedCommands, this));
 
   return id;
 }
 
-CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
-    EventCode event_code, EventCallback event_callback,
-    async_dispatcher_t* dispatcher) {
-  if (event_code == kCommandStatusEventCode ||
-      event_code == kCommandCompleteEventCode ||
+CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_code,
+                                                               EventCallback event_callback,
+                                                               async_dispatcher_t* dispatcher) {
+  if (event_code == kCommandStatusEventCode || event_code == kCommandCompleteEventCode ||
       event_code == kLEMetaEventCode) {
     return 0u;
   }
@@ -263,25 +248,23 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
   auto* handler = FindEventHandler(event_code);
   if (handler && handler->is_async()) {
-    bt_log(ERROR, "hci",
-           "async event handler %zu already registered for event code %#.2x",
+    bt_log(ERROR, "hci", "async event handler %zu already registered for event code %#.2x",
            handler->id, event_code);
     return 0u;
   }
 
-  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp,
-                            std::move(event_callback), dispatcher);
+  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp, std::move(event_callback),
+                            dispatcher);
   event_code_handlers_.emplace(event_code, id);
   return id;
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    EventCode subevent_code, EventCallback event_callback,
-    async_dispatcher_t* dispatcher) {
+    EventCode subevent_code, EventCallback event_callback, async_dispatcher_t* dispatcher) {
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
 
-  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp,
-                            std::move(event_callback), dispatcher);
+  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp, std::move(event_callback),
+                            dispatcher);
   subevent_code_handlers_.emplace(subevent_code, id);
   return id;
 }
@@ -298,8 +281,7 @@ void CommandChannel::RemoveEventHandler(EventHandlerId id) {
   RemoveEventHandlerInternal(id);
 }
 
-CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(
-    EventCode code) {
+CommandChannel::EventHandlerData* CommandChannel::FindEventHandler(EventCode code) {
   auto it = event_code_handlers_.find(code);
   if (it == event_code_handlers_.end()) {
     return nullptr;
@@ -314,13 +296,11 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
   }
 
   if (iter->second.event_code != 0) {
-    auto* event_handlers = iter->second.is_le_meta_subevent
-                               ? &subevent_code_handlers_
-                               : &event_code_handlers_;
+    auto* event_handlers =
+        iter->second.is_le_meta_subevent ? &subevent_code_handlers_ : &event_code_handlers_;
 
     bt_log(SPEW, "hci", "removing handler for %sevent code %#.2x",
-           (iter->second.is_le_meta_subevent ? "LE " : ""),
-           iter->second.event_code);
+           (iter->second.is_le_meta_subevent ? "LE " : ""), iter->second.event_code);
 
     auto range = event_handlers->equal_range(iter->second.event_code);
     for (auto it = range.first; it != range.second; ++it) {
@@ -347,16 +327,14 @@ void CommandChannel::TrySendQueuedCommands() {
   std::lock_guard<std::mutex> lock(send_queue_mutex_);
 
   // Walk the waiting and see if any are sendable.
-  for (auto it = send_queue_.begin();
-       allowed_command_packets_ > 0 && it != send_queue_.end();) {
+  for (auto it = send_queue_.begin(); allowed_command_packets_ > 0 && it != send_queue_.end();) {
     std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
 
     // Can't send if another is running with an opcode this can't coexist with.
     bool excluded = false;
     for (const auto& excluded_opcode : it->data->exclusions()) {
       if (pending_transactions_.count(excluded_opcode) != 0) {
-        bt_log(DEBUG, "hci",
-               "pending command (%#.4x) delayed due to running opcode %#.4x",
+        bt_log(DEBUG, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
                it->data->opcode(), excluded_opcode);
         excluded = true;
         break;
@@ -384,13 +362,11 @@ void CommandChannel::TrySendQueuedCommands() {
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
   auto packet_bytes = cmd.packet->view().data();
-  zx_status_t status =
-      channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
+  zx_status_t status = channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
   if (status < 0) {
     // TODO(armansito): We should notify the |status_callback| of the pending
     // command with a special error code in this case.
-    bt_log(ERROR, "hci", "failed to send command: %s",
-           zx_status_get_string(status));
+    bt_log(ERROR, "hci", "failed to send command: %s", zx_status_get_string(status));
     return;
   }
   allowed_command_packets_--;
@@ -407,8 +383,7 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
 
   MaybeAddTransactionHandler(transaction.get());
 
-  pending_transactions_.insert(
-      std::make_pair(transaction->opcode(), std::move(transaction)));
+  pending_transactions_.insert(std::make_pair(transaction->opcode(), std::move(transaction)));
 }
 
 void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
@@ -432,9 +407,11 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   bt_log(SPEW, "hci", "async command %zu assigned handler %zu", data->id(), id);
 }
 
-CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
-    EventCode event_code, bool is_le_meta, OpCode pending_opcode,
-    EventCallback event_callback, async_dispatcher_t* dispatcher) {
+CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_code,
+                                                               bool is_le_meta,
+                                                               OpCode pending_opcode,
+                                                               EventCallback event_callback,
+                                                               async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
   ZX_DEBUG_ASSERT(dispatcher);
@@ -450,8 +427,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
 
   bt_log(SPEW, "hci", "adding event handler %zu for %sevent code %#.2x", id,
          (is_le_meta ? "LE sub" : ""), event_code);
-  ZX_DEBUG_ASSERT(event_handler_id_map_.find(id) ==
-                  event_handler_id_map_.end());
+  ZX_DEBUG_ASSERT(event_handler_id_map_.find(id) == event_handler_id_map_.end());
   event_handler_id_map_[id] = std::move(data);
 
   return id;
@@ -460,8 +436,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
 void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   hci::EventCode event_code = event->event_code();
 
-  ZX_DEBUG_ASSERT(event_code == kCommandStatusEventCode ||
-                  event_code == kCommandCompleteEventCode);
+  ZX_DEBUG_ASSERT(event_code == kCommandStatusEventCode || event_code == kCommandCompleteEventCode);
 
   OpCode matching_opcode;
 
@@ -489,8 +464,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
   auto it = pending_transactions_.find(matching_opcode);
   if (it == pending_transactions_.end()) {
-    bt_log(ERROR, "hci", "update for unexpected opcode: %#.4x",
-           matching_opcode);
+    bt_log(ERROR, "hci", "update for unexpected opcode: %#.4x", matching_opcode);
     return;
   }
 
@@ -542,8 +516,8 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
 
     auto range = event_handlers->equal_range(event_code);
     if (range.first == range.second) {
-      bt_log(TRACE, "hci", "%sevent %#.2x received with no handler",
-             (is_le_event ? "LE " : ""), event_code);
+      bt_log(TRACE, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
+             event_code);
       return;
     }
 
@@ -552,8 +526,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       EventCallback callback;
       async_dispatcher_t* dispatcher;
       EventHandlerId event_id = iter->second;
-      bt_log(DEBUG, "hci", "notifying handler (id %zu) for event code %#.2x",
-             event_id, event_code);
+      bt_log(DEBUG, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
       auto handler_iter = event_handler_id_map_.find(event_id);
       ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
 
@@ -567,8 +540,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
 
       // Async command handling is not supported for LE events.
       if (!is_le_event && handler.is_async()) {
-        bt_log(DEBUG, "hci",
-               "removing completed async handler (id %zu, event code: %#.2x)",
+        bt_log(DEBUG, "hci", "removing completed async handler (id %zu, event code: %#.2x)",
                event_id, event_code);
         pending_transactions_.erase(handler.pending_opcode);
         RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
@@ -587,18 +559,14 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     auto event_copy = EventPacket::New(event->view().payload_size());
     MutableBufferView buf = event_copy->mutable_view()->mutable_data();
     event->view().data().Copy(&buf);
-    RunOrPost(
-        [ev = std::move(event_copy), cb = std::move(it->first)]() { cb(*ev); },
-        it->second);
+    RunOrPost([ev = std::move(event_copy), cb = std::move(it->first)]() { cb(*ev); }, it->second);
   }
   // Don't copy for the last callback.
-  RunOrPost([ev = std::move(event), cb = std::move(it->first)]() { cb(*ev); },
-            it->second);
+  RunOrPost([ev = std::move(event), cb = std::move(it->first)]() { cb(*ev); }, it->second);
 }
 
-void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
-                                    async::WaitBase* wait, zx_status_t status,
-                                    const zx_packet_signal_t* signal) {
+void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                                    zx_status_t status, const zx_packet_signal_t* signal) {
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
@@ -621,20 +589,17 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
       return;
     }
     auto packet_bytes = packet->mutable_view()->mutable_data();
-    zx_status_t read_status =
-        channel_.read(0u, packet_bytes.mutable_data(), nullptr,
-                      packet_bytes.size(), 0, &read_size, nullptr);
+    zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
+                                            packet_bytes.size(), 0, &read_size, nullptr);
     if (read_status < 0) {
-      bt_log(TRACE, "hci", "Failed to read event bytes: %s",
-             zx_status_get_string(read_status));
+      bt_log(TRACE, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
       // Clear the handler so that we stop receiving events from it.
       // TODO(jamuraa): signal upper layers that we can't read the channel.
       return;
     }
 
     if (read_size < sizeof(EventHeader)) {
-      bt_log(ERROR, "hci",
-             "malformed data packet - expected at least %zu bytes, got %u",
+      bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
              sizeof(EventHeader), read_size);
       // TODO(armansito): Should this be fatal? Ignore for now.
       continue;
@@ -642,8 +607,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher,
 
     // Compare the received payload size to what is in the header.
     const size_t rx_payload_size = read_size - sizeof(EventHeader);
-    const size_t size_from_header =
-        packet->view().header().parameter_total_size;
+    const size_t size_from_header = packet->view().header().parameter_total_size;
     if (size_from_header != rx_payload_size) {
       bt_log(ERROR, "hci",
              "malformed packet - payload size from header (%zu) does not match"

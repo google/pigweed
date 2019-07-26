@@ -24,12 +24,10 @@ DataBufferInfo::DataBufferInfo(size_t max_data_length, size_t max_num_packets)
 DataBufferInfo::DataBufferInfo() : max_data_length_(0u), max_num_packets_(0u) {}
 
 bool DataBufferInfo::operator==(const DataBufferInfo& other) const {
-  return max_data_length_ == other.max_data_length_ &&
-         max_num_packets_ == other.max_num_packets_;
+  return max_data_length_ == other.max_data_length_ && max_num_packets_ == other.max_num_packets_;
 }
 
-ACLDataChannel::ACLDataChannel(Transport* transport,
-                               zx::channel hci_acl_channel)
+ACLDataChannel::ACLDataChannel(Transport* transport, zx::channel hci_acl_channel)
     : transport_(transport),
       channel_(std::move(hci_acl_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
@@ -54,8 +52,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!is_initialized_);
-  ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() ||
-                  le_buffer_info.IsAvailable());
+  ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
   bredr_buffer_info_ = bredr_buffer_info;
   le_buffer_info_ = le_buffer_info;
@@ -63,8 +60,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
   auto setup_handler_task = [this] {
     zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
     if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed channel setup %s",
-             zx_status_get_string(status));
+      bt_log(ERROR, "hci", "failed channel setup %s", zx_status_get_string(status));
       channel_wait_.set_object(ZX_HANDLE_INVALID);
       return;
     }
@@ -80,8 +76,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
 
   event_handler_id_ = transport_->command_channel()->AddEventHandler(
       kNumberOfCompletedPacketsEventCode,
-      std::bind(&ACLDataChannel::NumberOfCompletedPacketsCallback, this,
-                std::placeholders::_1),
+      std::bind(&ACLDataChannel::NumberOfCompletedPacketsCallback, this, std::placeholders::_1),
       io_dispatcher_);
   ZX_DEBUG_ASSERT(event_handler_id_);
 
@@ -101,8 +96,7 @@ void ACLDataChannel::ShutDown() {
     bt_log(TRACE, "hci", "removing I/O handler");
     zx_status_t status = channel_wait_.Cancel();
     if (status != ZX_OK) {
-      bt_log(WARN, "hci", "couldn't cancel wait on channel: %s",
-             zx_status_get_string(status));
+      bt_log(WARN, "hci", "couldn't cancel wait on channel: %s", zx_status_get_string(status));
     }
   };
 
@@ -129,8 +123,7 @@ void ACLDataChannel::SetDataRxHandler(DataReceivedCallback rx_callback,
   rx_dispatcher_ = rx_dispatcher;
 }
 
-bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet,
-                                Connection::LinkType ll_type) {
+bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -152,8 +145,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet,
   return true;
 }
 
-bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets,
-                                 Connection::LinkType ll_type) {
+bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -187,8 +179,7 @@ bool ACLDataChannel::ClearLinkState(hci::ConnectionHandle handle) {
   std::lock_guard<std::mutex> lock(send_mutex_);
   auto iter = pending_links_.find(handle);
   if (iter == pending_links_.end()) {
-    bt_log(TRACE, "hci", "no pending packets on connection (handle: %#.4x)",
-           handle);
+    bt_log(TRACE, "hci", "no pending packets on connection (handle: %#.4x)", handle);
     return false;
   }
 
@@ -207,9 +198,7 @@ bool ACLDataChannel::ClearLinkState(hci::ConnectionHandle handle) {
   return true;
 }
 
-const DataBufferInfo& ACLDataChannel::GetBufferInfo() const {
-  return bredr_buffer_info_;
-}
+const DataBufferInfo& ACLDataChannel::GetBufferInfo() const { return bredr_buffer_info_; }
 
 const DataBufferInfo& ACLDataChannel::GetLEBufferInfo() const {
   return le_buffer_info_.IsAvailable() ? le_buffer_info_ : bredr_buffer_info_;
@@ -221,8 +210,7 @@ size_t ACLDataChannel::GetBufferMTU(Connection::LinkType ll_type) const {
   return GetLEBufferInfo().max_data_length();
 }
 
-void ACLDataChannel::NumberOfCompletedPacketsCallback(
-    const EventPacket& event) {
+void ACLDataChannel::NumberOfCompletedPacketsCallback(const EventPacket& event) {
   if (!is_initialized_) {
     return;
   }
@@ -241,8 +229,7 @@ void ACLDataChannel::NumberOfCompletedPacketsCallback(
 
     auto iter = pending_links_.find(le16toh(data->connection_handle));
     if (iter == pending_links_.end()) {
-      bt_log(WARN, "hci",
-             "controller reported sent packets on unknown connection handle!");
+      bt_log(WARN, "hci", "controller reported sent packets on unknown connection handle!");
       continue;
     }
 
@@ -253,8 +240,7 @@ void ACLDataChannel::NumberOfCompletedPacketsCallback(
       bt_log(WARN, "hci",
              "packet tx count mismatch! (handle: %#.4x, expected: %zu, "
              "actual : %u)",
-             le16toh(data->connection_handle), iter->second.count,
-             comp_packets);
+             le16toh(data->connection_handle), iter->second.count, comp_packets);
 
       iter->second.count = 0u;
 
@@ -298,11 +284,9 @@ void ACLDataChannel::TrySendNextQueuedPacketsLocked() {
     if (!avail_bredr_packets && !avail_le_packets)
       break;
 
-    if (send_queue_.front().ll_type == Connection::LinkType::kACL &&
-        avail_bredr_packets) {
+    if (send_queue_.front().ll_type == Connection::LinkType::kACL && avail_bredr_packets) {
       --avail_bredr_packets;
-    } else if (send_queue_.front().ll_type == Connection::LinkType::kLE &&
-               avail_le_packets) {
+    } else if (send_queue_.front().ll_type == Connection::LinkType::kLE && avail_le_packets) {
       --avail_le_packets;
     } else {
       // Cannot send packet yet, so skip it.
@@ -323,11 +307,9 @@ void ACLDataChannel::TrySendNextQueuedPacketsLocked() {
     const QueuedDataPacket& packet = to_send.front();
 
     auto packet_bytes = packet.packet->view().data();
-    zx_status_t status =
-        channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
+    zx_status_t status = channel_.write(0, packet_bytes.data(), packet_bytes.size(), nullptr, 0);
     if (status < 0) {
-      bt_log(ERROR, "hci",
-             "failed to send data packet to HCI driver (%s) - dropping packet",
+      bt_log(ERROR, "hci", "failed to send data packet to HCI driver (%s) - dropping packet",
              zx_status_get_string(status));
       to_send.pop_front();
       continue;
@@ -341,8 +323,7 @@ void ACLDataChannel::TrySendNextQueuedPacketsLocked() {
 
     auto iter = pending_links_.find(packet.packet->connection_handle());
     if (iter == pending_links_.end()) {
-      pending_links_[packet.packet->connection_handle()] =
-          PendingPacketData(packet.ll_type);
+      pending_links_[packet.packet->connection_handle()] = PendingPacketData(packet.ll_type);
     } else {
       iter->second.count++;
     }
@@ -383,8 +364,7 @@ void ACLDataChannel::DecrementLETotalNumPacketsLocked(size_t count) {
 }
 
 void ACLDataChannel::IncrementTotalNumPacketsLocked(size_t count) {
-  ZX_DEBUG_ASSERT(num_sent_packets_ + count <=
-                  bredr_buffer_info_.max_num_packets());
+  ZX_DEBUG_ASSERT(num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
   num_sent_packets_ += count;
 }
 
@@ -394,14 +374,12 @@ void ACLDataChannel::IncrementLETotalNumPacketsLocked(size_t count) {
     return;
   }
 
-  ZX_DEBUG_ASSERT(le_num_sent_packets_ + count <=
-                  le_buffer_info_.max_num_packets());
+  ZX_DEBUG_ASSERT(le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
   le_num_sent_packets_ += count;
 }
 
-void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher,
-                                    async::WaitBase* wait, zx_status_t status,
-                                    const zx_packet_signal_t* signal) {
+void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                                    zx_status_t status, const zx_packet_signal_t* signal) {
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
     return;
@@ -424,34 +402,29 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher,
     // we allocate the largest possible buffer.
     auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
     if (!packet) {
-      bt_log(ERROR, "hci",
-             "failed to allocate buffer received ACL data packet!");
+      bt_log(ERROR, "hci", "failed to allocate buffer received ACL data packet!");
       return;
     }
     uint32_t read_size;
     auto packet_bytes = packet->mutable_view()->mutable_data();
-    zx_status_t read_status =
-        channel_.read(0u, packet_bytes.mutable_data(), nullptr,
-                      packet_bytes.size(), 0, &read_size, nullptr);
+    zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
+                                            packet_bytes.size(), 0, &read_size, nullptr);
     if (read_status < 0) {
-      bt_log(TRACE, "hci", "failed to read RX bytes: %s",
-             zx_status_get_string(status));
+      bt_log(TRACE, "hci", "failed to read RX bytes: %s", zx_status_get_string(status));
       // Clear the handler so that we stop receiving events from it.
       // TODO(jamuraa): signal failure to the consumer so it can do something.
       return;
     }
 
     if (read_size < sizeof(ACLDataHeader)) {
-      bt_log(ERROR, "hci",
-             "malformed data packet - expected at least %zu bytes, got %u",
+      bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
              sizeof(ACLDataHeader), read_size);
       // TODO(jamuraa): signal stream error somehow
       continue;
     }
 
     const size_t rx_payload_size = read_size - sizeof(ACLDataHeader);
-    const size_t size_from_header =
-        le16toh(packet->view().header().data_total_length);
+    const size_t size_from_header = le16toh(packet->view().header().data_total_length);
     if (size_from_header != rx_payload_size) {
       bt_log(ERROR, "hci",
              "malformed packet - payload size from header (%zu) does not match"
@@ -465,10 +438,10 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher,
 
     ZX_DEBUG_ASSERT(rx_dispatcher_);
 
-    async::PostTask(rx_dispatcher_, [cb = rx_callback_.share(),
-                                     packet = std::move(packet)]() mutable {
-      cb(std::move(packet));
-    });
+    async::PostTask(rx_dispatcher_,
+                    [cb = rx_callback_.share(), packet = std::move(packet)]() mutable {
+                      cb(std::move(packet));
+                    });
   }
 
   status = wait->Begin(dispatcher);

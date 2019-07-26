@@ -21,8 +21,7 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesInformationFrame) {
                   .designates_information_frame());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesNonInformationFrame) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesNonInformationFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
   EXPECT_FALSE(CreateStaticByteBuffer(0b0000'0001, 0)
                    .As<EnhancedControlField>()
@@ -36,24 +35,21 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesSupervisoryFrame) {
                   .designates_supervisory_frame());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesNonSupervisoryFrame) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesNonSupervisoryFrame) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
   EXPECT_FALSE(CreateStaticByteBuffer(0b00000000, 1)
                    .As<EnhancedControlField>()
                    .designates_supervisory_frame());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesStartOfSegmentedSdu) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesStartOfSegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
   EXPECT_TRUE(CreateStaticByteBuffer(0, 0b01000000)
                   .As<EnhancedControlField>()
                   .designates_start_of_segmented_sdu());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesNonStartOfSegmentedSdu) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesNonStartOfSegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
   EXPECT_FALSE(CreateStaticByteBuffer(0, 0b00000000)
                    .As<EnhancedControlField>()
@@ -69,8 +65,7 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
                    .designates_start_of_segmented_sdu());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesPartOfSegmentedSdu) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesPartOfSegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
   EXPECT_TRUE(CreateStaticByteBuffer(0, 0b01000000)
                   .As<EnhancedControlField>()
@@ -83,8 +78,7 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
                   .designates_part_of_segmented_sdu());
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     IdentifiesNotPartOfSegmentedSdu) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesNotPartOfSegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
   EXPECT_FALSE(CreateStaticByteBuffer(0, 0b00000000)
                    .As<EnhancedControlField>()
@@ -104,9 +98,8 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, ReadsRequestSequenceNumber) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Core Spec v5, Vol 3, Part
   // A, Sec 8.3.
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
-    EXPECT_EQ(seq_num, CreateStaticByteBuffer(0, seq_num)
-                           .As<EnhancedControlField>()
-                           .request_seq_num());
+    EXPECT_EQ(seq_num,
+              CreateStaticByteBuffer(0, seq_num).As<EnhancedControlField>().request_seq_num());
   }
 }
 
@@ -115,27 +108,23 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IsConstructedProperly) {
   EXPECT_EQ(CreateStaticByteBuffer(0, 0), BufferView(&ecf, sizeof(ecf)));
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     SetSupervisoryFrameSetsBitCorrectly) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetSupervisoryFrameSetsBitCorrectly) {
   EnhancedControlField ecf;
   ecf.set_supervisory_frame();
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
   EXPECT_EQ(CreateStaticByteBuffer(0b1, 0), BufferView(&ecf, sizeof(ecf)));
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     SetRequestSeqNumSetsBitsCorrectly) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetRequestSeqNumSetsBitsCorrectly) {
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
     EnhancedControlField ecf;
     ecf.set_request_seq_num(seq_num);
     // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-    EXPECT_EQ(CreateStaticByteBuffer(0, seq_num),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, seq_num), BufferView(&ecf, sizeof(ecf)));
   }
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     SetSegmentationStatusWorksCorrectlyOnFreshFrame) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetSegmentationStatusWorksCorrectlyOnFreshFrame) {
   // See Core Spec, v5, Vol 3, Part A, Tables 3.2 and 3.4.
 
   {
@@ -147,22 +136,19 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
   {
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::FirstSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000), BufferView(&ecf, sizeof(ecf)));
   }
 
   {
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::LastSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000), BufferView(&ecf, sizeof(ecf)));
   }
 
   {
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000), BufferView(&ecf, sizeof(ecf)));
   }
 }
 
@@ -181,65 +167,55 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
     ecf.set_segmentation_status(SegmentationStatus::FirstSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b0100'0000), BufferView(&ecf, sizeof(ecf)));
   }
 
   {
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
     ecf.set_segmentation_status(SegmentationStatus::LastSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1000'0000), BufferView(&ecf, sizeof(ecf)));
   }
 
   {
     EnhancedControlField ecf;
     ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
     ecf.set_segmentation_status(SegmentationStatus::MiddleSegment);
-    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000),
-              BufferView(&ecf, sizeof(ecf)));
+    EXPECT_EQ(CreateStaticByteBuffer(0, 0b1100'0000), BufferView(&ecf, sizeof(ecf)));
   }
 }
 
-TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
-     SetSegmentationStatusPreservesRequestSeqNum) {
+TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetSegmentationStatusPreservesRequestSeqNum) {
   EnhancedControlField ecf;
   ecf.set_request_seq_num(EnhancedControlField::kMaxSeqNum);
   ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
   EXPECT_EQ(EnhancedControlField::kMaxSeqNum, ecf.request_seq_num());
 }
 
-TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
-     ReadsTxSequenceNumber) {
+TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest, ReadsTxSequenceNumber) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Core Spec v5, Vol 3, Part
   // A, Sec 8.3.
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
-    EXPECT_EQ(seq_num, CreateStaticByteBuffer(seq_num << 1, 0)
-                           .As<SimpleInformationFrameHeader>()
-                           .tx_seq());
+    EXPECT_EQ(seq_num,
+              CreateStaticByteBuffer(seq_num << 1, 0).As<SimpleInformationFrameHeader>().tx_seq());
   }
 }
 
-TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
-     IsConstructedProperly) {
+TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest, IsConstructedProperly) {
   constexpr uint8_t kTxSeq = 63;
   SimpleInformationFrameHeader frame(kTxSeq);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_EQ(CreateStaticByteBuffer(0b111'1110, 0),
-            BufferView(&frame, sizeof(frame)));
+  EXPECT_EQ(CreateStaticByteBuffer(0b111'1110, 0), BufferView(&frame, sizeof(frame)));
 }
 
-TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest,
-     SetSegmentationStatusPreservesTxSeq) {
+TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest, SetSegmentationStatusPreservesTxSeq) {
   constexpr uint8_t kTxSeq = 63;
   SimpleInformationFrameHeader frame(kTxSeq);
   frame.set_segmentation_status(SegmentationStatus::Unsegmented);
   EXPECT_EQ(kTxSeq, frame.tx_seq());
 }
 
-TEST(L2CAP_FrameHeaders_SimpleStartOfSduFrameHeaderTest,
-     IsConstructedProperly) {
+TEST(L2CAP_FrameHeaders_SimpleStartOfSduFrameHeaderTest, IsConstructedProperly) {
   constexpr uint8_t kTxSeq = 63;
   SimpleStartOfSduFrameHeader frame(kTxSeq);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2, and Figure 3.3.
@@ -252,92 +228,69 @@ TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, IsConstructedProperly) {
 
   {
     SimpleSupervisoryFrame frame(SupervisoryFunction::ReceiverReady);
-    EXPECT_EQ(CreateStaticByteBuffer(0b0001, 0),
-              BufferView(&frame, sizeof(frame)));
+    EXPECT_EQ(CreateStaticByteBuffer(0b0001, 0), BufferView(&frame, sizeof(frame)));
   }
 
   {
     SimpleSupervisoryFrame frame(SupervisoryFunction::Reject);
-    EXPECT_EQ(CreateStaticByteBuffer(0b0101, 0),
-              BufferView(&frame, sizeof(frame)));
+    EXPECT_EQ(CreateStaticByteBuffer(0b0101, 0), BufferView(&frame, sizeof(frame)));
   }
 
   {
     SimpleSupervisoryFrame frame(SupervisoryFunction::ReceiverNotReady);
-    EXPECT_EQ(CreateStaticByteBuffer(0b1001, 0),
-              BufferView(&frame, sizeof(frame)));
+    EXPECT_EQ(CreateStaticByteBuffer(0b1001, 0), BufferView(&frame, sizeof(frame)));
   }
 
   {
     SimpleSupervisoryFrame frame(SupervisoryFunction::SelectiveReject);
-    EXPECT_EQ(CreateStaticByteBuffer(0b1101, 0),
-              BufferView(&frame, sizeof(frame)));
+    EXPECT_EQ(CreateStaticByteBuffer(0b1101, 0), BufferView(&frame, sizeof(frame)));
   }
 }
 
 TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, IdentifiesPollRequest) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(CreateStaticByteBuffer(0b0'0001, 0)
-                   .As<SimpleSupervisoryFrame>()
-                   .is_poll_request());
-  EXPECT_TRUE(CreateStaticByteBuffer(0b1'0001, 0)
-                  .As<SimpleSupervisoryFrame>()
-                  .is_poll_request());
+  EXPECT_FALSE(CreateStaticByteBuffer(0b0'0001, 0).As<SimpleSupervisoryFrame>().is_poll_request());
+  EXPECT_TRUE(CreateStaticByteBuffer(0b1'0001, 0).As<SimpleSupervisoryFrame>().is_poll_request());
 }
 
 TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, IdentifiesPollResponse) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_FALSE(CreateStaticByteBuffer(0b0000'0001, 0)
-                   .As<SimpleSupervisoryFrame>()
-                   .is_poll_response());
-  EXPECT_TRUE(CreateStaticByteBuffer(0b1000'0001, 0)
-                  .As<SimpleSupervisoryFrame>()
-                  .is_poll_response());
+  EXPECT_FALSE(
+      CreateStaticByteBuffer(0b0000'0001, 0).As<SimpleSupervisoryFrame>().is_poll_response());
+  EXPECT_TRUE(
+      CreateStaticByteBuffer(0b1000'0001, 0).As<SimpleSupervisoryFrame>().is_poll_response());
 }
 
-TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest,
-     FunctionReadsSupervisoryFunction) {
+TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, FunctionReadsSupervisoryFunction) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 and Table 3.5.
   EXPECT_EQ(SupervisoryFunction::ReceiverReady,
-            CreateStaticByteBuffer(0b0001, 0)
-                .As<SimpleSupervisoryFrame>()
-                .function());
-  EXPECT_EQ(SupervisoryFunction::Reject, CreateStaticByteBuffer(0b0101, 0)
-                                             .As<SimpleSupervisoryFrame>()
-                                             .function());
+            CreateStaticByteBuffer(0b0001, 0).As<SimpleSupervisoryFrame>().function());
+  EXPECT_EQ(SupervisoryFunction::Reject,
+            CreateStaticByteBuffer(0b0101, 0).As<SimpleSupervisoryFrame>().function());
   EXPECT_EQ(SupervisoryFunction::ReceiverNotReady,
-            CreateStaticByteBuffer(0b1001, 0)
-                .As<SimpleSupervisoryFrame>()
-                .function());
+            CreateStaticByteBuffer(0b1001, 0).As<SimpleSupervisoryFrame>().function());
   EXPECT_EQ(SupervisoryFunction::SelectiveReject,
-            CreateStaticByteBuffer(0b1101, 0)
-                .As<SimpleSupervisoryFrame>()
-                .function());
+            CreateStaticByteBuffer(0b1101, 0).As<SimpleSupervisoryFrame>().function());
 }
 
-TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest,
-     SetIsPollRequestSetsCorrectBit) {
+TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, SetIsPollRequestSetsCorrectBit) {
   SimpleSupervisoryFrame sframe(SupervisoryFunction::ReceiverReady);
   sframe.set_is_poll_request();
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_EQ(CreateStaticByteBuffer(0b1'0001, 0),
-            BufferView(&sframe, sizeof(sframe)));
+  EXPECT_EQ(CreateStaticByteBuffer(0b1'0001, 0), BufferView(&sframe, sizeof(sframe)));
 }
 
-TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest,
-     SetIsPollResponseSetsCorrectBit) {
+TEST(L2CAP_FrameHeaders_SimpleSupervisoryFrameTest, SetIsPollResponseSetsCorrectBit) {
   SimpleSupervisoryFrame sframe(SupervisoryFunction::ReceiverReady);
   sframe.set_is_poll_response();
   // See Core Spec, v5, Vol 3, Part A, Table 3.2.
-  EXPECT_EQ(CreateStaticByteBuffer(0b1000'0001, 0),
-            BufferView(&sframe, sizeof(sframe)));
+  EXPECT_EQ(CreateStaticByteBuffer(0b1000'0001, 0), BufferView(&sframe, sizeof(sframe)));
 }
 
 TEST(L2CAP_FrameHeaders_SimpleReceiverReadyFrameTest, IsConstructedProperly) {
   SimpleReceiverReadyFrame frame;
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 and Table 3.5.
-  EXPECT_EQ(CreateStaticByteBuffer(0b0001, 0),
-            BufferView(&frame, sizeof(frame)));
+  EXPECT_EQ(CreateStaticByteBuffer(0b0001, 0), BufferView(&frame, sizeof(frame)));
 }
 
 }  // namespace

@@ -18,8 +18,7 @@ TEST(L2CAP_PduGeneratorTest, CanGeneratePdusFromEvenlyDivisbleBuffer) {
   EXPECT_TRUE(gen.GetNextPdu());
 }
 
-TEST(L2CAP_PduGeneratorTest,
-     ReadingPastEndFromEvenlyDivisibleBufferYieldsFalse) {
+TEST(L2CAP_PduGeneratorTest, ReadingPastEndFromEvenlyDivisibleBufferYieldsFalse) {
   std::array<uint8_t, 1024> buf;
   internal::PduGenerator gen(buf.data(), buf.size(), 2);
   gen.GetNextPdu();
@@ -37,8 +36,7 @@ TEST(L2CAP_PduGeneratorTest, CanGeneratePdusFromNonEvenlyDivisibleBuffer) {
   }
 }
 
-TEST(L2CAP_PduGeneratorTest,
-     ReadingPastEndFromNonEvenlyDivisibleBufferYieldsFalse) {
+TEST(L2CAP_PduGeneratorTest, ReadingPastEndFromNonEvenlyDivisibleBufferYieldsFalse) {
   std::array<uint8_t, 1024> buf;
   internal::PduGenerator gen(buf.data(), buf.size(), 3);
   gen.GetNextPdu();
@@ -54,8 +52,7 @@ TEST(L2CAP_PduGeneratorTest, ZeroNumPdusYieldsZeroPdus) {
 
 TEST(L2CAP_PduGeneratorTest, NumPdusGreaterThanNumBytesYieldsZeroPdus) {
   std::array<uint8_t, 1024> buf;
-  EXPECT_FALSE(internal::PduGenerator(buf.data(), buf.size(), buf.size() + 1)
-                   .GetNextPdu());
+  EXPECT_FALSE(internal::PduGenerator(buf.data(), buf.size(), buf.size() + 1).GetNextPdu());
 }
 
 TEST(L2CAP_PduGeneratorTest, ZeroBufSizeDoesNotCrash) {

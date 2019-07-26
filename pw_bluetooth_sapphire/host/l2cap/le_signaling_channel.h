@@ -25,8 +25,7 @@ class LESignalingChannel final : public SignalingChannel {
   ~LESignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const ByteBuffer& payload,
-                   ResponseHandler cb) override;
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
 
   // Sets a |callback| to be invoked when a Connection Parameter Update request
@@ -35,12 +34,10 @@ class LESignalingChannel final : public SignalingChannel {
   // implementation of |callback| to apply them to the controller.
   //
   // This task will be posted onto the given |dispatcher|.
-  void set_conn_param_update_callback(
-      ConnectionParameterUpdateCallback callback,
-      async_dispatcher_t* dispatcher) {
+  void set_conn_param_update_callback(ConnectionParameterUpdateCallback callback,
+                                      async_dispatcher_t* dispatcher) {
     ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
-    ZX_DEBUG_ASSERT(static_cast<bool>(callback) ==
-                    static_cast<bool>(dispatcher));
+    ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
     conn_param_update_cb_ = std::move(callback);
     dispatcher_ = dispatcher;
   }
@@ -49,8 +46,7 @@ class LESignalingChannel final : public SignalingChannel {
   void OnConnParamUpdateReceived(const SignalingPacket& packet);
 
   // SignalingChannel override
-  void DecodeRxUnit(ByteBufferPtr sdu,
-                    const SignalingPacketHandler& cb) override;
+  void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override;
 
   bool HandlePacket(const SignalingPacket& packet) override;
 

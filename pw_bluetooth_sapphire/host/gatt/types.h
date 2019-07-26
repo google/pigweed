@@ -32,14 +32,10 @@ class Service final {
   const UUID& type() const { return type_; }
 
   // The list of characteristics that have been added to this service.
-  const std::vector<CharacteristicPtr>& characteristics() const {
-    return characteristics_;
-  }
+  const std::vector<CharacteristicPtr>& characteristics() const { return characteristics_; }
 
   // Passes the ownership of this service's characteristics to the caller.
-  std::vector<CharacteristicPtr> ReleaseCharacteristics() {
-    return std::move(characteristics_);
-  }
+  std::vector<CharacteristicPtr> ReleaseCharacteristics() { return std::move(characteristics_); }
 
   // Adds the given characteristic to this service.
   inline void AddCharacteristic(CharacteristicPtr&& chr) {
@@ -65,8 +61,7 @@ using DescriptorPtr = std::unique_ptr<Descriptor>;
 // composition/structure of a characteristic and is not intended to carry state.
 class Characteristic final {
  public:
-  Characteristic(IdType id, const UUID& type, uint8_t properties,
-                 uint16_t extended_properties,
+  Characteristic(IdType id, const UUID& type, uint8_t properties, uint16_t extended_properties,
                  const att::AccessRequirements& read_permissions,
                  const att::AccessRequirements& write_permissions,
                  const att::AccessRequirements& update_permissions);
@@ -77,24 +72,16 @@ class Characteristic final {
   uint8_t properties() const { return properties_; }
   uint16_t extended_properties() const { return extended_properties_; }
 
-  const att::AccessRequirements& read_permissions() const {
-    return read_permissions_;
-  }
+  const att::AccessRequirements& read_permissions() const { return read_permissions_; }
 
-  const att::AccessRequirements& write_permissions() const {
-    return write_permissions_;
-  }
+  const att::AccessRequirements& write_permissions() const { return write_permissions_; }
 
-  const att::AccessRequirements& update_permissions() const {
-    return update_permissions_;
-  }
+  const att::AccessRequirements& update_permissions() const { return update_permissions_; }
 
   const std::vector<DescriptorPtr>& descriptors() const { return descriptors_; }
 
   // Passes the ownership of this characteristic's descriptors to the caller.
-  std::vector<DescriptorPtr> ReleaseDescriptors() {
-    return std::move(descriptors_);
-  }
+  std::vector<DescriptorPtr> ReleaseDescriptors() { return std::move(descriptors_); }
 
   inline void AddDescriptor(DescriptorPtr&& desc) {
     descriptors_.push_back(std::forward<DescriptorPtr>(desc));
@@ -118,21 +105,16 @@ class Characteristic final {
 // to carry state.
 class Descriptor final {
  public:
-  Descriptor(IdType id, const UUID& type,
-             const att::AccessRequirements& read_permissions,
+  Descriptor(IdType id, const UUID& type, const att::AccessRequirements& read_permissions,
              const att::AccessRequirements& write_permissions);
   ~Descriptor() = default;
 
   IdType id() const { return id_; }
   const UUID& type() const { return type_; }
 
-  const att::AccessRequirements& read_permissions() const {
-    return read_permissions_;
-  }
+  const att::AccessRequirements& read_permissions() const { return read_permissions_; }
 
-  const att::AccessRequirements& write_permissions() const {
-    return write_permissions_;
-  }
+  const att::AccessRequirements& write_permissions() const { return write_permissions_; }
 
  private:
   IdType id_;

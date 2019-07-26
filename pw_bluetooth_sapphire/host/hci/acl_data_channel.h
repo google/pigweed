@@ -54,9 +54,7 @@ class DataBufferInfo {
 
   // Comparison operators.
   bool operator==(const DataBufferInfo& other) const;
-  bool operator!=(const DataBufferInfo& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const DataBufferInfo& other) const { return !(*this == other); }
 
  private:
   size_t max_data_length_;
@@ -86,8 +84,7 @@ class ACLDataChannel final {
   //
   // As this class is intended to support flow-control for both, this function
   // should be called based on what is reported by the controller.
-  void Initialize(const DataBufferInfo& bredr_buffer_info,
-                  const DataBufferInfo& le_buffer_info);
+  void Initialize(const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
 
   // Unregisters event handlers and cleans up.
   // NOTE: Initialize() and ShutDown() MUST be called on the same thread. These
@@ -97,16 +94,14 @@ class ACLDataChannel final {
   // Callback invoked when there is a new ACL data packet from the controller.
   // The ownership of the |data_packet| is passed to the callback implementation
   // as a rvalue reference..
-  using DataReceivedCallback =
-      fit::function<void(ACLDataPacketPtr data_packet)>;
+  using DataReceivedCallback = fit::function<void(ACLDataPacketPtr data_packet)>;
 
   // Assigns a handler callback for received ACL data packets. |rx_callback|
   // will be posted on |dispatcher|.
   //
   // TODO(armansito): |dispatcher| will become mandatory. The Transport I/O
   // thread will be gone when bt-hci becomes a non-IPC protocol.
-  void SetDataRxHandler(DataReceivedCallback rx_callback,
-                        async_dispatcher_t* rx_dispatcher);
+  void SetDataRxHandler(DataReceivedCallback rx_callback, async_dispatcher_t* rx_dispatcher);
 
   // Queues the given ACL data packet to be sent to the controller. Returns
   // false if the packet cannot be queued up, e.g. if the size of |data_packet|
@@ -122,8 +117,7 @@ class ACLDataChannel final {
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for |ll_type| or it is empty.
-  bool SendPackets(LinkedList<ACLDataPacket> packets,
-                   Connection::LinkType ll_type);
+  bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type);
 
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
@@ -188,8 +182,7 @@ class ACLDataChannel final {
 
   // Decreases the total number of sent packets count for LE by the given
   // amount. Must be called from a locked context.
-  void DecrementLETotalNumPacketsLocked(size_t count)
-      __TA_REQUIRES(send_mutex_);
+  void DecrementLETotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
 
   // Increments the total number of sent packets count by the given amount. Must
   // be called from a locked context.
@@ -197,12 +190,11 @@ class ACLDataChannel final {
 
   // Increments the total number of sent LE packets count by the given amount.
   // Must be called from a locked context.
-  void IncrementLETotalNumPacketsLocked(size_t count)
-      __TA_REQUIRES(send_mutex_);
+  void IncrementLETotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
 
   // Read Ready Handler for |channel_|
-  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                      zx_status_t status, const zx_packet_signal_t* signal);
+  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
+                      const zx_packet_signal_t* signal);
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
@@ -215,8 +207,7 @@ class ACLDataChannel final {
   zx::channel channel_;
 
   // Wait object for |channel_|
-  async::WaitMethod<ACLDataChannel, &ACLDataChannel::OnChannelReady>
-      channel_wait_{this};
+  async::WaitMethod<ACLDataChannel, &ACLDataChannel::OnChannelReady> channel_wait_{this};
 
   // True if this instance has been initialized through a call to Initialize().
   std::atomic_bool is_initialized_;
@@ -272,14 +263,12 @@ class ACLDataChannel final {
 
     // We initialize the packet count at 1 since a new entry will only be
     // created once.
-    PendingPacketData(Connection::LinkType ll_type)
-        : ll_type(ll_type), count(1u) {}
+    PendingPacketData(Connection::LinkType ll_type) : ll_type(ll_type), count(1u) {}
 
     Connection::LinkType ll_type;
     size_t count;
   };
-  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_
-      __TA_GUARDED(send_mutex_);
+  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_ __TA_GUARDED(send_mutex_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
 };

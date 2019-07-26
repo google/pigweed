@@ -33,41 +33,28 @@ class Server final {
   // |peer_id| is the unique system identifier for the peer device.
   // |database| will be queried by the Server to resolve transactions.
   // |bearer| is the ATT data bearer that this Server operates on.
-  Server(PeerId peer_id, fxl::RefPtr<att::Database> database,
-         fxl::RefPtr<att::Bearer> bearer);
+  Server(PeerId peer_id, fxl::RefPtr<att::Database> database, fxl::RefPtr<att::Bearer> bearer);
   ~Server();
 
   // Sends a Handle-Value notification or indication PDU with the given
   // attribute handle. If |indicate| is true, then an indication will be sent.
   // The underlying att::Bearer will disconnect the link if a confirmation is
   // not received in a timely manner.
-  void SendNotification(att::Handle handle, const ByteBuffer& value,
-                        bool indicate);
+  void SendNotification(att::Handle handle, const ByteBuffer& value, bool indicate);
 
  private:
   // ATT protocol request handlers:
-  void OnExchangeMTU(att::Bearer::TransactionId tid,
-                     const att::PacketReader& packet);
-  void OnFindInformation(att::Bearer::TransactionId tid,
-                         const att::PacketReader& packet);
-  void OnReadByGroupType(att::Bearer::TransactionId tid,
-                         const att::PacketReader& packet);
-  void OnReadByType(att::Bearer::TransactionId tid,
-                    const att::PacketReader& packet);
-  void OnReadRequest(att::Bearer::TransactionId tid,
-                     const att::PacketReader& packet);
-  void OnWriteRequest(att::Bearer::TransactionId tid,
-                      const att::PacketReader& packet);
-  void OnWriteCommand(att::Bearer::TransactionId tid,
-                      const att::PacketReader& packet);
-  void OnReadBlobRequest(att::Bearer::TransactionId tid,
-                         const att::PacketReader& packet);
-  void OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
-                                const att::PacketReader& packet);
-  void OnPrepareWriteRequest(att::Bearer::TransactionId tid,
-                             const att::PacketReader& packet);
-  void OnExecuteWriteRequest(att::Bearer::TransactionId tid,
-                             const att::PacketReader& packet);
+  void OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnFindInformation(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnReadByGroupType(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnReadByType(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnReadRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnWriteCommand(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnReadBlobRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnFindByTypeValueRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnPrepareWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
+  void OnExecuteWriteRequest(att::Bearer::TransactionId tid, const att::PacketReader& packet);
 
   // Helper function to serve the Read By Type and Read By Group Type requests.
   // This searches |db| for attributes with the given |type| and adds as many
@@ -80,11 +67,10 @@ class Server final {
   //
   // Returns att::ErrorCode::kNoError on success. On error, returns an error
   // code that can be used in a ATT Error Response.
-  att::ErrorCode ReadByTypeHelper(
-      att::Handle start, att::Handle end, const UUID& type, bool group_type,
-      size_t max_data_list_size, size_t max_value_size,
-      size_t entry_prefix_size, size_t* out_value_size,
-      std::list<const att::Attribute*>* out_results);
+  att::ErrorCode ReadByTypeHelper(att::Handle start, att::Handle end, const UUID& type,
+                                  bool group_type, size_t max_data_list_size, size_t max_value_size,
+                                  size_t entry_prefix_size, size_t* out_value_size,
+                                  std::list<const att::Attribute*>* out_results);
 
   PeerId peer_id_;
   fxl::RefPtr<att::Database> db_;

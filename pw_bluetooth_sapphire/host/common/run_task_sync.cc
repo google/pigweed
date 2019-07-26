@@ -28,17 +28,16 @@ void RunTaskSync(fit::closure callback, async_dispatcher_t* dispatcher) {
   std::condition_variable cv;
   bool done = false;
 
-  async::PostTask(dispatcher,
-                  [callback = std::move(callback), &mtx, &cv, &done] {
-                    callback();
+  async::PostTask(dispatcher, [callback = std::move(callback), &mtx, &cv, &done] {
+    callback();
 
-                    {
-                      std::lock_guard<std::mutex> lock(mtx);
-                      done = true;
-                    }
+    {
+      std::lock_guard<std::mutex> lock(mtx);
+      done = true;
+    }
 
-                    cv.notify_one();
-                  });
+    cv.notify_one();
+  });
 
   std::unique_lock<std::mutex> lock(mtx);
   cv.wait(lock, [&done] { return done; });

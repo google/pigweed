@@ -65,37 +65,32 @@ class FakeControllerBase {
   const zx::channel& snoop_channel() const { return snoop_channel_; }
 
   // Called when there is an incoming command packet.
-  virtual void OnCommandPacketReceived(
-      const PacketView<hci::CommandHeader>& command_packet) = 0;
+  virtual void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) = 0;
 
   // Called when there is an outgoing ACL data packet.
   virtual void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) = 0;
 
  private:
   // Read and handle packets received over the channels.
-  void HandleCommandPacket(async_dispatcher_t* dispatcher,
-                           async::WaitBase* wait, zx_status_t wait_status,
-                           const zx_packet_signal_t* signal);
+  void HandleCommandPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
+                           zx_status_t wait_status, const zx_packet_signal_t* signal);
   void HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                       zx_status_t wait_status,
-                       const zx_packet_signal_t* signal);
+                       zx_status_t wait_status, const zx_packet_signal_t* signal);
 
   // Sends the given packet over this FakeController's Snoop channel
   // endpoint.
   // Retuns the result of the write operation on the channel.
-  void SendSnoopChannelPacket(const ByteBuffer& packet,
-                              bt_hci_snoop_type_t packet_type,
+  void SendSnoopChannelPacket(const ByteBuffer& packet, bt_hci_snoop_type_t packet_type,
                               bool is_received);
 
   zx::channel cmd_channel_;
   zx::channel acl_channel_;
   zx::channel snoop_channel_;
 
-  async::WaitMethod<FakeControllerBase,
-                    &FakeControllerBase::HandleCommandPacket>
-      cmd_channel_wait_{this};
-  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleACLPacket>
-      acl_channel_wait_{this};
+  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleCommandPacket> cmd_channel_wait_{
+      this};
+  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleACLPacket> acl_channel_wait_{
+      this};
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerBase);
 };

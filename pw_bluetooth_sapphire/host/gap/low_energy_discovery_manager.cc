@@ -47,9 +47,8 @@ void LowEnergyDiscoverySession::Stop() {
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   ZX_DEBUG_ASSERT(peer.le());
-  if (peer_found_callback_ &&
-      filter_.MatchLowEnergyResult(peer.le()->advertising_data(),
-                                   peer.connectable(), peer.rssi())) {
+  if (peer_found_callback_ && filter_.MatchLowEnergyResult(peer.le()->advertising_data(),
+                                                           peer.connectable(), peer.rssi())) {
     peer_found_callback_(peer);
   }
 }
@@ -60,9 +59,9 @@ void LowEnergyDiscoverySession::NotifyError() {
     error_callback_();
 }
 
-LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
-    fxl::RefPtr<hci::Transport> hci, hci::LowEnergyScanner* scanner,
-    PeerCache* peer_cache)
+LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
+                                                     hci::LowEnergyScanner* scanner,
+                                                     PeerCache* peer_cache)
     : dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
       background_scan_enabled_(false),
@@ -93,8 +92,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
   // state in which we are stopping and restarting scan in between scan
   // periods).
   if (!pending_.empty() ||
-      (scanner_->state() == hci::LowEnergyScanner::State::kStopping &&
-       sessions_.empty())) {
+      (scanner_->state() == hci::LowEnergyScanner::State::kStopping && sessions_.empty())) {
     ZX_DEBUG_ASSERT(!scanner_->IsScanning());
     pending_.push(std::move(callback));
     return;
@@ -106,10 +104,10 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
   if (!sessions_.empty()) {
     // Invoke |callback| asynchronously.
     auto session = AddSession();
-    async::PostTask(dispatcher_, [callback = std::move(callback),
-                                  session = std::move(session)]() mutable {
-      callback(std::move(session));
-    });
+    async::PostTask(dispatcher_,
+                    [callback = std::move(callback), session = std::move(session)]() mutable {
+                      callback(std::move(session));
+                    });
     return;
   }
 
@@ -128,8 +126,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
 
 void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
   if (background_scan_enabled_ == enable) {
-    bt_log(TRACE, "gap-le", "background scan already %s",
-           (enable ? "enabled" : "disabled"));
+    bt_log(TRACE, "gap-le", "background scan already %s", (enable ? "enabled" : "disabled"));
     return;
   }
 
@@ -148,8 +145,7 @@ void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
   // If neither condition is true, we'll apply a scan policy in OnScanStatus().
 }
 
-std::unique_ptr<LowEnergyDiscoverySession>
-LowEnergyDiscoveryManager::AddSession() {
+std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession() {
   // Cannot use make_unique here since LowEnergyDiscoverySession has a private
   // constructor.
   std::unique_ptr<LowEnergyDiscoverySession> session(
@@ -159,8 +155,7 @@ LowEnergyDiscoveryManager::AddSession() {
   return session;
 }
 
-void LowEnergyDiscoveryManager::RemoveSession(
-    LowEnergyDiscoverySession* session) {
+void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(session);
 
@@ -176,14 +171,13 @@ void LowEnergyDiscoveryManager::RemoveSession(
     scanner_->StopScan();
 }
 
-void LowEnergyDiscoveryManager::OnPeerFound(
-    const hci::LowEnergyScanResult& result, const ByteBuffer& data) {
+void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& result,
+                                            const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (peer && peer->bonded() && bonded_conn_cb_) {
-    bt_log(SPEW, "gap-le", "found connectable bonded peer (id: %s)",
-           bt_str(peer->identifier()));
+    bt_log(SPEW, "gap-le", "found connectable bonded peer (id: %s)", bt_str(peer->identifier()));
     bonded_conn_cb_(peer->identifier());
   }
 
@@ -205,27 +199,23 @@ void LowEnergyDiscoveryManager::OnPeerFound(
   }
 }
 
-void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
-    const hci::LowEnergyScanResult& result) {
+void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // TODO(NET-1572): Resolve the address in the host if it is random and
   // |result.resolved| is false.
   bt_log(SPEW, "gap-le", "Received directed advertisement (address: %s, %s)",
-         result.address.ToString().c_str(),
-         (result.resolved ? "resolved" : "not resolved"));
+         result.address.ToString().c_str(), (result.resolved ? "resolved" : "not resolved"));
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (!peer) {
-    bt_log(TRACE, "gap-le",
-           "ignoring connection request from unknown peripheral: %s",
+    bt_log(TRACE, "gap-le", "ignoring connection request from unknown peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
   if (!peer->le() || !peer->le()->bonded()) {
-    bt_log(TRACE, "gap-le",
-           "rejecting connection request from unbonded peripheral: %s",
+    bt_log(TRACE, "gap-le", "rejecting connection request from unbonded peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
@@ -235,8 +225,7 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(
   }
 }
 
-void LowEnergyDiscoveryManager::OnScanStatus(
-    hci::LowEnergyScanner::ScanStatus status) {
+void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus status) {
   switch (status) {
     case hci::LowEnergyScanner::ScanStatus::kFailed: {
       bt_log(ERROR, "gap-le", "failed to initiate scan!");
@@ -276,8 +265,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(
       if (!pending_.empty()) {
         size_t count = pending_.size();
         std::unique_ptr<LowEnergyDiscoverySession> new_sessions[count];
-        std::generate(new_sessions, new_sessions + count,
-                      [this] { return AddSession(); });
+        std::generate(new_sessions, new_sessions + count, [this] { return AddSession(); });
         for (size_t i = 0; i < count; i++) {
           auto callback = std::move(pending_.front());
           pending_.pop();

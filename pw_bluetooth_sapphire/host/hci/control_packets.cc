@@ -13,18 +13,17 @@ namespace hci {
 namespace slab_allocators {
 
 // Slab-allocator traits for command packets.
-using LargeCommandTraits = PacketTraits<CommandHeader, kLargeControlPacketSize,
-                                        kNumLargeControlPackets>;
-using SmallCommandTraits = PacketTraits<CommandHeader, kSmallControlPacketSize,
-                                        kNumSmallControlPackets>;
+using LargeCommandTraits =
+    PacketTraits<CommandHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
+using SmallCommandTraits =
+    PacketTraits<CommandHeader, kSmallControlPacketSize, kNumSmallControlPackets>;
 
 // Slab-allocator traits for event packets. Since event packets are only
 // received (and not sent) and because the packet size cannot be determined
 // before the contents are read from the underlying channel, CommandChannel
 // always allocates the largest possible buffer for events. Thus, a small buffer
 // allocator is not needed.
-using EventTraits =
-    PacketTraits<EventHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
+using EventTraits = PacketTraits<EventHeader, kLargeControlPacketSize, kNumLargeControlPackets>;
 
 using LargeCommandAllocator = fbl::SlabAllocator<LargeCommandTraits>;
 using SmallCommandAllocator = fbl::SlabAllocator<SmallCommandTraits>;
@@ -64,8 +63,8 @@ bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
 
 // Specialization for the CommandComplete event.
 template <>
-bool StatusCodeFromEvent<CommandCompleteEventParams>(
-    const EventPacket& event, hci::StatusCode* out_code) {
+bool StatusCodeFromEvent<CommandCompleteEventParams>(const EventPacket& event,
+                                                     hci::StatusCode* out_code) {
   ZX_DEBUG_ASSERT(out_code);
 
   const auto* params = event.return_params<SimpleReturnParams>();
@@ -79,8 +78,7 @@ bool StatusCodeFromEvent<CommandCompleteEventParams>(
 }  // namespace
 
 // static
-std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode,
-                                                  size_t payload_size) {
+std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode, size_t payload_size) {
   auto packet = NewCommandPacket(payload_size);
   if (!packet)
     return nullptr;
@@ -91,8 +89,7 @@ std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode,
 
 void CommandPacket::WriteHeader(OpCode opcode) {
   mutable_view()->mutable_header()->opcode = htole16(opcode);
-  mutable_view()->mutable_header()->parameter_total_size =
-      view().payload_size();
+  mutable_view()->mutable_header()->parameter_total_size = view().payload_size();
 }
 
 // static
@@ -145,12 +142,9 @@ void EventPacket::InitializeFromBuffer() {
 }  // namespace hci
 }  // namespace bt
 
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    bt::hci::slab_allocators::LargeCommandTraits,
-    bt::hci::slab_allocators::kMaxNumSlabs, true);
-DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(
-    bt::hci::slab_allocators::SmallCommandTraits,
-    bt::hci::slab_allocators::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeCommandTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
+DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::SmallCommandTraits,
+                                      bt::hci::slab_allocators::kMaxNumSlabs, true);
 DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::EventTraits,
-                                      bt::hci::slab_allocators::kMaxNumSlabs,
-                                      true);
+                                      bt::hci::slab_allocators::kMaxNumSlabs, true);

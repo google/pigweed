@@ -16,12 +16,9 @@
 namespace bt {
 namespace testing {
 
-FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) {
-  ZX_DEBUG_ASSERT(dev_);
-}
+FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) { ZX_DEBUG_ASSERT(dev_); }
 
-void FakeGattServer::HandlePdu(hci::ConnectionHandle conn,
-                               const ByteBuffer& pdu) {
+void FakeGattServer::HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   if (pdu.size() < sizeof(att::OpCode)) {
     bt_log(WARN, "fake-hci", "malformed ATT packet!");
     return;
@@ -31,8 +28,7 @@ void FakeGattServer::HandlePdu(hci::ConnectionHandle conn,
   switch (opcode) {
     case att::kExchangeMTURequest:
       // Always reply back with the default ATT_MTU.
-      Send(conn, CreateStaticByteBuffer(att::kExchangeMTUResponse,
-                                        att::kLEMinMTU, 0x00));
+      Send(conn, CreateStaticByteBuffer(att::kExchangeMTUResponse, att::kLEMinMTU, 0x00));
       break;
     case att::kReadByGroupTypeRequest:
       HandleReadByGrpType(conn, pdu.view(sizeof(att::OpCode)));
@@ -43,12 +39,10 @@ void FakeGattServer::HandlePdu(hci::ConnectionHandle conn,
   }
 }
 
-void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn,
-                                         const ByteBuffer& bytes) {
+void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& bytes) {
   // Don't support 128-bit group types.
   if (bytes.size() != sizeof(att::ReadByGroupTypeRequestParams16)) {
-    SendErrorRsp(conn, att::kReadByGroupTypeRequest, 0,
-                 att::ErrorCode::kInvalidPDU);
+    SendErrorRsp(conn, att::kReadByGroupTypeRequest, 0, att::ErrorCode::kInvalidPDU);
     return;
   }
 
@@ -56,29 +50,27 @@ void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn,
   att::Handle start = le16toh(params.start_handle);
   att::Handle end = le16toh(params.end_handle);
   if (!start || end < start) {
-    SendErrorRsp(conn, att::kReadByGroupTypeRequest, start,
-                 att::ErrorCode::kInvalidHandle);
+    SendErrorRsp(conn, att::kReadByGroupTypeRequest, start, att::ErrorCode::kInvalidHandle);
     return;
   }
 
   // Only support primary service discovery.
   uint16_t grp_type = le16toh(params.type);
   if (grp_type != gatt::types::kPrimaryService16 || start > 1) {
-    SendErrorRsp(conn, att::kReadByGroupTypeRequest, start,
-                 att::ErrorCode::kAttributeNotFound);
+    SendErrorRsp(conn, att::kReadByGroupTypeRequest, start, att::ErrorCode::kAttributeNotFound);
     return;
   }
 
   // We report back the standard services.
   // TODO(armansito): Support standard characteristics and more services.
   auto rsp = CreateStaticByteBuffer(att::kReadByGroupTypeResponse,  // opcode
-                                    6,           // entry length
-                                    0x01, 0x00,  // start handle: 1
-                                    0x01, 0x00,  // end handle: 1
-                                    0x00, 0x18,  // "GAP Service" UUID: 0x1800
-                                    0x02, 0x00,  // start handle: 2
-                                    0x02, 0x00,  // end handle: 2
-                                    0x01, 0x18   // "GATT Service" UUID: 0x1801
+                                    6,                              // entry length
+                                    0x01, 0x00,                     // start handle: 1
+                                    0x01, 0x00,                     // end handle: 1
+                                    0x00, 0x18,                     // "GAP Service" UUID: 0x1800
+                                    0x02, 0x00,                     // start handle: 2
+                                    0x02, 0x00,                     // end handle: 2
+                                    0x01, 0x18                      // "GATT Service" UUID: 0x1801
   );
   Send(conn, rsp);
 }
@@ -91,11 +83,9 @@ void FakeGattServer::Send(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   }
 }
 
-void FakeGattServer::SendErrorRsp(hci::ConnectionHandle conn,
-                                  att::OpCode opcode, att::Handle handle,
-                                  att::ErrorCode ecode) {
-  StaticByteBuffer<sizeof(att::ErrorResponseParams) + sizeof(att::OpCode)>
-      buffer;
+void FakeGattServer::SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode,
+                                  att::Handle handle, att::ErrorCode ecode) {
+  StaticByteBuffer<sizeof(att::ErrorResponseParams) + sizeof(att::OpCode)> buffer;
   att::PacketWriter writer(att::kErrorResponse, &buffer);
   auto* params = writer.mutable_payload<att::ErrorResponseParams>();
   params->request_opcode = htole16(opcode);
