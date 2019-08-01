@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_SERVER_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_SERVER_BASE_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
+
+#include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"

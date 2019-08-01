@@ -5,8 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_PROFILE_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_PROFILE_SERVER_H_
 
-#include <fbl/macros.h>
 #include <fuchsia/bluetooth/bredr/cpp/fidl.h>
+
+#include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -18,7 +19,7 @@
 namespace bthost {
 
 // Implements the bredr::Profile FIDL interface.
-class ProfileServer : public AdapterServerBase<fuchsia::bluetooth::bredr::Profile> {
+class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
  public:
   ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                 fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
@@ -43,6 +44,8 @@ class ProfileServer : public AdapterServerBase<fuchsia::bluetooth::bredr::Profil
   void OnServiceFound(bt::PeerId peer_id,
                       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
+  bt::gap::Adapter* adapter() const { return adapter_.get(); }
+
   // Registered service IDs handed out, correlated with Service Handles.
   std::map<uint64_t, bt::sdp::ServiceHandle> registered_;
 
@@ -50,6 +53,8 @@ class ProfileServer : public AdapterServerBase<fuchsia::bluetooth::bredr::Profil
   uint64_t last_service_id_;
 
   std::vector<bt::gap::BrEdrConnectionManager::SearchId> searches_;
+
+  fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

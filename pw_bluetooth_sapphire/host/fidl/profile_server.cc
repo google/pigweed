@@ -274,18 +274,21 @@ void AddProtocolDescriptorList(
 
 ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                              fidl::InterfaceRequest<Profile> request)
-    : AdapterServerBase(adapter, this, std::move(request)),
+    : ServerBase(this, std::move(request)),
       last_service_id_(0),
+      adapter_(adapter),
       weak_ptr_factory_(this) {}
 
 ProfileServer::~ProfileServer() {
-  // Unregister anything that we have registered.
-  auto sdp = adapter()->sdp_server();
-  for (const auto& it : registered_) {
-    sdp->UnregisterService(it.second);
-  }
-  for (const auto& search_id : searches_) {
-    adapter()->bredr_connection_manager()->RemoveServiceSearch(search_id);
+  if (adapter()) {
+    // Unregister anything that we have registered.
+    auto sdp = adapter()->sdp_server();
+    for (const auto& it : registered_) {
+      sdp->UnregisterService(it.second);
+    }
+    for (const auto& search_id : searches_) {
+      adapter()->bredr_connection_manager()->RemoveServiceSearch(search_id);
+    }
   }
 }
 
@@ -294,16 +297,18 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
                                AddServiceCallback callback) {
   // TODO: check that the service definition is valid for useful error messages
 
-  auto sdp = adapter()->sdp_server();
-  ZX_DEBUG_ASSERT(sdp);
-
   bt::sdp::ServiceRecord rec;
   std::vector<bt::UUID> classes;
   for (auto& uuid_str : definition.service_class_uuids) {
     bt::UUID uuid;
     bt_log(SPEW, "profile_server", "Setting Service Class UUID %s", uuid_str.c_str());
     bool success = bt::StringToUuid(uuid_str, &uuid);
-    ZX_DEBUG_ASSERT(success);
+    if (!success) {
+      callback(
+          fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Service class UUIDs not valid"),
+          0);
+      return;
+    };
     classes.emplace_back(std::move(uuid));
   }
 
@@ -341,6 +346,10 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
 
   uint64_t next = last_service_id_ + 1;
 
+  ZX_DEBUG_ASSERT(adapter());
+  auto sdp = adapter()->sdp_server();
+  ZX_DEBUG_ASSERT(sdp);
+
   auto handle = sdp->RegisterService(
       std::move(rec), [this, next](auto sock, auto handle, const auto& protocol_list) {
         OnChannelConnected(next, std::move(sock), handle, std::move(protocol_list));
@@ -364,6 +373,8 @@ void ProfileServer::RemoveService(uint64_t service_id) {
     bt_log(INFO, "profile_server", "RemoveService with unused id %lu", service_id);
     return;
   }
+
+  ZX_DEBUG_ASSERT(adapter());
   auto server = adapter()->sdp_server();
   ZX_DEBUG_ASSERT(server);
   bool removed = server->UnregisterService(it->second);
@@ -380,6 +391,7 @@ void ProfileServer::AddSearch(fidlbredr::ServiceClassProfileIdentifier service_u
     attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
   }
 
+  ZX_DEBUG_ASSERT(adapter());
   auto search_id = adapter()->bredr_connection_manager()->AddServiceSearch(
       search_uuid, std::move(attributes),
       [this](auto id, const auto& attrs) { OnServiceFound(id, attrs); });
@@ -401,6 +413,7 @@ void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
   auto connected_cb = [cb = callback.share()](zx::socket channel) {
     cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(channel));
   };
+  ZX_DEBUG_ASSERT(adapter());
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
       *dev_id, channel, std::move(connected_cb), async_get_default_dispatcher());
   if (!connecting) {
@@ -413,6 +426,7 @@ void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
 void ProfileServer::OnChannelConnected(uint64_t service_id, zx::socket socket,
                                        bt::hci::ConnectionHandle handle,
                                        const bt::sdp::DataElement& protocol_list) {
+  ZX_DEBUG_ASSERT(adapter());
   auto id = adapter()->bredr_connection_manager()->GetPeerId(handle);
 
   const auto* prot_seq = protocol_list.At(1);
