@@ -178,6 +178,19 @@ TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
 TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
   std::vector<ServiceHandle> results{1, 2};
   ServiceSearchResponse resp;
+
+  // Empty results
+  const auto kExpectedEmpty = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
+                                                     0x01, 0x10,  // Transaction ID (0x0110)
+                                                     0x00, 0x05,  // Parameter length: 5 bytes
+                                                     0x00, 0x00,  // Total service record count: 0
+                                                     0x00, 0x00,  // Current service record count: 0
+                                                     0x00         // No continuation state
+  );
+
+  auto pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedEmpty, *pdu));
+
   resp.set_service_record_handle_list(results);
 
   const auto kExpected = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
@@ -190,7 +203,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                                                 0x00                     // No continuation state
   );
 
-  auto pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
+  pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 
   const auto kExpectedLimited =

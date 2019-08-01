@@ -350,12 +350,13 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
     response_record_count = max;
   }
 
-  uint8_t info_length = 0;
-  uint16_t current_record_count = response_record_count - start_idx;
-  if (!current_record_count) {
+  if (cont_state.size() > 0 && response_record_count <= start_idx) {
     // Invalid continuation state, out of range.
     return nullptr;
   }
+
+  uint16_t current_record_count = response_record_count - start_idx;
+  uint8_t info_length = 0;
   if (kMaxServiceSearchResponseServices < current_record_count) {
     current_record_count = kMaxServiceSearchResponseServices;
     info_length = sizeof(uint16_t);
