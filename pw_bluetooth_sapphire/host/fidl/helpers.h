@@ -104,8 +104,8 @@ bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filt
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
 template <>
-struct fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer> {
-  static fidl::VectorPtr<uint8_t> Convert(const bt::ByteBuffer& from);
+struct fidl::TypeConverter<std::vector<uint8_t>, bt::ByteBuffer> {
+  static std::vector<uint8_t> Convert(const bt::ByteBuffer& from);
 };
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_

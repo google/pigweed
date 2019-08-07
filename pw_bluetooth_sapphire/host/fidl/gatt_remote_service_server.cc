@@ -36,7 +36,8 @@ Characteristic CharacteristicToFidl(const RemoteCharacteristic& chrc) {
     Descriptor fidl_descr;
     fidl_descr.id = descr.id();
     fidl_descr.type = descr.info().type.ToString();
-    fidl_char.descriptors.push_back(std::move(fidl_descr));
+    fidl_char.descriptors.emplace();
+    fidl_char.descriptors->push_back(std::move(fidl_descr));
   }
 
   return fidl_char;
@@ -90,7 +91,7 @@ void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristic
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
   };
 
   service_->ReadCharacteristic(id, std::move(cb));
@@ -110,7 +111,7 @@ void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offse
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
   };
 
   service_->ReadLongCharacteristic(id, offset, max_bytes, std::move(cb));
@@ -152,7 +153,7 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
   };
 
   service_->ReadDescriptor(id, std::move(cb));
@@ -171,7 +172,7 @@ void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, u
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), fidl::VectorPtr<uint8_t>(std::move(vec)));
+    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
   };
 
   service_->ReadLongDescriptor(id, offset, max_bytes, std::move(cb));
@@ -232,7 +233,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
       return;
 
     self->binding()->events().OnCharacteristicValueUpdated(
-        id, fidl::VectorPtr<uint8_t>(value.ToVector()));
+        id, value.ToVector());
   };
 
   auto status_cb = [self, svc = service_, id, callback = std::move(callback)](

@@ -64,7 +64,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement*
         return false;
       }
       bt::UUID uuid;
-      bool success = StringToUuid(fidl.data.uuid(), &uuid);
+      bool success = StringToUuid(fidl.data.uuid().value_or(""), &uuid);
       if (!success) {
         return false;
       }
@@ -332,8 +332,10 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
 
   for (const auto& info : definition.information) {
     bt_log(SPEW, "profile_server", "Adding Info (%s): (%s, %s, %s)", info.language.c_str(),
-           info.name->c_str(), info.description->c_str(), info.provider->c_str());
-    rec.AddInfo(info.language, info.name, info.description, info.provider);
+           info.name.value_or("").c_str(), info.description.value_or("").c_str(),
+           info.provider.value_or("").c_str());
+    rec.AddInfo(info.language, info.name.value_or(""), info.description.value_or(""),
+                info.provider.value_or(""));
   }
 
   for (const auto& attribute : *definition.additional_attributes) {

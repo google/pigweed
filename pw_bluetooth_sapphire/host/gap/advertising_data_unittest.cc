@@ -107,18 +107,17 @@ TEST(GAP_AdvertisingDataTest, ParseFIDL) {
 
   // Confirming UTF-8 codepoints are working as well.
   fidl_ad.name = "Test💖";
-  fidl_ad.service_uuids.push_back(kId1AsString);
-  fidl_ad.service_uuids.push_back(kId3AsString);
+  fidl_ad.service_uuids.emplace({kId1AsString, kId3AsString});
 
-  auto svc_data = fidl::VectorPtr<uint8_t>::New(4);
-  for (size_t i = 0; i < svc_data->size(); i++) {
-    svc_data->at(i) = static_cast<uint8_t>(i * 3);
+  std::vector<uint8_t> svc_data(4);
+  for (size_t i = 0; i < svc_data.size(); i++) {
+    svc_data.at(i) = static_cast<uint8_t>(i * 3);
   }
 
   fuchsia::bluetooth::le::ServiceDataEntry service_data_entry;
   service_data_entry.uuid = kId1AsString;
   service_data_entry.data = std::move(svc_data);
-  fidl_ad.service_data.push_back(std::move(service_data_entry));
+  fidl_ad.service_data->push_back(std::move(service_data_entry));
 
   AdvertisingData data;
 
@@ -136,7 +135,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDL) {
 
 TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedUuid) {
   fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
-  fidl_ad.service_uuids.push_back("12");
+  fidl_ad.service_uuids.emplace({"12"});
 
   AdvertisingData data;
   EXPECT_FALSE(AdvertisingData::FromFidl(fidl_ad, &data));
@@ -145,12 +144,12 @@ TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedUuid) {
 TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedServiceDataUuid) {
   fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
 
-  auto svc_data = fidl::VectorPtr<uint8_t>::New(1);
+  std::vector<uint8_t> svc_data(1);
 
   fuchsia::bluetooth::le::ServiceDataEntry service_data_entry;
   service_data_entry.uuid = "12";
   service_data_entry.data = std::move(svc_data);
-  fidl_ad.service_data.push_back(std::move(service_data_entry));
+  fidl_ad.service_data.emplace({std::move(service_data_entry)});
 
   AdvertisingData data;
   EXPECT_FALSE(AdvertisingData::FromFidl(fidl_ad, &data));

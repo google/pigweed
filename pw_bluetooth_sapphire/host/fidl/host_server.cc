@@ -682,7 +682,7 @@ void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
       std::move(*device), fuchsia::bluetooth::control::PairingMethod::CONSENT, nullptr,
-      [confirm = std::move(confirm)](const bool success, const std::string passkey) {
+      [confirm = std::move(confirm)](const bool success, fidl::StringPtr passkey) {
         confirm(success);
       });
 }
@@ -700,7 +700,7 @@ void HostServer::DisplayPasskey(PeerId id, uint32_t passkey, ConfirmCallback con
   pairing_delegate_->OnPairingRequest(
       std::move(*device), fuchsia::bluetooth::control::PairingMethod::PASSKEY_DISPLAY,
       fxl::StringPrintf("%06u", passkey),
-      [confirm = std::move(confirm)](const bool success, const std::string passkey) {
+      [confirm = std::move(confirm)](const bool success, fidl::StringPtr passkey) {
         confirm(success);
       });
 }
@@ -714,13 +714,16 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
       std::move(*device), fuchsia::bluetooth::control::PairingMethod::PASSKEY_ENTRY, nullptr,
-      [respond = std::move(respond)](const bool success, const std::string passkey) {
+      [respond = std::move(respond)](const bool success, fidl::StringPtr passkey) {
         if (!success) {
           respond(-1);
         } else {
           uint32_t response;
-          if (!fxl::StringToNumberWithError<uint32_t>(passkey, &response)) {
-            bt_log(ERROR, "bt-host", "Unrecognized integer in string: %s", passkey.c_str());
+          if (!passkey.has_value()) {
+            bt_log(ERROR, "bt-host", "Passkey not supplied");
+            respond(-1);
+          } else if (!fxl::StringToNumberWithError<uint32_t>(passkey.value(), &response)) {
+            bt_log(ERROR, "bt-host", "Unrecognized integer in string: '%s'", passkey.value().c_str());
             respond(-1);
           } else {
             respond(response);

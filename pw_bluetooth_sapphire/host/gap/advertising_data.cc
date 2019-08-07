@@ -18,15 +18,15 @@
 
 // A partial fidl::TypeConverter template specialization for copying the
 // contents of a type that derives from ByteBuffer into a
-// fidl::VectorPtr<unsigned char>. If the input array is empty, the output array
+// std::vector<unsigned char>. If the input array is empty, the output array
 // will be empty. Used by Vector<uint8_t>::From() in AsLEAdvertisingData()
 template <typename T>
-struct fidl::TypeConverter<fidl::VectorPtr<unsigned char>, T> {
-  static fidl::VectorPtr<unsigned char> Convert(const T& input) {
+struct fidl::TypeConverter<std::vector<unsigned char>, T> {
+  static std::vector<unsigned char> Convert(const T& input) {
     static_assert(std::is_base_of<bt::ByteBuffer, T>::value, "");
 
-    fidl::VectorPtr<unsigned char> result = fidl::VectorPtr<unsigned char>::New(input.size());
-    memcpy(result->data(), input.data(), input.size());
+    std::vector<unsigned char> result(input.size());
+    memcpy(result.data(), input.data(), input.size());
     return result;
   }
 };
@@ -261,26 +261,38 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
     fidl_data->appearance->value = *appearance_;
   }
 
-  for (const auto& pair : manufacturer_data_) {
-    ::ble::ManufacturerSpecificDataEntry entry;
-    entry.company_id = pair.first;
-    entry.data = fidl::To<fidl::VectorPtr<unsigned char>>(pair.second);
-    fidl_data->manufacturer_specific_data.push_back(std::move(entry));
+  if (!manufacturer_data_.empty()) {
+    fidl_data->manufacturer_specific_data.emplace();
+    for (const auto& pair : manufacturer_data_) {
+      ::ble::ManufacturerSpecificDataEntry entry;
+      entry.company_id = pair.first;
+      entry.data = fidl::To<std::vector<unsigned char>>(pair.second);
+      fidl_data->manufacturer_specific_data->push_back(std::move(entry));
+    }
   }
 
-  for (const auto& pair : service_data_) {
-    ::ble::ServiceDataEntry entry;
-    entry.uuid = pair.first.ToString();
-    entry.data = fidl::To<fidl::VectorPtr<unsigned char>>(pair.second);
-    fidl_data->service_data.push_back(std::move(entry));
+  if (!service_data_.empty()) {
+    fidl_data->service_data.emplace();
+    for (const auto& pair : service_data_) {
+      ::ble::ServiceDataEntry entry;
+      entry.uuid = pair.first.ToString();
+      entry.data = fidl::To<std::vector<unsigned char>>(pair.second);
+      fidl_data->service_data->push_back(std::move(entry));
+    }
   }
 
-  for (const auto& uuid : service_uuids_) {
-    fidl_data->service_uuids.push_back(uuid.ToString());
+  if (!service_uuids_.empty()) {
+    fidl_data->service_uuids.emplace();
+    for (const auto& uuid : service_uuids_) {
+      fidl_data->service_uuids->push_back(uuid.ToString());
+    }
   }
 
-  for (const auto& uri : uris_) {
-    fidl_data->uris.push_back(uri);
+  if (!uris_.empty()) {
+    fidl_data->uris.emplace();
+    for (const auto& uri : uris_) {
+      fidl_data->uris->push_back(uri);
+    }
   }
 
   if (local_name_) {
@@ -328,8 +340,8 @@ bool AdvertisingData::FromFidl(const ::ble::AdvertisingDataDeprecated& fidl_ad,
     out_ad->SetTxPower(fidl_ad.tx_power_level->value);
   }
 
-  if (fidl_ad.name) {
-    out_ad->SetLocalName(fidl_ad.name);
+  if (fidl_ad.name.has_value()) {
+    out_ad->SetLocalName(fidl_ad.name.value());
   }
 
   return true;

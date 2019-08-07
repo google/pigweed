@@ -435,8 +435,8 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
     out_filter->set_manufacturer_code(fidl_filter.manufacturer_identifier->value);
   }
 
-  if (fidl_filter.name_substring && !fidl_filter.name_substring.get().empty()) {
-    out_filter->set_name_substring(fidl_filter.name_substring.get());
+  if (fidl_filter.name_substring && !fidl_filter.name_substring.value_or("").empty()) {
+    out_filter->set_name_substring(fidl_filter.name_substring.value_or(""));
   }
 
   if (fidl_filter.max_path_loss) {
@@ -450,10 +450,10 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
 }  // namespace bthost
 
 // static
-fidl::VectorPtr<uint8_t> fidl::TypeConverter<fidl::VectorPtr<uint8_t>, bt::ByteBuffer>::Convert(
+std::vector<uint8_t> fidl::TypeConverter<std::vector<uint8_t>, bt::ByteBuffer>::Convert(
     const bt::ByteBuffer& from) {
-  auto to = fidl::VectorPtr<uint8_t>::New(from.size());
-  bt::MutableBufferView view(to->data(), to->size());
+  std::vector<uint8_t> to(from.size());
+  bt::MutableBufferView view(to.data(), to.size());
   view.Write(from);
   return to;
 }

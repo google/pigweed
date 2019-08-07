@@ -29,13 +29,13 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
   // Parse the UUID list.
   std::vector<bt::UUID> uuids;
-  if (!fidl_uuids.is_null()) {
+  if (fidl_uuids.has_value()) {
     // Allocate all at once and convert in-place.
     uuids.resize(fidl_uuids->size());
     for (size_t i = 0; i < uuids.size(); ++i) {
-      if (!StringToUuid(fidl_uuids.get()[i], &uuids[i])) {
+      if (!StringToUuid(fidl_uuids.value()[i], &uuids[i])) {
         callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                            "Invalid UUID: " + fidl_uuids.get()[i]),
+                                            "Invalid UUID: " + fidl_uuids.value()[i]),
                  std::vector<ServiceInfo>((size_t)0u));
         return;
       }
