@@ -73,7 +73,36 @@ constexpr uint16_t kCCCIndicationBit = 0x0002;
 
 using PeerId = PeerId;
 
-// An identifier uniquely identifies a service, characteristic, or descriptor.
+// An identity for a Characteristic within a RemoteService
+// Characteristic IDs are guaranteed to equal the Value Handle for the characteristic
+struct CharacteristicHandle {
+  constexpr explicit CharacteristicHandle(att::Handle handle) : value(handle) {}
+  CharacteristicHandle() = delete;
+  CharacteristicHandle(const CharacteristicHandle& other) = default;
+
+  CharacteristicHandle& operator=(const CharacteristicHandle& other) = default;
+
+  inline bool operator<(const CharacteristicHandle& rhs) const { return this->value < rhs.value; }
+  inline bool operator==(const CharacteristicHandle& rhs) const { return this->value == rhs.value; }
+
+  att::Handle value;
+};
+
+// Descriptors are identified by their underlying ATT handle
+struct DescriptorHandle {
+  DescriptorHandle(att::Handle handle) : value(handle) {}
+  DescriptorHandle() = delete;
+  DescriptorHandle(const DescriptorHandle& other) = default;
+
+  DescriptorHandle& operator=(const DescriptorHandle& other) = default;
+
+  inline bool operator<(const DescriptorHandle& rhs) const { return this->value < rhs.value; }
+  inline bool operator==(const DescriptorHandle& rhs) const { return this->value == rhs.value; }
+
+  att::Handle value;
+};
+
+// An identifier uniquely identifies a local GATT service, characteristic, or descriptor.
 using IdType = uint64_t;
 
 // 0 is reserved as an invalid ID.
@@ -90,26 +119,46 @@ struct ServiceData {
   UUID type;
 };
 
+// An immutable definition of a GATT Characteristic
 struct CharacteristicData {
-  CharacteristicData() = default;
+  CharacteristicData() = delete;
   CharacteristicData(Properties props, att::Handle handle, att::Handle value_handle,
                      const UUID& type);
 
-  Properties properties;
-  att::Handle handle;
-  att::Handle value_handle;
-  UUID type;
+  const Properties properties;
+  const att::Handle handle;
+  const att::Handle value_handle;
+  const UUID type;
 };
 
+// An immutable definition of a GATT Descriptor
 struct DescriptorData {
-  DescriptorData() = default;
+  DescriptorData() = delete;
   DescriptorData(att::Handle handle, const UUID& type);
 
-  att::Handle handle;
-  UUID type;
+  const att::Handle handle;
+  const UUID type;
 };
 
 }  // namespace gatt
 }  // namespace bt
+
+// Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
+namespace std {
+
+template <>
+struct hash<bt::gatt::CharacteristicHandle> {
+  size_t operator()(const bt::gatt::CharacteristicHandle& id) const {
+    return std::hash<uint16_t>()(id.value);
+  }
+};
+template <>
+struct hash<bt::gatt::DescriptorHandle> {
+  size_t operator()(const bt::gatt::DescriptorHandle& id) const {
+    return std::hash<uint16_t>()(id.value);
+  }
+};
+
+}  // namespace std
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_DEFS_H_

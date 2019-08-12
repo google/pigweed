@@ -43,30 +43,28 @@ bool ProcessDescriptorDiscoveryResponse(att::Handle range_start, att::Handle ran
   while (entries.size()) {
     const EntryType& entry = entries.As<EntryType>();
 
-    DescriptorData desc;
-    desc.handle = le16toh(entry.handle);
+    att::Handle desc_handle = le16toh(entry.handle);
 
     // Stop and report an error if the server erroneously responds with
     // an attribute outside the requested range.
-    if (desc.handle > range_end || desc.handle < range_start) {
+    if (desc_handle > range_end || desc_handle < range_start) {
       bt_log(TRACE, "gatt",
              "descriptor handle out of range (handle: %#.4x, "
              "range: %#.4x - %#.4x)",
-             desc.handle, range_start, range_end);
+             desc_handle, range_start, range_end);
       return false;
     }
 
     // The handles must be strictly increasing.
-    if (last_handle != range_end && desc.handle <= last_handle) {
+    if (last_handle != range_end && desc_handle <= last_handle) {
       bt_log(TRACE, "gatt", "descriptor handles not strictly increasing");
       return false;
     }
 
-    last_handle = desc.handle;
-    desc.type = UUID(entry.uuid);
+    last_handle = desc_handle;
 
     // Notify the handler.
-    desc_callback(desc);
+    desc_callback(DescriptorData(desc_handle, UUID(entry.uuid)));
 
     entries = entries.view(sizeof(EntryType));
   }
@@ -368,14 +366,13 @@ class Impl final : public Client {
         const auto& entry = attr_data_list.As<att::AttributeData>();
         BufferView value(entry.value, entry_length - sizeof(att::Handle));
 
-        CharacteristicData chrc;
-        chrc.handle = le16toh(entry.handle);
-        chrc.properties = value[0];
-        chrc.value_handle = le16toh(value.view(1, 2).As<att::Handle>());
+        att::Handle chrc_handle = le16toh(entry.handle);
+        Properties properties = value[0];
+        att::Handle value_handle = le16toh(value.view(1, 2).As<att::Handle>());
 
         // Vol 3, Part G, 3.3: "The Characteristic Value declaration shall
         // exist immediately following the characteristic declaration."
-        if (chrc.value_handle != chrc.handle + 1) {
+        if (value_handle != chrc_handle + 1) {
           bt_log(TRACE, "gatt", "characteristic value doesn't follow decl");
           res_cb(att::Status(HostError::kPacketMalformed));
           return;
@@ -383,32 +380,33 @@ class Impl final : public Client {
 
         // Stop and report an error if the server erroneously responds with
         // an attribute outside the requested range.
-        if (chrc.handle > range_end || chrc.handle < range_start) {
+        if (chrc_handle > range_end || chrc_handle < range_start) {
           bt_log(TRACE, "gatt",
                  "characteristic handle out of range (handle: %#.4x, "
                  "range: %#.4x - %#.4x)",
-                 chrc.handle, range_start, range_end);
+                 chrc_handle, range_start, range_end);
           res_cb(att::Status(HostError::kPacketMalformed));
           return;
         }
 
         // The handles must be strictly increasing. Check this so that a
         // server cannot fool us into sending requests forever.
-        if (last_handle != range_end && chrc.handle <= last_handle) {
+        if (last_handle != range_end && chrc_handle <= last_handle) {
           bt_log(TRACE, "gatt", "handles are not strictly increasing");
           res_cb(att::Status(HostError::kPacketMalformed));
           return;
         }
 
-        last_handle = chrc.handle;
+        last_handle = chrc_handle;
 
         // This must succeed as we have performed the necessary checks
         // above.
-        __UNUSED bool result = UUID::FromBytes(value.view(3), &chrc.type);
+        UUID type;
+        __UNUSED bool result = UUID::FromBytes(value.view(3), &type);
         ZX_DEBUG_ASSERT(result);
 
         // Notify the handler.
-        chrc_cb(chrc);
+        chrc_cb(CharacteristicData(properties, chrc_handle, value_handle, type));
 
         attr_data_list = attr_data_list.view(entry_length);
       }

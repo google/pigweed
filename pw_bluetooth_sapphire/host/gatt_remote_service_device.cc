@@ -4,14 +4,18 @@
 
 #include "gatt_remote_service_device.h"
 
-#include <ddk/binding.h>
 #include <zircon/status.h>
 
 #include <memory>
 
+#include <ddk/binding.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
 using namespace bt;
+
+using bt::gatt::CharacteristicHandle;
 
 namespace bthost {
 
@@ -216,25 +220,24 @@ void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb, v
         [connect_cb, cookie](att::Status cb_status, const auto& chrcs) {
           auto ddk_chars = std::make_unique<bt_gatt_chr[]>(chrcs.size());
           size_t char_idx = 0;
-          for (auto& chr : chrcs) {
-            ddk_chars[char_idx].id = static_cast<bt_gatt_id_t>(chr.id());
-            CopyUUIDBytes(&ddk_chars[char_idx].type, chr.info().type);
-            ddk_chars[char_idx].properties = chr.info().properties;
+          for (const auto& [id, chrc_pair] : chrcs) {
+            const auto& [chr, descriptors] = chrc_pair;
+            ddk_chars[char_idx].id = static_cast<bt_gatt_id_t>(id.value);
+            CopyUUIDBytes(&ddk_chars[char_idx].type, chr.type);
+            ddk_chars[char_idx].properties = chr.properties;
 
             // TODO(zbowling): remote extended properties are not implemented.
             // ddk_chars[char_idx].extended_properties =
-            // chr.info().extended_properties;
+            // chr.extended_properties;
 
-            auto& descriptors = chr.descriptors();
             if (descriptors.size() > 0) {
               ddk_chars[char_idx].descriptor_list = new bt_gatt_descriptor_t[descriptors.size()];
               ddk_chars[char_idx].descriptor_count = descriptors.size();
               size_t desc_idx = 0;
-              for (auto& descriptor : descriptors) {
+              for (auto& [id, descriptor] : descriptors) {
                 ddk_chars[char_idx].descriptor_list[desc_idx].id =
-                    static_cast<bt_gatt_id_t>(descriptor.id());
-                CopyUUIDBytes(&ddk_chars[char_idx].descriptor_list[desc_idx].type,
-                              descriptor.info().type);
+                    static_cast<bt_gatt_id_t>(id.value);
+                CopyUUIDBytes(&ddk_chars[char_idx].descriptor_list[desc_idx].type, descriptor.type);
                 desc_idx++;
               }
             } else {
@@ -276,7 +279,7 @@ void GattRemoteServiceDevice::ReadCharacteristic(bt_gatt_id_t id,
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadCharacteristic(static_cast<bt::gatt::IdType>(id), std::move(read_callback),
+  service_->ReadCharacteristic(CharacteristicHandle(id), std::move(read_callback),
                                loop_.dispatcher());
 
   return;
@@ -289,7 +292,7 @@ void GattRemoteServiceDevice::ReadLongCharacteristic(
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadLongCharacteristic(static_cast<bt::gatt::IdType>(id), offset, max_bytes,
+  service_->ReadLongCharacteristic(CharacteristicHandle(id), offset, max_bytes,
                                    std::move(read_callback), loop_.dispatcher());
 
   return;
@@ -301,15 +304,14 @@ void GattRemoteServiceDevice::WriteCharacteristic(
   auto* buf = static_cast<const uint8_t*>(buff);
   std::vector<uint8_t> data(buf, buf + len);
   if (write_cb == nullptr) {
-    service_->WriteCharacteristicWithoutResponse(static_cast<bt::gatt::IdType>(id),
-                                                 std::move(data));
+    service_->WriteCharacteristicWithoutResponse(CharacteristicHandle(id), std::move(data));
   } else {
     auto status_callback = [cookie, id, write_cb](bt::att::Status status) {
       bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
       write_cb(cookie, &ddk_status, id);
     };
 
-    service_->WriteCharacteristic(static_cast<bt::gatt::IdType>(id), std::move(data),
+    service_->WriteCharacteristic(CharacteristicHandle(id), std::move(data),
                                   std::move(status_callback), loop_.dispatcher());
   }
   return;
@@ -329,7 +331,7 @@ void GattRemoteServiceDevice::EnableNotifications(
     status_cb(cookie, &ddk_status, id);
   };
 
-  service_->EnableNotifications(static_cast<bt::gatt::IdType>(id), notif_callback,
+  service_->EnableNotifications(CharacteristicHandle(id), notif_callback,
                                 std::move(status_callback), loop_.dispatcher());
 
   return;

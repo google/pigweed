@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_REMOTE_SERVICE_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_REMOTE_SERVICE_SERVER_H_
 
-#include <fbl/macros.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -49,8 +50,8 @@ class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::
   // The remote GATT service that backs this service.
   fbl::RefPtr<bt::gatt::RemoteService> service_;
 
-  // Maps characteristic IDs to notification handler IDs.
-  std::unordered_map<bt::gatt::IdType, bt::gatt::IdType> notify_handlers_;
+  using HandlerId = bt::gatt::IdType;
+  std::unordered_map<bt::gatt::CharacteristicHandle, HandlerId> notify_handlers_;
 
   fxl::WeakPtrFactory<GattRemoteServiceServer> weak_ptr_factory_;
 

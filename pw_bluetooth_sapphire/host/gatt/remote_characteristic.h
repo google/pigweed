@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_CHARACTERISTIC_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_CHARACTERISTIC_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
+#include <map>
 #include <queue>
 #include <unordered_map>
-#include <vector>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
@@ -37,14 +38,9 @@ class Client;
 //
 // ID SCHEME:
 //
-// The ID that gets assigned to a RemoteCharacteristic is its index in the
-// owning RemoteService's |characteristics_| member. This allows for constant
-// time look up of a characteristic using the ID.
-//
-// The lower 16 bits of a Descriptor's ID is its index in the owning
-// RemoteCharacteristic's |descriptors_| member. The next 16 bits store the
-// characteristic ID. This enables constant-time lookup of a descriptor by ID
-// from a RemoteService.
+// The ID that gets assigned to a RemoteCharacteristic is its value_handle
+// The ID that gets assigned to a Descriptor is its handle. Looking up a descriptor by id from the
+// service is linear in the number of characteristics.
 //
 // THREAD-SAFETY:
 //
@@ -56,22 +52,10 @@ class RemoteCharacteristic final {
   using ValueCallback = fit::function<void(const ByteBuffer&)>;
   using NotifyStatusCallback = fit::function<void(att::Status, IdType handler_id)>;
 
-  // Represents a "Characteristic Descriptor" (Vol 3, Part G, 3.3.3).
-  class Descriptor final {
-   public:
-    Descriptor(IdType id, const DescriptorData& info);
+  // We use an ordered map so that the Descriptors are exposed to the world in order
+  using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
 
-    IdType id() const { return id_; }
-    const DescriptorData& info() const { return info_; }
-
-   private:
-    IdType id_;
-    DescriptorData info_;
-  };
-
-  using DescriptorList = std::vector<Descriptor>;
-
-  RemoteCharacteristic(fxl::WeakPtr<Client> client, IdType id, const CharacteristicData& info);
+  RemoteCharacteristic(fxl::WeakPtr<Client> client, const CharacteristicData& info);
   ~RemoteCharacteristic() = default;
 
   // The move constructor allows this move-only type to be stored in a vector
@@ -86,14 +70,11 @@ class RemoteCharacteristic final {
   // contents while resizing its storage.
   RemoteCharacteristic(RemoteCharacteristic&&);
 
-  // Returns the ID for this characteristic.
-  IdType id() const { return id_; }
-
   // ATT declaration data for this characteristic.
   const CharacteristicData& info() const { return info_; }
 
   // Descriptors of this characteristic.
-  const DescriptorList& descriptors() const { return descriptors_; }
+  const DescriptorMap& descriptors() const { return descriptors_; }
 
  private:
   friend class RemoteService;
@@ -111,7 +92,7 @@ class RemoteCharacteristic final {
   // outlives the discovery procedure.
   void DiscoverDescriptors(att::Handle range_end, att::StatusCallback callback);
 
-  // (See RemoteService::NotifyCharacteristic in remote_service.h).
+  // (See RemoteService::EnableNotifications in remote_service.h).
   void EnableNotifications(ValueCallback value_callback, NotifyStatusCallback status_callback,
                            async_dispatcher_t* dispatcher = nullptr);
   bool DisableNotifications(IdType handler_id);
@@ -128,9 +109,8 @@ class RemoteCharacteristic final {
   void HandleNotification(const ByteBuffer& value);
 
   fxl::ThreadChecker thread_checker_;
-  IdType id_;
   CharacteristicData info_;
-  DescriptorList descriptors_;
+  DescriptorMap descriptors_;
   bool discovery_error_;
 
   std::atomic_bool shut_down_;

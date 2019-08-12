@@ -54,27 +54,20 @@ RemoteCharacteristic::NotifyHandler::NotifyHandler(async_dispatcher_t* d, ValueC
   ZX_DEBUG_ASSERT(callback);
 }
 
-RemoteCharacteristic::Descriptor::Descriptor(IdType id, const DescriptorData& info)
-    : id_(id), info_(info) {}
-
-RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client, IdType id,
+RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
                                            const CharacteristicData& info)
-    : id_(id),
-      info_(info),
+    : info_(info),
       discovery_error_(false),
       shut_down_(false),
       ccc_handle_(att::kInvalidHandle),
       next_notify_handler_id_(1u),
       client_(client),
       weak_ptr_factory_(this) {
-  // See comments about "ID scheme" in remote_characteristics.h
-  ZX_DEBUG_ASSERT(id_ <= std::numeric_limits<uint16_t>::max());
   ZX_DEBUG_ASSERT(client_);
 }
 
 RemoteCharacteristic::RemoteCharacteristic(RemoteCharacteristic&& other)
-    : id_(other.id_),
-      info_(other.info_),
+    : info_(other.info_),
       discovery_error_(other.discovery_error_),
       shut_down_(other.shut_down_.load()),
       ccc_handle_(other.ccc_handle_),
@@ -138,10 +131,9 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       self->ccc_handle_ = desc.handle;
     }
 
-    // See comments about "ID scheme" in remote_characteristics.h
-    ZX_DEBUG_ASSERT(self->descriptors_.size() <= std::numeric_limits<uint16_t>::max());
-    IdType id = (self->id_ << 16) | self->descriptors_.size();
-    self->descriptors_.push_back(Descriptor(id, desc));
+    // As descriptors must be strictly increasing, this emplace should always succeed
+    auto [_unused, success] = self->descriptors_.try_emplace(DescriptorHandle(desc.handle), desc);
+    ZX_DEBUG_ASSERT(success);
   };
 
   auto status_cb = [self, cb = std::move(callback)](att::Status status) {
