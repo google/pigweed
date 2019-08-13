@@ -18,7 +18,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
@@ -69,7 +72,9 @@ fuchsia::bluetooth::Status StatusToFidl(const bt::Status<ProtocolErrorCode>& sta
   return fidl_status;
 }
 
-// Functions that convert FIDL types to library objects
+bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);
+
+// Functions that convert FIDL types to library objects.
 bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::control::InputCapabilityType,
                                           const fuchsia::bluetooth::control::OutputCapabilityType);
 
@@ -86,8 +91,6 @@ fuchsia::bluetooth::control::BondingData NewBondingData(const bt::gap::Adapter& 
                                                         const bt::gap::Peer& peer);
 
 // Functions to construct FIDL LE library objects from library objects.
-fuchsia::bluetooth::le::AdvertisingDataPtr NewAdvertisingData(
-    const bt::ByteBuffer& advertising_data);
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer);
 
 // Validates the contents of a ScanFilter.
@@ -98,6 +101,18 @@ bool IsScanFilterValid(const fuchsia::bluetooth::le::ScanFilter& fidl_filter);
 // unmodified.
 bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filter,
                              bt::gap::DiscoveryFilter* out_filter);
+
+// Converts the given |mode_hint| to a stack interval value.
+bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(
+    fuchsia::bluetooth::le::AdvertisingModeHint mode_hint);
+
+bt::gap::AdvertisingData AdvertisingDataFromFidl(
+    const fuchsia::bluetooth::le::AdvertisingData& input);
+fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(
+    const bt::gap::AdvertisingData& input);
+
+// Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
+fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);
 
 }  // namespace fidl_helpers
 }  // namespace bthost

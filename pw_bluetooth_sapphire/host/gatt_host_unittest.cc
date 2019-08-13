@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "gatt_host.h"
+
 #include <fbl/macros.h>
 
-#include "gatt_host.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 

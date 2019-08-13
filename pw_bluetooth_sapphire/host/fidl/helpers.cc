@@ -9,8 +9,6 @@
 #include <unordered_set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
@@ -22,6 +20,7 @@ using fuchsia::bluetooth::Int8;
 using fuchsia::bluetooth::Status;
 
 namespace fble = fuchsia::bluetooth::le;
+namespace fbt = fuchsia::bluetooth;
 namespace fctrl = fuchsia::bluetooth::control;
 namespace fhost = fuchsia::bluetooth::host;
 
@@ -186,6 +185,16 @@ Status NewFidlError(ErrorCode error_code, std::string description) {
   status.error->error_code = error_code;
   status.error->description = description;
   return status;
+}
+
+bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
+  bt::UUID output;
+  // Conversion must always succeed given the defined size of |input|.
+  static_assert(sizeof(input.value) == 16, "FIDL UUID definition malformed!");
+  bool status =
+      bt::UUID::FromBytes(bt::BufferView(input.value.data(), input.value.size()), &output);
+  ZX_ASSERT_MSG(status, "expected UUID conversion from FIDL to succeed!");
+  return output;
 }
 
 bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
@@ -444,6 +453,128 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
   }
 
   return true;
+}
+
+bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(fble::AdvertisingModeHint mode_hint) {
+  switch (mode_hint) {
+    case fble::AdvertisingModeHint::VERY_FAST:
+      return bt::gap::AdvertisingInterval::FAST1;
+    case fble::AdvertisingModeHint::FAST:
+      return bt::gap::AdvertisingInterval::FAST2;
+    case fble::AdvertisingModeHint::SLOW:
+      return bt::gap::AdvertisingInterval::SLOW;
+  }
+  return bt::gap::AdvertisingInterval::SLOW;
+}
+
+bt::gap::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& input) {
+  bt::gap::AdvertisingData output;
+
+  if (input.has_name()) {
+    output.SetLocalName(input.name());
+  }
+  if (input.has_appearance()) {
+    output.SetAppearance(static_cast<uint16_t>(input.appearance()));
+  }
+  if (input.has_tx_power_level()) {
+    output.SetTxPower(input.tx_power_level());
+  }
+  if (input.has_service_uuids()) {
+    for (const auto& uuid : input.service_uuids()) {
+      output.AddServiceUuid(UuidFromFidl(uuid));
+    }
+  }
+  if (input.has_service_data()) {
+    for (const auto& entry : input.service_data()) {
+      bt::UUID uuid = UuidFromFidl(entry.uuid);
+      bt::BufferView data(entry.data);
+      output.SetServiceData(uuid, data);
+    }
+  }
+  if (input.has_manufacturer_data()) {
+    for (const auto& entry : input.manufacturer_data()) {
+      bt::BufferView data(entry.data);
+      output.SetManufacturerData(entry.company_id, data);
+    }
+  }
+  if (input.has_uris()) {
+    for (const auto& uri : input.uris()) {
+      output.AddURI(uri);
+    }
+  }
+
+  return output;
+}
+
+fble::AdvertisingData AdvertisingDataToFidl(const bt::gap::AdvertisingData& input) {
+  fble::AdvertisingData output;
+
+  if (input.local_name()) {
+    output.set_name(*input.local_name());
+  }
+  if (input.appearance()) {
+    output.set_appearance(static_cast<fbt::Appearance>(*input.appearance()));
+  }
+  if (input.tx_power()) {
+    output.set_tx_power_level(*input.tx_power());
+  }
+  if (!input.service_uuids().empty()) {
+    std::vector<fbt::Uuid> uuids;
+    for (const auto& uuid : input.service_uuids()) {
+      uuids.push_back(fbt::Uuid{uuid.value()});
+    }
+    output.set_service_uuids(std::move(uuids));
+  }
+  if (!input.service_data_uuids().empty()) {
+    std::vector<fble::ServiceData> entries;
+    for (const auto& uuid : input.service_data_uuids()) {
+      auto data = input.service_data(uuid);
+      fble::ServiceData entry{fbt::Uuid{uuid.value()}, data.ToVector()};
+      entries.push_back(std::move(entry));
+    }
+    output.set_service_data(std::move(entries));
+  }
+  if (!input.manufacturer_data_ids().empty()) {
+    std::vector<fble::ManufacturerData> entries;
+    for (const auto& id : input.manufacturer_data_ids()) {
+      auto data = input.manufacturer_data(id);
+      fble::ManufacturerData entry{id, data.ToVector()};
+      entries.push_back(std::move(entry));
+    }
+    output.set_manufacturer_data(std::move(entries));
+  }
+  if (!input.uris().empty()) {
+    std::vector<std::string> uris;
+    for (const auto& uri : input.uris()) {
+      uris.push_back(uri);
+    }
+    output.set_uris(std::move(uris));
+  }
+
+  return output;
+}
+
+fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
+  ZX_ASSERT(peer.le());
+
+  fble::Peer output;
+  output.set_id(fbt::PeerId{peer.identifier().value()});
+  output.set_connectable(peer.connectable());
+
+  if (peer.rssi() != bt::hci::kRSSIInvalid) {
+    output.set_rssi(peer.rssi());
+  }
+
+  if (peer.le()->advertising_data().size() != 0u) {
+    // We populate |output|'s AdvertisingData field if we can parse the payload. We leave it blank
+    // otherwise.
+    bt::gap::AdvertisingData unpacked;
+    if (bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &unpacked)) {
+      output.set_advertising_data(fidl_helpers::AdvertisingDataToFidl(unpacked));
+    }
+  }
+
+  return output;
 }
 
 }  // namespace fidl_helpers
