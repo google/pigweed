@@ -305,11 +305,11 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
   auto peer_id = conn->peer_identifier();
   auto conn_handle = std::make_unique<LowEnergyConnectionServer>(std::move(conn), std::move(local));
   auto self = weak_ptr_factory_.GetWeakPtr();
-  conn_handle->set_closed_handler([self, id = advertisement_->id()] {
-    bt_log(TRACE, LOG_TAG, "central disconnected");
+  conn_handle->set_closed_handler([self, peer_id] {
+    bt_log(TRACE, LOG_TAG, "peer disconnected");
     if (self) {
       // Removing the connection
-      self->connections_.erase(id);
+      self->connections_.erase(peer_id);
     }
   });
 
@@ -323,6 +323,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
 
   // Close the AdvertisingHandle since advertising is stopped in response to a connection.
   advertisement_.reset();
+  connections_[peer_id] = std::move(conn_handle);
 }
 
 void LowEnergyPeripheralServer::OnConnectedDeprecated(bt::gap::AdvertisementId advertisement_id,
