@@ -56,6 +56,11 @@ class ChannelManager final {
   ChannelManager(fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
+  // Returns a handler for data packets received from the Bluetooth controller bound to this object.
+  // It must be called from the creation thread, but it is safe to call past ChannelManager's
+  // lifetime.
+  hci::ACLPacketHandler MakeInboundDataHandler();
+
   // Registers the ACL connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this
   // method.

@@ -91,17 +91,9 @@ class ACLDataChannel final {
   // methods are not thread-safe.
   void ShutDown();
 
-  // Callback invoked when there is a new ACL data packet from the controller.
-  // The ownership of the |data_packet| is passed to the callback implementation
-  // as a rvalue reference..
-  using DataReceivedCallback = fit::function<void(ACLDataPacketPtr data_packet)>;
-
-  // Assigns a handler callback for received ACL data packets. |rx_callback|
-  // will be posted on |dispatcher|.
-  //
-  // TODO(armansito): |dispatcher| will become mandatory. The Transport I/O
-  // thread will be gone when bt-hci becomes a non-IPC protocol.
-  void SetDataRxHandler(DataReceivedCallback rx_callback, async_dispatcher_t* rx_dispatcher);
+  // Assigns a handler callback for received ACL data packets. |rx_callback| will be posted on
+  // |dispatcher| and shall take ownership of each packet received from the controller.
+  void SetDataRxHandler(ACLPacketHandler rx_callback, async_dispatcher_t* rx_dispatcher);
 
   // Queues the given ACL data packet to be sent to the controller. Returns
   // false if the packet cannot be queued up, e.g. if the size of |data_packet|
@@ -221,7 +213,7 @@ class ACLDataChannel final {
   // The current handler for incoming data and the dispatcher on which to run
   // it.
   std::mutex rx_mutex_;
-  DataReceivedCallback rx_callback_ __TA_GUARDED(rx_mutex_);
+  ACLPacketHandler rx_callback_ __TA_GUARDED(rx_mutex_);
   async_dispatcher_t* rx_dispatcher_ __TA_GUARDED(rx_mutex_);
 
   // BR/EDR data buffer information. This buffer will not be available on

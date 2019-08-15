@@ -94,7 +94,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   //
   // InitializeACLDataChannel() must be called once and its data rx handler must
   // not be overridden by tests for |callback| to work.
-  void set_data_received_callback(hci::ACLDataChannel::DataReceivedCallback callback) {
+  void set_data_received_callback(hci::ACLPacketHandler callback) {
     data_received_callback_ = std::move(callback);
   }
 
@@ -152,7 +152,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
 
   std::unique_ptr<FakeControllerType> test_device_;
   fxl::RefPtr<hci::Transport> transport_;
-  hci::ACLDataChannel::DataReceivedCallback data_received_callback_;
+  hci::ACLPacketHandler data_received_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerTest);
   static_assert(std::is_base_of<FakeControllerBase, FakeControllerType>::value,

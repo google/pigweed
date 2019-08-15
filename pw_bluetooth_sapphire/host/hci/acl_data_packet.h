@@ -5,9 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_PACKET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_PACKET_H_
 
-#include <fbl/macros.h>
+#include <lib/fit/function.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
@@ -21,6 +23,7 @@ namespace hci {
 // instantiated. Represents a HCI ACL data packet.
 using ACLDataPacket = Packet<ACLDataHeader>;
 using ACLDataPacketPtr = std::unique_ptr<ACLDataPacket>;
+using ACLPacketHandler = fit::function<void(ACLDataPacketPtr data_packet)>;
 
 template <>
 class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {

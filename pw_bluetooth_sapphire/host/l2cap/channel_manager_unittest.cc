@@ -4,9 +4,9 @@
 
 #include "channel_manager.h"
 
-#include <fbl/macros.h>
-
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -46,6 +46,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     // call, as it overwrites ACLDataChannel's data rx handler. This is intended
     // as the L2CAP layer takes ownership of ACL data traffic.
     chanmgr_ = std::make_unique<ChannelManager>(transport(), dispatcher());
+    packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
 
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
@@ -56,6 +57,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     if (test_device()) {
       test_device()->ClearDataCallback();
     }
+    packet_rx_handler_ = nullptr;
     chanmgr_ = nullptr;
     TestingBase::TearDown();
   }
@@ -105,10 +107,20 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     chanmgr()->OpenChannel(conn_handle, psm, std::move(open_cb), dispatcher());
   }
 
+  void ReceiveAclDataPacket(const ByteBuffer& packet) {
+    const size_t payload_size = packet.size() - sizeof(hci::ACLDataHeader);
+    ZX_ASSERT(payload_size <= std::numeric_limits<uint16_t>::max());
+    hci::ACLDataPacketPtr acl_packet = hci::ACLDataPacket::New(static_cast<uint16_t>(payload_size));
+    auto mutable_acl_packet_data = acl_packet->mutable_view()->mutable_data();
+    packet.Copy(&mutable_acl_packet_data);
+    packet_rx_handler_(std::move(acl_packet));
+  }
+
   ChannelManager* chanmgr() const { return chanmgr_.get(); }
 
  private:
   std::unique_ptr<ChannelManager> chanmgr_;
+  hci::ACLPacketHandler packet_rx_handler_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_ChannelManagerTest);
 };
@@ -310,27 +322,25 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveData) {
     smp_cb_called = true;
   };
 
-  auto att_chan = ActivateNewFixedChannel(
-      kATTChannelId, kTestHandle1, [] {}, att_rx_cb);
-  auto smp_chan = ActivateNewFixedChannel(
-      kLESMPChannelId, kTestHandle1, [] {}, smp_rx_cb);
+  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1, DoNothing, att_rx_cb);
+  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, DoNothing, smp_rx_cb);
   ASSERT_TRUE(att_chan);
   ASSERT_TRUE(smp_chan);
 
   // ATT channel
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
 
       // L2CAP B-frame
       0x05, 0x00, 0x04, 0x00, 'h', 'e', 'l', 'l', 'o'));
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
 
       // L2CAP B-frame (partial)
       0x0C, 0x00, 0x04, 0x00, 'h', 'o', 'w', ' ', 'a'));
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (continuing fragment)
       0x01, 0x10, 0x07, 0x00,
 
@@ -338,7 +348,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveData) {
       'r', 'e', ' ', 'y', 'o', 'u', '?'));
 
   // SMP channel
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -372,7 +382,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(CreateStaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -381,7 +391,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   }
 
   // SMP channel
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -430,7 +440,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(CreateStaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -439,7 +449,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeCreatingChannel) {
   }
 
   // SMP channel
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -493,7 +503,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+    ReceiveAclDataPacket(CreateStaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
 
@@ -502,7 +512,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   }
 
   // SMP channel
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
 
@@ -768,7 +778,7 @@ TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, DoNothing, conn_param_cb);
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -809,7 +819,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   RunLoopUntilIdle();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -822,7 +832,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
       0x42, 0x90, 0x40, 0x00,
       0x00, 0x00, 0x00, 0x00));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -835,7 +845,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
       0x40, 0x00, 0x00, 0x00,
       0x01, 0x02, 0x00, 0x04));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -882,7 +892,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   channel->Deactivate();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -923,7 +933,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   RunLoopUntilIdle();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -936,7 +946,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
       0x47, 0x00, 0x40, 0x00,
       0x00, 0x00, 0x00, 0x00));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -949,7 +959,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
       0x40, 0x00, 0x00, 0x00,
       0x01, 0x02, 0x00, 0x04));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -969,7 +979,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_FALSE(channel_closed);
 
   // Test SDU reception.
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -980,7 +990,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_TRUE(sdu_received);
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1012,7 +1022,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   auto data_rx_cb = [](ByteBufferPtr sdu) { FAIL() << "Unexpected data reception"; };
 
   // Receive SDU for the channel about to be opened. It should be ignored.
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
@@ -1024,7 +1034,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   RunLoopUntilIdle();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1039,14 +1049,14 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
 
   // The channel is connected but not configured, so no data should flow on the
   // channel. Test that this received data is also ignored.
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
 
       // L2CAP B-frame: (length: 4, channel-id: 0x0040)
       0x04, 0x00, 0x40, 0x00, 'T', 'e', 's', 't'));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1059,7 +1069,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
       0x40, 0x00, 0x00, 0x00,
       0x01, 0x02, 0x00, 0x04));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -1079,7 +1089,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   EXPECT_FALSE(channel_closed);
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1108,7 +1118,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   RunLoopUntilIdle();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1140,7 +1150,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   RunLoopUntilIdle();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1153,7 +1163,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
       0x47, 0x00, 0x40, 0x00,
       0x00, 0x00, 0x00, 0x00));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1166,7 +1176,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
       0x40, 0x00, 0x00, 0x00,
       0x01, 0x02, 0x00, 0x04));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -1179,7 +1189,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
       0x40, 0x00, 0x00, 0x00,
       0x02, 0x00));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1219,7 +1229,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, std::move(channel_cb), dispatcher()));
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 
@@ -1232,7 +1242,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
 
   RunLoopUntilIdle();
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
 
@@ -1245,7 +1255,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
       0x40, 0x00, 0x00, 0x00,
       0x01, 0x02, 0x00, 0x04));
 
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
 
@@ -1292,7 +1302,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   channel->Deactivate();
 
   // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
 

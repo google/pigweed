@@ -52,6 +52,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     l2cap_socket_factory_ = nullptr;
     rfcomm_ = nullptr;
     l2cap_ = nullptr;  // Unregisters the RFCOMM PSM.
+    hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
   }
 
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -176,6 +177,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void InitializeL2CAP() {
     AssertOnDispatcherThread();
     l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_, dispatcher());
+    hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
 
   void InitializeRFCOMM() {

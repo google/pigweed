@@ -116,7 +116,7 @@ void ACLDataChannel::ShutDown() {
   SetDataRxHandler(nullptr, nullptr);
 }
 
-void ACLDataChannel::SetDataRxHandler(DataReceivedCallback rx_callback,
+void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
                                       async_dispatcher_t* rx_dispatcher) {
   std::lock_guard<std::mutex> lock(rx_mutex_);
   rx_callback_ = std::move(rx_callback);

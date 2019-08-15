@@ -18,27 +18,24 @@ ChannelManager::ChannelManager(fxl::RefPtr<hci::Transport> hci,
     : hci_(hci), l2cap_dispatcher_(l2cap_dispatcher), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(l2cap_dispatcher_);
-
-  // TODO(armansito): NET-353
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto acl_handler = [self](auto pkt) {
-    if (self) {
-      self->OnACLDataReceived(std::move(pkt));
-    }
-  };
-
-  hci_->acl_data_channel()->SetDataRxHandler(std::move(acl_handler), l2cap_dispatcher_);
 }
 
 ChannelManager::~ChannelManager() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
 
   // Explicitly shut down all links to force associated L2CAP channels to
   // release their strong references.
   for (auto& [handle, link] : ll_map_) {
     link->Close();
   }
+}
+
+hci::ACLPacketHandler ChannelManager::MakeInboundDataHandler() {
+  return [self = weak_ptr_factory_.GetWeakPtr()](auto packet) {
+    if (self) {
+      self->OnACLDataReceived(std::move(packet));
+    }
+  };
 }
 
 void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -158,12 +155,10 @@ void ChannelManager::UnregisterService(PSM psm) {
   services_.erase(psm);
 }
 
+// Called when an ACL data packet is received from the controller. This method
+// is responsible for routing the packet to the corresponding LogicalLink.
 void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-
-  // TODO(armansito): Route packets based on channel priority, prioritizing
-  // Guaranteed channels over Best Effort. Right now all channels are Best
-  // Effort.
 
   auto handle = packet->connection_handle();
 
