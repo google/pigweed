@@ -117,7 +117,7 @@ TEST(GAP_AdvertisingDataTest, ParseFIDL) {
   fuchsia::bluetooth::le::ServiceDataEntry service_data_entry;
   service_data_entry.uuid = kId1AsString;
   service_data_entry.data = std::move(svc_data);
-  fidl_ad.service_data->push_back(std::move(service_data_entry));
+  fidl_ad.service_data = {std::move(service_data_entry)};
 
   AdvertisingData data;
 

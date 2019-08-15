@@ -318,9 +318,11 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
                             definition.protocol_descriptors);
 
   size_t protocol_list_id = 1;
-  for (const auto& descriptor_list : *definition.additional_protocol_descriptors) {
-    AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list);
-    protocol_list_id++;
+  if (definition.additional_protocol_descriptors.has_value()) {
+    for (const auto& descriptor_list : *definition.additional_protocol_descriptors) {
+      AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list);
+      protocol_list_id++;
+    }
   }
 
   for (const auto& profile : definition.profile_descriptors) {
@@ -338,12 +340,14 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
                 info.provider.value_or(""));
   }
 
-  for (const auto& attribute : *definition.additional_attributes) {
-    bt::sdp::DataElement elem;
-    FidlToDataElement(attribute.element, &elem);
-    bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
-           elem.ToString().c_str());
-    rec.SetAttribute(attribute.id, std::move(elem));
+  if (definition.additional_attributes.has_value()) {
+    for (const auto& attribute : *definition.additional_attributes) {
+      bt::sdp::DataElement elem;
+      FidlToDataElement(attribute.element, &elem);
+      bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
+             elem.ToString().c_str());
+      rec.SetAttribute(attribute.id, std::move(elem));
+    }
   }
 
   uint64_t next = last_service_id_ + 1;
