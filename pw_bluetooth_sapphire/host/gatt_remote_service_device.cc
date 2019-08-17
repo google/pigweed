@@ -196,10 +196,14 @@ void GattRemoteServiceDevice::Unbind() {
   async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
   loop_.JoinThreads();
 
-  std::lock_guard<std::mutex> lock(mtx_);
-  if (dev_) {
-    device_remove(dev_);
+  zx_device_t* dev;
+  {
+    std::lock_guard<std::mutex> lock(mtx_);
+    dev = dev_;
     dev_ = nullptr;
+  }
+  if (dev) {
+    device_remove(dev);
   }
 }
 
