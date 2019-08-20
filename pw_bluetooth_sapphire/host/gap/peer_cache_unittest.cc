@@ -651,109 +651,6 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
   EXPECT_TRUE(peer()->le()->bonded());
 }
 
-TEST_F(GAP_PeerCacheTest_BondingTest, ForgetUnknownPeer) {
-  const PeerId id(0x9999);
-  ASSERT_FALSE(cache()->FindById(id));
-  EXPECT_FALSE(cache()->ForgetPeer(id));
-  EXPECT_EQ(0, updated_callback_count());
-}
-
-TEST_F(GAP_PeerCacheTest_BondingTest, ForgetBrEdrPeer) {
-  ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
-  ASSERT_TRUE(cache()->StoreBrEdrBond(kAddrBrEdr, kBrEdrKey));
-  ASSERT_TRUE(peer()->bonded());
-  ASSERT_FALSE(peer()->temporary());
-  ASSERT_EQ(3, updated_callback_count());
-
-  const PeerId id = peer()->identifier();
-  EXPECT_TRUE(cache()->ForgetPeer(id));
-  ASSERT_TRUE(cache()->FindById(id));
-  EXPECT_FALSE(peer()->bonded());
-  EXPECT_TRUE(peer()->temporary());
-  EXPECT_EQ(4, updated_callback_count());
-}
-
-TEST_F(GAP_PeerCacheTest_BondingTest, ForgetLowEnergyPeerWithPublicAddress) {
-  sm::PairingData data;
-  data.ltk = kLTK;
-  ASSERT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
-  ASSERT_EQ(DeviceAddress::Type::kLEPublic, peer()->address().type());
-  ASSERT_TRUE(peer()->bonded());
-  ASSERT_FALSE(peer()->temporary());
-  ASSERT_EQ(2, updated_callback_count());
-
-  const PeerId id = peer()->identifier();
-  EXPECT_TRUE(cache()->ForgetPeer(id));
-  ASSERT_TRUE(cache()->FindById(id));
-  EXPECT_FALSE(peer()->bonded());
-  EXPECT_TRUE(peer()->temporary());
-  EXPECT_EQ(3, updated_callback_count());
-}
-
-TEST_F(GAP_PeerCacheTest_BondingTest, ForgetLowEnergyPeerWithIrk) {
-  ASSERT_TRUE(NewPeer(kAddrLeRandom, true));
-
-  sm::PairingData data;
-  data.ltk = kLTK;
-  data.identity_address = kAddrLeAlias;
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
-  DeviceAddress rpa = sm::util::GenerateRpa(data.irk->value());
-
-  ASSERT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
-  ASSERT_TRUE(peer()->bonded());
-  ASSERT_FALSE(peer()->temporary());
-  ASSERT_TRUE(peer()->identity_known());
-  ASSERT_EQ(peer(), cache()->FindByAddress(rpa));
-  ASSERT_EQ(kAddrLeAlias, peer()->address());
-  EXPECT_EQ(3, updated_callback_count());
-
-  const PeerId id = peer()->identifier();
-  EXPECT_TRUE(cache()->ForgetPeer(id));
-  ASSERT_TRUE(cache()->FindById(id));
-  EXPECT_FALSE(peer()->bonded());
-  EXPECT_TRUE(peer()->temporary());
-  EXPECT_FALSE(peer()->identity_known());
-  EXPECT_FALSE(cache()->FindByAddress(rpa));
-
-  // Don't expect the original random address to be restored.
-  EXPECT_EQ(kAddrLeAlias, peer()->address());
-  EXPECT_EQ(4, updated_callback_count());
-
-  RunLoopFor(kCacheTimeout);
-  EXPECT_FALSE(cache()->FindById(id));
-}
-
-// Test that a forgotten LE peer using address privacy eventually expires out
-// of the cache.
-TEST_F(GAP_PeerCacheTest_BondingTest, RemoveForgetedLePrivacyPeerAfterDisconnectionThenExpiry) {
-  ASSERT_TRUE(NewPeer(kAddrLeRandom, true));
-
-  sm::PairingData data;
-  data.ltk = kLTK;
-  data.identity_address = kAddrLeAlias;
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
-
-  ASSERT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-  ASSERT_TRUE(peer()->bonded());
-  ASSERT_FALSE(peer()->temporary());
-
-  const PeerId id = peer()->identifier();
-  EXPECT_TRUE(cache()->ForgetPeer(id));
-  ASSERT_TRUE(cache()->FindById(id));
-  EXPECT_TRUE(peer()->temporary());
-
-  RunLoopFor(kCacheTimeout);
-  ASSERT_TRUE(cache()->FindById(id));
-
-  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
-  ASSERT_TRUE(cache()->FindById(id));
-  EXPECT_TRUE(peer()->temporary());
-
-  RunLoopFor(kCacheTimeout);
-  EXPECT_FALSE(cache()->FindById(id));
-}
-
 TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnknownPeer) {
   const PeerId id(0x9999);
   ASSERT_FALSE(cache()->FindById(id));
@@ -811,24 +708,6 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
   // The "new bond" callback should not be called when restoring a previously
   // bonded peer.
   EXPECT_FALSE(bonded_callback_called());
-}
-
-TEST_P(DualModeBondingTest, ForgetPeer) {
-  PeerId kId(5);
-  sm::PairingData data;
-  data.ltk = kLTK;
-
-  const DeviceAddress& address = GetParam();
-  EXPECT_TRUE(cache()->AddBondedPeer(BondingData{kId, address, {}, data, kBrEdrKey}));
-  auto* peer = cache()->FindById(kId);
-  ASSERT_TRUE(peer);
-  ASSERT_TRUE(peer->bonded());
-  EXPECT_EQ(5, updated_callback_count());
-
-  // Forgetting a dual-mode peer should only invoke the update callback once.
-  EXPECT_TRUE(cache()->ForgetPeer(kId));
-  EXPECT_FALSE(peer->bonded());
-  EXPECT_EQ(6, updated_callback_count());
 }
 
 // Test dual-mode character of peer using the same address of both types.

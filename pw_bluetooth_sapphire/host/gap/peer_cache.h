@@ -91,15 +91,6 @@ class PeerCache final {
   // false if the address does not match that of a known peer.
   bool StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key);
 
-  // Resets a peer |peer_id| to an unbonded state by removing secrets for its
-  // transports. The peer will become temporary and may expire. This does not
-  // otherwise disconnect the peer or remove its ID or address from the cache.
-  // Returns true if bonds were deleted from a known peer.
-  //
-  // TODO(BT-824): Replace calls to |ForgetPeer| with |RemoveDisconnectedPeer|
-  // to delete the peer immediately after disconnecting.
-  bool ForgetPeer(PeerId peer_id);
-
   // If a peer identified by |peer_id| exists and is not connected on either
   // transport, remove it from the cache immediately. Returns true after no peer
   // with |peer_id| exists in the cache, false otherwise.

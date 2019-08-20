@@ -183,46 +183,6 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
   return true;
 }
 
-bool PeerCache::ForgetPeer(PeerId peer_id) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  auto* const peer = FindById(peer_id);
-  if (!peer) {
-    bt_log(TRACE, "gap", "failed to unbond unknown peer %s", bt_str(peer_id));
-    return false;
-  }
-
-  bool bond_removed = false;
-  if (peer->bredr() && peer->bredr()->bonded()) {
-    peer->MutBrEdr().ClearBondData();
-    ZX_ASSERT(!peer->bredr()->bonded());
-    bond_removed = true;
-  }
-
-  if (peer->le() && peer->le()->bonded()) {
-    if (auto& address = peer->le()->bond_data()->identity_address) {
-      le_resolving_list_.Remove(*address);
-    }
-    peer->MutLe().ClearBondData();
-    ZX_ASSERT(!peer->le()->bonded());
-    bond_removed = true;
-  }
-
-  // Make peer temporary but don't set up expiry task unless the peer is
-  // already disconnected.
-  // TODO(BT-824): Mark the peer as "delete after disconnection."
-  peer->temporary_ = true;
-  if (!peer->connected()) {
-    // TODO(BT-824): Remove the peer.
-    UpdateExpiry(*peer);
-  }
-
-  if (bond_removed) {
-    NotifyPeerUpdated(*peer);
-  }
-
-  return bond_removed;
-}
-
 bool PeerCache::RemoveDisconnectedPeer(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {
