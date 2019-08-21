@@ -40,8 +40,8 @@ class AdapterTest : public TestingBase {
 
     auto data_domain = data::testing::FakeDomain::Create();
     data_domain->Initialize();
-    adapter_ = std::make_unique<Adapter>(transport(), std::move(data_domain),
-                                         gatt::testing::FakeLayer::Create());
+    adapter_ = std::make_unique<Adapter>(transport(), gatt::testing::FakeLayer::Create(),
+                                         std::optional(std::move(data_domain)));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
   }

@@ -4,8 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -290,6 +291,17 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(sock_cb_called);
+}
+
+using DATA_DomainLifecycleTest = TestingBase;
+
+TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
+  // Create an isolated domain, and shutdown without initializing
+  // We can't use the standard DATA_DomainTest fixture, as it will initialize the domain
+  auto data_domain = Domain::CreateWithDispatcher(transport(), dispatcher());
+  data_domain->ShutDown();
+  data_domain = nullptr;
+  SUCCEED();
 }
 
 // TODO(armansito): Add unit tests for RFCOMM sockets when the Domain class

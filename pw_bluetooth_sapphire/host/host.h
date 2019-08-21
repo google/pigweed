@@ -5,13 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 
-#include <ddk/protocol/bt/hci.h>
 #include <lib/fit/function.h>
 #include <zircon/types.h>
 
 #include <memory>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
+#include <ddk/protocol/bt/hci.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
@@ -71,7 +71,6 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
 
   bt_hci_protocol_t hci_proto_;
 
-  fbl::RefPtr<bt::data::Domain> data_domain_;
   std::unique_ptr<bt::gap::Adapter> gap_;
 
   // The GATT profile layer and bus.

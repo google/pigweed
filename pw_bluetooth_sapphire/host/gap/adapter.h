@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include <memory>
 #include <string>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
@@ -65,9 +66,11 @@ class Adapter final {
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
   //
-  // This will take ownership of |hci_device|.
-  explicit Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<data::Domain> data_domain,
-                   fbl::RefPtr<gatt::GATT> gatt);
+  // This will take ownership of |hci|.
+  // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nulloptr is
+  // passed, then the Adapter will create and initialize its own data domain.
+  explicit Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
+                   std::optional<fbl::RefPtr<data::Domain>> data_domain);
   ~Adapter();
 
   // Returns a uniquely identifier for this adapter on the current system.

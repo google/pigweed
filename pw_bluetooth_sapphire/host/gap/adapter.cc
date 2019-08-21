@@ -46,22 +46,24 @@ std::string GetHostname() {
 
 }  // namespace
 
-Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<data::Domain> data_domain,
-                 fbl::RefPtr<gatt::GATT> gatt)
+Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
+                 std::optional<fbl::RefPtr<data::Domain>> data_domain)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(hci),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
-      data_domain_(data_domain),
       gatt_(gatt),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(data_domain_);
   ZX_DEBUG_ASSERT(gatt_);
   ZX_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
   init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
+
+  if (data_domain.has_value()) {
+    data_domain_ = *data_domain;
+  }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci_->SetTransportClosedCallback(
@@ -378,9 +380,26 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
     return;
   }
 
-  // Initialize the data Domain to make L2CAP available for the next
-  // initialization step.
-  data_domain_->Initialize();
+  // Create the data domain, if we haven't been provided one. Doing so here lets us guarantee that
+  // AclDataChannel's lifetime is a superset of Data Domain's lifetime.
+  // TODO(35228) We currently allow tests to inject their own domain in the adapter constructor,
+  // as the adapter_unittests rely on injecting a fake domain to avoid concurrency in the unit
+  // tests.  Once we move to a single threaded model, we would like to remove this and have the
+  // adapter always be responsible for creating the domain.
+  if (!data_domain_) {
+    // Initialize the data Domain to make L2CAP available for the next initialization step. The
+    // ACLDataChannel must be initialized before creating the data domain
+    auto data_domain = data::Domain::Create(hci_, "bt-host (data)");
+    if (!data_domain) {
+      bt_log(ERROR, "gap", "Failed to initialize Data Domain");
+      CleanUp();
+      callback(false);
+      return;
+    }
+    // Ensure the initialize task is posted to the data domain before we store it in adapter
+    data_domain->Initialize();
+    data_domain_ = data_domain;
+  }
 
   ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
   ZX_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());

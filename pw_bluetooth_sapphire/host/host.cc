@@ -7,6 +7,7 @@
 #include "fidl/host_server.h"
 #include "gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
@@ -30,20 +31,15 @@ bool Host::Initialize(InitCallback callback) {
     return false;
   }
 
-  data_domain_ = data::Domain::Create(hci, "bt-host (data)");
-  if (!data_domain_)
-    return false;
-
   gatt_host_ = GattHost::Create("bt-host (gatt)");
   if (!gatt_host_)
     return false;
 
-  gap_ = std::make_unique<gap::Adapter>(hci, data_domain_, gatt_host_->profile());
+  gap_ = std::make_unique<gap::Adapter>(hci, gatt_host_->profile(), std::nullopt);
   if (!gap_)
     return false;
 
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(data_domain_);
 
   // Called when the GAP layer is ready. We initialize the GATT profile after
   // initial setup in GAP. The data domain will be initialized by GAP because it
@@ -79,12 +75,10 @@ void Host::ShutDown() {
   // This shuts down the GATT profile and all of its clients.
   gatt_host_->ShutDown();
   gap_->ShutDown();
-  data_domain_->ShutDown();
 
   // Make sure that |gap_| gets shut down and destroyed on its creation thread
   // as it is not thread-safe.
   gap_ = nullptr;
-  data_domain_ = nullptr;
   gatt_host_ = nullptr;
 }
 

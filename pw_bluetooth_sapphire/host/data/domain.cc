@@ -18,7 +18,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
  public:
   Impl(fxl::RefPtr<hci::Transport> hci, std::string thread_name)
       : Domain(), TaskDomain<Impl, Domain>(this, std::move(thread_name)), hci_(hci) {
-    ZX_DEBUG_ASSERT(hci_);
+    ZX_ASSERT(hci_);
   }
 
   // Second constructor used by CreateWithDispatcher.
@@ -51,8 +51,14 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     rfcomm_socket_factory_ = nullptr;
     l2cap_socket_factory_ = nullptr;
     rfcomm_ = nullptr;
+
+    // If l2cap has been initialized, we should have an acl_data_channel, as the data domain is not
+    // initialized until the acl channel is initialized.
+    if (l2cap_) {
+      ZX_ASSERT(hci_->acl_data_channel());
+      hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
+    }
     l2cap_ = nullptr;  // Unregisters the RFCOMM PSM.
-    hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
   }
 
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -176,6 +182,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
  private:
   void InitializeL2CAP() {
     AssertOnDispatcherThread();
+    ZX_ASSERT(hci_->acl_data_channel());
     l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_, dispatcher());
     hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
