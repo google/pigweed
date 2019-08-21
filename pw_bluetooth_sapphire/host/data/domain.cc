@@ -183,7 +183,9 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void InitializeL2CAP() {
     AssertOnDispatcherThread();
     ZX_ASSERT(hci_->acl_data_channel());
-    l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_, dispatcher());
+    auto send_packets =
+        fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::SendPackets);
+    l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_, std::move(send_packets), dispatcher());
     hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
 

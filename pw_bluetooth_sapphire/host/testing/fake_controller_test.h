@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"

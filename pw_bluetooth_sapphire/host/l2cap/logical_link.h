@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LOGICAL_LINK_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LOGICAL_LINK_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_counted.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
@@ -15,6 +13,9 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -40,9 +41,13 @@ class SignalingChannel;
 // Instances are created and owned by a ChannelManager.
 class LogicalLink final : public fbl::RefCounted<LogicalLink> {
  public:
-  // Used to query if ChannelManager has a service registered (identified by
-  // |psm|). If it does, return a function that can be used to provide the
-  // registrant with channels opened for the service. Otherwise, return nullptr.
+  // Used to schedule a sequence of packets to be sent to the Bluetooth controller for the type of
+  // link represented by this object.
+  using SendPacketsCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets)>;
+
+  // Returns a function that accepts opened channels for a registered local service identified by
+  // |psm| on a given connection identified by |handle|, or nullptr if there is no service
+  // registered for that PSM.
   using QueryServiceCallback =
       fit::function<ChannelCallback(hci::ConnectionHandle handle, PSM psm)>;
 
@@ -50,6 +55,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                                       hci::Connection::Role role, async_dispatcher_t* dispatcher,
                                       fxl::RefPtr<hci::Transport> hci,
+                                      SendPacketsCallback send_packets_cb,
                                       QueryServiceCallback query_service_cb);
 
   // Notifies and closes all open channels on this link. This must be called to
@@ -128,7 +134,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
               hci::Connection::Role role, async_dispatcher_t* dispatcher,
-              fxl::RefPtr<hci::Transport> hci, QueryServiceCallback query_service_cb);
+              fxl::RefPtr<hci::Transport> hci, SendPacketsCallback send_packets_cb,
+              QueryServiceCallback query_service_cb);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -220,6 +227,10 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // procedures terminated when this link gets closed.
   std::unique_ptr<DynamicChannelRegistry> dynamic_registry_;
 
+  // Queues data packets to be delivered to the controller and sent over the underlying link.
+  SendPacketsCallback send_packets_cb_;
+
+  // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;
 
   fxl::ThreadChecker thread_checker_;

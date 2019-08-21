@@ -48,21 +48,20 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 // static
-fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle,
-                                          hci::Connection::LinkType type,
-                                          hci::Connection::Role role,
-                                          async_dispatcher_t* dispatcher,
-                                          fxl::RefPtr<hci::Transport> hci,
-                                          QueryServiceCallback query_service_cb) {
-  auto ll = fbl::AdoptRef(
-      new LogicalLink(handle, type, role, dispatcher, hci, std::move(query_service_cb)));
+fbl::RefPtr<LogicalLink> LogicalLink::New(
+    hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
+    async_dispatcher_t* dispatcher, fxl::RefPtr<hci::Transport> hci,
+    SendPacketsCallback send_packets_cb, QueryServiceCallback query_service_cb) {
+  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, dispatcher, hci,
+                                          std::move(send_packets_cb), std::move(query_service_cb)));
   ll->Initialize();
   return ll;
 }
 
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                          hci::Connection::Role role, async_dispatcher_t* dispatcher,
-                         fxl::RefPtr<hci::Transport> hci, QueryServiceCallback query_service_cb)
+                         fxl::RefPtr<hci::Transport> hci, SendPacketsCallback send_packets_cb,
+                         QueryServiceCallback query_service_cb)
     : hci_(hci),
       dispatcher_(dispatcher),
       handle_(handle),
@@ -70,11 +69,14 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       role_(role),
       closed_(false),
       fragmenter_(handle),
+      send_packets_cb_(std::move(send_packets_cb)),
       query_service_cb_(std::move(query_service_cb)) {
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(type_ == hci::Connection::LinkType::kLE ||
                   type_ == hci::Connection::LinkType::kACL);
+  ZX_DEBUG_ASSERT(send_packets_cb_);
+  ZX_DEBUG_ASSERT(query_service_cb_);
 }
 
 void LogicalLink::Initialize() {
@@ -273,8 +275,8 @@ void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   PDU pdu = fragmenter_.BuildBasicFrame(id, payload);
   auto fragments = pdu.ReleaseFragments();
 
-  ZX_DEBUG_ASSERT(!fragments.is_empty());
-  hci_->acl_data_channel()->SendPackets(std::move(fragments), type_);
+  ZX_ASSERT(!fragments.is_empty());
+  ZX_ASSERT(send_packets_cb_(std::move(fragments)));
 }
 
 void LogicalLink::set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher) {

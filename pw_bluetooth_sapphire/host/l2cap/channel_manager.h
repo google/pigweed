@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <zircon/compiler.h>
 
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -53,7 +54,18 @@ class ChannelManager final {
  public:
   using LinkErrorCallback = fit::closure;
 
-  ChannelManager(fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* l2cap_dispatcher);
+  // Used to schedule a series of packets on the link type |ll_type| to be transmitted to the
+  // controller's ACL endpoint. All the packets in each invocation must be transmitted contiguously
+  // and in order. This will be called on the thread which the ChannelManager object is created, up
+  // to the object's duration.
+  //
+  // TODO(BT-938): Technically, the latter condition isn't true until SignalingChannel is processed
+  // in a way that it does not schedule deferred outbound packets on the L2CAP dispatch loop.
+  using SendAclCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets,
+                                             hci::Connection::LinkType ll_type)>;
+
+  ChannelManager(fxl::RefPtr<hci::Transport> hci, SendAclCallback send_acl_cb,
+                 async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -151,6 +163,10 @@ class ChannelManager final {
   ChannelCallback QueryService(hci::ConnectionHandle handle, PSM psm);
 
   fxl::RefPtr<hci::Transport> hci_;
+
+  // Queues data packets to be delivered to the controller for a given link type.
+  SendAclCallback send_acl_cb_;
+
   async_dispatcher_t* l2cap_dispatcher_;
 
   using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
