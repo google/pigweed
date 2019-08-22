@@ -24,6 +24,12 @@ namespace {
 using bt::testing::TestController;
 using TestingBase = bt::testing::FakeControllerTest<TestController>;
 
+// Sized intentionally to cause fragmentation for outbound dynamic channel data but not others. May
+// need adjustment if Signaling Channel Configuration {Request,Response} default transactions get
+// much bigger.
+constexpr size_t kMaxDataPacketLength = 64;
+constexpr size_t kMaxPacketCount = 10;
+
 class DATA_DomainTest : public TestingBase {
  public:
   DATA_DomainTest() = default;
@@ -32,7 +38,8 @@ class DATA_DomainTest : public TestingBase {
  protected:
   void SetUp() override {
     TestingBase::SetUp();
-    InitializeACLDataChannel();
+    const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
+    InitializeACLDataChannel(bredr_buffer_info);
 
     domain_ = Domain::CreateWithDispatcher(transport(), dispatcher());
     domain_->Initialize();
@@ -224,6 +231,55 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
+
+  // Test outbound data fragments using |kMaxDataPacketLength|.
+  const auto kFirstFragment = CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 64)
+      0x01, 0x00, 0x40, 0x00,
+
+      // L2CAP B-frame: (length: 80, channel-id: 0x9042 (kRemoteId))
+      0x50, 0x00, 0x42, 0x90,
+
+      // L2CAP payload (fragmented)
+      0xf0, 0x9f, 0x9a, 0x82, 0xf0, 0x9f, 0x9a, 0x83, 0xf0, 0x9f, 0x9a, 0x84, 0xf0, 0x9f, 0x9a,
+      0x85, 0xf0, 0x9f, 0x9a, 0x86, 0xf0, 0x9f, 0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x87, 0xf0, 0x9f,
+      0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x89, 0xf0, 0x9f, 0x9a, 0x8a, 0xf0, 0x9f, 0x9a, 0x8b, 0xf0,
+      0x9f, 0x9a, 0x8c, 0xf0, 0x9f, 0x9a, 0x8e, 0xf0, 0x9f, 0x9a, 0x9d, 0xf0, 0x9f, 0x9a, 0x9e);
+
+  const auto kSecondFragment = CreateStaticByteBuffer(
+      // ACL data header (handle: 1, pbf: continuing fr., length: 20)
+      0x01, 0x10, 0x14, 0x00,
+
+      // L2CAP payload (final fragment)
+      0xf0, 0x9f, 0x9a, 0x9f, 0xf0, 0x9f, 0x9a, 0xa0, 0xf0, 0x9f, 0x9a, 0xa1, 0xf0, 0x9f, 0x9b,
+      0xa4, 0xf0, 0x9f, 0x9b, 0xb2);
+
+  int rx_count = 0;
+  auto rx_cb = [&rx_count, &kFirstFragment, &kSecondFragment](const ByteBuffer& packet) {
+    rx_count++;
+    if (rx_count == 1) {
+      EXPECT_TRUE(ContainersEqual(kFirstFragment, packet));
+    } else if (rx_count == 2) {
+      EXPECT_TRUE(ContainersEqual(kSecondFragment, packet));
+    }
+  };
+  test_device()->SetDataCallback(rx_cb, dispatcher());
+
+  // Write some outbound bytes to the socket buffer.
+  // clang-format off
+  const char write_data[] = u8"🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
+  // clang-format on
+  size_t bytes_written = 0;
+  status = sock.write(0, write_data, sizeof(write_data) - 1, &bytes_written);
+  EXPECT_EQ(ZX_OK, status);
+  EXPECT_EQ(80u, bytes_written);
+
+  // Run until the data is flushed out to the TestController.
+  RunLoopUntilIdle();
+
+  // The 80-byte write should be fragmented over 64- and 20-byte HCI payloads in order to send it to
+  // the controller.
+  EXPECT_EQ(2, rx_count);
 }
 
 TEST_F(DATA_DomainTest, OutboundL2apSocket) {

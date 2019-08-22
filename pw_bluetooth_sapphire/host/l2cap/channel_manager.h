@@ -64,8 +64,16 @@ class ChannelManager final {
   using SendAclCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets,
                                              hci::Connection::LinkType ll_type)>;
 
-  ChannelManager(fxl::RefPtr<hci::Transport> hci, SendAclCallback send_acl_cb,
-                 async_dispatcher_t* l2cap_dispatcher);
+  // Creates L2CAP state for logical links and channels.
+  //
+  // |max_acl_payload_size| and |max_le_payload_size| are the "maximum size[s] of HCI ACL (excluding
+  // header) Data Packets... sent from the Host to the Controller" (Core v5.0 Vol 2, Part E, Section
+  // 4.1) used for fragmenting outbound data. Data that is fragmented will be passed contiguously as
+  // invocations of |send_packets_cb|.
+  //
+  // State changes are processed on |l2cap_dispatcher|.
+  ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
+                 SendAclCallback send_acl_cb, async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -78,7 +86,7 @@ class ChannelManager final {
   // method.
   //
   // |link_error_callback| will be used to notify when a channel signals a link
-  // error. It will be posted onto |dispatcher|.
+  // error.
   //
   // |security_callback| will be used to request an upgrade to the link security
   // level. This can be triggered by dynamic L2CAP channel creation or by a
@@ -153,7 +161,7 @@ class ChannelManager final {
   // added link.
   internal::LogicalLink* RegisterInternal(hci::ConnectionHandle handle,
                                           hci::Connection::LinkType ll_type,
-                                          hci::Connection::Role role);
+                                          hci::Connection::Role role, size_t max_payload_size);
 
   // If a service (identified by |psm|) requested has been registered, return a
   // callback that passes an inbound channel to the registrant. The callback may
@@ -162,7 +170,9 @@ class ChannelManager final {
   // unregistered services return an empty callback.
   ChannelCallback QueryService(hci::ConnectionHandle handle, PSM psm);
 
-  fxl::RefPtr<hci::Transport> hci_;
+  // Maximum sizes for data packet payloads from host to controller.
+  const size_t max_acl_payload_size_;
+  const size_t max_le_payload_size_;
 
   // Queues data packets to be delivered to the controller for a given link type.
   SendAclCallback send_acl_cb_;

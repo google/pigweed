@@ -8,17 +8,15 @@
 
 #include <fbl/macros.h>
 
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 
 namespace bt {
 namespace l2cap {
 namespace {
 
-using bt::testing::TestController;
-using TestingBase = bt::testing::FakeControllerTest<TestController>;
+using TestingBase = ::gtest::TestLoopFixture;
 
 constexpr hci::ConnectionHandle kTestHandle1 = 0x0001;
 constexpr hci::ConnectionHandle kTestHandle2 = 0x0002;
@@ -54,31 +52,18 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   L2CAP_ChannelManagerTest() = default;
   ~L2CAP_ChannelManagerTest() override = default;
 
-  void SetUp() override {
-    SetUp(hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10), hci::DataBufferInfo());
-  }
+  void SetUp() override { SetUp(hci::kMaxACLPayloadSize, hci::kMaxACLPayloadSize); }
 
-  void SetUp(const hci::DataBufferInfo& acl_info, const hci::DataBufferInfo& le_info) {
+  void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
-    TestingBase::InitializeACLDataChannel(acl_info, le_info);
 
     auto send_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets);
-
-    // FakeControllerTest's ACL data callbacks will no longer work after this
-    // call, as it overwrites ACLDataChannel's data rx handler. This is intended
-    // as the L2CAP layer takes ownership of ACL data traffic.
-    chanmgr_ = std::make_unique<ChannelManager>(transport(), std::move(send_packets), dispatcher());
+    chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
+                                                std::move(send_packets), dispatcher());
     packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
-
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
   }
 
   void TearDown() override {
-    // Don't trigger the data callback when cleaning up the manager.
-    if (test_device()) {
-      test_device()->ClearDataCallback();
-    }
     while (!expected_packets_.empty()) {
       auto& expected = expected_packets_.front();
       ADD_FAILURE_AT(expected.file_name, expected.line_number)
@@ -612,15 +597,13 @@ TEST_F(L2CAP_ChannelManagerTest, SendBasicSdu) {
   RunLoopUntilIdle();
 }
 
-// Tests that fragmentation of LE vs BR/EDR packets is based on the same
-// fragment size.
+// Tests that fragmentation of LE and BR/EDR packets use the corresponding buffer size.
 TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
-  constexpr size_t kMaxNumPackets = 100;  // Make this large to avoid simulating flow-control.
-  constexpr size_t kMaxDataSize = 5;
+  constexpr size_t kMaxACLDataSize = 6;
+  constexpr size_t kMaxLEDataSize = 5;
 
-  // No LE buffers.
   TearDown();
-  SetUp(hci::DataBufferInfo(kMaxDataSize, kMaxNumPackets), hci::DataBufferInfo());
+  SetUp(kMaxACLDataSize, kMaxLEDataSize);
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
   RegisterACL(kTestHandle2, hci::Connection::Role::kMaster);
@@ -646,65 +629,6 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
       'e', 'l', 'l', 'o'));
 
   EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
-      // ACL data header (handle: 2, length: 5)
-      0x02, 0x00, 0x05, 0x00,
-
-      // l2cap b-frame: (length: 7, channel-id: 7, partial payload)
-      0x07, 0x00, 0x07, 0x00, 'G'));
-
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
-      // ACL data header (handle: 2, pbf: continuing fr., length: 5)
-      0x02, 0x10, 0x05, 0x00,
-
-      // continuing payload
-      'o', 'o', 'd', 'b', 'y'));
-
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
-      // ACL data header (handle: 2, pbf: continuing fr., length: 1)
-      0x02, 0x10, 0x01, 0x00,
-
-      // Continuing payload
-      'e'));
-
-  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over
-  // 2 fragments.
-  EXPECT_TRUE(att_chan->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
-
-  // SDU of length 7 corresponds to a 11-octet B-frame which should be sent over
-  // 3 fragments.
-  EXPECT_TRUE(sm_chan->Send(NewBuffer('G', 'o', 'o', 'd', 'b', 'y', 'e')));
-
-  RunLoopUntilIdle();
-}
-
-// Tests that fragmentation of LE and BR/EDR packets use the corresponding
-// buffer size.
-TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdusDifferentBuffers) {
-  constexpr size_t kMaxNumPackets = 100;  // This is large to avoid having to simulate flow-control
-  constexpr size_t kMaxACLDataSize = 6;
-  constexpr size_t kMaxLEDataSize = 10;
-
-  TearDown();
-  SetUp(hci::DataBufferInfo(kMaxACLDataSize, kMaxNumPackets),
-        hci::DataBufferInfo(kMaxLEDataSize, kMaxNumPackets));
-
-  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
-  RegisterACL(kTestHandle2, hci::Connection::Role::kMaster);
-
-  // We use the ATT fixed-channel for LE and the SM fixed-channel for ACL.
-  auto att_chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
-  auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle2);
-  ASSERT_TRUE(att_chan);
-  ASSERT_TRUE(sm_chan);
-
-  EXPECT_LE_PACKET_OUT(CreateStaticByteBuffer(
-      // ACL data header (handle: 1, length: 9)
-      0x01, 0x00, 0x09, 0x00,
-
-      // L2CAP B-frame: (length: 5, channel-id: 4)
-      0x05, 0x00, 0x04, 0x00, 'H', 'e', 'l', 'l', 'o'));
-
-  EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
       // ACL data header (handle: 2, length: 6)
       0x02, 0x00, 0x06, 0x00,
 
@@ -718,12 +642,12 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdusDifferentBuffers) {
       // continuing payload
       'o', 'd', 'b', 'y', 'e'));
 
-  // SDU of length 5 corresponds to a 9-octet B-frame. The LE buffer size is
-  // large enough for this to be sent over a single fragment.
+  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over a 5-byte and a 4-
+  // byte fragment.
   EXPECT_TRUE(att_chan->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
 
-  // SDU of length 7 corresponds to a 11-octet B-frame. Due to the BR/EDR buffer
-  // size, this should be sent over 2 fragments.
+  // SDU of length 7 corresponds to a 11-octet B-frame. Due to the BR/EDR buffer size, this should
+  // be sent over a 6-byte then a 5-byte fragment.
   EXPECT_TRUE(sm_chan->Send(NewBuffer('G', 'o', 'o', 'd', 'b', 'y', 'e')));
 
   RunLoopUntilIdle();

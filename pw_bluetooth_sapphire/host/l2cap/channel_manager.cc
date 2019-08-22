@@ -13,13 +13,13 @@
 namespace bt {
 namespace l2cap {
 
-ChannelManager::ChannelManager(fxl::RefPtr<hci::Transport> hci, SendAclCallback send_acl_cb,
-                               async_dispatcher_t* l2cap_dispatcher)
-    : hci_(hci),
+ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
+                               SendAclCallback send_acl_cb, async_dispatcher_t* l2cap_dispatcher)
+    : max_acl_payload_size_(max_acl_payload_size),
+      max_le_payload_size_(max_le_payload_size),
       send_acl_cb_(std::move(send_acl_cb)),
       l2cap_dispatcher_(l2cap_dispatcher),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(hci_);
   ZX_ASSERT(send_acl_cb_);
   ZX_ASSERT(l2cap_dispatcher_);
 }
@@ -49,7 +49,7 @@ void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   bt_log(TRACE, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
-  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kACL, role);
+  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kACL, role, max_acl_payload_size_);
   ll->set_error_callback(std::move(link_error_cb), dispatcher);
   ll->set_security_upgrade_callback(std::move(security_cb), dispatcher);
 }
@@ -62,7 +62,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   bt_log(TRACE, "l2cap", "register LE link (handle: %#.4x)", handle);
 
-  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role);
+  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
   ll->set_error_callback(std::move(link_error_cb), dispatcher);
   ll->set_security_upgrade_callback(std::move(security_cb), dispatcher);
   ll->le_signaling_channel()->set_conn_param_update_callback(std::move(conn_param_cb), dispatcher);
@@ -142,8 +142,10 @@ bool ChannelManager::RegisterService(PSM psm, ChannelCallback cb, async_dispatch
 
   // Bind |dispatcher| in callback that forwards the created channel to the
   // service provider.
-  ChannelCallback pass_channel = [dispatcher,
+  ChannelCallback pass_channel = [this, dispatcher,
                                   cb = std::move(cb)](fbl::RefPtr<Channel> chan) mutable {
+    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+
     // Do not transfer ownership of |cb| when passing a channel to L2CAP.
     // |chan| is safe to move because its lifetime spans each invocation.
     async::PostTask(dispatcher, [cb = cb.share(), chan = std::move(chan)] { cb(std::move(chan)); });
@@ -190,7 +192,8 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
 
 internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle handle,
                                                         hci::Connection::LinkType ll_type,
-                                                        hci::Connection::Role role) {
+                                                        hci::Connection::Role role,
+                                                        size_t max_payload_size) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't
@@ -202,7 +205,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
     return send_acl_cb_(std::move(packets), ll_type);
   };
 
-  auto ll = internal::LogicalLink::New(handle, ll_type, role, l2cap_dispatcher_, hci_,
+  auto ll = internal::LogicalLink::New(handle, ll_type, role, l2cap_dispatcher_, max_payload_size,
                                        std::move(send_acl_cb),
                                        fit::bind_member(this, &ChannelManager::QueryService));
 
@@ -228,6 +231,8 @@ ChannelCallback ChannelManager::QueryService(hci::ConnectionHandle handle, PSM p
     return nullptr;
   }
 
+  // This will be called in LogicalLink. Each callback in |services_| already trampolines to the
+  // appropriate dispatcher (passed to RegisterService).
   return iter->second.share();
 }
 

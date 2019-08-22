@@ -75,7 +75,7 @@ class ACLDataChannel final {
   // control. |bredr_buffer_info| represents the controller's data buffering
   // capacity for the BR/EDR transport and the |le_buffer_info| represents Low
   // Energy buffers. At least one of these (BR/EDR vs LE) must contain non-zero
-  // values. Generally rules of thumb:
+  // values per Core Spec v5.0 Vol 2, Part E, Sec 4.1.1:
   //
   //   - A LE only controller will have LE buffers only.
   //   - A BR/EDR-only controller will have BR/EDR buffers only.

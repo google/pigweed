@@ -13,6 +13,7 @@
 #include "channel.h"
 #include "le_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
@@ -50,9 +51,9 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(
     hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
-    async_dispatcher_t* dispatcher, fxl::RefPtr<hci::Transport> hci,
+    async_dispatcher_t* dispatcher, size_t max_acl_payload_size,
     SendPacketsCallback send_packets_cb, QueryServiceCallback query_service_cb) {
-  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, dispatcher, hci,
+  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, dispatcher, max_acl_payload_size,
                                           std::move(send_packets_cb), std::move(query_service_cb)));
   ll->Initialize();
   return ll;
@@ -60,23 +61,20 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(
 
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                          hci::Connection::Role role, async_dispatcher_t* dispatcher,
-                         fxl::RefPtr<hci::Transport> hci, SendPacketsCallback send_packets_cb,
+                         size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
                          QueryServiceCallback query_service_cb)
-    : hci_(hci),
-      dispatcher_(dispatcher),
+    : dispatcher_(dispatcher),
       handle_(handle),
       type_(type),
       role_(role),
       closed_(false),
-      fragmenter_(handle),
+      fragmenter_(handle, max_acl_payload_size),
       send_packets_cb_(std::move(send_packets_cb)),
       query_service_cb_(std::move(query_service_cb)) {
-  ZX_DEBUG_ASSERT(hci_);
-  ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(type_ == hci::Connection::LinkType::kLE ||
-                  type_ == hci::Connection::LinkType::kACL);
-  ZX_DEBUG_ASSERT(send_packets_cb_);
-  ZX_DEBUG_ASSERT(query_service_cb_);
+  ZX_ASSERT(dispatcher_);
+  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
+  ZX_ASSERT(send_packets_cb_);
+  ZX_ASSERT(query_service_cb_);
 }
 
 void LogicalLink::Initialize() {
@@ -85,16 +83,10 @@ void LogicalLink::Initialize() {
 
   // Set up the signaling channel and dynamic channels.
   if (type_ == hci::Connection::LinkType::kLE) {
-    ZX_DEBUG_ASSERT(hci_->acl_data_channel()->GetLEBufferInfo().IsAvailable());
-    fragmenter_.set_max_acl_payload_size(
-        hci_->acl_data_channel()->GetLEBufferInfo().max_data_length());
     signaling_channel_ =
         std::make_unique<LESignalingChannel>(OpenFixedChannel(kLESignalingChannelId), role_);
     // TODO(armansito): Initialize LE registry when it exists.
   } else {
-    ZX_DEBUG_ASSERT(hci_->acl_data_channel()->GetBufferInfo().IsAvailable());
-    fragmenter_.set_max_acl_payload_size(
-        hci_->acl_data_channel()->GetBufferInfo().max_data_length());
     signaling_channel_ =
         std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
@@ -375,7 +367,7 @@ DynamicChannelRegistry::DynamicChannelCallback LogicalLink::OnServiceRequest(PSM
   }
 
   return [this, chan_cb = std::move(chan_cb)](const DynamicChannel* dyn_chan) mutable {
-    CompleteDynamicOpen(dyn_chan, std::move(chan_cb), dispatcher_);
+    CompleteDynamicOpen(dyn_chan, std::move(chan_cb), nullptr);
   };
 }
 
@@ -405,7 +397,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   ZX_DEBUG_ASSERT(!closed_);
 
   if (!dyn_chan) {
-    async::PostTask(dispatcher, std::bind(std::move(open_cb), nullptr));
+    RunOrPost(std::bind(std::move(open_cb), nullptr), dispatcher);
     return;
   }
 
@@ -414,9 +406,10 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   bt_log(TRACE, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
          local_cid, remote_cid);
 
-  auto chan = fbl::AdoptRef(new ChannelImpl(local_cid, remote_cid, fbl::WrapRefPtr(this), {}));
+  auto chan = fbl::AdoptRef(
+      new ChannelImpl(local_cid, remote_cid, fbl::WrapRefPtr(this), /*buffered_pdus=*/{}));
   channels_[local_cid] = chan;
-  async::PostTask(dispatcher, std::bind(std::move(open_cb), std::move(chan)));
+  RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
 }
 
 }  // namespace internal

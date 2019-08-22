@@ -36,8 +36,10 @@ class ChannelImpl;
 class LESignalingChannel;
 class SignalingChannel;
 
-// Represents a controller logical link. Each instance aids in mapping L2CAP
-// channels to their corresponding controller logical link and vice versa.
+// Represents a controller logical link. Each instance aids in mapping L2CAP channels to their
+// corresponding controller logical link and vice versa. This owns each link's signaling fixed
+// channel and the dynamic channel logic that operates on that channel.
+//
 // Instances are created and owned by a ChannelManager.
 class LogicalLink final : public fbl::RefCounted<LogicalLink> {
  public:
@@ -52,10 +54,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
       fit::function<ChannelCallback(hci::ConnectionHandle handle, PSM psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
+  // |dispatcher| will be used for all Channels created on this link.
+  // |max_payload_size| shall be the maximum "host to controller" data packet payload size for the
+  // link |type|, per Core Spec v5.0 Vol 2, Part E, Sec 4.1.
+  // Both |query_service_cb| and the inbound channel delivery callback that it returns will be
+  // executed on this object's creation thread.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                                       hci::Connection::Role role, async_dispatcher_t* dispatcher,
-                                      fxl::RefPtr<hci::Transport> hci,
-                                      SendPacketsCallback send_packets_cb,
+                                      size_t max_payload_size, SendPacketsCallback send_packets_cb,
                                       QueryServiceCallback query_service_cb);
 
   // Notifies and closes all open channels on this link. This must be called to
@@ -79,7 +85,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   void OpenChannel(PSM psm, ChannelCallback callback, async_dispatcher_t* dispatcher);
 
   // Takes ownership of |packet| for PDU processing and routes it to its target
-  // channel. This must be called on the HCI I/O thread.
+  // channel. This must be called on this object's creation thread.
   //
   // The link MUST not be closed when this is called.
   void HandleRxPacket(hci::ACLDataPacketPtr packet);
@@ -134,7 +140,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
               hci::Connection::Role role, async_dispatcher_t* dispatcher,
-              fxl::RefPtr<hci::Transport> hci, SendPacketsCallback send_packets_cb,
+              size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
               QueryServiceCallback query_service_cb);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
@@ -186,7 +192,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   sm::SecurityProperties security_ __TA_GUARDED(mtx_);
 
   // All members below must be accessed on the L2CAP dispatcher thread.
-  fxl::RefPtr<hci::Transport> hci_;
   async_dispatcher_t* dispatcher_;
 
   // Information about the underlying controller logical link.
@@ -209,7 +214,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   std::unique_ptr<SignalingChannel> signaling_channel_;
 
   // Fragmenter and Recombiner are always accessed on the L2CAP thread.
-  Fragmenter fragmenter_;
+  const Fragmenter fragmenter_;
   Recombiner recombiner_;
 
   // Channels that were created on this link. Channels notify the link for

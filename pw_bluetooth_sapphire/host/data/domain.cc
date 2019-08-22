@@ -183,9 +183,16 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void InitializeL2CAP() {
     AssertOnDispatcherThread();
     ZX_ASSERT(hci_->acl_data_channel());
+    const auto& acl_buffer_info = hci_->acl_data_channel()->GetBufferInfo();
+    const auto& le_buffer_info = hci_->acl_data_channel()->GetLEBufferInfo();
+
+    // LE Buffer Info is always available from ACLDataChannel.
+    ZX_ASSERT(acl_buffer_info.IsAvailable());
     auto send_packets =
         fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::SendPackets);
-    l2cap_ = std::make_unique<l2cap::ChannelManager>(hci_, std::move(send_packets), dispatcher());
+    l2cap_ = std::make_unique<l2cap::ChannelManager>(acl_buffer_info.max_data_length(),
+                                                     le_buffer_info.max_data_length(),
+                                                     std::move(send_packets), dispatcher());
     hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
 

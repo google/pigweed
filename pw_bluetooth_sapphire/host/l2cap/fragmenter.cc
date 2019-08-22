@@ -15,10 +15,10 @@ namespace l2cap {
 
 Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
     : connection_handle_(connection_handle), max_acl_payload_size_(max_acl_payload_size) {
-  ZX_DEBUG_ASSERT(connection_handle_);
-  ZX_DEBUG_ASSERT(connection_handle_ <= hci::kConnectionHandleMax);
-  ZX_DEBUG_ASSERT(max_acl_payload_size_);
-  ZX_DEBUG_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
+  ZX_ASSERT(connection_handle_);
+  ZX_ASSERT(connection_handle_ <= hci::kConnectionHandleMax);
+  ZX_ASSERT(max_acl_payload_size_);
+  ZX_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));
 }
 
 // NOTE(armansito): The following method copies the contents of |data| into ACL
@@ -46,7 +46,8 @@ Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl
 //     2. channel -> fragmenter ->(move) HCI layer ->(move) bt-hci driver
 //     if buffering is needed:
 //       3. bt-hci driver -> transport driver
-PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data, bool flushable) {
+PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
+                                bool flushable) const {
   ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
   ZX_DEBUG_ASSERT(channel_id);
 
