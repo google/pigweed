@@ -140,7 +140,7 @@ bool Session::SetL2CAPChannel(fbl::RefPtr<l2cap::Channel> l2cap_channel) {
   ZX_DEBUG_ASSERT(l2cap_channel);
   l2cap_channel_.Reset(l2cap_channel);
   auto self = weak_ptr_factory_.GetWeakPtr();
-  return l2cap_channel_->Activate(
+  return l2cap_channel_->ActivateWithDispatcher(
       [self](auto sdu) {
         if (self)
           self->RxCallback(std::move(sdu));

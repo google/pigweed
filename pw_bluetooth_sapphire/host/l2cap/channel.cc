@@ -65,8 +65,8 @@ const sm::SecurityProperties ChannelImpl::security() {
   return sm::SecurityProperties();
 }
 
-bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                           async_dispatcher_t* dispatcher) {
+bool ChannelImpl::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                                         async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(rx_callback);
   ZX_DEBUG_ASSERT(closed_callback);
 
@@ -91,7 +91,6 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
     // Route the buffered packets.
     if (!pending_rx_sdus_.empty()) {
       run_task = true;
-      dispatcher = dispatcher_;
       task = [func = rx_cb_.share(), pending = std::move(pending_rx_sdus_)]() mutable {
         while (!pending.empty()) {
           func(std::move(pending.front()));
@@ -107,6 +106,10 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
   }
 
   return true;
+}
+
+bool ChannelImpl::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) {
+  return ActivateWithDispatcher(std::move(rx_callback), std::move(closed_callback), nullptr);
 }
 
 void ChannelImpl::Deactivate() {

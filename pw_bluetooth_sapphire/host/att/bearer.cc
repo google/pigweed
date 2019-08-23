@@ -287,8 +287,8 @@ bool Bearer::Activate() {
   rx_task_.Reset(fit::bind_member(this, &Bearer::OnRxBFrame));
   chan_closed_cb_.Reset(fit::bind_member(this, &Bearer::OnChannelClosed));
 
-  return chan_->Activate(rx_task_.callback(), chan_closed_cb_.callback(),
-                         async_get_default_dispatcher());
+  return chan_->ActivateWithDispatcher(rx_task_.callback(), chan_closed_cb_.callback(),
+                                       async_get_default_dispatcher());
 }
 
 void Bearer::ShutDown() {

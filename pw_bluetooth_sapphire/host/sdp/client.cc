@@ -82,7 +82,7 @@ class Impl final : public Client {
 Impl::Impl(fbl::RefPtr<l2cap::Channel> channel)
     : channel_(std::move(channel)), next_tid_(0), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  bool activated = channel_->Activate(
+  bool activated = channel_->ActivateWithDispatcher(
       [self](auto packet) {
         if (self) {
           self->OnRxFrame(std::move(packet));

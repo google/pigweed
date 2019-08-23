@@ -57,9 +57,9 @@ namespace l2cap {
 // A Channel's owner must explicitly call Deactivate() and must not rely on
 // dropping its reference to close the channel.
 //
-// When a LogicalLink closes, All of its  active channels become deactivated
+// When a LogicalLink closes, all of its active channels become deactivated
 // when it closes and this is signaled by running the ClosedCallback passed to
-// Activate().
+// ActivateWithDispatcher() or ActivateOnDataDomain.
 class Channel : public fbl::RefCounted<Channel> {
  public:
   // Identifier for this channel's endpoint on this device. It can be prior-
@@ -106,15 +106,28 @@ class Channel : public fbl::RefCounted<Channel> {
   // that |rx_cb| is not empty and the underlying logical link is active.
   using RxCallback = fit::function<void(ByteBufferPtr packet)>;
 
-  // Activates this channel assigning |dispatcher| to execute |rx_callback| and
-  // |closed_callback|.
+  // Activates this channel assigning |dispatcher| to execute |rx_callback| and |closed_callback|.
   //
   // Returns false if the channel's link has been closed.
   //
-  // NOTE: Callers shouldn't assume that this method will succeed, as the
-  // underlying link can be removed at any time.
-  virtual bool Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                        async_dispatcher_t* dispatcher) = 0;
+  // Each channel can be activated only once.
+  //
+  // NOTE: Callers shouldn't assume that this method will succeed, as the underlying link can be
+  // removed at any time.
+  virtual bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                                      async_dispatcher_t* dispatcher) = 0;
+
+  // Activates this channel as in ActivateWithDispatcher, but callbacks will be executed immediately
+  // on the Data domain as L2CAP is notified of their underlying events.
+  //
+  // Any inbound data that has already been buffered for this channel will be drained by calling
+  // |rx_callback| repeatedly, before this call returns.
+  //
+  // Execution of |rx_callback| may block L2CAP data routing, so care should be taken to avoid
+  // introducing excessive latency.
+  //
+  // Each channel can be activated only once.
+  virtual bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) = 0;
 
   // Deactivates this channel. No more packets can be sent or received after
   // this is called. |rx_callback| may still be called if it has been already
@@ -178,8 +191,9 @@ class ChannelImpl : public Channel {
  public:
   // Channel overrides:
   const sm::SecurityProperties security() override;
-  bool Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                async_dispatcher_t* dispatcher) override;
+  bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                              async_dispatcher_t* dispatcher) override;
+  bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) override;
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;

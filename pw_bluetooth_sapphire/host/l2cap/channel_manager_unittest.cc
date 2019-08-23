@@ -95,7 +95,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
                                                Channel::ClosedCallback closed_cb = DoNothing,
                                                Channel::RxCallback rx_cb = NopRxCallback) {
     auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
-    if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
+    if (!chan ||
+        !chan->ActivateWithDispatcher(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
       return nullptr;
     }
 
@@ -111,7 +112,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     ChannelCallback open_cb = [this, activated_cb = std::move(activated_cb),
                                rx_cb = std::move(rx_cb),
                                closed_cb = std::move(closed_cb)](auto chan) mutable {
-      if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
+      if (!chan ||
+          !chan->ActivateWithDispatcher(std::move(rx_cb), std::move(closed_cb), dispatcher())) {
         activated_cb(nullptr);
       } else {
         activated_cb(std::move(chan));
@@ -205,7 +207,7 @@ TEST_F(L2CAP_ChannelManagerTest, ActivateFailsAfterDeactivate) {
   chan->Deactivate();
 
   // Activate should fail.
-  EXPECT_FALSE(chan->Activate(NopRxCallback, DoNothing, dispatcher()));
+  EXPECT_FALSE(chan->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
 }
 
 TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
@@ -336,7 +338,7 @@ TEST_F(L2CAP_ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
 TEST_F(L2CAP_ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
   RegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
-  chan->Activate(
+  chan->ActivateWithDispatcher(
       NopRxCallback, [chan] { chan->Deactivate(); }, dispatcher());
   chanmgr()->Unregister(kTestHandle1);  // Triggers ClosedCallback.
   RunLoopUntilIdle();
@@ -561,13 +563,76 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
 
-  att_chan->Activate(att_rx_cb, DoNothing, dispatcher());
-  smp_chan->Activate(smp_rx_cb, DoNothing, dispatcher());
+  att_chan->ActivateWithDispatcher(att_rx_cb, DoNothing, dispatcher());
+  smp_chan->ActivateWithDispatcher(smp_rx_cb, DoNothing, dispatcher());
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(smp_cb_called);
   EXPECT_EQ(kPacketCount, packet_count);
+}
+
+TEST_F(L2CAP_ChannelManagerTest, ActivateChannelOnDataDomainProcessesCallbacksSynchronously) {
+  // LE-U link
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
+
+  int att_rx_cb_count = 0;
+  int smp_rx_cb_count = 0;
+
+  auto att_chan = chanmgr()->OpenFixedChannel(kTestHandle1, kATTChannelId);
+  ASSERT_TRUE(att_chan);
+  auto att_rx_cb = [&att_rx_cb_count](ByteBufferPtr sdu) {
+    EXPECT_EQ("hello", sdu->AsString());
+    att_rx_cb_count++;
+  };
+  bool att_closed_called = false;
+  auto att_closed_cb = [&att_closed_called] { att_closed_called = true; };
+
+  // Activate ATT to run on Data domain, requiring synchronous callback invocation.
+  ASSERT_TRUE(att_chan->ActivateOnDataDomain(std::move(att_rx_cb), std::move(att_closed_cb)));
+
+  auto smp_rx_cb = [&smp_rx_cb_count](ByteBufferPtr sdu) {
+    EXPECT_EQ(u8"🤨", sdu->AsString());
+    smp_rx_cb_count++;
+  };
+  bool smp_closed_called = false;
+  auto smp_closed_cb = [&smp_closed_called] { smp_closed_called = true; };
+
+  // The SMP channel is activated with the test loop dispatcher.
+  auto smp_chan = ActivateNewFixedChannel(kLESMPChannelId, kTestHandle1, std::move(smp_closed_cb),
+                                          std::move(smp_rx_cb));
+  ASSERT_TRUE(smp_chan);
+
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
+      // ACL data header (starting fragment)
+      0x01, 0x00, 0x08, 0x00,
+
+      // L2CAP B-frame for SMP fixed channel (4-byte payload: U+1F928 in UTF-8)
+      0x04, 0x00, 0x06, 0x00, 0xf0, 0x9f, 0xa4, 0xa8));
+
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
+      // ACL data header (starting fragment)
+      0x01, 0x00, 0x09, 0x00,
+
+      // L2CAP B-frame for ATT fixed channel
+      0x05, 0x00, 0x04, 0x00, 'h', 'e', 'l', 'l', 'o'));
+
+  // Receiving data in ChannelManager processes the ATT packet synchronously so it has already
+  // routed the data to the Channel.
+  EXPECT_EQ(att_rx_cb_count, 1);
+
+  // But the SMP channel won't get anything until we yield to the event loop.
+  EXPECT_EQ(smp_rx_cb_count, 0);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, att_rx_cb_count);
+  EXPECT_EQ(1, smp_rx_cb_count);
+
+  // Link closure synchronously calls the ATT channel close callback.
+  chanmgr()->Unregister(kTestHandle1);
+  EXPECT_TRUE(att_closed_called);
+  EXPECT_FALSE(smp_closed_called);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, SendOnClosedLink) {
@@ -1241,7 +1306,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   auto channel_cb = [this, &channel,
                      closed_cb = std::move(closed_cb)](fbl::RefPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
-    EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing, dispatcher()));
+    EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
   };
 
   EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm0, channel_cb, dispatcher()));

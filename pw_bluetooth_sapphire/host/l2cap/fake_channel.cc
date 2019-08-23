@@ -7,6 +7,7 @@
 #include <lib/async/cpp/task.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 
 namespace bt {
 namespace l2cap {
@@ -27,14 +28,12 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandl
 }
 
 void FakeChannel::Receive(const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(!!rx_cb_ == !!dispatcher_);
-
   auto pdu = fragmenter_.BuildBasicFrame(id(), data);
   auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
-  if (dispatcher_) {
-    async::PostTask(dispatcher_,
-                    [cb = rx_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); });
+  if (rx_cb_) {
+    RunOrPost([cb = rx_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); },
+              dispatcher_);
   } else {
     pending_rx_sdus_.push(std::move(sdu));
   }
@@ -67,8 +66,8 @@ void FakeChannel::Close() {
     closed_cb_();
 }
 
-bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                           async_dispatcher_t* dispatcher) {
+bool FakeChannel::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                                         async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(rx_callback);
   ZX_DEBUG_ASSERT(closed_callback);
   ZX_DEBUG_ASSERT(!rx_cb_);
@@ -87,6 +86,10 @@ bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
   }
 
   return true;
+}
+
+bool FakeChannel::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) {
+  return ActivateWithDispatcher(std::move(rx_callback), std::move(closed_callback), nullptr);
 }
 
 void FakeChannel::Deactivate() {

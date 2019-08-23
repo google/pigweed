@@ -49,7 +49,7 @@ class FakeChannel : public Channel {
 
   fxl::WeakPtr<FakeChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-  // Activate() always fails if true.
+  // Activating always fails if true.
   void set_activate_fails(bool value) { activate_fails_ = value; }
 
   // True if SignalLinkError() has been called.
@@ -63,8 +63,9 @@ class FakeChannel : public Channel {
 
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
-  bool Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                async_dispatcher_t* dispatcher) override;
+  bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                              async_dispatcher_t* dispatcher) override;
+  bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) override;
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;

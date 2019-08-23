@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_counted.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <queue>
+
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -40,8 +41,8 @@ class Channel : public fbl::RefCounted<Channel> {
   using ClosedCallback = fit::closure;
   // Activates this channel assigning |dispatcher| to execute |rx_callback| and
   // |closed_callback|. Returns true on success.
-  virtual bool Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                        async_dispatcher_t* dispatcher) = 0;
+  virtual bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                                      async_dispatcher_t* dispatcher) = 0;
   // Cleans up resources associated with this channel.
   // TODO(NET-1756): Implement cleanup.
   void Deactivate() {}
@@ -94,8 +95,8 @@ namespace internal {
 class ChannelImpl : public Channel {
  public:
   // Channel overrides
-  bool Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                async_dispatcher_t* dispatcher) override;
+  bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                              async_dispatcher_t* dispatcher) override;
   bool Send(ByteBufferPtr data) override;
 
  private:

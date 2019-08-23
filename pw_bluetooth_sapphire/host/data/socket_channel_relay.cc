@@ -70,11 +70,13 @@ bool SocketChannelRelay<ChannelT>::Activate() {
     return false;
   }
 
+  // TODO(35105): Transition to ActivateOnDataDomain.
   const auto self = weak_ptr_factory_.GetWeakPtr();
   const auto channel_id = channel_->id();
-  const bool activate_success = channel_->Activate(
+  const bool activate_success = channel_->ActivateWithDispatcher(
       [self, channel_id](ByteBufferPtr rx_data) {
-        // Note: this lambda _may_ be invoked synchronously.
+        // Note: this lambda _may_ be invoked immediately when yielding after ActivateWithDispatcher
+        // returns.
         if (self) {
           self->OnChannelDataReceived(std::move(rx_data));
         } else {

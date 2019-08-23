@@ -54,7 +54,7 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role, boo
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  chan_->Activate(
+  chan_->ActivateWithDispatcher(
       [self](auto sdu) {
         if (self) {
           self->OnRxBFrame(std::move(sdu));

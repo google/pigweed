@@ -610,8 +610,8 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenOutgoingChannel) {
   DLCI dlci = ServerChannelToDLCI(kMinServerChannel, state.role);
 
   ByteBufferPtr received_data;
-  channel->Activate([&received_data](auto data) { received_data = std::move(data); }, []() {},
-                    dispatcher());
+  channel->ActivateWithDispatcher([&received_data](auto data) { received_data = std::move(data); },
+                                  []() {}, dispatcher());
 
   auto pattern = CreateStaticByteBuffer(1, 2, 3, 4);
   auto buffer = std::make_unique<DynamicByteBuffer>(pattern);
@@ -651,8 +651,8 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenIncomingChannel) {
   DLCI dlci = ServerChannelToDLCI(server_channel, OppositeRole(state.role));
 
   ByteBufferPtr received_data;
-  channel->Activate([&received_data](auto data) { received_data = std::move(data); }, []() {},
-                    dispatcher());
+  channel->ActivateWithDispatcher([&received_data](auto data) { received_data = std::move(data); },
+                                  []() {}, dispatcher());
 
   auto pattern = CreateStaticByteBuffer(1, 2, 3, 4);
   auto buffer = std::make_unique<DynamicByteBuffer>(pattern);
@@ -689,7 +689,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Outgoing) {
       AddFakePeerState(kHandle1, PeerState{true /*credit-based flow*/, Role::kUnassigned});
 
   auto channel = OpenOutgoingChannel(kHandle1, kMinServerChannel);
-  channel->Activate(
+  channel->ActivateWithDispatcher(
       &DoNothingWithBuffer, [] {}, dispatcher());
 
   auto& queue = handle_to_incoming_frames_[kHandle1];
@@ -797,7 +797,7 @@ TEST_F(RFCOMM_ChannelManagerTest, CreditBasedFlow_Incoming) {
 
   auto channel = OpenOutgoingChannel(kHandle1, kMinServerChannel);
   DLCI dlci = ServerChannelToDLCI(kMinServerChannel, state.role);
-  channel->Activate(
+  channel->ActivateWithDispatcher(
       &DoNothingWithBuffer, [] {}, dispatcher());
 
   auto& queue = handle_to_incoming_frames_[kHandle1];

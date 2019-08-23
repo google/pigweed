@@ -26,8 +26,8 @@ namespace internal {
 
 ChannelImpl::ChannelImpl(DLCI dlci, Session* session) : Channel(dlci, session) {}
 
-bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback,
-                           async_dispatcher_t* dispatcher) {
+bool ChannelImpl::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
+                                         async_dispatcher_t* dispatcher) {
   rx_callback_ = std::move(rx_callback);
   closed_callback_ = std::move(closed_callback_);
   dispatcher_ = dispatcher;
@@ -44,7 +44,7 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
 
 bool ChannelImpl::Send(ByteBufferPtr data) {
   ZX_DEBUG_ASSERT(session_);
-  ZX_DEBUG_ASSERT_MSG(rx_callback_, "must call Activate() first");
+  ZX_DEBUG_ASSERT_MSG(rx_callback_, "must activate channel first");
   session_->SendUserData(dlci_, std::move(data));
   return true;
 }

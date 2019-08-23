@@ -131,7 +131,7 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  bool activated = channel->Activate(
+  bool activated = channel->ActivateWithDispatcher(
       [self, handle](ByteBufferPtr sdu) {
         if (self) {
           self->OnRxBFrame(handle, std::move(sdu));
