@@ -58,9 +58,6 @@ class ChannelManager final {
   // controller's ACL endpoint. All the packets in each invocation must be transmitted contiguously
   // and in order. This will be called on the thread which the ChannelManager object is created, up
   // to the object's duration.
-  //
-  // TODO(BT-938): Technically, the latter condition isn't true until SignalingChannel is processed
-  // in a way that it does not schedule deferred outbound packets on the L2CAP dispatch loop.
   using SendAclCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets,
                                              hci::Connection::LinkType ll_type)>;
 

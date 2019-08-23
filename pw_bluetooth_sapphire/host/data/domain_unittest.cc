@@ -97,8 +97,6 @@ class DATA_DomainTest : public TestingBase {
         LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
         0x00, 0x00));
     // clang-format on
-
-    RunLoopUntilIdle();
   }
 
   void ExpectOutgoingChannelCreation(hci::ConnectionHandle link_handle, l2cap::ChannelId remote_id,
@@ -188,6 +186,9 @@ class DATA_DomainTest : public TestingBase {
   DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
 };
 
+void DoNothing() {}
+void NopSecurityCallback(hci::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
+
 TEST_F(DATA_DomainTest, InboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
@@ -195,8 +196,8 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  domain()->AddACLConnection(
-      kLinkHandle, hci::Connection::Role::kMaster, [] {}, [](auto, auto, auto) {}, dispatcher());
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -209,6 +210,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   RunLoopUntilIdle();
 
   EmulateIncomingChannelCreation(kLinkHandle, kRemoteId, kLocalId, kPSM);
+  RunLoopUntilIdle();
   ASSERT_TRUE(sock);
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
@@ -282,6 +284,50 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_EQ(2, rx_count);
 }
 
+TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
+  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  // Register a fake link.
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  zx::socket sock;
+  ASSERT_FALSE(sock);
+  auto sock_cb = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+    EXPECT_EQ(kLinkHandle, handle);
+    sock = std::move(cb_sock);
+  };
+
+  domain()->RegisterService(kPSM, std::move(sock_cb), dispatcher());
+  RunLoopUntilIdle();
+
+  EmulateIncomingChannelCreation(kLinkHandle, kRemoteId, kLocalId, kPSM);
+
+  // Queue up a data packet for the new channel before the channel configuration has been processed.
+  ASSERT_FALSE(sock);
+  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 8)
+      0x01, 0x00, 0x08, 0x00,
+
+      // L2CAP B-frame: (length: 4, channel-id: 0x0040 (kLocalId))
+      0x04, 0x00, 0x40, 0x00, 0xf0, 0x9f, 0x94, 0xb0));
+
+  // Run until the socket opens and the packet is written to the socket buffer.
+  RunLoopUntilIdle();
+  ASSERT_TRUE(sock);
+
+  // Allocate a larger buffer than the number of SDU bytes we expect (which is 4).
+  StaticByteBuffer<10> socket_bytes;
+  size_t bytes_read;
+  zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);
+  EXPECT_EQ(ZX_OK, status);
+  ASSERT_EQ(4u, bytes_read);
+  EXPECT_EQ(u8"🔰", socket_bytes.view(0, bytes_read).AsString());
+}
+
 TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
@@ -289,8 +335,8 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  domain()->AddACLConnection(
-      kLinkHandle, hci::Connection::Role::kMaster, [] {}, [](auto, auto, auto) {}, dispatcher());
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
 
   zx::socket sock;
   ASSERT_FALSE(sock);

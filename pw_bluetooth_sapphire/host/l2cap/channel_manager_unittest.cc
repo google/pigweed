@@ -955,6 +955,9 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
 
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
   // clang-format off
   ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
@@ -1074,9 +1077,20 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
       LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId), UpperBits(kRemoteId)));
   // clang-format on
 
+  // The preceding peer disconnection should have immediately destroyed the route to the channel.
+  // L2CAP will process it and this following SDU back-to-back. The latter should be dropped.
+  sdu_received = false;
+  ReceiveAclDataPacket(CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 5)
+      0x01, 0x00, 0x05, 0x00,
+
+      // L2CAP B-frame: (length: 1, channel-id: 0x0040)
+      0x01, 0x00, 0x40, 0x00, '!'));
+
   RunLoopUntilIdle();
 
   EXPECT_TRUE(channel_closed);
+  EXPECT_FALSE(sdu_received);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
@@ -1393,6 +1407,9 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
 
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 
   // clang-format off
   ReceiveAclDataPacket(CreateStaticByteBuffer(

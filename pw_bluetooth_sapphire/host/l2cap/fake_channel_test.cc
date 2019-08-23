@@ -11,6 +11,8 @@ namespace bt {
 namespace l2cap {
 namespace testing {
 
+void FakeChannelTest::SetUp() {}
+
 fbl::RefPtr<FakeChannel> FakeChannelTest::CreateFakeChannel(const ChannelOptions& options) {
   auto fake_chan = fbl::AdoptRef(
       new FakeChannel(options.id, options.remote_id, options.conn_handle, options.link_type));
@@ -19,6 +21,16 @@ fbl::RefPtr<FakeChannel> FakeChannelTest::CreateFakeChannel(const ChannelOptions
 }
 
 bool FakeChannelTest::Expect(const ByteBuffer& expected) {
+  return ExpectAfterMaybeReceiving(std::nullopt, expected);
+}
+
+bool FakeChannelTest::ReceiveAndExpect(const ByteBuffer& packet,
+                                       const ByteBuffer& expected_response) {
+  return ExpectAfterMaybeReceiving(packet.view(), expected_response);
+}
+
+bool FakeChannelTest::ExpectAfterMaybeReceiving(std::optional<BufferView> packet,
+                                                const ByteBuffer& expected) {
   if (!fake_chan()) {
     bt_log(ERROR, "testing", "no channel, failing!");
     return false;
@@ -30,21 +42,12 @@ bool FakeChannelTest::Expect(const ByteBuffer& expected) {
   };
 
   fake_chan()->SetSendCallback(cb, dispatcher());
+  if (packet.has_value()) {
+    fake_chan()->Receive(packet.value());
+  }
   RunLoopUntilIdle();
 
   return success;
-}
-
-bool FakeChannelTest::ReceiveAndExpect(const ByteBuffer& packet,
-                                       const ByteBuffer& expected_response) {
-  if (!fake_chan()) {
-    bt_log(ERROR, "testing", "no channel, failing!");
-    return false;
-  }
-
-  fake_chan()->Receive(packet);
-
-  return Expect(expected_response);
 }
 
 }  // namespace testing

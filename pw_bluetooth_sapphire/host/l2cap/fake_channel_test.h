@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_
 
-#include <fbl/macros.h>
-
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -39,7 +39,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
     hci::Connection::LinkType link_type = hci::Connection::LinkType::kLE;
   };
 
-  void SetUp() override{};
+  void SetUp() override;
 
   // Creates a new FakeChannel and returns it. A fxl::WeakPtr to the returned
   // channel is stored internally so that the returned channel can be accessed
@@ -68,6 +68,10 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   fxl::WeakPtr<FakeChannel> fake_chan() const { return fake_chan_; }
 
  private:
+  // Helper that sets a reception expectation callback with |expected| then sends |packet| if it is
+  // not std::nullopt, returning whether |expected| was received when the test loop run until idle.
+  bool ExpectAfterMaybeReceiving(std::optional<BufferView> packet, const ByteBuffer& expected);
+
   fxl::WeakPtr<FakeChannel> fake_chan_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
