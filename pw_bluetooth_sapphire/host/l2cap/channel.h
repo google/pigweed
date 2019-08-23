@@ -5,9 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
@@ -18,6 +15,10 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -134,11 +135,11 @@ class Channel : public fbl::RefCounted<Channel> {
   // close when the link gets removed later.
   virtual void SignalLinkError() = 0;
 
-  // Requests to upgrade the security properties of the underlying link to the
-  // requested |level| and reports the result via |callback|. |callback| will be
-  // run on the dispatcher that the channel was activated on. Has no effect if
-  // the channel is not active.
-  virtual void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) = 0;
+  // Requests to upgrade the security properties of the underlying link to the requested |level|
+  // and reports the result via |callback|, run on |dispatcher|. Has no effect if the channel is
+  // not active.
+  virtual void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+                               async_dispatcher_t* dispatcher) = 0;
 
   // Queue the given SDU payload for transmission over this channel, taking
   // ownership of |sdu|. Returns true if the SDU was queued successfully, and
@@ -182,7 +183,8 @@ class ChannelImpl : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) override;
+  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+                       async_dispatcher_t* dispatcher) override;
 
  private:
   friend class fbl::RefPtr<ChannelImpl>;

@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_
 
-#include <fbl/macros.h>
-
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -68,7 +68,8 @@ class FakeChannel : public Channel {
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
-  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) override;
+  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+                       async_dispatcher_t* dispatcher) override;
 
  private:
   hci::ConnectionHandle handle_;

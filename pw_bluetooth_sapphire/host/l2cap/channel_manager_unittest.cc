@@ -1418,7 +1418,7 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
 
   // Requesting security at or below the current level should succeed without
   // doing anything.
-  chan->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback);
+  chan->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
   EXPECT_EQ(1, security_status_count);
@@ -1426,7 +1426,7 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
 
   // Test reporting an error.
   delivered_status = sm::Status(HostError::kNotSupported);
-  chan->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback);
+  chan->UpgradeSecurity(sm::SecurityLevel::kEncrypted, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
@@ -1437,9 +1437,9 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
   chanmgr()->Unregister(kTestHandle1);
   RunLoopUntilIdle();
 
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
-  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback);
+  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
+  chan->UpgradeSecurity(sm::SecurityLevel::kAuthenticated, status_callback, dispatcher());
   RunLoopUntilIdle();
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);

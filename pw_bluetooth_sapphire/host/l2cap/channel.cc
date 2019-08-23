@@ -164,8 +164,10 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   return tx_engine_->QueueSdu(std::move(sdu));
 }
 
-void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
+void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
+                                  async_dispatcher_t* dispatcher) {
+  ZX_ASSERT(callback);
+  ZX_ASSERT(dispatcher);
 
   std::lock_guard<std::mutex> lock(mtx_);
 
@@ -174,11 +176,10 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
     return;
   }
 
-  ZX_DEBUG_ASSERT(dispatcher_);
-  async::PostTask(link_->dispatcher(), [link = link_, level, callback = std::move(callback),
-                                        dispatcher = dispatcher_]() mutable {
-    link->UpgradeSecurity(level, std::move(callback), dispatcher);
-  });
+  async::PostTask(link_->dispatcher(),
+                  [link = link_, level, callback = std::move(callback), dispatcher]() mutable {
+                    link->UpgradeSecurity(level, std::move(callback), dispatcher);
+                  });
 }
 
 void ChannelImpl::OnClosed() {
