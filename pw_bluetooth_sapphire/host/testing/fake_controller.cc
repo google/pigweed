@@ -188,14 +188,26 @@ void FakeController::ClearDefaultResponseStatus(hci::OpCode opcode) {
   default_status_map_.erase(opcode);
 }
 
-void FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
-  // Prevent multiple entries with the same address.
-  ZX_DEBUG_ASSERT(std::find_if(peers_.begin(), peers_.end(), [&](const auto& p) {
-                    return p->address() == peer->address();
-                  }) == peers_.end());
-
+bool FakeController::AddPeer(std::unique_ptr<FakePeer> peer) {
+  ZX_DEBUG_ASSERT(peer);
+  if (peers_.count(peer->address()) != 0u) {
+    return false;
+  }
   peer->set_ctrl(this);
-  peers_.push_back(std::move(peer));
+
+  // If a scan is enabled then send an advertising report for the peer that just got registered if
+  // it supports advertising.
+  SendSingleAdvertisingReport(*peer);
+
+  peers_[peer->address()] = std::move(peer);
+  return true;
+}
+
+void FakeController::RemovePeer(const DeviceAddress& address) { peers_.erase(address); }
+
+FakePeer* FakeController::FindPeer(const DeviceAddress& address) {
+  auto iter = peers_.find(address);
+  return (iter == peers_.end()) ? nullptr : iter->second.get();
 }
 
 void FakeController::SetScanStateCallback(ScanStateCallback callback,
@@ -234,18 +246,11 @@ void FakeController::SetLEConnectionParametersCallback(LEConnectionParametersCal
   le_conn_params_cb_dispatcher_ = dispatcher;
 }
 
-FakePeer* FakeController::FindByAddress(const DeviceAddress& addr) {
-  for (auto& dev : peers_) {
-    if (dev->address() == addr)
-      return dev.get();
-  }
-  return nullptr;
-}
-
 FakePeer* FakeController::FindByConnHandle(hci::ConnectionHandle handle) {
-  for (auto& dev : peers_) {
-    if (dev->HasLink(handle))
-      return dev.get();
+  for (auto& [addr, peer] : peers_) {
+    if (peer->HasLink(handle)) {
+      return peer.get();
+    }
   }
   return nullptr;
 }
@@ -359,22 +364,22 @@ void FakeController::SendNumberOfCompletedPacketsEvent(hci::ConnectionHandle han
 
 void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci::ConnectionRole role) {
   async::PostTask(dispatcher(), [addr, role, this] {
-    FakePeer* dev = FindByAddress(addr);
-    if (!dev) {
+    FakePeer* peer = FindPeer(addr);
+    if (!peer) {
       bt_log(WARN, "fake-hci", "no peer found with address: %s", addr.ToString().c_str());
       return;
     }
 
     // TODO(armansito): Don't worry about managing multiple links per peer
     // until this supports Bluetooth classic.
-    if (dev->connected()) {
+    if (peer->connected()) {
       bt_log(WARN, "fake-hci", "peer already connected");
       return;
     }
 
-    dev->set_connected(true);
+    peer->set_connected(true);
     hci::ConnectionHandle handle = ++next_conn_handle_;
-    dev->AddLink(handle);
+    peer->AddLink(handle);
 
     NotifyConnectionState(addr, true);
 
@@ -383,7 +388,7 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci::Connection
 
     hci::LEConnectionParameters conn_params(interval_min + ((interval_max - interval_min) / 2), 0,
                                             hci::defaults::kLESupervisionTimeout);
-    dev->set_le_params(conn_params);
+    peer->set_le_params(conn_params);
 
     hci::LEConnectionCompleteSubeventParams params;
     std::memset(&params, 0, sizeof(params));
@@ -404,18 +409,18 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci::Connection
 void FakeController::L2CAPConnectionParameterUpdate(
     const DeviceAddress& addr, const hci::LEPreferredConnectionParameters& params) {
   async::PostTask(dispatcher(), [addr, params, this] {
-    FakePeer* dev = FindByAddress(addr);
-    if (!dev) {
+    FakePeer* peer = FindPeer(addr);
+    if (!peer) {
       bt_log(WARN, "fake-hci", "no peer found with address: %s", addr.ToString().c_str());
       return;
     }
 
-    if (!dev->connected()) {
+    if (!peer->connected()) {
       bt_log(WARN, "fake-hci", "peer not connected");
       return;
     }
 
-    ZX_DEBUG_ASSERT(!dev->logical_links().empty());
+    ZX_DEBUG_ASSERT(!peer->logical_links().empty());
 
     l2cap::ConnectionParameterUpdateRequestPayload payload;
     payload.interval_min = htole16(params.min_interval());
@@ -425,21 +430,21 @@ void FakeController::L2CAPConnectionParameterUpdate(
 
     // TODO(armansito): Instead of picking the first handle we should pick
     // the handle that matches the current LE-U link.
-    SendL2CAPCFrame(*dev->logical_links().begin(), true, l2cap::kConnectionParameterUpdateRequest,
+    SendL2CAPCFrame(*peer->logical_links().begin(), true, l2cap::kConnectionParameterUpdateRequest,
                     NextL2CAPCommandId(), BufferView(&payload, sizeof(payload)));
   });
 }
 
 void FakeController::Disconnect(const DeviceAddress& addr) {
   async::PostTask(dispatcher(), [addr, this] {
-    FakePeer* dev = FindByAddress(addr);
-    if (!dev || !dev->connected()) {
+    FakePeer* peer = FindPeer(addr);
+    if (!peer || !peer->connected()) {
       bt_log(WARN, "fake-hci", "no connected peer found with address: %s", addr.ToString().c_str());
       return;
     }
 
-    auto links = dev->Disconnect();
-    ZX_DEBUG_ASSERT(!dev->connected());
+    auto links = peer->Disconnect();
+    ZX_DEBUG_ASSERT(!peer->connected());
     ZX_DEBUG_ASSERT(!links.empty());
 
     NotifyConnectionState(addr, false);
@@ -470,7 +475,7 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
 
 void FakeController::SendInquiryResponses() {
   // TODO(jamuraa): combine some of these into a single response event
-  for (const auto& peer : peers_) {
+  for (const auto& [addr, peer] : peers_) {
     if (!peer->has_inquiry_response()) {
       continue;
     }
@@ -487,28 +492,31 @@ void FakeController::SendAdvertisingReports() {
   if (!le_scan_state_.enabled || peers_.empty())
     return;
 
-  for (const auto& peer : peers_) {
-    if (!peer->has_advertising_reports()) {
-      continue;
-    }
-    // We want to send scan response packets only during an active scan and if
-    // the peer is scannable.
-    bool need_scan_rsp =
-        (le_scan_state().scan_type == hci::LEScanType::kActive) && peer->scannable();
-    SendCommandChannelPacket(
-        peer->CreateAdvertisingReportEvent(need_scan_rsp && peer->should_batch_reports()));
-
-    // If the original report did not include a scan response then we send it as
-    // a separate event.
-    if (need_scan_rsp && !peer->should_batch_reports()) {
-      SendCommandChannelPacket(peer->CreateScanResponseReportEvent());
-    }
+  for (const auto& iter : peers_) {
+    SendSingleAdvertisingReport(*iter.second);
   }
 
   // We'll send new reports for the same peers if duplicate filtering is
   // disabled.
   if (!le_scan_state_.filter_duplicates) {
     async::PostTask(dispatcher(), [this] { SendAdvertisingReports(); });
+  }
+}
+
+void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
+  if (!le_scan_state_.enabled || !peer.has_advertising_reports()) {
+    return;
+  }
+  // We want to send scan response packets only during an active scan and if
+  // the peer is scannable.
+  bool need_scan_rsp = (le_scan_state().scan_type == hci::LEScanType::kActive) && peer.scannable();
+  SendCommandChannelPacket(
+      peer.CreateAdvertisingReportEvent(need_scan_rsp && peer.should_batch_reports()));
+
+  // If the original report did not include a scan response then we send it as
+  // a separate event.
+  if (need_scan_rsp && !peer.should_batch_reports()) {
+    SendCommandChannelPacket(peer.CreateScanResponseReportEvent());
   }
 }
 
@@ -554,7 +562,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
   // Find the peer that matches the requested address.
-  FakePeer* peer = FindByAddress(peer_address);
+  FakePeer* peer = FindPeer(peer_address);
   if (peer) {
     if (peer->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;
@@ -652,7 +660,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   hci::StatusCode status = hci::StatusCode::kSuccess;
 
   // Find the peer that matches the requested address.
-  FakePeer* peer = FindByAddress(peer_address);
+  FakePeer* peer = FindPeer(peer_address);
   if (peer) {
     if (peer->connected())
       status = hci::StatusCode::kConnectionAlreadyExists;

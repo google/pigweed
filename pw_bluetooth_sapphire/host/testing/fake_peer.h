@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_
 
-#include <fbl/macros.h>
-
 #include <unordered_set>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -40,7 +40,7 @@ class FakePeer {
   // Toggles whether the address of this device represents a resolved RPA.
   void set_address_resolved(bool value) { address_resolved_ = value; }
 
-  bool has_advertising_reports() {
+  bool has_advertising_reports() const {
     return (adv_data_.size() > 0) || (scan_rsp_.size() > 0) || directed_;
   }
 

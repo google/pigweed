@@ -145,8 +145,17 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Returns the current Local Name.set in the controller
   const std::string& local_name() const { return local_name_; }
 
-  // Adds a fake remote peer.
-  void AddPeer(std::unique_ptr<FakePeer> device);
+  // Adds a fake remote peer. Returns false if a peer with the same address was previously
+  // added.
+  bool AddPeer(std::unique_ptr<FakePeer> peer);
+
+  // Removes a previously registered peer with the given device |address|. Does nothing if |address|
+  // is unrecognized.
+  void RemovePeer(const DeviceAddress& address);
+
+  // Returns a pointer to the FakePeer with the given |address|. Returns nullptr if the |address|
+  // is unknown.
+  FakePeer* FindPeer(const DeviceAddress& address);
 
   // Sets a callback to be invoked when the scan state changes.
   using ScanStateCallback = fit::function<void(bool enabled)>;
@@ -208,7 +217,6 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   // Finds and returns the FakePeer with the given parameters or nullptr if no
   // such device exists.
-  FakePeer* FindByAddress(const DeviceAddress& addr);
   FakePeer* FindByConnHandle(hci::ConnectionHandle handle);
 
   // Returns the next available L2CAP signaling channel command ID.
@@ -233,9 +241,17 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Sends Inquiry Response reports for known BR/EDR devices.
   void SendInquiryResponses();
 
-  // Sends LE advertising reports for known devices with advertising data, if a
-  // scan is currently enabled.
+  // Sends LE advertising reports for all known peers with advertising data, if a
+  // scan is currently enabled. If duplicate filtering is disabled then the reports are continued to
+  // be sent until scan is disabled.
   void SendAdvertisingReports();
+
+  // Sends a single LE advertising report for the given peer. May send an additional report if the
+  // peer has scan response data and was configured to not batch them in a single report alongside
+  // the regular advertisement.
+  //
+  // Does nothing if a LE scan is not currently enabled or if the peer doesn't support advertising.
+  void SendSingleAdvertisingReport(const FakePeer& peer);
 
   // Notifies |advertising_state_cb_|
   void NotifyAdvertisingState();
@@ -308,7 +324,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   std::unordered_map<hci::OpCode, hci::StatusCode> default_status_map_;
 
   // The set of fake peers that are visible.
-  std::vector<std::unique_ptr<FakePeer>> peers_;
+  std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;
 
   ScanStateCallback scan_state_cb_;
   async_dispatcher_t* scan_state_cb_dispatcher_;
