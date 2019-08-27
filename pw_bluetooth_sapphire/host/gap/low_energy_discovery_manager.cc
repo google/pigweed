@@ -188,9 +188,19 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
+    if (result.scan_response) {
+      bt_log(TRACE, "gap-le", "scan response received from unknown peer: %s",
+             result.address.ToString().c_str());
+      return;
+    }
     peer = peer_cache_->NewPeer(result.address, result.connectable);
   }
-  peer->MutLe().SetAdvertisingData(result.rssi, data);
+
+  if (result.scan_response) {
+    peer->MutLe().AppendScanResponse(result.rssi, data);
+  } else {
+    peer->MutLe().SetAdvertisingData(result.rssi, data);
+  }
 
   cached_scan_results_.insert(peer->identifier());
 

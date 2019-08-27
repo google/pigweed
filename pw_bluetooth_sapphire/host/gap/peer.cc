@@ -33,26 +33,40 @@ std::string ConnectionStateToString(Peer::ConnectionState state) {
 }  // namespace
 
 Peer::LowEnergyData::LowEnergyData(Peer* owner)
-    : peer_(owner), conn_state_(ConnectionState::kNotConnected), adv_data_len_(0u) {
+    : peer_(owner), conn_state_(ConnectionState::kNotConnected) {
   ZX_DEBUG_ASSERT(peer_);
 }
 
 void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv) {
+  adv_data_buffer_ = DynamicByteBuffer(adv.size());
+  adv.Copy(&adv_data_buffer_);
+
+  ProcessNewAdvertisingData(rssi, adv);
+}
+
+void Peer::LowEnergyData::AppendScanResponse(int8_t rssi, const ByteBuffer& scan_response) {
+  if (scan_response.size() == 0u) {
+    bt_log(DEBUG, "gap-le", "ignored empty scan response");
+    return;
+  }
+
+  DynamicByteBuffer buffer(adv_data_buffer_.size() + scan_response.size());
+  buffer.Write(adv_data_buffer_);
+  buffer.Write(scan_response, adv_data_buffer_.size());
+  adv_data_buffer_ = std::move(buffer);
+
+  ProcessNewAdvertisingData(rssi, scan_response);
+}
+
+void Peer::LowEnergyData::ProcessNewAdvertisingData(int8_t rssi, const ByteBuffer& new_data) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
   bool notify_listeners = peer_->SetRssiInternal(rssi);
 
-  // Update the advertising data
-  // TODO(armansito): Validate that the advertising data is not malformed?
-  if (adv_data_buffer_.size() < adv.size()) {
-    adv_data_buffer_ = DynamicByteBuffer(adv.size());
-  }
-  adv_data_len_ = adv.size();
-  adv.Copy(&adv_data_buffer_);
-
   // Walk through the advertising data and update common fields.
-  AdvertisingDataReader reader(adv);
+  // TODO(armansito): Validate that the advertising data is not malformed?
+  AdvertisingDataReader reader(new_data);
   gap::DataType type;
   BufferView data;
   while (reader.GetNextField(&type, &data)) {

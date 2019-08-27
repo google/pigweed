@@ -78,7 +78,6 @@ bool LegacyLowEnergyScanner::StartScan(bool active, uint16_t scan_interval, uint
   ZX_DEBUG_ASSERT(!scan_cb_);
   ZX_DEBUG_ASSERT(!scan_timeout_task_.is_pending());
   ZX_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
-  ZX_DEBUG_ASSERT(pending_results_.empty());
 
   set_state(State::kInitiating);
   set_active_scan_requested(active);
@@ -202,17 +201,6 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   scan_timeout_task_.Cancel();
   set_state(State::kStopping);
 
-  // Notify any pending scan results unless the scan was terminated by the user.
-  if (!stopped) {
-    for (auto& result : pending_results_) {
-      auto& pending = result.second;
-      NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len));
-    }
-  }
-
-  // Either way clear all results from the previous scan period.
-  pending_results_.clear();
-
   ZX_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
@@ -251,7 +239,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) 
   const LEAdvertisingReportData* report;
   int8_t rssi;
   while (parser.GetNextReport(&report, &rssi)) {
-    bool needs_scan_rsp = false;
+    bool is_scan_rsp = false;
     bool connectable = false;
     bool directed = false;
     switch (report->event_type) {
@@ -260,17 +248,12 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) 
         break;
       case LEAdvertisingEventType::kAdvInd:
         connectable = true;
-        __FALLTHROUGH;
+        break;
       case LEAdvertisingEventType::kAdvScanInd:
-        if (IsActiveScanning()) {
-          needs_scan_rsp = true;
-        }
         break;
       case LEAdvertisingEventType::kScanRsp:
-        if (IsActiveScanning()) {
-          HandleScanResponse(*report, rssi);
-        }
-        continue;
+        is_scan_rsp = true;
+        break;
       default:
         break;
     }
@@ -285,62 +268,13 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) 
     if (!DeviceAddressFromAdvReport(*report, &address, &resolved))
       continue;
 
-    LowEnergyScanResult result(address, resolved, connectable, rssi);
+    LowEnergyScanResult result(address, resolved, connectable, is_scan_rsp, rssi);
     if (directed) {
       delegate()->OnDirectedAdvertisement(result);
-      continue;
+    } else {
+      delegate()->OnPeerFound(result, BufferView(report->data, report->length_data));
     }
-
-    if (!needs_scan_rsp) {
-      NotifyPeerFound(result, BufferView(report->data, report->length_data));
-      continue;
-    }
-
-    auto iter = pending_results_.emplace(address, PendingScanResult()).first;
-    auto& pending = iter->second;
-
-    // We overwrite the pending result entry with the most recent report, even
-    // if one from this peer was already pending.
-    pending.result = result;
-    pending.adv_data_len = report->length_data;
-    pending.data.Write(report->data, report->length_data);
   }
-}
-
-void LegacyLowEnergyScanner::HandleScanResponse(const LEAdvertisingReportData& report,
-                                                int8_t rssi) {
-  DeviceAddress address;
-  bool resolved;
-  if (!DeviceAddressFromAdvReport(report, &address, &resolved))
-    return;
-
-  auto iter = pending_results_.find(address);
-  if (iter == pending_results_.end()) {
-    bt_log(TRACE, "hci-le", "dropping unmatched scan response");
-    return;
-  }
-
-  if (report.length_data > kMaxLEAdvertisingDataLength) {
-    bt_log(WARN, "hci-le", "scan response too long! Ignoring");
-    return;
-  }
-  auto& pending = iter->second;
-  ZX_DEBUG_ASSERT(address == pending.result.address);
-
-  // Update the result.
-  pending.result.resolved = resolved;
-  pending.result.rssi = rssi;
-
-  // Append the scan response to the pending advertising data.
-  pending.data.Write(report.data, report.length_data, pending.adv_data_len);
-
-  NotifyPeerFound(pending.result, pending.data.view(0, pending.adv_data_len + report.length_data));
-  pending_results_.erase(iter);
-}
-
-void LegacyLowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result,
-                                             const ByteBuffer& data) {
-  delegate()->OnPeerFound(result, data);
 }
 
 void LegacyLowEnergyScanner::OnScanPeriodComplete() {

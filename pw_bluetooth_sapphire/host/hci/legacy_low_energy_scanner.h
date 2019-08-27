@@ -44,15 +44,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   void StopScanPeriodForTesting();
 
  private:
-  struct PendingScanResult {
-    LowEnergyScanResult result;
-
-    // Make this large enough to store both advertising and scan response data
-    // PDUs.
-    size_t adv_data_len;
-    StaticByteBuffer<kMaxLEAdvertisingDataLength * 2> data;
-  };
-
   // Called by StartScan() after the local peer address has been obtained.
   void StartScanInternal(const DeviceAddress& local_address, bool active, uint16_t scan_interval,
                          uint16_t scan_window, bool filter_duplicates,
@@ -64,12 +55,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
 
   // Event handler for HCI LE Advertising Report event.
   void OnAdvertisingReportEvent(const EventPacket& event);
-
-  // Called when a Scan Response is received during an active scan.
-  void HandleScanResponse(const LEAdvertisingReportData& report, int8_t rssi);
-
-  // Notifies observers of a peer that was found.
-  void NotifyPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data);
 
   // Called when the scan timeout task executes.
   void OnScanPeriodComplete();
@@ -86,10 +71,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   // Our event handler ID for the LE Advertising Report event.
   CommandChannel::EventHandlerId event_handler_id_;
 
-  // Scannable advertising events for which a Scan Response PDU has not been
-  // received. This is accumulated during a discovery procedure and always
-  // cleared at the end of the scan period.
-  std::unordered_map<DeviceAddress, PendingScanResult> pending_results_;
   fxl::ThreadChecker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);

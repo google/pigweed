@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 
-#include <fbl/macros.h>
-
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -61,7 +61,7 @@ class Peer final {
 
     // Advertising (and optionally scan response) data obtained during
     // discovery.
-    const BufferView advertising_data() const { return adv_data_buffer_.view(0, adv_data_len_); }
+    const ByteBuffer& advertising_data() const { return adv_data_buffer_; }
 
     // Most recently used LE connection parameters. Has no value if the peer
     // has never been connected.
@@ -80,11 +80,13 @@ class Peer final {
 
     // Setters:
 
-    // Updates the LE advertising and scan response data.
-    // |rssi| corresponds to the most recent advertisement RSSI.
-    // |advertising_data| should include any scan response data if obtained
-    // during an active scan.
+    // Overwrites the stored advertising and scan response data with the contents of |data|
+    // and updates the known RSSI with the given value.
     void SetAdvertisingData(int8_t rssi, const ByteBuffer& data);
+
+    // Appends the given scan response payload to the internal advertising data buffer. Updates the
+    // known RSSI with the given value.
+    void AppendScanResponse(int8_t rssi, const ByteBuffer& scan_response);
 
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
@@ -107,13 +109,21 @@ class Peer final {
     // addresses.
 
    private:
+    // Update the RSSI and the fields obtained from |new_data| and notify any listeners. This also
+    // prolongs the peer's expiration timeout if it is temporary.
+    void ProcessNewAdvertisingData(int8_t rssi, const ByteBuffer& new_data);
+
     Peer* peer_;  // weak
 
     ConnectionState conn_state_;
-    size_t adv_data_len_;
-    DynamicByteBuffer adv_data_buffer_;
     std::optional<hci::LEConnectionParameters> conn_params_;
     std::optional<hci::LEPreferredConnectionParameters> preferred_conn_params_;
+
+    // Buffer containing advertising and scan response data appended to each other.
+    // NOTE: Repeated fields in advertising and scan response data are not deduplicated, so
+    // duplicate entries are possible. It is OK to assume that fields repeated in scan response
+    // data supercede those in the original advertising data when processing fields in order.
+    DynamicByteBuffer adv_data_buffer_;
 
     std::optional<sm::PairingData> bond_data_;
 

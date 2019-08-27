@@ -23,9 +23,8 @@ using TestingBase = testing::FakeControllerTest<FakeController>;
 
 constexpr zx::duration kScanPeriod = zx::sec(10);
 
-constexpr char kPlainAdvData[] = "Test";
-constexpr char kPlainScanRsp[] = "Data";
-constexpr char kAdvDataAndScanRsp[] = "TestData";
+constexpr char kAdvData[] = "Test";
+constexpr char kScanRsp[] = "Data";
 
 const DeviceAddress kPublicAddress1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kPublicAddress2(DeviceAddress::Type::kLEPublic, {2});
@@ -278,109 +277,155 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopScanWhileInitiating) {
 }
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
-  // One of the 6 fake peers is scannable but never sends scan response
-  // packets. That peer doesn't get reported until the end of the scan period.
-  constexpr size_t kExpectedResultCount = 5u;
-
   AddFakePeers();
 
-  std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
+  // Index all scan results by device address. Since all of our test advertising data contain
+  // strings, we use that type to verify the contents.
+  using ResultList = std::vector<std::pair<LowEnergyScanResult, std::string>>;
+  std::map<DeviceAddress, ResultList> results;
   set_peer_found_callback([&](const auto& result, const auto& data) {
-    results[result.address] = std::make_pair(result, data.ToString());
+    auto iter = results.try_emplace(result.address).first;
+    iter->second.push_back(std::make_pair(result, data.ToString()));
   });
 
   // Perform an active scan.
   EXPECT_TRUE(StartScan(true));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
-
   RunLoopUntilIdle();
 
-  ASSERT_EQ(kExpectedResultCount, results.size());
+  // Scan results should have been received for all 6 fake peers that we initialized.
+  ASSERT_EQ(6u, results.size());
 
-  // Ending the scan period should notify Fake Peer #4.
-  scanner()->StopScanPeriodForTesting();
-  RunLoopUntilIdle();
-  EXPECT_EQ(LowEnergyScanner::ScanStatus::kComplete, last_scan_status());
-  ASSERT_EQ(kExpectedResultCount + 1, results.size());
+  // Each fake peer is configured to send a scan response packet in different configurations (see
+  // AddFakePeers() for details). Here we verify the events for each fake peer.
 
-  // Verify the 6 results against the fake peers that were set up by
-  // AddFakePeers(). Since the scan period ended naturally, LowEnergyScanner
-  // should generate a peer found event for all pending reports even if a scan
-  // response was not received for a scannable peer (see Fake Peer 4, i.e.
-  // kRandomAddress3).
-
-  // Result 0
+  // Result 0 (ADV_IND)
   {
     const auto& iter = results.find(kPublicAddress1);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvDataAndScanRsp, result_pair.second);
-    EXPECT_EQ(kPublicAddress1, result_pair.first.address);
-    EXPECT_TRUE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(2u, events.size());
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ(kAdvData, first_adv_data);
+    EXPECT_EQ(kPublicAddress1, first_result.address);
+    EXPECT_TRUE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
+    const auto& [second_result, second_adv_data] = events[1];
+    EXPECT_EQ(kScanRsp, second_adv_data);
+    EXPECT_EQ(kPublicAddress1, second_result.address);
+    EXPECT_FALSE(second_result.connectable);
+    EXPECT_TRUE(second_result.scan_response);
+
     results.erase(iter);
   }
 
-  // Result 1
+  // Result 1 (ADV_SCAN_IND)
   {
     const auto& iter = results.find(kRandomAddress1);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvDataAndScanRsp, result_pair.second);
-    EXPECT_EQ(kRandomAddress1, result_pair.first.address);
-    EXPECT_FALSE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(2u, events.size());
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ(kAdvData, first_adv_data);
+    EXPECT_EQ(kRandomAddress1, first_result.address);
+    EXPECT_FALSE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
+    const auto& [second_result, second_adv_data] = events[1];
+    EXPECT_EQ(kScanRsp, second_adv_data);
+    EXPECT_EQ(kRandomAddress1, second_result.address);
+    EXPECT_FALSE(second_result.connectable);
+    EXPECT_TRUE(second_result.scan_response);
+
     results.erase(iter);
   }
 
-  // Result 2
+  // Result 2 (ADV_IND), empty scan response
   {
     const auto& iter = results.find(kPublicAddress2);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
-    EXPECT_EQ(kPublicAddress2, result_pair.first.address);
-    EXPECT_TRUE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(2u, events.size());
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ(kAdvData, first_adv_data);
+    EXPECT_EQ(kPublicAddress2, first_result.address);
+    EXPECT_TRUE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
+    const auto& [second_result, second_adv_data] = events[1];
+    EXPECT_EQ("", second_adv_data);  // Empty scan response
+    EXPECT_EQ(kPublicAddress2, second_result.address);
+    EXPECT_FALSE(second_result.connectable);
+    EXPECT_TRUE(second_result.scan_response);
+
     results.erase(iter);
   }
 
-  // Result 3
+  // Result 3 (ADV_IND), empty advertising data w/ scan response
   {
     const auto& iter = results.find(kRandomAddress2);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainScanRsp, result_pair.second);
-    EXPECT_EQ(kRandomAddress2, result_pair.first.address);
-    EXPECT_TRUE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(2u, events.size());
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ("", first_adv_data);  // Empty advertising data
+    EXPECT_EQ(kRandomAddress2, first_result.address);
+    EXPECT_TRUE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
+    const auto& [second_result, second_adv_data] = events[1];
+    EXPECT_EQ(kScanRsp, second_adv_data);
+    EXPECT_EQ(kRandomAddress2, second_result.address);
+    EXPECT_FALSE(second_result.connectable);
+    EXPECT_TRUE(second_result.scan_response);
+
     results.erase(iter);
   }
 
-  // Result 4
+  // Result 4 (ADV_IND), no scan response
   {
     const auto& iter = results.find(kRandomAddress3);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
-    EXPECT_EQ(kRandomAddress3, result_pair.first.address);
-    EXPECT_TRUE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(1u, events.size());  // No scan response
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ(kAdvData, first_adv_data);  // Empty advertising data
+    EXPECT_EQ(kRandomAddress3, first_result.address);
+    EXPECT_TRUE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
     results.erase(iter);
   }
 
-  // Result 5
+  // Result 5 (ADV_NONCONN_IND)
   {
     const auto& iter = results.find(kRandomAddress4);
     ASSERT_NE(iter, results.end());
 
-    const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
-    EXPECT_EQ(kRandomAddress4, result_pair.first.address);
-    EXPECT_FALSE(result_pair.first.connectable);
+    const ResultList& events = iter->second;
+    ASSERT_EQ(1u, events.size());  // Not scannable
+
+    const auto& [first_result, first_adv_data] = events[0];
+    EXPECT_EQ(kAdvData, first_adv_data);  // Empty advertising data
+    EXPECT_EQ(kRandomAddress4, first_result.address);
+    EXPECT_FALSE(first_result.connectable);
+    EXPECT_FALSE(first_result.scan_response);
+
     results.erase(iter);
   }
 
+  // No other reports are expected.
   EXPECT_TRUE(results.empty());
 }
 
@@ -399,22 +444,11 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   RunLoopUntilIdle();
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
 
-  // Run the loop until we've seen an event for the last peer that we
-  // added. Fake Peer 4 (i.e. kRandomAddress3) is scannable but it never sends
-  // a scan response so we expect that remain in the scanner's pending reports
-  // list.
-  RunLoopUntilIdle();
-  EXPECT_EQ(5u, results.size());
-  EXPECT_EQ(results.find(kRandomAddress3), results.end());
-
   // Stop the scan. Since we are terminating the scan period early,
   // LowEnergyScanner should not send a report for the pending peer.
   EXPECT_TRUE(scanner()->StopScan());
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsIdle());
-
-  EXPECT_EQ(5u, results.size());
-  EXPECT_EQ(results.find(kRandomAddress3), results.end());
 }
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
@@ -445,7 +479,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kAdvData, result_pair.second);
     EXPECT_EQ(kPublicAddress1, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -457,7 +491,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress1, result_pair.first.address);
     EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);
@@ -469,7 +503,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kAdvData, result_pair.second);
     EXPECT_EQ(kPublicAddress2, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -493,7 +527,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress3, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -505,7 +539,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress4, result_pair.first.address);
     EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);

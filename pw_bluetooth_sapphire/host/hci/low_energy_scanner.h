@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 
 #include <set>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -25,7 +26,8 @@ class Transport;
 // Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
   LowEnergyScanResult();
-  LowEnergyScanResult(const DeviceAddress& address, bool resolved, bool connectable, int8_t rssi);
+  LowEnergyScanResult(const DeviceAddress& address, bool resolved, bool connectable,
+                      bool scan_response, int8_t rssi);
 
   // The device address of the remote peer.
   DeviceAddress address;
@@ -35,8 +37,14 @@ struct LowEnergyScanResult {
   bool resolved;
 
   // True if this peer accepts connections. This is the case if this peer
-  // sent a connectable advertising PDU.
+  // sent a connectable advertising PDU. If true, |scan_response| will always be false.
   bool connectable;
+
+  // True if the scan result was generated due to a response to a scan request during an active
+  // scan. A scan response always follows a regular advertising report. When |scan_response| is
+  // true, |connectable| will always be false. This does not indicate that the peer is not
+  // connectable but rather that the advertising event isn't.
+  bool scan_response;
 
   // The received signal strength of the advertisement packet corresponding to
   // this peer.
@@ -78,8 +86,9 @@ class LowEnergyScanner : public LocalAddressClient {
    public:
     virtual ~Delegate() = default;
 
-    // Called when a peer is found. |data| contains the advertising data, as
-    // well as any scan response data that was received during an active scan.
+    // Called when a peer is found due to a connectable, non-connectable, or scannable advertising
+    // event. |data| contains the advertising data or the scan reponse data if
+    // |result.scan_response| is true.
     virtual void OnPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data);
 
     // Called when a directed advertising report is received from the peer
@@ -133,12 +142,9 @@ class LowEnergyScanner : public LocalAddressClient {
   // StopScan() method. Otherwise, an ongoing scan will terminate at the end of
   // the scan period if a finite value for |period| was provided.
   //
-  // If an active scan is being performed, then scannable advertising reports
-  // will NOT generate an OnPeerFound event until a scan response is received
-  // from the corresponding broadcaster. If a scan response from a scannable
-  // peer is never received during a scan period, then an OnPeerFound event
-  // (excluding scan response data) will be generated for that peer at the end
-  // of the scan period, UNLESS the scan was explicitly stopped via StopScan().
+  // If an active scan is being performed then scannable advertising reports (ADV_IND and
+  // ADV_SCAN_IND) as well as any following scan response events will be reported in separate calls
+  // to Delegate::OnPeerFound().
   enum class ScanStatus {
     // Reported when the scan could not be started.
     kFailed,
