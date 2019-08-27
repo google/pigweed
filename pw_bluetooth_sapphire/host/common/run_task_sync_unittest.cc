@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
 
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/zx/time.h>
 
@@ -17,7 +18,7 @@ TEST(RunTaskSyncTest, RunTaskSync) {
   constexpr zx::duration kSleepTime = zx::msec(10);
   constexpr int kLoopCount = 10;
 
-  async::Loop loop(&kAsyncLoopConfigNoAttachToThread);
+  async::Loop loop(&kAsyncLoopConfigNoAttachToCurrentThread);
   loop.StartThread("RunTaskSyncTest thread");
   auto dispatcher = loop.dispatcher();
 

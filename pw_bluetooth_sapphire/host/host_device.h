@@ -10,6 +10,7 @@
 #include <fbl/macros.h>
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 

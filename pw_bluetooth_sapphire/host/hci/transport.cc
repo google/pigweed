@@ -51,7 +51,7 @@ bool Transport::Initialize(async_dispatcher_t* dispatcher) {
   if (dispatcher) {
     io_dispatcher_ = dispatcher;
   } else {
-    io_loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToThread);
+    io_loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToCurrentThread);
     io_loop_->StartThread("hci-transport-io");
     io_dispatcher_ = io_loop_->dispatcher();
   }

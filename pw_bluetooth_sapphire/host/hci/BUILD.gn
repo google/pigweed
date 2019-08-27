@@ -68,6 +68,7 @@ static_library("hci") {
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c_client",
     "//zircon/public/lib/async-loop-cpp",
+    "//zircon/public/lib/async-loop-default",
     "//zircon/public/lib/ddk",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fdio",

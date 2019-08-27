@@ -7,6 +7,7 @@
 
 #include <fbl/macros.h>
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 

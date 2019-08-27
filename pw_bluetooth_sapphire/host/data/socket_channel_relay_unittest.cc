@@ -5,6 +5,7 @@
 #include "socket_channel_relay.h"
 
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <zircon/assert.h>
 #include <zircon/compiler.h>
 
@@ -25,7 +26,7 @@ using RelayT = internal::SocketChannelRelay<l2cap::Channel>;
 
 class DATA_SocketChannelRelayTest : public ::testing::Test {
  public:
-  DATA_SocketChannelRelayTest() : loop_(&kAsyncLoopConfigAttachToThread) {
+  DATA_SocketChannelRelayTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
 
     constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;

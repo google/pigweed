@@ -13,7 +13,7 @@
 namespace bthost {
 
 HostDevice::HostDevice(zx_device_t* device)
-    : dev_(nullptr), parent_(device), loop_(&kAsyncLoopConfigNoAttachToThread) {
+    : dev_(nullptr), parent_(device), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
   ZX_DEBUG_ASSERT(parent_);
 
   dev_proto_.version = DEVICE_OPS_VERSION;

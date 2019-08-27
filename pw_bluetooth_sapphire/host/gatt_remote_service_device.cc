@@ -110,7 +110,7 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
 
 GattRemoteServiceDevice::GattRemoteServiceDevice(bt::gatt::PeerId peer_id,
                                                  fbl::RefPtr<bt::gatt::RemoteService> service)
-    : loop_(&kAsyncLoopConfigNoAttachToThread),
+    : loop_(&kAsyncLoopConfigNoAttachToCurrentThread),
       dev_(nullptr),
       peer_id_(peer_id),
       service_(service) {

@@ -9,6 +9,7 @@
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
@@ -92,7 +93,7 @@ class TaskDomain {
   TaskDomain(T* obj, std::string name) {
     Init(obj);
 
-    loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToThread);
+    loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToCurrentThread);
     loop_->StartThread(name.c_str());
     dispatcher_ = loop_->dispatcher();
   }

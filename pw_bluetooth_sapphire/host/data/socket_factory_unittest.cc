@@ -8,6 +8,7 @@
 #include <type_traits>
 
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 
 #include "gtest/gtest.h"
 
@@ -31,7 +32,7 @@ constexpr hci::ConnectionHandle kAnotherConnectionHandle = 0x0002;
 
 class DATA_SocketFactoryTest : public ::testing::Test {
  public:
-  DATA_SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToThread) {
+  DATA_SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
     channel_ = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
         kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle,

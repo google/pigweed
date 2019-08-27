@@ -10,6 +10,7 @@
 #include <ddk/protocol/bt/gattsvc.h>
 #include <fbl/macros.h>
 #include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <zircon/types.h>
