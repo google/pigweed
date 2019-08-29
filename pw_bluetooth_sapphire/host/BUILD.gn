@@ -63,7 +63,7 @@ source_set("sources") {
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//src/lib/fxl",
     "//zircon/public/banjo/ddk.protocol.bt.gattsvc",
-    "//zircon/public/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
+    "//zircon/system/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/public/lib/ddk",
     "//zircon/public/lib/driver",
     "//zircon/public/lib/fbl",
