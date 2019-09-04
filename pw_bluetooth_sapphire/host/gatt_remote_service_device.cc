@@ -171,10 +171,10 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
       .name = "bt-gatt-svc",
       .ctx = this,
       .ops = &dev_proto_,
-      .proto_id = ZX_PROTOCOL_BT_GATT_SVC,
-      .proto_ops = &proto_ops_,
       .props = props,
       .prop_count = 5,
+      .proto_id = ZX_PROTOCOL_BT_GATT_SVC,
+      .proto_ops = &proto_ops_,
       .flags = 0,
   };
 
