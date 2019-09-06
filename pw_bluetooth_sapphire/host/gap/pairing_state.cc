@@ -202,8 +202,8 @@ void PairingState::EnableEncryption() {
 void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   bt_log(ERROR, "gap-bredr", "Unexpected event %s while in state \"%s\"", handler_name,
          ToString(state()));
-  status_callback_(link_->handle(), hci::Status(HostError::kNotSupported));
   state_ = State::kFailed;
+  status_callback_(link_->handle(), hci::Status(HostError::kNotSupported));
 }
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {

@@ -83,6 +83,25 @@ TEST(GAP_PairingStateTest,
   EXPECT_FALSE(pairing_state.initiator());
 }
 
+TEST(GAP_PairingStateTest, StatusCallbackMayDestroyPairingState) {
+  auto connection = MakeFakeConnection();
+  std::unique_ptr<PairingState> pairing_state;
+  bool cb_called = false;
+  auto status_cb = [&pairing_state, &cb_called](hci::ConnectionHandle handle, hci::Status status) {
+    EXPECT_FALSE(status.is_success());
+    cb_called = true;
+
+    // Note that this lambda is owned by the PairingState so its captures are invalid after this.
+    pairing_state = nullptr;
+  };
+  pairing_state = std::make_unique<PairingState>(&connection, status_cb);
+
+  // Unexpected event that should cause the status callback to be called with an error.
+  pairing_state->OnUserPasskeyNotification(kTestPasskey);
+
+  EXPECT_TRUE(cb_called);
+}
+
 // Test helper to inspect StatusCallback invocations.
 class TestStatusHandler final {
  public:
