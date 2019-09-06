@@ -61,9 +61,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
                                                              dispatcher());
     discovery_manager_ =
         std::make_unique<LowEnergyDiscoveryManager>(transport(), scanner_.get(), &peer_cache_);
-    test_device()->SetScanStateCallback(
-        std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this, std::placeholders::_1),
-        dispatcher());
+    test_device()->set_scan_state_callback(
+        std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this, std::placeholders::_1));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
   }

@@ -240,6 +240,17 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
                                                      const DeviceAddress& peer_address,
                                                      const LEConnectionParameters& conn_params) {
+  // Immediately construct a Connection object. If this object goes out of scope following the error
+  // checks below, it will send the a command to disconnect the link. We assign |advertised_| as the
+  // local address however this address may be invalid if we're not advertising. This is OK as the
+  // link will be disconnected in that case before it can propagate to higher layers.
+  //
+  // TODO(BT-2238): We can't assign the default address since an LE connection cannot have a BR/EDR
+  // type. This temporary default won't be necessary was we remove transport from the address type.
+  auto local_address =
+      advertising() ? advertised_ : DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+  auto link = Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_);
+
   if (!advertising()) {
     bt_log(TRACE, "hci-le", "connection received without advertising!");
     return;
@@ -252,12 +263,11 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
 
   // Assign the currently advertised address as the local address of the
   // connection.
-  auto local_address = advertised_;
   auto callback = std::move(connect_callback_);
   StopAdvertisingInternal();
 
-  // Assign the |advertised_| address as the connection's local address.
-  callback(Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_));
+  // Pass on the ownership.
+  callback(std::move(link));
 }
 
 }  // namespace hci

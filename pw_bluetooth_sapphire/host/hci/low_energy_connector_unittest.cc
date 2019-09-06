@@ -51,8 +51,8 @@ class LowEnergyConnectorTest : public TestingBase {
         transport(), &fake_address_delegate_, dispatcher(),
         fit::bind_member(this, &LowEnergyConnectorTest::OnIncomingConnectionCreated));
 
-    test_device()->SetConnectionStateCallback(
-        fit::bind_member(this, &LowEnergyConnectorTest::OnConnectionStateChanged), dispatcher());
+    test_device()->set_connection_state_callback(
+        fit::bind_member(this, &LowEnergyConnectorTest::OnConnectionStateChanged));
     StartTestDevice();
   }
 
@@ -78,7 +78,8 @@ class LowEnergyConnectorTest : public TestingBase {
         handle, hci::Connection::LinkType::kLE, role, kLocalAddress, peer_address));
   }
 
-  void OnConnectionStateChanged(const DeviceAddress& address, bool connected, bool canceled) {
+  void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,
+                                bool connected, bool canceled) {
     request_canceled = canceled;
   }
 

@@ -171,11 +171,7 @@ FakeController::FakeController()
       page_scan_window_(0x0012),
       next_conn_handle_(0u),
       le_connect_pending_(false),
-      next_le_sig_id_(1u),
-      scan_state_cb_dispatcher_(nullptr),
-      advertising_state_cb_dispatcher_(nullptr),
-      conn_state_cb_dispatcher_(nullptr),
-      le_conn_params_cb_dispatcher_(nullptr) {}
+      next_le_sig_id_(1u) {}
 
 FakeController::~FakeController() { Stop(); }
 
@@ -208,42 +204,6 @@ void FakeController::RemovePeer(const DeviceAddress& address) { peers_.erase(add
 FakePeer* FakeController::FindPeer(const DeviceAddress& address) {
   auto iter = peers_.find(address);
   return (iter == peers_.end()) ? nullptr : iter->second.get();
-}
-
-void FakeController::SetScanStateCallback(ScanStateCallback callback,
-                                          async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-
-  scan_state_cb_ = std::move(callback);
-  scan_state_cb_dispatcher_ = dispatcher;
-}
-
-void FakeController::SetAdvertisingStateCallback(fit::closure callback,
-                                                 async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-
-  advertising_state_cb_ = std::move(callback);
-  advertising_state_cb_dispatcher_ = dispatcher;
-}
-
-void FakeController::SetConnectionStateCallback(ConnectionStateCallback callback,
-                                                async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-
-  conn_state_cb_ = std::move(callback);
-  conn_state_cb_dispatcher_ = dispatcher;
-}
-
-void FakeController::SetLEConnectionParametersCallback(LEConnectionParametersCallback callback,
-                                                       async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-
-  le_conn_params_cb_ = std::move(callback);
-  le_conn_params_cb_dispatcher_ = dispatcher;
 }
 
 FakePeer* FakeController::FindByConnHandle(hci::ConnectionHandle handle) {
@@ -377,11 +337,10 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr, hci::Connection
       return;
     }
 
-    peer->set_connected(true);
     hci::ConnectionHandle handle = ++next_conn_handle_;
     peer->AddLink(handle);
 
-    NotifyConnectionState(addr, true);
+    NotifyConnectionState(addr, handle, /*connected=*/true);
 
     auto interval_min = hci::defaults::kLEConnectionIntervalMin;
     auto interval_max = hci::defaults::kLEConnectionIntervalMax;
@@ -447,9 +406,9 @@ void FakeController::Disconnect(const DeviceAddress& addr) {
     ZX_DEBUG_ASSERT(!peer->connected());
     ZX_DEBUG_ASSERT(!links.empty());
 
-    NotifyConnectionState(addr, false);
-
     for (auto link : links) {
+      NotifyConnectionState(addr, link, /*connected=*/false);
+
       hci::DisconnectionCompleteEventParams params;
       params.status = hci::StatusCode::kSuccess;
       params.connection_handle = htole16(link);
@@ -521,33 +480,23 @@ void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
 }
 
 void FakeController::NotifyAdvertisingState() {
-  if (!advertising_state_cb_) {
-    return;
+  if (advertising_state_cb_) {
+    advertising_state_cb_();
   }
-
-  ZX_DEBUG_ASSERT(advertising_state_cb_dispatcher_);
-  async::PostTask(advertising_state_cb_dispatcher_, advertising_state_cb_.share());
 }
 
-void FakeController::NotifyConnectionState(const DeviceAddress& addr, bool connected,
-                                           bool canceled) {
-  if (!conn_state_cb_)
-    return;
-
-  ZX_DEBUG_ASSERT(conn_state_cb_dispatcher_);
-  async::PostTask(
-      conn_state_cb_dispatcher_,
-      [addr, connected, canceled, cb = conn_state_cb_.share()] { cb(addr, connected, canceled); });
+void FakeController::NotifyConnectionState(const DeviceAddress& addr, hci::ConnectionHandle handle,
+                                           bool connected, bool canceled) {
+  if (conn_state_cb_) {
+    conn_state_cb_(addr, handle, connected, canceled);
+  }
 }
 
 void FakeController::NotifyLEConnectionParameters(const DeviceAddress& addr,
                                                   const hci::LEConnectionParameters& params) {
-  if (!le_conn_params_cb_)
-    return;
-
-  ZX_DEBUG_ASSERT(le_conn_params_cb_dispatcher_);
-  async::PostTask(le_conn_params_cb_dispatcher_,
-                  [addr, params, cb = le_conn_params_cb_.share()] { cb(addr, params); });
+  if (le_conn_params_cb_) {
+    le_conn_params_cb_(addr, params);
+  }
 }
 
 void FakeController::OnCreateConnectionCommandReceived(
@@ -635,9 +584,11 @@ void FakeController::OnCreateConnectionCommandReceived(
 
     if (response.status == hci::StatusCode::kSuccess) {
       bool notify = !peer->connected();
-      peer->AddLink(le16toh(response.connection_handle));
-      if (notify && peer->connected())
-        NotifyConnectionState(peer->address(), true);
+      hci::ConnectionHandle handle = le16toh(response.connection_handle);
+      peer->AddLink(handle);
+      if (notify && peer->connected()) {
+        NotifyConnectionState(peer->address(), handle, /*connected=*/true);
+      }
     }
 
     SendEvent(hci::kConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
@@ -734,9 +685,11 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
     if (response.status == hci::StatusCode::kSuccess) {
       bool notify = !peer->connected();
-      peer->AddLink(le16toh(response.connection_handle));
-      if (notify && peer->connected())
-        NotifyConnectionState(peer->address(), true);
+      hci::ConnectionHandle handle = le16toh(response.connection_handle);
+      peer->AddLink(handle);
+      if (notify && peer->connected()) {
+        NotifyConnectionState(peer->address(), handle, /*connected=*/true);
+      }
     }
 
     SendLEMetaEvent(hci::kLEConnectionCompleteSubeventCode,
@@ -803,8 +756,9 @@ void FakeController::OnDisconnectCommandReceived(const hci::DisconnectCommandPar
 
   bool notify = peer->connected();
   peer->RemoveLink(handle);
-  if (notify && !peer->connected())
-    NotifyConnectionState(peer->address(), false);
+  if (notify && !peer->connected()) {
+    NotifyConnectionState(peer->address(), handle, /*connected=*/false);
+  }
 
   hci::DisconnectionCompleteEventParams reply;
   reply.status = hci::StatusCode::kSuccess;
@@ -949,7 +903,7 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       bredr_connect_pending_ = false;
       pending_bredr_connect_rsp_.Cancel();
 
-      NotifyConnectionState(pending_bredr_connect_addr_, false, true);
+      NotifyConnectionState(pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
 
       hci::ConnectionCompleteEventParams response = {};
 
@@ -1090,7 +1044,8 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       pending_le_connect_rsp_.Cancel();
       ZX_DEBUG_ASSERT(le_connect_params_);
 
-      NotifyConnectionState(le_connect_params_->peer_address, false, true);
+      NotifyConnectionState(le_connect_params_->peer_address, 0, /*connected=*/false,
+                            /*canceled=*/true);
 
       hci::LEConnectionCompleteSubeventParams response;
       std::memset(&response, 0, sizeof(response));
@@ -1199,10 +1154,7 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       // event. This guarantees that single-threaded unit tests receive the scan
       // state update BEFORE the HCI command sequence terminates.
       if (scan_state_cb_) {
-        ZX_DEBUG_ASSERT(scan_state_cb_dispatcher_);
-        async::PostTask(
-            scan_state_cb_dispatcher_,
-            [cb = scan_state_cb_.share(), enabled = le_scan_state_.enabled] { cb(enabled); });
+        scan_state_cb_(le_scan_state_.enabled);
       }
 
       RespondWithSuccess(opcode);

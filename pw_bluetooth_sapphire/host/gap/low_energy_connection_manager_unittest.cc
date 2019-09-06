@@ -66,9 +66,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         transport(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
         gatt::testing::FakeLayer::Create());
 
-    test_device()->SetConnectionStateCallback(
-        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged),
-        dispatcher());
+    test_device()->set_connection_state_callback(
+        fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));
     StartTestDevice();
   }
 
@@ -113,9 +112,12 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   }
 
   // Called by FakeController on connection events.
-  void OnConnectionStateChanged(const DeviceAddress& address, bool connected, bool canceled) {
-    bt_log(SPEW, "gap-test", "OnConnectionStateChanged: %s connected: %s, canceled %s",
-           address.ToString().c_str(), connected ? "true" : "false", canceled ? "true" : "false");
+  void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,
+                                bool connected, bool canceled) {
+    bt_log(TRACE, "gap-test",
+           "OnConnectionStateChanged: : %s (handle: %#.4x) (connected: %s) (canceled: %s):\n",
+           address.ToString().c_str(), handle, (connected ? "true" : "false"),
+           (canceled ? "true" : "false"));
     if (canceled) {
       canceled_peers_.insert(address);
     } else if (connected) {
@@ -1018,7 +1020,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPLEConnectionParameterUpdate) {
     fake_peer_cb_called = true;
     actual = params;
   };
-  test_device()->SetLEConnectionParametersCallback(fake_peer_cb, dispatcher());
+  test_device()->set_le_connection_parameters_callback(fake_peer_cb);
 
   auto conn_params_cb = [&conn_params_cb_called, &conn_ref](const auto& peer) {
     EXPECT_EQ(conn_ref->peer_identifier(), peer.identifier());

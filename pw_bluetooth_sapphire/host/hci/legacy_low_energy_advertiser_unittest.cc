@@ -18,6 +18,7 @@
 namespace bt {
 
 using testing::FakeController;
+using testing::FakePeer;
 
 namespace hci {
 namespace {
@@ -203,15 +204,13 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
 
   bool enabled = true;
   std::vector<bool> adv_states;
-  test_device()->SetAdvertisingStateCallback(
-      [this, &adv_states, &enabled] {
-        bool new_enabled = test_device()->le_advertising_state().enabled;
-        if (enabled != new_enabled) {
-          adv_states.push_back(new_enabled);
-          enabled = new_enabled;
-        }
-      },
-      dispatcher());
+  test_device()->set_advertising_state_callback([this, &adv_states, &enabled] {
+    bool new_enabled = test_device()->le_advertising_state().enabled;
+    if (enabled != new_enabled) {
+      adv_states.push_back(new_enabled);
+      enabled = new_enabled;
+    }
+  });
 
   advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, kRandomAddress,
                                      LEConnectionParameters());
@@ -221,6 +220,71 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, RestartInConnectionCallback) {
   ASSERT_EQ(2u, adv_states.size());
   EXPECT_FALSE(adv_states[0]);
   EXPECT_TRUE(adv_states[1]);
+}
+
+// An incoming connection when not advertising should get disconnected.
+TEST_F(HCI_LegacyLowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
+  std::vector<std::pair<bool, ConnectionHandle>> connection_states;
+  test_device()->set_connection_state_callback(
+      [&](const auto& address, auto handle, bool connected, bool canceled) {
+        EXPECT_EQ(kRandomAddress, address);
+        EXPECT_FALSE(canceled);
+        connection_states.push_back(std::make_pair(connected, handle));
+      });
+
+  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
+  test_device()->AddPeer(std::move(fake_peer));
+  test_device()->ConnectLowEnergy(kRandomAddress, ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(1u, connection_states.size());
+  auto [connection_state, handle] = connection_states[0];
+  EXPECT_TRUE(connection_state);
+
+  // Notify the advertiser of the incoming connection. It should reject it and the controller should
+  // become disconnected.
+  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+                                     LEConnectionParameters());
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, connection_states.size());
+  auto [connection_state_after_disconnect, disconnected_handle] = connection_states[1];
+  EXPECT_EQ(handle, disconnected_handle);
+  EXPECT_FALSE(connection_state_after_disconnect);
+}
+
+// An incoming connection during non-connectable advertising should get disconnected.
+TEST_F(HCI_LegacyLowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertising) {
+  advertiser()->StartAdvertising(kPublicAddress, BufferView(), BufferView(), nullptr, kTestInterval,
+                                 false, GetSuccessCallback());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(MoveLastStatus());
+
+  std::vector<std::pair<bool, ConnectionHandle>> connection_states;
+  test_device()->set_connection_state_callback(
+      [&](const auto& address, auto handle, bool connected, bool canceled) {
+        EXPECT_EQ(kRandomAddress, address);
+        EXPECT_FALSE(canceled);
+        connection_states.push_back(std::make_pair(connected, handle));
+      });
+
+  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
+  test_device()->AddPeer(std::move(fake_peer));
+  test_device()->ConnectLowEnergy(kRandomAddress, ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(1u, connection_states.size());
+  auto [connection_state, handle] = connection_states[0];
+  EXPECT_TRUE(connection_state);
+
+  // Notify the advertiser of the incoming connection. It should reject it and the controller should
+  // become disconnected.
+  advertiser()->OnIncomingConnection(handle, Connection::Role::kSlave, kRandomAddress,
+                                     LEConnectionParameters());
+  RunLoopUntilIdle();
+  ASSERT_EQ(2u, connection_states.size());
+  auto [connection_state_after_disconnect, disconnected_handle] = connection_states[1];
+  EXPECT_EQ(handle, disconnected_handle);
+  EXPECT_FALSE(connection_state_after_disconnect);
 }
 
 // Tests starting and stopping an advertisement.
@@ -342,7 +406,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, StartWhileStopping) {
                                      GetSuccessCallback());
     }
   };
-  test_device()->SetAdvertisingStateCallback(adv_state_cb, dispatcher());
+  test_device()->set_advertising_state_callback(adv_state_cb);
 
   EXPECT_TRUE(advertiser()->StopAdvertising(addr));
 

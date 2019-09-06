@@ -159,22 +159,27 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   // Sets a callback to be invoked when the scan state changes.
   using ScanStateCallback = fit::function<void(bool enabled)>;
-  void SetScanStateCallback(ScanStateCallback callback, async_dispatcher_t* dispatcher);
+  void set_scan_state_callback(ScanStateCallback callback) { scan_state_cb_ = std::move(callback); }
 
   // Sets a callback to be invoked when the LE Advertising state changes.
-  void SetAdvertisingStateCallback(fit::closure callback, async_dispatcher_t* dispatcher);
+  void set_advertising_state_callback(fit::closure callback) {
+    advertising_state_cb_ = std::move(callback);
+  }
 
   // Sets a callback to be invoked on connection events.
-  using ConnectionStateCallback =
-      fit::function<void(const DeviceAddress&, bool connected, bool canceled)>;
-  void SetConnectionStateCallback(ConnectionStateCallback callback, async_dispatcher_t* dispatcher);
+  using ConnectionStateCallback = fit::function<void(
+      const DeviceAddress&, hci::ConnectionHandle handle, bool connected, bool canceled)>;
+  void set_connection_state_callback(ConnectionStateCallback callback) {
+    conn_state_cb_ = std::move(callback);
+  }
 
   // Sets a callback to be invoked when LE connection parameters are updated for
   // a fake device.
   using LEConnectionParametersCallback =
       fit::function<void(const DeviceAddress&, const hci::LEConnectionParameters&)>;
-  void SetLEConnectionParametersCallback(LEConnectionParametersCallback callback,
-                                         async_dispatcher_t* dispatcher);
+  void set_le_connection_parameters_callback(LEConnectionParametersCallback callback) {
+    le_conn_params_cb_ = std::move(callback);
+  }
 
   // Sends a HCI event with the given parameters.
   void SendEvent(hci::EventCode event_code, const ByteBuffer& payload);
@@ -257,7 +262,8 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   void NotifyAdvertisingState();
 
   // Notifies |conn_state_cb_| with the given parameters.
-  void NotifyConnectionState(const DeviceAddress& addr, bool connected, bool canceled = false);
+  void NotifyConnectionState(const DeviceAddress& addr, hci::ConnectionHandle handle,
+                             bool connected, bool canceled = false);
 
   // Called when a HCI_Create_Connection command is received.
   void OnCreateConnectionCommandReceived(const hci::CreateConnectionCommandParams& params);
@@ -327,16 +333,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;
 
   ScanStateCallback scan_state_cb_;
-  async_dispatcher_t* scan_state_cb_dispatcher_;
-
   fit::closure advertising_state_cb_;
-  async_dispatcher_t* advertising_state_cb_dispatcher_;
-
   ConnectionStateCallback conn_state_cb_;
-  async_dispatcher_t* conn_state_cb_dispatcher_;
-
   LEConnectionParametersCallback le_conn_params_cb_;
-  async_dispatcher_t* le_conn_params_cb_dispatcher_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
