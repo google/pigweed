@@ -32,7 +32,8 @@ class FakeDynamicChannel final : public DynamicChannel {
   bool IsOpen() const override { return open_; }
 
   void DoConnect(ChannelId remote_cid) {
-    set_remote_cid(remote_cid);
+    ASSERT_TRUE(SetRemoteChannelId(remote_cid))
+        << "Could not set non-unique remote_cid " << remote_cid;
     connected_ = true;
   }
 
@@ -99,7 +100,8 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
 
   // Make public for testing.
   using DynamicChannelRegistry::FindAvailableChannelId;
-  using DynamicChannelRegistry::FindChannel;
+  using DynamicChannelRegistry::FindChannelByLocalId;
+  using DynamicChannelRegistry::FindChannelByRemoteId;
   using DynamicChannelRegistry::RequestService;
 
  private:
@@ -161,11 +163,16 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
 
   EXPECT_TRUE(open_result_cb_called);
   EXPECT_FALSE(close_cb_called);
-  EXPECT_TRUE(registry.FindChannel(kLocalCId));
+  auto channel_by_local_id = registry.FindChannelByLocalId(kLocalCId);
+  auto channel_by_remote_id = registry.FindChannelByRemoteId(kRemoteCId);
+  EXPECT_TRUE(channel_by_local_id);
+  EXPECT_TRUE(channel_by_remote_id);
+  EXPECT_EQ(channel_by_local_id, channel_by_remote_id);
 
   registry.last_channel()->DoRemoteClose();
   EXPECT_TRUE(close_cb_called);
-  EXPECT_FALSE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByRemoteId(kRemoteCId));
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
 }
 
@@ -187,12 +194,12 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
   registry.last_channel()->DoOpen();
 
   EXPECT_TRUE(open_result_cb_called);
-  EXPECT_TRUE(registry.FindChannel(kLocalCId));
+  EXPECT_TRUE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_EQ(kFirstDynamicChannelId + 1, registry.FindAvailableChannelId());
 
   registry.CloseChannel(kLocalCId);
   EXPECT_FALSE(close_cb_called);
-  EXPECT_FALSE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
 }
 
@@ -211,7 +218,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, RejectServiceRequest) {
   registry.RequestService(kPsm, registry.FindAvailableChannelId(), kRemoteCId);
   EXPECT_TRUE(service_request_cb_called);
   EXPECT_FALSE(registry.last_channel());
-  EXPECT_FALSE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
 }
 
@@ -245,7 +252,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
   registry.last_channel()->DoOpen();
 
   EXPECT_TRUE(open_result_cb_called);
-  EXPECT_TRUE(registry.FindChannel(kLocalCId));
+  EXPECT_TRUE(registry.FindChannelByLocalId(kLocalCId));
 }
 
 TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
@@ -271,7 +278,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
 
   // Don't get channels that failed to open.
   EXPECT_FALSE(open_result_cb_called);
-  EXPECT_FALSE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
 
   // The channel ID should be released upon this failure.
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
@@ -295,7 +302,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
   registry.last_channel()->DoOpen();
 
   EXPECT_TRUE(open_result_cb_called);
-  EXPECT_TRUE(registry.FindChannel(kLocalCId));
+  EXPECT_TRUE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_FALSE(close_cb_called);
 
   // |registry| goes out of scope and FakeDynamicChannel's dtor checks that it
@@ -319,7 +326,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ErrorConnectingChannel) {
 
   EXPECT_TRUE(open_result_cb_called);
   EXPECT_FALSE(close_cb_called);
-  EXPECT_FALSE(registry.FindChannel(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
 
   // Recycle channel ID immediately for the following channel attempt.
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
@@ -365,13 +372,14 @@ TEST(L2CAP_DynamicChannelRegistryTest, ExhaustedChannelIds) {
   EXPECT_EQ(0, close_cb_count);
 
   // Close the most recently opened channel.
+  auto last_remote_cid = registry.last_channel()->remote_cid();
   registry.last_channel()->DoRemoteClose();
   EXPECT_EQ(1, close_cb_count);
   EXPECT_NE(kInvalidChannelId, registry.FindAvailableChannelId());
 
   // Try to open a channel again.
   registry.OpenOutbound(kPsm, success_open_result_cb.share());
-  registry.last_channel()->DoConnect(kRemoteCId);
+  registry.last_channel()->DoConnect(last_remote_cid);
   registry.last_channel()->DoOpen();
   EXPECT_EQ(kNumChannelsAllowed + 2, open_result_cb_count);
   EXPECT_EQ(1, close_cb_count);
@@ -384,7 +392,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
   registry.last_channel()->DoConnect(kRemoteCId);
   registry.last_channel()->DoOpen();
 
-  ASSERT_TRUE(registry.FindChannel(kLocalCId));
+  ASSERT_TRUE(registry.FindChannelByLocalId(kLocalCId));
   ASSERT_NE(kLocalCId, registry.FindAvailableChannelId());
 
   // Close the channel but don't let the disconnection complete.
@@ -394,8 +402,8 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
 
   // New channels should not reuse the "mostly disconnected" channel's ID.
   EXPECT_NE(kLocalCId, registry.FindAvailableChannelId());
-  ASSERT_TRUE(registry.FindChannel(kLocalCId));
-  EXPECT_FALSE(registry.FindChannel(kLocalCId)->IsConnected());
+  ASSERT_TRUE(registry.FindChannelByLocalId(kLocalCId));
+  EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId)->IsConnected());
 
   // Open a new channel and make sure it has a different channel ID.
   bool open_result_cb_called = false;

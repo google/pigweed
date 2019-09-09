@@ -6,6 +6,7 @@
 
 #include <zircon/assert.h>
 
+#include "lib/zx/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
@@ -37,7 +38,7 @@ void DynamicChannelRegistry::OpenOutbound(PSM psm, DynamicChannelCallback open_c
 }
 
 void DynamicChannelRegistry::CloseChannel(ChannelId local_cid) {
-  DynamicChannel* channel = FindChannel(local_cid);
+  DynamicChannel* channel = FindChannelByLocalId(local_cid);
   if (!channel) {
     return;
   }
@@ -89,12 +90,21 @@ ChannelId DynamicChannelRegistry::FindAvailableChannelId() const {
   return kInvalidChannelId;
 }
 
-DynamicChannel* DynamicChannelRegistry::FindChannel(ChannelId local_cid) const {
+DynamicChannel* DynamicChannelRegistry::FindChannelByLocalId(ChannelId local_cid) const {
   auto iter = channels_.find(local_cid);
   if (iter == channels_.end()) {
     return nullptr;
   }
   return iter->second.get();
+}
+
+DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(ChannelId remote_cid) const {
+  for (auto& [id, channel_ptr] : channels_) {
+    if (channel_ptr->remote_cid() == remote_cid) {
+      return channel_ptr.get();
+    }
+  }
+  return nullptr;
 }
 
 void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,

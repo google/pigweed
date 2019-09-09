@@ -7,6 +7,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -20,6 +21,16 @@ DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, Channe
       remote_cid_(remote_cid),
       opened_(false) {
   ZX_DEBUG_ASSERT(registry_);
+}
+
+bool DynamicChannel::SetRemoteChannelId(ChannelId remote_cid) {
+  // do not allow duplicate remote CIDs
+  if (registry_->FindChannelByRemoteId(remote_cid)) {
+    return false;
+  }
+
+  remote_cid_ = remote_cid;
+  return true;
 }
 
 void DynamicChannel::OnDisconnected() { registry_->OnChannelDisconnected(this); }
