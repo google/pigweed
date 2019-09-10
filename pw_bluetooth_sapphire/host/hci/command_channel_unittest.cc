@@ -42,6 +42,14 @@ class HCI_CommandChannelTest : public TestingBase {
   ~HCI_CommandChannelTest() override = default;
 };
 
+std::unique_ptr<CommandPacket> MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
+  auto packet = CommandPacket::New(kReadRemoteSupportedFeatures,
+                                   sizeof(ReadRemoteSupportedFeaturesCommandParams));
+  auto params = packet->mutable_view()->mutable_payload<ReadRemoteSupportedFeaturesCommandParams>();
+  params->connection_handle = connection_handle;
+  return packet;
+}
+
 TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
   // Set up expectations:
   // clang-format off
@@ -691,6 +699,305 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, event_count);
+}
+
+// Tests:
+//  - Calling RemoveQueuedCommand on a synchronous command that has already been sent to the
+//    controller returns false.
+//  - The command still completes and notifies the callback.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
+  auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
+                                          0x00  // parameter_total_size
+  );
+  auto rsp_reset = CreateStaticByteBuffer(kCommandCompleteEventCode,
+                                          0x03,  // parameter_total_size (3 byte payload)
+                                          0xFF,  // num_hci_command_packets (255 can be sent)
+                                          LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
+  );
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  StartTestDevice();
+
+  int transaction_count = 0u;
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
+
+  auto cmd = CommandPacket::New(kReset);
+  int cmd_cb_count = 0;
+  auto cmd_cb = [&cmd_cb_count](auto, auto&) { cmd_cb_count++; };
+  auto cmd_id = cmd_channel()->SendCommand(std::move(cmd), dispatcher(), std::move(cmd_cb));
+  EXPECT_NE(0u, cmd_id);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
+  test_device()->SendCommandChannelPacket(rsp_reset);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  EXPECT_EQ(1, cmd_cb_count);
+}
+
+// Tests:
+//  - Remove a synchronous command that is queued up behind another command with the same opcode.
+//  - The first command (after removal) does not receive the update event for the second command.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
+  using namespace std::placeholders;
+  auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
+                                          0x00  // parameter_total_size
+  );
+  auto rsp_reset = CreateStaticByteBuffer(kCommandCompleteEventCode,
+                                          0x03,  // parameter_total_size (4 byte payload)
+                                          0xFF,  // num_hci_command_packets (255 can be sent)
+                                          LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
+  );
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  StartTestDevice();
+
+  int transaction_count = 0u;
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
+
+  auto event_cb = [](CommandChannel::TransactionId id, const EventPacket& event, int* event_count) {
+    EXPECT_EQ(kCommandCompleteEventCode, event.event_code());
+    (*event_count)++;
+  };
+
+  // Send two reset commands so that the second one is queued up.
+  auto reset = CommandPacket::New(kReset);
+  int event_count0 = 0;
+  auto id0 = cmd_channel()->SendCommand(std::move(reset), dispatcher(),
+                                        std::bind(event_cb, _1, _2, &event_count0));
+  EXPECT_NE(0u, id0);
+  reset = CommandPacket::New(kReset);
+  int event_count1 = 0;
+  auto id1 = cmd_channel()->SendCommand(std::move(reset), dispatcher(),
+                                        std::bind(event_cb, _1, _2, &event_count1));
+  EXPECT_NE(0u, id1);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  EXPECT_TRUE(cmd_channel()->RemoveQueuedCommand(id1));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(0, event_count0);
+  test_device()->SendCommandChannelPacket(rsp_reset);
+
+  RunLoopUntilIdle();
+
+  // Only one command should have been sent.
+  EXPECT_EQ(1, transaction_count);
+  // The queued (then canceled) command should never have gotten an event.
+  EXPECT_EQ(0, event_count1);
+  // The sent command should have gotten one event (CommandComplete).
+  EXPECT_EQ(1, event_count0);
+}
+
+// Read Remote Supported Features
+const auto kReadRemoteSupportedFeaturesCmd = CreateStaticByteBuffer(
+    LowerBits(kReadRemoteSupportedFeatures), UpperBits(kReadRemoteSupportedFeatures),
+    0x02,       // parameter_total_size
+    0x01, 0x00  // connection_handle
+);
+
+// Command Status for Read Remote Supported Features
+const auto kReadRemoteSupportedFeaturesRsp =
+    CreateStaticByteBuffer(kCommandStatusEventCode,
+                           0x04,                  // parameter_total_size (4 byte payload)
+                           StatusCode::kSuccess,  // status
+                           0xFF,                  // num_hci_command_packets
+                           LowerBits(kReadRemoteSupportedFeatures),
+                           UpperBits(kReadRemoteSupportedFeatures)  // opcode
+    );
+
+// Read Remote Supported Features Complete
+const auto kReadRemoteSupportedFeaturesComplete =
+    CreateStaticByteBuffer(kReadRemoteSupportedFeaturesCompleteEventCode,
+                           0x0B,                  // parameter_total_size (11 bytes)
+                           StatusCode::kSuccess,  // status
+                           0x01, 0x00,            // connection_handle
+                           0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80  // lmp_features
+                           // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
+                           // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
+    );
+
+// Tests:
+//  - Remove an asynchronous command that is queued up behind another command with the same opcode.
+//  - The first command (after removal) does not receive the update event for the second command.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
+  using namespace std::placeholders;
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadRemoteSupportedFeaturesCmd, {}));
+  StartTestDevice();
+
+  int transaction_count = 0u;
+  test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
+                                        dispatcher());
+
+  auto event_cb = [](CommandChannel::TransactionId id, const EventPacket& event, int* event_count) {
+    (*event_count)++;
+  };
+
+  // Send two read commands so that the second one is queued up.
+  auto packet = MakeReadRemoteSupportedFeatures(0x0001);
+  int event_count0 = 0;
+  auto id0 = cmd_channel()->SendCommand(std::move(packet), dispatcher(),
+                                        std::bind(event_cb, _1, _2, &event_count0),
+                                        kReadRemoteSupportedFeaturesCompleteEventCode);
+  EXPECT_NE(0u, id0);
+  packet = MakeReadRemoteSupportedFeatures(0x0001);
+  int event_count1 = 0;
+  auto id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(),
+                                        std::bind(event_cb, _1, _2, &event_count1),
+                                        kReadRemoteSupportedFeaturesCompleteEventCode);
+  EXPECT_NE(0u, id1);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  EXPECT_TRUE(cmd_channel()->RemoveQueuedCommand(id1));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(0, event_count0);
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesRsp);
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RunLoopUntilIdle();
+
+  // Only one command should have been sent.
+  EXPECT_EQ(1, transaction_count);
+  // The queued (then canceled) command should never have gotten an event.
+  EXPECT_EQ(0, event_count1);
+  // The sent command should have gotten two events (Command Status, Read Remote
+  // Supported Features Complete).
+  EXPECT_EQ(2, event_count0);
+}
+
+// Tests:
+//  - Calling RemoveQueuedCommand on an asynchronous command that has received both Command Status
+//    and command completion events returns false and has no effect.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kReadRemoteSupportedFeaturesCmd,
+      {&kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete}));
+  StartTestDevice();
+
+  int transaction_count = 0;
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
+                                        dispatcher());
+
+  int event_count = 0;
+  auto event_cb = [&event_count](CommandChannel::TransactionId id, const EventPacket& event) {
+    event_count++;
+  };
+
+  auto packet = MakeReadRemoteSupportedFeatures(0x0001);
+  auto id = cmd_channel()->SendCommand(std::move(packet), dispatcher(), std::move(event_cb),
+                                       kReadRemoteSupportedFeaturesCompleteEventCode);
+  EXPECT_NE(0u, id);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(2, event_count);
+  EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(id));
+
+  RunLoopUntilIdle();
+
+  // Only one command should have been sent.
+  EXPECT_EQ(1, transaction_count);
+  // The sent command should have received CommandStatus and InquiryComplete.
+  EXPECT_EQ(2, event_count);
+}
+
+// Tests:
+//  - Calling RemoveQueuedCommand on an asynchronous command that has already been sent to the
+//    controller returns false.
+//  - The command still notifies the callback for update and completion events.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadRemoteSupportedFeaturesCmd, {}));
+  StartTestDevice();
+
+  int transaction_count = 0;
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
+                                        dispatcher());
+
+  CommandChannel::TransactionId cmd_id;
+  int cmd_events = 0;
+  auto cmd_cb = [&cmd_id, &cmd_events](CommandChannel::TransactionId id, const EventPacket& event) {
+    EXPECT_EQ(cmd_id, id);
+    if (cmd_events == 0) {
+      EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+    }
+    cmd_events++;
+  };
+
+  auto cmd_packet = MakeReadRemoteSupportedFeatures(0x0001);
+  cmd_id = cmd_channel()->SendCommand(std::move(cmd_packet), dispatcher(), std::move(cmd_cb),
+                                      kReadRemoteSupportedFeaturesCompleteEventCode);
+  EXPECT_NE(0u, cmd_id);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(0, cmd_events);
+  EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
+
+  RunLoopUntilIdle();
+
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesRsp);
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  // The command should have gotten update and complete events.
+  EXPECT_EQ(2, cmd_events);
+}
+
+// Tests:
+//  - Calling RemoveQueuedCommand on an asynchronous command that has already been sent to the
+//    controller and gotten Command Status returns false.
+//  - The command still notifies the callback for completion event.
+TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kReadRemoteSupportedFeaturesCmd, {&kReadRemoteSupportedFeaturesRsp}));
+  StartTestDevice();
+
+  int transaction_count = 0;
+  test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
+                                        dispatcher());
+
+  CommandChannel::TransactionId cmd_id;
+  int cmd_events = 0;
+  auto cmd_cb = [&cmd_id, &cmd_events](CommandChannel::TransactionId id, const EventPacket& event) {
+    EXPECT_EQ(cmd_id, id);
+    if (cmd_events == 0) {
+      EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+    }
+    cmd_events++;
+  };
+
+  auto cmd_packet = MakeReadRemoteSupportedFeatures(0x0001);
+  cmd_id = cmd_channel()->SendCommand(std::move(cmd_packet), dispatcher(), std::move(cmd_cb),
+                                      kReadRemoteSupportedFeaturesCompleteEventCode);
+  EXPECT_NE(0u, cmd_id);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, cmd_events);
+  EXPECT_FALSE(cmd_channel()->RemoveQueuedCommand(cmd_id));
+
+  RunLoopUntilIdle();
+
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count);
+  // The command should have gotten update and complete events.
+  EXPECT_EQ(2, cmd_events);
 }
 
 TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {

@@ -92,6 +92,11 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
   callback_ = nullptr;
 }
 
+void CommandChannel::TransactionData::Cancel() {
+  timeout_task_.Cancel();
+  callback_ = nullptr;
+}
+
 CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   return [id = id_, cb = callback_.share()](const EventPacket& event) { cb(id, event); };
 }
@@ -236,6 +241,29 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
   return id;
 }
 
+bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
+  ZX_ASSERT(id != 0u);
+  std::lock_guard<std::mutex> lock(send_queue_mutex_);
+
+  auto it = std::find_if(send_queue_.begin(), send_queue_.end(),
+                         [id](const auto& cmd) { return cmd.data->id() == id; });
+  if (it != send_queue_.end()) {
+    bt_log(SPEW, "hci", "removing queued command id: %zu", id);
+    TransactionData& data = *it->data;
+    data.Cancel();
+    if (data.handler_id() != 0u) {
+      std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
+      RemoveEventHandlerInternal(data.handler_id());
+    }
+    send_queue_.erase(it);
+    return true;
+  }
+
+  // The transaction to remove has already finished or never existed.
+  bt_log(SPEW, "hci", "command to remove not found, id: %zu", id);
+  return false;
+}
+
 CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_code,
                                                                EventCallback event_callback,
                                                                async_dispatcher_t* dispatcher) {
@@ -329,9 +357,12 @@ void CommandChannel::TrySendQueuedCommands() {
   for (auto it = send_queue_.begin(); allowed_command_packets_ > 0 && it != send_queue_.end();) {
     std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
 
+    // Care must be taken not to dangle this reference if its owner QueuedCommand is destroyed.
+    const TransactionData& data = *it->data;
+
     // Can't send if another is running with an opcode this can't coexist with.
     bool excluded = false;
-    for (const auto& excluded_opcode : it->data->exclusions()) {
+    for (const auto& excluded_opcode : data.exclusions()) {
       if (pending_transactions_.count(excluded_opcode) != 0) {
         bt_log(DEBUG, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
                it->data->opcode(), excluded_opcode);
@@ -348,9 +379,9 @@ void CommandChannel::TrySendQueuedCommands() {
     // waiting for another transaction to complete on the same event.
     // It is unlikely but possible to have commands with different opcodes
     // wait on the same completion event.
-    EventCode complete_code = it->data->complete_event_code();
-    if (!IsAsync(complete_code) || it->data->handler_id() != 0 ||
-        event_code_handlers_.count(complete_code) == 0) {
+    if (!IsAsync(data.complete_event_code()) || data.handler_id() != 0 ||
+        event_code_handlers_.count(data.complete_event_code()) == 0) {
+      bt_log(DEBUG, "hci", "sending previously queued command id %zu", data.id());
       SendQueuedCommand(std::move(*it));
       it = send_queue_.erase(it);
       continue;
@@ -487,7 +518,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     unregister_async_handler = true;
   }
 
-  // If an asynchronous command failed, then remove it's event handler.
+  // If an asynchronous command failed, then remove its event handler.
   if (unregister_async_handler) {
     bt_log(DEBUG, "hci", "async command failed; removing its handler");
     RemoveEventHandlerInternal(pending->handler_id());
@@ -496,11 +527,11 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 }
 
 void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
-  EventCode event_code;
-  const std::unordered_multimap<EventCode, EventHandlerId>* event_handlers;
   std::vector<std::pair<EventCallback, async_dispatcher_t*>> pending_callbacks;
 
   {
+    EventCode event_code;
+    const std::unordered_multimap<EventCode, EventHandlerId>* event_handlers;
     std::lock_guard<std::mutex> lock(event_handler_mutex_);
 
     bool is_le_event = false;
@@ -522,8 +553,6 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
 
     auto iter = range.first;
     while (iter != range.second) {
-      EventCallback callback;
-      async_dispatcher_t* dispatcher;
       EventHandlerId event_id = iter->second;
       bt_log(DEBUG, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
       auto handler_iter = event_handler_id_map_.find(event_id);
@@ -532,8 +561,8 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       auto& handler = handler_iter->second;
       ZX_DEBUG_ASSERT(handler.event_code == event_code);
 
-      callback = handler.event_callback.share();
-      dispatcher = handler.dispatcher;
+      EventCallback callback = handler.event_callback.share();
+      async_dispatcher_t* const dispatcher = handler.dispatcher;
 
       ++iter;  // Advance so we don't point to an invalid iterator.
 

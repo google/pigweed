@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
@@ -20,6 +19,8 @@
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
@@ -69,9 +70,10 @@ class CommandChannel final {
   // This call takes ownership of the contents of |command_packet|.
   // |command_packet| MUST represent a valid HCI command packet.
   //
-  // |callback| will be called with all events related to the transaction.
-  // If the command results in a CommandStatus event, it will be sent to this
-  // callback before the event with |complete_event_code| is sent.
+  // |callback| will be called with all events related to the transaction,
+  // unless the transaction is removed with RemoveQueuedCommand. If the command
+  // results in a CommandStatus event, it will be sent to this callback before
+  // the event with |complete_event_code| is sent.
   //
   // Synchronous transactions complete with a CommandComplete HCI event.
   // This function is the only way to receive a CommandComplete event.
@@ -87,7 +89,6 @@ class CommandChannel final {
   // or a code that has been registered for events via AddEventHandler.
   //
   // TODO(jamuraa): Support LE Event Codes for LE Commands.
-  // TODO(jamuraa): Add a way to cancel commands (NET-619)
   //
   // Returns a ID unique to the command transaction, or zero if the parameters
   // are invalid.  This ID will be supplied to |callback| in its |id| parameter
@@ -115,6 +116,12 @@ class CommandChannel final {
       std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
       CommandCallback callback, const EventCode complete_event_code = kCommandCompleteEventCode,
       std::unordered_set<OpCode> exclusions = {});
+
+  // If the command identified by |id| has not been sent to the controller, remove it from the send
+  // queue and return true. In this case, its CommandCallback will not be notified. If the command
+  // identified by |id| has already been sent to the controller or if it does not exist, this has no
+  // effect and returns false.
+  [[nodiscard]] bool RemoveQueuedCommand(TransactionId id);
 
   // Used to identify an individual HCI event handler that was registered with
   // this CommandChannel.
@@ -206,6 +213,9 @@ class CommandChannel final {
 
     // Completes the transaction with |event|.
     void Complete(std::unique_ptr<EventPacket> event);
+
+    // Cancels the transaction timeout and erases the callback so it isn't called upon destruction.
+    void Cancel();
 
     // Makes an EventCallback that calls |callback_| correctly.
     EventCallback MakeCallback();
