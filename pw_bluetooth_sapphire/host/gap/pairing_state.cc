@@ -13,19 +13,39 @@ using hci::AuthRequirements;
 using hci::IOCapability;
 
 PairingState::PairingState(hci::Connection* link, StatusCallback status_cb)
-    : link_(link), initiator_(false), state_(State::kIdle), status_callback_(std::move(status_cb)) {
+    : link_(link), state_(State::kIdle), status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
   ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));
 }
 
-PairingState::InitiatorAction PairingState::InitiatePairing() {
+PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback status_cb) {
   if (state() == State::kIdle) {
-    initiator_ = true;
+    ZX_ASSERT(!is_pairing());
+    current_pairing_ = Pairing();
+    current_pairing_->initiator = true;
+    current_pairing_->initiator_callbacks.push_back(std::move(status_cb));
+    bt_log(TRACE, "gap-bredr", "Initiating pairing on %#.04x %zu callbacks", handle(),
+           current_pairing_->initiator_callbacks.size());
     state_ = State::kInitiatorPairingStarted;
     return InitiatorAction::kSendAuthenticationRequest;
   }
+
+  // More than one consumer may wish to initiate pairing (e.g. concurrent outbound L2CAP channels),
+  // but each should wait for the results of any ongoing pairing procedure instead of sending their
+  // own Authentication Request.
+  if (is_pairing()) {
+    ZX_ASSERT(state() != State::kIdle);
+    bt_log(TRACE, "gap-bredr", "Already pairing %#.04x; blocking callback on completion", handle());
+    current_pairing_->initiator_callbacks.push_back(std::move(status_cb));
+  } else {
+    // In the error state, we should expect no pairing to be created and cancel this particular
+    // request immediately.
+    ZX_ASSERT(state() == State::kFailed);
+    status_cb(handle(), hci::Status(HostError::kCanceled));
+  }
+
   return InitiatorAction::kDoNotSendAuthenticationRequest;
 }
 
@@ -34,6 +54,7 @@ std::optional<hci::IOCapability> PairingState::OnIoCapabilityRequest() {
     ZX_ASSERT(initiator());
     state_ = State::kInitiatorWaitIoCapResponse;
   } else if (state() == State::kResponderWaitIoCapRequest) {
+    ZX_ASSERT(is_pairing());
     ZX_ASSERT(!initiator());
     state_ = State::kWaitPairingEvent;
 
@@ -50,7 +71,9 @@ std::optional<hci::IOCapability> PairingState::OnIoCapabilityRequest() {
 void PairingState::OnIoCapabilityResponse(hci::IOCapability peer_iocap) {
   // TODO(xow): Store peer IO Capability.
   if (state() == State::kIdle) {
-    ZX_ASSERT(!initiator());
+    ZX_ASSERT(!is_pairing());
+    current_pairing_ = Pairing();
+    current_pairing_->initiator = false;
     state_ = State::kResponderWaitIoCapRequest;
   } else if (state() == State::kInitiatorWaitIoCapResponse) {
     ZX_ASSERT(initiator());
@@ -68,6 +91,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
     cb(false);
     return;
   }
+  ZX_ASSERT(is_pairing());
 
   // TODO(xow): Return actual user response.
   state_ = State::kWaitPairingComplete;
@@ -80,6 +104,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
     cb(std::nullopt);
     return;
   }
+  ZX_ASSERT(is_pairing());
 
   // TODO(xow): Return actual user response.
   state_ = State::kWaitPairingComplete;
@@ -91,6 +116,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
+  ZX_ASSERT(is_pairing());
 
   // TODO(xow): Display passkey to user.
   state_ = State::kWaitPairingComplete;
@@ -101,6 +127,7 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
+  ZX_ASSERT(is_pairing());
 
   // TODO(xow): Check |status_code|.
   state_ = State::kWaitLinkKey;
@@ -111,6 +138,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
     FailWithUnexpectedEvent(__func__);
     return;
   }
+  ZX_ASSERT(is_pairing());
 
   // TODO(xow): Store link key.
   if (initiator()) {
@@ -143,22 +171,21 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (status && !enabled) {
     // With Secure Connections, encryption should never be disabled (v5.0 Vol 2,
     // Part E, Sec 7.1.16) at all.
-    bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.04x",
-           link_->handle());
+    bt_log(WARN, "gap-bredr", "Pairing failed due to encryption disable on link %#.04x", handle());
     status = hci::Status(HostError::kFailed);
   }
-
-  // TODO(xow): Write link key to Connection::ltk to register new security
-  //            properties.
-  // TODO(xow): Notify |InitiatePairing| callers.
-  status_callback_(link_->handle(), status);
 
   // Perform state transition.
   if (status) {
     // Reset state for another pairing.
     state_ = State::kIdle;
-    initiator_ = false;
+  } else {
+    state_ = State::kFailed;
   }
+
+  // TODO(xow): Write link key to Connection::ltk to register new security
+  //            properties.
+  SignalStatus(status);
 }
 
 const char* PairingState::ToString(PairingState::State state) {
@@ -189,6 +216,24 @@ const char* PairingState::ToString(PairingState::State state) {
   return "";
 }
 
+void PairingState::SignalStatus(hci::Status status) {
+  bt_log(SPEW, "gap-bredr", "Signaling pairing listeners for %#.04x with %s", handle(),
+         bt_str(status));
+  std::vector<StatusCallback> callbacks_to_signal;
+  if (is_pairing()) {
+    std::swap(callbacks_to_signal, current_pairing_->initiator_callbacks);
+    current_pairing_ = std::nullopt;
+  }
+
+  // This PairingState may be destroyed by these callbacks (e.g. if signaling an error causes a
+  // disconnection), so care must be taken not to access any members.
+  const auto handle = this->handle();
+  status_callback_(handle, status);
+  for (auto& cb : callbacks_to_signal) {
+    cb(handle, status);
+  }
+}
+
 void PairingState::EnableEncryption() {
   if (!link_->StartEncryption()) {
     bt_log(ERROR, "gap-bredr", "Failed to enable encryption (state \"%s\")", ToString(state()));
@@ -203,7 +248,7 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   bt_log(ERROR, "gap-bredr", "Unexpected event %s while in state \"%s\"", handler_name,
          ToString(state()));
   state_ = State::kFailed;
-  status_callback_(link_->handle(), hci::Status(HostError::kNotSupported));
+  SignalStatus(hci::Status(HostError::kNotSupported));
 }
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {

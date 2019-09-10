@@ -5,9 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 
-#include <fbl/macros.h>
-
 #include <optional>
+#include <vector>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -158,17 +159,20 @@ class PairingState final {
 
   // True if there is currently a pairing procedure in progress that the local
   // device initiated.
-  bool initiator() const { return initiator_; }
+  bool initiator() const { return is_pairing() ? current_pairing_->initiator : false; }
 
   // Starts pairing against the peer, if pairing is not already in progress.
   // If not, this device becomes the pairing initiator, and returns
   // |kSendAuthenticationRequest| to indicate that the caller shall send an
   // Authentication Request for this peer.
+  //
+  // When pairing completes or errors out, the |status_cb| of each call to this
+  // function will be invoked with the result.
   enum class InitiatorAction {
     kDoNotSendAuthenticationRequest,
     kSendAuthenticationRequest,
   };
-  [[nodiscard]] InitiatorAction InitiatePairing();
+  [[nodiscard]] InitiatorAction InitiatePairing(StatusCallback status_cb);
 
   // Event handlers. Caller must ensure that the event is addressed to the link
   // for this PairingState.
@@ -243,9 +247,27 @@ class PairingState final {
     kFailed,
   };
 
+  // Extra information for pairing constructed when a pairing procedure begins and destroyed when
+  // the pairing procedure is reset or errors out.
+  struct Pairing final {
+    // True if the local device initiated pairing.
+    bool initiator;
+
+    // Callbacks from callers of |InitiatePairing|.
+    std::vector<StatusCallback> initiator_callbacks;
+  };
+
   static const char* ToString(State state);
 
   State state() const { return state_; }
+
+  bool is_pairing() const { return current_pairing_.has_value(); }
+
+  hci::ConnectionHandle handle() const { return link_->handle(); }
+
+  // Call the permanent status callback this object was created with as well as any callbacks from
+  // local initiators. Resets the current pairing but does not change the state machine state.
+  void SignalStatus(hci::Status status);
 
   // Called to enable encryption on the link for this peer. Sets |state_| to
   // kWaitEncryption.
@@ -259,11 +281,12 @@ class PairingState final {
   // The BR/EDR link whose pairing is being driven by this object.
   hci::Connection* const link_;
 
-  // Set to true by locally-initiated pairing and cleared when pairing is reset.
-  bool initiator_;
-
   // State machine representation.
   State state_;
+
+  // Represents an ongoing pairing procedure. Will contain a value when the state isn't kIdle or
+  // kFailed.
+  std::optional<Pairing> current_pairing_;
 
   // Callback that status of this pairing is reported back through.
   StatusCallback status_callback_;
