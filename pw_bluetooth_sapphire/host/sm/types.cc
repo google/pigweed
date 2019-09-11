@@ -73,6 +73,25 @@ SecurityProperties::SecurityProperties(hci::LinkKeyType lk_type)
                       "Can't infer security information from a Changed Combination Key");
 }
 
+std::optional<hci::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
+  if (level() == SecurityLevel::kNoSecurity) {
+    return std::nullopt;
+  }
+  if (authenticated()) {
+    if (secure_connections()) {
+      return hci::LinkKeyType::kAuthenticatedCombination256;
+    } else {
+      return hci::LinkKeyType::kAuthenticatedCombination192;
+    }
+  } else {
+    if (secure_connections()) {
+      return hci::LinkKeyType::kUnauthenticatedCombination256;
+    } else {
+      return hci::LinkKeyType::kUnauthenticatedCombination192;
+    }
+  }
+}
+
 std::string SecurityProperties::ToString() const {
   return fxl::StringPrintf("[security: %s, key size: %lu, %s]", LevelToString(level()),
                            enc_key_size(),

@@ -62,21 +62,35 @@ class SecurityProperties final {
   SecurityProperties();
   SecurityProperties(SecurityLevel level, size_t enc_key_size, bool secure_connections);
 
-  // Build from a BR/EDR Link Key that resulted from pairing. |lk_type| should
-  // not be kChangedCombination, because that means that the link key is the
-  // same type as before it was changed.
+  // Build from a BR/EDR Link Key that resulted from pairing. |lk_type| should not be
+  // kChangedCombination, because that means that the link key is the same type as before it was
+  // changed, which this has no knowledge of.
   //
-  // Legacy pairing keys will be considered to have security level kNoSecurity
-  // because legacy pairing is superceded by Secure Simple Pairing in Core Spec
-  // v2.1 + EDR in 2007. Backwards compatiblity is optional per v5.0, Vol 3,
-  // Part C, Section 5. Furthermore, the last Core Spec with only legacy pairing
-  // (v2.0 + EDR) is to be withdrawn by Bluetooth SIG on 2019-01-28.
+  // Legacy pairing keys will be considered to have security level kNoSecurity because legacy
+  // pairing is superceded by Secure Simple Pairing in Core Spec v2.1 + EDR in 2007. Backwards
+  // compatiblity is optional per v5.0, Vol 3, Part C, Section 5. Furthermore, the last Core Spec
+  // with only legacy pairing (v2.0 + EDR) was withdrawn by Bluetooth SIG on 2019-01-28.
+  //
+  // TODO(36360): SecurityProperties will treat kDebugCombination keys as "encrypted,
+  // unauthenticated, and no Secure Connections" to potentially allow their use as valid link keys,
+  // but does not store the fact that they originate from a controller in pairing debug mode, a
+  // potential hazard. Care should be taken at the controller interface to enforce particular
+  // policies regarding debug keys.
   explicit SecurityProperties(hci::LinkKeyType lk_type);
 
   SecurityLevel level() const { return level_; }
   size_t enc_key_size() const { return enc_key_size_; }
   bool secure_connections() const { return sc_; }
   bool authenticated() const { return level_ == SecurityLevel::kAuthenticated; }
+
+  // Returns the BR/EDR link key type that produces the current security properties. Returns
+  // std::nullopt if the current security level is kNoSecurity.
+  //
+  // SecurityProperties does not encode the use of LinkKeyType::kDebugCombination keys (see Core
+  // Spec v5.0 Vol 2, Part E Section 7.6.4), produced when a controller is in debug mode, so
+  // SecurityProperties constructed from LinkKeyType::kDebugCombination returns
+  // LinkKeyType::kUnauthenticatedCombination192 from this method.
+  std::optional<hci::LinkKeyType> GetLinkKeyType() const;
 
   // Returns a string representation of these properties.
   std::string ToString() const;
