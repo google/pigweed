@@ -632,6 +632,45 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   }
 }
 
+TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
+  // Advance state machine.
+  pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+
+  // Inject failure status.
+  pairing_state().OnSimplePairingComplete(hci::StatusCode::kAuthenticationFailure);
+  EXPECT_EQ(1, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_FALSE(status_handler().status()->is_success());
+
+  RETURN_IF_FATAL(InjectEvent());
+  EXPECT_EQ(2, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+}
+
+TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
+  // Advance state machine.
+  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+
+  // Inject failure status.
+  pairing_state().OnAuthenticationComplete(hci::StatusCode::kAuthenticationFailure);
+  EXPECT_EQ(1, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_FALSE(status_handler().status()->is_success());
+
+  RETURN_IF_FATAL(InjectEvent());
+  EXPECT_EQ(2, status_handler().call_count());
+  ASSERT_TRUE(status_handler().status());
+  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+}
+
 // PairingAction expected answers are inferred from "device A" Authentication
 // Stage 1 specs in v5.0 Vol 3, Part C, Sec 5.2.2.6, Table 5.7.
 TEST(GAP_PairingStateTest, GetInitiatorPairingAction) {

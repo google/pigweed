@@ -129,7 +129,13 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
   }
   ZX_ASSERT(is_pairing());
 
-  // TODO(xow): Check |status_code|.
+  if (const hci::Status status(status_code);
+      bt_is_error(status, INFO, "gap-bredr", "Pairing failed on link %#.04x", handle())) {
+    state_ = State::kFailed;
+    SignalStatus(status);
+    return;
+  }
+
   state_ = State::kWaitLinkKey;
 }
 
@@ -155,7 +161,13 @@ void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
   }
   ZX_ASSERT(initiator());
 
-  // TODO(xow): Check |status_code|.
+  if (const hci::Status status(status_code);
+      bt_is_error(status, INFO, "gap-bredr", "Authentication failed on link %#.04x", handle())) {
+    state_ = State::kFailed;
+    SignalStatus(status);
+    return;
+  }
+
   EnableEncryption();
 }
 
