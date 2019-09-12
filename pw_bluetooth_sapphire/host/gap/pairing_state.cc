@@ -12,8 +12,8 @@ namespace gap {
 using hci::AuthRequirements;
 using hci::IOCapability;
 
-PairingState::PairingState(hci::Connection* link, StatusCallback status_cb)
-    : link_(link), state_(State::kIdle), status_callback_(std::move(status_cb)) {
+PairingState::PairingState(PeerId peer_id, hci::Connection* link, StatusCallback status_cb)
+    : peer_id_(peer_id), link_(link), state_(State::kIdle), status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
   ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
   ZX_ASSERT(status_callback_);
