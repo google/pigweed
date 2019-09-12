@@ -107,33 +107,6 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
 
 // TODO(jamuraa): Use typed tests to test LowEnergyAdvertiser common properties
 
-// - Error when the advertisement data is too large
-TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisementSizeTest) {
-  // 4 bytes long (adv length: 7 bytes)
-  auto reasonable_data = CreateStaticByteBuffer(0x20, 0x06, 0xaa, 0xfe, 'T', 'e', 's', 't');
-  // 30 bytes long (adv length: 33 bytes)
-  auto oversize_data = CreateStaticByteBuffer(
-      0x20, 0x20, 0xaa, 0xfe, 'T', 'h', 'e', 'q', 'u', 'i', 'c', 'k', 'b', 'r', 'o', 'w', 'n', 'f',
-      'o', 'x', 'w', 'a', 'g', 'g', 'e', 'd', 'i', 't', 's', 't', 'a', 'i', 'l', '.');
-
-  DynamicByteBuffer scan_data;
-
-  // Should accept ads that are of reasonable size
-  advertiser()->StartAdvertising(kPublicAddress, reasonable_data, scan_data, nullptr, kTestInterval,
-                                 false, GetSuccessCallback());
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(MoveLastStatus());
-
-  advertiser()->StopAdvertising(kPublicAddress);
-
-  // And reject ads that are too big
-  advertiser()->StartAdvertising(kPublicAddress, oversize_data, scan_data, nullptr, kTestInterval,
-                                 false, GetErrorCallback());
-  EXPECT_TRUE(MoveLastStatus());
-}
-
 // - Stops the advertisement when an incoming connection comes
 // - Calls the connection callback correctly when it's setup
 // - Checks that advertising state is cleaned up.
@@ -331,6 +304,30 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingParameters) {
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(fake_adv_state.enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, fake_adv_state.own_address_type);
+}
+
+TEST_F(HCI_LegacyLowEnergyAdvertiserTest, AdvertisingDataTooLong) {
+  DynamicByteBuffer valid(kMaxLEAdvertisingDataLength);
+  DynamicByteBuffer invalid(kMaxLEAdvertisingDataLength + 1);
+
+  // Advertising data too large.
+  advertiser()->StartAdvertising(kRandomAddress, invalid, valid, nullptr, kTestInterval, false,
+                                 GetErrorCallback());
+  RunLoopUntilIdle();
+  auto status = MoveLastStatus();
+  ASSERT_TRUE(status);
+  EXPECT_EQ(HostError::kAdvertisingDataTooLong, status->error());
+}
+
+TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ScanResponseTooLong) {
+  DynamicByteBuffer valid(kMaxLEAdvertisingDataLength);
+  DynamicByteBuffer invalid(kMaxLEAdvertisingDataLength + 1);
+  advertiser()->StartAdvertising(kRandomAddress, valid, invalid, nullptr, kTestInterval, false,
+                                 GetErrorCallback());
+  RunLoopUntilIdle();
+  auto status = MoveLastStatus();
+  ASSERT_TRUE(status);
+  EXPECT_EQ(HostError::kScanResponseTooLong, status->error());
 }
 
 // Tests that advertising interval values are capped within the allowed range.

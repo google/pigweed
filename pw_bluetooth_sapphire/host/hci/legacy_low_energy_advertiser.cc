@@ -116,13 +116,13 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
 
   if (data.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "advertising data too large");
-    callback(Status(HostError::kInvalidParameters));
+    callback(Status(HostError::kAdvertisingDataTooLong));
     return;
   }
 
   if (scan_rsp.size() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "scan response too large");
-    callback(Status(HostError::kInvalidParameters));
+    callback(Status(HostError::kScanResponseTooLong));
     return;
   }
 

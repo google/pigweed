@@ -90,6 +90,11 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   //
   // |callback| may be called before this function returns, but will
   // be called before any calls to |connect_callback|.
+  //
+  // The maxium advertising and scan response data sizes are determined by the Bluetooth controller
+  // (4.x supports up to 31 bytes while 5.x is extended up to 251). If |data| and |scan_rsp| exceed
+  // this internal limit, a HostError::kAdvertisingDataTooLong or HostError::kScanResponseTooLong
+  // error will be generated.
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
   virtual void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
                                 const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,

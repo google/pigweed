@@ -32,6 +32,12 @@ enum class HostError : uint8_t {
   // The operation was initiated with invalid parameters.
   kInvalidParameters,
 
+  // An advertising data blob is too large due to controller constraints.
+  kAdvertisingDataTooLong,
+
+  // A scan response data blob is too large due to controller constraints.
+  kScanResponseTooLong,
+
   // The operation was canceled.
   kCanceled,
 

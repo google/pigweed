@@ -18,6 +18,10 @@ std::string HostErrorToString(HostError error) {
       return "timed out";
     case HostError::kInvalidParameters:
       return "invalid parameters";
+    case HostError::kAdvertisingDataTooLong:
+      return "advertising data too long";
+    case HostError::kScanResponseTooLong:
+      return "scan response too long";
     case HostError::kCanceled:
       return "canceled";
     case HostError::kInProgress:

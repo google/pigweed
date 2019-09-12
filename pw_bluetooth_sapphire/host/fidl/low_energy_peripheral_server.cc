@@ -38,6 +38,25 @@ std::string MessageFromStatus(bt::hci::Status status) {
   }
 }
 
+fble::PeripheralError FidlErrorFromStatus(bt::hci::Status status) {
+  switch (status.error()) {
+    case bt::HostError::kNoError:
+      ZX_ASSERT("FidlErrorFromStatus called on success status");
+      break;
+    case bt::HostError::kNotSupported:
+      return fble::PeripheralError::NOT_SUPPORTED;
+    case bt::HostError::kInvalidParameters:
+      return fble::PeripheralError::INVALID_PARAMETERS;
+    case bt::HostError::kAdvertisingDataTooLong:
+      return fble::PeripheralError::ADVERTISING_DATA_TOO_LONG;
+    case bt::HostError::kScanResponseTooLong:
+      return fble::PeripheralError::SCAN_RESPONSE_DATA_TOO_LONG;
+    default:
+      break;
+  }
+  return fble::PeripheralError::FAILED;
+}
+
 // TODO(BT-812): Remove this once the string IDs have been removed from the FIDL
 // API.
 std::optional<bt::gap::AdvertisementId> AdvertisementIdFromString(const std::string& id) {
@@ -173,7 +192,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
 
     fble::Peripheral_StartAdvertising_Result result;
     if (!status) {
-      result.set_err(fble::PeripheralError::FAILED);
+      result.set_err(FidlErrorFromStatus(status));
       self->advertisement_.reset();
       callback(std::move(result));
       return;
