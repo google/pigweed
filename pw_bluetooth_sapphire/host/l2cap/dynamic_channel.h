@@ -6,10 +6,9 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_
 
 #include <lib/fit/function.h>
+#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include <memory>
-
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
@@ -105,10 +104,9 @@ class DynamicChannel {
   // Signal the registry of a remote-requested closure.
   void OnDisconnected();
 
-  // Checks remote_cid for validity and uniqueness.
-  // Returns true on success, false on error.
-  // bool SetRemoteChannelId(ChannelId remote_cid);
-  [[nodiscard]] bool SetRemoteChannelId(ChannelId remote_cid);
+  // TODO(NET-1320): This should query its DynamicChannelRegistry for uniqueness
+  // among open dynamic channels of this remote ID.
+  void set_remote_cid(ChannelId remote_cid) { remote_cid_ = remote_cid; }
 
   void set_opened() { opened_ = true; }
 

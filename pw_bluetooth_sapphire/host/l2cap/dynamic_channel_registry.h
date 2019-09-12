@@ -97,11 +97,7 @@ class DynamicChannelRegistry {
 
   // Returns null if not found. Can be downcast to the derived DynamicChannel
   // created by MakeOutbound.
-  DynamicChannel* FindChannelByLocalId(ChannelId local_cid) const;
-
-  // Searches for alive dynamic channel with given remote channel id.
-  // Returns null if not found.
-  DynamicChannel* FindChannelByRemoteId(ChannelId remote_cid) const;
+  DynamicChannel* FindChannel(ChannelId local_cid) const;
 
  private:
   friend class DynamicChannel;
