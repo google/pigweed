@@ -142,7 +142,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   const std::optional<DeviceAddress>& le_random_address() const { return le_random_address_; }
 
-  // Returns the current Local Name.set in the controller
+  // Returns the current local name set in the controller
   const std::string& local_name() const { return local_name_; }
 
   // Adds a fake remote peer. Returns false if a peer with the same address was previously
@@ -299,7 +299,8 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   uint16_t page_scan_interval_;
   uint16_t page_scan_window_;
 
-  // The GAP local name, as written/read by HCI_(Read/Write)_Local_Name
+  // The GAP local name, as written/read by HCI_(Read/Write)_Local_Name. While the aforementioned
+  // HCI commands carry the name in a 248 byte buffer, |local_name_| contains the intended value.
   std::string local_name_;
 
   // Variables used for

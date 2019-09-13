@@ -60,6 +60,15 @@ class AdapterTest : public TestingBase {
     RunLoopUntilIdle();
   }
 
+  bool EnsureInitialized() {
+    bool initialized = false;
+    InitializeAdapter([&](bool success) {
+      EXPECT_TRUE(success);
+      initialized = true;
+    });
+    return initialized;
+  }
+
  protected:
   bool transport_closed_called() const { return transport_closed_called_; }
 
@@ -237,24 +246,15 @@ TEST_F(GAP_AdapterTest, ShutDownDuringInitialize) {
 
 TEST_F(GAP_AdapterTest, SetNameError) {
   std::string kNewName = "something";
-  bool success;
-  hci::Status result;
-  int init_cb_count = 0;
-  auto init_cb = [&](bool cb_success) {
-    success = cb_success;
-    init_cb_count++;
-  };
 
   // Make all settings valid but make WriteLocalName command fail.
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
   test_device()->SetDefaultResponseStatus(hci::kWriteLocalName, hci::StatusCode::kHardwareFailure);
+  ASSERT_TRUE(EnsureInitialized());
 
-  InitializeAdapter(std::move(init_cb));
-  EXPECT_TRUE(success);
-  EXPECT_EQ(1, init_cb_count);
-
+  hci::Status result;
   auto name_cb = [&result](const auto& status) { result = status; };
 
   adapter()->SetLocalName(kNewName, name_cb);
@@ -267,33 +267,49 @@ TEST_F(GAP_AdapterTest, SetNameError) {
 
 TEST_F(GAP_AdapterTest, SetNameSuccess) {
   const std::string kNewName = "Fuchsia BT 💖✨";
-  bool success;
-  hci::Status result;
-  int init_cb_count = 0;
-  auto init_cb = [&](bool cb_success) {
-    success = cb_success;
-    init_cb_count++;
-  };
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
+  ASSERT_TRUE(EnsureInitialized());
 
-  InitializeAdapter(std::move(init_cb));
-  EXPECT_TRUE(success);
-  EXPECT_EQ(1, init_cb_count);
-
+  hci::Status result;
   auto name_cb = [&result](const auto& status) { result = status; };
-
   adapter()->SetLocalName(kNewName, name_cb);
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(result);
-  // Local name is only valid up to the first zero
-  for (size_t i = 0; i < kNewName.size(); i++) {
-    EXPECT_EQ(kNewName[i], test_device()->local_name()[i]);
-  }
+  EXPECT_EQ(kNewName, test_device()->local_name());
+}
+
+// Tests that writing a local name that is larger than the maximum size succeeds.
+TEST_F(GAP_AdapterTest, SetNameLargerThanMax) {
+  const std::string long_name(hci::kMaxNameLength, 'x');
+
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  ASSERT_TRUE(EnsureInitialized());
+
+  hci::Status result;
+  auto name_cb = [&result](const auto& status) { result = status; };
+  adapter()->SetLocalName(long_name, name_cb);
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result);
+  EXPECT_EQ(long_name, test_device()->local_name());
+}
+
+TEST_F(GAP_AdapterTest, DefaultName) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  ASSERT_TRUE(EnsureInitialized());
+
+  EXPECT_EQ(kDefaultLocalName, test_device()->local_name());
+  EXPECT_EQ(kDefaultLocalName, adapter()->state().local_name());
 }
 
 TEST_F(GAP_AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache()); }

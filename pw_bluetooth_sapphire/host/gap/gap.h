@@ -89,6 +89,9 @@ enum AdvFlag : uint8_t {
 };
 // clang-format on
 
+// Placeholder assigned as the local name when gap::Adapter is initialized.
+constexpr char kDefaultLocalName[] = "fuchsia";
+
 // Constants used in BR/EDR Inquiry (Core Spec v5.0, Vol 2, Part C, Appendix A)
 // Default cycles value for length of Inquiry. See T_gap(100).
 // This is in 1.28s time slice units, and is 10.24 seconds.

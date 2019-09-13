@@ -916,7 +916,13 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
     }
     case hci::kWriteLocalName: {
       const auto& in_params = command_packet.payload<hci::WriteLocalNameCommandParams>();
-      local_name_ = std::string(in_params.local_name, in_params.local_name + hci::kMaxNameLength);
+      size_t name_len = 0;
+      for (; name_len < hci::kMaxNameLength; ++name_len) {
+        if (in_params.local_name[name_len] == '\0') {
+          break;
+        }
+      }
+      local_name_ = std::string(in_params.local_name, in_params.local_name + name_len);
       RespondWithSuccess(opcode);
       break;
     }
@@ -924,7 +930,8 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       hci::ReadLocalNameReturnParams params;
       params.status = hci::StatusCode::kSuccess;
       auto mut_view = MutableBufferView(params.local_name, hci::kMaxNameLength);
-      mut_view.Write((uint8_t*)(local_name_.c_str()), hci::kMaxNameLength);
+      mut_view.Write((uint8_t*)(local_name_.c_str()),
+                     std::min(local_name_.length() + 1, hci::kMaxNameLength));
       RespondWithCommandComplete(hci::kReadLocalName, BufferView(&params, sizeof(params)));
       break;
     }

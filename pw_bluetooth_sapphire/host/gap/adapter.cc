@@ -5,7 +5,6 @@
 #include "adapter.h"
 
 #include <endian.h>
-#include <unistd.h>
 
 #include "bredr_connection_manager.h"
 #include "bredr_discovery_manager.h"
@@ -27,24 +26,6 @@
 
 namespace bt {
 namespace gap {
-
-namespace {
-
-std::string GetHostname() {
-  char host_name_buffer[HOST_NAME_MAX + 1];
-  int result = gethostname(host_name_buffer, sizeof(host_name_buffer));
-
-  if (result < 0) {
-    bt_log(TRACE, "gap", "gethostname failed");
-    return std::string("");
-  }
-
-  host_name_buffer[sizeof(host_name_buffer) - 1] = '\0';
-
-  return std::string(host_name_buffer);
-}
-
-}  // namespace
 
 Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
                  std::optional<fbl::RefPtr<data::Domain>> data_domain)
@@ -531,14 +512,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
   }
 
-  // Set the local name default.
-  // TODO(jamuraa): set this by default in bt-gap or HostServer instead
-  std::string local_name("fuchsia");
-  auto nodename = GetHostname();
-  if (!nodename.empty()) {
-    local_name += " " + nodename;
-  }
-  SetLocalName(local_name, [](const auto&) {});
+  SetLocalName(kDefaultLocalName, [](auto status) {});
 
   // Set the default device class - a computer with audio.
   // TODO(BT-641): set this from a platform configuration file
