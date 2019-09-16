@@ -6,6 +6,7 @@
 
 #include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
@@ -25,7 +26,11 @@ DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, Channe
 
 bool DynamicChannel::SetRemoteChannelId(ChannelId remote_cid) {
   // do not allow duplicate remote CIDs
-  if (registry_->FindChannelByRemoteId(remote_cid)) {
+  auto channel = registry_->FindChannelByRemoteId(remote_cid);
+  if (channel && channel != this) {
+    bt_log(WARN, "l2cap",
+           "channel %#.4x: received remote channel id %#.4x that is already set for channel %#.4x",
+           local_cid(), remote_cid, channel->local_cid());
     return false;
   }
 

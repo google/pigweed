@@ -545,6 +545,51 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       PeerConnectionResponseWithSameRemoteChannelIdAsPeerPendingConnectionResponseSucceeds) {
+  const auto kOkPendingConnRsp = MakeConnectionResponseWithResultPending(kLocalCId, kRemoteCId);
+  auto conn_rsp_id =
+      EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                          {SignalingChannel::Status::kSuccess, kOkPendingConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+      EXPECT_TRUE(chan->IsConnected());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
+      EXPECT_EQ(kRemoteCId, chan->remote_cid());
+    }
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto) { close_cb_count++; });
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(sig()->ReceiveResponses(
+      conn_rsp_id, {{SignalingChannel::Status::kSuccess, kOkConnRsp.view()}}));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(open_cb_count, 1);
+  EXPECT_EQ(close_cb_count, 0);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kRejectConnRsp.view()});
