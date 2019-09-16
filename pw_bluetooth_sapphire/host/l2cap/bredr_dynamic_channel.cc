@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -45,8 +46,23 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
   bt_log(SPEW, "l2cap-bredr", "Got Connection Request for PSM %#.4x from channel %#.4x", psm,
          remote_cid);
 
-  // TODO(NET-1320): Check if remote ID is already in use and if so, respond
-  // with kSourceCIDAlreadyAllocated
+  if (remote_cid == kInvalidChannelId) {
+    bt_log(TRACE, "l2cap-bredr",
+           "Invalid source CID; rejecting connection for PSM %#.4x from channel %#.4x", psm,
+           remote_cid);
+    responder->Send(kInvalidChannelId, ConnectionResult::kInvalidSourceCID,
+                    ConnectionStatus::kNoInfoAvailable);
+    return;
+  }
+
+  if (FindChannelByRemoteId(remote_cid) != nullptr) {
+    bt_log(TRACE, "l2cap-bredr",
+           "Remote CID already in use; rejecting connection for PSM %#.4x from channel %#.4x", psm,
+           remote_cid);
+    responder->Send(kInvalidChannelId, ConnectionResult::kSourceCIDAlreadyAllocated,
+                    ConnectionStatus::kNoInfoAvailable);
+    return;
+  }
 
   ChannelId local_cid = FindAvailableChannelId();
   if (local_cid == kInvalidChannelId) {
@@ -72,7 +88,7 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
 void BrEdrDynamicChannelRegistry::OnRxConfigReq(
     ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
     BrEdrCommandHandler::ConfigurationResponder* responder) {
-  auto channel = static_cast<BrEdrDynamicChannel*>(FindChannel(local_cid));
+  auto channel = static_cast<BrEdrDynamicChannel*>(FindChannelByLocalId(local_cid));
   if (channel == nullptr) {
     bt_log(WARN, "l2cap-bredr", "ID %#.4x not found for Configuration Request", local_cid);
     responder->RejectInvalidChannelId();
@@ -85,7 +101,7 @@ void BrEdrDynamicChannelRegistry::OnRxConfigReq(
 void BrEdrDynamicChannelRegistry::OnRxDisconReq(
     ChannelId local_cid, ChannelId remote_cid,
     BrEdrCommandHandler::DisconnectionResponder* responder) {
-  auto channel = static_cast<BrEdrDynamicChannel*>(FindChannel(local_cid));
+  auto channel = static_cast<BrEdrDynamicChannel*>(FindChannelByLocalId(local_cid));
   if (channel == nullptr || channel->remote_cid() != remote_cid) {
     bt_log(WARN, "l2cap-bredr", "ID %#.4x not found for Disconnection Request (remote ID %#.4x)",
            local_cid, remote_cid);
@@ -362,13 +378,21 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
     bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Remote is pending open, status %#.4hx", local_cid(),
            rsp.conn_status());
 
+    if (rsp.remote_cid() == kInvalidChannelId) {
+      return true;
+    }
+
     // If the remote provides a channel ID, then we store it. It can be used for
     // disconnection from this point forward.
-    if (rsp.remote_cid() != kInvalidChannelId) {
-      set_remote_cid(rsp.remote_cid());
-      bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
-             remote_cid());
+    if (!SetRemoteChannelId(rsp.remote_cid())) {
+      bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Remote channel ID %#.4x is not unique",
+             local_cid(), rsp.remote_cid());
+      PassOpenError();
+      return false;
     }
+
+    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
+           remote_cid());
     return true;  // Final connection result still expected
   }
 
@@ -404,10 +428,16 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
   }
 
   state_ |= kConnResponded;
-  set_remote_cid(rsp.remote_cid());
+
+  if (!SetRemoteChannelId(rsp.remote_cid())) {
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Remote channel ID %#.4x is not unique",
+           local_cid(), rsp.remote_cid());
+    PassOpenError();
+    return false;
+  }
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
-         remote_cid());
+         rsp.remote_cid());
 
   TrySendLocalConfig();
   return false;

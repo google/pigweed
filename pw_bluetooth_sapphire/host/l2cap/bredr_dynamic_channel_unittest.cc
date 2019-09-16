@@ -8,9 +8,13 @@
 
 #include <vector>
 
+#include "gtest/gtest.h"
 #include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -24,6 +28,7 @@ namespace {
 constexpr uint16_t kPsm = 0x0001;
 constexpr uint16_t kInvalidPsm = 0x0002;  // Valid PSMs are odd.
 constexpr ChannelId kLocalCId = 0x0040;
+constexpr ChannelId kLocalCId2 = 0x0041;
 constexpr ChannelId kRemoteCId = 0x60a3;
 constexpr ChannelId kBadCId = 0x003f;  // Not a dynamic channel.
 
@@ -41,6 +46,15 @@ const ByteBuffer& kConnReq = CreateStaticByteBuffer(
 
     // Source CID
     LowerBits(kLocalCId), UpperBits(kLocalCId));
+
+auto MakeConnectionRequest(ChannelId src_id, PSM psm) {
+  return CreateStaticByteBuffer(
+      // PSM
+      LowerBits(psm), UpperBits(psm),
+
+      // Source CID
+      LowerBits(src_id), UpperBits(src_id));
+}
 
 const ByteBuffer& kInboundConnReq = CreateStaticByteBuffer(
     // PSM
@@ -91,6 +105,21 @@ const ByteBuffer& kPendingConnRspWithId = CreateStaticByteBuffer(
     // Status (Authorization Pending)
     0x02, 0x00);
 
+auto MakeConnectionResponseWithResultPending(ChannelId src_id, ChannelId dst_id) {
+  return CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(dst_id), UpperBits(dst_id),
+
+      // Source CID
+      LowerBits(src_id), UpperBits(src_id),
+
+      // Result (Pending)
+      0x01, 0x00,
+
+      // Status (Authorization Pending)
+      0x02, 0x00);
+}
+
 const ByteBuffer& kOkConnRsp = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kRemoteCId), UpperBits(kRemoteCId),
@@ -103,6 +132,21 @@ const ByteBuffer& kOkConnRsp = CreateStaticByteBuffer(
 
     // Status (No further information available)
     0x00, 0x00);
+
+auto MakeConnectionResponse(ChannelId src_id, ChannelId dst_id) {
+  return CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(dst_id), UpperBits(dst_id),
+
+      // Source CID
+      LowerBits(src_id), UpperBits(src_id),
+
+      // Result (Successful)
+      0x00, 0x00,
+
+      // Status (No further information available)
+      0x00, 0x00);
+}
 
 const ByteBuffer& kInvalidConnRsp = CreateStaticByteBuffer(
     // Destination CID (Not a dynamic channel ID)
@@ -139,6 +183,19 @@ const ByteBuffer& kInboundOkConnRsp = CreateStaticByteBuffer(
 
     // Result (Successful)
     0x00, 0x00,
+
+    // Status (No further information available)
+    0x00, 0x00);
+
+const ByteBuffer& kOutboundSourceCIdAlreadyAllocatedConnRsp = CreateStaticByteBuffer(
+    // Destination CID (Invalid)
+    0x00, 0x00,
+
+    // Source CID (Invalid)
+    LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+
+    // Result (Connection refused - source CID already allocated)
+    0x07, 0x00,
 
     // Status (No further information available)
     0x00, 0x00);
@@ -203,6 +260,13 @@ const ByteBuffer& kConfigReq = CreateStaticByteBuffer(
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
+
+    // Flags
+    0x00, 0x00);
+
+const ByteBuffer& kInboundConfigReq2 = CreateStaticByteBuffer(
+    // Destination CID
+    LowerBits(kLocalCId2), UpperBits(kLocalCId2),
 
     // Flags
     0x00, 0x00);
@@ -313,6 +377,173 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrDynamicChannelTest);
 };
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       InboundConnectionResponseReusingChannelIdCausesInboundChannelFailure) {
+  // make successful connection
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+      EXPECT_TRUE(chan->IsConnected());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
+      EXPECT_EQ(kRemoteCId, chan->remote_cid());
+    }
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto chan) {
+    EXPECT_TRUE(chan);
+    close_cb_count++;
+  });
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+
+  // simulate inbound request to make new connection using already allocated remote CId
+  sig()->ReceiveExpect(kConnectionRequest, kInboundConnReq,
+                       kOutboundSourceCIdAlreadyAllocatedConnRsp);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       PeerConnectionResponseReusingChannelIdCausesOutboundChannelFailure) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+
+  // make successful connection
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+      EXPECT_TRUE(chan->IsConnected());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
+      EXPECT_EQ(kRemoteCId, chan->remote_cid());
+    }
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto chan) {
+    EXPECT_TRUE(chan);
+    close_cb_count++;
+  });
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+
+  // peer responds with already allocated remote CID
+  const auto kConnReq2 = MakeConnectionRequest(kLocalCId2, kPsm);
+  const auto kOkConnRspSamePeerCId = MakeConnectionResponse(kLocalCId2, kRemoteCId);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq2.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRspSamePeerCId.view()});
+
+  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId2);
+  EXPECT_FALSE(channel->IsConnected());
+  EXPECT_FALSE(channel->IsOpen());
+
+  int close_cb_count2 = 0;
+  set_channel_close_cb([&close_cb_count2](auto) { close_cb_count2++; });
+
+  int open_cb_count2 = 0;
+  channel->Open([&open_cb_count2] { open_cb_count2++; });
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_FALSE(channel->IsConnected());
+  EXPECT_FALSE(channel->IsOpen());
+  EXPECT_EQ(open_cb_count2, 1);
+  EXPECT_EQ(close_cb_count2, 0);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       PeerPendingConnectionResponseReusingChannelIdCausesOutboundChannelFailure) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+
+  // make successful connection
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+      EXPECT_TRUE(chan->IsConnected());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
+      EXPECT_EQ(kRemoteCId, chan->remote_cid());
+    }
+    open_cb_count++;
+  };
+
+  int close_cb_count = 0;
+  set_channel_close_cb([&close_cb_count](auto chan) {
+    EXPECT_TRUE(chan);
+    close_cb_count++;
+  });
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+
+  EXPECT_EQ(1, open_cb_count);
+  EXPECT_EQ(0, close_cb_count);
+
+  // peer responds with already allocated remote CID
+  const auto kConnReq2 = MakeConnectionRequest(kLocalCId2, kPsm);
+  const auto kOkConnRspWithResultPendingSamePeerCId =
+      MakeConnectionResponseWithResultPending(kLocalCId2, kRemoteCId);
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConnectionRequest, kConnReq2.view(),
+      {SignalingChannel::Status::kSuccess, kOkConnRspWithResultPendingSamePeerCId.view()});
+
+  int open_cb_count2 = 0;
+  int close_cb_count2 = 0;
+  set_channel_close_cb([&close_cb_count2](auto) { close_cb_count2++; });
+
+  registry()->OpenOutbound(kPsm, [&open_cb_count2](auto) { open_cb_count2++; });
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(open_cb_count2, 1);
+  // A failed-to-open channel should not invoke the close callback.
+  EXPECT_EQ(close_cb_count2, 0);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
