@@ -188,8 +188,11 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
 
 fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
                                                      l2cap::ChannelId remote_id) {
-  auto chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type));
-  chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
+  fbl::RefPtr<FakeChannel> chan;
+  if (!simulate_open_channel_failure_) {
+    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type));
+    chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
+  }
 
   if (chan_cb_) {
     chan_cb_(chan);

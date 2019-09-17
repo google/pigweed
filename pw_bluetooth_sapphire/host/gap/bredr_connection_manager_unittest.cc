@@ -1899,6 +1899,39 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
   EXPECT_FALSE(connmgr()->Disconnect(peer_b->identifier()));
 }
 
+// If SDP channel creation fails, null channel should be caught and
+// not be dereferenced. Search should fail to return results.
+TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
+  constexpr l2cap::ChannelId kLocalCId = 0x40;
+  constexpr l2cap::ChannelId kRemoteCId = 0x41;
+
+  // Channel creation should fail.
+  data_domain()->set_channel_callback([](auto new_chan) { ASSERT_FALSE(new_chan); });
+
+  // Since SDP channel creation fails, search_cb should not be called by SDP.
+  auto search_cb = [&](auto id, const auto& attributes) { FAIL(); };
+  connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
+
+  QueueSuccessfulIncomingConn();
+  data_domain()->set_simulate_open_channel_failure(true);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, kLocalCId, kRemoteCId);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  // Peer should still connect successfully.
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  EXPECT_TRUE(IsConnected(peer));
+
+  test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(IsConnected(peer));
+}
+
 // TODO(BT-819) Connecting a peer that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP

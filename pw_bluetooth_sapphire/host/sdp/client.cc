@@ -255,6 +255,7 @@ TransactionId Impl::GetNextId() {
 }  // namespace
 
 std::unique_ptr<Client> Client::Create(fbl::RefPtr<l2cap::Channel> channel) {
+  ZX_DEBUG_ASSERT(channel);
   return std::make_unique<Impl>(std::move(channel));
 }
 

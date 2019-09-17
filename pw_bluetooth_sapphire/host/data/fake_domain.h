@@ -76,6 +76,9 @@ class FakeDomain final : public Domain {
   // reference to all channels.
   using FakeChannelCallback = fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
   void set_channel_callback(FakeChannelCallback callback) { chan_cb_ = std::move(callback); }
+  void set_simulate_open_channel_failure(bool simulate_failure) {
+    simulate_open_channel_failure_ = simulate_failure;
+  }
 
  private:
   friend class fbl::RefPtr<FakeDomain>;
@@ -123,6 +126,7 @@ class FakeDomain final : public Domain {
   bool initialized_ = false;
   std::unordered_map<hci::ConnectionHandle, LinkData> links_;
   FakeChannelCallback chan_cb_;
+  bool simulate_open_channel_failure_ = false;
 
   using ChannelDelivery = std::pair<l2cap::ChannelCallback, async_dispatcher_t*>;
   std::unordered_map<l2cap::PSM, ChannelDelivery> inbound_conn_cbs_;

@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_
 
-#include <fbl/ref_ptr.h>
 #include <lib/async/cpp/task.h>
 
 #include <unordered_map>
+
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
@@ -24,7 +25,7 @@ namespace sdp {
 class Client {
  public:
   // Create a new SDP client on the given |channel|.  |channel| must be
-  // un-activated.
+  // un-activated. |channel| must not be null.
   static std::unique_ptr<Client> Create(fbl::RefPtr<l2cap::Channel> channel);
 
   virtual ~Client() = default;

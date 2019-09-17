@@ -451,8 +451,14 @@ void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
         [self, peer_id = peer->identifier()](auto channel) {
           if (!self)
             return;
-          auto client = sdp::Client::Create(std::move(channel));
 
+          if (!channel) {
+            bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer id: %s)",
+                   bt_str(peer_id));
+            return;
+          }
+
+          auto client = sdp::Client::Create(std::move(channel));
           self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
         },
         dispatcher_);
