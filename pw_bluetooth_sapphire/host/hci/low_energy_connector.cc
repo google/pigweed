@@ -58,7 +58,6 @@ bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddres
                                           StatusCallback status_callback, zx::duration timeout) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(status_callback);
-  ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(timeout.get() > 0);
 
   if (request_pending())
@@ -187,10 +186,8 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   ZX_ASSERT(params);
 
   // First check if this event is related to the currently pending request.
-  const DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type),
-                                   params->peer_address);
-  bool matches_pending_request =
-      pending_request_ && (pending_request_->peer_address == peer_address);
+  const bool matches_pending_request =
+      pending_request_ && (pending_request_->peer_address.value() == params->peer_address);
 
   Status status(params->status);
   if (!status) {
@@ -214,6 +211,7 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   ConnectionHandle handle = le16toh(params->connection_handle);
   Connection::Role role = (params->role == ConnectionRole::kMaster) ? Connection::Role::kMaster
                                                                     : Connection::Role::kSlave;
+  DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type), params->peer_address);
   LEConnectionParameters connection_params(le16toh(params->conn_interval),
                                            le16toh(params->conn_latency),
                                            le16toh(params->supervision_timeout));

@@ -100,8 +100,8 @@ class DeviceAddress {
     return type_ < other.type_ || (type_ == other.type_ && value_ < other.value_);
   }
 
-  // Returns true if this address is a LE public address.
-  bool IsPublic() const { return type_ == Type::kLEPublic; }
+  // Returns true if this address is a BR/EDR BD_ADDR or LE public address.
+  bool IsPublic() const { return type_ == Type::kBREDR || type_ == Type::kLEPublic; }
 
   // Returns true if this address is a Resolvable Private Address.
   bool IsResolvablePrivate() const;

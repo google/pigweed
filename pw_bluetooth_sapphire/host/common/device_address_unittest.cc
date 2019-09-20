@@ -144,7 +144,7 @@ TEST(DeviceAddressTest, IsStatic) {
 }
 
 TEST(DeviceAddressTest, IsPublic) {
-  EXPECT_FALSE(kClassic.IsPublic());
+  EXPECT_TRUE(kClassic.IsPublic());
   EXPECT_TRUE(kPublic.IsPublic());
   EXPECT_FALSE(kNonResolvable.IsPublic());
   EXPECT_FALSE(kResolvable.IsPublic());
