@@ -208,7 +208,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
         });
 
     // Claim the RFCOMM PSM for inbound connections.
-    auto rfcomm_cb = [self = fbl::WrapRefPtr(this)](auto channel) {
+    auto rfcomm_cb = [self = fbl::RefPtr(this)](auto channel) {
       ZX_DEBUG_ASSERT(channel);
       if (!self->rfcomm_) {
         bt_log(SPEW, "data-domain", "RFCOMM connected after shutdown");

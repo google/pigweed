@@ -42,7 +42,7 @@ GattHost::~GattHost() {}
 void GattHost::Initialize() {
   // Initialize the profile.
   gatt_->Initialize();
-  gatt_->RegisterRemoteServiceWatcher([self = fbl::WrapRefPtr(this)](auto peer_id, auto service) {
+  gatt_->RegisterRemoteServiceWatcher([self = fbl::RefPtr(this)](auto peer_id, auto service) {
     // Make sure we are not holding the lock while |watcher| executes to
     // prevent potential deadlocks.
     bt::gatt::GATT::RemoteServiceWatcher watcher;

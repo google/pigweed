@@ -115,7 +115,7 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback,
     if (pending_discov_reqs_.size() > 1u)
       return;
 
-    auto self = fbl::WrapRefPtr(this);
+    auto self = fbl::RefPtr(this);
     auto chrc_cb = [self](const CharacteristicData& chr) {
       if (!self->shut_down_) {
         // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
@@ -416,7 +416,7 @@ void RemoteService::StartDescriptorDiscovery() {
   ZX_DEBUG_ASSERT(characteristics_.size());
   remaining_descriptor_requests_ = characteristics_.size();
 
-  auto self = fbl::WrapRefPtr(this);
+  auto self = fbl::RefPtr(this);
 
   // Callback called for each characteristic. This may be called in any
   // order since we request the descriptors of all characteristics all at
@@ -524,14 +524,14 @@ HostError RemoteService::GetDescriptor(DescriptorHandle id, const DescriptorData
 
 void RemoteService::RunGattTask(fit::closure task) {
   // Capture a reference to this object to guarantee its lifetime.
-  RunOrPost([objref = fbl::WrapRefPtr(this), task = std::move(task)] { task(); }, gatt_dispatcher_);
+  RunOrPost([objref = fbl::RefPtr(this), task = std::move(task)] { task(); }, gatt_dispatcher_);
 }
 
 void RemoteService::ReportCharacteristics(Status status, CharacteristicCallback callback,
                                           async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(IsOnGattThread());
   RunOrPost(
-      [self = fbl::WrapRefPtr(this), status, cb = std::move(callback)] {
+      [self = fbl::RefPtr(this), status, cb = std::move(callback)] {
         // We return a new copy of only the immutable data of our characteristics and their
         // descriptors. This requires a copy, which *could* be expensive in the (unlikely) case
         // that a service has a very large number of characteristics, but provides much safer
@@ -606,7 +606,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   ZX_DEBUG_ASSERT(!shut_down_);
 
   // Capture a reference so that this object is alive when the callback runs.
-  auto self = fbl::WrapRefPtr(this);
+  auto self = fbl::RefPtr(this);
   auto read_blob_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
                        cb = std::move(callback),
                        dispatcher](att::Status status, const ByteBuffer& blob) mutable {

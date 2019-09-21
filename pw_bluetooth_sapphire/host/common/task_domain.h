@@ -133,7 +133,7 @@ class TaskDomain {
   void PostMessage(fit::closure func) {
     // |objref| is captured here to make sure |obj_| stays alive until |func|
     // has run.
-    async::PostTask(dispatcher_, [this, func = std::move(func), objref = fbl::WrapRefPtr(obj_)] {
+    async::PostTask(dispatcher_, [this, func = std::move(func), objref = fbl::RefPtr(obj_)] {
       if (alive_) {
         func();
       }
