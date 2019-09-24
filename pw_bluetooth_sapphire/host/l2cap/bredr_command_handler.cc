@@ -142,7 +142,9 @@ void BrEdrCommandHandler::InformationResponder::Send(InformationResult result,
   sig_responder_->Send(info_rsp_view.data());
 }
 
-BrEdrCommandHandler::BrEdrCommandHandler(SignalingChannelInterface* sig) : sig_(sig) {
+BrEdrCommandHandler::BrEdrCommandHandler(SignalingChannelInterface* sig,
+                                         fit::closure request_fail_callback)
+    : sig_(sig), request_fail_callback_(std::move(request_fail_callback)) {
   ZX_DEBUG_ASSERT(sig_);
 }
 
@@ -287,7 +289,16 @@ void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb)
 
 template <class ResponseT, typename CallbackT>
 SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(CallbackT rsp_cb) {
-  return [rsp_cb = std::move(rsp_cb)](Status status, const ByteBuffer& rsp_payload) {
+  return [rsp_cb = std::move(rsp_cb), fail_cb = request_fail_callback_.share()](
+             Status status, const ByteBuffer& rsp_payload) {
+    if (status == Status::kTimeOut) {
+      bt_log(WARN, "l2cap-bredr", "cmd: timed out waiting for \"%s\"", ResponseT::kName);
+      if (fail_cb) {
+        fail_cb();
+      }
+      return false;
+    }
+
     ResponseT rsp(status);
     if (status == Status::kReject) {
       if (!rsp.ParseReject(rsp_payload)) {

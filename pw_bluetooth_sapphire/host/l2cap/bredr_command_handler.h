@@ -281,8 +281,12 @@ class BrEdrCommandHandler final {
   using InformationRequestCallback =
       fit::function<void(InformationType type, InformationResponder* responder)>;
 
-  // |sig| must be valid for the lifetime of this object
-  explicit BrEdrCommandHandler(SignalingChannelInterface* sig);
+  // |sig| must be valid for the lifetime of this object.
+  // |command_failed_callback| is called if an outbound request timed out with
+  // RTX or ERTX timers after retransmission (if configured). The call may come
+  // after the lifetime of this object.
+  explicit BrEdrCommandHandler(SignalingChannelInterface* sig,
+                               fit::closure request_fail_callback = nullptr);
   ~BrEdrCommandHandler() = default;
 
   // Disallow copy even though there's no state because having multiple
@@ -322,6 +326,7 @@ class BrEdrCommandHandler final {
   SignalingChannel::ResponseHandler BuildResponseHandler(CallbackT rsp_cb);
 
   SignalingChannelInterface* const sig_;  // weak
+  fit::closure request_fail_callback_;
 };
 
 }  // namespace internal

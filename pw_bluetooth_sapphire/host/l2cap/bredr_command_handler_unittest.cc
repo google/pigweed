@@ -19,11 +19,13 @@ namespace l2cap {
 namespace internal {
 namespace {
 
+using TestBase = ::gtest::TestLoopFixture;
+
 constexpr uint16_t kPsm = 0x0001;
 constexpr ChannelId kLocalCId = 0x0040;
 constexpr ChannelId kRemoteCId = 0x60a3;
 
-class L2CAP_BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
+class L2CAP_BrEdrCommandHandlerTest : public TestBase {
  public:
   L2CAP_BrEdrCommandHandlerTest() = default;
   ~L2CAP_BrEdrCommandHandlerTest() override = default;
@@ -32,20 +34,42 @@ class L2CAP_BrEdrCommandHandlerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestLoopFixture overrides
   void SetUp() override {
+    TestBase::SetUp();
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
-    command_handler_ = std::make_unique<BrEdrCommandHandler>(fake_sig());
+    command_handler_ = std::make_unique<BrEdrCommandHandler>(
+        fake_sig(), fit::bind_member(this, &L2CAP_BrEdrCommandHandlerTest::OnRequestFail));
+    request_fail_callback_ = nullptr;
+    failed_requests_ = 0;
   }
 
   void TearDown() override {
+    request_fail_callback_ = nullptr;
     signaling_channel_ = nullptr;
     command_handler_ = nullptr;
+    TestBase::TearDown();
   }
 
   testing::FakeSignalingChannel* fake_sig() const { return signaling_channel_.get(); }
   BrEdrCommandHandler* cmd_handler() const { return command_handler_.get(); }
+  size_t failed_requests() const { return failed_requests_; }
+
+  void set_request_fail_callback(fit::closure request_fail_callback) {
+    ZX_ASSERT(!request_fail_callback_);
+    request_fail_callback_ = std::move(request_fail_callback);
+  }
+
+ private:
+  void OnRequestFail() {
+    failed_requests_++;
+    if (request_fail_callback_) {
+      request_fail_callback_();
+    }
+  }
 
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<BrEdrCommandHandler> command_handler_;
+  fit::closure request_fail_callback_;
+  size_t failed_requests_;
 };
 
 TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRej) {
@@ -189,6 +213,29 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
   RunLoopUntilIdle();
   EXPECT_EQ(2, cb_count);
+}
+
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
+  // Connection Request payload
+  auto expected_conn_req = CreateStaticByteBuffer(
+      // PSM
+      LowerBits(kPsm), UpperBits(kPsm),
+
+      // Source CID
+      LowerBits(kLocalCId), UpperBits(kLocalCId));
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kConnectionRequest, expected_conn_req.view(),
+                      {SignalingChannel::Status::kTimeOut, {}});
+
+  ASSERT_EQ(0u, failed_requests());
+
+  auto on_conn_rsp = [](auto&) {
+    ADD_FAILURE();
+    return false;
+  };
+  EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_EQ(1u, failed_requests());
 }
 
 TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspNotSupported) {
@@ -375,6 +422,51 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
   EXPECT_TRUE(cb_called);
 }
 
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
+  // Configuration Request payload
+  auto expected_config_req = CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+
+      // Flags (non-zero to test encoding)
+      0x01, 0xf0,
+
+      // Data
+      // TODO(NET-1084): Replace with real configuration options
+      't', 'e', 's', 't');
+  const BufferView& req_options = expected_config_req.view(4, 4);
+
+  // Disconnect Request payload
+  auto expected_discon_req = CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+
+      // Source CID
+      LowerBits(kLocalCId), UpperBits(kLocalCId));
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kConfigurationRequest, expected_config_req.view(),
+                      {SignalingChannel::Status::kTimeOut, {}});
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kDisconnectionRequest, expected_discon_req.view());
+
+  set_request_fail_callback([this]() {
+    // Should still be allowed to send requests even after one failed
+    auto on_discon_rsp = [](auto&) { return false; };
+    EXPECT_TRUE(
+        cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
+  });
+
+  ASSERT_EQ(0u, failed_requests());
+
+  auto on_config_rsp = [](auto&) {
+    ADD_FAILURE();
+    return false;
+  };
+  EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0xf001, req_options,
+                                                      std::move(on_config_rsp)));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_EQ(1u, failed_requests());
+}
+
 TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRspOk) {
   // Disconnect Request payload
   auto expected_discon_req = CreateStaticByteBuffer(
@@ -393,7 +485,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRspOk) {
                       {SignalingChannel::Status::kSuccess, ok_discon_rsp.view()});
 
   bool cb_called = false;
-  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_req =
+  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_rsp =
       [&cb_called](const BrEdrCommandHandler::DisconnectionResponse& rsp) {
         cb_called = true;
         EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
@@ -403,7 +495,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRspOk) {
       };
 
   EXPECT_TRUE(
-      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_req)));
+      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
 }
@@ -433,7 +525,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRej) {
                       {SignalingChannel::Status::kReject, rej_cid.view()});
 
   bool cb_called = false;
-  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_cb =
+  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_rsp =
       [&cb_called](const BrEdrCommandHandler::DisconnectionResponse& rsp) {
         cb_called = true;
         EXPECT_EQ(SignalingChannel::Status::kReject, rsp.status());
@@ -444,7 +536,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRej) {
       };
 
   EXPECT_TRUE(
-      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_cb)));
+      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
 }
