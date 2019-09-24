@@ -5,9 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 
-#include <fbl/macros.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
@@ -126,12 +127,28 @@ class Connection {
   bool is_open() const { return is_open_; }
   void set_closed() { is_open_ = false; }
 
-  // Assigns a link key to this connection. This will be used for all future
-  // encryption procedures.
-  void set_link_key(const LinkKey& ltk) { ltk_ = ltk; }
+  // Assigns a long term key to this LE-U connection. This will be used for all future encryption
+  // procedures.
+  void set_le_ltk(const LinkKey& ltk) {
+    ZX_ASSERT(ll_type_ == LinkType::kLE);
+    ltk_ = ltk;
+    ltk_type_ = std::nullopt;
+  }
+
+  // Assigns a link key with its corresponding HCI type to this BR/EDR connection. This will be
+  // used for bonding procedures and determines the resulting security properties of the link.
+  void set_bredr_link_key(const LinkKey& link_key, hci::LinkKeyType type) {
+    ZX_ASSERT(ll_type_ != LinkType::kLE);
+    ltk_ = link_key;
+    ltk_type_ = type;
+  }
 
   // The current long term key of the connection.
   const std::optional<LinkKey>& ltk() const { return ltk_; }
+
+  // For BR/EDR, returns the HCI type value for the long term key, or "link key" per HCI
+  // terminology. For LE, returns std::nullopt.
+  const std::optional<hci::LinkKeyType>& ltk_type() const { return ltk_type_; }
 
   // Assigns a callback that will run when the encryption state of the
   // underlying link changes. The |enabled| parameter should be ignored if
@@ -178,6 +195,9 @@ class Connection {
 
   // This connection's current link key.
   std::optional<LinkKey> ltk_;
+
+  // BR/EDR-specific type of the assigned link key.
+  std::optional<hci::LinkKeyType> ltk_type_;
 
   EncryptionChangeCallback encryption_change_callback_;
 

@@ -29,7 +29,11 @@ class ConnectionImpl final : public Connection {
   bool StartEncryption() override;
 
  private:
-  // Starts the LE link layer authentication procedure using the given |ltk|.
+  // Start the BR/EDR link layer encryption. |ltk_| and |ltk_type_| must have already been set and
+  // may be used for bonding and detecting the security properties following the encryption enable.
+  bool BrEdrStartEncryption();
+
+  // Start the LE link layer authentication procedure using the given |ltk|.
   bool LEStartEncryption(const LinkKey& ltk);
 
   // Called when encryption is enabled or disabled as a result of the link layer
@@ -229,10 +233,7 @@ bool ConnectionImpl::StartEncryption() {
   }
 
   if (ll_type() != LinkType::kLE) {
-    bt_log(TRACE, "hci", "encrypting BR/EDR links not supported");
-
-    // TODO(BT-374): Support this.
-    return false;
+    return BrEdrStartEncryption();
   }
 
   if (role() != Role::kMaster) {
@@ -248,8 +249,46 @@ bool ConnectionImpl::StartEncryption() {
   return LEStartEncryption(*ltk());
 }
 
+bool ConnectionImpl::BrEdrStartEncryption() {
+  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+
+  ZX_ASSERT(ltk().has_value() == ltk_type().has_value());
+  if (!ltk().has_value()) {
+    bt_log(TRACE, "hci", "connection link key type has not been set; not starting encryption");
+    return false;
+  }
+
+  auto cmd =
+      CommandPacket::New(kSetConnectionEncryption, sizeof(SetConnectionEncryptionCommandParams));
+  auto* params = cmd->mutable_payload<SetConnectionEncryptionCommandParams>();
+  params->connection_handle = htole16(handle());
+  params->encryption_enable = GenericEnableParam::kEnable;
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto status_cb = [self, handle = handle()](auto id, const EventPacket& event) {
+    if (!self) {
+      return;
+    }
+
+    const Status status = event.ToStatus();
+    if (!bt_is_error(status, ERROR, "hci-bredr", "could not set encryption on link %#.04x",
+                     handle)) {
+      bt_log(TRACE, "hci-bredr", "requested encryption start on %#.04x", handle);
+      return;
+    }
+
+    if (self->encryption_change_callback()) {
+      self->encryption_change_callback()(status, false);
+    }
+  };
+
+  return hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
+                                              std::move(status_cb), kCommandStatusEventCode) != 0u;
+}
+
 bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(!ltk_type().has_value());
 
   // TODO(BT-208): Tell the data channel to stop data flow.
 
@@ -261,18 +300,17 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   params->long_term_key = ltk.value();
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self](auto id, const EventPacket& event) {
+  auto status_cb = [self, handle = handle()](auto id, const EventPacket& event) {
     if (!self) {
       return;
     }
 
-    Status status = event.ToStatus();
-    if (status) {
-      bt_log(TRACE, "hci-le", "began authentication procedure");
+    const Status status = event.ToStatus();
+    if (!bt_is_error(status, ERROR, "hci-le", "could not set encryption on link %#.04x", handle)) {
+      bt_log(TRACE, "hci-le", "requested encryption start on %#.04x", handle);
       return;
     }
 
-    bt_log(ERROR, "hci", "failed to start LE authentication: %s", status.ToString().c_str());
     if (self->encryption_change_callback()) {
       self->encryption_change_callback()(status, false);
     }

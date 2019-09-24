@@ -438,7 +438,7 @@ void PairingState::OnPairingFailed(Status status) {
 
   if (legacy_state_) {
     ZX_DEBUG_ASSERT(le_link_);
-    le_link_->set_link_key(hci::LinkKey());
+    le_link_->set_le_ltk(hci::LinkKey());
     legacy_state_ = nullptr;
   }
 }
@@ -616,7 +616,7 @@ void PairingState::OnPairingRandom(const UInt128& random) {
 
   // EDiv and Rand values are set to 0 to generate the STK (Vol 3, Part H,
   // 2.4.4.1).
-  le_link_->set_link_key(hci::LinkKey(stk, 0, 0));
+  le_link_->set_le_ltk(hci::LinkKey(stk, 0, 0));
 
   if (legacy_state_->features->initiator) {
     // Initiate link layer encryption with STK.
@@ -946,7 +946,7 @@ void PairingState::LEPairingAddresses(const DeviceAddress** out_initiator,
 
 void PairingState::AssignLongTermKeyInternal(const LTK& ltk) {
   ltk_ = ltk;
-  le_link_->set_link_key(ltk.key());
+  le_link_->set_le_ltk(ltk.key());
 }
 
 }  // namespace sm

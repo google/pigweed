@@ -548,11 +548,13 @@ void BrEdrConnectionManager::OnLinkKeyRequest(const hci::EventPacket& event) {
   const auto& key_value = hci_key.value();
   std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
 
+  const auto link_key_type = link_key.security().GetLinkKeyType();
+  ZX_ASSERT(link_key_type.has_value());
   auto handle = FindConnectionById(peer_id);
   if (!handle) {
     bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)", bt_str(peer_id));
   } else {
-    handle->second->link().set_link_key(hci_key);
+    handle->second->link().set_bredr_link_key(hci_key, link_key_type.value());
   }
 
   hci_->command_channel()->SendCommand(
@@ -577,7 +579,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(const hci::EventPacket& event
     return;
   }
 
-  const auto key_type = static_cast<hci::LinkKeyType>(params.key_type);
+  auto key_type = hci::LinkKeyType{params.key_type};
   sm::SecurityProperties sec_props;
   if (key_type == hci::LinkKeyType::kChangedCombination) {
     if (!peer->bredr() || !peer->bredr()->bonded()) {
@@ -589,6 +591,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(const hci::EventPacket& event
     // Reuse current properties
     ZX_DEBUG_ASSERT(peer->bredr()->link_key());
     sec_props = peer->bredr()->link_key()->security();
+    key_type = *sec_props.GetLinkKeyType();
   } else {
     sec_props = sm::SecurityProperties(key_type);
   }
@@ -610,7 +613,7 @@ void BrEdrConnectionManager::OnLinkKeyNotification(const hci::EventPacket& event
   if (!handle) {
     bt_log(WARN, "gap-bredr", "can't find current connection for ltk (id: %s)", bt_str(peer_id));
   } else {
-    handle->second->link().set_link_key(hci_key);
+    handle->second->link().set_bredr_link_key(hci_key, key_type);
   }
 
   if (!cache_->StoreBrEdrBond(addr, key)) {

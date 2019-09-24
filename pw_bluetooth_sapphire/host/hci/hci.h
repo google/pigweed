@@ -302,7 +302,7 @@ struct AuthenticationRequestedCommandParams {
 
 // =================================================
 // Set Connection Encryption Command (v1.1) (BR/EDR)
-constexpr OpCode kiSetConnectionEncryption = LinkControlOpCode(0x0013);
+constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);
 
 struct SetConnectionEncryptionCommandParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
@@ -310,11 +310,8 @@ struct SetConnectionEncryptionCommandParams {
   // Must be the handle of a connected ACL-U logical link.
   ConnectionHandle connection_handle;
 
-  // Whether Link level encryption should be turned on or off
-  // Valid values are:
-  // 0x00 - Turn Link Level Encryption OFF
-  // 0x01 - Turn Link Level Encryption ON
-  uint8_t encryption_enable;
+  // Whether link level encryption should be turned on or off.
+  GenericEnableParam encryption_enable;
 } __PACKED;
 
 // NOTE on ReturnParams: No Command Complete event will be sent by the
@@ -1079,7 +1076,7 @@ struct EncryptionChangeEventParams {
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
 
-  // TODO(armansito): Define an enum in hci_constants.h for this.
+  // TODO(1530): Define an enum in hci_constants.h for this.
   // 0x00: Link Level Encryption is OFF.
   // 0x01: Link Level Encryption is ON with E0 for BR/EDR.
   //       Link Level Encryption is ON with AES-CCM for LE.

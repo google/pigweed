@@ -22,6 +22,7 @@ const DeviceAddress kACLAddress2(DeviceAddress::Type::kBREDR, {4});
 constexpr UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
 constexpr uint64_t kRand = 1;
 constexpr uint16_t kEDiv = 255;
+constexpr LinkKeyType kLinkKeyType = LinkKeyType::kAuthenticatedCombination256;
 
 const DataBufferInfo kBrEdrBufferInfo(1024, 5);
 const DataBufferInfo kLeBufferInfo(1024, 1);
@@ -70,6 +71,16 @@ class LinkTypeConnectionTest : public ConnectionTest,
     ZX_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));
     return nullptr;
   }
+
+  // Assigns the appropriate test link key based on the type of link being tested.
+  void SetTestLinkKey(Connection* connection) {
+    const Connection::LinkType ll_type = GetParam();
+    if (ll_type == Connection::LinkType::kLE) {
+      connection->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
+    } else {
+      connection->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+    }
+  }
 };
 
 using HCI_ConnectionTest = ConnectionTest;
@@ -84,6 +95,24 @@ TEST_F(HCI_ConnectionTest, Getters) {
   EXPECT_EQ(kLEAddress1, connection->local_address());
   EXPECT_EQ(kLEAddress2, connection->peer_address());
   EXPECT_TRUE(connection->is_open());
+
+  EXPECT_EQ(std::nullopt, connection->ltk());
+  connection->set_le_ltk(LinkKey());
+  ASSERT_TRUE(connection->ltk().has_value());
+  EXPECT_EQ(LinkKey(), connection->ltk().value());
+}
+
+TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
+  auto connection = NewACLConnection();
+
+  EXPECT_EQ(Connection::LinkType::kACL, connection->ll_type());
+  EXPECT_EQ(std::nullopt, connection->ltk());
+  EXPECT_EQ(std::nullopt, connection->ltk_type());
+  connection->set_bredr_link_key(LinkKey(), kLinkKeyType);
+  ASSERT_TRUE(connection->ltk().has_value());
+  EXPECT_EQ(LinkKey(), connection->ltk().value());
+  ASSERT_TRUE(connection->ltk_type().has_value());
+  EXPECT_EQ(kLinkKeyType, connection->ltk_type().value());
 }
 
 TEST_P(LinkTypeConnectionTest, Close) {
@@ -117,6 +146,24 @@ TEST_P(LinkTypeConnectionTest, Close) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
+}
+
+TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
+  auto conn = NewLEConnection(Connection::Role::kSlave);
+  conn->set_le_ltk(LinkKey());
+  EXPECT_FALSE(conn->StartEncryption());
+}
+
+TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
+  auto conn = NewLEConnection(Connection::Role::kMaster);
+  conn->set_le_ltk(LinkKey());
+  EXPECT_TRUE(conn->StartEncryption());
+}
+
+TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
+  auto conn = NewACLConnection();
+  conn->set_bredr_link_key(LinkKey(), kLinkKeyType);
+  EXPECT_TRUE(conn->StartEncryption());
 }
 
 TEST_P(LinkTypeConnectionTest, CloseError) {
@@ -153,21 +200,6 @@ TEST_P(LinkTypeConnectionTest, CloseError) {
   EXPECT_TRUE(callback_called);
 }
 
-TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsSlave) {
-  auto conn = NewLEConnection(Connection::Role::kSlave);
-  conn->set_link_key(LinkKey());
-  EXPECT_FALSE(conn->StartEncryption());
-}
-
-// TODO(BT-374): This test is temporary to document the current state of
-// support for link layer encryption. Remove this and replace it with new tests
-// when StartEncryption can work with BR/EDR.
-TEST_F(HCI_ConnectionTest, StartEncryptionNotSupportedOnACL) {
-  auto conn = NewACLConnection();
-  conn->set_link_key(LinkKey());
-  EXPECT_FALSE(conn->StartEncryption());
-}
-
 TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
   auto conn = NewConnection();
   EXPECT_FALSE(conn->StartEncryption());
@@ -197,7 +229,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
 
   bool callback = false;
   auto conn = NewLEConnection();
-  conn->set_link_key(LinkKey(kLTK, kRand, kEDiv));
+  conn->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Status status, bool enabled) {
     EXPECT_FALSE(status);
     EXPECT_FALSE(enabled);
@@ -211,7 +243,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
   EXPECT_TRUE(callback);
 }
 
-TEST_F(HCI_ConnectionTest, LEStartEncryptionSuccess) {
+TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
   auto kExpectedCommand =
       CreateStaticByteBuffer(0x19, 0x20,  // HCI_LE_Start_Encryption
                              28,          // parameter total size
@@ -231,13 +263,72 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionSuccess) {
 
   bool callback = false;
   auto conn = NewLEConnection();
-  conn->set_link_key(LinkKey(kLTK, kRand, kEDiv));
+  conn->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
 
   EXPECT_TRUE(conn->StartEncryption());
 
   // Callback shouldn't be called until the controller sends an encryption
   // changed event.
+  RunLoopUntilIdle();
+  EXPECT_FALSE(callback);
+}
+
+// HCI Command Status event is received with an error status.
+TEST_F(HCI_ConnectionTest, AclStartEncryptionFailsAtStatus) {
+  auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
+                                                 3,           // parameter total size
+                                                 0x01, 0x00,  // connection handle
+                                                 0x01         // encryption enable
+  );
+  auto kErrorStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
+                                             4,          // parameter total size
+                                             0x0C,       // "Command Disallowed" error
+                                             1,          // num_hci_command_packets
+                                             0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
+  );
+
+  test_device()->QueueCommandTransaction(kExpectedCommand, {&kErrorStatus});
+
+  bool callback = false;
+  auto conn = NewACLConnection();
+  conn->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+  conn->set_encryption_change_callback([&](Status status, bool enabled) {
+    EXPECT_FALSE(status);
+    EXPECT_FALSE(enabled);
+    EXPECT_EQ(StatusCode::kCommandDisallowed, status.protocol_error());
+    callback = true;
+  });
+
+  EXPECT_TRUE(conn->StartEncryption());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(callback);
+}
+
+TEST_F(HCI_ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
+  auto kExpectedCommand = CreateStaticByteBuffer(0x13, 0x04,  // HCI_Set_Connection_Encryption
+                                                 3,           // parameter total size
+                                                 0x01, 0x00,  // connection handle
+                                                 0x01         // encryption enable
+  );
+  auto kStatus = CreateStaticByteBuffer(0x0F,       // HCI Command Status event code
+                                        4,          // parameter total size
+                                        0x00,       // success status
+                                        1,          // num_hci_command_packets
+                                        0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
+  );
+
+  test_device()->QueueCommandTransaction(kExpectedCommand, {&kStatus});
+
+  bool callback = false;
+  auto conn = NewACLConnection();
+  conn->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
+  conn->set_encryption_change_callback([&](Status status, bool enabled) { callback = true; });
+
+  EXPECT_TRUE(conn->StartEncryption());
+
+  // Callback shouldn't be called until the controller sends an encryption changed event.
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
 }
@@ -262,7 +353,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
 
   bool callback = false;
   auto conn = NewConnection();
-  conn->set_link_key(LinkKey(kLTK, kRand, kEDiv));
+  SetTestLinkKey(conn.get());
   conn->set_encryption_change_callback([&](Status, bool) { callback = true; });
 
   test_device()->SendCommandChannelPacket(kEncChangeMalformed);
@@ -492,7 +583,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
   // clang-format on
 
   auto conn = NewLEConnection();
-  conn->set_link_key(LinkKey(kLTK, 0, 0));
+  conn->set_le_ltk(LinkKey(kLTK, 0, 0));
 
   test_device()->SendCommandChannelPacket(kMalformed);
   test_device()->SendCommandChannelPacket(kWrongHandle);
@@ -557,7 +648,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   // The request should be rejected since there is no LTK.
   test_device()->QueueCommandTransaction(kResponse, {});
   auto conn = NewLEConnection();
-  conn->set_link_key(LinkKey(kLTK, 1, 1));
+  conn->set_le_ltk(LinkKey(kLTK, 1, 1));
 
   test_device()->SendCommandChannelPacket(kEvent);
   RunLoopUntilIdle();
@@ -589,7 +680,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
   // The request should be rejected since there is no LTK.
   test_device()->QueueCommandTransaction(kResponse, {});
   auto conn = NewLEConnection();
-  conn->set_link_key(LinkKey(kLTK, 0x8899AABBCCDDEEFF, 0xBEEF));
+  conn->set_le_ltk(LinkKey(kLTK, 0x8899AABBCCDDEEFF, 0xBEEF));
 
   test_device()->SendCommandChannelPacket(kEvent);
   RunLoopUntilIdle();
