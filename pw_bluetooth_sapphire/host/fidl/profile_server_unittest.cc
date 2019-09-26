@@ -7,7 +7,6 @@
 #include "lib/gtest/test_loop_fixture.h"
 
 namespace bthost {
-
 namespace {
 
 class ProfileServerTest : public ::gtest::TestLoopFixture {

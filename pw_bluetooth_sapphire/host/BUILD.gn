@@ -62,13 +62,13 @@ source_set("sources") {
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//src/connectivity/bluetooth/fidl:host",
     "//src/lib/fxl",
-    "//zircon/system/banjo/ddk.protocol.bt.gattsvc",
-    "//zircon/system/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/public/lib/ddk",
     "//zircon/public/lib/driver",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
+    "//zircon/system/banjo/ddk.protocol.bt.gattsvc",
+    "//zircon/system/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
   ]
 }
 
@@ -110,6 +110,7 @@ source_set("driver_tests") {
 
   sources = [
     "fidl/helpers_unittest.cc",
+    "fidl/profile_server_unittest.cc",
     "gatt_host_unittest.cc",
   ]
 
