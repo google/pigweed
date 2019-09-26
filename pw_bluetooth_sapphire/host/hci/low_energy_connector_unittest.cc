@@ -133,7 +133,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
   EXPECT_TRUE(conn->is_open());
-  conn->set_closed();
+  conn->Close(false);
 }
 
 // Controller reports error from HCI Command Status event.
@@ -275,7 +275,7 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnect) {
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
   EXPECT_TRUE(conn->is_open());
-  conn->set_closed();
+  conn->Close(false);
 }
 
 TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
@@ -329,8 +329,9 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
 
   EXPECT_TRUE(conn->is_open());
   EXPECT_TRUE(in_conn->is_open());
-  conn->set_closed();
-  in_conn->set_closed();
+
+  conn->Close(false);
+  in_conn->Close(false);
 }
 
 TEST_F(HCI_LowEnergyConnectorTest, CreateConnectionTimeout) {

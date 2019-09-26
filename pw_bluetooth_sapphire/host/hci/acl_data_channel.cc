@@ -131,12 +131,18 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
 
   ZX_DEBUG_ASSERT(data_packet);
 
+  const auto handle = data_packet->connection_handle();
+
+  std::lock_guard<std::mutex> lock(send_mutex_);
+  if (registered_links_.find(handle) == registered_links_.end()) {
+    bt_log(SPEW, "hci", "dropping packet for unregistered connection (handle: %#.4x)", handle);
+    return false;
+  }
+
   if (data_packet->view().payload_size() > GetBufferMTU(ll_type)) {
     bt_log(ERROR, "hci", "ACL data packet too large!");
     return false;
   }
-
-  std::lock_guard<std::mutex> lock(send_mutex_);
 
   send_queue_.emplace_back(QueuedDataPacket(ll_type, std::move(data_packet)));
 
@@ -156,15 +162,23 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
     return false;
   }
 
-  // Make sure that all packets are within the MTU.
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
   for (const auto& packet : packets) {
+    // Make sure that all packets are within the MTU.
     if (packet.view().payload_size() > GetBufferMTU(ll_type)) {
       bt_log(ERROR, "hci", "ACL data packet too large!");
       return false;
     }
-  }
 
-  std::lock_guard<std::mutex> lock(send_mutex_);
+    // Make sure that all packets have registered connection handles.
+    if (registered_links_.find(packet.connection_handle()) == registered_links_.end()) {
+      bt_log(SPEW, "hci",
+             "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
+             packet.connection_handle(), packets.size_slow());
+      return false;
+    }
+  }
 
   while (!packets.is_empty()) {
     send_queue_.emplace_back(QueuedDataPacket(ll_type, packets.pop_front()));
@@ -175,12 +189,42 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
   return true;
 }
 
-bool ACLDataChannel::ClearLinkState(hci::ConnectionHandle handle) {
+void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle) {
   std::lock_guard<std::mutex> lock(send_mutex_);
+  bt_log(TRACE, "hci", "ACL register link (handle: %#.4x)", handle);
+  ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
+  registered_links_.insert(handle);
+}
+
+void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
+  bt_log(TRACE, "hci", "ACL unregister link (handle: %#.4x)", handle);
+
+  if (registered_links_.erase(handle) == 0) {
+    // handle not registered
+    bt_log(WARN, "hci", "attempt to unregister link that is not registered (handle: %#.4x)",
+           handle);
+    return;
+  }
+
+  // remove packets with matching connection handle in send queue
+  const size_t old_size = send_queue_.size();
+  send_queue_.remove_if([handle](const auto& queued_packet) {
+    return queued_packet.packet->connection_handle() == handle;
+  });
+  const size_t removed_count = old_size - send_queue_.size();
+  if (removed_count > 0) {
+    bt_log(SPEW, "hci", "stale packets for unregistered link removed from send queue (count: %lu)",
+           removed_count);
+  }
+
+  // subtract removed packets from sent packet counts, because controller
+  // does not send HCI Number of Completed Packets event for disconnected link
   auto iter = pending_links_.find(handle);
   if (iter == pending_links_.end()) {
     bt_log(TRACE, "hci", "no pending packets on connection (handle: %#.4x)", handle);
-    return false;
+    return;
   }
 
   const PendingPacketData& data = iter->second;
@@ -194,8 +238,6 @@ bool ACLDataChannel::ClearLinkState(hci::ConnectionHandle handle) {
 
   // Try sending the next batch of packets in case buffer space opened up.
   TrySendNextQueuedPacketsLocked();
-
-  return true;
 }
 
 const DataBufferInfo& ACLDataChannel::GetBufferInfo() const { return bredr_buffer_info_; }

@@ -11,7 +11,9 @@ namespace testing {
 FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address)
-    : Connection(handle, ll_type, role, local_address, peer_address), weak_ptr_factory_(this) {}
+    : Connection(handle, ll_type, role, local_address, peer_address),
+      is_open_(true),
+      weak_ptr_factory_(this) {}
 
 void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled) {
   ZX_DEBUG_ASSERT(encryption_change_callback());
@@ -20,7 +22,7 @@ void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled
 
 fxl::WeakPtr<Connection> FakeConnection::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-void FakeConnection::Close(StatusCode reason) {
+void FakeConnection::Close(bool send_disconnect, StatusCode reason) {
   // TODO(armansito): implement
 }
 

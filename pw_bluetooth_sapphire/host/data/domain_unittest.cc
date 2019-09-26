@@ -282,6 +282,21 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   // The 80-byte write should be fragmented over 64- and 20-byte HCI payloads in order to send it to
   // the controller.
   EXPECT_EQ(2, rx_count);
+  rx_count = 0;
+
+  domain()->RemoveConnection(kLinkHandle);
+
+  // try resending data now that connection is closed
+  bytes_written = 0;
+  status = sock.write(0, write_data, sizeof(write_data) - 1, &bytes_written);
+
+  EXPECT_EQ(ZX_OK, status);
+  EXPECT_EQ(80u, bytes_written);
+
+  RunLoopUntilIdle();
+
+  // no packets should have been received
+  EXPECT_EQ(0, rx_count);
 }
 
 TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
@@ -393,6 +408,147 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(sock_cb_called);
+}
+
+TEST_F(
+    DATA_DomainTest,
+    PacketsOverBufferLimitGetDroppedWhenConnectionRemovedAndStalePacketsDontGetSentOnHandleReuse) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  // Register a fake link.
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  zx::socket sock;
+  ASSERT_FALSE(sock);
+  auto sock_cb = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+    EXPECT_EQ(kLinkHandle, handle);
+    sock = std::move(cb_sock);
+  };
+
+  domain()->RegisterService(kPSM, sock_cb, dispatcher());
+
+  TestController::DataCallback data_cb = [](const ByteBuffer& packet) {};
+  size_t data_cb_count = 0;
+  auto data_cb_wrapper = [&data_cb, &data_cb_count](const ByteBuffer& packet) {
+    data_cb_count++;
+    data_cb(packet);
+  };
+  test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
+
+  RunLoopUntilIdle();
+
+  EmulateIncomingChannelCreation(kLinkHandle, kRemoteId, kLocalId, kPSM);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(sock);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  // 3 packets should have been received for channel creation
+  EXPECT_EQ(3u, data_cb_count);
+  const auto kNOCPEvent3Packets = CreateStaticByteBuffer(
+      0x13, 0x05,             // Number Of Completed Packet HCI event header, parameters length
+      0x01,                   // Number of handles
+      0x01, 0x00, 0x03, 0x00  // 3 packets on handle 0x0001
+  );
+  test_device()->SendCommandChannelPacket(kNOCPEvent3Packets);
+
+  // fill up buffer with |kPacket1| packets
+  const auto kPacket1 = CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 5)
+      0x01, 0x00, 0x05, 0x00,
+
+      // L2CAP B-frame: (length: 1, channel-id: 0x9042 (kRemoteId))
+      0x01, 0x00, 0x42, 0x90,
+
+      // L2CAP payload
+      0x01);
+
+  data_cb_count = 0;
+  data_cb = [&kPacket1](const ByteBuffer& packet) {
+    EXPECT_TRUE(ContainersEqual(kPacket1, packet));
+  };
+
+  // Write outbound byte to the socket buffer.
+  const char write_data[] = {0x01};
+
+  // |kMaxPacketCount| packets should be sent to the controller,
+  // and 1 packet should be left in the queue
+  for (size_t i = 0; i < kMaxPacketCount + 1; i++) {
+    size_t bytes_written = 0;
+    zx_status_t status = sock.write(0, write_data, sizeof(write_data), &bytes_written);
+    EXPECT_EQ(ZX_OK, status);
+    EXPECT_EQ(sizeof(write_data), bytes_written);
+  }
+
+  // Run until the data is flushed out to the TestController.
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kMaxPacketCount, data_cb_count);
+
+  // should clear queue & reset controller completed packet counts
+  domain()->RemoveConnection(kLinkHandle);
+  domain()->UnregisterService(kPSM);
+
+  RunLoopUntilIdle();
+
+  // Register a fake link with same handle
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  domain()->RegisterService(kPSM, std::move(sock_cb), dispatcher());
+
+  // no-op for connection packets
+  data_cb = [](const ByteBuffer& packet) {};
+  data_cb_count = 0;
+  RunLoopUntilIdle();
+
+  EmulateIncomingChannelCreation(kLinkHandle, kRemoteId, kLocalId, kPSM);
+
+  RunLoopUntilIdle();
+
+  // 3 packets should have been received from incoming channel creation
+  EXPECT_EQ(3u, data_cb_count);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  test_device()->SendCommandChannelPacket(kNOCPEvent3Packets);
+  RunLoopUntilIdle();
+
+  // 1 packet that was in queue should not have been sent.
+  EXPECT_EQ(3u, data_cb_count);
+
+  // verify that stale packet was removed from queue and does
+  // not get sent, and new packets can be received
+  const auto kPacket2 = CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 5)
+      0x01, 0x00, 0x05, 0x00,
+
+      // L2CAP B-frame: (length: 1, channel-id: 0x9042 (kRemoteId))
+      0x01, 0x00, 0x42, 0x90,
+
+      // L2CAP payload
+      0x02);
+
+  data_cb_count = 0;
+  data_cb = [&kPacket2](const ByteBuffer& packet) {
+    EXPECT_TRUE(ContainersEqual(kPacket2, packet));
+  };
+
+  // Fill buffer with |kPacket2| packets
+  const char write_data2[] = {0x02};
+  for (size_t i = 0; i < kMaxPacketCount; i++) {
+    size_t bytes_written = 0;
+    zx_status_t status = sock.write(0, write_data2, sizeof(write_data2), &bytes_written);
+    EXPECT_EQ(ZX_OK, status);
+    EXPECT_EQ(sizeof(write_data2), bytes_written);
+  }
+
+  // Run until the data is flushed out to the TestController.
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kMaxPacketCount, data_cb_count);
 }
 
 using DATA_DomainLifecycleTest = TestingBase;

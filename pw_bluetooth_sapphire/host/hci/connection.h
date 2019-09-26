@@ -124,8 +124,7 @@ class Connection {
   const DeviceAddress& peer_address() const { return peer_address_; }
 
   // Returns true if this connection is currently open.
-  bool is_open() const { return is_open_; }
-  void set_closed() { is_open_ = false; }
+  virtual bool is_open() const = 0;
 
   // Assigns a long term key to this LE-U connection. This will be used for all future encryption
   // procedures.
@@ -159,8 +158,10 @@ class Connection {
   }
 
   // Closes this connection by sending the HCI_Disconnect command to the
-  // controller. This method is a NOP if the connection is already closed.
-  virtual void Close(StatusCode reason = StatusCode::kRemoteUserTerminatedConnection) = 0;
+  // controller if |send_disconnect| is true. This method is a NOP if the connection is already
+  // closed.
+  virtual void Close(bool send_disconnect = true,
+                     StatusCode reason = StatusCode::kRemoteUserTerminatedConnection) = 0;
 
   // Authenticate (i.e. encrypt) this connection using its current link key.
   // Returns false if the procedure cannot be initiated. The result of the
@@ -184,7 +185,6 @@ class Connection {
   LinkType ll_type_;
   ConnectionHandle handle_;
   Role role_;
-  bool is_open_;
 
   // Addresses used while creating the link.
   DeviceAddress local_address_;

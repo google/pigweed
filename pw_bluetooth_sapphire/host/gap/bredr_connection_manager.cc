@@ -508,7 +508,7 @@ void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrE
 
   if (!close_link) {
     // Connection is already closed, so we don't need to send a disconnect.
-    conn.link().set_closed();
+    conn.link().Close(false);
   }
 
   // |conn| is destroyed when it goes out of scope.

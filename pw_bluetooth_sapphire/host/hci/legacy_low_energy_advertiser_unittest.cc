@@ -130,7 +130,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_EQ(kHandle, link->handle());
   EXPECT_EQ(kPublicAddress, link->local_address());
   EXPECT_EQ(kRandomAddress, link->peer_address());
-  link->set_closed();
+  link->Close(false);
 
   // Advertising state should get cleared.
   RunLoopUntilIdle();
@@ -154,7 +154,7 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   ASSERT_TRUE(link);
   EXPECT_EQ(kRandomAddress, link->local_address());
   EXPECT_EQ(kPublicAddress, link->peer_address());
-  link->set_closed();
+  link->Close(false);
 }
 
 // Tests that advertising can be restarted right away in a connection callback.

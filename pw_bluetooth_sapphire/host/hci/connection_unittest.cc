@@ -686,44 +686,6 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
   RunLoopUntilIdle();
 }
 
-// Tests that a Connection clears the ACL data channel state associated with its
-// connection handle during destruction.
-TEST_F(HCI_ConnectionTest, ClearAclState) {
-  constexpr size_t kMaxNumPackets = 1;
-  ASSERT_EQ(kMaxNumPackets, kLeBufferInfo.max_num_packets());
-
-  auto conn = NewLEConnection();
-
-  // TODO(NET-1211): Change this test to exercise enable/disable functionality.
-  // Consider creating a FakeAclDataChannel class to prevent duplicating tests
-  // in HCI_ConnectionTest and HCI_ACLDataChannelTest.
-  size_t packet_count = 0;
-  test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
-
-  ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(conn->handle(), ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
-      Connection::LinkType::kLE));
-  ASSERT_TRUE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(conn->handle(), ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         ACLBroadcastFlag::kPointToPoint, 1),
-      Connection::LinkType::kLE));
-
-  RunLoopUntilIdle();
-
-  // The second packet should have been queued.
-  ASSERT_EQ(kMaxNumPackets, packet_count);
-
-  // Mark the connection as closed so that destroying it doesn't send
-  // HCI_Disconnect. ACLDataChannel should get updated regardless.
-  conn->set_closed();
-
-  // This should allow the next packet to go out.
-  conn = nullptr;
-  RunLoopUntilIdle();
-  ASSERT_EQ(2u, packet_count);
-}
-
 // Test connection handling cases for all types of links.
 INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
                          ::testing::Values(Connection::LinkType::kACL, Connection::LinkType::kLE));

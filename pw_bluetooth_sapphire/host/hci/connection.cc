@@ -25,8 +25,9 @@ class ConnectionImpl final : public Connection {
 
   // Connection overrides:
   fxl::WeakPtr<Connection> WeakPtr() override;
-  void Close(StatusCode reason) override;
+  void Close(bool send_disconnect, StatusCode reason) override;
   bool StartEncryption() override;
+  bool is_open() const override { return is_open_; }
 
  private:
   // Start the BR/EDR link layer encryption. |ltk_| and |ltk_type_| must have already been set and
@@ -62,6 +63,8 @@ class ConnectionImpl final : public Connection {
 
   // The underlying HCI transport.
   fxl::RefPtr<Transport> hci_;
+
+  bool is_open_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
@@ -132,7 +135,6 @@ Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
     : ll_type_(ll_type),
       handle_(handle),
       role_(role),
-      is_open_(true),
       local_address_(local_address),
       peer_address_(peer_address) {
   ZX_DEBUG_ASSERT(handle_);
@@ -156,6 +158,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
                                const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
       hci_(hci),
+      is_open_(true),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
 
@@ -177,23 +180,19 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
 }
 
 ConnectionImpl::~ConnectionImpl() {
-  // Tell ACL data channel to clear all ACL buffering state related to this
-  // link.
-  hci_->acl_data_channel()->ClearLinkState(handle());
-
   // Unregister HCI event handlers.
   hci_->command_channel()->RemoveEventHandler(enc_change_id_);
   hci_->command_channel()->RemoveEventHandler(enc_key_refresh_cmpl_id_);
   hci_->command_channel()->RemoveEventHandler(le_ltk_request_id_);
 
-  Close(StatusCode::kRemoteUserTerminatedConnection);
+  Close(true, StatusCode::kRemoteUserTerminatedConnection);
 }
 
 fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-void ConnectionImpl::Close(StatusCode reason) {
+void ConnectionImpl::Close(bool send_disconnect, StatusCode reason) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  if (!is_open())
+  if (!is_open_)
     return;
 
   // The connection is immediately marked as closed as there is no reasonable
@@ -204,25 +203,26 @@ void ConnectionImpl::Close(StatusCode reason) {
   //
   // TODO(armansito): The procedure could also fail if "the command was not
   // presently allowed". Retry in that case?
-  set_closed();
+  is_open_ = false;
 
   // Here we send a HCI_Disconnect command without waiting for it to complete.
+  if (send_disconnect) {
+    auto status_cb = [](auto id, const EventPacket& event) {
+      ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
+      const auto& params = event.params<CommandStatusEventParams>();
+      if (params.status != StatusCode::kSuccess) {
+        bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x", params.status);
+      }
+    };
 
-  auto status_cb = [](auto id, const EventPacket& event) {
-    ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
-    const auto& params = event.params<CommandStatusEventParams>();
-    if (params.status != StatusCode::kSuccess) {
-      bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x", params.status);
-    }
-  };
+    auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
+    auto params = disconn->mutable_payload<DisconnectCommandParams>();
+    params->connection_handle = htole16(handle());
+    params->reason = reason;
 
-  auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
-  auto params = disconn->mutable_payload<DisconnectCommandParams>();
-  params->connection_handle = htole16(handle());
-  params->reason = reason;
-
-  hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
-                                       std::move(status_cb), kCommandStatusEventCode);
+    hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
+                                         std::move(status_cb), kCommandStatusEventCode);
+  }
 }
 
 bool ConnectionImpl::StartEncryption() {
@@ -330,7 +330,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
   if (!status) {
-    Close(StatusCode::kAuthenticationFailure);
+    Close(true, StatusCode::kAuthenticationFailure);
   } else {
     // TODO(BT-208): Tell the data channel to resume data flow.
   }

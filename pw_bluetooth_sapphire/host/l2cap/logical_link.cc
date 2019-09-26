@@ -268,7 +268,7 @@ void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());
-  ZX_ASSERT(send_packets_cb_(std::move(fragments)));
+  send_packets_cb_(std::move(fragments));
 }
 
 void LogicalLink::set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher) {

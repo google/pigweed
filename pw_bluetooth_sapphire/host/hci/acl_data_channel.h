@@ -105,23 +105,28 @@ class ACLDataChannel final {
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
-  // packets that are in |packets| are queued atomically.
+  // packets that are in |packets| are queued atomically. If any packet's handle is not registered
+  // in the allowlist, then none will be queued.
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for |ll_type| or it is empty.
   bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type);
 
+  // Allowlist packets destined for the link identified by |handle| for submission
+  // to the controller.
+  //
+  // Failure to register a link before sending packets will result in the packets
+  // being dropped immediately. A handle must not be registered again until after UnregisterLink has
+  // been called on that handle.
+  void RegisterLink(hci::ConnectionHandle handle);
+
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
-  // to ensure that ACL flow-control works correctly.
+  // to ensure that stale outbound packets are filtered out of the send queue.
+  // All future packets sent to this link will be dropped.
   //
-  // TODO(armansito): This doesn't fix things for subsequent data packets on
-  // this |handle| (either already queued by ACLDataChannel or waiting to be
-  // sent in an async task). Support enabling/disabling data flow with separate
-  // packet queues for each link so that we can drop packets for closed links.
-  // This is also needed to correctly pause TX data flow during encryption pause
-  // (NET-1169).
-  bool ClearLinkState(hci::ConnectionHandle handle);
+  // |RegisterLink| must be called before |UnregisterLink| for the same handle.
+  void UnregisterLink(hci::ConnectionHandle handle);
 
   // Returns the underlying channel handle.
   const zx::channel& channel() const { return channel_; }
@@ -261,6 +266,9 @@ class ACLDataChannel final {
     size_t count;
   };
   std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_ __TA_GUARDED(send_mutex_);
+
+  // Stores links registered by RegisterLink
+  std::unordered_set<hci::ConnectionHandle> registered_links_ __TA_GUARDED(send_mutex_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
 };

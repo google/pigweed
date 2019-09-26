@@ -68,6 +68,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     PostMessage([this, handle, role, lec = std::move(link_error_callback),
                  suc = std::move(security_callback), dispatcher]() mutable {
       if (l2cap_) {
+        ZX_DEBUG_ASSERT(hci_);
+        hci_->acl_data_channel()->RegisterLink(handle);
         l2cap_->RegisterACL(handle, role, std::move(lec), std::move(suc), dispatcher);
       }
     });
@@ -83,6 +85,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
                  lec = std::move(link_error_callback), suc = std::move(security_callback),
                  cc = std::move(channel_callback), dispatcher]() mutable {
       if (l2cap_) {
+        ZX_DEBUG_ASSERT(hci_);
+        hci_->acl_data_channel()->RegisterLink(handle);
         l2cap_->RegisterLE(handle, role, std::move(cpc), std::move(lec), std::move(suc),
                            dispatcher);
 
@@ -101,6 +105,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void RemoveConnection(hci::ConnectionHandle handle) override {
     PostMessage([this, handle] {
       if (l2cap_) {
+        ZX_DEBUG_ASSERT(hci_);
+        hci_->acl_data_channel()->UnregisterLink(handle);
         l2cap_->Unregister(handle);
       }
     });

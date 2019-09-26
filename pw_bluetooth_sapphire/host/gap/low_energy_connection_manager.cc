@@ -721,7 +721,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
     //
     // |close_link| is expected to be false only when this method is called due
     // to a disconnection that was not requested by the local host.
-    conn->link()->set_closed();
+    conn->link()->Close(false);
   }
 
   // The |conn| is destroyed when it goes out of scope.
