@@ -7,6 +7,7 @@
 
 #include <lib/fit/function.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 
@@ -18,6 +19,13 @@ namespace gap {
 class PairingDelegate {
  public:
   using ConfirmCallback = fit::function<void(bool confirm)>;
+
+  // Selects the intent of the passkey provided to the underlying pairing
+  // provider.
+  enum DisplayMethod {
+    kComparison,  // Both sides display a passkey which the user compares.
+    kPeerEntry,   // User enters the displayed passkey into the peer device.
+  };
 
   virtual ~PairingDelegate() = default;
 
@@ -32,9 +40,10 @@ class PairingDelegate {
   // |id| and confirm or reject by calling |confirm|.
   virtual void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) = 0;
 
-  // Ask the user to confirm the 6-digit |passkey| and report status by invoking
-  // |confirm|.
-  virtual void DisplayPasskey(PeerId peer_id, uint32_t passkey, ConfirmCallback confirm) = 0;
+  // Show the user the 6-digit |passkey| that should be compared to the peer's passkey or entered
+  // into the peer. |confirm| may be called to accept a comparison or to reject the pairing.
+  virtual void DisplayPasskey(PeerId peer_id, uint32_t passkey, DisplayMethod method,
+                              ConfirmCallback confirm) = 0;
 
   // Ask the user to enter a 6-digit passkey or reject pairing. Report the
   // result by invoking |respond|.

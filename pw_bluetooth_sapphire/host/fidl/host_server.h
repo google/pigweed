@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 
-#include <fbl/macros.h>
 #include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <lib/zx/channel.h>
 
 #include <memory>
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
@@ -75,8 +76,14 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   bt::sm::IOCapability io_capability() const override;
   void CompletePairing(bt::PeerId id, bt::sm::Status status) override;
   void ConfirmPairing(bt::PeerId id, ConfirmCallback confirm) override;
-  void DisplayPasskey(bt::PeerId id, uint32_t passkey, ConfirmCallback confirm) override;
+  void DisplayPasskey(bt::PeerId id, uint32_t passkey, DisplayMethod method,
+                      ConfirmCallback confirm) override;
   void RequestPasskey(bt::PeerId id, PasskeyResponseCallback respond) override;
+
+  // Common code used for showing a user intent (except passkey request).
+  void DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> passkey,
+                             fuchsia::bluetooth::control::PairingMethod method,
+                             ConfirmCallback confirm);
 
   // Called by |adapter()->peer_cache()| when a peer is updated.
   void OnPeerUpdated(const bt::gap::Peer& peer);
