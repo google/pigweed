@@ -571,17 +571,58 @@ TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate
   EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
 }
 
-// TODO(xow): Split into three tests depending on the pairing event expected.
-TEST_P(HandlesEvent, InWaitPairingEventStateAsInitiator) {
+TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
   // Advance state machine.
   static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == UserConfirmationRequest || event() == UserPasskeyRequest ||
-      event() == UserPasskeyNotification) {
+  if (event() == UserConfirmationRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsInitiator) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  ASSERT_TRUE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == UserPasskeyRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InWaitUserPasskeyNotificationStateAsInitiator) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  ASSERT_TRUE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == UserPasskeyNotification) {
     EXPECT_EQ(0, status_handler().call_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
@@ -591,15 +632,55 @@ TEST_P(HandlesEvent, InWaitPairingEventStateAsInitiator) {
 }
 
 // TODO(xow): Split into three tests depending on the pairing event expected.
-TEST_P(HandlesEvent, InWaitPairingEventStateAsResponder) {
+TEST_P(HandlesEvent, InWaitUserConfirmationStateAsResponder) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
   // Advance state machine.
-  pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
+  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   ASSERT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == UserConfirmationRequest || event() == UserPasskeyRequest ||
-      event() == UserPasskeyNotification) {
+  if (event() == UserConfirmationRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsResponder) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  ASSERT_FALSE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == UserPasskeyRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InWaitUserNotificationStateAsResponder) {
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  static_cast<void>(pairing_state().OnIoCapabilityRequest());
+  ASSERT_FALSE(pairing_state().initiator());
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == UserPasskeyNotification) {
     EXPECT_EQ(0, status_handler().call_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());

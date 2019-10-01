@@ -241,8 +241,11 @@ class PairingState final {
     // As responder, wait for IO Capability Request.
     kResponderWaitIoCapRequest,
 
-    // Wait for controller event for pairing action.
-    kWaitPairingEvent,
+    // Wait for controller event for pairing action. Only one of these will occur in a given pairing
+    // (see class documentation for pairing flow).
+    kWaitUserConfirmationRequest,
+    kWaitUserPasskeyRequest,
+    kWaitUserPasskeyNotification,
 
     // Wait for Simple Pairing Complete.
     kWaitPairingComplete,
@@ -268,9 +271,21 @@ class PairingState final {
 
     // Callbacks from callers of |InitiatePairing|.
     std::vector<StatusCallback> initiator_callbacks;
+
+    // IO Capability obtained from the pairing delegate.
+    hci::IOCapability local_iocap;
+
+    // IO Capability from peer through IO Capability Response.
+    hci::IOCapability peer_iocap;
+
+    // HCI event to respond to in order to complete or reject pairing.
+    hci::EventCode expected_event;
   };
 
   static const char* ToString(State state);
+
+  // Returns state for the three pairing action events, kFailed otherwise.
+  static State GetStateForPairingEvent(hci::EventCode event_code);
 
   // Peer for this pairing.
   PeerId peer_id() const { return peer_id_; }
@@ -296,6 +311,10 @@ class PairingState final {
   // event. Invokes |status_callback_| with HostError::kNotSupported and sets
   // |state_| to kFailed. Logs an error using |handler_name| for identification.
   void FailWithUnexpectedEvent(const char* handler_name);
+
+  // Compute the expected pairing event and state to occur after receiving the peer IO Capability
+  // and write it to |current_pairing_| (which must exist).
+  void WritePairingData();
 
   const PeerId peer_id_;
 
