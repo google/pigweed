@@ -203,7 +203,7 @@ void GattRemoteServiceDevice::Unbind() {
     dev_ = nullptr;
   }
   if (dev) {
-    device_remove(dev);
+    device_remove_deprecated(dev);
   }
 }
 

@@ -218,7 +218,7 @@ void HostDevice::CleanUp() {
   host_ = nullptr;
 
   if (dev_) {
-    device_remove(dev_);
+    device_remove_deprecated(dev_);
     dev_ = nullptr;
   }
 }
