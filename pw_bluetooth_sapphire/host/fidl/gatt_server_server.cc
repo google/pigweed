@@ -311,9 +311,14 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdTy
     return;
   }
 
-  auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> value, auto error_code) {
+  auto cb = [responder = std::move(responder)](fidl::VectorPtr<uint8_t> optional_value,
+                                               auto error_code) {
+    std::vector<uint8_t> value;
+    if (optional_value.has_value()) {
+      value = std::move(optional_value.value());
+    }
     responder(GattErrorCodeFromFidl(error_code, true /* is_read */),
-              bt::BufferView(value->data(), value->size()));
+              bt::BufferView(value.data(), value.size()));
   };
 
   auto* delegate = iter->second->delegate();
