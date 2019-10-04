@@ -9,7 +9,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel_manager.h"
 
 namespace bt {
 namespace data {
@@ -31,12 +30,9 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     PostMessage([this] {
       // This can only run once during initialization.
       ZX_DEBUG_ASSERT(!l2cap_);
-      ZX_DEBUG_ASSERT(!rfcomm_);
 
       InitializeL2CAP();
-      InitializeRFCOMM();
       l2cap_socket_factory_ = std::make_unique<internal::SocketFactory<l2cap::Channel>>();
-      rfcomm_socket_factory_ = std::make_unique<internal::SocketFactory<rfcomm::Channel>>();
 
       bt_log(TRACE, "data-domain", "initialized");
     });
@@ -48,9 +44,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
   void CleanUp() {
     AssertOnDispatcherThread();
     bt_log(TRACE, "data-domain", "shutting down");
-    rfcomm_socket_factory_ = nullptr;
     l2cap_socket_factory_ = nullptr;
-    rfcomm_ = nullptr;
 
     // If l2cap has been initialized, we should have an acl_data_channel, as the data domain is not
     // initialized until the acl channel is initialized.
@@ -58,7 +52,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
       ZX_ASSERT(hci_->acl_data_channel());
       hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
     }
-    l2cap_ = nullptr;  // Unregisters the RFCOMM PSM.
+    l2cap_ = nullptr;
   }
 
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -202,49 +196,15 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
 
-  void InitializeRFCOMM() {
-    AssertOnDispatcherThread();
-
-    // |this| is safe to capture here since |rfcomm_| is owned by |this| and the
-    // delegate callback only runs synchronously on |rfcomm_|'s creation thread
-    // as a result of OpenRemoteChannel.
-    rfcomm_ = std::make_unique<rfcomm::ChannelManager>(
-        [this](hci::ConnectionHandle handle, l2cap::ChannelCallback cb) {
-          l2cap_->OpenChannel(handle, l2cap::kRFCOMM, std::move(cb), dispatcher());
-        });
-
-    // Claim the RFCOMM PSM for inbound connections.
-    auto rfcomm_cb = [self = fbl::RefPtr(this)](auto channel) {
-      ZX_DEBUG_ASSERT(channel);
-      if (!self->rfcomm_) {
-        bt_log(SPEW, "data-domain", "RFCOMM connected after shutdown");
-        return;
-      }
-      if (self->rfcomm_->RegisterL2CAPChannel(std::move(channel))) {
-        bt_log(TRACE, "data-domain", "RFCOMM session initialized");
-      } else {
-        bt_log(ERROR, "data-domain", "failed to initialize RFCOMM session after L2CAP connection");
-      }
-    };
-
-    // Registering the RFCOMM PSM immediately after creation should always
-    // succeed.
-    bool result = l2cap_->RegisterService(l2cap::kRFCOMM, std::move(rfcomm_cb), dispatcher());
-    ZX_ASSERT_MSG(result, "failed to register RFCOMM PSM");
-  }
-
   // All members below must be accessed on the data domain thread.
 
   // Handle to the underlying HCI transport.
   fxl::RefPtr<hci::Transport> hci_;
 
   std::unique_ptr<l2cap::ChannelManager> l2cap_;
-  std::unique_ptr<rfcomm::ChannelManager> rfcomm_;
 
   // Creates sockets that bridge internal L2CAP channels to profile processes.
   std::unique_ptr<internal::SocketFactory<l2cap::Channel>> l2cap_socket_factory_;
-  // Creates sockets that bridge internal RFCOMM channels to profile processes.
-  std::unique_ptr<internal::SocketFactory<rfcomm::Channel>> rfcomm_socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };

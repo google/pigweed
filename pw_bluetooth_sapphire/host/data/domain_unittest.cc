@@ -299,6 +299,55 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_EQ(0, rx_count);
 }
 
+TEST_F(DATA_DomainTest, InboundRfcommSocketFails) {
+  constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
+  // constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  // Register a fake link.
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  RunLoopUntilIdle();
+
+  bool responded = false;
+  auto response_cb = [=, &responded](const auto& bytes) {
+    responded = true;
+    auto kConnectionRejectedResponse = CreateStaticByteBuffer(
+        // ACL Data header (handle, length = 16)
+        LowerBits(kLinkHandle), UpperBits(kLinkHandle), 0x10, 0x00,
+        // L2CAP b-frame header (length = 12, cid)
+        0x0c, 0x00, 0x01, 0x00,
+        // Connnection Response, ID: 1, length: 8,
+        0x03, 0x01, 0x08, 0x00,
+        // |dest cid|, |source cid|
+        0x00, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId),
+        // Result: refused|, |status|
+        0x02, 0x00, 0x00, 0x00);
+    ASSERT_TRUE(ContainersEqual(kConnectionRejectedResponse, bytes));
+  };
+
+  test_device()->SetDataCallback(response_cb, dispatcher());
+
+  // clang-format off
+  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
+      // ACL data header (handle: |link_handle|, length: 12 bytes)
+      LowerBits(kLinkHandle), UpperBits(kLinkHandle), 0x0c, 0x00,
+
+      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
+      0x08, 0x00, 0x01, 0x00,
+
+      // Connection Request (ID: 1, length: 4, |psm|, |src_id|)
+      0x02, 0x01, 0x04, 0x00,
+      LowerBits(kPSM), UpperBits(kPSM), LowerBits(kRemoteId), UpperBits(kRemoteId)));
+  // clang-format on
+
+  RunLoopUntilIdle();
+  // Incoming connection refused, RFCOMM is not routed.
+  ASSERT_TRUE(responded);
+}
+
 TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr l2cap::PSM kPSM = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
@@ -561,9 +610,6 @@ TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
   data_domain = nullptr;
   SUCCEED();
 }
-
-// TODO(armansito): Add unit tests for RFCOMM sockets when the Domain class
-// has a public API for it.
 
 }  // namespace
 }  // namespace data
