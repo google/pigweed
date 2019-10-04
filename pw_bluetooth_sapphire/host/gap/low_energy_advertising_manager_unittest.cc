@@ -217,6 +217,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp;  // Empty scan response
 
+  EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, /*anonymous=*/false,
                               GetSuccessCallback());
 
@@ -224,6 +225,7 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
 
   EXPECT_TRUE(MoveLastStatus());
   ASSERT_EQ(1u, ad_store().size());
+  EXPECT_TRUE(adv_mgr()->advertising());
 
   // Verify that the advertiser uses the requested local address.
   EXPECT_EQ(kRandomAddress, ad_store().begin()->first);
@@ -273,9 +275,11 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_EQ(1u, ad_store().size());
+  EXPECT_TRUE(adv_mgr()->advertising());
 
   EXPECT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
   EXPECT_TRUE(ad_store().empty());
+  EXPECT_FALSE(adv_mgr()->advertising());
 
   EXPECT_FALSE(adv_mgr()->StopAdvertising(last_ad_id()));
   EXPECT_TRUE(ad_store().empty());
@@ -287,12 +291,13 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertiserError) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp;
 
+  EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, false /* anonymous */,
                               GetErrorCallback());
-
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
+  EXPECT_FALSE(adv_mgr()->advertising());
 }
 
 //  - It calls the connectable callback correctly when connected to
@@ -393,6 +398,85 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertisingIntervals) {
   EXPECT_EQ(kLEAdvertisingSlowIntervalMin, current_adv()->interval_min);
   EXPECT_EQ(kLEAdvertisingSlowIntervalMax, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
+}
+
+TEST_F(GAP_LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
+  {
+    AdvertisementInstance instance;
+    adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                                AdvertisingInterval::FAST1, /*anonymous=*/false,
+                                [&](AdvertisementInstance i, auto status) {
+                                  ASSERT_TRUE(status);
+                                  instance = std::move(i);
+                                });
+    RunLoopUntilIdle();
+    EXPECT_TRUE(adv_mgr()->advertising());
+
+    // Destroying |instance| should stop the advertisement.
+  }
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adv_mgr()->advertising());
+}
+
+TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
+  AdvertisementInstance instance;
+  adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                              AdvertisingInterval::FAST1, /*anonymous=*/false,
+                              [&](AdvertisementInstance i, auto status) {
+                                ASSERT_TRUE(status);
+                                instance = std::move(i);
+                              });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(adv_mgr()->advertising());
+
+  // Destroying |instance| by invoking the move assignment operator should stop the advertisement.
+  instance = {};
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adv_mgr()->advertising());
+}
+
+TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAdvertisement) {
+  auto instance = std::make_unique<AdvertisementInstance>();
+  adv_mgr()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                              AdvertisingInterval::FAST1, /*anonymous=*/false,
+                              [&](AdvertisementInstance i, auto status) {
+                                ASSERT_TRUE(status);
+                                *instance = std::move(i);
+                              });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(adv_mgr()->advertising());
+
+  // Moving |instance| should transfer the ownership of the advertisement (assignment).
+  {
+    AdvertisementInstance move_assigned_instance = std::move(*instance);
+
+    // Explicitly clearing the old instance should have no effect.
+    *instance = {};
+    RunLoopUntilIdle();
+    EXPECT_TRUE(adv_mgr()->advertising());
+
+    *instance = std::move(move_assigned_instance);
+  }
+
+  // Advertisement should not stop when |move_assigned_instance| goes out of scope as it no longer
+  // owns the advertisement.
+  RunLoopUntilIdle();
+  EXPECT_TRUE(adv_mgr()->advertising());
+
+  // Moving |instance| should transfer the ownership of the advertisement (move-constructor).
+  {
+    AdvertisementInstance move_constructed_instance(std::move(*instance));
+
+    // Explicitly destroying the old instance should have no effect.
+    instance.reset();
+    RunLoopUntilIdle();
+    EXPECT_TRUE(adv_mgr()->advertising());
+  }
+
+  // Advertisement should stop when |move_constructed_instance| goes out of scope.
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adv_mgr()->advertising());
 }
 
 }  // namespace

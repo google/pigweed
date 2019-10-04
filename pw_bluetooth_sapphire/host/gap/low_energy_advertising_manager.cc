@@ -60,10 +60,25 @@ AdvertisementInstance::AdvertisementInstance(AdvertisementId id,
   ZX_DEBUG_ASSERT(owner_);
 }
 
-AdvertisementInstance::~AdvertisementInstance() {
-  if (owner_) {
+AdvertisementInstance::~AdvertisementInstance() { Reset(); }
+
+void AdvertisementInstance::Move(AdvertisementInstance* other) {
+  // Destroy the old advertisement instance if active and clear the contents.
+  Reset();
+
+  // Transfer the old data over and clear |other| so that it no longer owns its advertisement.
+  owner_ = std::move(other->owner_);
+  id_ = other->id_;
+  other->id_ = kInvalidAdvertisementId;
+}
+
+void AdvertisementInstance::Reset() {
+  if (owner_ && id_ != kInvalidAdvertisementId) {
     owner_->StopAdvertising(id_);
   }
+
+  owner_.reset();
+  id_ = kInvalidAdvertisementId;
 }
 
 class LowEnergyAdvertisingManager::ActiveAdvertisement final {

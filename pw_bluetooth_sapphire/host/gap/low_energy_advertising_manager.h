@@ -36,8 +36,11 @@ class AdvertisementInstance final {
   AdvertisementInstance();
   ~AdvertisementInstance();
 
-  AdvertisementInstance(AdvertisementInstance&&) = default;
-  AdvertisementInstance& operator=(AdvertisementInstance&&) = default;
+  AdvertisementInstance(AdvertisementInstance&& other) { Move(&other); }
+  AdvertisementInstance& operator=(AdvertisementInstance&& other) {
+    Move(&other);
+    return *this;
+  }
 
   AdvertisementId id() const { return id_; }
 
@@ -45,6 +48,8 @@ class AdvertisementInstance final {
   friend class LowEnergyAdvertisingManager;
 
   AdvertisementInstance(AdvertisementId id, fxl::WeakPtr<LowEnergyAdvertisingManager> owner);
+  void Move(AdvertisementInstance* other);
+  void Reset();
 
   AdvertisementId id_;
   fxl::WeakPtr<LowEnergyAdvertisingManager> owner_;
@@ -65,6 +70,9 @@ class LowEnergyAdvertisingManager {
   LowEnergyAdvertisingManager(hci::LowEnergyAdvertiser* advertiser,
                               hci::LocalAddressDelegate* local_addr_delegate);
   virtual ~LowEnergyAdvertisingManager();
+
+  // Returns true if the controller is currently advertising.
+  bool advertising() const { return !advertisements_.empty(); }
 
   // Asynchronously attempts to start advertising a set of |data| with
   // additional scan response data |scan_rsp|.
