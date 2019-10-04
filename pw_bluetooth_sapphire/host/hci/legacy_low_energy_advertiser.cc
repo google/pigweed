@@ -172,14 +172,13 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
         ZX_DEBUG_ASSERT(starting_);
         starting_ = false;
 
-        bt_log(TRACE, "hci-le", "advertising status: %s", status.ToString().c_str());
-
-        if (status) {
-          advertised_ = address;
-          connect_callback_ = std::move(connect_callback);
-        } else {
+        if (bt_is_error(status, ERROR, "hci-le", "failed to start advertising")) {
           // Clear out the advertising data if it partially succeeded.
           StopAdvertisingInternal();
+        } else {
+          bt_log(INFO, "hci-le", "advertising enabled");
+          advertised_ = address;
+          connect_callback_ = std::move(connect_callback);
         }
 
         callback(status);
@@ -234,7 +233,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
   hci_cmd_runner_->QueueCommand(std::move(scan_rsp_packet));
 
   hci_cmd_runner_->RunCommands(
-      [](Status status) { bt_log(TRACE, "hci-le", "advertising stopped: %s", bt_str(status)); });
+      [](Status status) { bt_log(INFO, "hci-le", "advertising stopped: %s", bt_str(status)); });
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Connection::Role role,
