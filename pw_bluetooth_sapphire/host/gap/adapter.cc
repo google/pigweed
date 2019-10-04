@@ -290,41 +290,6 @@ void Adapter::InitializeStep2(InitializeCallback callback) {
         if (mtu && max_count) {
           state_.le_state_.data_buffer_info_ = hci::DataBufferInfo(mtu, max_count);
         }
-        bt_log(TRACE, "gap", "LE read buffer size mtu=%u max_count=%c", mtu, max_count);
-      });
-
-  // HCI_LE_Read_Maximum_Data_Length
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci::kLEReadMaximumDataLength),
-      [](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "LE read maximum data length failed")) {
-          return;
-        }
-        auto params = cmd_complete.return_params<hci::LEReadMaximumDataLengthReturnParams>();
-        uint16_t max_tx_octets = le16toh(params->supported_max_tx_octets);
-        uint16_t max_tx_time = le16toh(params->supported_max_tx_time);
-        uint16_t max_rx_octets = le16toh(params->supported_max_rx_octets);
-        uint16_t max_rx_time = le16toh(params->supported_max_rx_time);
-        bt_log(TRACE, "gap",
-               "LE read max data length tx_octets=%u tx_time=%u rx_octets=%u rx_time=%u",
-               max_tx_octets, max_tx_time, max_rx_octets, max_rx_time);
-      });
-
-  // HCI_LE_Read_Suggested_Default_Data_Length
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci::kLEReadSuggestedDefaultDataLength),
-      [](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap",
-                         "LE read suggested default data length failed")) {
-          return;
-        }
-        auto params =
-            cmd_complete.return_params<hci::LEReadSuggestedDefaultDataLengthReturnParams>();
-        uint16_t max_tx_octets = le16toh(params->suggested_max_tx_octets);
-        uint16_t max_tx_time = le16toh(params->suggested_max_tx_time);
-        bt_log(TRACE, "gap",
-               "LE read suggested default data length max_tx_octets=%u max_tx_time=%u",
-               max_tx_octets, max_tx_time);
       });
 
   if (state_.features().HasBit(0u, hci::LMPFeature::kSecureSimplePairing)) {

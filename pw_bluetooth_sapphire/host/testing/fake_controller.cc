@@ -1090,32 +1090,6 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       RespondWithCommandComplete(hci::kLEReadBufferSize, BufferView(&params, sizeof(params)));
       break;
     }
-    case hci::kLEReadMaximumDataLength: {
-      // Maximum supported values where LE Data Packet Length Extension feature is supported
-      // and LE Coded PHY feature is not supported.
-      // See Core Spec v5.0 Vol 6, Part B, Table 4.3
-      hci::LEReadMaximumDataLengthReturnParams params;
-      params.status = hci::StatusCode::kSuccess;
-      params.supported_max_tx_octets = htole16(251);
-      params.supported_max_tx_time = htole16(2120);
-      params.supported_max_rx_octets = htole16(251);
-      params.supported_max_rx_time = htole16(2120);
-      RespondWithCommandComplete(hci::kLEReadMaximumDataLength,
-                                 BufferView(&params, sizeof(params)));
-      break;
-    }
-    case hci::kLEReadSuggestedDefaultDataLength: {
-      // Suggested default maximum supported values chosen to support devices without support for
-      // the LE Data Packet Length Extension feature or the LE Coded PHY feature.
-      // See Core Spec v5.0 Vol 6, Part B, Table 4.3
-      hci::LEReadSuggestedDefaultDataLengthReturnParams params;
-      params.status = hci::StatusCode::kSuccess;
-      params.suggested_max_tx_octets = htole16(27);
-      params.suggested_max_tx_time = htole16(328);
-      RespondWithCommandComplete(hci::kLEReadSuggestedDefaultDataLength,
-                                 BufferView(&params, sizeof(params)));
-      break;
-    }
     case hci::kSetEventMask: {
       const auto& in_params = command_packet.payload<hci::SetEventMaskCommandParams>();
       settings_.event_mask = le64toh(in_params.event_mask);
