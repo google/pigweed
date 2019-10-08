@@ -123,7 +123,8 @@ void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
   rx_dispatcher_ = rx_dispatcher;
 }
 
-bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type) {
+bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
+                                l2cap::ChannelId channel_id) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -144,14 +145,15 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
     return false;
   }
 
-  send_queue_.emplace_back(QueuedDataPacket(ll_type, std::move(data_packet)));
+  send_queue_.emplace_back(ll_type, channel_id, std::move(data_packet));
 
   TrySendNextQueuedPacketsLocked();
 
   return true;
 }
 
-bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type) {
+bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
+                                 l2cap::ChannelId channel_id) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -181,7 +183,7 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
   }
 
   while (!packets.is_empty()) {
-    send_queue_.emplace_back(QueuedDataPacket(ll_type, packets.pop_front()));
+    send_queue_.emplace_back(ll_type, channel_id, packets.pop_front());
   }
 
   TrySendNextQueuedPacketsLocked();
@@ -238,6 +240,20 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
 
   // Try sending the next batch of packets in case buffer space opened up.
   TrySendNextQueuedPacketsLocked();
+}
+
+void ACLDataChannel::DropQueuedPackets(ACLPacketPredicate predicate) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
+  // remove packets with matching channel id in send queue
+  const size_t before_count = send_queue_.size();
+  send_queue_.remove_if([&predicate](const QueuedDataPacket& packet) {
+    return predicate(packet.packet, packet.channel_id);
+  });
+  const size_t removed_count = before_count - send_queue_.size();
+  if (removed_count > 0) {
+    bt_log(SPEW, "hci", "packets dropped from send queue (count: %lu)", removed_count);
+  }
 }
 
 const DataBufferInfo& ACLDataChannel::GetBufferInfo() const { return bredr_buffer_info_; }

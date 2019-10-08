@@ -10,7 +10,11 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -58,9 +62,13 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     TestingBase::SetUp();
 
     auto send_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets);
+    auto drop_queued_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::DropQueuedPackets);
     chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
-                                                std::move(send_packets), dispatcher());
+                                                std::move(send_packets),
+                                                std::move(drop_queued_packets), dispatcher());
     packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
+
+    drop_queued_packets_cb_ = [](hci::ACLPacketPredicate) {};
   }
 
   void TearDown() override {
@@ -145,8 +153,13 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
   ChannelManager* chanmgr() const { return chanmgr_.get(); }
 
+  void set_drop_queued_packets_cb(ChannelManager::DropQueuedAclCallback cb) {
+    drop_queued_packets_cb_ = std::move(cb);
+  }
+
  private:
-  bool SendPackets(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type) {
+  bool SendPackets(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type,
+                   ChannelId channel_id = kInvalidChannelId) {
     for (const auto& packet : packets) {
       const ByteBuffer& data = packet.view().data();
       if (expected_packets_.empty()) {
@@ -167,8 +180,13 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     return !packets.is_empty();
   }
 
+  void DropQueuedPackets(hci::ACLPacketPredicate filter) {
+    drop_queued_packets_cb_(std::move(filter));
+  }
+
   std::unique_ptr<ChannelManager> chanmgr_;
   hci::ACLPacketHandler packet_rx_handler_;
+  ChannelManager::DropQueuedAclCallback drop_queued_packets_cb_;
 
   std::queue<const PacketExpectation> expected_packets_;
 
@@ -952,11 +970,33 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(3));
 
+  // Packets for testing filter against
+  constexpr hci::ConnectionHandle kTestHandle2 = 0x02;
+  constexpr ChannelId kWrongChannelId = 0x02;
+  auto dummy_packet1 =
+      hci::ACLDataPacket::New(kTestHandle1, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+  auto dummy_packet2 =
+      hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+  size_t filter_cb_count = 0;
+  auto filter_cb = [&](hci::ACLPacketPredicate filter) {
+    // filter out correct closed channel on correct connection handle
+    EXPECT_TRUE(filter(dummy_packet1, kLocalId));
+    // do not filter out other channels
+    EXPECT_FALSE(filter(dummy_packet1, kWrongChannelId));
+    // do not filter out other connections
+    EXPECT_FALSE(filter(dummy_packet2, kLocalId));
+    filter_cb_count++;
+  };
+  set_drop_queued_packets_cb(std::move(filter_cb));
+
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_EQ(1u, filter_cb_count);
 
   // clang-format off
   ReceiveAclDataPacket(CreateStaticByteBuffer(
@@ -1063,6 +1103,27 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionResponse(7));
 
+  // Packets for testing filter against
+  constexpr hci::ConnectionHandle kTestHandle2 = 0x02;
+  constexpr ChannelId kWrongChannelId = 0x02;
+  auto dummy_packet1 =
+      hci::ACLDataPacket::New(kTestHandle1, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+  auto dummy_packet2 =
+      hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 0x00);
+  size_t filter_cb_count = 0;
+  auto filter_cb = [&](hci::ACLPacketPredicate filter) {
+    // filter out correct closed channel
+    EXPECT_TRUE(filter(dummy_packet1, kLocalId));
+    // do not filter out other channels
+    EXPECT_FALSE(filter(dummy_packet1, kWrongChannelId));
+    // do not filter out other connections
+    EXPECT_FALSE(filter(dummy_packet2, kLocalId));
+    filter_cb_count++;
+  };
+  set_drop_queued_packets_cb(std::move(filter_cb));
+
   // clang-format off
   ReceiveAclDataPacket(CreateStaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
@@ -1091,6 +1152,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 
   EXPECT_TRUE(channel_closed);
   EXPECT_FALSE(sdu_received);
+  EXPECT_EQ(1u, filter_cb_count);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {

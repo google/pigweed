@@ -190,9 +190,12 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     ZX_ASSERT(acl_buffer_info.IsAvailable());
     auto send_packets =
         fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::SendPackets);
-    l2cap_ = std::make_unique<l2cap::ChannelManager>(acl_buffer_info.max_data_length(),
-                                                     le_buffer_info.max_data_length(),
-                                                     std::move(send_packets), dispatcher());
+    auto drop_queued_acl =
+        fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::DropQueuedPackets);
+
+    l2cap_ = std::make_unique<l2cap::ChannelManager>(
+        acl_buffer_info.max_data_length(), le_buffer_info.max_data_length(),
+        std::move(send_packets), std::move(drop_queued_acl), dispatcher());
     hci_->acl_data_channel()->SetDataRxHandler(l2cap_->MakeInboundDataHandler(), dispatcher());
   }
 

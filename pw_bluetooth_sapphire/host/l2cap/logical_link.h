@@ -22,6 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -45,7 +46,10 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
  public:
   // Used to schedule a sequence of packets to be sent to the Bluetooth controller for the type of
   // link represented by this object.
-  using SendPacketsCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets)>;
+  using SendPacketsCallback =
+      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id)>;
+
+  using DropQueuedAclCallback = ChannelManager::DropQueuedAclCallback;
 
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
@@ -62,6 +66,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                                       hci::Connection::Role role, async_dispatcher_t* dispatcher,
                                       size_t max_payload_size, SendPacketsCallback send_packets_cb,
+                                      DropQueuedAclCallback drop_queued_acl_cb,
                                       QueryServiceCallback query_service_cb);
 
   // Notifies and closes all open channels on this link. This must be called to
@@ -141,7 +146,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
               hci::Connection::Role role, async_dispatcher_t* dispatcher,
               size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
-              QueryServiceCallback query_service_cb);
+              DropQueuedAclCallback drop_queued_acl_cb, QueryServiceCallback query_service_cb);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -234,6 +239,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Queues data packets to be delivered to the controller and sent over the underlying link.
   SendPacketsCallback send_packets_cb_;
+
+  // Drops data packets queued for delivery to controller.
+  DropQueuedAclCallback drop_queued_acl_cb_;
 
   // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;

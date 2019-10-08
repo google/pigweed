@@ -14,13 +14,17 @@ namespace bt {
 namespace l2cap {
 
 ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                               SendAclCallback send_acl_cb, async_dispatcher_t* l2cap_dispatcher)
+                               SendAclCallback send_acl_cb,
+                               DropQueuedAclCallback drop_queued_acl_cb,
+                               async_dispatcher_t* l2cap_dispatcher)
     : max_acl_payload_size_(max_acl_payload_size),
       max_le_payload_size_(max_le_payload_size),
       send_acl_cb_(std::move(send_acl_cb)),
+      drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
       l2cap_dispatcher_(l2cap_dispatcher),
       weak_ptr_factory_(this) {
   ZX_ASSERT(send_acl_cb_);
+  ZX_ASSERT(drop_queued_acl_cb_);
   ZX_ASSERT(l2cap_dispatcher_);
 }
 
@@ -201,12 +205,12 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   auto iter = ll_map_.find(handle);
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
-  auto send_acl_cb = [this, ll_type](auto packets) {
-    return send_acl_cb_(std::move(packets), ll_type);
+  auto send_acl_cb = [this, ll_type](auto packets, ChannelId channel_id) {
+    return send_acl_cb_(std::move(packets), ll_type, channel_id);
   };
 
   auto ll = internal::LogicalLink::New(handle, ll_type, role, l2cap_dispatcher_, max_payload_size,
-                                       std::move(send_acl_cb),
+                                       std::move(send_acl_cb), drop_queued_acl_cb_.share(),
                                        fit::bind_member(this, &ChannelManager::QueryService));
 
   // Route all pending packets to the link.

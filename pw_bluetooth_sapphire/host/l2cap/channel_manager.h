@@ -14,10 +14,12 @@
 
 #include <fbl/macros.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -58,8 +60,14 @@ class ChannelManager final {
   // controller's ACL endpoint. All the packets in each invocation must be transmitted contiguously
   // and in order. This will be called on the thread which the ChannelManager object is created, up
   // to the object's duration.
-  using SendAclCallback = fit::function<bool(LinkedList<hci::ACLDataPacket> packets,
-                                             hci::Connection::LinkType ll_type)>;
+  using SendAclCallback =
+      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type,
+                         ChannelId channel_id)>;
+
+  // Used to drop stale queued ACL data packets for which |predicate| returns true (eg. when their
+  // link has been disconnected). Queued ACL data packets are those that were sent with
+  // |SendAclCallback| but not have not yet been transmitted to the controller.
+  using DropQueuedAclCallback = fit::function<void(hci::ACLPacketPredicate predicate)>;
 
   // Creates L2CAP state for logical links and channels.
   //
@@ -70,7 +78,8 @@ class ChannelManager final {
   //
   // State changes are processed on |l2cap_dispatcher|.
   ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                 SendAclCallback send_acl_cb, async_dispatcher_t* l2cap_dispatcher);
+                 SendAclCallback send_acl_cb, DropQueuedAclCallback filter_acl_cb,
+                 async_dispatcher_t* l2cap_dispatcher);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -173,6 +182,9 @@ class ChannelManager final {
 
   // Queues data packets to be delivered to the controller for a given link type.
   SendAclCallback send_acl_cb_;
+
+  // Drops data packets pending delivery to the controller.
+  DropQueuedAclCallback drop_queued_acl_cb_;
 
   async_dispatcher_t* l2cap_dispatcher_;
 

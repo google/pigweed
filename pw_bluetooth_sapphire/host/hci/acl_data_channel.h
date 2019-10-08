@@ -23,6 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace hci {
@@ -66,6 +67,9 @@ class DataBufferInfo {
 //
 // This currently only supports the Packet-based Data Flow Control as defined in
 // Core Spec v5.0, Vol 2, Part E, Section 4.1.1.
+using ACLPacketPredicate =
+    fit::function<bool(const ACLDataPacketPtr& packet, l2cap::ChannelId channel_id)>;
+
 class ACLDataChannel final {
  public:
   ACLDataChannel(Transport* transport, zx::channel hci_acl_channel);
@@ -101,7 +105,13 @@ class ACLDataChannel final {
   //
   // |data_packet| is passed by value, meaning that ACLDataChannel will take
   // ownership of it. |data_packet| must represent a valid ACL data packet.
-  bool SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type);
+  //
+  // |channel_id| must match the l2cap channel that the packet is being sent to. It is needed to
+  // determine what channel l2cap packet fragments are being sent to when revoking queued packets
+  // for specific channels that have closed. If the packet does not contain a fragment of an l2cap
+  // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
+  bool SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
+                  l2cap::ChannelId channel_id);
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
@@ -110,7 +120,13 @@ class ACLDataChannel final {
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for |ll_type| or it is empty.
-  bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type);
+  //
+  // |channel_id| must match the l2cap channel that all packets is being sent to. It is needed to
+  // determine what channel l2cap packet fragments are being sent to when revoking queued packets
+  // for channels that have closed. If the packets do not contain a fragment of an l2cap
+  // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
+  bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
+                   l2cap::ChannelId channel_id);
 
   // Allowlist packets destined for the link identified by |handle| for submission
   // to the controller.
@@ -128,6 +144,9 @@ class ACLDataChannel final {
   // |RegisterLink| must be called before |UnregisterLink| for the same handle.
   void UnregisterLink(hci::ConnectionHandle handle);
 
+  // Removes all queued data packets for which |predicate| returns true.
+  void DropQueuedPackets(ACLPacketPredicate predicate);
+
   // Returns the underlying channel handle.
   const zx::channel& channel() const { return channel_; }
 
@@ -143,14 +162,16 @@ class ACLDataChannel final {
  private:
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {
-    QueuedDataPacket(Connection::LinkType ll_type, ACLDataPacketPtr packet)
-        : ll_type(ll_type), packet(std::move(packet)) {}
+    QueuedDataPacket(Connection::LinkType ll_type, l2cap::ChannelId channel_id,
+                     ACLDataPacketPtr packet)
+        : ll_type(ll_type), channel_id(channel_id), packet(std::move(packet)) {}
 
     QueuedDataPacket() = default;
     QueuedDataPacket(QueuedDataPacket&& other) = default;
     QueuedDataPacket& operator=(QueuedDataPacket&& other) = default;
 
     Connection::LinkType ll_type;
+    l2cap::ChannelId channel_id;
     ACLDataPacketPtr packet;
   };
 

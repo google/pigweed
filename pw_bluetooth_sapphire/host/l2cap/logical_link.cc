@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -52,9 +53,11 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 fbl::RefPtr<LogicalLink> LogicalLink::New(
     hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
     async_dispatcher_t* dispatcher, size_t max_acl_payload_size,
-    SendPacketsCallback send_packets_cb, QueryServiceCallback query_service_cb) {
+    SendPacketsCallback send_packets_cb, DropQueuedAclCallback drop_queued_acl_cb,
+    QueryServiceCallback query_service_cb) {
   auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, dispatcher, max_acl_payload_size,
-                                          std::move(send_packets_cb), std::move(query_service_cb)));
+                                          std::move(send_packets_cb), std::move(drop_queued_acl_cb),
+                                          std::move(query_service_cb)));
   ll->Initialize();
   return ll;
 }
@@ -62,6 +65,7 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                          hci::Connection::Role role, async_dispatcher_t* dispatcher,
                          size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
+                         DropQueuedAclCallback drop_queued_acl_cb,
                          QueryServiceCallback query_service_cb)
     : dispatcher_(dispatcher),
       handle_(handle),
@@ -70,10 +74,12 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       closed_(false),
       fragmenter_(handle, max_acl_payload_size),
       send_packets_cb_(std::move(send_packets_cb)),
+      drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
       query_service_cb_(std::move(query_service_cb)) {
   ZX_ASSERT(dispatcher_);
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
   ZX_ASSERT(send_packets_cb_);
+  ZX_ASSERT(drop_queued_acl_cb_);
   ZX_ASSERT(query_service_cb_);
 }
 
@@ -268,7 +274,7 @@ void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());
-  send_packets_cb_(std::move(fragments));
+  send_packets_cb_(std::move(fragments), id);
 }
 
 void LogicalLink::set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher) {
@@ -320,6 +326,12 @@ void LogicalLink::RemoveChannel(Channel* chan) {
 
   pending_pdus_.erase(id);
   channels_.erase(iter);
+
+  // Drop stale packets queued for this channel.
+  hci::ACLPacketPredicate predicate = [this, id](const auto& packet, l2cap::ChannelId channel_id) {
+    return packet->connection_handle() == handle_ && id == channel_id;
+  };
+  drop_queued_acl_cb_(std::move(predicate));
 
   // Disconnect the channel if it's a dynamic channel. This path is for local-
   // initiated closures and does not invoke callbacks back to the channel user.
@@ -386,6 +398,12 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   fbl::RefPtr<ChannelImpl> channel = std::move(iter->second);
   ZX_DEBUG_ASSERT(channel->remote_id() == dyn_chan->remote_cid());
   channels_.erase(iter);
+
+  hci::ACLPacketPredicate predicate = [this, id = channel->id()](const auto& packet,
+                                                              l2cap::ChannelId channel_id) {
+    return packet->connection_handle() == handle_ && id == channel_id;
+  };
+  drop_queued_acl_cb_(std::move(predicate));
 
   // Signal closure because this is a remote disconnection.
   channel->OnClosed();
