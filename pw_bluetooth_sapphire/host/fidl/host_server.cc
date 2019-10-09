@@ -666,13 +666,13 @@ bt::sm::IOCapability HostServer::io_capability() const {
 }
 
 void HostServer::CompletePairing(PeerId id, bt::sm::Status status) {
-  bt_log(INFO, "bt-host", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
+  bt_log(TRACE, "bt-host", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(id.ToString(), StatusToFidl(status));
 }
 
 void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {
-  bt_log(INFO, "bt-host", "pairing confirmation request for peer: %s", bt_str(id));
+  bt_log(TRACE, "bt-host", "pairing confirmation request for peer: %s", bt_str(id));
   DisplayPairingRequest(id, std::nullopt, fuchsia::bluetooth::control::PairingMethod::CONSENT,
                         std::move(confirm));
 }
@@ -681,16 +681,16 @@ void HostServer::DisplayPasskey(PeerId id, uint32_t passkey, DisplayMethod metho
                                 ConfirmCallback confirm) {
   auto fidl_method = fuchsia::bluetooth::control::PairingMethod::PASSKEY_DISPLAY;
   if (method == DisplayMethod::kComparison) {
-    bt_log(INFO, "bt-host", "compare passkey %06u on peer: %s", passkey, bt_str(id));
+    bt_log(TRACE, "bt-host", "compare passkey %06u on peer: %s", passkey, bt_str(id));
     fidl_method = fuchsia::bluetooth::control::PairingMethod::PASSKEY_COMPARISON;
   } else {
-    bt_log(INFO, "bt-host", "enter passkey %06u on peer: %s", passkey, bt_str(id));
+    bt_log(TRACE, "bt-host", "enter passkey %06u on peer: %s", passkey, bt_str(id));
   }
   DisplayPairingRequest(id, passkey, fidl_method, std::move(confirm));
 }
 
 void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
-  bt_log(INFO, "bt-host", "passkey request for peer: %s", bt_str(id));
+  bt_log(TRACE, "bt-host", "passkey request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
   ZX_ASSERT(found_peer);
   auto device = fidl_helpers::NewRemoteDevicePtr(*found_peer);
@@ -700,22 +700,26 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   pairing_delegate_->OnPairingRequest(
       std::move(*device), fuchsia::bluetooth::control::PairingMethod::PASSKEY_ENTRY, nullptr,
       [respond = std::move(respond)](const bool success, fidl::StringPtr passkey) {
-        bt_log(INFO, "bt-host", "got peer passkey: \"%s\"", passkey.value().c_str());
+        bt_log(TRACE, "bt-host", "got peer response: %s, \"%s\"", success ? "success" : "failure",
+               passkey.has_value() ? passkey.value().c_str() : "(null)");
         if (!success) {
           respond(-1);
-        } else {
-          uint32_t response;
-          if (!passkey.has_value()) {
-            bt_log(ERROR, "bt-host", "Passkey not supplied");
-            respond(-1);
-          } else if (!fxl::StringToNumberWithError<uint32_t>(passkey.value(), &response)) {
-            bt_log(ERROR, "bt-host", "Unrecognized integer in string: '%s'",
-                   passkey.value().c_str());
-            respond(-1);
-          } else {
-            respond(response);
-          }
+          return;
         }
+        if (!passkey.has_value()) {
+          bt_log(WARN, "bt-host", "Passkey not supplied");
+          respond(-1);
+          return;
+        }
+        uint32_t response;
+        if (!fxl::StringToNumberWithError<uint32_t>(passkey.value(), &response)) {
+          bt_log(WARN, "bt-host", "Unrecognized integer in string: \"%s\"",
+                 passkey.value().c_str());
+          respond(-1);
+          return;
+        }
+        bt_log(SPEW, "bt-host", "got peer passkey: \"%u\"", response);
+        respond(response);
       });
 }
 
@@ -735,6 +739,8 @@ void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> pa
   pairing_delegate_->OnPairingRequest(
       std::move(*device), method, displayed_passkey,
       [confirm = std::move(confirm)](const bool success, fidl::StringPtr passkey) {
+        bt_log(TRACE, "bt-host", "got peer response: %s, \"%s\"", success ? "success" : "failure",
+               passkey.has_value() ? passkey.value().c_str() : "(null)");
         confirm(success);
       });
 }
