@@ -28,6 +28,18 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
                             fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
   ~LowEnergyPeripheralServer() override;
 
+  // fuchsia::bluetooth::le::Peripheral overrides:
+  void StartAdvertising(fuchsia::bluetooth::le::AdvertisingParameters parameters,
+                        ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
+                        StartAdvertisingCallback callback) override;
+  void StartAdvertisingDeprecated(
+      fuchsia::bluetooth::le::AdvertisingDataDeprecated advertising_data,
+      fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr scan_result, bool connectable,
+      uint32_t interval, bool anonymous, StartAdvertisingDeprecatedCallback callback) override;
+
+  void StopAdvertisingDeprecated(::std::string advertisement_id,
+                                 StopAdvertisingDeprecatedCallback callback) override;
+
  private:
   using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
 
@@ -86,17 +98,6 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
   };
 
-  // fuchsia::bluetooth::le::Peripheral overrides:
-  void StartAdvertising(fuchsia::bluetooth::le::AdvertisingParameters parameters,
-                        ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
-                        StartAdvertisingCallback callback) override;
-  void StartAdvertisingDeprecated(
-      fuchsia::bluetooth::le::AdvertisingDataDeprecated advertising_data,
-      fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr scan_result, bool connectable,
-      uint32_t interval, bool anonymous, StartAdvertisingDeprecatedCallback callback) override;
-
-  void StopAdvertisingDeprecated(::std::string advertisement_id,
-                                 StopAdvertisingDeprecatedCallback callback) override;
   bool StopAdvertisingInternal(bt::gap::AdvertisementId id);
 
   // Called when a central connects to us.  When this is called, the

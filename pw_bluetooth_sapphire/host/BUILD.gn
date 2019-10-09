@@ -108,8 +108,11 @@ source_set("driver_tests") {
   testonly = true
 
   sources = [
+    "fidl/adapter_test_fixture.cc",
+    "fidl/adapter_test_fixture.h",
     "fidl/helpers_unittest.cc",
     "fidl/host_server_unittest.cc",
+    "fidl/low_energy_peripheral_server_unittest.cc",
     "fidl/profile_server_unittest.cc",
     "gatt_host_unittest.cc",
   ]

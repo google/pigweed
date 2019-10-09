@@ -51,6 +51,8 @@ fble::PeripheralError FidlErrorFromStatus(bt::hci::Status status) {
       return fble::PeripheralError::ADVERTISING_DATA_TOO_LONG;
     case bt::HostError::kScanResponseTooLong:
       return fble::PeripheralError::SCAN_RESPONSE_DATA_TOO_LONG;
+    case bt::HostError::kCanceled:
+      return fble::PeripheralError::ABORTED;
     default:
       break;
   }
@@ -187,13 +189,21 @@ void LowEnergyPeripheralServer::StartAdvertising(
       return;
     }
 
-    ZX_DEBUG_ASSERT(self->advertisement_);
-    ZX_DEBUG_ASSERT(self->advertisement_->id() == bt::gap::kInvalidAdvertisementId);
+    ZX_ASSERT(self->advertisement_);
+    ZX_ASSERT(self->advertisement_->id() == bt::gap::kInvalidAdvertisementId);
 
     fble::Peripheral_StartAdvertising_Result result;
     if (!status) {
       result.set_err(FidlErrorFromStatus(status));
-      self->advertisement_.reset();
+
+      // The only scenario in which it is valid to leave |advertisement_| intact in a failure
+      // scenario is if StartAdvertising was called while a previous call was in progress. This
+      // aborts the prior request causing it to end with the "kCanceled" status. This means that
+      // another request is currently progress.
+      if (status.error() != bt::HostError::kCanceled) {
+        self->advertisement_.reset();
+      }
+
       callback(std::move(result));
       return;
     }

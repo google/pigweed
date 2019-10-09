@@ -7,11 +7,11 @@
 #include <fuchsia/bluetooth/control/cpp/fidl_test_base.h>
 #include <lib/zx/channel.h>
 
+#include "adapter_test_fixture.h"
 #include "gmock/gmock.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
@@ -20,9 +20,6 @@ namespace {
 
 // Limiting the de-scoped aliases here helps test cases be more specific about whether they're using
 // FIDL names or bt-host internal names.
-using bt::testing::FakeController;
-using bt::testing::FakePeer;
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 using HostPairingDelegate = bt::gap::PairingDelegate;
 using fuchsia::bluetooth::control::InputCapabilityType;
 using fuchsia::bluetooth::control::OutputCapabilityType;
@@ -58,37 +55,17 @@ class MockPairingDelegate : public fuchsia::bluetooth::control::testing::Pairing
   }
 };
 
-class HostServerTest : public TestingBase {
+class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
  public:
-  HostServerTest() = default;
-  ~HostServerTest() override = default;
+  FIDL_HostServerTest() = default;
+  ~FIDL_HostServerTest() override = default;
 
   void SetUp() override {
-    TestingBase::SetUp();
-
-    // Boilerplate to create and initialize an Adapter with emulated dependencies.
-    auto data_domain = bt::data::testing::FakeDomain::Create();
-    data_domain->Initialize();
-    auto gatt = bt::gatt::testing::FakeLayer::Create();
-    adapter_ = std::make_unique<bt::gap::Adapter>(transport(), gatt, std::move(data_domain));
-    test_device()->StartCmdChannel(test_cmd_chan());
-    test_device()->StartAclChannel(test_acl_chan());
-
-    FakeController::Settings settings;
-    settings.lmp_features_page0 |= static_cast<uint64_t>(bt::hci::LMPFeature::kLESupported);
-    settings.le_acl_data_packet_length = 5;
-    settings.le_total_num_acl_data_packets = 1;
-    test_device()->set_settings(settings);
-
-    bool success = false;
-    auto init_cb = [&](bool cb_success) { success = cb_success; };
-    adapter()->Initialize(init_cb, [] {});
-    RunLoopUntilIdle();
-    ASSERT_TRUE(success);
+    AdapterTestFixture::SetUp();
 
     // Create a HostServer and bind it to a local client.
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
-    gatt_host_ = GattHost::CreateForTesting(dispatcher(), std::move(gatt));
+    gatt_host_ = GattHost::CreateForTesting(dispatcher(), gatt());
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                                 adapter()->AsWeakPtr(), gatt_host_);
     host_.Bind(std::move(host_handle));
@@ -101,18 +78,12 @@ class HostServerTest : public TestingBase {
     host_server_ = nullptr;
     gatt_host_->ShutDown();
     gatt_host_ = nullptr;
-    if (adapter()->IsInitialized()) {
-      adapter()->ShutDown();
-    }
-    adapter_ = nullptr;
 
     RunLoopUntilIdle();
-    TestingBase::TearDown();
+    AdapterTestFixture::TearDown();
   }
 
  protected:
-  bt::gap::Adapter* adapter() const { return adapter_.get(); }
-
   HostServer* host_server() const { return host_server_.get(); }
 
   fuchsia::bluetooth::host::Host* host_client() const { return host_.get(); }
@@ -121,7 +92,7 @@ class HostServerTest : public TestingBase {
   // heap-allocated to permit its explicit destruction.
   [[nodiscard]] std::unique_ptr<MockPairingDelegate> SetMockPairingDelegate(
       InputCapabilityType input_capability, OutputCapabilityType output_capability) {
-    using testing::StrictMock;
+    using ::testing::StrictMock;
     fidl::InterfaceHandle<FidlPairingDelegate> pairing_delegate_handle;
     auto pairing_delegate = std::make_unique<StrictMock<MockPairingDelegate>>(
         pairing_delegate_handle.NewRequest(), dispatcher());
@@ -134,15 +105,14 @@ class HostServerTest : public TestingBase {
   }
 
  private:
-  std::unique_ptr<bt::gap::Adapter> adapter_;
   std::unique_ptr<HostServer> host_server_;
   fbl::RefPtr<GattHost> gatt_host_;
   fuchsia::bluetooth::host::HostPtr host_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServerTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest);
 };
 
-TEST_F(HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
+TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
   auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
 
@@ -154,8 +124,8 @@ TEST_F(HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   EXPECT_EQ(bt::sm::IOCapability::kKeyboardDisplay, host_pairing_delegate->io_capability());
 }
 
-TEST_F(HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
-  using namespace testing;
+TEST_F(FIDL_HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
+  using namespace ::testing;
 
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
   auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
@@ -177,8 +147,8 @@ TEST_F(HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
   RunLoopUntilIdle();
 }
 
-TEST_F(HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
-  using namespace testing;
+TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
+  using namespace ::testing;
   auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
@@ -206,8 +176,9 @@ TEST_F(HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   EXPECT_TRUE(confirm_cb_value);
 }
 
-TEST_F(HostServerTest, HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
-  using namespace testing;
+TEST_F(FIDL_HostServerTest,
+       HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
+  using namespace ::testing;
   auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
@@ -258,8 +229,8 @@ TEST_F(HostServerTest, HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparis
   EXPECT_TRUE(confirm_cb_called);
 }
 
-TEST_F(HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
-  using namespace testing;
+TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
+  using namespace ::testing;
   auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);

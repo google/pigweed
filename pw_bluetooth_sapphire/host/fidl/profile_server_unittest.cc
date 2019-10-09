@@ -9,10 +9,10 @@
 namespace bthost {
 namespace {
 
-class ProfileServerTest : public ::gtest::TestLoopFixture {
+class FIDL_ProfileServerTest : public ::gtest::TestLoopFixture {
  public:
-  ProfileServerTest() = default;
-  ~ProfileServerTest() override = default;
+  FIDL_ProfileServerTest() = default;
+  ~FIDL_ProfileServerTest() override = default;
 
  protected:
   void SetUp() override {
@@ -31,10 +31,10 @@ class ProfileServerTest : public ::gtest::TestLoopFixture {
   std::optional<ProfileServer> profile_server_;
   fidl::InterfacePtr<fuchsia::bluetooth::bredr::Profile> client_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(ProfileServerTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(FIDL_ProfileServerTest);
 };
 
-TEST_F(ProfileServerTest, ErrorOnInvalidUuid) {
+TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidUuid) {
   bool called = false;
   fuchsia::bluetooth::Status status;
   uint64_t service_id;
