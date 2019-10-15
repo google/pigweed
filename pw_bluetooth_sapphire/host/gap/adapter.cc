@@ -517,17 +517,19 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
   }
 
-  SetLocalName(kDefaultLocalName, [](auto status) {});
-
-  // Set the default device class - a computer with audio.
-  // TODO(BT-641): set this from a platform configuration file
-  DeviceClass dev_class(DeviceClass::MajorClass::kComputer);
-  dev_class.SetServiceClasses({DeviceClass::ServiceClass::kAudio});
-  SetDeviceClass(dev_class, [](const auto&) {});
-
-  // This completes the initialization sequence.
-  init_state_ = State::kInitialized;
-  callback(true);
+  // Assign a default name and device class before notifying completion.
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  SetLocalName(kDefaultLocalName, [self, callback = std::move(callback)](auto status) mutable {
+    // Set the default device class - a computer with audio.
+    // TODO(BT-641): set this from a platform configuration file
+    DeviceClass dev_class(DeviceClass::MajorClass::kComputer);
+    dev_class.SetServiceClasses({DeviceClass::ServiceClass::kAudio});
+    self->SetDeviceClass(dev_class, [self, callback = std::move(callback)](const auto&) {
+      // This completes the initialization sequence.
+      self->init_state_ = State::kInitialized;
+      callback(true);
+    });
+  });
 }
 
 uint64_t Adapter::BuildEventMask() {

@@ -307,10 +307,19 @@ TEST_F(GAP_AdapterTest, DefaultName) {
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
-  ASSERT_TRUE(EnsureInitialized());
 
-  EXPECT_EQ(kDefaultLocalName, test_device()->local_name());
-  EXPECT_EQ(kDefaultLocalName, adapter()->state().local_name());
+  bool initialized = false;
+  InitializeAdapter([&](bool success) {
+    // Ensure that the local name has been written to the controller when initialization has
+    // completed.
+    EXPECT_TRUE(success);
+    EXPECT_EQ(kDefaultLocalName, test_device()->local_name());
+    EXPECT_EQ(kDefaultLocalName, adapter()->state().local_name());
+
+    initialized = true;
+  });
+
+  EXPECT_TRUE(initialized);
 }
 
 TEST_F(GAP_AdapterTest, PeerCacheReturnsNonNull) { EXPECT_TRUE(adapter()->peer_cache()); }
