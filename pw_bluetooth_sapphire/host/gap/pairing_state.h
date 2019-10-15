@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace gap {
@@ -283,6 +284,12 @@ class PairingState final {
 
     // HCI event to respond to in order to complete or reject pairing.
     hci::EventCode expected_event;
+
+    // True if this pairing is expected to be resistant to MITM attacks.
+    bool authenticated;
+
+    // Security properties of the link key received from the controller.
+    std::optional<sm::SecurityProperties> security_properties;
   };
 
   static const char* ToString(State state);

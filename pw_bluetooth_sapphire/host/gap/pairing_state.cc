@@ -181,7 +181,45 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
   }
   ZX_ASSERT(is_pairing());
 
-  // TODO(xow): Store link key.
+  // The association model and resulting link security properties are computed by both the Link
+  // Manager (controller) and the host subsystem, so check that they agree.
+  sm::SecurityProperties sec_props;
+  if (key_type == hci::LinkKeyType::kChangedCombination) {
+    if (!link_->ltk()) {
+      bt_log(WARN, "gap-bredr",
+             "Got Changed Combination key but link %#.4x (id: %s) has no current key", handle(),
+             bt_str(peer_id()));
+      state_ = State::kFailed;
+      SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+      return;
+    }
+  } else {
+    sec_props = sm::SecurityProperties(key_type);
+    current_pairing_->security_properties = sec_props;
+  }
+
+  // Link keys resulting from legacy pairing are assigned lowest security level and we reject them.
+  if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
+    bt_log(WARN, "gap-bredr", "Link key (type %hhu) for %#.4x (id: %s) has insufficient security",
+           key_type, handle(), bt_str(peer_id()));
+    state_ = State::kFailed;
+    SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+    return;
+  }
+
+  // If we performed an association procedure for MITM protection then expect the controller to
+  // produce a corresponding "authenticated" link key. Inversely, do not accept a link key reported
+  // as authenticated if we haven't performed the corresponding association procedure because it
+  // may provide a false high expectation of security to the user or application.
+  if (sec_props.authenticated() != current_pairing_->authenticated) {
+    bt_log(WARN, "gap-bredr", "Expected %sauthenticated link key for %#.4x (id: %s), got %hhu",
+           current_pairing_->authenticated ? "" : "un", handle(), bt_str(peer_id()), key_type);
+    state_ = State::kFailed;
+    SignalStatus(hci::Status(HostError::kInsufficientSecurity));
+    return;
+  }
+
+  link_->set_bredr_link_key(hci::LinkKey(link_key, 0, 0), key_type);
   if (initiator()) {
     state_ = State::kInitiatorWaitAuthComplete;
   } else {
@@ -234,8 +272,6 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
     state_ = State::kFailed;
   }
 
-  // TODO(xow): Write link key to Connection::ltk to register new security
-  //            properties.
   SignalStatus(status);
 }
 
@@ -340,6 +376,8 @@ void PairingState::WritePairingData() {
   current_pairing_->expected_event =
       GetExpectedEvent(current_pairing_->local_iocap, current_pairing_->peer_iocap);
   ZX_DEBUG_ASSERT(GetStateForPairingEvent(current_pairing_->expected_event) != State::kFailed);
+  current_pairing_->authenticated =
+      IsPairingAuthenticated(current_pairing_->local_iocap, current_pairing_->peer_iocap);
 }
 
 PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {

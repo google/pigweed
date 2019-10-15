@@ -30,7 +30,9 @@ const auto kTestLocalIoCap = sm::IOCapability::kDisplayYesNo;
 const auto kTestPeerIoCap = IOCapability::kDisplayOnly;
 const uint32_t kTestPasskey = 123456;
 const auto kTestLinkKeyValue = Random<UInt128>();
+const auto kTestUnauthenticatedLinkKeyType = hci::LinkKeyType::kUnauthenticatedCombination192;
 const auto kTestAuthenticatedLinkKeyType = hci::LinkKeyType::kAuthenticatedCombination192;
+const auto kTestLegacyLinkKeyType = hci::LinkKeyType::kCombination;
 
 void NoOpStatusCallback(hci::ConnectionHandle, hci::Status){};
 void NoOpUserConfirmationCallback(bool){};
@@ -245,7 +247,7 @@ void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state->OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   pairing_state->OnAuthenticationComplete(hci::StatusCode::kSuccess);
 }
 
@@ -372,7 +374,7 @@ TEST(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) 
 
   // Keep advancing state machine.
   pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 
   EXPECT_FALSE(pairing_state.initiator());
   ASSERT_EQ(0, status_handler.call_count());
@@ -425,6 +427,77 @@ TEST(GAP_PairingStateTest, PairingStateRejectsPairingResponseWithoutPairingDeleg
   EXPECT_EQ(hci::Status(HostError::kNotReady), *status_handler.status());
 }
 
+TEST(GAP_PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  // Provide an authenticated link key when this should have resulted in an
+  // unauthenticated link key.
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
+}
+
+TEST(GAP_PairingStateTest, LegacyPairingLinkKeyRaisesError) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  // Provide a legacy pairing link key type.
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestLegacyLinkKeyType);
+
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
+}
+
+TEST(GAP_PairingStateTest, PairingSetsConnectionLinkKey) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  ASSERT_FALSE(connection.ltk());
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+  ASSERT_TRUE(connection.ltk());
+  EXPECT_EQ(kTestLinkKeyValue, connection.ltk()->value());
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
 // Event injectors. Return values are necessarily ignored in order to make types
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
@@ -447,7 +520,7 @@ void SimplePairingComplete(PairingState* pairing_state) {
   pairing_state->OnSimplePairingComplete(hci::StatusCode::kSuccess);
 }
 void LinkKeyNotification(PairingState* pairing_state) {
-  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 }
 void AuthenticationComplete(PairingState* pairing_state) {
   pairing_state->OnAuthenticationComplete(hci::StatusCode::kSuccess);
@@ -731,7 +804,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteState) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   ASSERT_TRUE(pairing_state().initiator());
   EXPECT_EQ(0, connection().start_encryption_count());
 
@@ -753,7 +826,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   pairing_state().OnAuthenticationComplete(hci::StatusCode::kSuccess);
   ASSERT_TRUE(pairing_state().initiator());
 
@@ -771,7 +844,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   ASSERT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -789,7 +862,7 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   pairing_state().OnAuthenticationComplete(hci::StatusCode::kSuccess);
   ASSERT_TRUE(pairing_state().initiator());
 
@@ -835,7 +908,7 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
   pairing_state().OnSimplePairingComplete(hci::StatusCode::kSuccess);
-  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 
   // Inject failure status.
   pairing_state().OnAuthenticationComplete(hci::StatusCode::kAuthenticationFailure);
