@@ -170,6 +170,11 @@ void Adapter::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
   bredr_connection_manager()->SetPairingDelegate(delegate);
 }
 
+bool Adapter::IsDiscoverable() const {
+  return (le_advertising_manager_ && le_advertising_manager_->advertising()) ||
+         (bredr_discovery_manager_ && bredr_discovery_manager_->discoverable());
+}
+
 bool Adapter::IsDiscovering() const {
   return (le_discovery_manager_ && le_discovery_manager_->discovering()) ||
          (bredr_discovery_manager_ && bredr_discovery_manager_->discovering());

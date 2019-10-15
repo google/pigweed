@@ -159,6 +159,9 @@ class Adapter final {
   // new PairingDelegate cancels all ongoing pairing procedures.
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
 
+  // Returns true if this adapter is currently in discoverable mode on the LE or BR/EDR transports.
+  bool IsDiscoverable() const;
+
   // Returns true if any discovery process (LE or BR/EDR) is running on this
   // adapter.
   bool IsDiscovering() const;

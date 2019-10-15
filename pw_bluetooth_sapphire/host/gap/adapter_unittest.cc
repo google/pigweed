@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "bredr_discovery_manager.h"
 #include "low_energy_address_manager.h"
 #include "low_energy_advertising_manager.h"
 #include "low_energy_discovery_manager.h"
@@ -639,6 +640,48 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   RunLoopFor(kPrivateAddressTimeout);
   ASSERT_TRUE(test_device()->le_random_address());
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
+}
+
+TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {
+  FakeController::Settings settings;
+  settings.ApplyLegacyLEConfig();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+
+  AdvertisementInstance instance;
+  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                                        nullptr, AdvertisingInterval::FAST1, false,
+                                                        [&](AdvertisementInstance i, auto status) {
+                                                          ASSERT_TRUE(status);
+                                                          instance = std::move(i);
+                                                        });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(adapter()->IsDiscoverable());
+
+  instance = {};
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+}
+
+TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  InitializeAdapter([](bool) {});
+
+  EXPECT_FALSE(adapter()->IsDiscoverable());
+
+  std::unique_ptr<BrEdrDiscoverableSession> session;
+  adapter()->bredr_discovery_manager()->RequestDiscoverable(
+      [&](auto, auto s) { session = std::move(s); });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(adapter()->IsDiscoverable());
+
+  session = nullptr;
+  RunLoopUntilIdle();
+  EXPECT_FALSE(adapter()->IsDiscoverable());
 }
 
 }  // namespace
