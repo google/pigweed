@@ -181,6 +181,12 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
   }
   ZX_ASSERT(is_pairing());
 
+  // TODO(36360): We assume the controller is never in pairing debug mode because it's a security
+  // hazard to pair and bond using Debug Combination link keys.
+  ZX_ASSERT_MSG(key_type != hci::LinkKeyType::kDebugCombination,
+                "Pairing on link %#.4x (id: %s) resulted in insecure Debug Combination link key",
+                handle(), bt_str(peer_id()));
+
   // The association model and resulting link security properties are computed by both the Link
   // Manager (controller) and the host subsystem, so check that they agree.
   sm::SecurityProperties sec_props;
