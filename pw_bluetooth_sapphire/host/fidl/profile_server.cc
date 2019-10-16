@@ -64,7 +64,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement*
         return false;
       }
       bt::UUID uuid;
-      bool success = StringToUuid(fidl.data.uuid().value_or(""), &uuid);
+      bool success = StringToUuid(fidl.data.uuid(), &uuid);
       if (!success) {
         return false;
       }
@@ -75,7 +75,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement*
       if (!fidl.data.is_str()) {
         return false;
       }
-      out->Set(*fidl.data.str());
+      out->Set(fidl.data.str());
       return true;
     }
     case DataElementType::BOOLEAN: {
