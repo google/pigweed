@@ -5,14 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_SESSION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_SESSION_H_
 
-#include <fbl/ref_ptr.h>
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include <map>
 #include <queue>
 #include <unordered_map>
+
+#include <fbl/ref_ptr.h>
+#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"

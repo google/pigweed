@@ -5,11 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_RFCOMM_CHANNEL_MANAGER_H_
 
-#include <fbl/ref_ptr.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
-
 #include <tuple>
 #include <unordered_map>
+
+#include <fbl/ref_ptr.h>
+#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
