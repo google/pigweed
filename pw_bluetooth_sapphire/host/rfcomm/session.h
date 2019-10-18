@@ -13,7 +13,6 @@
 #include <unordered_map>
 
 #include <fbl/ref_ptr.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -21,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/frames.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace rfcomm {

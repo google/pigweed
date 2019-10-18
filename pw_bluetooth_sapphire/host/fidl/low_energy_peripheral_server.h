@@ -12,12 +12,12 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/low_energy_connection_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 

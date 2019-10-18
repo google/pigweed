@@ -8,10 +8,10 @@
 #include <fuchsia/bluetooth/le/cpp/fidl.h>
 
 #include <fbl/macros.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 

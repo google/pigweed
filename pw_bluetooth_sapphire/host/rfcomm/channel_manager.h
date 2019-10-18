@@ -9,12 +9,12 @@
 #include <unordered_map>
 
 #include <fbl/ref_ptr.h>
-#include <src/lib/fxl/memory/weak_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/session.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace rfcomm {
