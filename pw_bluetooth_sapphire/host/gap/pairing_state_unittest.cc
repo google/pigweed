@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -498,6 +499,205 @@ TEST(GAP_PairingStateTest, PairingSetsConnectionLinkKey) {
   EXPECT_EQ(0, status_handler.call_count());
 }
 
+TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  static_cast<void>(pairing_state.InitiatePairing(status_handler.MakeStatusCallback()));
+  ASSERT_TRUE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(kTestPasskey, value);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
+        ASSERT_TRUE(cb);
+        cb(true);
+      });
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  EXPECT_TRUE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(kTestPasskey, value);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
+        ASSERT_TRUE(cb);
+        cb(true);
+      });
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  EXPECT_TRUE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+// v5.0, Vol 3, Part C, Sec 5.2.2.6 call this "Numeric Comparison with automatic
+// confirmation on device B only and Yes/No confirmation on whether to pair on
+// device A. Device A does not show the confirmation value." and it should
+// result in user consent.
+TEST(GAP_PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+
+  pairing_delegate.SetConfirmPairingCallback([](PeerId peer_id, auto cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    ASSERT_TRUE(cb);
+    cb(true);
+  });
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  EXPECT_TRUE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kDisplayOnly, *pairing_state.OnIoCapabilityRequest());
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
+        EXPECT_EQ(kTestPeerId, peer_id);
+        EXPECT_EQ(kTestPasskey, value);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kPeerEntry, method);
+        EXPECT_TRUE(cb);
+      });
+  pairing_state.OnUserPasskeyNotification(kTestPasskey);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kKeyboardOnly, *pairing_state.OnIoCapabilityRequest());
+
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId peer_id, auto cb) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    ASSERT_TRUE(cb);
+    cb(kTestPasskey);
+  });
+  bool cb_called = false;
+  std::optional<uint32_t> passkey;
+  auto passkey_cb = [&cb_called, &passkey](std::optional<uint32_t> pairing_state_passkey) {
+    cb_called = true;
+    passkey = pairing_state_passkey;
+  };
+
+  pairing_state.OnUserPasskeyRequest(std::move(passkey_cb));
+  EXPECT_TRUE(cb_called);
+  ASSERT_TRUE(passkey);
+  EXPECT_EQ(kTestPasskey, *passkey);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, JustWorksPairingDoesNotRequestUserAction) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Advance state machine.
+  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  EXPECT_TRUE(confirmed);
+
+  pairing_delegate.SetCompletePairingCallback([](PeerId peer_id, sm::Status status) {
+    EXPECT_EQ(kTestPeerId, peer_id);
+    EXPECT_TRUE(status);
+  });
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
 // Event injectors. Return values are necessarily ignored in order to make types
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
@@ -542,7 +742,6 @@ class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
       : connection_(MakeFakeConnection()),
         pairing_delegate_(kTestLocalIoCap),
         pairing_state_(kTestPeerId, &connection_, status_handler_.MakeStatusCallback()) {
-    // TODO(xow): Ignore PairingDelegate method matches for these tests.
     pairing_state().SetPairingDelegate(pairing_delegate_.GetWeakPtr());
   }
   ~HandlesEvent() = default;

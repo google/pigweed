@@ -167,6 +167,10 @@ class PairingState final {
   // Set a handler for user-interactive authentication challenges. If not set or
   // set to nullptr, all pairing requests will be rejected, but this does not
   // cause a fatal error and should not result in link disconnection.
+  //
+  // If the delegate indicates passkey display capabilities, then it will always
+  // be asked to confirm pairing, even when Core Spec v5.0, Vol 3, Part C,
+  // Section 5.2.2.6 indicates "automatic confirmation."
   void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> pairing_delegate) {
     pairing_delegate_ = std::move(pairing_delegate);
   }
@@ -201,8 +205,8 @@ class PairingState final {
   void OnIoCapabilityResponse(hci::IOCapability peer_iocap);
 
   // |cb| is called with: true to send User Confirmation Request Reply, else
-  // for to send User Confirmation Request Negative Reply. It may not be called
-  // from the same thread that called OnUserConfirmationRequest.
+  // for to send User Confirmation Request Negative Reply. It may be called from
+  // a different thread than the one that called OnUserConfirmationRequest.
   using UserConfirmationCallback = fit::callback<void(bool confirm)>;
   void OnUserConfirmationRequest(uint32_t numeric_value, UserConfirmationCallback cb);
 
@@ -266,9 +270,23 @@ class PairingState final {
 
   // Extra information for pairing constructed when a pairing procedure begins and destroyed when
   // the pairing procedure is reset or errors out.
-  struct Pairing final {
-    static Pairing MakeInitiator(StatusCallback status_callback);
-    static Pairing MakeResponder(hci::IOCapability peer_iocap);
+  //
+  // Instances must be heap allocated so that they can be moved without destruction, preserving
+  // their WeakPtr holders. WeakPtrs are vended to PairingDelegate callbacks to uniquely identify
+  // each attempt to pair because |current_pairing_| is not synchronized to the user's actions
+  // through PairingDelegate.
+  class Pairing final {
+   public:
+    static std::unique_ptr<Pairing> MakeInitiator(StatusCallback status_callback);
+    static std::unique_ptr<Pairing> MakeResponder(hci::IOCapability peer_iocap);
+
+    // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are already set, compute and
+    // set |action|, |expected_event|, |authenticated|, and |security_properties| for the pairing
+    // procedure and bonding data that we expect.
+    void ComputePairingData();
+
+    // Used to prevent PairingDelegate callbacks from using captured stale pointers.
+    fxl::WeakPtr<Pairing> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
     // True if the local device initiated pairing.
     bool initiator;
@@ -282,6 +300,9 @@ class PairingState final {
     // IO Capability from peer through IO Capability Response.
     hci::IOCapability peer_iocap;
 
+    // User interaction to perform after receiving HCI user event.
+    PairingAction action;
+
     // HCI event to respond to in order to complete or reject pairing.
     hci::EventCode expected_event;
 
@@ -290,6 +311,11 @@ class PairingState final {
 
     // Security properties of the link key received from the controller.
     std::optional<sm::SecurityProperties> security_properties;
+
+   private:
+    Pairing() : weak_ptr_factory_(this) {}
+
+    fxl::WeakPtrFactory<Pairing> weak_ptr_factory_;
   };
 
   static const char* ToString(State state);
@@ -302,7 +328,7 @@ class PairingState final {
 
   State state() const { return state_; }
 
-  bool is_pairing() const { return current_pairing_.has_value(); }
+  bool is_pairing() const { return current_pairing_ != nullptr; }
 
   hci::ConnectionHandle handle() const { return link_->handle(); }
 
@@ -322,10 +348,6 @@ class PairingState final {
   // |state_| to kFailed. Logs an error using |handler_name| for identification.
   void FailWithUnexpectedEvent(const char* handler_name);
 
-  // Compute the expected pairing event and state to occur after receiving the peer IO Capability
-  // and write it to |current_pairing_| (which must exist).
-  void WritePairingData();
-
   const PeerId peer_id_;
 
   // The BR/EDR link whose pairing is being driven by this object.
@@ -338,7 +360,7 @@ class PairingState final {
 
   // Represents an ongoing pairing procedure. Will contain a value when the state isn't kIdle or
   // kFailed.
-  std::optional<Pairing> current_pairing_;
+  std::unique_ptr<Pairing> current_pairing_;
 
   // Callback that status of this pairing is reported back through.
   StatusCallback status_callback_;
