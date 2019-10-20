@@ -11,6 +11,8 @@
 
 namespace bt {
 
+static_assert(kLargeBufferSize > kSmallBufferSize);
+
 using SmallBufferTraits = SlabBufferTraits<kSmallBufferSize, kSlabSize / kSmallBufferSize>;
 using LargeBufferTraits = SlabBufferTraits<kLargeBufferSize, kSlabSize / kLargeBufferSize>;
 
@@ -18,12 +20,20 @@ using SmallAllocator = fbl::SlabAllocator<SmallBufferTraits>;
 using LargeAllocator = fbl::SlabAllocator<LargeBufferTraits>;
 
 MutableByteBufferPtr NewSlabBuffer(size_t size) {
-  if (size == 0)
+  if (size == 0) {
+    // Don't return nullptr because that would indicate an error.
     return std::make_unique<DynamicByteBuffer>();
+  }
+
   if (size <= kSmallBufferSize) {
     auto buffer = SmallAllocator::New(size);
-    if (buffer)
+    if (buffer) {
       return buffer;
+    }
+  }
+
+  if (size > kLargeBufferSize) {
+    return nullptr;
   }
 
   return LargeAllocator::New(size);

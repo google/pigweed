@@ -25,6 +25,13 @@ TEST(SlabAllocatorTest, NewSlabBuffer) {
   buffer = NewSlabBuffer(kLargeBufferSize / 2);
   EXPECT_TRUE(buffer);
   EXPECT_EQ(kLargeBufferSize / 2, buffer->size());
+
+  buffer = NewSlabBuffer(kLargeBufferSize + 1);
+  EXPECT_FALSE(buffer);
+
+  buffer = NewSlabBuffer(0);
+  EXPECT_TRUE(buffer);
+  EXPECT_EQ(0U, buffer->size());
 }
 
 }  // namespace
