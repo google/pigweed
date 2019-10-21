@@ -400,7 +400,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   channels_.erase(iter);
 
   hci::ACLPacketPredicate predicate = [this, id = channel->id()](const auto& packet,
-                                                              l2cap::ChannelId channel_id) {
+                                                                 l2cap::ChannelId channel_id) {
     return packet->connection_handle() == handle_ && id == channel_id;
   };
   drop_queued_acl_cb_(std::move(predicate));

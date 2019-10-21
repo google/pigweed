@@ -22,8 +22,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace hci {
@@ -72,6 +72,8 @@ using ACLPacketPredicate =
 
 class ACLDataChannel final {
  public:
+  enum class PacketPriority { kHigh, kLow };
+
   ACLDataChannel(Transport* transport, zx::channel hci_acl_channel);
   ~ACLDataChannel();
 
@@ -110,8 +112,12 @@ class ACLDataChannel final {
   // determine what channel l2cap packet fragments are being sent to when revoking queued packets
   // for specific channels that have closed. If the packet does not contain a fragment of an l2cap
   // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
+  //
+  // |priority| indicates the order this packet should be dispatched off of the queue relative to
+  // packets of other priorities. Note that high priority packets may still wait behind low priority
+  // packets that have already been sent to the controller.
   bool SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
-                  l2cap::ChannelId channel_id);
+                  l2cap::ChannelId channel_id, PacketPriority priority = PacketPriority::kLow);
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
@@ -125,8 +131,12 @@ class ACLDataChannel final {
   // determine what channel l2cap packet fragments are being sent to when revoking queued packets
   // for channels that have closed. If the packets do not contain a fragment of an l2cap
   // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
+  //
+  // |priority| indicates the order this packet should be dispatched off of the queue relative to
+  // packets of other priorities. Note that high priority packets may still wait behind low priority
+  // packets that have already been sent to the controller.
   bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
-                   l2cap::ChannelId channel_id);
+                   l2cap::ChannelId channel_id, PacketPriority priority = PacketPriority::kLow);
 
   // Allowlist packets destined for the link identified by |handle| for submission
   // to the controller.
@@ -163,8 +173,8 @@ class ACLDataChannel final {
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {
     QueuedDataPacket(Connection::LinkType ll_type, l2cap::ChannelId channel_id,
-                     ACLDataPacketPtr packet)
-        : ll_type(ll_type), channel_id(channel_id), packet(std::move(packet)) {}
+                     PacketPriority priority, ACLDataPacketPtr packet)
+        : ll_type(ll_type), channel_id(channel_id), priority(priority), packet(std::move(packet)) {}
 
     QueuedDataPacket() = default;
     QueuedDataPacket(QueuedDataPacket&& other) = default;
@@ -172,8 +182,13 @@ class ACLDataChannel final {
 
     Connection::LinkType ll_type;
     l2cap::ChannelId channel_id;
+    PacketPriority priority;
     ACLDataPacketPtr packet;
   };
+
+  // Drops all packets that |predicate| returns true for. This locked version is required for
+  // UnregisterLink to call this method.
+  void DropQueuedPacketsLocked(ACLPacketPredicate predicate) __TA_REQUIRES(send_mutex_);
 
   // Returns the data buffer MTU for the given connection.
   size_t GetBufferMTU(Connection::LinkType ll_type) const;
@@ -183,7 +198,8 @@ class ACLDataChannel final {
   void NumberOfCompletedPacketsCallback(const EventPacket& event);
 
   // Tries to send the next batch of queued data packets if the controller has
-  // any space available.
+  // any space available. All packets in higher priority queues will be sent before packets in lower
+  // priority queues.
   void TrySendNextQueuedPacketsLocked() __TA_REQUIRES(send_mutex_);
 
   // Returns the number of BR/EDR packets for which the controller has available
@@ -272,6 +288,13 @@ class ACLDataChannel final {
   //     memory layout.
   using DataPacketQueue = std::list<QueuedDataPacket>;
   DataPacketQueue send_queue_ __TA_GUARDED(send_mutex_);
+
+  // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
+  // their |priority|:
+  // If |priority| is |kLow|: returns past-the-end of |send_queue_|.
+  // If |priority| is |kHigh|: returns the location of the first |kLow| priority packet.
+  DataPacketQueue::iterator SendQueueInsertLocationForPriority(PacketPriority priority)
+      __TA_REQUIRES(send_mutex_);
 
   // Stores the link type of connections on which we have a pending packet that
   // has been sent to the controller. Entries are removed on the HCI Number Of

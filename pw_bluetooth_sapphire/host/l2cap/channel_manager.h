@@ -62,11 +62,11 @@ class ChannelManager final {
   // to the object's duration.
   using SendAclCallback =
       fit::function<bool(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type,
-                         ChannelId channel_id)>;
+                         ChannelId channel_id, hci::ACLDataChannel::PacketPriority priority)>;
 
-  // Used to drop stale queued ACL data packets for which |predicate| returns true (eg. when their
-  // link has been disconnected). Queued ACL data packets are those that were sent with
-  // |SendAclCallback| but not have not yet been transmitted to the controller.
+  // Used to drop stale queued ACL data packets for which |predicate| returns true (eg. when a
+  // channel is closed). Queued ACL data packets are those that were sent with |SendAclCallback| but
+  // not have not yet been transmitted to the controller.
   using DropQueuedAclCallback = fit::function<void(hci::ACLPacketPredicate predicate)>;
 
   // Creates L2CAP state for logical links and channels.
@@ -157,6 +157,9 @@ class ChannelManager final {
   // Register/Unregister a callback for incoming service connections.
   bool RegisterService(PSM psm, ChannelCallback cb, async_dispatcher_t* dispatcher);
   void UnregisterService(PSM psm);
+
+  // Returns mapping of ChannelId -> PacketPriority for use with ACLDataChannel::SendPacket.
+  static hci::ACLDataChannel::PacketPriority ChannelPriority(ChannelId id);
 
  private:
   // Called when an ACL data packet is received from the controller. This method

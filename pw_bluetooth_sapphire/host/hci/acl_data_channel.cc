@@ -124,7 +124,7 @@ void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
 }
 
 bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
-                                l2cap::ChannelId channel_id) {
+                                l2cap::ChannelId channel_id, PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -145,7 +145,8 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
     return false;
   }
 
-  send_queue_.emplace_back(ll_type, channel_id, std::move(data_packet));
+  send_queue_.insert(SendQueueInsertLocationForPriority(priority),
+                     QueuedDataPacket(ll_type, channel_id, priority, std::move(data_packet)));
 
   TrySendNextQueuedPacketsLocked();
 
@@ -153,7 +154,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
 }
 
 bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
-                                 l2cap::ChannelId channel_id) {
+                                 l2cap::ChannelId channel_id, PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -182,8 +183,10 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
     }
   }
 
+  auto insert_iter = SendQueueInsertLocationForPriority(priority);
   while (!packets.is_empty()) {
-    send_queue_.emplace_back(ll_type, channel_id, packets.pop_front());
+    send_queue_.insert(insert_iter,
+                       QueuedDataPacket(ll_type, channel_id, priority, packets.pop_front()));
   }
 
   TrySendNextQueuedPacketsLocked();
@@ -211,15 +214,10 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
   }
 
   // remove packets with matching connection handle in send queue
-  const size_t old_size = send_queue_.size();
-  send_queue_.remove_if([handle](const auto& queued_packet) {
-    return queued_packet.packet->connection_handle() == handle;
-  });
-  const size_t removed_count = old_size - send_queue_.size();
-  if (removed_count > 0) {
-    bt_log(SPEW, "hci", "stale packets for unregistered link removed from send queue (count: %lu)",
-           removed_count);
-  }
+  auto filter = [handle](const ACLDataPacketPtr& packet, l2cap::ChannelId channel_id) {
+    return packet->connection_handle() == handle;
+  };
+  DropQueuedPacketsLocked(filter);
 
   // subtract removed packets from sent packet counts, because controller
   // does not send HCI Number of Completed Packets event for disconnected link
@@ -244,8 +242,10 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
 
 void ACLDataChannel::DropQueuedPackets(ACLPacketPredicate predicate) {
   std::lock_guard<std::mutex> lock(send_mutex_);
+  DropQueuedPacketsLocked(std::move(predicate));
+}
 
-  // remove packets with matching channel id in send queue
+void ACLDataChannel::DropQueuedPacketsLocked(ACLPacketPredicate predicate) {
   const size_t before_count = send_queue_.size();
   send_queue_.remove_if([&predicate](const QueuedDataPacket& packet) {
     return predicate(packet.packet, packet.channel_id);
@@ -506,6 +506,19 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
   }
+}
+
+ACLDataChannel::DataPacketQueue::iterator ACLDataChannel::SendQueueInsertLocationForPriority(
+    PacketPriority priority) {
+  // insert low priority packets at the end of the queue
+  if (priority == PacketPriority::kLow) {
+    return send_queue_.end();
+  }
+
+  // insert high priority packets before first low priority packet
+  return std::find_if(send_queue_.begin(), send_queue_.end(), [&](const QueuedDataPacket& packet) {
+    return packet.priority == PacketPriority::kLow;
+  });
 }
 
 }  // namespace hci

@@ -206,7 +206,8 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
   auto send_acl_cb = [this, ll_type](auto packets, ChannelId channel_id) {
-    return send_acl_cb_(std::move(packets), ll_type, channel_id);
+    return send_acl_cb_(std::move(packets), ll_type, channel_id,
+                        ChannelManager::ChannelPriority(channel_id));
   };
 
   auto ll = internal::LogicalLink::New(handle, ll_type, role, l2cap_dispatcher_, max_payload_size,
@@ -238,6 +239,18 @@ ChannelCallback ChannelManager::QueryService(hci::ConnectionHandle handle, PSM p
   // This will be called in LogicalLink. Each callback in |services_| already trampolines to the
   // appropriate dispatcher (passed to RegisterService).
   return iter->second.share();
+}
+
+hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id) {
+  switch (id) {
+    case kSignalingChannelId:
+    case kLESignalingChannelId:
+    case kSMPChannelId:
+    case kLESMPChannelId:
+      return hci::ACLDataChannel::PacketPriority::kHigh;
+    default:
+      return hci::ACLDataChannel::PacketPriority::kLow;
+  }
 }
 
 }  // namespace l2cap

@@ -30,6 +30,13 @@ using TestingBase = bt::testing::FakeControllerTest<TestController>;
 constexpr size_t kMaxDataPacketLength = 64;
 constexpr size_t kMaxPacketCount = 10;
 
+auto MakeNumCompletedPacketsEvent(hci::ConnectionHandle handle, uint16_t num_packets) {
+  return CreateStaticByteBuffer(
+      0x13, 0x05,  // Number Of Completed Packet HCI event header, parameters length
+      0x01,        // Number of handles
+      LowerBits(handle), UpperBits(handle), LowerBits(num_packets), UpperBits(num_packets));
+}
+
 class DATA_DomainTest : public TestingBase {
  public:
   DATA_DomainTest() = default;
@@ -99,9 +106,10 @@ class DATA_DomainTest : public TestingBase {
     // clang-format on
   }
 
-  void ExpectOutgoingChannelCreation(hci::ConnectionHandle link_handle, l2cap::ChannelId remote_id,
-                                     l2cap::ChannelId expected_local_cid, l2cap::PSM psm) {
-    auto response_cb = [=](const auto& bytes) {
+  auto OutgoingChannelCreationDataCallback(hci::ConnectionHandle link_handle,
+                                           l2cap::ChannelId remote_id,
+                                           l2cap::ChannelId expected_local_cid, l2cap::PSM psm) {
+    auto response_cb = [=](const ByteBuffer& bytes) {
       ASSERT_LE(10u, bytes.size());
       EXPECT_EQ(LowerBits(link_handle), bytes[0]);
       EXPECT_EQ(UpperBits(link_handle), bytes[1]);
@@ -175,6 +183,14 @@ class DATA_DomainTest : public TestingBase {
           return;
       };
     };
+
+    return response_cb;
+  }
+
+  void ExpectOutgoingChannelCreation(hci::ConnectionHandle link_handle, l2cap::ChannelId remote_id,
+                                     l2cap::ChannelId expected_local_cid, l2cap::PSM psm) {
+    auto response_cb =
+        OutgoingChannelCreationDataCallback(link_handle, remote_id, expected_local_cid, psm);
     test_device()->SetDataCallback(response_cb, dispatcher());
   }
 
@@ -598,6 +614,114 @@ TEST_F(
   RunLoopUntilIdle();
 
   EXPECT_EQ(kMaxPacketCount, data_cb_count);
+}
+
+// Queue dynamic channel packets, then open a new dynamic channel.
+// The signaling channel packets should be sent before the queued dynamic channel packets.
+TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId0 = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
+
+  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId1 = 0x0041;
+  constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
+
+  // connection request/response, config request, config response
+  constexpr size_t kConnectionPacketCount = 3;
+
+  TestController::DataCallback data_cb = [](const ByteBuffer& packet) {};
+  size_t data_cb_count = 0;
+  auto data_cb_wrapper = [&data_cb, &data_cb_count](const ByteBuffer& packet) {
+    data_cb_count++;
+    data_cb(packet);
+  };
+  test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
+
+  // Register a fake link.
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  zx::socket sock0;
+  ASSERT_FALSE(sock0);
+  auto sock_cb0 = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+    EXPECT_EQ(kLinkHandle, handle);
+    sock0 = std::move(cb_sock);
+  };
+  domain()->RegisterService(kPSM0, sock_cb0, dispatcher());
+
+  EmulateIncomingChannelCreation(kLinkHandle, kRemoteId0, kLocalId0, kPSM0);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(sock0);
+
+  // Channel creation packet count
+  EXPECT_EQ(kConnectionPacketCount, data_cb_count);
+  test_device()->SendCommandChannelPacket(
+      MakeNumCompletedPacketsEvent(kLinkHandle, kConnectionPacketCount));
+
+  // Dummy dynamic channel packet
+  const auto kPacket0 = CreateStaticByteBuffer(
+      // ACL data header (handle: 1, length 5)
+      0x01, 0x00, 0x05, 0x00,
+
+      // L2CAP B-frame: (length: 1, channel-id: 0x9042 (kRemoteId))
+      0x01, 0x00, 0x42, 0x90,
+
+      // L2CAP payload
+      0x01);
+
+  data_cb_count = 0;
+  data_cb = [&kPacket0](const ByteBuffer& packet) {
+    EXPECT_TRUE(ContainersEqual(kPacket0, packet));
+  };
+
+  // |kMaxPacketCount| packets should be sent to the controller,
+  // and 1 packet should be left in the queue
+  const char write_data[] = {0x01};
+  for (size_t i = 0; i < kMaxPacketCount + 1; i++) {
+    size_t bytes_written = 0;
+    zx_status_t status = sock0.write(0, write_data, sizeof(write_data), &bytes_written);
+    EXPECT_EQ(ZX_OK, status);
+    EXPECT_EQ(sizeof(write_data), bytes_written);
+  }
+
+  // Run until the data is flushed out to the TestController.
+  RunLoopUntilIdle();
+  EXPECT_EQ(kMaxPacketCount, data_cb_count);
+
+  zx::socket sock1;
+  ASSERT_FALSE(sock1);
+  auto sock_cb1 = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+    EXPECT_EQ(kLinkHandle, handle);
+    sock1 = std::move(cb_sock);
+  };
+
+  domain()->OpenL2capChannel(kLinkHandle, kPSM1, std::move(sock_cb1), dispatcher());
+  data_cb_count = 0;
+  data_cb = OutgoingChannelCreationDataCallback(kLinkHandle, kRemoteId1, kLocalId1, kPSM1);
+
+  for (size_t i = 0; i < kConnectionPacketCount; i++) {
+    test_device()->SendCommandChannelPacket(MakeNumCompletedPacketsEvent(kLinkHandle, 1));
+    // Wait for next connection creation packet to be queued (eg. configuration request/response).
+    RunLoopUntilIdle();
+  }
+
+  EXPECT_TRUE(sock1);
+  EXPECT_EQ(kConnectionPacketCount, data_cb_count);
+
+  data_cb_count = 0;
+  data_cb = [&kPacket0](const ByteBuffer& packet) {
+    EXPECT_TRUE(ContainersEqual(kPacket0, packet));
+  };
+
+  // Make room in buffer for queued dynamic channel packet.
+  test_device()->SendCommandChannelPacket(MakeNumCompletedPacketsEvent(kLinkHandle, 1));
+
+  RunLoopUntilIdle();
+  // 1 Queued dynamic channel data packet should have been sent.
+  EXPECT_EQ(1u, data_cb_count);
 }
 
 using DATA_DomainLifecycleTest = TestingBase;

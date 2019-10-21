@@ -1058,6 +1058,88 @@ TEST_F(HCI_ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFrom
   EXPECT_EQ(2, handle1_packet_count);
 }
 
+TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsAreSentFirst) {
+  constexpr size_t kMaxMTU = 5;
+  constexpr size_t kMaxNumPackets = 5;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
+
+  acl_data_channel()->RegisterLink(kHandle0);
+  acl_data_channel()->RegisterLink(kHandle1);
+
+  size_t handle0_packet_count = 0;
+  size_t handle1_packet_count = 0;
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    if (connection_handle == kHandle0) {
+      handle0_packet_count++;
+    } else {
+      ASSERT_EQ(kHandle1, connection_handle);
+      handle1_packet_count++;
+    }
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Fill controller with |kMaxNumPackets| packets so queue can grow.
+  for (size_t i = 0; i < kMaxNumPackets; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), Connection::LinkType::kACL,
+                                               l2cap::kFirstDynamicChannelId,
+                                               ACLDataChannel::PacketPriority::kLow));
+  }
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kMaxNumPackets, handle0_packet_count);
+  handle0_packet_count = 0;
+
+  // Queue up 10 packets in total, distributed among the two connection handles.
+  for (size_t i = 0; i < 2 * kMaxNumPackets; ++i) {
+    ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+    auto priority =
+        (i % 2) ? ACLDataChannel::PacketPriority::kLow : ACLDataChannel::PacketPriority::kHigh;
+    auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), Connection::LinkType::kACL,
+                                               l2cap::kFirstDynamicChannelId, priority));
+  }
+
+  RunLoopUntilIdle();
+
+  // No packets should have been sent because controller buffer is full.
+  EXPECT_EQ(0u, handle0_packet_count);
+  EXPECT_EQ(0u, handle1_packet_count);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  auto event_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
+                                             0x01,                   // Number of handles
+                                             0x01, 0x00, 0x05, 0x00  // 5 packets on handle 0x0001
+  );
+  test_device()->SendCommandChannelPacket(event_buffer);
+
+  RunLoopUntilIdle();
+
+  // Only high priority packets should have been sent.
+  EXPECT_EQ(5u, handle0_packet_count);
+  EXPECT_EQ(0u, handle1_packet_count);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  test_device()->SendCommandChannelPacket(event_buffer);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(5u, handle0_packet_count);
+  // Now low priority packets should have been sent.
+  EXPECT_EQ(5u, handle1_packet_count);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt
