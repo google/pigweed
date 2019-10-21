@@ -75,6 +75,8 @@ source_set("sources") {
 group("stack") {
   public_deps = [
     "att",
+    "cobalt:base",
+    "cobalt:real",
     "common",
     "data",
     "gap",
@@ -136,6 +138,7 @@ executable("tests") {
   deps = [
     ":driver_tests",
     "att:tests",
+    "cobalt:tests",
     "common:tests",
     "data:tests",
     "gap:tests",

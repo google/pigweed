@@ -1,0 +1,58 @@
+# Copyright 2019 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//third_party/cobalt/metrics_registry.gni")
+import("//third_party/protobuf/proto_library.gni")
+
+metrics_registry("registry") {
+  project_name = "bluetooth"
+  generate_cc = true
+  generate_binarypb = false
+}
+
+source_set("base") {
+  sources = [
+    "logger.h",
+  ]
+
+  public_deps = [
+    ":registry_cc",
+    "//src/lib/fxl",
+    "//zircon/public/lib/fbl",
+  ]
+}
+
+source_set("real") {
+  sources = [
+    "cobalt_logger.cc",
+    "cobalt_logger.h",
+  ]
+
+  deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+  ]
+
+  public_deps = [
+    ":base",
+    "//sdk/lib/fidl/cpp",
+    "//sdk/lib/sys/cpp",
+    "//zircon/public/lib/fit",
+    "//zircon/system/fidl/fuchsia-cobalt",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "cobalt_logger_unittest.cc",
+  ]
+
+  deps = [
+    ":real",
+    "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gtest",
+  ]
+}
