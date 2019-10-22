@@ -230,6 +230,9 @@ class ACLDataChannel final {
   void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
                       const zx_packet_signal_t* signal);
 
+  // Handler for HCI_Buffer_Overflow_event
+  void DataBufferOverflowCallback(const EventPacket& event);
+
   // Used to assert that certain public functions are only called on the
   // creation thread.
   fxl::ThreadChecker thread_checker_;
@@ -247,7 +250,10 @@ class ACLDataChannel final {
   std::atomic_bool is_initialized_;
 
   // The event handler ID for the Number Of Completed Packets event.
-  CommandChannel::EventHandlerId event_handler_id_;
+  CommandChannel::EventHandlerId num_completed_packets_event_handler_id_;
+
+  // The event handler ID for the Data Buffer Overflow event.
+  CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_;
 
   // The dispatcher used for posting tasks on the HCI transport I/O thread.
   async_dispatcher_t* io_dispatcher_;

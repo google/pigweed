@@ -1224,6 +1224,15 @@ struct LinkKeyNotificationEventParams {
   uint8_t key_type;
 } __PACKED;
 
+// ===========================================
+// Data Buffer Overflow Event (v1.1) (BR/EDR & LE)
+constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
+
+struct DataBufferOverflowEventParams {
+  // The type of data that caused the overflow.
+  LinkType ll_type;
+} __PACKED;
+
 // ==============================================
 // Inquiry Result with RSSI Event (v1.2) (BR/EDR)
 constexpr EventCode kInquiryResultWithRSSIEventCode = 0x22;

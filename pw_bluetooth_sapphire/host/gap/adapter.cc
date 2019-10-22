@@ -541,6 +541,7 @@ uint64_t Adapter::BuildEventMask() {
   ENABLE_EVT(kAuthenticationCompleteEvent);
   ENABLE_EVT(kConnectionCompleteEvent);
   ENABLE_EVT(kConnectionRequestEvent);
+  ENABLE_EVT(kDataBufferOverflowEvent);
   ENABLE_EVT(kDisconnectionCompleteEvent);
   ENABLE_EVT(kEncryptionChangeEvent);
   ENABLE_EVT(kEncryptionKeyRefreshCompleteEvent);

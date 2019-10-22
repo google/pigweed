@@ -9,6 +9,7 @@
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
+#include "lib/fit/function.h"
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
@@ -32,7 +33,8 @@ ACLDataChannel::ACLDataChannel(Transport* transport, zx::channel hci_acl_channel
       channel_(std::move(hci_acl_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
       is_initialized_(false),
-      event_handler_id_(0u),
+      num_completed_packets_event_handler_id_(0u),
+      data_buffer_overflow_event_handler_id_(0u),
       io_dispatcher_(nullptr),
       rx_dispatcher_(nullptr),
       num_sent_packets_(0u),
@@ -74,11 +76,15 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
   if (channel_wait_.object() == ZX_HANDLE_INVALID)
     return;
 
-  event_handler_id_ = transport_->command_channel()->AddEventHandler(
+  num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       kNumberOfCompletedPacketsEventCode,
-      std::bind(&ACLDataChannel::NumberOfCompletedPacketsCallback, this, std::placeholders::_1),
-      io_dispatcher_);
-  ZX_DEBUG_ASSERT(event_handler_id_);
+      fit::bind_member(this, &ACLDataChannel::NumberOfCompletedPacketsCallback), io_dispatcher_);
+  ZX_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
+
+  data_buffer_overflow_event_handler_id_ = transport_->command_channel()->AddEventHandler(
+      kDataBufferOverflowEventCode,
+      fit::bind_member(this, &ACLDataChannel::DataBufferOverflowCallback), io_dispatcher_);
+  ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = true;
 
@@ -102,7 +108,8 @@ void ACLDataChannel::ShutDown() {
 
   RunTaskSync(handler_cleanup_task, io_dispatcher_);
 
-  transport_->command_channel()->RemoveEventHandler(event_handler_id_);
+  transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
+  transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = false;
 
@@ -112,7 +119,8 @@ void ACLDataChannel::ShutDown() {
   }
 
   io_dispatcher_ = nullptr;
-  event_handler_id_ = 0u;
+  num_completed_packets_event_handler_id_ = 0u;
+  data_buffer_overflow_event_handler_id_ = 0u;
   SetDataRxHandler(nullptr, nullptr);
 }
 
@@ -519,6 +527,15 @@ ACLDataChannel::DataPacketQueue::iterator ACLDataChannel::SendQueueInsertLocatio
   return std::find_if(send_queue_.begin(), send_queue_.end(), [&](const QueuedDataPacket& packet) {
     return packet.priority == PacketPriority::kLow;
   });
+}
+
+void ACLDataChannel::DataBufferOverflowCallback(const EventPacket& event) {
+  ZX_DEBUG_ASSERT(event.event_code() == hci::kDataBufferOverflowEventCode);
+
+  const auto& params = event.params<hci::ConnectionRequestEventParams>();
+
+  // Internal buffer state must be invalid and no further transmissions are possible.
+  ZX_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
 }
 
 }  // namespace hci
