@@ -34,6 +34,7 @@ const auto kTestLinkKeyValue = Random<UInt128>();
 const auto kTestUnauthenticatedLinkKeyType = hci::LinkKeyType::kUnauthenticatedCombination192;
 const auto kTestAuthenticatedLinkKeyType = hci::LinkKeyType::kAuthenticatedCombination192;
 const auto kTestLegacyLinkKeyType = hci::LinkKeyType::kCombination;
+const auto kTestChangedLinkKeyType = hci::LinkKeyType::kChangedCombination;
 
 void NoOpStatusCallback(hci::ConnectionHandle, hci::Status){};
 void NoOpUserConfirmationCallback(bool){};
@@ -238,6 +239,37 @@ TEST(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallbac
   ASSERT_EQ(0, status_handler.call_count());
 
   connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST(GAP_PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  ASSERT_FALSE(connection.ltk().has_value());
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
+
+  EXPECT_FALSE(connection.ltk().has_value());
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.handle());
+  EXPECT_EQ(kTestHandle, *status_handler.handle());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_EQ(HostError::kInsufficientSecurity, status_handler.status()->error());
+}
+
+TEST(GAP_PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  connection.set_bredr_link_key(hci::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType);
+
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
+
+  ASSERT_TRUE(connection.ltk().has_value());
+  EXPECT_EQ(kTestLinkKeyValue, connection.ltk().value().value());
+  ASSERT_TRUE(connection.ltk_type().has_value());
+  EXPECT_EQ(kTestChangedLinkKeyType, connection.ltk_type().value());
   EXPECT_EQ(0, status_handler.call_count());
 }
 

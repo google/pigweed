@@ -247,22 +247,14 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
 }
 
 void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type) {
-  if (state() != State::kWaitLinkKey) {
-    FailWithUnexpectedEvent(__func__);
-    return;
-  }
-  ZX_ASSERT(is_pairing());
-
   // TODO(36360): We assume the controller is never in pairing debug mode because it's a security
   // hazard to pair and bond using Debug Combination link keys.
   ZX_ASSERT_MSG(key_type != hci::LinkKeyType::kDebugCombination,
                 "Pairing on link %#.4x (id: %s) resulted in insecure Debug Combination link key",
                 handle(), bt_str(peer_id()));
 
-  // The association model and resulting link security properties are computed by both the Link
-  // Manager (controller) and the host subsystem, so check that they agree.
-  sm::SecurityProperties sec_props;
-  if (key_type == hci::LinkKeyType::kChangedCombination) {
+  // When not pairing, only connection link key changes are allowed.
+  if (state() == State::kIdle && key_type == hci::LinkKeyType::kChangedCombination) {
     if (!link_->ltk()) {
       bt_log(WARN, "gap-bredr",
              "Got Changed Combination key but link %#.4x (id: %s) has no current key", handle(),
@@ -271,10 +263,20 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
       SignalStatus(hci::Status(HostError::kInsufficientSecurity));
       return;
     }
-  } else {
-    sec_props = sm::SecurityProperties(key_type);
-    current_pairing_->security_properties = sec_props;
+
+    bt_log(TRACE, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
+    link_->set_bredr_link_key(hci::LinkKey(link_key, 0, 0), key_type);
+    return;
+  } else if (state() != State::kWaitLinkKey) {
+    FailWithUnexpectedEvent(__func__);
+    return;
   }
+
+  // The association model and resulting link security properties are computed by both the Link
+  // Manager (controller) and the host subsystem, so check that they agree.
+  ZX_ASSERT(is_pairing());
+  const sm::SecurityProperties sec_props = sm::SecurityProperties(key_type);
+  current_pairing_->security_properties = sec_props;
 
   // Link keys resulting from legacy pairing are assigned lowest security level and we reject them.
   if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
