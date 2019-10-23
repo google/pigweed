@@ -20,9 +20,14 @@ PairingState::PairingState(PeerId peer_id, hci::Connection* link, StatusCallback
   ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));
+  cleanup_cb_ = [](PairingState* self) { self->link_->set_encryption_change_callback(nullptr); };
 }
 
-PairingState::~PairingState() { link_->set_encryption_change_callback(nullptr); }
+PairingState::~PairingState() {
+  if (cleanup_cb_) {
+    cleanup_cb_(this);
+  }
+}
 
 PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback status_cb) {
   // Raise an error to only the initiator—and not others—if we can't pair because there's no pairing

@@ -115,6 +115,7 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
     CASE_EVENT_STATUS(ReadRemoteVersionInfoComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(ReadRemoteExtendedFeaturesComplete);
+    CASE_EVENT_STATUS(SimplePairingComplete);
 
       // TODO(armansito): Complete this list.
 

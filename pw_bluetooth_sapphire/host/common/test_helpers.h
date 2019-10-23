@@ -6,7 +6,9 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TEST_HELPERS_H_
 
 #include <algorithm>
+#include <array>
 #include <iostream>
+#include <type_traits>
 
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -86,9 +88,22 @@ MutableByteBufferPtr NewBuffer(T... bytes) {
   return std::make_unique<StaticByteBuffer<sizeof...(T)>>(std::forward<T>(bytes)...);
 }
 
+// Returns the value of |x| as a little-endian array, i.e. the first byte of the array has the value
+// of the least significant byte of |x|.
+template <typename T>
+constexpr std::array<uint8_t, sizeof(T)> ToBytes(T x) {
+  static_assert(std::is_integral_v<T>, "Must use integral types for safe bytewise access");
+  std::array<uint8_t, sizeof(T)> bytes;
+  for (auto& byte : bytes) {
+    byte = x;
+    x >>= 8;
+  }
+  return bytes;
+}
+
 // Returns the Upper/Lower bits of a uint16_t
-constexpr uint8_t UpperBits(const uint16_t x) { return x >> 8; }
-constexpr uint8_t LowerBits(const uint16_t x) { return x & 0x00FF; }
+constexpr uint8_t UpperBits(const uint16_t x) { return ToBytes(x).back(); }
+constexpr uint8_t LowerBits(const uint16_t x) { return ToBytes(x).front(); }
 
 }  // namespace bt
 

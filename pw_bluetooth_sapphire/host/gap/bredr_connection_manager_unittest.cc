@@ -6,6 +6,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -19,6 +20,8 @@ namespace bt {
 namespace gap {
 namespace {
 
+using bt::hci::AuthRequirements;
+using bt::hci::IOCapability;
 using bt::testing::CommandTransaction;
 
 using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
@@ -360,6 +363,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
         CommandTransaction(testing::CreateConnectionPacket(peer->address()),
                            {&kCreateConnectionRsp, &complete_packet}));
   }
+
   void QueueSuccessfulInterrogation(DeviceAddress addr, hci::ConnectionHandle conn) const {
     const DynamicByteBuffer remote_name_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
@@ -638,66 +642,259 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncommingConnectionFailedInterrogation) {
   EXPECT_EQ(5, transaction_count());
 }
 
-const auto kCapabilitiesRequest = CreateStaticByteBuffer(hci::kIOCapabilityRequestEventCode,
+auto MakeIoCapabilityResponse(IOCapability io_cap, AuthRequirements auth_req) {
+  return CreateStaticByteBuffer(hci::kIOCapabilityResponseEventCode,
+                                0x09,                    // parameter_total_size (9 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // address
+                                io_cap,
+                                0x00,  // OOB authentication data not present
+                                auth_req);
+}
+
+const auto kIoCapabilityRequest = CreateStaticByteBuffer(hci::kIOCapabilityRequestEventCode,
                                                          0x06,  // parameter_total_size (6 bytes)
                                                          TEST_DEV_ADDR_BYTES_LE  // address
 );
 
-const auto kCapabilitiesRequestReply = CreateStaticByteBuffer(
-    LowerBits(hci::kIOCapabilityRequestReply), UpperBits(hci::kIOCapabilityRequestReply),
-    0x09,                    // parameter_total_size (9 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0x03,                    // No input, No output
-    0x00,                    // No OOB data present
-    0x04                     // MITM Protection Not Required – General Bonding
-);
+auto MakeIoCapabilityRequestReply(IOCapability io_cap, AuthRequirements auth_req) {
+  return CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestReply),
+                                UpperBits(hci::kIOCapabilityRequestReply),
+                                0x09,                    // parameter_total_size (9 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                io_cap,
+                                0x00,  // No OOB data present
+                                auth_req);
+}
 
-const auto kCapabilitiesRequestReplyRsp = CreateStaticByteBuffer(
+const auto kIoCapabilityRequestReplyRsp = CreateStaticByteBuffer(
     hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestReply),
     UpperBits(hci::kIOCapabilityRequestReply),
     hci::kSuccess,          // status
     TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
-// Test: sends replies to Capability Requests
-// TODO(jamuraa): returns correct capabilities when we have different
-// requirements.
-TEST_F(GAP_BrEdrConnectionManagerTest, CapabilityRequest) {
-  test_device()->QueueCommandTransaction(kCapabilitiesRequestReply,
-                                         {&kCapabilitiesRequestReplyRsp});
+const auto kIoCapabilityRequestNegativeReply =
+    CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestNegativeReply),
+                           UpperBits(hci::kIOCapabilityRequestNegativeReply),
+                           0x07,                    // parameter_total_size (7 bytes)
+                           TEST_DEV_ADDR_BYTES_LE,  // peer address
+                           hci::StatusCode::kPairingNotAllowed);
 
-  test_device()->SendCommandChannelPacket(kCapabilitiesRequest);
+const auto kIoCapabilityRequestNegativeReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestNegativeReply),
+    UpperBits(hci::kIOCapabilityRequestNegativeReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+// Test: replies negative to IO Capability Requests before PairingDelegate is set
+TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPairingDelegate) {
+  test_device()->QueueCommandTransaction(kIoCapabilityRequestNegativeReply,
+                                         {&kIoCapabilityRequestNegativeReplyRsp});
+
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, transaction_count());
 }
 
-const auto kUserConfirmationRequest =
-    CreateStaticByteBuffer(hci::kUserConfirmationRequestEventCode,
-                           0x0A,                    // parameter_total_size (10 byte payload)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0x00, 0x00, 0x00, 0x00   // numeric value 000000
-    );
+// Test: replies negative to IO Capability Requests for unconnected peers
+TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWhenNotConnected) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-const auto kConfirmationRequestReply = CreateStaticByteBuffer(
+  test_device()->QueueCommandTransaction(kIoCapabilityRequestNegativeReply,
+                                         {&kIoCapabilityRequestNegativeReplyRsp});
+
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, transaction_count());
+}
+
+// Test: replies to IO Capability Requests for connected peers
+TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(kIncomingConnTransactions, transaction_count());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kNoInputNoOutput,
+                                   AuthRequirements::kGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kMITMGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+constexpr uint32_t kPasskey = 123456;
+
+auto MakeUserConfirmationRequest(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(hci::kUserConfirmationRequestEventCode,
+                                0x0A,                    // parameter_total_size (10 byte payload)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
+const auto kUserConfirmationRequestReply = CreateStaticByteBuffer(
     LowerBits(hci::kUserConfirmationRequestReply), UpperBits(hci::kUserConfirmationRequestReply),
     0x06,                   // parameter_total_size (6 bytes)
     TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
-const auto kConfirmationRequestReplyRsp = COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestReply);
+const auto kUserConfirmationRequestReplyRsp =
+    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestReply);
 
-// Test: sends replies to Confirmation Requests
-TEST_F(GAP_BrEdrConnectionManagerTest, ConfirmationRequest) {
-  test_device()->QueueCommandTransaction(kConfirmationRequestReply,
-                                         {&kConfirmationRequestReplyRsp});
+const auto kUserConfirmationRequestNegativeReply =
+    CreateStaticByteBuffer(LowerBits(hci::kUserConfirmationRequestNegativeReply),
+                           UpperBits(hci::kUserConfirmationRequestNegativeReply),
+                           0x06,                   // parameter_total_size (6 bytes)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
 
-  test_device()->SendCommandChannelPacket(kUserConfirmationRequest);
+const auto kUserConfirmationRequestNegativeReplyRsp =
+    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestNegativeReply);
+
+const auto kSimplePairingCompleteSuccess =
+    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
+                           0x07,                   // parameter_total_size (7 byte payload)
+                           0x00,                   // status (success)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kSimplePairingCompleteError =
+    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
+                           0x07,                   // parameter_total_size (7 byte payload)
+                           0x05,                   // status (authentication failure)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+// Test: Responds to Secure Simple Pairing with user rejection of Numeric Comparison association
+TEST_F(GAP_BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRejects) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(1, transaction_count());
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        EXPECT_EQ(kPasskey, passkey);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(false);
+      });
+
+  test_device()->QueueCommandTransaction(kUserConfirmationRequestNegativeReply,
+                                         {&kUserConfirmationRequestNegativeReplyRsp});
+  test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_EQ(sm::Status(HostError::kFailed), status); });
+
+  test_device()->SendCommandChannelPacket(kSimplePairingCompleteError);
+
+  // We disconnect the peer when authentication fails.
+  QueueDisconnection(kConnectionHandle);
+
+  RunLoopUntilIdle();
+}
+
+const auto kUserPasskeyRequest =
+    CreateStaticByteBuffer(hci::kUserPasskeyRequestEventCode,
+                           0x06,                   // parameter_total_size (6 byte payload)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kUserPasskeyRequestNegativeReply =
+    CreateStaticByteBuffer(LowerBits(hci::kUserPasskeyRequestNegativeReply),
+                           UpperBits(hci::kUserPasskeyRequestNegativeReply),
+                           0x06,                   // parameter_total_size (6 bytes)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kUserPasskeyRequestNegativeReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kUserPasskeyRequestNegativeReply),
+    UpperBits(hci::kUserPasskeyRequestNegativeReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+// Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
+// user declines or provides invalid input
+TEST_F(GAP_BrEdrConnectionManagerTest,
+       RespondToPasskeyEntryPairingAfterUserProvidesInvalidPasskey) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
+    ASSERT_TRUE(response_cb);
+    response_cb(-128);  // Negative values indicate rejection.
+  });
+
+  test_device()->QueueCommandTransaction(kUserPasskeyRequestNegativeReply,
+                                         {&kUserPasskeyRequestNegativeReplyRsp});
+  test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_EQ(sm::Status(HostError::kFailed), status); });
+
+  test_device()->SendCommandChannelPacket(kSimplePairingCompleteError);
+
+  // We disconnect the peer when authentication fails.
+  QueueDisconnection(kConnectionHandle);
+
+  RunLoopUntilIdle();
 }
 
 const auto kLinkKeyRequest = CreateStaticByteBuffer(hci::kLinkKeyRequestEventCode,
@@ -766,7 +963,7 @@ const auto kLinkKeyNotification =
                            TEST_DEV_ADDR_BYTES_LE,  // peer address
                            0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e,
                            0xca, 0x1e, 0xca, 0xfe,  // link key
-                           0x04  // key type (Unauthenticated Combination Key generated from P-192)
+                           0x05  // key type (Authenticated Combination Key generated from P-192)
     );
 
 const auto kLinkKeyRequestReply = CreateStaticByteBuffer(
@@ -830,48 +1027,231 @@ const auto kLinkKeyRequestReplyChanged = CreateStaticByteBuffer(
     0xd5  // link key
 );
 
-// Test: stores and recalls link key for a remote peer
-TEST_F(GAP_BrEdrConnectionManagerTest, BondPeer) {
+const auto kSetConnectionEncryption = CreateStaticByteBuffer(
+    LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
+    0x03,        // parameter total size
+    0xAA, 0x0B,  // connection handle
+    0x01         // encryption enable
+);
+
+const auto kSetConnectionEncryptionRsp =
+    COMMAND_STATUS_RSP(hci::kSetConnectionEncryption, hci::StatusCode::kSuccess);
+
+const auto kEncryptionChangeEvent = CreateStaticByteBuffer(hci::kEncryptionChangeEventCode,
+                                                           4,           // parameter total size
+                                                           0x00,        // status
+                                                           0xAA, 0x0B,  // connection handle
+                                                           0x01         // encryption enabled
+);
+
+const auto kReadEncryptionKeySize = CreateStaticByteBuffer(LowerBits(hci::kReadEncryptionKeySize),
+                                                           UpperBits(hci::kReadEncryptionKeySize),
+                                                           0x02,       // parameter size
+                                                           0xAA, 0x0B  // connection handle
+);
+
+const auto kReadEncryptionKeySizeRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode,
+    0x07,  // parameters total size
+    0xFF,  // num command packets allowed (255)
+    LowerBits(hci::kReadEncryptionKeySize), UpperBits(hci::kReadEncryptionKeySize),
+    hci::kSuccess,  // status
+    0xAA, 0x0B,     // connection handle
+    0x10            // encryption key size: 16
+);
+
+auto MakeUserPasskeyRequestReply(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(LowerBits(hci::kUserPasskeyRequestReply),
+                                UpperBits(hci::kUserPasskeyRequestReply),
+                                0x0A,                    // parameter_total_size (10 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
+const auto kUserPasskeyRequestReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kUserPasskeyRequestReply),
+    UpperBits(hci::kUserPasskeyRequestReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+auto MakeUserPasskeyNotification(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(hci::kUserPasskeyNotificationEventCode,
+                                0x0A,                    // parameter_total_size (10 byte payload)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
+// Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
+// user provides the correct passkey
+TEST_F(GAP_BrEdrConnectionManagerTest,
+       EncryptAfterPasskeyEntryPairingAndUserProvidesAcceptedPasskey) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
   RunLoopUntilIdle();
 
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
+
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
+    ASSERT_TRUE(response_cb);
+    response_cb(kPasskey);
+  });
+
+  test_device()->QueueCommandTransaction(MakeUserPasskeyRequestReply(kPasskey),
+                                         {&kUserPasskeyRequestReplyRsp});
+  test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
+  test_device()->SendCommandChannelPacket(kLinkKeyNotification);
+
+  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
+                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(peer->bonded());
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Test: Responds to Secure Simple Pairing as the display side of Passkey Entry association after
+// the user provides the correct passkey on the peer
+TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
 
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->connected());
   ASSERT_FALSE(peer->bonded());
 
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kDisplayOnly,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kKeyboardOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        EXPECT_EQ(kPasskey, passkey);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kPeerEntry, method);
+        EXPECT_TRUE(confirm_cb);
+      });
+
+  test_device()->SendCommandChannelPacket(MakeUserPasskeyNotification(kPasskey));
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
+  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
+                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(peer->bonded());
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+// Test: Responds to Secure Simple Pairing and user confirmation of Numeric Comparison association,
+// then bonds and encrypts using resulting link key
+TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAndUserConfirms) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
   RunLoopUntilIdle();
+
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->connected());
+  ASSERT_FALSE(peer->bonded());
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  test_device()->QueueCommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp});
+
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        EXPECT_EQ(kPasskey, passkey);
+        EXPECT_EQ(PairingDelegate::DisplayMethod::kComparison, method);
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  test_device()->QueueCommandTransaction(kUserConfirmationRequestReply,
+                                         {&kUserConfirmationRequestReplyRsp});
+  test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
+  test_device()->SendCommandChannelPacket(kLinkKeyNotification);
+
+  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
+                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
+  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(peer->bonded());
 
   test_device()->QueueCommandTransaction(kLinkKeyRequestReply, {&kLinkKeyRequestReplyRsp});
-
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
   RunLoopUntilIdle();
-
-  EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
-
-  // Change the link key.
-  test_device()->SendCommandChannelPacket(kLinkKeyNotificationChanged);
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(peer->bonded());
-
-  test_device()->QueueCommandTransaction(kLinkKeyRequestReplyChanged, {&kLinkKeyRequestReplyRsp});
-
-  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(peer->bonded());
-  EXPECT_EQ(kIncomingConnTransactions + 2, transaction_count());
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -1212,13 +1592,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
   QueueDisconnection(kConnectionHandle);
 }
 
-const auto kAuthenticationRequest = CreateStaticByteBuffer(LowerBits(hci::kAuthenticationRequested),
-                                                           UpperBits(hci::kAuthenticationRequested),
-                                                           0x02,  // parameter_total_size (2 bytes)
-                                                           0xAA, 0x0B  // Connection_Handle
+const auto kAuthenticationRequested = CreateStaticByteBuffer(
+    LowerBits(hci::kAuthenticationRequested), UpperBits(hci::kAuthenticationRequested),
+    0x02,       // parameter_total_size (2 bytes)
+    0xAA, 0x0B  // Connection_Handle
 );
 
-const auto kAuthenticationStatus =
+const auto kAuthenticationRequestedStatus =
     COMMAND_STATUS_RSP(hci::kAuthenticationRequested, hci::StatusCode::kSuccess);
 
 const auto kAuthenticationComplete = CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
@@ -1234,7 +1614,9 @@ const auto kAuthenticationCompleteFailed =
                            0xAA, 0x0B                            // connection_handle
     );
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthentication) {
+// Test: when opening an L2CAP channel on an unbonded peer, indicate that we have no link key then
+// pair, authenticate, bond, and encrypt the link, then try to open the channel.
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   QueueSuccessfulIncomingConn();
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -1250,28 +1632,56 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthentication) {
 
   auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
 
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
   // Initial connection request
 
-  // Note: this skips some parts of the pairing flow, because the link key being
-  // received is the important part of this.
+  // Pairing initiation and flow that results in bonding then encryption, but verifying the strength
+  // of the encryption key doesn't complete
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kAuthenticationRequested, {&kAuthenticationRequestedStatus, &kLinkKeyRequest}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kLinkKeyRequestNegativeReply, {&kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest}));
+  const auto kIoCapabilityResponse =
+      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                   AuthRequirements::kMITMGeneralBonding),
+      {&kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest}));
   test_device()->QueueCommandTransaction(
-      CommandTransaction(kAuthenticationRequest, {&kAuthenticationStatus, &kLinkKeyNotification}));
+      CommandTransaction(kUserConfirmationRequestReply,
+                         {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                          &kLinkKeyNotification, &kAuthenticationComplete}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
                               async_get_default_dispatcher());
 
-  RunLoopUntilIdle();
+  RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  // The L2CAP shouldn't have been called
-  // We should not have a socket, and the callback shouldn't have been called,
-  // but the LTK should be stored since the link key got received.
+  // We should not have a socket because the L2CAP open callback shouldn't have been called, but
+  // the LTK should be stored since the link key got received.
   ASSERT_FALSE(connected_socket);
 
-  test_device()->SendCommandChannelPacket(kAuthenticationComplete);
+  test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
 
-  RunLoopUntilIdle();
+  RETURN_IF_FATAL(RunLoopUntilIdle());
 
   // The socket should be returned.
   ASSERT_TRUE(connected_socket);
@@ -1291,15 +1701,18 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthentication) {
   QueueDisconnection(kConnectionHandle);
 }
 
-// Test: when the device is already bonded, the link key gets stored when it is
-// provided to the connection.
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationBonded) {
+// Test: when the peer is already bonded, the link key gets stored when it is provided to the
+// connection.
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
   ASSERT_TRUE(
       peer_cache()->AddBondedPeer(BondingData{PeerId(999), kTestDevAddr, {}, {}, kLinkKey}));
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connected());
   ASSERT_TRUE(peer->bonded());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   QueueSuccessfulIncomingConn();
 
@@ -1320,7 +1733,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationBonded) {
   // received is the important part of this. The key is not received when the
   // authentication fails.
   test_device()->QueueCommandTransaction(
-      CommandTransaction(kAuthenticationRequest, {&kAuthenticationStatus}));
+      CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
                               async_get_default_dispatcher());
@@ -1333,16 +1746,21 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationBonded) {
 
   // The authentication flow will request the existing link key, which should be
   // returned and stored, and then the authentication is complete.
-  test_device()->QueueCommandTransaction(kLinkKeyRequestReply, {&kLinkKeyRequestReplyRsp});
+  test_device()->QueueCommandTransaction(kLinkKeyRequestReply,
+                                         {&kLinkKeyRequestReplyRsp, &kAuthenticationComplete});
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
+
   RunLoopUntilIdle();
 
-  // No socket until the authentication is signaled complete.
+  // No socket until the encryption verification completes.
   ASSERT_FALSE(connected_socket);
 
-  test_device()->SendCommandChannelPacket(kAuthenticationComplete);
+  test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
 
@@ -1354,8 +1772,12 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationBonded) {
   QueueDisconnection(kConnectionHandle);
 }
 
-TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationFailed) {
+TEST_F(GAP_BrEdrConnectionManagerTest,
+       OpenL2capAuthenticationFailureReturnsInvalidSocketAndDisconnects) {
   QueueSuccessfulIncomingConn();
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1376,7 +1798,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationFailed) {
   // received is the important part of this. The key is not received when the
   // authentication fails.
   test_device()->QueueCommandTransaction(
-      CommandTransaction(kAuthenticationRequest, {&kAuthenticationStatus}));
+      CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
                               async_get_default_dispatcher());
@@ -1401,6 +1823,81 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capAuthenticationFailed) {
   ASSERT_EQ(ZX_HANDLE_INVALID, *connected_socket);
 
   ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
+}
+
+// Test: when pairing is in progress, opening an L2CAP channel waits for the pairing to complete
+// before retrying.
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComplete) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  std::optional<zx::socket> connected_socket;
+
+  auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  // Initiate pairing from the peer
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Initial connection request
+
+  // Pair and bond as the responder. Note that Authentication Requested is not sent even though we
+  // are opening the L2CAP channel because the peer started pairing first.
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                      AuthRequirements::kMITMGeneralBonding),
+                         {&kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kUserConfirmationRequestReply,
+      {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess, &kLinkKeyNotification}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
+  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
+
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+                              async_get_default_dispatcher());
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // We should not have a socket because the L2CAP open callback shouldn't have been called, but
+  // the LTK should be stored since the link key got received.
+  ASSERT_FALSE(connected_socket);
+
+  test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
+
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // The socket should be returned.
+  ASSERT_TRUE(connected_socket);
+
+  QueueDisconnection(kConnectionHandle);
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {

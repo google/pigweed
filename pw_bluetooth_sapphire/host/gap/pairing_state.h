@@ -158,6 +158,8 @@ class PairingState final {
   //
   // |link| must be valid for the lifetime of this object.
   PairingState(PeerId peer_id, hci::Connection* link, StatusCallback status_cb);
+  PairingState(PairingState&&) = default;
+  PairingState& operator=(PairingState&&) = default;
   ~PairingState();
 
   // True if there is currently a pairing procedure in progress that the local
@@ -348,10 +350,14 @@ class PairingState final {
   // |state_| to kFailed. Logs an error using |handler_name| for identification.
   void FailWithUnexpectedEvent(const char* handler_name);
 
-  const PeerId peer_id_;
+  // Compute the expected pairing event and state to occur after receiving the peer IO Capability
+  // and write it to |current_pairing_| (which must exist).
+  void WritePairingData();
+
+  PeerId peer_id_;
 
   // The BR/EDR link whose pairing is being driven by this object.
-  hci::Connection* const link_;
+  hci::Connection* link_;
 
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 
@@ -364,6 +370,10 @@ class PairingState final {
 
   // Callback that status of this pairing is reported back through.
   StatusCallback status_callback_;
+
+  // Cleanup work that should occur only once per connection; uniqueness is guaranteed by being
+  // moved with PairingState. |self| shall be a pointer to the moved-to instance being cleaned up.
+  fit::callback<void(PairingState* self)> cleanup_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };

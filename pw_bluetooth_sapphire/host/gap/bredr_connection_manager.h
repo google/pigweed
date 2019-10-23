@@ -8,6 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -33,8 +34,8 @@ class BrEdrConnectionManager;
 // interrogation
 class BrEdrConnection final {
  public:
-  BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link)
-      : link_(std::move(link)), peer_id_(peer_id) {}
+  BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
+                  std::unique_ptr<hci::Connection> link);
 
   BrEdrConnection(BrEdrConnection&&) = default;
   BrEdrConnection& operator=(BrEdrConnection&&) = default;
@@ -44,9 +45,12 @@ class BrEdrConnection final {
 
   PeerId peer_id() const { return peer_id_; }
 
+  PairingState& pairing_state() { return pairing_state_; }
+
  private:
-  std::unique_ptr<hci::Connection> link_;
   PeerId peer_id_;
+  std::unique_ptr<hci::Connection> link_;
+  PairingState pairing_state_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };
@@ -63,6 +67,9 @@ class BrEdrConnectionManager final {
 
   // Set whether this host is connectable
   void SetConnectable(bool connectable, hci::StatusCallback status_cb);
+
+  // Returns the PairingDelegate currently assigned to this connection manager.
+  PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
 
   // Assigns a new PairingDelegate to handle BR/EDR authentication challenges.
   // Replacing an existing pairing delegate cancels all ongoing pairing
@@ -140,14 +147,24 @@ class BrEdrConnectionManager final {
   std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionById(
       PeerId peer_id);
 
+  // Find the handle for a connection to |bd_addr|. Returns nullopt if no BR/EDR
+  // |bd_addr| is connected.
+  std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionByAddress(
+      const DeviceAddressBytes& bd_addr);
+
   // Callbacks for registered events
+  void OnAuthenticationComplete(const hci::EventPacket& event);
   void OnConnectionRequest(const hci::EventPacket& event);
   void OnConnectionComplete(const hci::EventPacket& event);
   void OnDisconnectionComplete(const hci::EventPacket& event);
+  void OnIoCapabilityRequest(const hci::EventPacket& event);
+  void OnIoCapabilityResponse(const hci::EventPacket& event);
   void OnLinkKeyRequest(const hci::EventPacket& event);
   void OnLinkKeyNotification(const hci::EventPacket& event);
-  void OnIOCapabilitiesRequest(const hci::EventPacket& event);
+  void OnSimplePairingComplete(const hci::EventPacket& event);
   void OnUserConfirmationRequest(const hci::EventPacket& event);
+  void OnUserPasskeyRequest(const hci::EventPacket& event);
+  void OnUserPasskeyNotification(const hci::EventPacket& event);
 
   // Called once interrogation is complete to establish a BrEdrConnection and,
   // if in response to an outgoing connection request, completes the request
@@ -172,10 +189,36 @@ class BrEdrConnectionManager final {
   // command.
   void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn, bool close_link);
 
+  // Helpers for sending commands on the command channel for this controller.
+  // All callbacks will run on |dispatcher_|.
+  void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr, hci::IOCapability io_capability,
+                                    uint8_t oob_data_present,
+                                    hci::AuthRequirements auth_requirements,
+                                    hci::StatusCallback cb = nullptr);
+  void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci::StatusCode reason,
+                                            hci::StatusCallback cb = nullptr);
+  void SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
+                                        hci::StatusCallback cb = nullptr);
+  void SendUserConfirmationRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                                hci::StatusCallback cb = nullptr);
+  void SendUserPasskeyRequestReply(DeviceAddressBytes bd_addr, uint32_t numeric_value,
+                                   hci::StatusCallback cb = nullptr);
+  void SendUserPasskeyRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                           hci::StatusCallback cb = nullptr);
+
+  // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
+  // will be decoded for its status, which is passed to |cb|.
+  void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
+                                     hci::StatusCallback cb);
+
   using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 
   fxl::RefPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
+
+  // The pairing delegate used for authentication challenges. If nullptr, all
+  // pairing requests will be rejected.
+  fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 
   // Peer cache is used to look up parameters for connecting to peers and
   // update the state of connected peers as well as introduce unknown peers.

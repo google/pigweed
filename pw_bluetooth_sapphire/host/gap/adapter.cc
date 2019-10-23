@@ -545,8 +545,6 @@ uint64_t Adapter::BuildEventMask() {
   ENABLE_EVT(kDisconnectionCompleteEvent);
   ENABLE_EVT(kEncryptionChangeEvent);
   ENABLE_EVT(kEncryptionKeyRefreshCompleteEvent);
-  ENABLE_EVT(kLinkKeyRequestEvent);
-  ENABLE_EVT(kLinkKeyNotificationEvent);
   ENABLE_EVT(kExtendedInquiryResultEvent);
   ENABLE_EVT(kHardwareErrorEvent);
   ENABLE_EVT(kInquiryCompleteEvent);
@@ -555,13 +553,17 @@ uint64_t Adapter::BuildEventMask() {
   ENABLE_EVT(kIOCapabilityRequestEvent);
   ENABLE_EVT(kIOCapabilityResponseEvent);
   ENABLE_EVT(kLEMetaEvent);
-  ENABLE_EVT(kUserConfirmationRequestEvent);
-  ENABLE_EVT(kUserPasskeyRequestEvent);
+  ENABLE_EVT(kLinkKeyRequestEvent);
+  ENABLE_EVT(kLinkKeyNotificationEvent);
   ENABLE_EVT(kRemoteOOBDataRequestEvent);
   ENABLE_EVT(kRemoteNameRequestCompleteEvent);
   ENABLE_EVT(kReadRemoteSupportedFeaturesCompleteEvent);
   ENABLE_EVT(kReadRemoteVersionInformationCompleteEvent);
   ENABLE_EVT(kReadRemoteExtendedFeaturesCompleteEvent);
+  ENABLE_EVT(kSimplePairingCompleteEvent);
+  ENABLE_EVT(kUserConfirmationRequestEvent);
+  ENABLE_EVT(kUserPasskeyRequestEvent);
+  ENABLE_EVT(kUserPasskeyNotificationEvent);
 
 #undef ENABLE_EVT
 
