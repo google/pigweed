@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 
-#include <ddk/driver.h>
-
 #include <cstddef>
+
+#include <ddk/driver.h>
 
 #include "src/lib/fxl/compiler_specific.h"
 
@@ -22,7 +22,7 @@
 // number:
 //
 //     if (IsLogLevelEnabled(LogSeverity::TRACE)) {
-//       LogMessage(LogSeverity::TRACE, "bt-host", "oops: %d", foo);
+//       LogMessage(__FILE__, __LINE__, LogSeverity::TRACE, "bt-host", "oops: %d", foo);
 //     }
 //
 // or using the bt_log convenience macro:
@@ -112,18 +112,31 @@ enum class LogSeverity {
 constexpr size_t kNumLogSeverities = 6;
 
 bool IsLogLevelEnabled(LogSeverity severity);
-void LogMessage(LogSeverity severity, const char* tag, const char* fmt, ...)
-    FXL_PRINTF_FORMAT(3, 4);
+void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
+                ...) FXL_PRINTF_FORMAT(5, 6);
 
 void UsePrintf(LogSeverity min_severity);
 
+namespace internal {
+
+// Returns the part of a path following the final '/', or the whole path if there is no '/'.
+constexpr const char* BaseName(const char* path) {
+  for (const char* c = path; c && (*c != '\0'); c++) {
+    if (*c == '/') {
+      path = c + 1;
+    }
+  }
+  return path;
+}
+
+}  // namespace internal
 }  // namespace bt
 
-#define bt_log(flag, tag, fmt...)                       \
-  do {                                                  \
-    if (bt::IsLogLevelEnabled(bt::LogSeverity::flag)) { \
-      bt::LogMessage(bt::LogSeverity::flag, tag, fmt);  \
-    }                                                   \
+#define bt_log(flag, tag, fmt...)                                                                  \
+  do {                                                                                             \
+    if (bt::IsLogLevelEnabled(bt::LogSeverity::flag)) {                                            \
+      bt::LogMessage(bt::internal::BaseName(__FILE__), __LINE__, bt::LogSeverity::flag, tag, fmt); \
+    }                                                                                              \
   } while (0)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};

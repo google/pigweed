@@ -4,15 +4,24 @@
 
 #include "log.h"
 
-#include <ddk/debug.h>
 #include <stdarg.h>
 
 #include <algorithm>
+#include <string_view>
+
+#include <ddk/debug.h>
 
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace {
+
+// Check that BaseName strips the directory portion of a string literal path at compile time.
+static_assert(internal::BaseName(nullptr) == nullptr);
+static_assert(internal::BaseName("") == std::string_view());
+static_assert(internal::BaseName("main.cc") == std::string_view("main.cc"));
+static_assert(internal::BaseName("/main.cc") == std::string_view("main.cc"));
+static_assert(internal::BaseName("../foo/bar//main.cc") == std::string_view("main.cc"));
 
 std::atomic_int g_printf_min_severity(-1);
 
@@ -47,16 +56,17 @@ bool IsLogLevelEnabled(LogSeverity severity) {
   return zxlog_level_enabled_etc(LogSeverityToDdkLog(severity));
 }
 
-void LogMessage(LogSeverity severity, const char* tag, const char* fmt, ...) {
+void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
+                ...) {
   va_list args;
   va_start(args, fmt);
   std::string msg = fxl::StringVPrintf(fmt, args);
   va_end(args);
 
   if (IsPrintfEnabled()) {
-    printf("[%s] %s: %s\n", tag, LogSeverityToString(severity), msg.c_str());
+    printf("[%s:%s:%d] %s: %s\n", tag, file, line, LogSeverityToString(severity), msg.c_str());
   } else {
-    driver_printf(LogSeverityToDdkLog(severity), "[bt-host/%s] %s: %s\n", tag,
+    driver_printf(LogSeverityToDdkLog(severity), "[bt-host/%s:%s:%d] %s: %s\n", tag, file, line,
                   LogSeverityToString(severity), msg.c_str());
   }
 }

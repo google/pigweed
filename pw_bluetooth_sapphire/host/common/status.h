@@ -119,21 +119,22 @@ class Status {
 
   // Helper that returns true if this status represents an error and prints a
   // message containing a string representation of the status.
-  bool TestForErrorAndLog(LogSeverity severity, const char* tag, const std::string& msg) const {
+  bool TestForErrorAndLog(LogSeverity severity, const char* tag, const char* file, int line,
+                          const std::string& msg) const {
     bool is_error = !is_success();
     if (is_error && IsLogLevelEnabled(severity)) {
-      LogMessage(severity, tag, "%s: %s", msg.c_str(), ToString().c_str());
+      LogMessage(file, line, severity, tag, "%s: %s", msg.c_str(), ToString().c_str());
     }
     return is_error;
   }
 
-  bool TestForErrorAndLogF(LogSeverity severity, const char* tag, const char* fmt, ...) const
-      FXL_PRINTF_FORMAT(4, 5) {
+  bool TestForErrorAndLogF(LogSeverity severity, const char* tag, const char* file, int line,
+                           const char* fmt, ...) const FXL_PRINTF_FORMAT(6, 7) {
     va_list args;
     va_start(args, fmt);
     std::string msg = fxl::StringVPrintf(fmt, args);
     va_end(args);
-    return TestForErrorAndLog(severity, tag, msg);
+    return TestForErrorAndLog(severity, tag, file, line, msg);
   }
 
  private:
@@ -153,7 +154,8 @@ class Status {
 // It will log with the string prepended to the stringified status if status is
 // a failure. Evaluates to true if the status indicates failure.
 
-#define bt_is_error(status, flag, tag, fmt...) \
-  (status.TestForErrorAndLogF(bt::LogSeverity::flag, tag, fmt))
+#define bt_is_error(status, flag, tag, fmt...)                                              \
+  (status.TestForErrorAndLogF(bt::LogSeverity::flag, tag, bt::internal::BaseName(__FILE__), \
+                              __LINE__, fmt))
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_STATUS_H_
