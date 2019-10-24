@@ -64,8 +64,8 @@ source_set("gtest_main") {
   ]
 
   deps = [
-    "//garnet/public/lib/fsl",
     "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/lib/fsl",
     "//src/lib/fxl/test:test_settings",
     "//zircon/public/lib/driver",
   ]
