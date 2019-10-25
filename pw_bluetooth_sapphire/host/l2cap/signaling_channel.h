@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 
-#include <fbl/macros.h>
-
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
@@ -43,6 +43,8 @@ class SignalingChannelInterface {
   // Callback invoked to handle a response received from the remote. If |status|
   // is kSuccess or kReject, then |rsp_payload| will contain any payload
   // received. Return true if an additional response is expected.
+  //
+  // TODO(36062): Name the return type with an enum to make parsing code more readable.
   using ResponseHandler = fit::function<bool(Status status, const ByteBuffer& rsp_payload)>;
 
   // Initiate an outbound transaction. The signaling channel will send a request

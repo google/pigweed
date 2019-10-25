@@ -113,7 +113,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Connection Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const ByteBuffer& payload_buf);
+    bool Decode(const ByteBuffer& payload_buf);
 
     ConnectionResult result() const { return result_; }
     ConnectionStatus conn_status() const { return conn_status_; }
@@ -129,7 +129,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Configuration Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const ByteBuffer& payload_buf);
+    bool Decode(const ByteBuffer& payload_buf);
 
     uint16_t flags() const { return flags_; }
     ConfigurationResult result() const { return result_; }
@@ -155,7 +155,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Disconnection Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const ByteBuffer& payload_buf);
+    bool Decode(const ByteBuffer& payload_buf);
   };
 
   class InformationResponse : public Response {
@@ -164,7 +164,7 @@ class BrEdrCommandHandler final {
     static constexpr const char* kName = "Information Response";
 
     using Response::Response;  // Inherit ctor
-    void Decode(const ByteBuffer& payload_buf);
+    bool Decode(const ByteBuffer& payload_buf);
 
     InformationType type() const { return type_; }
     InformationResult result() const { return result_; }
@@ -174,14 +174,14 @@ class BrEdrCommandHandler final {
       return data_.As<uint16_t>();
     }
 
-    uint32_t extended_features() const {
+    ExtendedFeatures extended_features() const {
       ZX_DEBUG_ASSERT(type() == InformationType::kExtendedFeaturesSupported);
-      return data_.As<uint32_t>();
+      return data_.As<ExtendedFeatures>();
     }
 
-    uint64_t fixed_channels() const {
+    FixedChannelsSupported fixed_channels() const {
       ZX_DEBUG_ASSERT(type() == InformationType::kFixedChannelsSupported);
-      return data_.As<uint64_t>();
+      return data_.As<FixedChannelsSupported>();
     }
 
    private:
@@ -198,8 +198,11 @@ class BrEdrCommandHandler final {
 
   using ConnectionResponseCallback = fit::function<bool(const ConnectionResponse& rsp)>;
   using ConfigurationResponseCallback = fit::function<bool(const ConfigurationResponse& rsp)>;
+
+  // TODO(36062): DisconnectionResponseCallback should return void if no additional responses are
+  // necessary.
   using DisconnectionResponseCallback = fit::function<bool(const DisconnectionResponse& rsp)>;
-  using InformationResponseCallback = fit::function<bool(const InformationResponse& rsp)>;
+  using InformationResponseCallback = fit::function<void(const InformationResponse& rsp)>;
 
   // Base of response-sending objects passed to request delegates that they can
   // use to reply with a corresponding response or a rejection. This base
@@ -316,14 +319,23 @@ class BrEdrCommandHandler final {
   void ServeInformationRequest(InformationRequestCallback cb);
 
  private:
-  // Returns a function that decodes a response status and payload into a
-  // |ResponseT| object and invokes |cb| with it.
+  // Returns a function that decodes a response status and payload into a |ResponseT| object and
+  // invokes |rsp_cb| with it.
   // |ResponseT| needs to have
-  //  - |Decode| function that accepts a buffer of at least
-  //    |sizeof(ResponseT::PayloadT)| bytes
+  //  - |Decode| function that accepts a buffer of at least |sizeof(ResponseT::PayloadT)| bytes. If
+  //    it returns false, then decoding failed, no additional responses are expected, and the user
+  //    response handler will not be called.
   //  - |kName| string literal
+  //
+  // TODO(36062): Name the return type of CallbackT to make parsing code more readable.
   template <class ResponseT, typename CallbackT>
   SignalingChannel::ResponseHandler BuildResponseHandler(CallbackT rsp_cb);
+
+  // Invokes |rsp_cb| with |rsp|. Returns false for "no additional responses expected" if |rsp_cb|
+  // returns void, otherwise passes along its return result. Used because not all *ResponseCallback
+  // types return void (some can request additional continuations in their return value).
+  template <typename CallbackT, class ResponseT>
+  static bool InvokeResponseCallback(CallbackT* rsp_cb, ResponseT rsp);
 
   SignalingChannelInterface* const sig_;  // weak
   fit::closure request_fail_callback_;

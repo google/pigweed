@@ -112,6 +112,37 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRej) {
   EXPECT_TRUE(cb_called);
 }
 
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
+  constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
+
+  // Connection Request payload
+  auto expected_conn_req = CreateStaticByteBuffer(
+      // PSM
+      LowerBits(kPsm), UpperBits(kPsm),
+
+      // Source CID
+      LowerBits(kBadLocalCId), UpperBits(kBadLocalCId));
+
+  // Command Reject payload (the invalid channel IDs are missing)
+  auto rej_rsp = CreateStaticByteBuffer(
+      // Reject Reason (invalid channel ID)
+      LowerBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
+      UpperBits(static_cast<uint16_t>(RejectReason::kInvalidCID)));
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kConnectionRequest, expected_conn_req.view(),
+                      {SignalingChannel::Status::kReject, rej_rsp.view()});
+
+  bool cb_called = false;
+  auto on_conn_rsp = [&cb_called](const BrEdrCommandHandler::ConnectionResponse& rsp) {
+    cb_called = true;
+    return false;
+  };
+
+  EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kBadLocalCId, std::move(on_conn_rsp)));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cb_called);
+}
+
 TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
   // Connection Request payload
   auto expected_conn_req = CreateStaticByteBuffer(
@@ -537,6 +568,216 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRej) {
 
   EXPECT_TRUE(
       cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
+
+  // Information Response payload
+  auto ok_info_rsp = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+
+      // Information Result
+      LowerBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+      UpperBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+
+      // Data (extended features mask, 4 bytes)
+      LowerBits(kExtendedFeaturesBitFixedChannels), 0, 0, 0);
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, ok_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+        cb_called = true;
+        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
+        EXPECT_EQ(InformationResult::kSuccess, rsp.result());
+        EXPECT_EQ(InformationType::kExtendedFeaturesSupported, rsp.type());
+        EXPECT_EQ(kExtendedFeaturesBitFixedChannels, rsp.extended_features());
+      };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
+                                                    std::move(on_info_cb)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspNotSupported) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
+      UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)));
+
+  // Information Response payload
+  auto error_info_rsp = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
+      UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
+
+      // Information Result
+      LowerBits(static_cast<uint16_t>(InformationResult::kNotSupported)),
+      UpperBits(static_cast<uint16_t>(InformationResult::kNotSupported)));
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, error_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+        cb_called = true;
+        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
+        EXPECT_EQ(InformationResult::kNotSupported, rsp.result());
+        EXPECT_EQ(InformationType::kConnectionlessMTU, rsp.type());
+      };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kConnectionlessMTU,
+                                                    std::move(on_info_cb)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
+
+  // Information Response payload
+  auto malformed_info_rsp = CreateStaticByteBuffer(
+      // 1 of 4 bytes expected of an Information Response just to be able to parse it.
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, malformed_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) { cb_called = true; };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
+                                                    std::move(on_info_cb)));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cb_called);
+}
+
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
+
+  // Information Response payload
+  auto malformed_info_rsp = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+
+      // Information Result
+      LowerBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+      UpperBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+
+      // Data (2 of 4 bytes expected of an extended features mask)
+      0, 0);
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, malformed_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) { cb_called = true; };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
+                                                    std::move(on_info_cb)));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cb_called);
+}
+
+// Accept and pass a valid Information Response even if it doesn't have the type
+// requested.
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspWrongType) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
+
+  // Information Response payload
+  auto mismatch_info_rsp = CreateStaticByteBuffer(
+      // Information Type
+      LowerBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
+      UpperBits(static_cast<uint16_t>(InformationType::kConnectionlessMTU)),
+
+      // Information Result
+      LowerBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+      UpperBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+
+      // Data (connectionless broadcast MTU, 2 bytes)
+      0x40, 0);
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, mismatch_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+        cb_called = true;
+        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
+        EXPECT_EQ(InformationResult::kSuccess, rsp.result());
+        EXPECT_EQ(InformationType::kConnectionlessMTU, rsp.type());
+        EXPECT_EQ(0x40, rsp.connectionless_mtu());
+      };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(InformationType::kExtendedFeaturesSupported,
+                                                    std::move(on_info_cb)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cb_called);
+}
+
+// Allow types of information besides those known to BrEdrCommandHandler.
+TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
+  // Information Request payload
+  auto expected_info_req = CreateStaticByteBuffer(
+      // Information Type
+      0x04, 0);
+
+  // Information Response payload
+  auto ok_info_rsp = CreateStaticByteBuffer(
+      // Information Type
+      0x04, 0,
+
+      // Information Result
+      LowerBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+      UpperBits(static_cast<uint16_t>(InformationResult::kSuccess)),
+
+      // Data (some payload)
+      't', 'e', 's', 't');
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kInformationRequest, expected_info_req.view(),
+                      {SignalingChannel::Status::kSuccess, ok_info_rsp.view()});
+
+  bool cb_called = false;
+  BrEdrCommandHandler::InformationResponseCallback on_info_cb =
+      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+        cb_called = true;
+        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
+        EXPECT_EQ(InformationResult::kSuccess, rsp.result());
+        EXPECT_EQ(static_cast<InformationType>(0x04), rsp.type());
+      };
+
+  EXPECT_TRUE(cmd_handler()->SendInformationRequest(static_cast<InformationType>(0x04),
+                                                    std::move(on_info_cb)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
 }
