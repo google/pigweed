@@ -38,11 +38,11 @@ source_set("common") {
   ]
 
   public_deps = [
-    "//src/devices:driver",
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/async-default",
     "//zircon/public/lib/ddk",
+    "//zircon/public/lib/driver",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
