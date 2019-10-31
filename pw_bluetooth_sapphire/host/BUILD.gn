@@ -54,6 +54,10 @@ source_set("sources") {
     "fidl/server_base.h",
   ]
 
+  deps = [
+    "//src/devices:driver",
+    "//src/devices/host",
+  ]
   public_deps = [
     ":stack",
     "//sdk/fidl/fuchsia.bluetooth",
@@ -63,7 +67,6 @@ source_set("sources") {
     "//src/connectivity/bluetooth/fidl:host",
     "//src/lib/fxl",
     "//zircon/public/lib/ddk",
-    "//zircon/public/lib/driver",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
@@ -149,6 +152,7 @@ executable("tests") {
     "sdp:tests",
     "sm:tests",
     "testing:gtest_main",
+    "//src/devices:driver",
     "//third_party/googletest:gtest",
   ]
 }
