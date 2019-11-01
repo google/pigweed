@@ -1,0 +1,81 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_build/pw_executable.gni")
+
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+# pw_unit_test core library.
+source_set("pw_unit_test") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public_deps = [
+    "$dir_pw_preprocessor",
+  ]
+  public = [
+    "public/gtest/gtest.h",
+    "public/pw_unit_test/event_handler.h",
+    "public/pw_unit_test/framework.h",
+  ]
+  sources = [ "framework.cc" ] + public
+}
+
+# Library providing an event handler which outputs human-readable text.
+source_set("simple_printing_event_handler") {
+  public_deps = [
+    ":pw_unit_test",
+    "$dir_pw_preprocessor",
+  ]
+  public = [
+    "public/pw_unit_test/simple_printing_event_handler.h",
+  ]
+  sources = [ "simple_printing_event_handler.cc" ] + public
+}
+
+# Library providing a standard desktop main function for the pw_unit_test
+# framework. Unit test files can link against this library to build runnable
+# unit test executables.
+source_set("main") {
+  public_deps = [
+    ":pw_unit_test",
+  ]
+  deps = [
+    ":simple_printing_event_handler",
+  ]
+  sources = [
+    "main.cc",
+  ]
+}
+
+# TODO(frolv): These targets are temporarily here until unit test support is
+# integrated into the build system.
+pw_executable("framework_test") {
+  deps = [
+    ":main",
+    ":pw_unit_test",
+  ]
+  sources = [
+    "framework_test.cc",
+  ]
+}
+
+group("framework_test_linux") {
+  deps = [
+    ":framework_test($dir_pw_toolchain:x86_linux_o2)",
+  ]
+}

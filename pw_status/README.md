@@ -1,1 +1,1 @@
-# pw\_status: Pigweed error codes.
+# pw\_status: Pigweed error codes

@@ -13,6 +13,7 @@
 # the License.
 
 import("arm_gcc.gni")
+import("x86_linux_gcc.gni")
 
 # Creates a series of toolchain targets with common compiler options.
 #
@@ -117,6 +118,17 @@ generate_toolchains("cortex_m4") {
     {
       toolchain_name = "arm_gcc_cortex_m4_os"
       additional_cflags = [ "-Os" ]
+    },
+  ]
+}
+
+generate_toolchains("linux") {
+  toolchain_template = "x86_gcc_toolchain"
+
+  toolchains = [
+    {
+      toolchain_name = "x86_linux_o2"
+      additional_cflags = [ "-O2" ]
     },
   ]
 }

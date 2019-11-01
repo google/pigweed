@@ -1,1 +1,1 @@
-# pw\_build: Definitions for Pigweed's build system.
+# pw\_build: Definitions for Pigweed's build system
