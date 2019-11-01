@@ -1,0 +1,27 @@
+# Build artifacts
+out/
+
+# IDE artifacts
+.idea/
+.project
+.cproject
+.vscode
+.clangd/
+
+# Python artifacts
+venv/
+*.pyc
+*.egg/
+*.eggs/
+*.egg-info/
+.cache/
+python-env/
+.mypy_cache/
+
+# Mac artifacts
+.DS_Store
+
+# Vim artifacts
+*.swp
+
+.gdb_history

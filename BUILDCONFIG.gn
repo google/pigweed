@@ -1,0 +1,48 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("modules.gni")
+
+# Default configs to use for all binary build targets.
+_default_common_binary_configs = [
+  "$dir_pw_build:reduced_size",
+  "$dir_pw_build:strict_warnings",
+]
+
+set_defaults("executable") {
+  configs = _default_common_binary_configs
+}
+
+set_defaults("static_library") {
+  configs = _default_common_binary_configs
+}
+
+set_defaults("shared_library") {
+  configs = _default_common_binary_configs
+}
+
+set_defaults("source_set") {
+  configs = _default_common_binary_configs
+}
+
+declare_args() {
+  # The name of the GN template used to build Pigweed executables.
+  pw_executable_target_type = "executable"
+
+  # Path to the .gni file in which the pw_executable_target_type template is
+  # defined. Empty string if using a GN primitive.
+  pw_executable_target_path = ""
+}
+
+set_default_toolchain("$dir_pw_toolchain:arm_gcc_cortex_m4_og")

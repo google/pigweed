@@ -1,0 +1,122 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("arm_gcc.gni")
+
+# Creates a series of toolchain targets with common compiler options.
+#
+# Args:
+#   toolchain_template: The target template to use to create the toolchains.
+#   common_toolchain_cflags: cflags to be shared by all toolchains.
+#   common_toolchain_ldflags: ldflags to be shared by all toolchains.
+#   toolchains: List of scopes defining each of the desired toolchains.
+#     Each scope contains up to three variables:
+#       toolchain_name: The full target name of the toolchain.
+#       additional_cflags: Optional list of extra cflags for the toolchain.
+#       additional_ldflags: Optional list of extra ldflags for the toolchain.
+template("generate_toolchains") {
+  not_needed([ "target_name" ])
+
+  assert(defined(invoker.toolchain_template),
+         "generate_toolchains requires a toolchain template")
+  assert(defined(invoker.toolchains),
+         "generate_toolchains must be called with a list of toolchains")
+
+  if (defined(invoker.common_toolchain_cflags)) {
+    _common_cflags = invoker.common_toolchain_cflags
+  } else {
+    _common_cflags = []
+  }
+
+  if (defined(invoker.common_toolchain_ldflags)) {
+    _common_ldflags = invoker.common_toolchain_ldflags
+  } else {
+    _common_ldflags = []
+  }
+
+  # Create a target for each of the desired toolchains, appending its own cflags
+  # and ldflags to the common ones.
+  foreach(toolchain_config, invoker.toolchains) {
+    # GN does not allow assigning a non-empty array to a non-empty array.
+    # This must be done as two assignments, first clearing the original value.
+    _toolchain_cflags = []
+    _toolchain_cflags = _common_cflags
+    if (defined(toolchain_config.additional_cflags)) {
+      _toolchain_cflags += toolchain_config.additional_cflags
+    }
+
+    _toolchain_ldflags = []
+    _toolchain_ldflags = _common_ldflags
+    if (defined(toolchain_config.additional_ldflags)) {
+      _toolchain_ldflags += toolchain_config.additional_ldflags
+    }
+
+    target(invoker.toolchain_template, toolchain_config.toolchain_name) {
+      toolchain_cflags = _toolchain_cflags
+      toolchain_ldflags = _toolchain_ldflags
+    }
+  }
+}
+
+generate_toolchains("cortex_m4") {
+  toolchain_template = "arm_gcc_toolchain"
+
+  common_toolchain_cflags = [
+    "-mabi=aapcs",
+    "-mcpu=cortex-m4",
+    "-mfpu=fpv4-sp-d16",
+    "-mfloat-abi=hard",
+    "-mthumb",
+
+    # Disable obnoxious ABI warning.
+    #
+    # GCC 7.1 adds an over-zealous ABI warning with little useful information
+    # on how to resolve the issue. The warning you get is:
+    #
+    #   note: parameter passing for argument of type '...' changed in GCC 7.1
+    #
+    # There is no other information, and searching for the error is needed to
+    # understand what is happening. For upstream Pigweed, we compile from
+    # source so this is irrelevant; so disable it.
+    #
+    # See: https://gcc.gnu.org/gcc-7/changes.html (search for "psabi").
+    #      https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
+    "-Wno-psabi",
+  ]
+
+  common_toolchain_ldflags = [
+    "--specs=nosys.specs",
+    "-lnosys",
+    "-lc",
+  ]
+
+  toolchains = [
+    {
+      toolchain_name = "arm_gcc_cortex_m4_og"
+      additional_cflags = [ "-Og" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4_o1"
+      additional_cflags = [ "-O1" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4_o2"
+      additional_cflags = [ "-O2" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4_os"
+      additional_cflags = [ "-Os" ]
+    },
+  ]
+}
