@@ -19,16 +19,39 @@
 
 namespace pw::unit_test {
 
+void SimplePrintingEventHandler::RunAllTestsStart() {
+  WriteAndFlush("[==========] Running all tests.\n");
+}
+
+void SimplePrintingEventHandler::RunAllTestsEnd(
+    const RunTestsSummary& run_tests_summary) {
+  WriteAndFlush("[==========] Done running all tests.\n");
+  WriteAndFlush(
+      "[  PASSED  ] %d test(s).\n", run_tests_summary.passed_tests);
+  if (run_tests_summary.failed_tests) {
+    WriteAndFlush(
+        "[  FAILED  ] %d test(s).\n", run_tests_summary.failed_tests);
+  }
+}
+
 void SimplePrintingEventHandler::TestCaseStart(const TestCase& test_case) {
   WriteAndFlush(
-      ">>> Running %s.%s\n", test_case.suite_name, test_case.test_name);
+      "[ RUN      ] %s.%s\n", test_case.suite_name, test_case.test_name);
 }
 
 void SimplePrintingEventHandler::TestCaseEnd(const TestCase& test_case,
                                              TestResult result) {
-  const char* status = result == TestResult::kSuccess ? "succeeded" : "failed";
-  WriteAndFlush(
-      "<<< Test %s.%s %s\n", test_case.suite_name, test_case.test_name, status);
+  // Use a switch with no default to detect changes in the test result enum.
+  switch (result) {
+    case TestResult::kSuccess:
+      WriteAndFlush(
+          "[       OK ] %s.%s\n", test_case.suite_name, test_case.test_name);
+      break;
+    case TestResult::kFailure:
+      WriteAndFlush(
+          "[  FAILED  ] %s.%s\n", test_case.suite_name, test_case.test_name);
+      break;
+  }
 }
 
 void SimplePrintingEventHandler::TestCaseExpect(
@@ -37,9 +60,10 @@ void SimplePrintingEventHandler::TestCaseExpect(
     return;
   }
 
-  const char* result = expectation.success ? "SUCCESS" : "FAILURE";
-  WriteAndFlush("[%s] %s\n", result, expectation.expression);
-  WriteAndFlush("  at %s:%d\n", test_case.file_name, expectation.line_number);
+  const char* result = expectation.success ? "Success" : "Failure";
+  WriteAndFlush(
+      "%s:%d: %s\n", test_case.file_name, expectation.line_number, result);
+  WriteAndFlush("      Expected: %s\n", expectation.expression);
 }
 
 int SimplePrintingEventHandler::WriteAndFlush(const char* format, ...) {

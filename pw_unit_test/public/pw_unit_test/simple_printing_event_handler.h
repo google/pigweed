@@ -41,6 +41,8 @@ class SimplePrintingEventHandler : public EventHandler {
   SimplePrintingEventHandler(WriteFunction write_function, bool verbose = false)
       : write_(write_function), verbose_(verbose) {}
 
+  void RunAllTestsStart() override;
+  void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
   void TestCaseStart(const TestCase& test_case) override;
   void TestCaseEnd(const TestCase& test_case, TestResult result) override;
   void TestCaseExpect(const TestCase& test_case,

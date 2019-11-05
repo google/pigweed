@@ -75,11 +75,25 @@ struct TestExpectation {
   bool success;
 };
 
+struct RunTestsSummary {
+  // The number of passed tests among the run tests.
+  int passed_tests;
+
+  // The number of passed tests among the run tests.
+  int failed_tests;
+};
+
 // An event handler is responsible for collecting and processing the results of
 // a unit test run. Its interface is called by the unit test framework as tests
 // are executed and various test events occur.
 class EventHandler {
  public:
+  // Called before all tests are run.
+  virtual void RunAllTestsStart() = 0;
+
+  // Called after all tests are run.
+  virtual void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) = 0;
+
   // Called when a new test case is started.
   virtual void TestCaseStart(const TestCase& test_case) = 0;
 

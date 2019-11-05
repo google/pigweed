@@ -27,6 +27,9 @@ config("strict_warnings") {
   cflags = [
     "-Wall",
     "-Wextra",
+
+    # Warn when a switch on an enum does not cover all the cases.
+    "-Wswitch",
   ]
 }
 

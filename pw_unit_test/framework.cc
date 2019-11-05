@@ -38,8 +38,17 @@ void Framework::RegisterTest(TestInfo* test) {
 }
 
 int Framework::RunAllTests() {
+  run_tests_summary_.passed_tests = 0;
+  run_tests_summary_.failed_tests = 0;
+
+  if (event_handler_ != nullptr) {
+    event_handler_->RunAllTestsStart();
+  }
   for (TestInfo* test = tests_; test != nullptr; test = test->next) {
     test->run();
+  }
+  if (event_handler_ != nullptr) {
+    event_handler_->RunAllTestsEnd(run_tests_summary_);
   }
   return exit_status_;
 }
@@ -64,6 +73,14 @@ void Framework::StartTest(Test* test) {
 
 void Framework::EndTest(Test* test) {
   current_test_ = nullptr;
+  switch (current_result_) {
+    case TestResult::kSuccess:
+      run_tests_summary_.passed_tests++;
+      break;
+    case TestResult::kFailure:
+      run_tests_summary_.failed_tests++;
+      break;
+  }
 
   if (event_handler_ == nullptr) {
     return;

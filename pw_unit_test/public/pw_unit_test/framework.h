@@ -91,6 +91,7 @@ class Framework {
   constexpr Framework()
       : current_test_(nullptr),
         current_result_(TestResult::kSuccess),
+        run_tests_summary_{.passed_tests = 0, .failed_tests = 0},
         exit_status_(0),
         event_handler_(nullptr),
         memory_pool_() {}
@@ -177,6 +178,9 @@ class Framework {
 
   // Overall result of the current test case (pass/fail).
   TestResult current_result_;
+
+  // Overall result of the ongoing test run, which covers multiple tests.
+  RunTestsSummary run_tests_summary_;
 
   // Program exit status returned by RunAllTests for Googletest compatibility.
   int exit_status_;
