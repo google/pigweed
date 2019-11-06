@@ -1,0 +1,108 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_build/pw_executable.gni")
+
+declare_args() {
+  # Whether GN unit test runner targets should be created.
+  #
+  # If set to true, the pw_test_run() template will create an action that
+  # invokes the test runner script on a test executable.
+  # If false, the pw_test_run() template becomes a no-op.
+  #
+  # This should be enabled for targets which support parallelized running
+  # of unit tests, such as desktops with multiple cores.
+  pw_unit_test_create_run_targets = false
+}
+
+# Creates an executable target for a unit test.
+# Additionally, outputs a file containing unit test metadata in JSON format for
+# the test runner script.
+#
+# This template accepts all of the regular "executable" target args.
+template("pw_test") {
+  # This is required in order to reference the pw_test template's target name
+  # within the test_metadata of the metadata group below. The group() definition
+  # creates a new scope where the "target_name" variable is set to its target,
+  # shadowing the one in this scope.
+  _target_name = target_name
+
+  # Metadata for the test runner script. This is a dummy target which doesn't
+  # require or produce anything; it simply exists to define the unit test
+  # metadata.
+  _metadata_group_target = _target_name + "_pw_metadata_group"
+  group(_metadata_group_target) {
+    metadata = {
+      test_metadata = [
+        {
+          test_name = _target_name
+        },
+      ]
+    }
+  }
+
+  # Output file for the unit test metadata. Reads metadata from the dummy group
+  # target and outputs to a JSON file.
+  _metadata_file_target = _target_name + "_pw_test_metadata"
+  generated_file(_metadata_file_target) {
+    outputs = [
+      "$target_out_dir/$_target_name.meta.json",
+    ]
+    data_keys = [ "test_metadata" ]
+    output_conversion = "json"
+
+    deps = [
+      ":$_metadata_group_target",
+    ]
+  }
+
+  # Actual executable file for the unit test. Depends on the metadata output
+  # file in order to generate it as well.
+  pw_executable(_target_name) {
+    forward_variables_from(invoker, "*")
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ ":$_metadata_file_target" ]
+  }
+
+  if (pw_unit_test_create_run_targets) {
+    # When the run targets arg is set, create an action which runs the unit test
+    # executable using the test runner script.
+    _run_action_name = _target_name + "_run"
+
+    # Resolve the GN path of a dependency to a filesystem path relative to the
+    # build directory. Keep the target name.
+    _binary_path = rebase_path(target_out_dir, root_build_dir) + ":$_target_name"
+
+    # The runner script touches this file to indicate that the test has run.
+    _stamp_file = "$target_gen_dir/${_target_name}.test_completion.stamp"
+
+    action(_run_action_name) {
+      deps = [
+        ":$_target_name",
+      ]
+      script = "$dir_pw_unit_test/py/test_runner.py"
+      args = [
+        "--touch",
+        rebase_path(_stamp_file, root_build_dir),
+        _binary_path,
+      ]
+      outputs = [
+        _stamp_file,
+      ]
+    }
+  }
+}

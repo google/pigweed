@@ -20,3 +20,10 @@ group("pw_modules") {
     "$dir_pw_unit_test",
   ]
 }
+
+# Targets for all module unit test groups.
+group("pw_module_tests") {
+  deps = [
+    "$dir_pw_preprocessor:unit_tests",
+  ]
+}

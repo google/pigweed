@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_unit_test/test.gni")
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -31,7 +33,8 @@ source_set("pw_preprocessor") {
   sources = public
 }
 
-group("pw_preprocessor_tests") {
+# All pw_preprocessor test binaries.
+group("unit_tests") {
   deps = [
     ":boolean_test",
     ":concat_test",
@@ -40,49 +43,24 @@ group("pw_preprocessor_tests") {
   ]
 }
 
-group("pw_preprocessor_tests_linux") {
-  deps = [
-    ":pw_preprocessor_tests($dir_pw_toolchain:x86_linux_o2)",
-  ]
+template("preprocessor_test") {
+  not_needed([ "invoker" ])
+  pw_test(target_name) {
+    deps = [
+      ":pw_preprocessor",
+      "$dir_pw_unit_test:main",
+    ]
+    sources = [
+      "$target_name.cc",
+    ]
+  }
 }
 
-# TODO(frolv): Change these to special unit test executables.
-executable("boolean_test") {
-  deps = [
-    ":pw_preprocessor",
-    "$dir_pw_unit_test:main",
-  ]
-  sources = [
-    "boolean_test.cc",
-  ]
+preprocessor_test("boolean_test") {
 }
-
-executable("concat_test") {
-  deps = [
-    ":pw_preprocessor",
-    "$dir_pw_unit_test:main",
-  ]
-  sources = [
-    "concat_test.cc",
-  ]
+preprocessor_test("concat_test") {
 }
-
-executable("macro_arg_count_test") {
-  deps = [
-    ":pw_preprocessor",
-    "$dir_pw_unit_test:main",
-  ]
-  sources = [
-    "macro_arg_count_test.cc",
-  ]
+preprocessor_test("macro_arg_count_test") {
 }
-
-executable("util_test") {
-  deps = [
-    ":pw_preprocessor",
-    "$dir_pw_unit_test:main",
-  ]
-  sources = [
-    "util_test.cc",
-  ]
+preprocessor_test("util_test") {
 }
