@@ -79,21 +79,6 @@ generate_toolchains("cortex_m4") {
     "-mfpu=fpv4-sp-d16",
     "-mfloat-abi=hard",
     "-mthumb",
-
-    # Disable obnoxious ABI warning.
-    #
-    # GCC 7.1 adds an over-zealous ABI warning with little useful information
-    # on how to resolve the issue. The warning you get is:
-    #
-    #   note: parameter passing for argument of type '...' changed in GCC 7.1
-    #
-    # There is no other information, and searching for the error is needed to
-    # understand what is happening. For upstream Pigweed, we compile from
-    # source so this is irrelevant; so disable it.
-    #
-    # See: https://gcc.gnu.org/gcc-7/changes.html (search for "psabi").
-    #      https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
-    "-Wno-psabi",
   ]
 
   common_toolchain_ldflags = [

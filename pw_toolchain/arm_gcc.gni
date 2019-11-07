@@ -18,11 +18,33 @@
 #   toolchain_cflags: Additional C/C++ compiler flags for the target.
 #   toolchain_ldflags: Additional linker flags for the target.
 template("arm_gcc_toolchain") {
-  _toolchain_cflags = ""
+  _cflags_list = [
+    # Colorize output. Ninja's GCC invocation disables color by default.
+    "-fdiagnostics-color",
+
+    # Disable obnoxious ABI warning.
+    #
+    # GCC 7.1 adds an over-zealous ABI warning with little useful information
+    # on how to resolve the issue. The warning you get is:
+    #
+    #   note: parameter passing for argument of type '...' changed in GCC 7.1
+    #
+    # There is no other information, and searching for the error is needed to
+    # understand what is happening. For upstream Pigweed, we compile from
+    # source so this is irrelevant; so disable it.
+    #
+    # See: https://gcc.gnu.org/gcc-7/changes.html (search for "psabi").
+    #      https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
+    "-Wno-psabi",
+  ]
+
   if (defined(invoker.toolchain_cflags)) {
-    foreach(flag, invoker.toolchain_cflags) {
-      _toolchain_cflags += " " + flag
-    }
+    _cflags_list += invoker.toolchain_cflags
+  }
+
+  _toolchain_cflags = ""
+  foreach(flag, _cflags_list) {
+    _toolchain_cflags += " " + flag
   }
 
   _toolchain_ldflags = ""

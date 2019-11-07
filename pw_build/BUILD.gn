@@ -28,13 +28,20 @@ config("strict_warnings") {
     "-Wall",
     "-Wextra",
 
-    # Warn when a switch on an enum does not cover all the cases.
-    "-Wswitch",
+    # Make all warnings errors, except for the exemptions below.
+    "-Werror",
+    "-Wno-error=cpp",  # preprocessor #warning statement
+    "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
   ]
 }
 
 config("cpp17") {
-  cflags_cc = [ "-std=c++17" ]
+  cflags_cc = [
+    "-std=c++17",
+
+    # Allow uses of the register keyword, which may appear in C headers.
+    "-Wno-register",
+  ]
 }
 
 # Default C++ version for Pigweed modules.
