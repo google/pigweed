@@ -12,19 +12,29 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# All Pigweed modules that can be built using gn.
-group("pw_modules") {
-  deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
-    "$dir_pw_status",
-    "$dir_pw_unit_test",
-  ]
+import("$dir_pw_unit_test/test.gni")
+
+config("default_config") {
+  include_dirs = [ "public" ]
 }
 
-# Targets for all module unit test groups.
-group("pw_module_tests") {
+source_set("pw_span") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public = [
+    "public/pw_span/span.h",
+  ]
+  sources = public
+}
+
+pw_test("test") {
   deps = [
-    "$dir_pw_preprocessor:unit_tests",
+    ":pw_span",
+    "$dir_pw_unit_test:main",
+  ]
+  sources = [
+    "span_test.cc",
   ]
 }
