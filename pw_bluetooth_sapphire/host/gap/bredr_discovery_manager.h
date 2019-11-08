@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <queue>
 #include <unordered_set>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -126,6 +127,13 @@ class BrEdrDiscoveryManager final {
 
   bool discoverable() const { return !discoverable_.empty(); }
 
+  // Updates local name of BrEdrDiscoveryManager.
+  // Updates the extended inquiry response to include the new |name|.
+  void UpdateLocalName(std::string name, hci::StatusCallback callback);
+
+  // Returns the BR/EDR local name used for EIR.
+  const std::string local_name() const { return local_name_; }
+
  private:
   friend class BrEdrDiscoverySession;
   friend class BrEdrDiscoverableSession;
@@ -156,7 +164,7 @@ class BrEdrDiscoveryManager final {
   void SetInquiryScan();
 
   // Writes the Inquiry Scan Settings to the controller.
-  // If |interlaced| is true, and the controller does not supoport interlaces
+  // If |interlaced| is true, and the controller does not support interlaces
   // inquiry scan mode, standard mode is used.
   void WriteInquiryScanSettings(uint16_t interval, uint16_t window, bool interlaced);
 
@@ -169,6 +177,10 @@ class BrEdrDiscoveryManager final {
   // Sends a RemoteNameRequest to the peer with |id|.
   void RequestPeerName(PeerId id);
 
+  // Updates the EIR response data with |name|.
+  // Currently, only the name field in EIR is supported.
+  void UpdateEIRResponseData(std::string name, hci::StatusCallback callback);
+
   // The HCI Transport
   fxl::RefPtr<hci::Transport> hci_;
 
@@ -178,6 +190,9 @@ class BrEdrDiscoveryManager final {
   // Peer cache to use.
   // We hold a raw pointer is because it must out-live us.
   PeerCache* cache_;
+
+  // The local name that was last successfully written to the controller.
+  std::string local_name_;
 
   // The list of discovering sessions. We store raw pointers here as we
   // don't own the sessions.  Sessions notify us when they are destroyed to

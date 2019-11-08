@@ -285,8 +285,9 @@ TEST_F(GAP_AdapterTest, SetNameSuccess) {
 }
 
 // Tests that writing a local name that is larger than the maximum size succeeds.
+// The saved local name is the original (untruncated) local name.
 TEST_F(GAP_AdapterTest, SetNameLargerThanMax) {
-  const std::string long_name(hci::kMaxNameLength, 'x');
+  const std::string long_name(hci::kMaxNameLength + 1, 'x');
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();
@@ -300,7 +301,78 @@ TEST_F(GAP_AdapterTest, SetNameLargerThanMax) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(result);
-  EXPECT_EQ(long_name, test_device()->local_name());
+  EXPECT_EQ(long_name, adapter()->state().local_name());
+}
+
+// Tests that SetLocalName results in BrEdrDiscoveryManager updating it's local name.
+TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
+  const std::string kNewName = "This is a test BT name! 1234";
+
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  ASSERT_TRUE(EnsureInitialized());
+  EXPECT_TRUE(adapter()->bredr_discovery_manager());
+
+  hci::Status result;
+  auto name_cb = [&result](const auto& status) { result = status; };
+  adapter()->SetLocalName(kNewName, name_cb);
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result);
+  EXPECT_EQ(kNewName, adapter()->state().local_name());
+  EXPECT_EQ(kNewName, adapter()->bredr_discovery_manager()->local_name());
+}
+
+// Tests that writing a long local name results in BrEdr updating it's local name.
+// Should still succeed, and the stored local name should be the original name.
+TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
+  const std::string long_name(hci::kExtendedInquiryResponseMaxNameBytes + 2, 'x');
+
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  ASSERT_TRUE(EnsureInitialized());
+  EXPECT_TRUE(adapter()->bredr_discovery_manager());
+
+  hci::Status result;
+  auto name_cb = [&result](const auto& status) { result = status; };
+  adapter()->SetLocalName(long_name, name_cb);
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result);
+  // Both the adapter & discovery manager local name should be the original (untruncated) name.
+  EXPECT_EQ(long_name, adapter()->state().local_name());
+  EXPECT_EQ(long_name, adapter()->bredr_discovery_manager()->local_name());
+}
+
+// Tests WriteExtendedInquiryResponse failure leads to |local_name_| not updated.
+TEST_F(GAP_AdapterTest, BrEdrUpdateEIRResponseError) {
+  std::string kNewName = "EirFailure";
+
+  // Make all settings valid but make WriteExtendedInquiryResponse command fail.
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+  test_device()->SetDefaultResponseStatus(hci::kWriteExtendedInquiryResponse,
+                                          hci::StatusCode::kConnectionTerminatedByLocalHost);
+  ASSERT_TRUE(EnsureInitialized());
+
+  hci::Status result;
+  auto name_cb = [&result](const auto& status) { result = status; };
+
+  adapter()->SetLocalName(kNewName, name_cb);
+
+  RunLoopUntilIdle();
+
+  // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
+  EXPECT_FALSE(result);
+  EXPECT_EQ(hci::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
+  // The |local_name_| should not be set.
+  EXPECT_NE(kNewName, adapter()->state().local_name());
+  EXPECT_NE(kNewName, adapter()->bredr_discovery_manager()->local_name());
 }
 
 TEST_F(GAP_AdapterTest, DefaultName) {

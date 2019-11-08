@@ -732,6 +732,18 @@ struct WritePageScanTypeCommandParams {
   PageScanType page_scan_type;
 } __PACKED;
 
+// =================================
+// Write Extended Inquiry Response (v1.2) (BR/EDR)
+constexpr OpCode kWriteExtendedInquiryResponse = ControllerAndBasebandOpCode(0x0052);
+
+struct WriteExtendedInquiryResponseParams {
+  // If FEC Encoding is required. (v1.2) (7.3.56)
+  uint8_t fec_required;
+
+  // Extended inquiry response data as defined in Vol 3, Part C, Sec 8
+  uint8_t extended_inquiry_response[kExtendedInquiryResponseBytes];
+} __PACKED;
+
 // ==============================================
 // Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kReadSimplePairingMode = ControllerAndBasebandOpCode(0x0055);

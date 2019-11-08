@@ -181,29 +181,22 @@ bool Adapter::IsDiscovering() const {
 }
 
 void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
-  // TODO(jamuraa): set the public LE advertisement name from |name|
-  bool null_term = true;
-  if (name.size() >= hci::kMaxNameLength) {
-    name.resize(hci::kMaxNameLength);
-    null_term = false;
+  // TODO(40836): set the public LE advertisement name from |name|
+  // If BrEdr is not supported, skip the name update.
+  if (!bredr_discovery_manager()) {
+    callback(hci::Status(bt::HostError::kNotSupported));
+    return;
   }
-  auto write_name =
-      hci::CommandPacket::New(hci::kWriteLocalName, sizeof(hci::WriteLocalNameCommandParams));
-  auto name_buf =
-      MutableBufferView(write_name->mutable_payload<hci::WriteLocalNameCommandParams>()->local_name,
-                        hci::kMaxNameLength);
-  name_buf.Write(reinterpret_cast<const uint8_t*>(name.data()), name.size());
-  if (null_term) {
-    name_buf[name.size()] = 0;
-  }
-  hci_->command_channel()->SendCommand(
-      std::move(write_name), dispatcher_,
-      [this, name = std::move(name), cb = std::move(callback)](
-          auto, const hci::EventPacket& event) mutable {
-        if (!hci_is_error(event, WARN, "gap", "set local name failed")) {
-          state_.local_name_ = std::move(name);
+
+  // Make a copy of |name| to move separately into the lambda.
+  std::string name_copy(name);
+  bredr_discovery_manager_->UpdateLocalName(
+      std::move(name),
+      [this, cb = std::move(callback), local_name = std::move(name_copy)](auto status) {
+        if (!bt_is_error(status, WARN, "gap", "set local name failed")) {
+          state_.local_name_ = local_name;
         }
-        cb(event.ToStatus());
+        cb(status);
       });
 }
 

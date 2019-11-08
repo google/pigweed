@@ -276,6 +276,62 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(const hci::EventPacket& event)
   }
 }
 
+void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusCallback callback) {
+  DataType name_type = DataType::kCompleteLocalName;
+  size_t name_size = name.size();
+  if (name.size() >= (hci::kExtendedInquiryResponseMaxNameBytes)) {
+    name_type = DataType::kShortenedLocalName;
+    name_size = hci::kExtendedInquiryResponseMaxNameBytes;
+  }
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto eir_packet = hci::CommandPacket::New(hci::kWriteExtendedInquiryResponse,
+                                            sizeof(hci::WriteExtendedInquiryResponseParams));
+  eir_packet->mutable_payload<hci::WriteExtendedInquiryResponseParams>()->fec_required = 0x00;
+  auto eir_response_buf =
+      MutableBufferView(eir_packet->mutable_payload<hci::WriteExtendedInquiryResponseParams>()
+                            ->extended_inquiry_response,
+                        hci::kExtendedInquiryResponseBytes);
+  eir_response_buf.Fill(0);
+  eir_response_buf[0] = name.length() + 1;
+  eir_response_buf[1] = static_cast<uint8_t>(name_type);
+  eir_response_buf.mutable_view(2).Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
+  self->hci_->command_channel()->SendCommand(
+      std::move(eir_packet), self->dispatcher_,
+      [self, name = std::move(name), cb = std::move(callback)](
+          auto, const hci::EventPacket& event) mutable {
+        if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
+          self->local_name_ = std::move(name);
+        }
+        cb(event.ToStatus());
+      });
+}
+
+void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallback callback) {
+  size_t name_size = name.size();
+  if (name.size() >= hci::kMaxNameLength) {
+    name_size = hci::kMaxNameLength;
+  }
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto write_name =
+      hci::CommandPacket::New(hci::kWriteLocalName, sizeof(hci::WriteLocalNameCommandParams));
+  auto name_buf =
+      MutableBufferView(write_name->mutable_payload<hci::WriteLocalNameCommandParams>()->local_name,
+                        hci::kMaxNameLength);
+  name_buf.Fill(0);
+  name_buf.Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
+  hci_->command_channel()->SendCommand(
+      std::move(write_name), dispatcher_,
+      [self, name = std::move(name), cb = std::move(callback)](
+          auto, const hci::EventPacket& event) mutable {
+        if (hci_is_error(event, WARN, "gap", "set local name failed")) {
+          cb(event.ToStatus());
+          return;
+        }
+        // If the WriteLocalName command was successful, update the extended inquiry data.
+        self->UpdateEIRResponseData(std::move(name), std::move(cb));
+      });
+}
+
 void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   if (requesting_names_.count(id)) {
     bt_log(SPEW, "gap-bredr", "already requesting name for %s", bt_str(id));

@@ -107,6 +107,7 @@ void FakeController::Settings::AddBREDRSupportedCommands() {
   SetBit(supported_commands + 14, hci::SupportedCommand::kReadBufferSize);
   SetBit(supported_commands + 17, hci::SupportedCommand::kReadSimplePairingMode);
   SetBit(supported_commands + 17, hci::SupportedCommand::kWriteSimplePairingMode);
+  SetBit(supported_commands + 17, hci::SupportedCommand::kWriteExtendedInquiryResponse);
 }
 
 void FakeController::Settings::AddLESupportedCommands() {
@@ -1022,6 +1023,16 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
 
       SetBit(&settings_.lmp_features_page1, hci::LMPFeature::kSecureSimplePairingHostSupport);
 
+      RespondWithSuccess(opcode);
+      break;
+    }
+    case hci::kWriteExtendedInquiryResponse: {
+      const auto& in_params = command_packet.payload<hci::WriteExtendedInquiryResponseParams>();
+
+      // As of now, we don't support FEC encoding enabled.
+      if (in_params.fec_required != 0x00) {
+        RespondWithCommandStatus(opcode, hci::kInvalidHCICommandParameters);
+      }
       RespondWithSuccess(opcode);
       break;
     }
