@@ -202,7 +202,7 @@ struct TestInfo {
   TestInfo(const char* const test_suite_name,
            const char* const test_name,
            const char* const file_name,
-           void (&run)())
+           void (*run)())
       : test_suite_name(test_suite_name),
         test_name(test_name),
         file_name(file_name),
@@ -221,7 +221,7 @@ struct TestInfo {
 
   // Function which runs the test case. Refers to Framework::CreateAndRunTest
   // instantiated for the test case's class.
-  void (&run)();
+  void (*run)();
 
   // TestInfo structs are registered with the test framework and stored as a
   // linked list.
@@ -276,7 +276,7 @@ class Test {
   static_assert(sizeof(PW_STRINGIFY(test_name)) > 1,               \
                 "test_name must not be empty");                    \
                                                                    \
-  class _PW_TEST_CLASS_NAME(test_suite_name, test_name)            \
+  class _PW_TEST_CLASS_NAME(test_suite_name, test_name) final      \
       : public parent_class {                                      \
    public:                                                         \
     _PW_TEST_CLASS_NAME(test_suite_name, test_name)() {            \
@@ -293,7 +293,7 @@ class Test {
           PW_STRINGIFY(test_suite_name),                           \
           PW_STRINGIFY(test_name),                                 \
           __FILE__,                                                \
-          &::pw::unit_test::internal::Framework::CreateAndRunTest< \
+          ::pw::unit_test::internal::Framework::CreateAndRunTest<  \
               _PW_TEST_CLASS_NAME(test_suite_name, test_name)>);   \
                                                                    \
   void _PW_TEST_CLASS_NAME(test_suite_name, test_name)::PigweedTestBody()
