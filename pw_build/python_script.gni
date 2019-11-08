@@ -1,0 +1,87 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Defines an action to run a Python script.
+#
+# This wraps a regular Python script action with an invocation of a script-
+# runner script which resolves GN paths to filesystem paths and locates output
+# files for binary targets.
+#
+# The interface to this template is identical to that of a regular "action"
+# which runs a Python script, except for two key differences:
+#
+#   1. Regular GN actions typically require a call to rebase_path to resolve
+#      GN paths to filesystem paths. This template requires that all paths
+#      remain GN paths, but are made absolute.
+#
+#      This means that an "action" argument of the form:
+#
+#        rebase_path("my/relative/path:optional_target", root_build_dir)
+#
+#      Becomes:
+#
+#        get_path_info("my/relative/path:optional_target", "abspath")
+#
+#   2. The behavior of the runner script depends on whether a provided path is a
+#      regular build path or an output path (starting with "$root_out_dir").
+#      If an output path is provided and the path has a target, the script
+#      assumes that the target refers to a file built by Ninja and tries to
+#      locate it within the output directory.
+#
+# Path resolution examples (assuming the build directory is //out):
+#
+#           BEFORE                     AFTER
+#
+#   //my_module              ../my_module
+#   //my_module:foo          ../my_module:foo
+#   //my_module/file.txt     ../my_module/file.txt
+#   $root_out_dir/my_module  ../out/obj/my_module
+#   $target_out_dir          ../out/obj/my_module      (in //my_module/BUILD.gn)
+#   $target_out_dir/out.json ../out/obj/my_module/out.json
+#   $target_out_dir:foo      ../out/obj/my_module/foo.elf  (toolchain-dependent)
+#   $target_out_dir:foo      ../out/obj/my_module/foo.exe  (toolchain-dependent)
+#
+template("pw_python_script") {
+  _script_args = [
+    # GN root directory relative to the build directory (in which the runner
+    # script is invoked).
+    "--gn-root",
+    rebase_path("//", root_build_dir),
+
+    # Output directory root, used to determine whether to search for a binary.
+    "--out-dir",
+    root_out_dir,
+
+    # "--" indicates the end of arguments to the runner script.
+    # Everything beyond this point is interpreted as the command and arguments
+    # of the Python script to run.
+    "--",
+  ]
+
+  _script_args += [ get_path_info(invoker.script, "abspath") ]
+  if (defined(invoker.args)) {
+    _script_args += invoker.args
+  }
+
+  action(target_name) {
+    _ignore_vars = [
+      "script",
+      "args",
+    ]
+    forward_variables_from(invoker, "*", _ignore_vars)
+
+    script = "$dir_pw_build/py/python_runner.py"
+    args = _script_args
+  }
+}

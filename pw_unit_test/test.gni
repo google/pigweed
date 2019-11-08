@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_build/python_script.gni")
 
 declare_args() {
   # Whether GN unit test runner targets should be created.
@@ -36,17 +37,17 @@ template("pw_test") {
   # within the test_metadata of the metadata group below. The group() definition
   # creates a new scope where the "target_name" variable is set to its target,
   # shadowing the one in this scope.
-  _target_name = target_name
+  _test_target_name = target_name
 
   # Metadata for the test runner script. This is a dummy target which doesn't
   # require or produce anything; it simply exists to define the unit test
   # metadata.
-  _metadata_group_target = _target_name + "_pw_metadata_group"
+  _metadata_group_target = _test_target_name + "_pw_metadata_group"
   group(_metadata_group_target) {
     metadata = {
       test_metadata = [
         {
-          test_name = _target_name
+          test_name = _test_target_name
         },
       ]
     }
@@ -54,10 +55,10 @@ template("pw_test") {
 
   # Output file for the unit test metadata. Reads metadata from the dummy group
   # target and outputs to a JSON file.
-  _metadata_file_target = _target_name + "_pw_test_metadata"
+  _metadata_file_target = _test_target_name + "_pw_test_metadata"
   generated_file(_metadata_file_target) {
     outputs = [
-      "$target_out_dir/$_target_name.meta.json",
+      "$target_out_dir/$_test_target_name.meta.json",
     ]
     data_keys = [ "test_metadata" ]
     output_conversion = "json"
@@ -69,7 +70,7 @@ template("pw_test") {
 
   # Actual executable file for the unit test. Depends on the metadata output
   # file in order to generate it as well.
-  pw_executable(_target_name) {
+  pw_executable(_test_target_name) {
     forward_variables_from(invoker, "*")
 
     if (!defined(deps)) {
@@ -81,24 +82,20 @@ template("pw_test") {
   if (pw_unit_test_create_run_targets) {
     # When the run targets arg is set, create an action which runs the unit test
     # executable using the test runner script.
-    _run_action_name = _target_name + "_run"
-
-    # Resolve the GN path of a dependency to a filesystem path relative to the
-    # build directory. Keep the target name.
-    _binary_path = rebase_path(target_out_dir, root_build_dir) + ":$_target_name"
+    _run_action_name = _test_target_name + "_run"
 
     # The runner script touches this file to indicate that the test has run.
-    _stamp_file = "$target_gen_dir/${_target_name}.test_completion.stamp"
+    _stamp_file = "$target_gen_dir/${_test_target_name}.test_completion.stamp"
 
-    action(_run_action_name) {
+    pw_python_script(_run_action_name) {
       deps = [
-        ":$_target_name",
+        ":$_test_target_name",
       ]
       script = "$dir_pw_unit_test/py/test_runner.py"
       args = [
         "--touch",
-        rebase_path(_stamp_file, root_build_dir),
-        _binary_path,
+        get_path_info(_stamp_file, "abspath"),
+        get_path_info("$target_out_dir:$_test_target_name", "abspath"),
       ]
       outputs = [
         _stamp_file,

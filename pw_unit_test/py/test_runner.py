@@ -35,46 +35,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# TODO(frolv): This should be extracted into a script-running script which
-# performs path resolution before calling another script.
-def find_binary(target: str) -> str:
-    """Tries to find a binary for a gn build target.
-
-    Args:
-        target: Relative path to the target's output directory and target name,
-            separated by a colon.
-
-    Returns:
-        Full path to the target's binary.
-
-    Raises:
-        RuntimeError: No binary found for target.
-    """
-
-    target_path, target_name = target.split(':')
-
-    extensions = ['', '.elf']
-    for extension in extensions:
-        potential_filename = f'{target_path}/{target_name}{extension}'
-        if os.path.isfile(potential_filename):
-            return potential_filename
-
-    raise FileNotFoundError(
-        f'could not find output binary for build target {target}')
-
-
 def main() -> int:
     """Runs some unit tests."""
 
     args = parse_args()
 
     try:
-        test_binary = find_binary(args.test)
-    except FileNotFoundError as err:
+        exit_status = subprocess.call([args.test])
+    except subprocess.CalledProcessError as err:
         print(f'{sys.argv[0]}: {err}', file=sys.stderr)
         return 1
-
-    exit_status = subprocess.call([test_binary])
 
     # GN expects "action" targets to output a file, and uses that to determine
     # whether the target should be run again. Touching an empty file allows GN
