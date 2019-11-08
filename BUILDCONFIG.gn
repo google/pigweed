@@ -43,6 +43,12 @@ declare_args() {
   # Path to the .gni file in which the pw_executable_target_type template is
   # defined. Empty string if using a GN primitive.
   pw_executable_target_path = ""
+
+  # Toolchain for the current build target (desktop/device).
+  #
+  # If this is changed, you must run `ninja -t clean` to remove any files from
+  # the previous toolchain's build before building again.
+  pw_target_toolchain = "$dir_pw_toolchain:x86_linux_o2"
 }
 
-set_default_toolchain("$dir_pw_toolchain:arm_gcc_cortex_m4_og")
+set_default_toolchain(pw_target_toolchain)
