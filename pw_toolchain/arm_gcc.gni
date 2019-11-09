@@ -42,16 +42,11 @@ template("arm_gcc_toolchain") {
     _cflags_list += invoker.toolchain_cflags
   }
 
-  _toolchain_cflags = ""
-  foreach(flag, _cflags_list) {
-    _toolchain_cflags += " " + flag
-  }
+  _toolchain_cflags = string_join(" ", _cflags_list)
 
   _toolchain_ldflags = ""
   if (defined(invoker.toolchain_ldflags)) {
-    foreach(flag, invoker.toolchain_ldflags) {
-      _toolchain_ldflags += " " + flag
-    }
+    _toolchain_ldflags += string_join(" ", invoker.toolchain_ldflags)
   }
 
   # TODO(frolv): This assumes that the ARM gcc toolchain is in the PATH.
@@ -66,7 +61,17 @@ template("arm_gcc_toolchain") {
   toolchain(target_name) {
     tool("asm") {
       depfile = "{{output}}.d"
-      command = "$_cc -MMD -MF $depfile $_toolchain_cflags {{defines}} {{include_dirs}} {{asmflags}} -c {{source}} -o {{output}}"
+      command = string_join(" ",
+                            [
+                              _cc,
+                              "-MMD -MF $depfile",  # Write out dependencies.
+                              _toolchain_cflags,
+                              "{{defines}}",
+                              "{{include_dirs}}",
+                              "{{asmflags}}",
+                              "-c {{source}}",
+                              "-o {{output}}",
+                            ])
       depsformat = "gcc"
       description = "as {{output}}"
       outputs = [
@@ -76,7 +81,18 @@ template("arm_gcc_toolchain") {
 
     tool("cc") {
       depfile = "{{output}}.d"
-      command = "$_cc -MMD -MF $depfile $_toolchain_cflags {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} -c {{source}} -o {{output}}"
+      command = string_join(" ",
+                            [
+                              _cc,
+                              "-MMD -MF $depfile",  # Write out dependencies.
+                              _toolchain_cflags,
+                              "{{defines}}",
+                              "{{include_dirs}}",
+                              "{{cflags}}",
+                              "{{cflags_c}}",
+                              "-c {{source}}",
+                              "-o {{output}}",
+                            ])
       depsformat = "gcc"
       description = "cc {{output}}"
       outputs = [
@@ -86,7 +102,18 @@ template("arm_gcc_toolchain") {
 
     tool("cxx") {
       depfile = "{{output}}.d"
-      command = "$_cxx -MMD -MF $depfile $_toolchain_cflags {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} -c {{source}} -o {{output}}"
+      command = string_join(" ",
+                            [
+                              _cc,
+                              "-MMD -MF $depfile",  # Write out dependencies.
+                              _toolchain_cflags,
+                              "{{defines}}",
+                              "{{include_dirs}}",
+                              "{{cflags}}",
+                              "{{cflags_cc}}",
+                              "-c {{source}}",
+                              "-o {{output}}",
+                            ])
       depsformat = "gcc"
       description = "c++ {{output}}"
       outputs = [
@@ -108,7 +135,30 @@ template("arm_gcc_toolchain") {
 
     _link_outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
     _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
-    _link_command = "$_cxx {{ldflags}} -Wl,--gc-sections $_toolchain_cflags $_toolchain_ldflags -Wl,--start-group {{inputs}} -Wl,--end-group {{libs}} -Wl,-Map=$_link_mapfile -o $_link_outfile"
+    _link_command = string_join(
+            " ",
+            [
+              _cxx,
+              "{{ldflags}}",
+
+              # Delete unreferenced sections. Helpful with -ffunction-sections.
+              "-Wl,--gc-sections",
+
+              # Output a map file that shows symbols and their location.
+              "-Wl,-Map=$_link_mapfile",
+
+              _toolchain_cflags,
+              _toolchain_ldflags,
+
+              # The start groups / end groups tag causes the linker to repeatedly
+              # re-link until there are no more missing symbols.
+              "-Wl,--start-group",
+              "{{inputs}}",
+              "-Wl,--end-group",
+
+              "{{libs}}",
+              "-o $_link_outfile",
+            ])
 
     tool("link") {
       command = _link_command
