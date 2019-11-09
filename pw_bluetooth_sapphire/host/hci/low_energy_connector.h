@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTOR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTOR_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -122,7 +123,7 @@ class LowEnergyConnector : public LocalAddressClient {
   void CancelInternal(bool timed_out = false);
 
   // Event handler for the HCI LE Connection Complete event.
-  void OnConnectionCompleteEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnConnectionCompleteEvent(const EventPacket& event);
 
   // Called when a LE Create Connection request has completed.
   void OnCreateConnectionComplete(Status status, ConnectionPtr link);

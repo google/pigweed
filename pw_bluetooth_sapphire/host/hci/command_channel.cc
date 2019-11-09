@@ -98,7 +98,10 @@ void CommandChannel::TransactionData::Cancel() {
 }
 
 CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
-  return [id = id_, cb = callback_.share()](const EventPacket& event) { cb(id, event); };
+  return [id = id_, cb = callback_.share()](const EventPacket& event) {
+    cb(id, event);
+    return CommandChannel::EventCallbackResult::kContinue;
+  };
 }
 
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
@@ -527,7 +530,12 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 }
 
 void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
-  std::vector<std::pair<EventCallback, async_dispatcher_t*>> pending_callbacks;
+  struct PendingCallback {
+    EventCallback callback;
+    EventHandlerId id;
+    async_dispatcher_t* dispatcher;
+  };
+  std::vector<PendingCallback> pending_callbacks;
 
   {
     EventCode event_code;
@@ -574,7 +582,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
         RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
       }
 
-      pending_callbacks.emplace_back(std::move(callback), dispatcher);
+      pending_callbacks.push_back({std::move(callback), event_id, dispatcher});
     }
   }
 
@@ -582,15 +590,32 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   // finishes on the same event.
   TrySendQueuedCommands();
 
-  auto it = pending_callbacks.begin();
-  for (; it != pending_callbacks.end() - 1; ++it) {
-    auto event_copy = EventPacket::New(event->view().payload_size());
-    MutableBufferView buf = event_copy->mutable_view()->mutable_data();
-    event->view().data().Copy(&buf);
-    RunOrPost([ev = std::move(event_copy), cb = std::move(it->first)]() { cb(*ev); }, it->second);
+  for (auto it = pending_callbacks.begin(); it != pending_callbacks.end(); ++it) {
+    std::unique_ptr<EventPacket> ev = nullptr;
+
+    // Don't copy event for last callback.
+    if (it == pending_callbacks.end() - 1) {
+      ev = std::move(event);
+    } else {
+      ev = EventPacket::New(event->view().payload_size());
+      MutableBufferView buf = ev->mutable_view()->mutable_data();
+      event->view().data().Copy(&buf);
+    }
+
+    ExecuteEventCallback(std::move(it->callback), it->id, std::move(ev), it->dispatcher);
   }
-  // Don't copy for the last callback.
-  RunOrPost([ev = std::move(event), cb = std::move(it->first)]() { cb(*ev); }, it->second);
+}
+
+void CommandChannel::ExecuteEventCallback(EventCallback cb, EventHandlerId id,
+                                          std::unique_ptr<EventPacket> event,
+                                          async_dispatcher_t* dispatcher) {
+  auto task = [this, cb = std::move(cb), id, ev = std::move(event)]() {
+    auto result = cb(*ev);
+    if (result == EventCallbackResult::kRemove) {
+      RemoveEventHandler(id);
+    }
+  };
+  RunOrPost(std::move(task), dispatcher);
 }
 
 void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,

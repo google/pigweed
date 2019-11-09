@@ -195,7 +195,7 @@ class ACLDataChannel final {
 
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
-  void NumberOfCompletedPacketsCallback(const EventPacket& event);
+  CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(const EventPacket& event);
 
   // Tries to send the next batch of queued data packets if the controller has
   // any space available. All packets in higher priority queues will be sent before packets in lower
@@ -231,7 +231,7 @@ class ACLDataChannel final {
                       const zx_packet_signal_t* signal);
 
   // Handler for HCI_Buffer_Overflow_event
-  void DataBufferOverflowCallback(const EventPacket& event);
+  CommandChannel::EventCallbackResult DataBufferOverflowCallback(const EventPacket& event);
 
   // Used to assert that certain public functions are only called on the
   // creation thread.

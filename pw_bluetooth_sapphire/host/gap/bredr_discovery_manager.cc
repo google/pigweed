@@ -227,7 +227,8 @@ void BrEdrDiscoveryManager::StopInquiry() {
       });
 }
 
-void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
+hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
+    const hci::EventPacket& event) {
   std::unordered_set<Peer*> peers;
   if (event.event_code() == hci::kInquiryResultEventCode) {
     peers = ProcessInquiryResult<hci::InquiryResultEventParams, hci::InquiryResult>(cache_, event);
@@ -236,7 +237,7 @@ void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
         cache_, event);
   } else {
     bt_log(ERROR, "gap-bredr", "unsupported inquiry result type");
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   for (Peer* peer : peers) {
@@ -247,15 +248,17 @@ void BrEdrDiscoveryManager::InquiryResult(const hci::EventPacket& event) {
       session->NotifyDiscoveryResult(*peer);
     }
   }
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-void BrEdrDiscoveryManager::ExtendedInquiryResult(const hci::EventPacket& event) {
+hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryResult(
+    const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kExtendedInquiryResultEventCode);
 
   bt_log(SPEW, "gap-bredr", "ExtendedInquiryResult received");
   if (event.view().payload_size() != sizeof(hci::ExtendedInquiryResultEventParams)) {
     bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)", event.view().payload_size());
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   const auto& result = event.params<hci::ExtendedInquiryResultEventParams>();
 
@@ -274,6 +277,7 @@ void BrEdrDiscoveryManager::ExtendedInquiryResult(const hci::EventPacket& event)
   for (const auto& session : discovering_) {
     session->NotifyDiscoveryResult(*peer);
   }
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
 void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusCallback callback) {

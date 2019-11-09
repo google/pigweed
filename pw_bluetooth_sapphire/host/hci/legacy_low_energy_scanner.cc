@@ -228,12 +228,13 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   });
 }
 
-void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) {
+CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportEvent(
+    const EventPacket& event) {
   bt_log(DEBUG, "hci-le", "received advertising report");
 
   // Drop the event if not requested to scan.
   if (!IsScanning())
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
 
   AdvertisingReportParser parser(event);
   const LEAdvertisingReportData* report;
@@ -275,6 +276,7 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(const EventPacket& event) 
       delegate()->OnPeerFound(result, BufferView(report->data, report->length_data));
     }
   }
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 void LegacyLowEnergyScanner::OnScanPeriodComplete() {

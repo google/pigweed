@@ -127,9 +127,20 @@ class CommandChannel final {
   // this CommandChannel.
   using EventHandlerId = size_t;
 
+  // Return values for EventCallbacks.
+  enum class EventCallbackResult {
+    // Continue handling this event.
+    kContinue,
+
+    // Remove this event handler.
+    // NOTE: The event callback may still be called again after it has been removed
+    // if the handler has already been posted to the dispatcher for subsequent events.
+    kRemove
+  };
+
   // Callback invoked to report generic HCI events excluding CommandComplete and
   // CommandStatus events.
-  using EventCallback = fit::function<void(const EventPacket& event_packet)>;
+  using EventCallback = fit::function<EventCallbackResult(const EventPacket& event_packet)>;
 
   // Registers an event handler for HCI events that match |event_code|. Incoming
   // HCI event packets that are not associated with a pending command sequence
@@ -300,6 +311,10 @@ class CommandChannel final {
 
   // Notifies any matching event handler for |event|.
   void NotifyEventHandler(std::unique_ptr<EventPacket> event);
+
+  // Post callback and handle callback result.
+  void ExecuteEventCallback(EventCallback cb, EventHandlerId id, std::unique_ptr<EventPacket> event,
+                            async_dispatcher_t* dispatcher);
 
   // Notifies handlers for Command Status and Command Complete Events.
   // This function marks opcodes that have transactions pending as complete

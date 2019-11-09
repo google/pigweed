@@ -50,9 +50,9 @@ class ConnectionImpl final : public Connection {
   void ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb);
 
   // HCI event handlers.
-  void OnEncryptionChangeEvent(const EventPacket& event);
-  void OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event);
-  void OnLELongTermKeyRequestEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnLELongTermKeyRequestEvent(const EventPacket& event);
 
   fxl::ThreadChecker thread_checker_;
 
@@ -91,12 +91,14 @@ std::string LinkTypeToString(Connection::LinkType type) {
   return "(invalid)";
 }
 
-template <void (ConnectionImpl::*EventHandlerMethod)(const EventPacket&)>
+template <
+    CommandChannel::EventCallbackResult (ConnectionImpl::*EventHandlerMethod)(const EventPacket&)>
 CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn) {
   return [conn](const auto& event) {
     if (conn) {
-      ((conn.get())->*EventHandlerMethod)(event);
+      return ((conn.get())->*EventHandlerMethod)(event);
     }
+    return CommandChannel::EventCallbackResult::kRemove;
   };
 }
 
@@ -377,13 +379,14 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
                                        std::move(status_cb));
 }
 
-void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
+CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
+    const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionChangeEventCode);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (event.view().payload_size() != sizeof(EncryptionChangeEventParams)) {
     bt_log(WARN, "hci", "malformed encryption change event");
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   const auto& params = event.params<EncryptionChangeEventParams>();
@@ -391,12 +394,12 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   if (!is_open()) {
     bt_log(TRACE, "hci", "encryption change ignored: connection closed");
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   Status status(params.status);
@@ -409,19 +412,22 @@ void ConnectionImpl::OnEncryptionChangeEvent(const EventPacket& event) {
     ValidateAclEncryptionKeySize([this](const Status& key_valid_status) {
       HandleEncryptionStatus(key_valid_status, true /* enabled */);
     });
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   HandleEncryptionStatus(status, enabled);
+
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
-void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event) {
+CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
+    const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionKeyRefreshCompleteEventCode);
 
   if (event.view().payload_size() != sizeof(EncryptionKeyRefreshCompleteEventParams)) {
     bt_log(WARN, "hci", "malformed encryption key refresh complete event");
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   const auto& params = event.params<EncryptionKeyRefreshCompleteEventParams>();
@@ -429,12 +435,12 @@ void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(const EventPacket& even
 
   // Silently ignore this event as it isn't meant for this connection.
   if (handle != this->handle()) {
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   if (!is_open()) {
     bt_log(TRACE, "hci", "encryption key refresh ignored: connection closed");
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   Status status(params.status);
@@ -444,9 +450,12 @@ void ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(const EventPacket& even
   // Report that encryption got disabled on failure status. The accuracy of this
   // isn't that important since the link will be disconnected.
   HandleEncryptionStatus(status, static_cast<bool>(status));
+
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
-void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
+CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
+    const EventPacket& event) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
   ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
@@ -455,14 +464,14 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   auto* params = event.le_event_params<LELongTermKeyRequestSubeventParams>();
   if (!params) {
     bt_log(WARN, "hci", "malformed LE LTK request event");
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   hci::ConnectionHandle handle = le16toh(params->connection_handle);
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   // TODO(BT-767): Tell the data channel to stop data flow.
@@ -494,6 +503,7 @@ void ConnectionImpl::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   };
   hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
                                        std::move(status_cb));
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 }  // namespace hci

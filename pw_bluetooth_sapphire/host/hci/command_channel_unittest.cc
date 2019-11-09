@@ -20,6 +20,7 @@ namespace {
 using bt::LowerBits;
 using bt::UpperBits;
 using bt::testing::CommandTransaction;
+using EventCallbackResult = CommandChannel::EventCallbackResult;
 
 using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
@@ -442,7 +443,7 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
   // Should not be able to register an event handler now, we're still waiting on
   // the asynchronous command.
   auto event_id0 = cmd_channel()->AddEventHandler(
-      kTestEventCode0, [](const auto&) {}, dispatcher());
+      kTestEventCode0, [](const auto&) { return EventCallbackResult::kContinue; }, dispatcher());
   EXPECT_EQ(0u, event_id0);
 
   // Finish out the commands.
@@ -528,7 +529,7 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
 
   // This returns invalid because an async command is registered.
   auto invalid_id = cmd_channel()->AddEventHandler(
-      kTestEventCode0, [](const auto&) {}, dispatcher());
+      kTestEventCode0, [](const auto&) { return EventCallbackResult::kContinue; }, dispatcher());
 
   RunLoopUntilIdle();
 
@@ -559,18 +560,21 @@ TEST_F(HCI_CommandChannelTest, EventHandlerBasic) {
   auto event_cb0 = [&event_count0, kTestEventCode0](const EventPacket& event) {
     event_count0++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
+    return EventCallbackResult::kContinue;
   };
 
   int event_count1 = 0;
   auto event_cb1 = [&event_count1, kTestEventCode0](const EventPacket& event) {
     event_count1++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
+    return EventCallbackResult::kContinue;
   };
 
   int event_count2 = 0;
   auto event_cb2 = [&event_count2, kTestEventCode1](const EventPacket& event) {
     event_count2++;
     EXPECT_EQ(kTestEventCode1, event.event_code());
+    return EventCallbackResult::kContinue;
   };
   auto id0 = cmd_channel()->AddEventHandler(kTestEventCode0, event_cb0, dispatcher());
   EXPECT_NE(0u, id0);
@@ -683,6 +687,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
     EXPECT_EQ(kTestEventCode, event.event_code());
     EXPECT_EQ(1u, event.view().header().parameter_total_size);
     EXPECT_EQ(1u, event.view().payload_size());
+    return EventCallbackResult::kContinue;
   };
 
   cmd_channel()->AddEventHandler(kTestEventCode, event_cb, dispatcher());
@@ -1013,6 +1018,7 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
     event_count0++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode0, event.params<LEMetaEventParams>().subevent_code);
+    return EventCallbackResult::kContinue;
   };
 
   int event_count1 = 0;
@@ -1020,6 +1026,7 @@ TEST_F(HCI_CommandChannelTest, LEMetaEventHandler) {
     event_count1++;
     EXPECT_EQ(hci::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode1, event.params<LEMetaEventParams>().subevent_code);
+    return EventCallbackResult::kContinue;
   };
 
   auto id0 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode0, event_cb0, dispatcher());
@@ -1064,19 +1071,23 @@ TEST_F(HCI_CommandChannelTest, EventHandlerIdsDontCollide) {
   // Add a LE Meta event handler and a event handler and make sure that IDs are
   // generated correctly across the two methods.
   EXPECT_EQ(1u, cmd_channel()->AddLEMetaEventHandler(
-                    hci::kLEConnectionCompleteSubeventCode, [](const auto&) {}, dispatcher()));
+                    hci::kLEConnectionCompleteSubeventCode,
+                    [](const auto&) { return EventCallbackResult::kContinue; }, dispatcher()));
   EXPECT_EQ(2u, cmd_channel()->AddEventHandler(
-                    hci::kDisconnectionCompleteEventCode, [](const auto&) {}, dispatcher()));
+                    hci::kDisconnectionCompleteEventCode,
+                    [](const auto&) { return EventCallbackResult::kContinue; }, dispatcher()));
 }
 
 // Tests:
 //  - Can't register an event handler for CommandStatus or CommandComplete
 TEST_F(HCI_CommandChannelTest, EventHandlerRestrictions) {
   auto id0 = cmd_channel()->AddEventHandler(
-      hci::kCommandStatusEventCode, [](const auto&) {}, dispatcher());
+      hci::kCommandStatusEventCode, [](const auto&) { return EventCallbackResult::kContinue; },
+      dispatcher());
   EXPECT_EQ(0u, id0);
   id0 = cmd_channel()->AddEventHandler(
-      hci::kCommandCompleteEventCode, [](const auto&) {}, dispatcher());
+      hci::kCommandCompleteEventCode, [](const auto&) { return EventCallbackResult::kContinue; },
+      dispatcher());
   EXPECT_EQ(0u, id0);
 }
 
@@ -1109,6 +1120,7 @@ TEST_F(HCI_CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInte
     EXPECT_EQ(kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestEventCode, event.params<LEMetaEventParams>().subevent_code);
     le_event_count++;
+    return EventCallbackResult::kContinue;
   };
   cmd_channel()->AddLEMetaEventHandler(kLEConnectionCompleteSubeventCode, std::move(le_event_cb),
                                        dispatcher());
@@ -1496,6 +1508,53 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
 
   EXPECT_EQ(6u, exclusive_cb_count);
   EXPECT_EQ(3u, nonexclusive_cb_count);
+}
+
+TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
+  constexpr EventCode kTestEventCode0 = 0xFE;
+  auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
+  auto cmd_complete = CreateStaticByteBuffer(kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
+  auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
+
+  int event_count = 0;
+  auto event_cb = [&event_count, kTestEventCode0](const EventPacket& event) {
+    event_count++;
+    EXPECT_EQ(kTestEventCode0, event.event_code());
+    if (event_count == 1) {
+      return EventCallbackResult::kContinue;
+    } else {
+      return EventCallbackResult::kRemove;
+    }
+  };
+
+  auto id0 = cmd_channel()->AddEventHandler(kTestEventCode0, event_cb, dispatcher());
+  EXPECT_NE(0u, id0);
+
+  auto reset = CommandPacket::New(kReset);
+  auto transaction_id = cmd_channel()->SendCommand(
+      std::move(reset), dispatcher(), [](auto, const auto&) {}, kTestEventCode0);
+
+  EXPECT_EQ(0u, transaction_id);
+
+  StartTestDevice();
+  test_device()->SendCommandChannelPacket(cmd_status);
+  test_device()->SendCommandChannelPacket(cmd_complete);
+  test_device()->SendCommandChannelPacket(event0);
+  test_device()->SendCommandChannelPacket(event0);
+  test_device()->SendCommandChannelPacket(event0);
+
+  // Without waiting for the event loop to process the handler thrice,
+  // the handler will not be removed before the fourth event is received,
+  // and the handler will be placed into the dispatcher and called a fourth time.
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(3, event_count);
+
+  test_device()->SendCommandChannelPacket(event0);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(3, event_count);
 }
 
 }  // namespace

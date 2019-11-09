@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_MANAGER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
@@ -14,6 +13,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -263,10 +264,11 @@ class LowEnergyConnectionManager final {
   // Event handler for the HCI Disconnection Complete event.
   // TODO(armansito): This needs to be shared between the BR/EDR and LE
   // connection managers, so this handler should be moved elsewhere.
-  void OnDisconnectionComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnDisconnectionComplete(const hci::EventPacket& event);
 
   // Event handler for the HCI LE Connection Update Complete event.
-  void OnLEConnectionUpdateComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnLEConnectionUpdateComplete(
+      const hci::EventPacket& event);
 
   // Called when the preferred connection parameters have been received for a LE
   // peripheral. This can happen in the form of:

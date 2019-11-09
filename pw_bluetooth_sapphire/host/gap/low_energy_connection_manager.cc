@@ -400,16 +400,20 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transpor
   disconn_cmpl_handler_id_ = hci->command_channel()->AddEventHandler(
       hci::kDisconnectionCompleteEventCode,
       [self](const auto& event) {
-        if (self)
-          self->OnDisconnectionComplete(event);
+        if (self) {
+          return self->OnDisconnectionComplete(event);
+        }
+        return hci::CommandChannel::EventCallbackResult::kRemove;
       },
       dispatcher_);
 
   conn_update_cmpl_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
       hci::kLEConnectionUpdateCompleteSubeventCode,
       [self](const auto& event) {
-        if (self)
-          self->OnLEConnectionUpdateComplete(event);
+        if (self) {
+          return self->OnLEConnectionUpdateComplete(event);
+        }
+        return hci::CommandChannel::EventCallbackResult::kRemove;
       },
       dispatcher_);
 }
@@ -806,7 +810,8 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   TryCreateNextConnection();
 }
 
-void LowEnergyConnectionManager::OnDisconnectionComplete(const hci::EventPacket& event) {
+hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnDisconnectionComplete(
+    const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
   const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
   hci::ConnectionHandle handle = le16toh(params.connection_handle);
@@ -816,7 +821,7 @@ void LowEnergyConnectionManager::OnDisconnectionComplete(const hci::EventPacket&
            "HCI connection event received with error (status: \"%s\", handle: "
            "%#.4x",
            hci::StatusCodeToString(params.status).c_str(), handle);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   bt_log(INFO, "gap-le", "link disconnected - status: \"%s\", handle: %#.4x, reason: %#.2x",
@@ -830,7 +835,7 @@ void LowEnergyConnectionManager::OnDisconnectionComplete(const hci::EventPacket&
   auto iter = FindConnection(handle);
   if (iter == connections_.end()) {
     bt_log(TRACE, "gap-le", "unknown connection handle: %#.4x", handle);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   // Found the connection. Remove the entry from |connections_| before notifying
@@ -842,9 +847,11 @@ void LowEnergyConnectionManager::OnDisconnectionComplete(const hci::EventPacket&
 
   // The connection is already closed, so no need to send HCI_Disconnect.
   CleanUpConnection(std::move(conn), false /* close_link */);
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(const hci::EventPacket& event) {
+hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnLEConnectionUpdateComplete(
+    const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kLEMetaEventCode);
   ZX_DEBUG_ASSERT(event.params<hci::LEMetaEventParams>().subevent_code ==
                   hci::kLEConnectionUpdateCompleteSubeventCode);
@@ -858,13 +865,13 @@ void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(const hci::EventPa
            "HCI LE Connection Update Complete event with error "
            "(status: %#.2x, handle: %#.4x)",
            payload->status, handle);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   auto iter = FindConnection(handle);
   if (iter == connections_.end()) {
     bt_log(TRACE, "gap-le", "conn. parameters received for unknown link (handle: %#.4x)", handle);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   const auto& conn = *iter->second;
@@ -880,13 +887,15 @@ void LowEnergyConnectionManager::OnLEConnectionUpdateComplete(const hci::EventPa
   Peer* peer = peer_cache_->FindById(conn.peer_id());
   if (!peer) {
     bt_log(ERROR, "gap-le", "conn. parameters updated for unknown peer!");
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   peer->MutLe().SetConnectionParameters(params);
 
   if (test_conn_params_cb_)
     test_conn_params_cb_(*peer);
+
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
 void LowEnergyConnectionManager::OnNewLEConnectionParams(

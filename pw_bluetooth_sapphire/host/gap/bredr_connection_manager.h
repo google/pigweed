@@ -153,18 +153,18 @@ class BrEdrConnectionManager final {
       const DeviceAddressBytes& bd_addr);
 
   // Callbacks for registered events
-  void OnAuthenticationComplete(const hci::EventPacket& event);
-  void OnConnectionRequest(const hci::EventPacket& event);
-  void OnConnectionComplete(const hci::EventPacket& event);
-  void OnDisconnectionComplete(const hci::EventPacket& event);
-  void OnIoCapabilityRequest(const hci::EventPacket& event);
-  void OnIoCapabilityResponse(const hci::EventPacket& event);
-  void OnLinkKeyRequest(const hci::EventPacket& event);
-  void OnLinkKeyNotification(const hci::EventPacket& event);
-  void OnSimplePairingComplete(const hci::EventPacket& event);
-  void OnUserConfirmationRequest(const hci::EventPacket& event);
-  void OnUserPasskeyRequest(const hci::EventPacket& event);
-  void OnUserPasskeyNotification(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnConnectionComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnDisconnectionComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnLinkKeyNotification(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnSimplePairingComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(const hci::EventPacket& event);
 
   // Called once interrogation is complete to establish a BrEdrConnection and,
   // if in response to an outgoing connection request, completes the request

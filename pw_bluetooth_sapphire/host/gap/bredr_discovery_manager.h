@@ -145,10 +145,10 @@ class BrEdrDiscoveryManager final {
   void StopInquiry();
 
   // Used to receive Inquiry Results.
-  void InquiryResult(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult InquiryResult(const hci::EventPacket& event);
 
   // Used to receive Inquiry Results.
-  void ExtendedInquiryResult(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(const hci::EventPacket& event);
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<BrEdrDiscoverySession> AddDiscoverySession();

@@ -40,8 +40,10 @@ LowEnergyConnector::LowEnergyConnector(fxl::RefPtr<Transport> hci,
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
       kLEConnectionCompleteSubeventCode,
       [self](const auto& event) {
-        if (self)
-          self->OnConnectionCompleteEvent(event);
+        if (self) {
+          return self->OnConnectionCompleteEvent(event);
+        }
+        return CommandChannel::EventCallbackResult::kRemove;
       },
       dispatcher_);
 }
@@ -177,7 +179,8 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   OnCreateConnectionComplete(Status(HostError::kCanceled), nullptr);
 }
 
-void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
+CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEvent(
+    const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
   ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
                   kLEConnectionCompleteSubeventCode);
@@ -205,7 +208,7 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
       bt_log(WARN, "hci-le", "unexpected connection complete event with error received: %s",
              status.ToString().c_str());
     }
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   ConnectionHandle handle = le16toh(params->connection_handle);
@@ -220,7 +223,7 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   // information down to the incoming connection delegate.
   if (!matches_pending_request) {
     delegate_(handle, role, peer_address, connection_params);
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   // A new link layer connection was created. Create an object to track this
@@ -242,6 +245,7 @@ void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
     connection = nullptr;
   }
   OnCreateConnectionComplete(status, std::move(connection));
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 void LowEnergyConnector::OnCreateConnectionComplete(Status status, ConnectionPtr link) {

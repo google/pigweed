@@ -54,7 +54,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   void StopScanInternal(bool stopped);
 
   // Event handler for HCI LE Advertising Report event.
-  void OnAdvertisingReportEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnAdvertisingReportEvent(const EventPacket& event);
 
   // Called when the scan timeout task executes.
   void OnScanPeriodComplete();

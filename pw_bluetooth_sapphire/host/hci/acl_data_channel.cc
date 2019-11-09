@@ -276,9 +276,10 @@ size_t ACLDataChannel::GetBufferMTU(Connection::LinkType ll_type) const {
   return GetLEBufferInfo().max_data_length();
 }
 
-void ACLDataChannel::NumberOfCompletedPacketsCallback(const EventPacket& event) {
+CommandChannel::EventCallbackResult ACLDataChannel::NumberOfCompletedPacketsCallback(
+    const EventPacket& event) {
   if (!is_initialized_) {
-    return;
+    return CommandChannel::EventCallbackResult::kContinue;
   }
 
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
@@ -332,6 +333,7 @@ void ACLDataChannel::NumberOfCompletedPacketsCallback(const EventPacket& event) 
   DecrementTotalNumPacketsLocked(total_comp_packets);
   DecrementLETotalNumPacketsLocked(le_total_comp_packets);
   TrySendNextQueuedPacketsLocked();
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 void ACLDataChannel::TrySendNextQueuedPacketsLocked() {
@@ -529,13 +531,16 @@ ACLDataChannel::DataPacketQueue::iterator ACLDataChannel::SendQueueInsertLocatio
   });
 }
 
-void ACLDataChannel::DataBufferOverflowCallback(const EventPacket& event) {
+CommandChannel::EventCallbackResult ACLDataChannel::DataBufferOverflowCallback(
+    const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kDataBufferOverflowEventCode);
 
   const auto& params = event.params<hci::ConnectionRequestEventParams>();
 
   // Internal buffer state must be invalid and no further transmissions are possible.
   ZX_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
+
+  return CommandChannel::EventCallbackResult::kContinue;
 }
 
 }  // namespace hci
