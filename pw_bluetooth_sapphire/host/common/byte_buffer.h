@@ -5,15 +5,17 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 
+#include <zircon/assert.h>
+#include <zircon/syscalls.h>
+
 #include <array>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <fbl/macros.h>
-#include <zircon/assert.h>
-#include <zircon/syscalls.h>
 
 #include "src/lib/fxl/strings/string_view.h"
 
@@ -82,10 +84,15 @@ class ByteBuffer {
     return data()[pos];
   }
 
-  // Converts the underlying buffer to the given type with bounds checking. The
-  // buffer is allowed to be larger than T.
+  // Converts the underlying buffer to the given type with bounds checking. The buffer is allowed
+  // to be larger than T. The user is responsible for checking that the first sizeof(T) bytes
+  // represents a valid instance of T.
   template <typename T>
   const T& As() const {
+    // std::is_trivial_v would be a stronger guarantee that the buffer contains a valid T object,
+    // but would disallow casting to types that have useful constructors, which might instead cause
+    // uninitialized field(s) bugs for data encoding/decoding structs.
+    static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
     ZX_ASSERT(size() >= sizeof(T));
     return *reinterpret_cast<const T*>(data());
   }
@@ -127,10 +134,12 @@ class MutableByteBuffer : public ByteBuffer {
     return mutable_data()[pos];
   }
 
-  // Converts the underlying buffer to a mutable reference to the given type,
-  // with bounds checking. The buffer is allowed to be larger than T.
+  // Converts the underlying buffer to a mutable reference to the given type, with bounds checking.
+  // The buffer is allowed to be larger than T. The user is responsible for checking that the first
+  // sizeof(T) bytes represents a valid instance of T.
   template <typename T>
   T& AsMutable() {
+    static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
     ZX_ASSERT(size() >= sizeof(T));
     return *reinterpret_cast<T*>(mutable_data());
   }
@@ -151,7 +160,11 @@ class MutableByteBuffer : public ByteBuffer {
   // If T is an array of known bounds, the entire array will be written.
   template <typename T>
   void WriteObj(const T& data, size_t pos = 0) {
-    static_assert(!std::is_pointer<T>::value, "Pointer passed to WriteObj, deref or use Write");
+    // ByteBuffers are (mostly?) not TriviallyCopyable, but check this first for the error to be
+    // useful.
+    static_assert(!std::is_base_of_v<ByteBuffer, T>, "ByteBuffer passed to WriteObj; use Write");
+    static_assert(!std::is_pointer_v<T>, "Pointer passed to WriteObj, deref or use Write");
+    static_assert(std::is_trivially_copyable_v<T>, "Unsafe to peek byte representation");
     Write(reinterpret_cast<const uint8_t*>(&data), sizeof(T), pos);
   }
 
