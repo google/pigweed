@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
@@ -86,7 +87,7 @@ void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
 }
 
 void BrEdrDynamicChannelRegistry::OnRxConfigReq(
-    ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
+    ChannelId local_cid, uint16_t flags, ChannelConfiguration config,
     BrEdrCommandHandler::ConfigurationResponder* responder) {
   auto channel = static_cast<BrEdrDynamicChannel*>(FindChannelByLocalId(local_cid));
   if (channel == nullptr) {
@@ -95,7 +96,7 @@ void BrEdrDynamicChannelRegistry::OnRxConfigReq(
     return;
   }
 
-  channel->OnRxConfigReq(flags, options, responder);
+  channel->OnRxConfigReq(flags, std::move(config), responder);
 }
 
 void BrEdrDynamicChannelRegistry::OnRxDisconReq(
@@ -240,7 +241,7 @@ bool BrEdrDynamicChannel::IsOpen() const {
   return IsConnected() && (state_ & kLocalConfigAccepted) && (state_ & kRemoteConfigAccepted);
 }
 
-void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, const ByteBuffer& options,
+void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                                         BrEdrCommandHandler::ConfigurationResponder* responder) {
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request", local_cid());
 
@@ -258,7 +259,9 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, const ByteBuffer& option
 
   // TODO(NET-1084): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
-  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, BufferView());
+
+  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess,
+                  ChannelConfiguration::ConfigurationOptions());
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response", local_cid());
 
@@ -333,7 +336,9 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
   }
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
-  if (!cmd_handler.SendConfigurationRequest(remote_cid(), 0, BufferView(),
+
+  if (!cmd_handler.SendConfigurationRequest(remote_cid(), 0,
+                                            ChannelConfiguration::ConfigurationOptions(),
                                             [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
                                               if (self) {
                                                 return self->OnRxConfigRsp(rsp);

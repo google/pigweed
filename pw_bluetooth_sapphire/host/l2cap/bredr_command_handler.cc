@@ -8,8 +8,11 @@
 
 #include <type_traits>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -46,7 +49,11 @@ bool BrEdrCommandHandler::ConfigurationResponse::Decode(const ByteBuffer& payloa
   local_cid_ = letoh16(config_rsp.header().src_cid);
   flags_ = letoh16(config_rsp.header().flags);
   result_ = static_cast<ConfigurationResult>(letoh16(config_rsp.header().result));
-  options_ = config_rsp.payload_data().view();
+
+  if (!config_.ReadOptions(config_rsp.payload_data())) {
+    bt_log(WARN, "l2cap", "could not decode channel configuration response option");
+    return false;
+  }
   return true;
 }
 
@@ -120,15 +127,27 @@ BrEdrCommandHandler::ConfigurationResponder::ConfigurationResponder(
     SignalingChannel::Responder* sig_responder, ChannelId local_cid)
     : Responder(sig_responder, local_cid) {}
 
-void BrEdrCommandHandler::ConfigurationResponder::Send(ChannelId remote_cid, uint16_t flags,
-                                                       ConfigurationResult result,
-                                                       const ByteBuffer& data) {
-  DynamicByteBuffer config_rsp_buf(sizeof(ConfigurationResponsePayload) + data.size());
-  MutablePacketView<ConfigurationResponsePayload> config_rsp(&config_rsp_buf, data.size());
+void BrEdrCommandHandler::ConfigurationResponder::Send(
+    ChannelId remote_cid, uint16_t flags, ConfigurationResult result,
+    ChannelConfiguration::ConfigurationOptions options) {
+  size_t options_size = 0;
+  for (auto& option : options) {
+    options_size += option->size();
+  }
+
+  DynamicByteBuffer config_rsp_buf(sizeof(ConfigurationResponsePayload) + options_size);
+  MutablePacketView<ConfigurationResponsePayload> config_rsp(&config_rsp_buf, options_size);
   config_rsp.mutable_header()->src_cid = htole16(remote_cid);
   config_rsp.mutable_header()->flags = htole16(flags);
   config_rsp.mutable_header()->result = static_cast<ConfigurationResult>(htole16(result));
-  config_rsp.mutable_payload_data().Write(data);
+
+  auto payload_view = config_rsp.mutable_payload_data().mutable_view();
+  for (auto& option : options) {
+    auto encoded = option->Encode();
+    payload_view.Write(encoded.data(), encoded.size());
+    payload_view = payload_view.mutable_view(encoded.size());
+  }
+
   sig_responder_->Send(config_rsp.data());
 }
 
@@ -193,16 +212,28 @@ bool BrEdrCommandHandler::SendConnectionRequest(uint16_t psm, ChannelId local_ci
                            std::move(on_conn_rsp));
 }
 
-bool BrEdrCommandHandler::SendConfigurationRequest(ChannelId remote_cid, uint16_t flags,
-                                                   const ByteBuffer& options,
-                                                   ConfigurationResponseCallback cb) {
+bool BrEdrCommandHandler::SendConfigurationRequest(
+    ChannelId remote_cid, uint16_t flags, ChannelConfiguration::ConfigurationOptions options,
+    ConfigurationResponseCallback cb) {
   auto on_config_rsp = BuildResponseHandler<ConfigurationResponse>(std::move(cb));
 
-  DynamicByteBuffer config_req_buf(sizeof(ConfigurationRequestPayload) + options.size());
-  MutablePacketView<ConfigurationRequestPayload> config_req(&config_req_buf, options.size());
+  size_t options_size = 0;
+  for (auto& option : options) {
+    options_size += option->size();
+  }
+
+  DynamicByteBuffer config_req_buf(sizeof(ConfigurationRequestPayload) + options_size);
+  MutablePacketView<ConfigurationRequestPayload> config_req(&config_req_buf, options_size);
   config_req.mutable_header()->dst_cid = htole16(remote_cid);
   config_req.mutable_header()->flags = htole16(flags);
-  config_req.mutable_payload_data().Write(options);
+
+  auto payload_view = config_req.mutable_payload_data().mutable_view();
+  for (auto& option : options) {
+    auto encoded = option->Encode();
+    payload_view.Write(encoded.data(), encoded.size());
+    payload_view = payload_view.mutable_view(encoded.size());
+  }
+
   return sig_->SendRequest(kConfigurationRequest, config_req_buf, std::move(on_config_rsp));
 }
 
@@ -280,7 +311,13 @@ void BrEdrCommandHandler::ServeConfigurationRequest(ConfigurationRequestCallback
     const auto local_cid = static_cast<ChannelId>(letoh16(config_req.header().dst_cid));
     const uint16_t flags = letoh16(config_req.header().flags);
     ConfigurationResponder responder(sig_responder, local_cid);
-    cb(local_cid, flags, config_req.payload_data(), &responder);
+
+    ChannelConfiguration config;
+    if (!config.ReadOptions(config_req.payload_data())) {
+      bt_log(WARN, "l2cap", "could not decode configuration option in configuration request");
+    }
+
+    cb(local_cid, flags, std::move(config), &responder);
   };
 
   sig_->ServeRequest(kConfigurationRequest, std::move(on_config_req));
@@ -344,7 +381,7 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
                rsp_payload.size());
         return false;
       }
-      return InvokeResponseCallback(&rsp_cb, rsp);
+      return InvokeResponseCallback(&rsp_cb, std::move(rsp));
     }
 
     if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
@@ -357,7 +394,7 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
       return false;
     }
 
-    return InvokeResponseCallback(&rsp_cb, rsp);
+    return InvokeResponseCallback(&rsp_cb, std::move(rsp));
   };
 }
 

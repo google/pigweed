@@ -7,7 +7,10 @@
 
 #include <lib/fit/function.h>
 
+#include <memory>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
@@ -133,20 +136,14 @@ class BrEdrCommandHandler final {
 
     uint16_t flags() const { return flags_; }
     ConfigurationResult result() const { return result_; }
-    const ByteBuffer& options() const { return options_; }
-
-    // TODO(BT-466): Replace raw option access with abstraction over parsed
-    // options.
+    const ChannelConfiguration& config() const { return config_; }
 
    private:
     friend class BrEdrCommandHandler;
 
     uint16_t flags_;
     ConfigurationResult result_;
-
-    // View into the raw options received from the peer. It is only valid for
-    // the duration of the ConfigurationResponseCallback invocation.
-    BufferView options_;
+    ChannelConfiguration config_;
   };
 
   class DisconnectionResponse : public Response {
@@ -244,9 +241,7 @@ class BrEdrCommandHandler final {
     ConfigurationResponder(SignalingChannel::Responder* sig_responder, ChannelId local_cid);
 
     void Send(ChannelId remote_cid, uint16_t flags, ConfigurationResult result,
-              const ByteBuffer& data);
-
-    // TODO(NET-1084): Add builder abstraction for configuration options
+              ChannelConfiguration::ConfigurationOptions options);
   };
 
   class DisconnectionResponder : public Responder {
@@ -277,7 +272,7 @@ class BrEdrCommandHandler final {
   using ConnectionRequestCallback =
       fit::function<void(PSM psm, ChannelId remote_cid, ConnectionResponder* responder)>;
   using ConfigurationRequestCallback =
-      fit::function<void(ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
+      fit::function<void(ChannelId local_cid, uint16_t flags, ChannelConfiguration config,
                          ConfigurationResponder* responder)>;
   using DisconnectionRequestCallback = fit::function<void(ChannelId local_cid, ChannelId remote_cid,
                                                           DisconnectionResponder* responder)>;
@@ -301,7 +296,8 @@ class BrEdrCommandHandler final {
   // non-empty. The callbacks are wrapped and moved into the SignalingChannel
   // and may outlive BrEdrCommandHandler.
   bool SendConnectionRequest(uint16_t psm, ChannelId local_cid, ConnectionResponseCallback cb);
-  bool SendConfigurationRequest(ChannelId remote_cid, uint16_t flags, const ByteBuffer& options,
+  bool SendConfigurationRequest(ChannelId remote_cid, uint16_t flags,
+                                ChannelConfiguration::ConfigurationOptions options,
                                 ConfigurationResponseCallback cb);
   bool SendDisconnectionRequest(ChannelId remote_cid, ChannelId local_cid,
                                 DisconnectionResponseCallback cb);

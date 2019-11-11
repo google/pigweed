@@ -36,7 +36,7 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
   // Signaling channel request handlers
   void OnRxConnReq(PSM psm, ChannelId remote_cid,
                    BrEdrCommandHandler::ConnectionResponder* responder);
-  void OnRxConfigReq(ChannelId local_cid, uint16_t flags, const ByteBuffer& options,
+  void OnRxConfigReq(ChannelId local_cid, uint16_t flags, ChannelConfiguration config,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(ChannelId local_cid, ChannelId remote_cid,
                      BrEdrCommandHandler::DisconnectionResponder* responder);
@@ -86,7 +86,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   // Inbound request handlers. Request must have a destination channel ID that
   // matches this instance's |local_cid|.
-  void OnRxConfigReq(uint16_t flags, const ByteBuffer& options,
+  void OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(BrEdrCommandHandler::DisconnectionResponder* responder);
 

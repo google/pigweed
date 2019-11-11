@@ -12,7 +12,9 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -371,13 +373,17 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundInfoReqRspFixedChannels) {
 }
 
 TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConfigReqEmptyRspOkEmpty) {
-  BrEdrCommandHandler::ConfigurationRequestCallback cb = [](ChannelId local_cid, uint16_t flags,
-                                                            auto& data, auto responder) {
-    EXPECT_EQ(kLocalCId, local_cid);
-    EXPECT_EQ(0x6006, flags);
-    EXPECT_EQ(0UL, data.size());
-    responder->Send(kRemoteCId, 0x0001, ConfigurationResult::kPending, BufferView());
-  };
+  BrEdrCommandHandler::ConfigurationRequestCallback cb =
+      [](ChannelId local_cid, uint16_t flags, ChannelConfiguration config, auto responder) {
+        EXPECT_EQ(kLocalCId, local_cid);
+        EXPECT_EQ(0x6006, flags);
+        EXPECT_FALSE(config.mtu_option().has_value());
+        EXPECT_FALSE(config.retransmission_flow_control_option().has_value());
+        EXPECT_EQ(0u, config.unknown_options().size());
+
+        responder->Send(kRemoteCId, 0x0001, ConfigurationResult::kPending,
+                        ChannelConfiguration::ConfigurationOptions());
+      };
   cmd_handler()->ServeConfigurationRequest(std::move(cb));
 
   // Configuration Request payload
@@ -411,10 +417,11 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
       // Flags (non-zero to test encoding)
       0x01, 0x00,
 
-      // Data
-      // TODO(NET-1084): Replace with real configuration options
-      't', 'e', 's', 't');
-  const BufferView& req_options = expected_config_req.view(4, 4);
+      // Data (Config Options)
+      0x01,       // Type = MTU
+      0x02,       // Length = 2
+      0x30, 0x00  // MTU = 48
+  );
 
   // Configuration Response payload
   auto pending_config_req = CreateStaticByteBuffer(
@@ -427,27 +434,32 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
       // Result = Pending
       0x04, 0x00,
 
-      // Data
-      // TODO(NET-1084): Replace with real configuration options
-      'l', 'o', 'l', 'z');
-  const BufferView& rsp_options = pending_config_req.view(6, 4);
+      // Data (Config Options)
+      0x01,       // Type = MTU
+      0x02,       // Length = 2
+      0x60, 0x00  // MTU = 96
+  );
 
   EXPECT_OUTBOUND_REQ(*fake_sig(), kConfigurationRequest, expected_config_req.view(),
                       {SignalingChannel::Status::kSuccess, pending_config_req.view()});
 
   bool cb_called = false;
   BrEdrCommandHandler::ConfigurationResponseCallback on_config_rsp =
-      [&cb_called, &rsp_options](const BrEdrCommandHandler::ConfigurationResponse& rsp) {
+      [&cb_called](const BrEdrCommandHandler::ConfigurationResponse& rsp) {
         cb_called = true;
         EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
         EXPECT_EQ(kLocalCId, rsp.local_cid());
         EXPECT_EQ(0x0004, rsp.flags());
         EXPECT_EQ(ConfigurationResult::kPending, rsp.result());
-        EXPECT_TRUE(ContainersEqual(rsp_options, rsp.options()));
+        EXPECT_TRUE(rsp.config().mtu_option().has_value());
+        EXPECT_EQ(96u, rsp.config().mtu_option()->mtu());
         return false;
       };
 
-  EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0x0001, req_options,
+  ChannelConfiguration config;
+  config.set_mtu_option(ChannelConfiguration::MtuOption(48));
+
+  EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0x0001, config.Options(),
                                                       std::move(on_config_rsp)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
@@ -462,10 +474,11 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
       // Flags (non-zero to test encoding)
       0x01, 0xf0,
 
-      // Data
-      // TODO(NET-1084): Replace with real configuration options
-      't', 'e', 's', 't');
-  const BufferView& req_options = expected_config_req.view(4, 4);
+      // Data (Config Options)
+      0x01,       // Type = MTU
+      0x02,       // Length = 2
+      0x30, 0x00  // MTU = 48
+  );
 
   // Disconnect Request payload
   auto expected_discon_req = CreateStaticByteBuffer(
@@ -492,7 +505,11 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
     ADD_FAILURE();
     return false;
   };
-  EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0xf001, req_options,
+
+  ChannelConfiguration config;
+  config.set_mtu_option(ChannelConfiguration::MtuOption(48));
+
+  EXPECT_TRUE(cmd_handler()->SendConfigurationRequest(kRemoteCId, 0xf001, config.Options(),
                                                       std::move(on_config_rsp)));
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_EQ(1u, failed_requests());

@@ -89,6 +89,17 @@ constexpr uint16_t kMinLEMTU = 23;
 // The maximum length of a L2CAP B-frame information payload.
 constexpr uint16_t kMaxBasicFramePayloadSize = 65535;
 
+// Channel configuration option type field (Core Spec v5.1, Vol 3, Part A, Section 5):
+enum class OptionType : uint8_t {
+  kMTU = 0x01,
+  kFlushTimeout = 0x02,
+  kQoS = 0x03,
+  kRetransmissionAndFlowControl = 0x04,
+  kFCS = 0x05,
+  kExtendedFlowSpecification = 0x06,
+  kExtendedWindowSize = 0x07,
+};
+
 // Signaling packet formats (Core Spec v5.0, Vol 3, Part A, Section 4):
 
 using CommandCode = uint8_t;
@@ -127,6 +138,14 @@ enum class ConfigurationResult : uint16_t {
   kUnknownOptions = 0x0003,
   kPending = 0x0004,
   kFlowSpecRejected = 0x0005,
+};
+
+enum class ChannelMode : uint8_t {
+  kBasic = 0x00,
+  kRetransmission = 0x01,
+  kFlowControl = 0x02,
+  kEnhancedRetransmission = 0x03,
+  kStreaming = 0x04
 };
 
 enum class InformationType : uint16_t {
@@ -260,11 +279,27 @@ struct ConfigurationOption {
   ConfigurationOption() = delete;
   DISALLOW_COPY_ASSIGN_AND_MOVE(ConfigurationOption);
 
-  uint8_t type;
+  OptionType type;
   uint8_t length;
 
   // Up to 22 octets of data
   uint8_t data[];
+} __PACKED;
+
+// Payload of ConfigurationOption (see Vol 3, Part A, Section 5.1)
+struct MtuOptionPayload {
+  uint16_t mtu;
+} __PACKED;
+
+// Payload of ConfigurationOption (see Vol 3, Part A, Section 5.4)
+struct RetransmissionAndFlowControlOptionPayload {
+  ChannelMode mode;
+  uint8_t tx_window_size;
+  uint8_t max_transmit;
+  uint16_t rtx_timeout;
+  uint16_t monitor_timeout;
+  // Maximum PDU size
+  uint16_t mps;
 } __PACKED;
 
 struct ConfigurationRequestPayload {
