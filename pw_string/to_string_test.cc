@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_status/status.h"
+#include "pw_string/type_to_string.h"
 
 namespace pw {
 
@@ -117,8 +118,6 @@ TEST(ToString, Float) {
   EXPECT_STREQ("-NaN", buffer);
 }
 
-constexpr std::string_view kNullString = "(null)";
-
 TEST(ToString, Pointer_NonNull_WritesValue) {
   CustomType custom;
   const size_t length = std::snprintf(expected,
@@ -135,24 +134,25 @@ TEST(ToString, Pointer_NonNull_WritesValue) {
 }
 
 TEST(ToString, Pointer_Nullptr_WritesNull) {
-  EXPECT_EQ(kNullString.size(), ToString(nullptr, buffer).size());
-  EXPECT_EQ(kNullString, buffer);
+  EXPECT_EQ(string::kNullPointerString.size(),
+            ToString(nullptr, buffer).size());
+  EXPECT_EQ(string::kNullPointerString, buffer);
 }
 
 TEST(ToString, Pointer_NullValuedPointer_WritesNull) {
-  EXPECT_EQ(kNullString.size(),
+  EXPECT_EQ(string::kNullPointerString.size(),
             ToString(static_cast<const CustomType*>(nullptr), buffer).size());
-  EXPECT_EQ(kNullString, buffer);
+  EXPECT_EQ(string::kNullPointerString, buffer);
 }
 
 TEST(ToString, Pointer_NullValuedCString_WritesNull) {
-  EXPECT_EQ(kNullString.size(),
+  EXPECT_EQ(string::kNullPointerString.size(),
             ToString(static_cast<char*>(nullptr), buffer).size());
-  EXPECT_EQ(kNullString, buffer);
+  EXPECT_EQ(string::kNullPointerString, buffer);
 
-  EXPECT_EQ(kNullString.size(),
+  EXPECT_EQ(string::kNullPointerString.size(),
             ToString(static_cast<const char*>(nullptr), buffer).size());
-  EXPECT_EQ(kNullString, buffer);
+  EXPECT_EQ(string::kNullPointerString, buffer);
 }
 
 TEST(ToString, String_Literal) {
@@ -218,9 +218,9 @@ TEST(ToString, StdArrayAsBuffer) {
   EXPECT_STREQ("false", test_buffer.data());
   EXPECT_EQ(2u, ToString("Hi", test_buffer).size());
   EXPECT_STREQ("Hi", test_buffer.data());
-  EXPECT_EQ(kNullString.size(),
+  EXPECT_EQ(string::kNullPointerString.size(),
             ToString(static_cast<void*>(nullptr), test_buffer).size());
-  EXPECT_EQ(kNullString, test_buffer.data());
+  EXPECT_EQ(string::kNullPointerString, test_buffer.data());
 }
 
 TEST(ToString, StringView) {

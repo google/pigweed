@@ -97,7 +97,11 @@ StatusWithSize FloatAsIntToString(float value, const span<char>& buffer);
 // Writes a bool as "true" or "false". Semantics match CopyEntireString.
 StatusWithSize BoolToString(bool value, const span<char>& buffer);
 
-// Writes the pointer's address or "(null)". Semantics match CopyEntireString.
+// String used to represent null pointers.
+inline constexpr std::string_view kNullPointerString("(null)");
+
+// Writes the pointer's address or kNullPointerString. Semantics match
+// CopyEntireString.
 StatusWithSize PointerToString(const void* pointer, const span<char>& buffer);
 
 // Copies the string to the buffer, truncating if the full string does not fit.

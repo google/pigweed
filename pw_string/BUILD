@@ -26,12 +26,15 @@ pw_cc_library(
     name = "pw_string",
     srcs = [
         "format.cc",
+        "string_builder.cc",
         "type_to_string.cc",
     ],
     hdrs = [
         "public/pw_string/format.h",
+        "public/pw_string/string_builder.h",
         "public/pw_string/to_string.h",
         "public/pw_string/type_to_string.h",
+        "public/pw_string/util.h",
     ],
     deps = [
         "//pw_preprocessor",
@@ -53,6 +56,14 @@ pw_cc_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
     deps = ["//pw_string"],
+)
+
+pw_cc_test(
+    name = "string_builder_test",
+    srcs = ["string_builder_test.cc"],
+    deps = [
+        "//pw_string",
+    ],
 )
 
 pw_cc_test(
