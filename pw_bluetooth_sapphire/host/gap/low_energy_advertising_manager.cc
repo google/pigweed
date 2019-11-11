@@ -127,6 +127,13 @@ void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
     return;
   }
 
+  // v5.1, Vol 3, Part C, Appendix A recommends the FAST1 parameters for connectable advertising and
+  // FAST2 parameters for non-connectable advertising. Some Bluetooth controllers reject the FAST1
+  // parameters for non-connectable advertising, hence we fall back to FAST2 in that case.
+  if (interval == AdvertisingInterval::FAST1 && !connect_callback) {
+    interval = AdvertisingInterval::FAST2;
+  }
+
   // Serialize the data
   auto data_bytes = NewSlabBuffer(data.CalculateBlockSize() + kFlagsSize);
   WriteFlags(data_bytes.get());

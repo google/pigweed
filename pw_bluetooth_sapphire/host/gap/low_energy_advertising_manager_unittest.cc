@@ -29,6 +29,8 @@ constexpr AdvertisingInterval kTestInterval = AdvertisingInterval::FAST1;
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom,
                                    {0x55, 0x44, 0x33, 0x22, 0x11, 0x00});
 
+void NopConnectCallback(AdvertisementId, std::unique_ptr<hci::Connection>) {}
+
 struct AdvertisementStatus {
   AdvertisingData data;
   AdvertisingData scan_rsp;
@@ -368,17 +370,52 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 // Test that the AdvertisingInterval values map to the spec defined constants (NOTE: this might
 // change in the future in favor of a more advanced policy for managing the intervals; for now they
 // get mapped to recommended values from Vol 3, Part C, Appendix A).
-TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertisingIntervals) {
+TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   AdvertisingData fake_ad = CreateFakeAdvertisingData();
   AdvertisingData scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::FAST1,
+  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::FAST1,
                               false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
   EXPECT_EQ(kLEAdvertisingFastIntervalMin1, current_adv()->interval_min);
   EXPECT_EQ(kLEAdvertisingFastIntervalMax1, current_adv()->interval_max);
+  ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
+
+  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::FAST2,
+                              false /* anonymous */, GetSuccessCallback());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(MoveLastStatus());
+  ASSERT_TRUE(current_adv());
+  EXPECT_EQ(kLEAdvertisingFastIntervalMin2, current_adv()->interval_min);
+  EXPECT_EQ(kLEAdvertisingFastIntervalMax2, current_adv()->interval_max);
+  ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
+
+  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::SLOW,
+                              false /* anonymous */, GetSuccessCallback());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(MoveLastStatus());
+  ASSERT_TRUE(current_adv());
+  EXPECT_EQ(kLEAdvertisingSlowIntervalMin, current_adv()->interval_min);
+  EXPECT_EQ(kLEAdvertisingSlowIntervalMax, current_adv()->interval_max);
+  ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
+}
+
+TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
+  AdvertisingData fake_ad = CreateFakeAdvertisingData();
+  AdvertisingData scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
+
+  // We expect FAST1 to fall back to FAST2 due to specification recommendation (Vol 3, Part C,
+  // Appendix A) and lack of support for non-connectable advertising with FAST1 parameters on
+  // certain controllers.
+  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::FAST1,
+                              false /* anonymous */, GetSuccessCallback());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(MoveLastStatus());
+  ASSERT_TRUE(current_adv());
+  EXPECT_EQ(kLEAdvertisingFastIntervalMin2, current_adv()->interval_min);
+  EXPECT_EQ(kLEAdvertisingFastIntervalMax2, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 
   adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::FAST2,
