@@ -97,7 +97,7 @@ zx_status_t HostDevice::Bind() {
           bt_log(TRACE, "bt-host", "adapter initialized; make device visible");
           host_->gatt_host()->SetRemoteServiceWatcher(
               fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
-          device_make_visible(dev_);
+          device_make_visible(dev_, nullptr);
           return;
         }
 
