@@ -63,7 +63,10 @@ BrEdrConnection::BrEdrConnection(BrEdrConnectionManager* connection_manager, Pee
                        if (!status) {
                          mgr->Disconnect(peer_id);
                        }
-                     }) {}
+                     }) {
+  link_->set_peer_disconnect_callback(
+      fit::bind_member(connection_manager, &BrEdrConnectionManager::OnPeerDisconnect));
+}
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci::EventCode& code, hci::CommandChannel::EventCallback cb) {
@@ -111,8 +114,6 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci,
                   fit::bind_member(this, &BrEdrConnectionManager::OnConnectionComplete));
   AddEventHandler(hci::kConnectionRequestEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnConnectionRequest));
-  AddEventHandler(hci::kDisconnectionCompleteEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnDisconnectionComplete));
   AddEventHandler(hci::kIOCapabilityRequestEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnIoCapabilityRequest));
   AddEventHandler(hci::kIOCapabilityResponseEventCode,
@@ -267,8 +268,7 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
   }
 
   auto [handle, connection] = *conn_pair;
-  CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()),
-                    true /* close_link */);
+  CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()));
   return true;
 }
 
@@ -476,15 +476,15 @@ void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
                                                  unique_ptr<hci::Connection> connection) {
   auto self = weak_ptr_factory_.GetWeakPtr();
 
-  auto error_handler = [self, connection = connection->WeakPtr()] {
+  auto handle = connection->handle();
+
+  auto error_handler = [self, peer_id = peer->identifier(), connection = connection->WeakPtr()] {
     if (!self || !connection)
       return;
     bt_log(ERROR, "gap-bredr", "Link error received, closing connection %#.4x",
            connection->handle());
 
-    // Clean up after receiving the DisconnectComplete event.
-    // TODO(BT-70): Test link error behavior using FakePeer.
-    connection->Close();
+    self->Disconnect(peer_id);
   };
 
   // TODO(armansito): Implement this callback.
@@ -497,10 +497,9 @@ void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
   data_domain_->AddACLConnection(connection->handle(), connection->role(), error_handler,
                                  std::move(security_callback), dispatcher_);
 
-  auto handle = connection->handle();
-
   auto conn =
       connections_.try_emplace(handle, this, peer->identifier(), std::move(connection)).first;
+
   peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
   conn->second.pairing_state().SetPairingDelegate(pairing_delegate_);
 
@@ -535,42 +534,28 @@ void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
   }
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnDisconnectionComplete(
-    const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
-  const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
-
-  hci::ConnectionHandle handle = le16toh(params.connection_handle);
-  if (hci_is_error(event, WARN, "gap-bredr", "HCI disconnection error handle %#.4x", handle)) {
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  }
+void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection) {
+  auto handle = connection->handle();
 
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    bt_log(TRACE, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
-    return hci::CommandChannel::EventCallbackResult::kContinue;
+    bt_log(WARN, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
+    return;
   }
 
-  auto* peer = cache_->FindByAddress(it->second.link().peer_address());
-  bt_log(INFO, "gap-bredr", "%s disconnected - %s, handle: %#.4x, reason: %#.2x",
-         bt_str(peer->identifier()), bt_str(event.ToStatus()), handle, params.reason);
+  auto* peer = cache_->FindByAddress(connection->peer_address());
+  bt_log(INFO, "gap-bredr", "peer %s disconnected (handle: %#.4x)", bt_str(peer->identifier()),
+         handle);
 
-  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()), false /* close_link */);
-  return hci::CommandChannel::EventCallbackResult::kContinue;
+  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()));
 }
 
-void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn,
-                                               bool close_link) {
+void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn) {
   auto* peer = cache_->FindByAddress(conn.link().peer_address());
   ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
   peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
 
   data_domain_->RemoveConnection(handle);
-
-  if (!close_link) {
-    // Connection is already closed, so we don't need to send a disconnect.
-    conn.link().Close(false);
-  }
 
   // |conn| is destroyed when it goes out of scope.
 }

@@ -4,11 +4,44 @@
 
 #include "test_packets.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 
 namespace bt {
 namespace testing {
+
+// clang-format off
+#define COMMAND_STATUS_RSP(opcode, statuscode)                       \
+CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04,         \
+                                (statuscode), 0xF0,                 \
+                                LowerBits((opcode)), UpperBits((opcode)))
+// clang-format on
+
+DynamicByteBuffer DisconnectStatusResponsePacket() {
+  return DynamicByteBuffer(COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess));
+}
+
+DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      LowerBits(hci::kAcceptConnectionRequest), UpperBits(hci::kAcceptConnectionRequest),
+      0x07,                                                  // parameter_total_size (7 bytes)
+      addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
+      0x00                                                   // role (become master)
+      ));
+}
+
+DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      hci::kConnectionRequestEventCode,
+      0x0A,  // parameter_total_size (10 byte payload)
+      addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
+      0x00, 0x1F, 0x00,                                      // class_of_device (unspecified)
+      0x01                                                   // link_type (ACL)
+      ));
+}
 
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
   auto addr = address.value().bytes();

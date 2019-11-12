@@ -21,17 +21,15 @@ class FakeConnection final : public Connection {
 
   // Connection overrides:
   fxl::WeakPtr<Connection> WeakPtr() override;
-  void Close(bool send_disconnect, StatusCode reason) override;
+  void Disconnect(StatusCode reason) override;
   bool StartEncryption() override;
-
-  bool is_open() const override { return is_open_; }
 
   // Number of times StartEncryption() was called.
   int start_encryption_count() const { return start_encryption_count_; }
 
  private:
   int start_encryption_count_ = 0;
-  bool is_open_;
+  State conn_state_;
 
   fxl::WeakPtrFactory<FakeConnection> weak_ptr_factory_;
 

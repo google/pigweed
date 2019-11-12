@@ -1,4 +1,4 @@
-// Copyright 2017 The Fuchsia Authors. All rights reserved.
+// Copyright 2019 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,10 @@
 
 #include "command_channel.h"
 #include "defaults.h"
+#include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
@@ -25,9 +28,15 @@ class ConnectionImpl final : public Connection {
 
   // Connection overrides:
   fxl::WeakPtr<Connection> WeakPtr() override;
-  void Close(bool send_disconnect, StatusCode reason) override;
   bool StartEncryption() override;
-  bool is_open() const override { return is_open_; }
+  State state() const { return conn_state_; }
+
+  // Sends HCI Disconnect command with |reason|. Takes over handling of HCI
+  // Disconnection Complete event with a lambda so that connection instance can be safely destroyed
+  // immediately.
+  void Disconnect(StatusCode reason) override;
+
+  void set_state(State state) { conn_state_ = state; };
 
  private:
   // Start the BR/EDR link layer encryption. |ltk_| and |ltk_type_| must have already been set and
@@ -53,6 +62,16 @@ class ConnectionImpl final : public Connection {
   CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EventPacket& event);
   CommandChannel::EventCallbackResult OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event);
   CommandChannel::EventCallbackResult OnLELongTermKeyRequestEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnDisconnectionCompleteEvent(const EventPacket& event);
+
+  // Checks |event|, unregisters link, and clears pending packets count.
+  // If the disconnection was initiated by the peer, call |peer_disconnect_callback|.
+  // Returns true if event was valid and for this connection.
+  // This method is static so that it can be called in an event handler
+  // after this object has been destroyed.
+  static CommandChannel::EventCallbackResult OnDisconnectionComplete(
+      fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::RefPtr<Transport> hci,
+      const EventPacket& event);
 
   fxl::ThreadChecker thread_checker_;
 
@@ -64,7 +83,7 @@ class ConnectionImpl final : public Connection {
   // The underlying HCI transport.
   fxl::RefPtr<Transport> hci_;
 
-  bool is_open_;
+  State conn_state_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
@@ -160,7 +179,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
                                const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
       hci_(hci),
-      is_open_(true),
+      conn_state_(State::kConnected),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
 
@@ -179,57 +198,99 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
       kLELongTermKeyRequestSubeventCode,
       BindEventHandler<&ConnectionImpl::OnLELongTermKeyRequestEvent>(self),
       async_get_default_dispatcher());
+
+  auto disconn_complete_handler = [self, handle, hci](auto& event) {
+    return ConnectionImpl::OnDisconnectionComplete(self, handle, hci, event);
+  };
+
+  hci_->command_channel()->AddEventHandler(
+      kDisconnectionCompleteEventCode, disconn_complete_handler, async_get_default_dispatcher());
+
+  // Allow packets to be sent on this link immediately.
+  hci->acl_data_channel()->RegisterLink(handle);
 }
 
 ConnectionImpl::~ConnectionImpl() {
+  if (conn_state_ == Connection::State::kConnected) {
+    Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  }
+
   // Unregister HCI event handlers.
   hci_->command_channel()->RemoveEventHandler(enc_change_id_);
   hci_->command_channel()->RemoveEventHandler(enc_key_refresh_cmpl_id_);
   hci_->command_channel()->RemoveEventHandler(le_ltk_request_id_);
-
-  Close(true, StatusCode::kRemoteUserTerminatedConnection);
 }
 
 fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-void ConnectionImpl::Close(bool send_disconnect, StatusCode reason) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  if (!is_open_)
-    return;
+CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
+    fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::RefPtr<Transport> hci,
+    const EventPacket& event) {
+  ZX_DEBUG_ASSERT(event.event_code() == kDisconnectionCompleteEventCode);
 
-  // The connection is immediately marked as closed as there is no reasonable
-  // way for a Disconnect procedure to fail, i.e. it always succeeds. If the
-  // controller reports failure in the Disconnection Complete event, it should
-  // be because we gave it an already disconnected handle which we would treat
-  // as success.
-  //
-  // TODO(armansito): The procedure could also fail if "the command was not
-  // presently allowed". Retry in that case?
-  is_open_ = false;
+  if (event.view().payload_size() != sizeof(DisconnectionCompleteEventParams)) {
+    bt_log(WARN, "hci", "malformed disconnection complete event");
+    return CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  const auto& params = event.params<DisconnectionCompleteEventParams>();
+  const auto event_handle = le16toh(params.connection_handle);
+
+  // Silently ignore this event as it isn't meant for this connection.
+  if (event_handle != handle) {
+    return CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2x",
+         bt_str(event.ToStatus()), handle, params.reason);
+
+  // Stop data flow and revoke queued packets for this connection.
+  hci->acl_data_channel()->UnregisterLink(handle);
+
+  // Notify ACL data channel that packets have been flushed from controller buffer.
+  hci->acl_data_channel()->ClearControllerPacketCount(handle);
+
+  if (!self) {
+    return CommandChannel::EventCallbackResult::kRemove;
+  }
+
+  auto prev_state = self->state();
+  self->set_state(State::kDisconnected);
+
+  // Peer disconnect. Callback may destroy connection.
+  if (prev_state == State::kConnected && self->peer_disconnect_callback()) {
+    self->peer_disconnect_callback()(self.get());
+  }
+
+  return CommandChannel::EventCallbackResult::kRemove;
+}
+
+void ConnectionImpl::Disconnect(StatusCode reason) {
+  ZX_ASSERT(conn_state_ == Connection::State::kConnected);
+
+  conn_state_ = Connection::State::kWaitingForDisconnectionComplete;
 
   // Here we send a HCI_Disconnect command without waiting for it to complete.
-  if (send_disconnect) {
-    auto status_cb = [](auto id, const EventPacket& event) {
-      ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
-      const auto& params = event.params<CommandStatusEventParams>();
-      if (params.status != StatusCode::kSuccess) {
-        bt_log(WARN, "hci", "ignoring failed disconnection status: %#.2x", params.status);
-      }
-    };
+  auto status_cb = [](auto id, const EventPacket& event) {
+    ZX_DEBUG_ASSERT(event.event_code() == kCommandStatusEventCode);
+    hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
+  };
 
-    auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
-    auto params = disconn->mutable_payload<DisconnectCommandParams>();
-    params->connection_handle = htole16(handle());
-    params->reason = reason;
+  auto disconn = CommandPacket::New(kDisconnect, sizeof(DisconnectCommandParams));
+  auto params = disconn->mutable_payload<DisconnectCommandParams>();
+  params->connection_handle = htole16(handle());
+  params->reason = reason;
 
-    hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
-                                         std::move(status_cb), kCommandStatusEventCode);
-  }
+  bt_log(TRACE, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2x)", handle(), reason);
+
+  // Send HCI Disconnect.
+  hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
+                                       std::move(status_cb), kCommandStatusEventCode);
 }
 
 bool ConnectionImpl::StartEncryption() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  if (!is_open()) {
+  if (conn_state_ != Connection::State::kConnected) {
     bt_log(TRACE, "hci", "connection closed; cannot start encryption");
     return false;
   }
@@ -332,7 +393,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
   if (!status) {
-    Close(true, StatusCode::kAuthenticationFailure);
+    Disconnect(StatusCode::kAuthenticationFailure);
   } else {
     // TODO(BT-208): Tell the data channel to resume data flow.
   }
@@ -347,7 +408,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
 
 void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb) {
   ZX_ASSERT(ll_type() == LinkType::kACL);
-  ZX_ASSERT(is_open());
+  ZX_ASSERT(conn_state_ == Connection::State::kConnected);
 
   auto cmd = CommandPacket::New(kReadEncryptionKeySize, sizeof(ReadEncryptionKeySizeParams));
   auto* params = cmd->mutable_payload<ReadEncryptionKeySizeParams>();
@@ -397,7 +458,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (!is_open()) {
+  if (conn_state_ != Connection::State::kConnected) {
     bt_log(TRACE, "hci", "encryption change ignored: connection closed");
     return CommandChannel::EventCallbackResult::kContinue;
   }
@@ -438,7 +499,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshComple
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (!is_open()) {
+  if (conn_state_ != Connection::State::kConnected) {
     bt_log(TRACE, "hci", "encryption key refresh ignored: connection closed");
     return CommandChannel::EventCallbackResult::kContinue;
   }

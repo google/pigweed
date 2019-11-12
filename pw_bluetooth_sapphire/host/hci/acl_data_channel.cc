@@ -226,6 +226,16 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
     return packet->connection_handle() == handle;
   };
   DropQueuedPacketsLocked(filter);
+}
+
+void ACLDataChannel::ClearControllerPacketCount(hci::ConnectionHandle handle) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
+  // Ensure link has already been unregistered. Otherwise, queued packets for this handle
+  // could be sent after clearing packet count, and the packet count could become corrupted.
+  ZX_ASSERT(registered_links_.find(handle) == registered_links_.end());
+
+  bt_log(TRACE, "hci", "clearing pending packets (handle: %#.4x)", handle);
 
   // subtract removed packets from sent packet counts, because controller
   // does not send HCI Number of Completed Packets event for disconnected link

@@ -48,6 +48,12 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     ZX_DEBUG_ASSERT(conn_mgr_);
     ZX_DEBUG_ASSERT(data_domain_);
     ZX_DEBUG_ASSERT(gatt_);
+
+    link_->set_peer_disconnect_callback([conn_mgr](auto conn) {
+      if (conn_mgr) {
+        conn_mgr->OnPeerDisconnect(conn);
+      }
+    });
   }
 
   ~LowEnergyConnection() override {
@@ -55,9 +61,6 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     // invalidates all L2CAP channels that are associated with this link.
     gatt_->RemoveConnection(peer_id());
     data_domain_->RemoveConnection(link_->handle());
-
-    // Tell the controller to disconnect the link if it is marked as open.
-    link_->Close();
 
     // Notify all active references that the link is gone. This will
     // synchronously notify all refs.
@@ -393,20 +396,6 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transpor
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
-  // TODO(armansito): Setting this up here means that the
-  // ClassicConnectionManager won't be able to listen to the same event. So this
-  // event either needs to be handled elsewhere OR we make hci::CommandChannel
-  // support registering multiple handlers for the same event.
-  disconn_cmpl_handler_id_ = hci->command_channel()->AddEventHandler(
-      hci::kDisconnectionCompleteEventCode,
-      [self](const auto& event) {
-        if (self) {
-          return self->OnDisconnectionComplete(event);
-        }
-        return hci::CommandChannel::EventCallbackResult::kRemove;
-      },
-      dispatcher_);
-
   conn_update_cmpl_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
       hci::kLEConnectionUpdateCompleteSubeventCode,
       [self](const auto& event) {
@@ -420,7 +409,6 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transpor
 
 LowEnergyConnectionManager::~LowEnergyConnectionManager() {
   hci_->command_channel()->RemoveEventHandler(conn_update_cmpl_handler_id_);
-  hci_->command_channel()->RemoveEventHandler(disconn_cmpl_handler_id_);
 
   bt_log(TRACE, "gap-le", "connection manager shutting down");
 
@@ -660,7 +648,6 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
   // destination for remote initiated connections (see NET-321).
   if (connections_.find(peer_id) != connections_.end()) {
     bt_log(TRACE, "gap-le", "multiple links from peer; connection refused");
-    link->Close();
     return nullptr;
   }
 
@@ -711,7 +698,7 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::AddConnectionRef(PeerId pe
 }
 
 void LowEnergyConnectionManager::CleanUpConnection(
-    std::unique_ptr<internal::LowEnergyConnection> conn, bool close_link) {
+    std::unique_ptr<internal::LowEnergyConnection> conn) {
   ZX_DEBUG_ASSERT(conn);
 
   // Mark the peer peer as no longer connected.
@@ -719,16 +706,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
   ZX_DEBUG_ASSERT(peer);
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
-  if (!close_link) {
-    // Mark the connection as already closed so that hci::Connection::Close()
-    // doesn't send HCI_Disconnect to the controller.
-    //
-    // |close_link| is expected to be false only when this method is called due
-    // to a disconnection that was not requested by the local host.
-    conn->link()->Close(false);
-  }
-
-  // The |conn| is destroyed when it goes out of scope.
+  conn.reset();
 }
 
 void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci::Connection> link) {
@@ -810,22 +788,12 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   TryCreateNextConnection();
 }
 
-hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnDisconnectionComplete(
-    const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kDisconnectionCompleteEventCode);
-  const auto& params = event.params<hci::DisconnectionCompleteEventParams>();
-  hci::ConnectionHandle handle = le16toh(params.connection_handle);
+void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connection) {
+  auto handle = connection->handle();
 
-  if (params.status != hci::StatusCode::kSuccess) {
-    bt_log(TRACE, "gap-le",
-           "HCI connection event received with error (status: \"%s\", handle: "
-           "%#.4x",
-           hci::StatusCodeToString(params.status).c_str(), handle);
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  }
-
-  bt_log(INFO, "gap-le", "link disconnected - status: \"%s\", handle: %#.4x, reason: %#.2x",
-         hci::StatusCodeToString(params.status).c_str(), handle, params.reason);
+  auto* peer = peer_cache_->FindByAddress(connection->peer_address());
+  bt_log(INFO, "gap-le", "peer %s disconnected (handle: %#.4x)", bt_str(peer->identifier()),
+         handle);
 
   if (test_disconn_cb_)
     test_disconn_cb_(handle);
@@ -834,8 +802,8 @@ hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnDisconnec
   // connections list.
   auto iter = FindConnection(handle);
   if (iter == connections_.end()) {
-    bt_log(TRACE, "gap-le", "unknown connection handle: %#.4x", handle);
-    return hci::CommandChannel::EventCallbackResult::kContinue;
+    bt_log(WARN, "gap-le", "disconnect from unknown connection handle: %#.4x", handle);
+    return;
   }
 
   // Found the connection. Remove the entry from |connections_| before notifying
@@ -845,9 +813,7 @@ hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnDisconnec
 
   ZX_DEBUG_ASSERT(conn->ref_count());
 
-  // The connection is already closed, so no need to send HCI_Disconnect.
-  CleanUpConnection(std::move(conn), false /* close_link */);
-  return hci::CommandChannel::EventCallbackResult::kContinue;
+  CleanUpConnection(std::move(conn));
 }
 
 hci::CommandChannel::EventCallbackResult LowEnergyConnectionManager::OnLEConnectionUpdateComplete(

@@ -26,7 +26,7 @@ class Transport;
 
 // A Connection represents a logical link connection to a remote device. It
 // maintains link-specific configuration parameters (such as the connection
-// handle, role, and connection parameters) and state (e.g. open/closed).
+// handle, role, and connection parameters) and state (e.g. kConnected/kDisconnected).
 // Controller procedures that are related to managing a logical link are
 // performed by a Connection, e.g. disconnecting the link and initiating link
 // layer authentication.
@@ -68,6 +68,19 @@ class Connection {
   enum class Role {
     kMaster,
     kSlave,
+  };
+
+  enum class State {
+    // Default state of a newly created Connection. This is the only connection state that is
+    // considered "open".
+    kConnected,
+
+    // HCI Disconnect command has been sent, but HCI Disconnection Complete event has not yet been
+    // received. This state is skipped when the disconnection is initiated by the peer.
+    kWaitingForDisconnectionComplete,
+
+    // HCI Disconnection Complete event has been received.
+    kDisconnected
   };
 
   // Initializes this as a LE connection.
@@ -123,9 +136,6 @@ class Connection {
   // The peer address used while establishing the connection.
   const DeviceAddress& peer_address() const { return peer_address_; }
 
-  // Returns true if this connection is currently open.
-  virtual bool is_open() const = 0;
-
   // Assigns a long term key to this LE-U connection. This will be used for all future encryption
   // procedures.
   void set_le_ltk(const LinkKey& ltk) {
@@ -157,11 +167,12 @@ class Connection {
     encryption_change_callback_ = std::move(callback);
   }
 
-  // Closes this connection by sending the HCI_Disconnect command to the
-  // controller if |send_disconnect| is true. This method is a NOP if the connection is already
-  // closed.
-  virtual void Close(bool send_disconnect = true,
-                     StatusCode reason = StatusCode::kRemoteUserTerminatedConnection) = 0;
+  // Assigns a callback that will be run when the peer disconnects. The callback will be called in
+  // the creation thread.
+  using PeerDisconnectCallback = fit::function<void(const Connection* connection)>;
+  void set_peer_disconnect_callback(PeerDisconnectCallback callback) {
+    peer_disconnect_callback_ = std::move(callback);
+  }
 
   // Authenticate (i.e. encrypt) this connection using its current link key.
   // Returns false if the procedure cannot be initiated. The result of the
@@ -173,12 +184,20 @@ class Connection {
   // notified of the failure.
   virtual bool StartEncryption() = 0;
 
+  // Send HCI Disconnect and set state to closed. Must not be called on an already disconnected
+  // connection.
+  virtual void Disconnect(StatusCode reason) = 0;
+
  protected:
   Connection(ConnectionHandle handle, LinkType ll_type, Role role,
              const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   const EncryptionChangeCallback& encryption_change_callback() const {
     return encryption_change_callback_;
+  }
+
+  const PeerDisconnectCallback& peer_disconnect_callback() const {
+    return peer_disconnect_callback_;
   }
 
  private:
@@ -200,6 +219,8 @@ class Connection {
   std::optional<hci::LinkKeyType> ltk_type_;
 
   EncryptionChangeCallback encryption_change_callback_;
+
+  PeerDisconnectCallback peer_disconnect_callback_;
 
   // TODO(BT-715): Add a BREDRParameters struct.
 

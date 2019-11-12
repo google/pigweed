@@ -130,7 +130,8 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_EQ(kHandle, link->handle());
   EXPECT_EQ(kPublicAddress, link->local_address());
   EXPECT_EQ(kRandomAddress, link->peer_address());
-  link->Close(false);
+  link->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  test_device()->SendDisconnectionCompleteEvent(link->handle());
 
   // Advertising state should get cleared.
   RunLoopUntilIdle();
@@ -151,10 +152,10 @@ TEST_F(HCI_LegacyLowEnergyAdvertiserTest, ConnectionTest) {
   // should get assigned correctly.
   advertiser()->OnIncomingConnection(kHandle, Connection::Role::kSlave, kPublicAddress,
                                      LEConnectionParameters());
-  ASSERT_TRUE(link);
+  // ASSERT_TRUE(link);
   EXPECT_EQ(kRandomAddress, link->local_address());
   EXPECT_EQ(kPublicAddress, link->peer_address());
-  link->Close(false);
+  link->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 }
 
 // Tests that advertising can be restarted right away in a connection callback.

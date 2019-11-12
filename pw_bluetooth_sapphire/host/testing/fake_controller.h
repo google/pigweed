@@ -216,6 +216,28 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Disconnection Complete event for all of its links.
   void Disconnect(const DeviceAddress& addr);
 
+  // Send HCI Disconnection Complete event for |handle|.
+  void SendDisconnectionCompleteEvent(hci::ConnectionHandle handle);
+
+  // Callback to invoke when a packet is received over the data channel. Care
+  // should be taken to ensure that a callback with a reference to test case
+  // variables is not invoked when tearing down.
+  using DataCallback = fit::function<void(const ByteBuffer& packet)>;
+  void SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher);
+  void ClearDataCallback();
+
+  // Automatically send HCI Number of Completed Packets event for each packet received. Enabled by
+  // default.
+  void set_auto_completed_packets_event_enabled(bool enabled) {
+    auto_completed_packets_event_enabled_ = enabled;
+  }
+
+  // Automatically send HCI Disconnection Complete event when HCI Disconnect command received.
+  // Enabled by default.
+  void set_auto_disconnection_complete_event_enabled(bool enabled) {
+    auto_disconnection_complete_event_enabled_ = enabled;
+  }
+
  private:
   // Returns the current thread's task dispatcher.
   async_dispatcher_t* dispatcher() const { return async_get_default_dispatcher(); }
@@ -337,6 +359,13 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   fit::closure advertising_state_cb_;
   ConnectionStateCallback conn_state_cb_;
   LEConnectionParametersCallback le_conn_params_cb_;
+
+  // Called when ACL data packets received.
+  DataCallback data_callback_;
+  async_dispatcher_t* data_dispatcher_;
+
+  bool auto_completed_packets_event_enabled_;
+  bool auto_disconnection_complete_event_enabled_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };

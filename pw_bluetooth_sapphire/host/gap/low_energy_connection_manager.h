@@ -177,6 +177,9 @@ class LowEnergyConnectionManager final {
   // default value is kLECreateConnectionTimeout.
   void set_request_timeout_for_testing(zx::duration value) { request_timeout_ = value; }
 
+  // Callback for hci::Connection, called when the peer disconnects.
+  void OnPeerDisconnect(const hci::Connection* connection);
+
  private:
   friend class LowEnergyConnectionRef;
 
@@ -228,18 +231,17 @@ class LowEnergyConnectionManager final {
   // |peer_id| is not recognized.
   LowEnergyConnectionRefPtr AddConnectionRef(PeerId peer_id);
 
-  // Cleans up a connection state. This results in a HCI_Disconnect command
-  // if |close_link| is true, and notifies any referenced
-  // LowEnergyConnectionRefs of the disconnection. Marks the corresponding
-  // PeerCache entry as disconnected and cleans up all data bearers.
+  // Cleans up a connection state. This results in a HCI_Disconnect command if the connection has
+  // not already been disconnected, and notifies any referenced LowEnergyConnectionRefs of the
+  // disconnection. Marks the corresponding PeerCache entry as disconnected and cleans up all data
+  // bearers.
   //
   // |conn_state| will have been removed from the underlying map at the time of
   // a call. Its ownership is passed to the method for disposal.
   //
   // This is also responsible for unregistering the link from managed subsystems
   // (e.g. L2CAP).
-  void CleanUpConnection(std::unique_ptr<internal::LowEnergyConnection> conn,
-                         bool close_link = true);
+  void CleanUpConnection(std::unique_ptr<internal::LowEnergyConnection> conn);
 
   // Called by |connector_| when a new locally initiated LE connection has been
   // created.
@@ -260,11 +262,6 @@ class LowEnergyConnectionManager final {
 
   // Called by |connector_| to indicate the result of a connect request.
   void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link);
-
-  // Event handler for the HCI Disconnection Complete event.
-  // TODO(armansito): This needs to be shared between the BR/EDR and LE
-  // connection managers, so this handler should be moved elsewhere.
-  hci::CommandChannel::EventCallbackResult OnDisconnectionComplete(const hci::EventPacket& event);
 
   // Event handler for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventCallbackResult OnLEConnectionUpdateComplete(
@@ -334,9 +331,6 @@ class LowEnergyConnectionManager final {
 
   // Local GATT service registry.
   std::unique_ptr<gatt::LocalServiceManager> gatt_registry_;
-
-  // Event handler ID for the HCI Disconnection Complete event.
-  hci::CommandChannel::EventHandlerId disconn_cmpl_handler_id_;
 
   // Event handler ID for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventHandlerId conn_update_cmpl_handler_id_;

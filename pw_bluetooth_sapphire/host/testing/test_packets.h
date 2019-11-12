@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_PACKETS_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
@@ -17,6 +18,9 @@ namespace testing {
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
 
+DynamicByteBuffer DisconnectStatusResponsePacket();
+DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
+DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
 DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);

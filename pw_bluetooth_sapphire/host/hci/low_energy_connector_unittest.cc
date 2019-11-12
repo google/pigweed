@@ -132,8 +132,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
   EXPECT_EQ(1u, conn->handle());
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
-  EXPECT_TRUE(conn->is_open());
-  conn->Close(false);
+  conn->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 }
 
 // Controller reports error from HCI Command Status event.
@@ -274,8 +273,7 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnect) {
   EXPECT_EQ(1u, conn->handle());
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
-  EXPECT_TRUE(conn->is_open());
-  conn->Close(false);
+  conn->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 }
 
 TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
@@ -327,11 +325,8 @@ TEST_F(HCI_LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   EXPECT_EQ(kTestAddress, conn->peer_address());
   EXPECT_EQ(kIncomingAddress, in_conn->peer_address());
 
-  EXPECT_TRUE(conn->is_open());
-  EXPECT_TRUE(in_conn->is_open());
-
-  conn->Close(false);
-  in_conn->Close(false);
+  conn->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  in_conn->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 }
 
 TEST_F(HCI_LowEnergyConnectorTest, CreateConnectionTimeout) {

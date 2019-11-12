@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -37,6 +38,9 @@ const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {2});
 const DeviceAddress kAddress2(DeviceAddress::Type::kBREDR, {3});
 
+const size_t kLEMaxNumPackets = 10;
+const hci::DataBufferInfo kLEDataBufferInfo(hci::kMaxACLPayloadSize, kLEMaxNumPackets);
+
 class LowEnergyConnectionManagerTest : public TestingBase {
  public:
   LowEnergyConnectionManagerTest() = default;
@@ -47,8 +51,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     TestingBase::SetUp();
 
     // Initialize with LE buffers only.
-    TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
-                                          hci::DataBufferInfo(hci::kMaxACLPayloadSize, 10));
+    TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(), kLEDataBufferInfo);
 
     FakeController::Settings settings;
     settings.ApplyLegacyLEConfig();
@@ -870,7 +873,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectWhileRefPending) {
 // This tests that a connection reference callback returns nullptr if a HCI
 // Disconnection Complete event is received for the corresponding ACL link
 // BEFORE the callback gets run.
-TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectCompleteEventWhileRefPending) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
@@ -889,13 +892,17 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
 
   // Request a new reference. Disconnect the link before the reference is
   // received.
-  auto ref_cb = [](auto status, auto conn_ref) {
+  size_t ref_cb_count = 0;
+  auto ref_cb = [&ref_cb_count](auto status, auto conn_ref) {
+    ref_cb_count++;
     EXPECT_FALSE(conn_ref);
     EXPECT_FALSE(status);
     EXPECT_EQ(HostError::kFailed, status.error());
   };
 
-  auto disconn_cb = [this, ref_cb, peer](auto) {
+  size_t disconn_cb_count = 0;
+  auto disconn_cb = [this, ref_cb, peer, &disconn_cb_count](auto) {
+    disconn_cb_count++;
     // The link is gone but conn_mgr() hasn't updated the connection state yet.
     // The request to connect will attempt to add a new reference which will be
     // invalidated before |ref_cb| gets called.
@@ -903,8 +910,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectEventWhileRefPending) {
   };
   conn_mgr()->SetDisconnectCallbackForTesting(disconn_cb);
 
-  test_device()->Disconnect(kAddress0);
+  test_device()->SendDisconnectionCompleteEvent(conn_ref->handle());
+
   RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, ref_cb_count);
+  EXPECT_EQ(1u, disconn_cb_count);
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
@@ -1112,6 +1123,131 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
+}
+
+// Test fixture for tests that disconnect a connection in various ways and expect that
+// controller packet counts are not cleared on disconnecting, but are cleared on disconnection
+// complete. Tests should disconnect conn_ref0().
+class PendingPacketsTest : public LowEnergyConnectionManagerTest {
+ public:
+  PendingPacketsTest() = default;
+  ~PendingPacketsTest() override = default;
+
+  void SetUp() override {
+    LowEnergyConnectionManagerTest::SetUp();
+    const DeviceAddress kPeerAddr0(DeviceAddress::Type::kLEPublic, {1});
+    const DeviceAddress kPeerAddr1(DeviceAddress::Type::kLEPublic, {2});
+
+    peer0_ = peer_cache()->NewPeer(kPeerAddr0, true);
+    EXPECT_TRUE(peer0_->temporary());
+    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr0));
+
+    peer1_ = peer_cache()->NewPeer(kPeerAddr1, true);
+    EXPECT_TRUE(peer1_->temporary());
+    test_device()->AddPeer(std::make_unique<FakePeer>(kPeerAddr1));
+
+    // Connect |peer0|
+    hci::Status status0(HostError::kFailed);
+    conn_ref0_.reset();
+    auto callback0 = [this, &status0](auto cb_status, auto cb_conn_ref) {
+      EXPECT_TRUE(cb_conn_ref);
+      status0 = cb_status;
+      conn_ref0_ = std::move(cb_conn_ref);
+      EXPECT_TRUE(conn_ref0_->active());
+    };
+    EXPECT_TRUE(conn_mgr()->Connect(peer0_->identifier(), callback0));
+    RunLoopUntilIdle();
+
+    // Connect |peer1|
+    hci::Status status1(HostError::kFailed);
+    conn_ref1_.reset();
+    auto callback1 = [this, &status1](auto cb_status, auto cb_conn_ref) {
+      EXPECT_TRUE(cb_conn_ref);
+      status1 = cb_status;
+      conn_ref1_ = std::move(cb_conn_ref);
+      EXPECT_TRUE(conn_ref1_->active());
+    };
+    EXPECT_TRUE(conn_mgr()->Connect(peer1_->identifier(), callback1));
+    RunLoopUntilIdle();
+
+    packet_count_ = 0;
+    test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, dispatcher());
+    test_device()->set_auto_completed_packets_event_enabled(false);
+    test_device()->set_auto_disconnection_complete_event_enabled(false);
+
+    // Fill controller buffer by sending |kMaxNumPackets| packets to peer0.
+    for (size_t i = 0; i < kLEMaxNumPackets; i++) {
+      ASSERT_TRUE(acl_data_channel()->SendPacket(
+          hci::ACLDataPacket::New(conn_ref0_->handle(),
+                                  hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                  hci::ACLBroadcastFlag::kPointToPoint, 1),
+          hci::Connection::LinkType::kLE, l2cap::kInvalidChannelId));
+    }
+
+    // Queue packet for |peer1|.
+    ASSERT_TRUE(acl_data_channel()->SendPacket(
+        hci::ACLDataPacket::New(conn_ref1_->handle(),
+                                hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                hci::ACLBroadcastFlag::kPointToPoint, 1),
+        hci::Connection::LinkType::kLE, l2cap::kInvalidChannelId));
+
+    RunLoopUntilIdle();
+
+    // Packet for |peer1| should not have been sent because controller buffer is full.
+    EXPECT_EQ(kLEMaxNumPackets, packet_count_);
+
+    handle0_ = conn_ref0_->handle();
+  }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+
+    // Packet for |peer1| should not have been sent before Disconnection Complete event.
+    EXPECT_EQ(kLEMaxNumPackets, packet_count_);
+
+    // This makes FakeController send us the HCI Disconnection Complete event.
+    test_device()->SendDisconnectionCompleteEvent(handle0_);
+    RunLoopUntilIdle();
+
+    // |peer0|'s link should have been unregistered.
+    ASSERT_FALSE(acl_data_channel()->SendPacket(
+        hci::ACLDataPacket::New(handle0_, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                hci::ACLBroadcastFlag::kPointToPoint, 1),
+        hci::Connection::LinkType::kLE, l2cap::kInvalidChannelId));
+
+    // Packet for |peer1| should have been sent.
+    EXPECT_EQ(kLEMaxNumPackets + 1, packet_count_);
+
+    peer0_ = nullptr;
+    peer1_ = nullptr;
+    conn_ref0_.reset();
+    conn_ref1_.reset();
+
+    LowEnergyConnectionManagerTest::TearDown();
+  }
+
+  Peer* peer0() { return peer0_; }
+  LowEnergyConnectionRefPtr& conn_ref0() { return conn_ref0_; }
+
+ private:
+  size_t packet_count_;
+  Peer* peer0_;
+  Peer* peer1_;
+  hci::ConnectionHandle handle0_;
+  LowEnergyConnectionRefPtr conn_ref0_;
+  LowEnergyConnectionRefPtr conn_ref1_;
+};
+
+using GAP_LowEnergyConnectionManagerPendingPacketsTest = PendingPacketsTest;
+
+TEST_F(GAP_LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
+  // Send HCI Disconnect to controller.
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer0()->identifier()));
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
+  // Releasing ref should send HCI Disconnect to controller.
+  conn_ref0().reset();
 }
 
 }  // namespace

@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -58,6 +59,14 @@ class BrEdrConnection final {
 // Manages all activity related to connections in the BR/EDR section of the
 // controller, including whether the peer can be connected to, incoming
 // connections, and initiating connections.
+//
+// There are two flows for destroying connections: explicit local disconnections, and peer
+// disconnections. When the connection is disconnected explicitly with |Disconnect()|, the
+// connection is immediately cleaned up and removed from the internal |connections_| map and owned
+// by itself until the HCI Disconnection Complete event is received by the underlying
+// hci::Connection object. When the peer disconnects, the |OnPeerDisconnect()| callback is
+// called by the underlying hci::Connection object and the connection is cleaned up and removed from
+// the internal |connections_| map.
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
@@ -128,6 +137,9 @@ class BrEdrConnectionManager final {
   // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id);
 
+  // Callback for hci::Connection. Called when the peer disconnects.
+  void OnPeerDisconnect(const hci::Connection* connection);
+
  private:
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
@@ -156,7 +168,6 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionComplete(const hci::EventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnDisconnectionComplete(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(const hci::EventPacket& event);
@@ -185,9 +196,8 @@ class BrEdrConnectionManager final {
   // Clean up |conn| after it has been deliberately disconnected or after its
   // link closed. Unregisters the connection from the data domain and marks the
   // peer's BR/EDR cache state as disconnected. Takes ownership of |conn| and
-  // destroys it. If |close_link| is true, this results in an HCI Disconnect
-  // command.
-  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn, bool close_link);
+  // destroys it.
+  void CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn);
 
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.

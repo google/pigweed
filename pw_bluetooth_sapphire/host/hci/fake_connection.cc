@@ -12,7 +12,7 @@ FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type, Role r
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address)
     : Connection(handle, ll_type, role, local_address, peer_address),
-      is_open_(true),
+      conn_state_(State::kConnected),
       weak_ptr_factory_(this) {}
 
 void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled) {
@@ -22,8 +22,9 @@ void FakeConnection::TriggerEncryptionChangeCallback(Status status, bool enabled
 
 fxl::WeakPtr<Connection> FakeConnection::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-void FakeConnection::Close(bool send_disconnect, StatusCode reason) {
+void FakeConnection::Disconnect(StatusCode reason) {
   // TODO(armansito): implement
+  conn_state_ = State::kWaitingForDisconnectionComplete;
 }
 
 bool FakeConnection::StartEncryption() {

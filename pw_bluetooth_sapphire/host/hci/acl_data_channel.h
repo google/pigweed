@@ -152,10 +152,20 @@ class ACLDataChannel final {
   // All future packets sent to this link will be dropped.
   //
   // |RegisterLink| must be called before |UnregisterLink| for the same handle.
+  //
+  // |UnregisterLink| does not clear the controller packet count, so |ClearControllerPacketCount|
+  // must be called after |UnregisterLink| and the HCI Disconnection Complete event has been
+  // received.
   void UnregisterLink(hci::ConnectionHandle handle);
 
   // Removes all queued data packets for which |predicate| returns true.
   void DropQueuedPackets(ACLPacketPredicate predicate);
+
+  // Resets controller packet count for |handle| so that controller buffer credits can be reused.
+  // This must be called on the HCI_Disconnection_Complete event to notify ACLDataChannel that
+  // packets in the controller's buffer for |handle| have been flushed. See Core Spec v5.1, Vol 2,
+  // Part E, Section 4.3. This must be called after |UnregisterLink|.
+  void ClearControllerPacketCount(hci::ConnectionHandle handle);
 
   // Returns the underlying channel handle.
   const zx::channel& channel() const { return channel_; }

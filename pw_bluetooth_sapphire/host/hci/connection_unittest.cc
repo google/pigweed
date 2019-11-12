@@ -4,9 +4,12 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt {
 namespace hci {
@@ -43,13 +46,14 @@ class ConnectionTest : public TestingBase {
     StartTestDevice();
   }
 
-  ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster) {
-    return Connection::CreateLE(kTestHandle, role, kLEAddress1, kLEAddress2, kTestParams,
-                                transport());
+  ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster,
+                                ConnectionHandle handle = kTestHandle) {
+    return Connection::CreateLE(handle, role, kLEAddress1, kLEAddress2, kTestParams, transport());
   }
 
-  ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster) {
-    return Connection::CreateACL(kTestHandle, role, kACLAddress1, kACLAddress2, transport());
+  ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster,
+                                 ConnectionHandle handle = kTestHandle) {
+    return Connection::CreateACL(handle, role, kACLAddress1, kACLAddress2, transport());
   }
 };
 
@@ -58,13 +62,14 @@ class ConnectionTest : public TestingBase {
 class LinkTypeConnectionTest : public ConnectionTest,
                                public ::testing::WithParamInterface<Connection::LinkType> {
  protected:
-  ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster) {
+  ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster,
+                              ConnectionHandle handle = kTestHandle) {
     const Connection::LinkType ll_type = GetParam();
     switch (ll_type) {
       case Connection::LinkType::kACL:
-        return NewACLConnection(role);
+        return NewACLConnection(role, handle);
       case Connection::LinkType::kLE:
-        return NewLEConnection(role);
+        return NewLEConnection(role, handle);
       default:
         break;
     }
@@ -94,7 +99,6 @@ TEST_F(HCI_ConnectionTest, Getters) {
   EXPECT_EQ(kTestParams, connection->low_energy_parameters());
   EXPECT_EQ(kLEAddress1, connection->local_address());
   EXPECT_EQ(kLEAddress2, connection->peer_address());
-  EXPECT_TRUE(connection->is_open());
 
   EXPECT_EQ(std::nullopt, connection->ltk());
   connection->set_le_ltk(LinkKey());
@@ -115,7 +119,7 @@ TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
   EXPECT_EQ(kLinkKeyType, connection->ltk_type().value());
 }
 
-TEST_P(LinkTypeConnectionTest, Close) {
+TEST_P(LinkTypeConnectionTest, Disconnect) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
@@ -139,13 +143,163 @@ TEST_P(LinkTypeConnectionTest, Close) {
                                         dispatcher());
 
   auto connection = NewConnection();
-  EXPECT_TRUE(connection->is_open());
 
-  connection->Close(StatusCode::kRemoteUserTerminatedConnection);
-  EXPECT_FALSE(connection->is_open());
+  size_t disconn_cb_count = 0;
+  auto disconn_complete_cb = [&](const Connection* cb_conn) { disconn_cb_count++; };
+  connection->set_peer_disconnect_callback(disconn_complete_cb);
+
+  connection->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
+  EXPECT_EQ(0u, disconn_cb_count);
+}
+
+TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
+  const Connection::LinkType ll_type = GetParam();
+  const ConnectionHandle kHandle0 = 0x0001;
+  const ConnectionHandle kHandle1 = 0x0002;
+
+  const auto& kBufferInfo =
+      ll_type == Connection::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
+
+  // Should register connection with ACL Data Channel.
+  auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
+  auto conn1 = NewConnection(Connection::Role::kMaster, kHandle1);
+
+  size_t handle0_packet_count = 0;
+  size_t handle1_packet_count = 0;
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    if (connection_handle == kHandle0) {
+      handle0_packet_count++;
+    } else {
+      ASSERT_EQ(kHandle1, connection_handle);
+      handle1_packet_count++;
+    }
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Fill controller buffer.
+  for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
+    // Connection handle should have been registered with ACL Data Channel.
+    EXPECT_TRUE(acl_data_channel()->SendPacket(
+        ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           ACLBroadcastFlag::kPointToPoint, 1),
+        ll_type, l2cap::kInvalidChannelId));
+  }
+
+  EXPECT_TRUE(acl_data_channel()->SendPacket(
+      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         ACLBroadcastFlag::kPointToPoint, 1),
+      ll_type, l2cap::kInvalidChannelId));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(handle0_packet_count, kBufferInfo.max_num_packets());
+  EXPECT_EQ(handle1_packet_count, 0u);
+
+  const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
+  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle0),
+                                         {&disconnect_status_rsp});
+
+  conn0->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
+  RunLoopUntilIdle();
+
+  // controller packet counts for |kHandle0| should not have been cleared after disconnect.
+  EXPECT_EQ(handle1_packet_count, 0u);
+
+  // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
+  // should be sent.
+  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle0));
+  test_device()->SendCommandChannelPacket(disconnection_complete);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(handle1_packet_count, 1u);
+
+  // Connection handle should have been unregistered with ACL Data Channel.
+  EXPECT_FALSE(acl_data_channel()->SendPacket(
+      ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         ACLBroadcastFlag::kPointToPoint, 1),
+      ll_type, l2cap::kInvalidChannelId));
+}
+
+// In remote disconnection, Connection::Disconnect is not called. Instead,
+// Connection::OnDisconnectionComplete is invoked and handles all cleanup.
+TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
+  const Connection::LinkType ll_type = GetParam();
+  const ConnectionHandle kHandle0 = 0x0001;
+  const ConnectionHandle kHandle1 = 0x0002;
+
+  const auto& kBufferInfo =
+      ll_type == Connection::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
+
+  // Should register connection with ACL Data Channel.
+  auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
+
+  auto conn1 = NewConnection(Connection::Role::kMaster, kHandle1);
+
+  size_t handle0_packet_count = 0;
+  size_t handle1_packet_count = 0;
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    if (connection_handle == kHandle0) {
+      handle0_packet_count++;
+    } else {
+      ASSERT_EQ(kHandle1, connection_handle);
+      handle1_packet_count++;
+    }
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Fill controller buffer.
+  for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
+    // Connection handle should have been registered with ACL Data Channel.
+    EXPECT_TRUE(acl_data_channel()->SendPacket(
+        ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           ACLBroadcastFlag::kPointToPoint, 1),
+        ll_type, l2cap::kInvalidChannelId));
+  }
+
+  EXPECT_TRUE(acl_data_channel()->SendPacket(
+      ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         ACLBroadcastFlag::kPointToPoint, 1),
+      ll_type, l2cap::kInvalidChannelId));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(handle0_packet_count, kBufferInfo.max_num_packets());
+  EXPECT_EQ(handle1_packet_count, 0u);
+
+  size_t disconn_cb_count = 0;
+  auto disconn_complete_cb = [&](const Connection* cb_conn) {
+    ASSERT_TRUE(cb_conn);
+    EXPECT_EQ(kHandle0, cb_conn->handle());
+    disconn_cb_count++;
+  };
+  conn0->set_peer_disconnect_callback(disconn_complete_cb);
+
+  // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
+  // should be sent.
+  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle0));
+  test_device()->SendCommandChannelPacket(disconnection_complete);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, disconn_cb_count);
+
+  // Connection handle should have been unregistered with ACL Data Channel.
+  EXPECT_FALSE(acl_data_channel()->SendPacket(
+      ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         ACLBroadcastFlag::kPointToPoint, 1),
+      ll_type, l2cap::kInvalidChannelId));
+
+  // Since controller packet count was cleared, packet for |kHandle1| should
+  // have been sent.
+  EXPECT_EQ(handle1_packet_count, 1u);
 }
 
 TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
@@ -166,7 +320,7 @@ TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
   EXPECT_TRUE(conn->StartEncryption());
 }
 
-TEST_P(LinkTypeConnectionTest, CloseError) {
+TEST_P(LinkTypeConnectionTest, DisconnectError) {
   // clang-format off
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
@@ -191,10 +345,8 @@ TEST_P(LinkTypeConnectionTest, CloseError) {
                                         dispatcher());
 
   auto connection = NewConnection();
-  EXPECT_TRUE(connection->is_open());
 
-  connection->Close(StatusCode::kRemoteUserTerminatedConnection);
-  EXPECT_FALSE(connection->is_open());
+  connection->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
@@ -684,6 +836,105 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
 
   test_device()->SendCommandChannelPacket(kEvent);
   RunLoopUntilIdle();
+}
+
+TEST_F(HCI_ConnectionTest,
+       QueuedPacketsGetDroppedOnDisconnectionCompleteAndStalePacketsAreNotSentOnHandleReuse) {
+  const ConnectionHandle kHandle = 0x0001;
+
+  // Should register connection with ACL Data Channel.
+  auto conn0 = NewACLConnection(Connection::Role::kMaster, kHandle);
+
+  testing::TestController::DataCallback data_cb = [](const ByteBuffer& packet) {};
+  size_t packet_count = 0;
+  auto data_cb_wrapper = [&data_cb, &packet_count](const ByteBuffer& packet) {
+    packet_count++;
+    ASSERT_EQ(packet.size(), sizeof(ACLDataHeader) + 1);
+    data_cb(packet);
+  };
+  test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
+
+  const uint8_t payload0 = 0x01;
+  data_cb = [payload0](const ByteBuffer& packet) {
+    EXPECT_EQ(packet[sizeof(ACLDataHeader)], payload0);
+  };
+
+  // Fill controller buffer, + 1 packet in queue.
+  for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets() + 1; i++) {
+    auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, 1);
+    packet->mutable_view()->mutable_payload_bytes()[0] = payload0;
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), Connection::LinkType::kACL,
+                                               l2cap::kInvalidChannelId));
+  }
+
+  // Run until the data is flushed out to the TestController.
+  RunLoopUntilIdle();
+
+  // Only packets that fit in buffer should have been received.
+  EXPECT_EQ(packet_count, kBrEdrBufferInfo.max_num_packets());
+
+  // All future packets received should be for the next connection.
+  const uint8_t payload1 = 0x02;
+  data_cb = [payload1](const ByteBuffer& packet) {
+    EXPECT_EQ(packet[sizeof(ACLDataHeader)], payload1);
+  };
+
+  const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
+  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle));
+  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle),
+                                         {&disconnect_status_rsp, &disconnection_complete});
+
+  // Disconnect |conn0| by destroying it. The received disconnection complete event will cause the
+  // handler to unregister the link and clear pending packets.
+  conn0.reset();
+  RunLoopUntilIdle();
+
+  // Register connection with same handle.
+  auto conn1 = NewACLConnection(Connection::Role::kMaster, kHandle);
+
+  // Fill controller buffer, + 1 packet in queue.
+  for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets(); i++) {
+    auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, 1);
+    packet->mutable_view()->mutable_payload_bytes()[0] = payload1;
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), Connection::LinkType::kACL,
+                                               l2cap::kInvalidChannelId));
+  }
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(packet_count, 2 * kBrEdrBufferInfo.max_num_packets());
+
+  conn1.reset();
+  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle),
+                                         {&disconnect_status_rsp, &disconnection_complete});
+  RunLoopUntilIdle();
+}
+
+TEST_F(HCI_ConnectionTest, PeerDisconnectCallback) {
+  const ConnectionHandle kHandle = 0x0001;
+
+  auto conn = NewACLConnection(Connection::Role::kMaster, kHandle);
+
+  size_t cb_count = 0;
+  auto disconn_complete_cb = [&](const Connection* cb_conn) {
+    ASSERT_TRUE(cb_conn);
+    cb_count++;
+
+    // Should be safe to destroy connection from this callback, as a connection manager does.
+    conn.reset();
+  };
+  conn->set_peer_disconnect_callback(disconn_complete_cb);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, cb_count);
+
+  DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle));
+  test_device()->SendCommandChannelPacket(disconnection_complete);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, cb_count);
 }
 
 // Test connection handling cases for all types of links.

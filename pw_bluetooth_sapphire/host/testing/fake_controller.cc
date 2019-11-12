@@ -172,7 +172,11 @@ FakeController::FakeController()
       page_scan_window_(0x0012),
       next_conn_handle_(0u),
       le_connect_pending_(false),
-      next_le_sig_id_(1u) {}
+      next_le_sig_id_(1u),
+      data_callback_(nullptr),
+      data_dispatcher_(nullptr),
+      auto_completed_packets_event_enabled_(true),
+      auto_disconnection_complete_event_enabled_(true) {}
 
 FakeController::~FakeController() { Stop(); }
 
@@ -409,14 +413,17 @@ void FakeController::Disconnect(const DeviceAddress& addr) {
 
     for (auto link : links) {
       NotifyConnectionState(addr, link, /*connected=*/false);
-
-      hci::DisconnectionCompleteEventParams params;
-      params.status = hci::StatusCode::kSuccess;
-      params.connection_handle = htole16(link);
-      params.reason = hci::StatusCode::kRemoteUserTerminatedConnection;
-      SendEvent(hci::kDisconnectionCompleteEventCode, BufferView(&params, sizeof(params)));
+      SendDisconnectionCompleteEvent(link);
     }
   });
+}
+
+void FakeController::SendDisconnectionCompleteEvent(hci::ConnectionHandle handle) {
+  hci::DisconnectionCompleteEventParams params;
+  params.status = hci::StatusCode::kSuccess;
+  params.connection_handle = htole16(handle);
+  params.reason = hci::StatusCode::kRemoteUserTerminatedConnection;
+  SendEvent(hci::kDisconnectionCompleteEventCode, BufferView(&params, sizeof(params)));
 }
 
 bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
@@ -761,11 +768,9 @@ void FakeController::OnDisconnectCommandReceived(const hci::DisconnectCommandPar
     NotifyConnectionState(peer->address(), handle, /*connected=*/false);
   }
 
-  hci::DisconnectionCompleteEventParams reply;
-  reply.status = hci::StatusCode::kSuccess;
-  reply.connection_handle = params.connection_handle;
-  reply.reason = hci::StatusCode::kConnectionTerminatedByLocalHost;
-  SendEvent(hci::kDisconnectionCompleteEventCode, BufferView(&reply, sizeof(reply)));
+  if (auto_disconnection_complete_event_enabled_) {
+    SendDisconnectionCompleteEvent(handle);
+  }
 }
 
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
@@ -1241,6 +1246,12 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
 }
 
 void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
+  if (data_callback_) {
+    DynamicByteBuffer packet_copy(acl_data_packet);
+    async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
+                                       cb = data_callback_.share()]() mutable { cb(packet_copy); });
+  }
+
   if (acl_data_packet.size() < sizeof(hci::ACLDataHeader)) {
     bt_log(WARN, "fake-hci", "malformed ACL packet!");
     return;
@@ -1254,8 +1265,26 @@ void FakeController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
     return;
   }
 
-  SendNumberOfCompletedPacketsEvent(handle, 1);
+  if (auto_completed_packets_event_enabled_) {
+    SendNumberOfCompletedPacketsEvent(handle, 1);
+  }
   peer->OnRxL2CAP(handle, acl_data_packet.view(sizeof(hci::ACLDataHeader)));
+}
+
+void FakeController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
+  ZX_DEBUG_ASSERT(callback);
+  ZX_DEBUG_ASSERT(dispatcher);
+  ZX_DEBUG_ASSERT(!data_callback_);
+  ZX_DEBUG_ASSERT(!data_dispatcher_);
+
+  data_callback_ = std::move(callback);
+  data_dispatcher_ = dispatcher;
+}
+
+void FakeController::ClearDataCallback() {
+  // Leave dispatcher set (if already set) to preserve its write-once-ness (this catches bugs with
+  // setting multiple data callbacks in class hierarchies).
+  data_callback_ = nullptr;
 }
 
 }  // namespace testing

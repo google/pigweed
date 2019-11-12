@@ -578,7 +578,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsAtomically) {
   }
 }
 
-TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsSentPacketsCount) {
+TEST_F(HCI_ACLDataChannelTest,
+       UnregisterLinkDoesNotClearNumSentPacketsAndClearControllerPacketCountDoes) {
   constexpr size_t kMaxMTU = 1024;
   constexpr size_t kMaxNumPackets = 2;
   constexpr ConnectionHandle kHandle1 = 1;
@@ -611,8 +612,14 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsSentPacketsCount) {
   // The third packet should have been queued.
   ASSERT_EQ(2, packet_count);
 
-  // Clear the packet count for |kHandle2|. The next packet should go out.
+  // UnregisterLink should not decrement sent packet count,
+  // so next packet should not be sent.
   acl_data_channel()->UnregisterLink(kHandle2);
+  RunLoopUntilIdle();
+  ASSERT_EQ(2, packet_count);
+
+  // Clear the controller packet count for |kHandle2|. The next packet should go out.
+  acl_data_channel()->ClearControllerPacketCount(kHandle2);
   RunLoopUntilIdle();
   ASSERT_EQ(3, packet_count);
 }

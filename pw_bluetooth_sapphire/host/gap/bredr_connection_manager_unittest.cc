@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
@@ -27,6 +28,7 @@ using bt::testing::CommandTransaction;
 using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
 
 constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
+constexpr hci::ConnectionHandle kConnectionHandle2 = 0x0BAB;
 const DeviceAddress kLocalDevAddr(DeviceAddress::Type::kBREDR, {0});
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic, {2});
@@ -98,34 +100,17 @@ const auto kWritePageScanTypeRsp =
   CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04,         \
                                  (statuscode), 0xF0,                 \
                                  LowerBits((opcode)), UpperBits((opcode)));
+
 // clang-format on
 
-const auto kConnectionRequest =
-    CreateStaticByteBuffer(hci::kConnectionRequestEventCode,
-                           0x0A,                    // parameter_total_size (10 byte payload)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0x00, 0x1F, 0x00,        // class_of_device (unspecified)
-                           0x01                     // link_type (ACL)
-    );
-const auto kAcceptConnectionRequest = CreateStaticByteBuffer(
-    LowerBits(hci::kAcceptConnectionRequest), UpperBits(hci::kAcceptConnectionRequest),
-    0x07,                    // parameter_total_size (7 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0x00                     // role (become master)
-);
+const auto kConnectionRequest = testing::ConnectionRequestPacket(kTestDevAddr);
+
+const auto kAcceptConnectionRequest = testing::AcceptConnectionRequestPacket(kTestDevAddr);
 
 const auto kAcceptConnectionRequestRsp =
     COMMAND_STATUS_RSP(hci::kAcceptConnectionRequest, hci::StatusCode::kSuccess);
 
-const auto kConnectionComplete =
-    CreateStaticByteBuffer(hci::kConnectionCompleteEventCode,
-                           0x0B,                       // parameter_total_size (11 byte payload)
-                           hci::StatusCode::kSuccess,  // status
-                           0xAA, 0x0B,                 // connection_handle
-                           TEST_DEV_ADDR_BYTES_LE,     // peer address
-                           0x01,                       // link_type (ACL)
-                           0x00                        // encryption not enabled
-    );
+const auto kConnectionComplete = testing::ConnectionCompletePacket(kTestDevAddr, kConnectionHandle);
 
 const auto kConnectionCompleteError =
     CreateStaticByteBuffer(hci::kConnectionCompleteEventCode,
@@ -274,12 +259,7 @@ const auto kReadRemoteExtended2Complete =
                            // lmp_features  - All the bits should be ignored.
     );
 
-const auto kDisconnect =
-    CreateStaticByteBuffer(LowerBits(hci::kDisconnect), UpperBits(hci::kDisconnect),
-                           0x03,        // parameter_total_size (3 bytes)
-                           0xAA, 0x0B,  // connection_handle
-                           0x13         // Reason (Remote User Terminated Connection)
-    );
+const auto kDisconnect = testing::DisconnectPacket(kConnectionHandle);
 
 const auto kDisconnectRsp = COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess);
 
@@ -291,6 +271,9 @@ const auto kDisconnectionComplete =
                            0x13                        // Reason (Remote User Terminated Connection)
     );
 
+const hci::DataBufferInfo kBrEdrBufferInfo(1024, 1);
+const hci::DataBufferInfo kLeBufferInfo(1024, 1);
+
 class BrEdrConnectionManagerTest : public TestingBase {
  public:
   BrEdrConnectionManagerTest() = default;
@@ -298,7 +281,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
   void SetUp() override {
     TestingBase::SetUp();
-    InitializeACLDataChannel();
+    InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
 
     peer_cache_ = std::make_unique<PeerCache>();
     data_domain_ = data::testing::FakeDomain::Create();
@@ -350,10 +333,14 @@ class BrEdrConnectionManagerTest : public TestingBase {
   // Add expectations and simulated responses for the outbound commands sent
   // after an inbound Connection Request Event is received. Results in
   // |kIncomingConnTransactions| transactions.
-  void QueueSuccessfulIncomingConn() const {
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-    QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+
+  void QueueSuccessfulIncomingConn(DeviceAddress addr = kTestDevAddr,
+                                   hci::ConnectionHandle handle = kConnectionHandle) const {
+    const auto connection_complete = testing::ConnectionCompletePacket(addr, handle);
+    test_device()->QueueCommandTransaction(
+        CommandTransaction(testing::AcceptConnectionRequestPacket(addr),
+                           {&kAcceptConnectionRequestRsp, &connection_complete}));
+    QueueSuccessfulInterrogation(addr, handle);
   }
 
   void QueueSuccessfulCreateConnection(Peer* peer, hci::ConnectionHandle conn) const {
@@ -1987,7 +1974,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
   EXPECT_TRUE(connmgr()->Disconnect(id));
   ASSERT_FALSE(peer->bredr()->connected());
 
-  // Remove the peer from PeerCache before receving HCI Disconnection Complete.
+  // Remove the peer from PeerCache before receiving HCI Disconnection Complete.
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(id));
 
   RunLoopUntilIdle();
@@ -2324,10 +2311,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
       kCreateConnectionCancel, {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
 
   // Enqueue second connection (which will succeed once previous has ended)
-  const hci::ConnectionHandle conn = 0x0BAB;
-  QueueSuccessfulCreateConnection(peer_b, conn);
-  QueueSuccessfulInterrogation(peer_b->address(), conn);
-  QueueDisconnection(conn);
+  QueueSuccessfulCreateConnection(peer_b, kConnectionHandle2);
+  QueueSuccessfulInterrogation(peer_b->address(), kConnectionHandle2);
+  QueueDisconnection(kConnectionHandle2);
 
   // Initialize as success to verify that |callback_a| assigns failure.
   hci::Status status_a;
@@ -2427,6 +2413,78 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
   RunLoopUntilIdle();
 
   EXPECT_FALSE(IsConnected(peer));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest,
+       PendingPacketsNotClearedOnDisconnectAndClearedOnDisconnectionCompleteEvent) {
+  constexpr size_t kMaxNumPackets = 1;
+
+  ASSERT_EQ(kMaxNumPackets, kBrEdrBufferInfo.max_num_packets());
+
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle2));
+
+  QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+
+  QueueSuccessfulIncomingConn(kTestDevAddr2, kConnectionHandle2);
+  test_device()->SendCommandChannelPacket(testing::ConnectionRequestPacket(kTestDevAddr2));
+
+  RunLoopUntilIdle();
+
+  auto* peer2 = peer_cache()->FindByAddress(kTestDevAddr2);
+  ASSERT_TRUE(peer2);
+  EXPECT_EQ(peer2->identifier(), connmgr()->GetPeerId(kConnectionHandle2));
+
+  EXPECT_EQ(2 * kIncomingConnTransactions, transaction_count());
+
+  size_t packet_count = 0;
+  test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
+
+  ASSERT_TRUE(acl_data_channel()->SendPacket(
+      hci::ACLDataPacket::New(kConnectionHandle, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 1),
+      hci::Connection::LinkType::kACL, l2cap::kInvalidChannelId));
+
+  ASSERT_TRUE(acl_data_channel()->SendPacket(
+      hci::ACLDataPacket::New(kConnectionHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 1),
+      hci::Connection::LinkType::kACL, l2cap::kInvalidChannelId));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, packet_count);
+
+  test_device()->QueueCommandTransaction(CommandTransaction(kDisconnect, {&kDisconnectRsp}));
+
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  RunLoopUntilIdle();
+
+  // Packet for |kConnectionHandle2| should not have been sent before Disconnection Complete event.
+  EXPECT_EQ(1u, packet_count);
+
+  test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(IsConnected(peer));
+
+  // Packet for |kConnectionHandle2| should have been sent.
+  EXPECT_EQ(2u, packet_count);
+
+  // Link |kConnectionHandle| should have been unregistered.
+  ASSERT_FALSE(acl_data_channel()->SendPacket(
+      hci::ACLDataPacket::New(kConnectionHandle, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                              hci::ACLBroadcastFlag::kPointToPoint, 1),
+      hci::Connection::LinkType::kACL, l2cap::kInvalidChannelId));
+
+  QueueDisconnection(kConnectionHandle2);
 }
 
 // TODO(BT-819) Connecting a peer that's being interrogated
