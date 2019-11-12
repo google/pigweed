@@ -29,8 +29,6 @@ def parse_args() -> argparse.Namespace:
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser('Run Pigweed unit tests')
-    parser.add_argument('--touch', type=str,
-                        help='File to touch after test run')
     parser.add_argument('test', type=str, help='Path to unit test binary')
     return parser.parse_args()
 
@@ -45,13 +43,6 @@ def main() -> int:
     except subprocess.CalledProcessError as err:
         print(f'{sys.argv[0]}: {err}', file=sys.stderr)
         return 1
-
-    # GN expects "action" targets to output a file, and uses that to determine
-    # whether the target should be run again. Touching an empty file allows GN
-    # to only run unit tests which have been affected by code changes since the
-    # previous run, taking advantage of its dependency resolution.
-    if args.touch is not None:
-        pathlib.Path(args.touch).touch()
 
     return exit_status
 

@@ -16,10 +16,9 @@
 
 import argparse
 import os
+import pathlib
 import subprocess
 import sys
-
-from typing import List
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,6 +29,8 @@ def parse_args() -> argparse.Namespace:
                         help='Path to the root of the GN tree')
     parser.add_argument('--out-dir', type=str, required=True,
                         help='Path to the GN build output directory')
+    parser.add_argument('--touch', type=str,
+                        help='File to touch after command is run')
     parser.add_argument('command', nargs=argparse.REMAINDER,
                         help='Python script with arguments to run')
     return parser.parse_args()
@@ -51,8 +52,7 @@ def find_binary(target: str) -> str:
 
     target_path, target_name = target.split(':')
 
-    extensions = ['', '.elf']
-    for extension in extensions:
+    for extension in ['', '.elf', '.exe']:
         potential_filename = f'{target_path}/{target_name}{extension}'
         if os.path.isfile(potential_filename):
             return potential_filename
@@ -61,27 +61,28 @@ def find_binary(target: str) -> str:
         f'Could not find output binary for build target {target}')
 
 
-def resolve_paths(gn_root: str, out_dir: str, command: List[str]) -> None:
-    """Runs through an argument list, replacing GN paths with filesystem paths.
+def resolve_path(gn_root: str, out_dir: str, string: str) -> str:
+    """Resolves a string to a filesystem path if it is a GN path.
 
     GN paths are assumed to be absolute, starting with "//". This is replaced
     with the relative filesystem path of the GN root directory.
+
+    If the string is not a GN path, it is returned unmodified.
 
     If a path refers to the GN output directory and a target name is defined,
     attempts to locate a binary file for the target within the out directory.
     """
 
-    for i, arg in enumerate(command):
-        if not arg.startswith('//'):
-            continue
+    if not string.startswith('//'):
+        return string
 
-        resolved_path = gn_root + arg[2:]
+    resolved_path = gn_root + string[2:]
 
-        # GN targets have the format '/path/to/directory:target_name'.
-        if arg.startswith(out_dir) and ':' in arg:
-            command[i] = find_binary(resolved_path)
-        else:
-            command[i] = resolved_path
+    # GN targets have the format '/path/to/directory:target_name'.
+    if string.startswith(out_dir) and ':' in string:
+        return find_binary(resolved_path)
+
+    return resolved_path
 
 
 def main() -> int:
@@ -92,15 +93,30 @@ def main() -> int:
         print(f'{sys.argv[0]} requires a command to run', file=sys.stderr)
         return 1
 
-    command = [sys.executable] + args.command[1:]
-
     try:
-        resolve_paths(args.gn_root, args.out_dir, command)
+        resolved_command = [resolve_path(
+            args.gn_root, args.out_dir, arg) for arg in args.command[1:]]
     except FileNotFoundError as err:
-        print(f'{sys.argv[0]} {err}', file=sys.stderr)
+        print(f'{sys.argv[0]}: {err}', file=sys.stderr)
         return 1
 
-    return subprocess.call(command)
+    command = [sys.executable] + resolved_command
+    print('RUN', ' '.join(command), flush=True)
+
+    try:
+        status = subprocess.call(command)
+    except subprocess.CalledProcessError as err:
+        print(f'{sys.argv[0]}: {err}', file=sys.stderr)
+        return 1
+
+    if status == 0 and args.touch:
+        # If a touch file is provided, touch it to indicate a successful run of
+        # the command.
+        touch_file = resolve_path(args.gn_root, args.out_dir, args.touch)
+        print('TOUCH', touch_file)
+        pathlib.Path(touch_file).touch()
+
+    return status
 
 
 if __name__ == '__main__':

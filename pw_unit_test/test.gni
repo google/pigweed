@@ -84,22 +84,13 @@ template("pw_test") {
     # executable using the test runner script.
     _run_action_name = _test_target_name + "_run"
 
-    # The runner script touches this file to indicate that the test has run.
-    _stamp_file = "$target_gen_dir/${_test_target_name}.test_completion.stamp"
-
     pw_python_script(_run_action_name) {
       deps = [
         ":$_test_target_name",
       ]
       script = "$dir_pw_unit_test/py/test_runner.py"
-      args = [
-        "--touch",
-        get_path_info(_stamp_file, "abspath"),
-        get_path_info("$target_out_dir:$_test_target_name", "abspath"),
-      ]
-      outputs = [
-        _stamp_file,
-      ]
+      args = [ get_path_info("$target_out_dir:$_test_target_name", "abspath") ]
+      stamp = true
     }
   }
 }

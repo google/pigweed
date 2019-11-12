@@ -39,6 +39,11 @@
 #      assumes that the target refers to a file built by Ninja and tries to
 #      locate it within the output directory.
 #
+# Additionally, this template can accept a boolean "stamp" argument. If set to
+# true, the script runner will touch a file to indicate the success of the run.
+# This is provided so that individual Python scripts are not required to define
+# an output file if they do not have one.
+#
 # Path resolution examples (assuming the build directory is //out):
 #
 #           BEFORE                     AFTER
@@ -62,12 +67,28 @@ template("pw_python_script") {
     # Output directory root, used to determine whether to search for a binary.
     "--out-dir",
     root_out_dir,
-
-    # "--" indicates the end of arguments to the runner script.
-    # Everything beyond this point is interpreted as the command and arguments
-    # of the Python script to run.
-    "--",
   ]
+
+  if (defined(invoker.outputs)) {
+    _outputs = invoker.outputs
+  } else {
+    _outputs = []
+  }
+
+  # If a stamp file is requested, add it as an output of the runner script.
+  if (defined(invoker.stamp) && invoker.stamp) {
+    _stamp_file = "$target_gen_dir/$target_name.pw_pystamp"
+    _outputs += [ _stamp_file ]
+    _script_args += [
+      "--touch",
+      _stamp_file,
+    ]
+  }
+
+  # "--" indicates the end of arguments to the runner script.
+  # Everything beyond this point is interpreted as the command and arguments
+  # of the Python script to run.
+  _script_args += [ "--" ]
 
   _script_args += [ get_path_info(invoker.script, "abspath") ]
   if (defined(invoker.args)) {
@@ -78,10 +99,12 @@ template("pw_python_script") {
     _ignore_vars = [
       "script",
       "args",
+      "outputs",
     ]
     forward_variables_from(invoker, "*", _ignore_vars)
 
     script = "$dir_pw_build/py/python_runner.py"
     args = _script_args
+    outputs = _outputs
   }
 }
