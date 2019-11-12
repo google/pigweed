@@ -40,8 +40,8 @@ using LEFixedChannelsCallback =
 
 // Callback used to request a security upgrade for an active logical link.
 // Invokes its |callback| argument with the result of the operation.
-using SecurityUpgradeCallback =
-    fit::function<void(hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
+using SecurityUpgradeCallback = fit::function<void(
+    hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
 
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented
 // channels over a logical link.
@@ -78,6 +78,16 @@ struct BasicHeader {
   uint16_t length;
   ChannelId channel_id;
 } __PACKED;
+
+// Frame Check Sequence (FCS) footer. This is computed for S- and I-frames per Core Spec v5.0, Vol
+// 3, Part A, Section 3.3.5.
+struct FrameCheckSequence {
+  uint16_t fcs;
+} __PACKED;
+
+// Initial state of the FCS generating circuit is all zeroes per v5.0, Vol 3, Part A, Section 3.3.5,
+// Figure 3.5.
+constexpr FrameCheckSequence kInitialFcsValue = {0};
 
 // The L2CAP MTU defines the maximum SDU size and is asymmetric. The following are the minimum and
 // default MTU sizes that a L2CAP implementation must support (see Core Spec v5.0, Vol 3, Part A,
