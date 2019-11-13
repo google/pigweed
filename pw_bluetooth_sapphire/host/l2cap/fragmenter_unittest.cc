@@ -16,6 +16,92 @@ namespace {
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
+TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayload) {
+  auto kExpectedFrame = CreateStaticByteBuffer(
+      // Basic L2CAP header (0-length Information Payload)
+      0x00, 0x00, 0x01, 0x00);
+
+  OutboundFrame frame(kTestChannelId, BufferView());
+  EXPECT_EQ(4u, frame.size());
+  StaticByteBuffer<4> out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 0);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
+TEST(L2CAP_FragmenterTest, OutboundFrameExactFit) {
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+
+  auto kExpectedFrame = CreateStaticByteBuffer(
+      // Basic L2CAP header
+      0x04, 0x00, 0x01, 0x00,
+
+      // Payload
+      'T', 'e', 's', 't');
+
+  OutboundFrame frame(kTestChannelId, payload);
+  EXPECT_EQ(8u, frame.size());
+  StaticByteBuffer<8> out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 0);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
+TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInHeader) {
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+
+  auto kExpectedFrame = CreateStaticByteBuffer(
+      // Basic L2CAP header (minus first byte)
+      0x00, 0x01, 0x00,
+
+      // Payload (first byte only, limited by size of output buffer)
+      'T');
+
+  OutboundFrame frame(kTestChannelId, payload);
+  EXPECT_EQ(8u, frame.size());
+  StaticByteBuffer<4> out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 1);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
+TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInPayload) {
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+
+  auto kExpectedFrame = CreateStaticByteBuffer(
+      // Payload
+      'T', 'e', 's');
+
+  OutboundFrame frame(kTestChannelId, payload);
+  EXPECT_EQ(8u, frame.size());
+  StaticByteBuffer<3> out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 4);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
+TEST(L2CAP_FragmenterTest, OutboundFrameOutBufferBigger) {
+  auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
+
+  auto kExpectedFrame = CreateStaticByteBuffer(
+      // Basic L2CAP header (minus first two bytes)
+      0x01, 0x00,
+
+      // Payload
+      'T', 'e', 's', 't',
+
+      // Extraneous unused bytes
+      0, 0, 0);
+
+  OutboundFrame frame(kTestChannelId, payload);
+  EXPECT_EQ(8u, frame.size());
+  StaticByteBuffer<9> out_buffer;
+  out_buffer.SetToZeros();
+  frame.WriteToFragment(out_buffer.mutable_view(), 2);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
 TEST(L2CAP_FragmenterTest, EmptyPayload) {
   BufferView payload;
 

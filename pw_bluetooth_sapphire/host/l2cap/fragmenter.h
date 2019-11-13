@@ -14,6 +14,27 @@
 namespace bt {
 namespace l2cap {
 
+// Represents an unfragmented view of a complete L2CAP frame, used to construct PDUs. Unlike PDU,
+// this does not own its underlying data and is read-only. To avoid extraneous copies, the only way
+// to access the view is to perform a copy from a slice of the view.
+class OutboundFrame final {
+ public:
+  OutboundFrame(ChannelId channel_id, const ByteBuffer& data);
+
+  // Returns the total size of the frame including the L2CAP Basic Header and Information payload.
+  [[nodiscard]] size_t size() const;
+
+  // Fills |fragment_payload| with frame data starting at |offset| into the frame, up to the
+  // fragment's capacity or the end of this frame, whichever comes first.
+  void WriteToFragment(MutableBufferView fragment_payload, size_t offset);
+
+ private:
+  const ChannelId channel_id_;
+  const BufferView data_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(OutboundFrame);
+};
+
 // A Fragmenter is used to construct L2CAP PDUs composed of fragments that can
 // be sent over the HCI ACL data channel. This is intended for building PDUs
 // that will be sent in the host-to-controller direction only.
