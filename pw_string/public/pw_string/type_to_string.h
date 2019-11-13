@@ -83,4 +83,37 @@ StatusWithSize IntToString(int64_t integer, const span<char>& buffer);
 //
 StatusWithSize FloatAsIntToString(float value, const span<char>& buffer);
 
+// Writes a bool as "true" or "false". Semantics match CopyEntireString.
+StatusWithSize BoolToString(bool value, const span<char>& buffer);
+
+// Writes the pointer's address or "null". Semantics match CopyEntireString.
+StatusWithSize PointerToString(const void* pointer, const span<char>& buffer);
+
+// Copies the string to the buffer, truncating if the full string does not fit.
+// Always null terminates if buffer.size() > 0.
+//
+// Returns the number of characters written, excluding the null terminator. If
+// the string is truncated, the status is RESOURCE_EXHAUSTED.
+StatusWithSize CopyString(const std::string_view& value,
+                          const span<char>& buffer);
+
+// Copies the string to the buffer, if the entire string fits. Always null
+// terminates if buffer.size() > 0.
+//
+// Returns the number of characters written, excluding the null terminator. If
+// the full string does not fit, only a null terminator is written and the
+// status is RESOURCE_EXHAUSTED.
+StatusWithSize CopyEntireString(const std::string_view& value,
+                                const span<char>& buffer);
+
+// This function is a fallback that is called if by ToString if no overload
+// matches. No definition is provided, so attempting to print an unsupported
+// type causes a linker error.
+//
+// Applications may define pw::string::UnknownTypeToString to support generic
+// printing for unknown types, if desired. Implementations must follow the
+// ToString semantics.
+template <typename T>
+StatusWithSize UnknownTypeToString(const T& value, const span<char>& buffer);
+
 }  // namespace pw::string

@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <string_view>
 
 #include "gtest/gtest.h"
 
@@ -314,6 +315,119 @@ TEST_F(FloatAsIntToStringTest, TooSmall_NaN_NullTerminates) {
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
+}
+
+class CopyStringTest : public TestWithBuffer {};
+
+using namespace std::literals::string_view_literals;
+
+TEST_F(CopyStringTest, EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(0u, CopyString("", buffer_).size());
+  EXPECT_EQ('\0', buffer_[0]);
+}
+
+TEST_F(CopyStringTest, EmptyBuffer_WritesNothing) {
+  auto result = CopyString("Hello", span(buffer_, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(CopyStringTest, TooSmall_Truncates) {
+  auto result = CopyString("Hi!", span(buffer_, 3));
+  EXPECT_EQ(2u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("Hi", buffer_);
+}
+
+TEST_F(CopyStringTest, ExactFit) {
+  auto result = CopyString("Hi!", span(buffer_, 4));
+  EXPECT_EQ(3u, result.size());
+  EXPECT_TRUE(result.ok());
+  EXPECT_STREQ("Hi!", buffer_);
+}
+
+TEST_F(CopyStringTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u, CopyString("\0!\0\0"sv, span(buffer_, 5)).size());
+  EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
+}
+
+class CopyEntireStringTest : public TestWithBuffer {};
+
+TEST_F(CopyEntireStringTest, EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(0u, CopyEntireString("", buffer_).size());
+  EXPECT_EQ('\0', buffer_[0]);
+}
+
+TEST_F(CopyEntireStringTest, EmptyBuffer_WritesNothing) {
+  auto result = CopyEntireString("Hello", span(buffer_, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(CopyEntireStringTest, TooSmall_WritesNothing) {
+  auto result = CopyEntireString("Hi!", span(buffer_, 3));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("", buffer_);
+}
+
+TEST_F(CopyEntireStringTest, ExactFit) {
+  auto result = CopyEntireString("Hi!", span(buffer_, 4));
+  EXPECT_EQ(3u, result.size());
+  EXPECT_TRUE(result.ok());
+  EXPECT_STREQ("Hi!", buffer_);
+}
+
+TEST_F(CopyEntireStringTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u, CopyEntireString("\0!\0\0"sv, span(buffer_, 5)).size());
+  EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
+}
+
+class PointerToStringTest : public TestWithBuffer {};
+
+TEST_F(PointerToStringTest, Nullptr_WritesNull) {
+  EXPECT_EQ(4u, PointerToString(nullptr, span(buffer_, 5)).size());
+  EXPECT_STREQ("null", buffer_);
+}
+
+TEST_F(PointerToStringTest, WritesAddress) {
+  const void* pointer = reinterpret_cast<void*>(321);
+  EXPECT_EQ(3u, PointerToString(pointer, buffer_).size());
+  EXPECT_STREQ("321", buffer_);
+}
+
+class BoolToStringTest : public TestWithBuffer {};
+
+TEST_F(BoolToStringTest, ExactFit) {
+  EXPECT_EQ(4u, BoolToString(true, span(buffer_, 5)).size());
+  EXPECT_STREQ("true", buffer_);
+
+  EXPECT_EQ(5u, BoolToString(false, span(buffer_, 6)).size());
+  EXPECT_STREQ("false", buffer_);
+}
+
+TEST_F(BoolToStringTest, True_TooSmall_WritesNullTerminator) {
+  auto result = BoolToString(true, span(buffer_, 4));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("", buffer_);
+}
+
+TEST_F(BoolToStringTest, False_TooSmall_WritesNullTerminator) {
+  auto result = BoolToString(false, span(buffer_, 5));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("", buffer_);
+}
+
+TEST_F(BoolToStringTest, EmptyBuffer_WritesNothing) {
+  EXPECT_EQ(0u, BoolToString(true, span(buffer_, 0)).size());
+  EXPECT_STREQ(kStartingString, buffer_);
+
+  EXPECT_EQ(0u, BoolToString(false, span(buffer_, 0)).size());
+  EXPECT_STREQ(kStartingString, buffer_);
 }
 
 }  // namespace

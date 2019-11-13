@@ -119,7 +119,9 @@ StatusWithSize IntToString(int64_t value, const span<char>& buffer) {
   if (result.ok()) {
     buffer[0] = '-';
     return StatusWithSize(result.size() + 1);
-  } else if (!buffer.empty()) {
+  }
+
+  if (!buffer.empty()) {
     buffer[0] = '\0';
   }
   return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
@@ -148,8 +150,46 @@ StatusWithSize FloatAsIntToString(float value, const span<char>& buffer) {
   if (!buffer.empty()) {
     buffer[0] = '\0';
   }
-
   return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+}
+
+StatusWithSize BoolToString(bool value, const span<char>& buffer) {
+  return CopyEntireString(value ? "true" : "false", buffer);
+}
+
+StatusWithSize PointerToString(const void* pointer, const span<char>& buffer) {
+  if (pointer == nullptr) {
+    return CopyEntireString("null", buffer);
+  }
+  // TODO(hepler): Add support for hexadecimal output.
+  return IntToString(reinterpret_cast<uintptr_t>(pointer), buffer);
+}
+
+StatusWithSize CopyString(const std::string_view& value,
+                          const span<char>& buffer) {
+  if (buffer.empty()) {
+    return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+  }
+
+  const size_t copied = value.copy(buffer.data(), buffer.size() - 1);
+  buffer[copied] = '\0';
+
+  return StatusWithSize(
+      copied == value.size() ? Status::OK : Status::RESOURCE_EXHAUSTED, copied);
+}
+
+StatusWithSize CopyEntireString(const std::string_view& value,
+                                const span<char>& buffer) {
+  if (value.size() >= buffer.size()) {
+    if (!buffer.empty()) {
+      buffer[0] = '\0';
+    }
+    return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+  }
+
+  std::memcpy(buffer.data(), value.data(), value.size());
+  buffer[value.size()] = '\0';
+  return StatusWithSize(value.size());
 }
 
 }  // namespace pw::string
