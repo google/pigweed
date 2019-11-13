@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_unit_test/test.gni")
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -23,6 +25,27 @@ source_set("pw_status") {
   ]
   public = [
     "public/pw_status/status.h",
+    "public/pw_status/status_with_size.h",
   ]
   sources = [ "status.cc" ] + public
+}
+
+pw_test("status_test") {
+  deps = [
+    ":pw_status",
+    "$dir_pw_unit_test:main",
+  ]
+  sources = [
+    "status_test.cc",
+  ]
+}
+
+pw_test("status_with_size_test") {
+  deps = [
+    ":pw_status",
+    "$dir_pw_unit_test:main",
+  ]
+  sources = [
+    "status_with_size_test.cc",
+  ]
 }
