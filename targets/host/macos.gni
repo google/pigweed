@@ -12,10 +12,4 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Wrapper for Pigweed executable build targets which uses a globally-defined,
-# configurable target type.
-template("pw_executable") {
-  target(pw_executable_config.target_type, target_name) {
-    forward_variables_from(invoker, "*")
-  }
-}
+import("$dir_pigweed/pw_vars_default.gni")

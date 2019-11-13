@@ -1,0 +1,46 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file defines default values for all of the build variables used by
+# Pigweed.
+#
+# Each individual variable can be overriden by a target to configure the system
+# to build for it. This is done in a .gni file specific to the target by first
+# importing this file, then changing the variables as desired.
+
+# Options which configure the executable targets created in Pigweed builds.
+pw_executable_config = {
+  # The name of the GN target type used to build Pigweed executables.
+  #
+  # If this is a custom template, the .gni file containing the template must
+  # be imported at the top of this file to make it globally available.
+  target_type = "executable"
+
+  # Path to an instantiation of the "linker_script" GN template defining the
+  # linker script configuration for the target.
+  linker_script_target = ""
+
+  # Path to the Bloaty configuration file that defines the memory layout and
+  # capacities for the target binaries.
+  bloaty_config_file = ""
+}
+
+# Default toolchain for the build target.
+#
+# If this is changed, you must run `ninja -t clean` to remove any files from
+# the previous toolchain's build before building again.
+pw_target_toolchain = ""
+
+# Implementation of a main function for "pw_test" unit test binaries.
+pw_unit_test_main = "$dir_pw_unit_test:main"

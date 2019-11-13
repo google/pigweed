@@ -12,10 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Wrapper for Pigweed executable build targets which uses a globally-defined,
-# configurable target type.
-template("pw_executable") {
-  target(pw_executable_config.target_type, target_name) {
-    forward_variables_from(invoker, "*")
-  }
+# Config file for a host desktop system.
+if (host_os == "linux") {
+  import("linux.gni")
+} else if (host_os == "mac") {
+  import("macos.gni")
+} else if (host_os == "win") {
+  import("windows.gni")
+} else {
+  assert(false, "Please define a host config for your system: $host_os")
 }

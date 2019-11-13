@@ -37,18 +37,15 @@ set_defaults("source_set") {
 }
 
 declare_args() {
-  # The name of the GN template used to build Pigweed executables.
-  pw_executable_target_type = "executable"
-
-  # Path to the .gni file in which the pw_executable_target_type template is
-  # defined. Empty string if using a GN primitive.
-  pw_executable_target_path = ""
-
-  # Toolchain for the current build target (desktop/device).
+  # Path to the Pigweed variables config file for the build target.
   #
-  # If this is changed, you must run `ninja -t clean` to remove any files from
-  # the previous toolchain's build before building again.
-  pw_target_toolchain = "$dir_pw_toolchain:x86_linux_o2"
+  # When this is changed, you must run `ninja -t clean` to remove any files from
+  # the previous target's build before building again.
+  pw_target_config = "$dir_pigweed/targets/host/host.gni"
 }
 
+import(pw_target_config)
+
+assert(pw_target_toolchain != "",
+       "Build target must provide its own toolchain.")
 set_default_toolchain(pw_target_toolchain)
