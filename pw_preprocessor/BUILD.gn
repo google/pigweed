@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -31,6 +32,12 @@ source_set("pw_preprocessor") {
     "public/pw_preprocessor/util.h",
   ]
   sources = public
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
 }
 
 # All pw_preprocessor test binaries.

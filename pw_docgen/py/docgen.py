@@ -1,0 +1,126 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+"""Renders HTML documentation using Sphinx."""
+
+# TODO(frolv): Figure out a solution for installing all library dependencies
+# to run Sphinx and build RTD docs.
+
+import argparse
+import collections
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+from typing import Dict, List, Tuple
+
+SCRIPT_HEADER: str = '''
+██████╗ ██╗ ██████╗ ██╗    ██╗███████╗███████╗██████╗     ██████╗  ██████╗  ██████╗███████╗
+██╔══██╗██║██╔════╝ ██║    ██║██╔════╝██╔════╝██╔══██╗    ██╔══██╗██╔═══██╗██╔════╝██╔════╝
+██████╔╝██║██║  ███╗██║ █╗ ██║█████╗  █████╗  ██║  ██║    ██║  ██║██║   ██║██║     ███████╗
+██╔═══╝ ██║██║   ██║██║███╗██║██╔══╝  ██╔══╝  ██║  ██║    ██║  ██║██║   ██║██║     ╚════██║
+██║     ██║╚██████╔╝╚███╔███╔╝███████╗███████╗██████╔╝    ██████╔╝╚██████╔╝╚██████╗███████║
+╚═╝     ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚══════╝╚══════╝╚═════╝     ╚═════╝  ╚═════╝  ╚═════╝╚══════╝
+'''
+
+
+def parse_args() -> argparse.Namespace:
+    """Parses command-line arguments."""
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--sphinx-build-dir', type=str, required=True,
+                        help='Directory in which to build docs')
+    parser.add_argument('--conf', type=str, required=True,
+                        'Path to conf.py file for Sphinx')
+    parser.add_argument('--gn-root', type=str, required=True,
+                        'Root of the GN build tree')
+    parser.add_argument('--index', type=str, required=True,
+                        help='Path to root index.rst file')
+    parser.add_argument('--out-dir', type=str, required=True,
+                        help='Output directory for rendered HTML docs')
+    parser.add_argument('metadata_file', type=argparse.FileType('r'))
+    return parser.parse_args()
+
+
+def build_docs(src_dir: str, dst_dir: str) -> int:
+    """Runs Sphinx to render HTML documentation from a doc tree."""
+
+    # TODO(frolv): Specify the Sphinx script from a prebuilts path instead of
+    # requiring it in the tree.
+    command = ['sphinx-build', '-b', 'html', '-d',
+               f'{dst_dir}/help', src_dir, f'{dst_dir}/html']
+    return subprocess.call(command)
+
+
+def mkdir(dirname: str, exist_ok: bool = False) -> None:
+    """Wrapper around os.makedirs that prints the operation."""
+    print(f'MKDIR {dirname}')
+    os.makedirs(dirname, exist_ok=exist_ok)
+
+
+def copy(src: str, dst: str) -> None:
+    """Wrapper around shutil.copy that prints the operation."""
+    print(f'COPY  {src} -> {dst}')
+    shutil.copy(src, dst)
+
+
+def copy_doc_tree(args: argparse.Namespace) -> None:
+    """Copies doc source and input files into a build tree."""
+
+    def build_path(path):
+        """Converts a source path to a filename in the build directory."""
+        return f'{args.sphinx_build_dir}/{path[len(args.gn_root):]}'
+
+    source_files = json.load(args.metadata_file)
+    copy_paths = [build_path(f) for f in source_files]
+
+    mkdir(args.sphinx_build_dir)
+    copy(args.index, f'{args.sphinx_build_dir}/index.rst')
+    copy(args.conf, f'{args.sphinx_build_dir}/conf.py')
+
+    # Map of directory path to list of source and destination file paths.
+    dirs: Dict[str, List[Tuple[str, str]]] = collections.defaultdict(list)
+
+    for source_file, copy_path in zip(source_files, copy_paths):
+        dirname = os.path.dirname(copy_path)
+        dirs[dirname].append((source_file, copy_path))
+
+    for directory, file_pairs in dirs.items():
+        mkdir(directory, exist_ok=True)
+        for src, dst in file_pairs:
+            copy(src, dst)
+
+
+def main() -> int:
+    """Script entry point."""
+
+    args = parse_args()
+
+    # Clear out any existing docs for the target.
+    if os.path.exists(args.sphinx_build_dir):
+        shutil.rmtree(args.sphinx_build_dir)
+
+    print(SCRIPT_HEADER)
+    copy_doc_tree(args)
+
+    # Flush all script output before running Sphinx.
+    print('-' * 80, flush=True)
+
+    return build_docs(args.sphinx_build_dir, args.out_dir)
+
+
+if __name__ == '__main__':
+    sys.exit(main())

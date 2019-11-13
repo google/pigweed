@@ -58,6 +58,8 @@
 #   $target_out_dir:foo      ../out/obj/my_module/foo.exe  (toolchain-dependent)
 #
 template("pw_python_script") {
+  assert(defined(invoker.script), "pw_python_script requires a script to run")
+
   _script_args = [
     # GN root directory relative to the build directory (in which the runner
     # script is invoked).
@@ -68,6 +70,16 @@ template("pw_python_script") {
     "--out-dir",
     root_out_dir,
   ]
+
+  if (defined(invoker.inputs)) {
+    _inputs = invoker.inputs
+  } else {
+    _inputs = []
+  }
+
+  # List the script to run as an input so that the action is re-run when it is
+  # modified.
+  _inputs += [ invoker.script ]
 
   if (defined(invoker.outputs)) {
     _outputs = invoker.outputs
@@ -99,12 +111,14 @@ template("pw_python_script") {
     _ignore_vars = [
       "script",
       "args",
+      "inputs",
       "outputs",
     ]
     forward_variables_from(invoker, "*", _ignore_vars)
 
     script = "$dir_pw_build/py/python_runner.py"
     args = _script_args
+    inputs = _inputs
     outputs = _outputs
   }
 }

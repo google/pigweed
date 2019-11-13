@@ -1,0 +1,115 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_build/python_script.gni")
+
+# Defines a group of documentation files and assets.
+#
+# Args:
+#   sources: Source files for the documentation (.rst or .md).
+#   inputs: Additional resource files for the docs, such as images.
+#   group_deps: Other pw_doc_group targets on which this group depends.
+#   report_deps: Report card targets on which documentation depends.
+template("pw_doc_group") {
+  assert(defined(invoker.sources), "pw_doc_group requires a list of sources")
+
+  if (defined(invoker.inputs)) {
+    _inputs = invoker.inputs
+  } else {
+    _inputs = []
+  }
+
+  _all_deps = []
+  if (defined(invoker.group_deps)) {
+    _all_deps += invoker.group_deps
+  }
+  if (defined(invoker.report_deps)) {
+    _all_deps += invoker.report_deps
+  }
+
+  # Creates an action which depends on all of the source and input files so that
+  # docs are rebuilt on file modifications. The action does not do anything.
+  pw_python_script(target_name) {
+    metadata = {
+      pw_doc_sources = rebase_path(invoker.sources, root_build_dir)
+      pw_doc_inputs = rebase_path(_inputs, root_build_dir)
+    }
+    deps = _all_deps
+    script = "$dir_pw_build/py/nop.py"
+    inputs = invoker.sources + _inputs
+    stamp = true
+  }
+}
+
+# Creates a target to build HTML documentation from groups of sources.
+#
+# Args:
+#   deps: List of pw_doc_group targets.
+#   index: Top-level documentation index file.
+#   conf: Configuration script (conf.py) for Sphinx.
+#   output_directory: Path to directory to which HTML output is rendered.
+template("pw_doc_gen") {
+  assert(defined(invoker.deps),
+         "pw_doc_gen requires doc groups as dependencies")
+  assert(
+      defined(invoker.index),
+      "pw_doc_gen requires an 'index' argument pointing a top-level index.rst")
+  assert(defined(invoker.conf),
+         "pw_doc_gen requires a 'conf' argument pointing a top-level conf.py")
+  assert(defined(invoker.output_directory),
+         "pw_doc_gen requires an 'output_directory' argument")
+
+  # Collects all dependency metadata into a single JSON file.
+  _metadata_file_target = "${target_name}_metadata"
+  generated_file(_metadata_file_target) {
+    outputs = [
+      "$target_gen_dir/$target_name.json",
+    ]
+    data_keys = [
+      "pw_doc_sources",
+      "pw_doc_inputs",
+    ]
+    output_conversion = "json"
+    deps = invoker.deps
+  }
+
+  _script_args = [
+    "--gn-root",
+    "//",
+    "--sphinx-build-dir",
+    get_path_info("$target_gen_dir/pw_docgen_tree", "abspath"),
+    "--conf",
+    get_path_info(invoker.conf, "abspath"),
+    "--index",
+    get_path_info(invoker.index, "abspath"),
+    "--out-dir",
+    get_path_info(invoker.output_directory, "abspath"),
+  ]
+
+  # Metadata JSON file path.
+  _script_args +=
+      get_path_info(get_target_outputs(":$_metadata_file_target"), "abspath")
+
+  pw_python_script(target_name) {
+    script = "$dir_pw_docgen/py/docgen.py"
+    args = _script_args
+    deps = [
+      ":$_metadata_file_target",
+    ]
+    inputs = [
+      invoker.index,
+    ]
+    stamp = true
+  }
+}
