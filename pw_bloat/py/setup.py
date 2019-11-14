@@ -12,12 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+"""pw_bloat"""
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
-}
+import unittest
+import setuptools
 
-pw_executable_config.bloaty_config_file =
-    get_path_info("linux.bloaty", "abspath")
+
+def test_suite():
+    """Test suite for pw_bloat module."""
+    return unittest.TestLoader().discover('./', pattern='*_test.py')
+
+
+setuptools.setup(
+        name='pw_bloat',
+        version='0.0.1',
+        author='Pigweed Authors',
+        author_email='pigweed-developers@googlegroups.com',
+        description='Tools for generating binary size report cards',
+        packages=setuptools.find_packages(),
+        test_suite='setup.test_suite',
+)

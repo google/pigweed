@@ -1,0 +1,146 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_build/python_script.gni")
+
+# Creates a target which runs a size report diff on a set of executables.
+#
+# Args:
+#   base: The default base executable target to run the diff against.
+#   binaries: List of executables to compare in the diff.
+#     Each binary in the list is a scope containing up to three variables:
+#       label: Descriptive name for the executable. Required.
+#       target: Build target for the executable. Required.
+#       base: Optional base diff target. Overrides global base argument.
+#   source_filter: Optional regex to filter data source names in Bloaty.
+#   title: Optional title string to display with the size report.
+#   full_report: Optional boolean flag indicating whether to produce a full
+#     symbol size breakdown or a summary.
+#
+# Example:
+#   bloat_report("foo_bloat") {
+#     base = ":foo_base"
+#     binaries = [
+#       {
+#         target = ":foo_static"
+#         label = "Static"
+#       },
+#       {
+#         target = ":foo_dynamic"
+#         label = "Dynamic"
+#       },
+#     ]
+#     title = "static vs. dynamic foo"
+#   }
+#
+template("bloat_report") {
+  assert(defined(invoker.base), "bloat template requires a 'base' file")
+
+  # Allow the invoker to directly override the bloaty config, instead of
+  # expecting it to come in through a global pw_executable_config
+  if (defined(invoker.bloaty_config)) {
+    _bloaty_config = invoker.bloaty_config
+  } else {
+    _bloaty_config = pw_executable_config.bloaty_config_file
+  }
+
+  if (defined(invoker.title)) {
+    _title = invoker.title
+  } else {
+    _title = target_name
+  }
+
+  # This template creates an action which invokes a Python script to run a size
+  # report on each of the provided targets. Each of the targets is listed as a
+  # dependency of the action so that the report gets updated when anything is
+  # changed. Most of the code below builds the command-line arguments to pass
+  # each of the targets into the script.
+
+  _all_target_dependencies = [ invoker.base ]
+
+  _binary_paths = []
+  _binary_labels = []
+
+  _base_target_dir = get_label_info(invoker.base, "target_out_dir")
+  _base_target_name = get_label_info(invoker.base, "name")
+  _base_target_path =
+      get_path_info(_base_target_dir, "abspath") + ":$_base_target_name"
+
+  # Process each of the binaries, resolving their full output paths and building
+  # them into a list of command-line arguments to the bloat script.
+  foreach(binary, invoker.binaries) {
+    assert(defined(binary.label) && defined(binary.target),
+           "Size report binaries must define 'label' and 'target' variables")
+
+    _all_target_dependencies += [ binary.target ]
+
+    _target_dir = get_label_info(binary.target, "target_out_dir")
+    _target_name = get_label_info(binary.target, "name")
+    _binary_path = get_path_info(_target_dir, "abspath") + ":$_target_name"
+
+    if (defined(binary.base)) {
+      # If the binary defines its own base, use that instead of the global base.
+      _all_target_dependencies += [ binary.base ]
+
+      _base_dir = get_label_info(binary.base, "target_out_dir")
+      _base_name = get_label_info(binary.base, "name")
+      _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
+    }
+
+    _binary_paths += [ _binary_path ]
+    _binary_labels += [ binary.label ]
+  }
+
+  _bloat_script_args = [
+    "--bloaty-config",
+    get_path_info(_bloaty_config, "abspath"),
+    "--out-dir",
+    target_gen_dir,
+    "--target",
+    target_name,
+    "--title",
+    _title,
+    "--base-target",
+    _base_target_path,
+    "--labels",
+    string_join(";", _binary_labels),
+  ]
+
+  if (defined(invoker.full_report) && invoker.full_report) {
+    _bloat_script_args += [ "--full" ]
+  }
+
+  if (defined(invoker.source_filter)) {
+    _bloat_script_args += [
+      "--source-filter",
+      invoker.source_filter,
+    ]
+  }
+
+  # Create an action which runs the size report script on the provided targets.
+  pw_python_script(target_name) {
+    script = "$dir_pw_bloat/py/bloat.py"
+    inputs = [
+      _bloaty_config,
+      "$dir_pw_bloat/py/binary_diff.py",
+      "$dir_pw_bloat/py/bloat_output.py",
+    ]
+    outputs = [
+      "$target_gen_dir/${target_name}.txt",
+      "$target_gen_dir/${target_name}.rst",
+    ]
+    deps = _all_target_dependencies
+    args = _bloat_script_args + _binary_paths
+  }
+}

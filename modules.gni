@@ -22,6 +22,7 @@ declare_args() {
   dir_pigweed = get_path_info(get_path_info("BUILD.gn", "abspath"), "dir")
 }
 
+dir_pw_bloat = "$dir_pigweed/pw_bloat"
 dir_pw_build = "$dir_pigweed/pw_build"
 dir_pw_docgen = "$dir_pigweed/pw_docgen"
 dir_pw_preprocessor = "$dir_pigweed/pw_preprocessor"

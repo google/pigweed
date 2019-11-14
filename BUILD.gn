@@ -15,6 +15,7 @@
 # All Pigweed modules that can be built using gn.
 group("pw_modules") {
   deps = [
+    "$dir_pw_bloat",
     "$dir_pw_preprocessor",
     "$dir_pw_span",
     "$dir_pw_status",

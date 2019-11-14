@@ -12,12 +12,16 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+custom_data_source: {
+  name: "segment_names"
+  base_data_source: "segments"
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+  rewrite: {
+    pattern: "LOAD #3"
+    replacement: "EXAMPLE CODE"
+  }
+  rewrite: {
+    pattern: "LOAD #5"
+    replacement: "EXAMPLE  RAM"
+  }
 }
-
-pw_executable_config.bloaty_config_file =
-    get_path_info("linux.bloaty", "abspath")

@@ -12,12 +12,37 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+import("../bloat.gni")
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+executable("simple_base") {
+  sources = [
+    "simple_base.cc",
+  ]
 }
 
-pw_executable_config.bloaty_config_file =
-    get_path_info("linux.bloaty", "abspath")
+executable("simple_loop") {
+  sources = [
+    "simple_loop.cc",
+  ]
+}
+
+executable("simple_function") {
+  sources = [
+    "simple_function.cc",
+  ]
+}
+
+bloat_report("simple_bloat") {
+  base = ":simple_base"
+  bloaty_config = "simple_base.bloaty"
+  binaries = [
+    {
+      target = ":simple_loop"
+      label = "Add a loop"
+    },
+    {
+      target = ":simple_function"
+      label = "Add a function"
+    },
+  ]
+}
