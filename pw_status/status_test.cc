@@ -55,25 +55,26 @@ TEST(Status, NotOk_OkIsFalse) {
 }
 
 TEST(Status, KnownString) {
-  EXPECT_EQ("OK", Status(Status::OK).str());
-  EXPECT_EQ("CANCELLED", Status(Status::CANCELLED).str());
-  EXPECT_EQ("DEADLINE_EXCEEDED", Status(Status::DEADLINE_EXCEEDED).str());
-  EXPECT_EQ("NOT_FOUND", Status(Status::NOT_FOUND).str());
-  EXPECT_EQ("ALREADY_EXISTS", Status(Status::ALREADY_EXISTS).str());
-  EXPECT_EQ("PERMISSION_DENIED", Status(Status::PERMISSION_DENIED).str());
-  EXPECT_EQ("UNAUTHENTICATED", Status(Status::UNAUTHENTICATED).str());
-  EXPECT_EQ("RESOURCE_EXHAUSTED", Status(Status::RESOURCE_EXHAUSTED).str());
-  EXPECT_EQ("FAILED_PRECONDITION", Status(Status::FAILED_PRECONDITION).str());
-  EXPECT_EQ("ABORTED", Status(Status::ABORTED).str());
-  EXPECT_EQ("OUT_OF_RANGE", Status(Status::OUT_OF_RANGE).str());
-  EXPECT_EQ("UNIMPLEMENTED", Status(Status::UNIMPLEMENTED).str());
-  EXPECT_EQ("INTERNAL", Status(Status::INTERNAL).str());
-  EXPECT_EQ("UNAVAILABLE", Status(Status::UNAVAILABLE).str());
-  EXPECT_EQ("DATA_LOSS", Status(Status::DATA_LOSS).str());
+  EXPECT_STREQ("OK", Status(Status::OK).str());
+  EXPECT_STREQ("CANCELLED", Status(Status::CANCELLED).str());
+  EXPECT_STREQ("DEADLINE_EXCEEDED", Status(Status::DEADLINE_EXCEEDED).str());
+  EXPECT_STREQ("NOT_FOUND", Status(Status::NOT_FOUND).str());
+  EXPECT_STREQ("ALREADY_EXISTS", Status(Status::ALREADY_EXISTS).str());
+  EXPECT_STREQ("PERMISSION_DENIED", Status(Status::PERMISSION_DENIED).str());
+  EXPECT_STREQ("UNAUTHENTICATED", Status(Status::UNAUTHENTICATED).str());
+  EXPECT_STREQ("RESOURCE_EXHAUSTED", Status(Status::RESOURCE_EXHAUSTED).str());
+  EXPECT_STREQ("FAILED_PRECONDITION",
+               Status(Status::FAILED_PRECONDITION).str());
+  EXPECT_STREQ("ABORTED", Status(Status::ABORTED).str());
+  EXPECT_STREQ("OUT_OF_RANGE", Status(Status::OUT_OF_RANGE).str());
+  EXPECT_STREQ("UNIMPLEMENTED", Status(Status::UNIMPLEMENTED).str());
+  EXPECT_STREQ("INTERNAL", Status(Status::INTERNAL).str());
+  EXPECT_STREQ("UNAVAILABLE", Status(Status::UNAVAILABLE).str());
+  EXPECT_STREQ("DATA_LOSS", Status(Status::DATA_LOSS).str());
 }
 
 TEST(Status, UnknownString) {
-  EXPECT_EQ("INVALID STATUS", Status(static_cast<Status::Code>(30)).str());
+  EXPECT_STREQ("INVALID STATUS", Status(static_cast<Status::Code>(30)).str());
 }
 
 }  // namespace
