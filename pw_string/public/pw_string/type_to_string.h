@@ -18,6 +18,7 @@
 // in "pw_string/to_string.h" should be used instead of these functions.
 
 #include <cstdint>
+#include <string_view>
 #include <type_traits>
 
 #include "pw_span/span.h"
