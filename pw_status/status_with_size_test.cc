@@ -16,11 +16,12 @@
 
 #include "gtest/gtest.h"
 
-namespace pw::string {
+namespace pw {
 namespace {
 
 static_assert(StatusWithSize::max_size() ==
-              (static_cast<size_t>(1) << (sizeof(size_t) * 8 - 5)) - 1);
+                  (static_cast<size_t>(1) << (sizeof(size_t) * 8 - 5)) - 1,
+              "max_size() should use all but the top 5 bits of a size_t.");
 
 TEST(StatusWithSize, Default) {
   StatusWithSize result;
@@ -98,4 +99,4 @@ TEST(StatusWithSize, Constexpr) {
 }
 
 }  // namespace
-}  // namespace pw::string
+}  // namespace pw

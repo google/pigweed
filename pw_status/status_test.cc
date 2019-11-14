@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 
-namespace pw::string {
+namespace pw {
 namespace {
 
 constexpr Status::Code kInvalidCode = static_cast<Status::Code>(30);
@@ -77,4 +77,4 @@ TEST(Status, UnknownString) {
 }
 
 }  // namespace
-}  // namespace pw::string
+}  // namespace pw
