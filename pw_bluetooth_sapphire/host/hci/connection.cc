@@ -207,7 +207,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
       kDisconnectionCompleteEventCode, disconn_complete_handler, async_get_default_dispatcher());
 
   // Allow packets to be sent on this link immediately.
-  hci->acl_data_channel()->RegisterLink(handle);
+  hci->acl_data_channel()->RegisterLink(handle, ll_type);
 }
 
 ConnectionImpl::~ConnectionImpl() {

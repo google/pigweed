@@ -131,8 +131,8 @@ void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
   rx_dispatcher_ = rx_dispatcher;
 }
 
-bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
-                                l2cap::ChannelId channel_id, PacketPriority priority) {
+bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
+                                PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -143,10 +143,15 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
   const auto handle = data_packet->connection_handle();
 
   std::lock_guard<std::mutex> lock(send_mutex_);
-  if (registered_links_.find(handle) == registered_links_.end()) {
+
+  auto link_iter = registered_links_.find(handle);
+
+  if (link_iter == registered_links_.end()) {
     bt_log(SPEW, "hci", "dropping packet for unregistered connection (handle: %#.4x)", handle);
     return false;
   }
+
+  Connection::LinkType ll_type = link_iter->second;
 
   if (data_packet->view().payload_size() > GetBufferMTU(ll_type)) {
     bt_log(ERROR, "hci", "ACL data packet too large!");
@@ -161,8 +166,8 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, Connection::LinkTy
   return true;
 }
 
-bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
-                                 l2cap::ChannelId channel_id, PacketPriority priority) {
+bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::ChannelId channel_id,
+                                 PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(TRACE, "hci", "cannot send packets while uninitialized");
     return false;
@@ -175,13 +180,15 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
 
   std::lock_guard<std::mutex> lock(send_mutex_);
 
-  for (const auto& packet : packets) {
-    // Make sure that all packets are within the MTU.
-    if (packet.view().payload_size() > GetBufferMTU(ll_type)) {
-      bt_log(ERROR, "hci", "ACL data packet too large!");
-      return false;
-    }
+  auto handle = packets.front().connection_handle();
 
+  if (registered_links_.find(handle) == registered_links_.end()) {
+    bt_log(SPEW, "hci", "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
+           handle, packets.size_slow());
+    return false;
+  }
+
+  for (const auto& packet : packets) {
     // Make sure that all packets have registered connection handles.
     if (registered_links_.find(packet.connection_handle()) == registered_links_.end()) {
       bt_log(SPEW, "hci",
@@ -189,12 +196,21 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
              packet.connection_handle(), packets.size_slow());
       return false;
     }
+
+    // Make sure that all packets are within the MTU.
+    if (packet.view().payload_size() >
+        GetBufferMTU(registered_links_[packet.connection_handle()])) {
+      bt_log(ERROR, "hci", "ACL data packet too large!");
+      return false;
+    }
   }
 
   auto insert_iter = SendQueueInsertLocationForPriority(priority);
   while (!packets.is_empty()) {
+    auto packet = packets.pop_front();
+    auto ll_type = registered_links_[packet->connection_handle()];
     send_queue_.insert(insert_iter,
-                       QueuedDataPacket(ll_type, channel_id, priority, packets.pop_front()));
+                       QueuedDataPacket(ll_type, channel_id, priority, std::move(packet)));
   }
 
   TrySendNextQueuedPacketsLocked();
@@ -202,11 +218,11 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, Connection::
   return true;
 }
 
-void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle) {
+void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) {
   std::lock_guard<std::mutex> lock(send_mutex_);
   bt_log(TRACE, "hci", "ACL register link (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
-  registered_links_.insert(handle);
+  registered_links_[handle] = ll_type;
 }
 
 void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {

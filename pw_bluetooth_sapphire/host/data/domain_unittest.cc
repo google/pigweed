@@ -212,7 +212,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle);
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
 
@@ -325,7 +325,7 @@ TEST_F(DATA_DomainTest, InboundRfcommSocketFails) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle);
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
 
@@ -375,7 +375,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle);
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
 
@@ -420,7 +420,7 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle);
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
 
@@ -506,7 +506,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
 
   // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle);
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
 

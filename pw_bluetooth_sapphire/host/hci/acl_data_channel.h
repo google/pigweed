@@ -103,7 +103,7 @@ class ACLDataChannel final {
 
   // Queues the given ACL data packet to be sent to the controller. Returns
   // false if the packet cannot be queued up, e.g. if the size of |data_packet|
-  // exceeds the MTU for |ll_type|.
+  // exceeds the MTU for the link type set in RegisterLink().
   //
   // |data_packet| is passed by value, meaning that ACLDataChannel will take
   // ownership of it. |data_packet| must represent a valid ACL data packet.
@@ -116,8 +116,8 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPacket(ACLDataPacketPtr data_packet, Connection::LinkType ll_type,
-                  l2cap::ChannelId channel_id, PacketPriority priority = PacketPriority::kLow);
+  bool SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
+                  PacketPriority priority = PacketPriority::kLow);
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
@@ -125,7 +125,7 @@ class ACLDataChannel final {
   // in the allowlist, then none will be queued.
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
-  // contains an element that exceeds the MTU for |ll_type| or it is empty.
+  // contains an element that exceeds the MTU for its link type or |packets| is empty.
   //
   // |channel_id| must match the l2cap channel that all packets is being sent to. It is needed to
   // determine what channel l2cap packet fragments are being sent to when revoking queued packets
@@ -135,16 +135,16 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPackets(LinkedList<ACLDataPacket> packets, Connection::LinkType ll_type,
-                   l2cap::ChannelId channel_id, PacketPriority priority = PacketPriority::kLow);
+  bool SendPackets(LinkedList<ACLDataPacket> packets, l2cap::ChannelId channel_id,
+                   PacketPriority priority = PacketPriority::kLow);
 
-  // Allowlist packets destined for the link identified by |handle| for submission
-  // to the controller.
+  // Allowlist packets destined for the link identified by |handle| (of link type |ll_type|) for
+  // submission to the controller.
   //
   // Failure to register a link before sending packets will result in the packets
   // being dropped immediately. A handle must not be registered again until after UnregisterLink has
   // been called on that handle.
-  void RegisterLink(hci::ConnectionHandle handle);
+  void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type);
 
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
@@ -328,7 +328,8 @@ class ACLDataChannel final {
   std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_ __TA_GUARDED(send_mutex_);
 
   // Stores links registered by RegisterLink
-  std::unordered_set<hci::ConnectionHandle> registered_links_ __TA_GUARDED(send_mutex_);
+  std::unordered_map<hci::ConnectionHandle, Connection::LinkType> registered_links_
+      __TA_GUARDED(send_mutex_);
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
 };

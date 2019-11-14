@@ -61,8 +61,8 @@ class ChannelManager final {
   // and in order. This will be called on the thread which the ChannelManager object is created, up
   // to the object's duration.
   using SendAclCallback =
-      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type,
-                         ChannelId channel_id, hci::ACLDataChannel::PacketPriority priority)>;
+      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
+                         hci::ACLDataChannel::PacketPriority priority)>;
 
   // Used to drop stale queued ACL data packets for which |predicate| returns true (eg. when a
   // channel is closed). Queued ACL data packets are those that were sent with |SendAclCallback| but

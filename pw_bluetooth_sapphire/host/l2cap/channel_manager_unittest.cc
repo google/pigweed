@@ -168,8 +168,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   }
 
  private:
-  bool SendPackets(LinkedList<hci::ACLDataPacket> packets, hci::Connection::LinkType ll_type,
-                   ChannelId channel_id, hci::ACLDataChannel::PacketPriority priority) {
+  bool SendPackets(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
+                   hci::ACLDataChannel::PacketPriority priority) {
     for (const auto& packet : packets) {
       const ByteBuffer& data = packet.view().data();
       if (expected_packets_.empty()) {

@@ -205,8 +205,8 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   auto iter = ll_map_.find(handle);
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
-  auto send_acl_cb = [this, ll_type](auto packets, ChannelId channel_id) {
-    return send_acl_cb_(std::move(packets), ll_type, channel_id,
+  auto send_acl_cb = [this](auto packets, ChannelId channel_id) {
+    return send_acl_cb_(std::move(packets), channel_id,
                         ChannelManager::ChannelPriority(channel_id));
   };
 
