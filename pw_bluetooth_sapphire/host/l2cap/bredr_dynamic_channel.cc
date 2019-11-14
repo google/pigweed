@@ -255,11 +255,30 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
 
   state_ |= kRemoteConfigReceived;
 
+  // Options to include in response payload. Only include rejected or adjusted options.
+  // See Core Spec v5.1, Volume 3, Section 4.5: Configuration Options
+  ChannelConfiguration::ConfigurationOptions rsp_options;
+
+  // Reject request if it contains unknown options
+  if (!config.unknown_options().empty()) {
+    std::string unknown_string;
+    for (auto& option : config.unknown_options()) {
+      rsp_options.push_back(std::make_unique<ChannelConfiguration::UnknownOption>(option));
+      unknown_string += std::string(" ") + option.ToString();
+    }
+
+    bt_log(TRACE, "l2cap", "Channel %#.4x: config request contained unknown options:%s\n",
+           local_cid(), unknown_string.c_str());
+
+    responder->Send(remote_cid(), 0x0000, ConfigurationResult::kUnknownOptions,
+                    std::move(rsp_options));
+    return;
+  }
+
   // TODO(NET-1084): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
 
-  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess,
-                  ChannelConfiguration::ConfigurationOptions());
+  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, std::move(rsp_options));
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response", local_cid());
 

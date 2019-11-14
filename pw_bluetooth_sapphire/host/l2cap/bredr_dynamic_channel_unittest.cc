@@ -1114,6 +1114,53 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
   RunLoopUntilIdle();
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  const ByteBuffer& kInboundConfigReqUnknownOption = CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(kLocalCId), UpperBits(kLocalCId),
+
+      // Flags
+      0x00, 0x00,
+
+      // Unknown Option: Type, Length, Data
+      0x70, 0x01, 0x02);
+
+  const ByteBuffer& kOutboundConfigRspUnknownOption = CreateStaticByteBuffer(
+      // Source CID
+      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+
+      // Flags
+      0x00, 0x00,
+
+      // Result (Failure - unknown options)
+      0x03, 0x00,
+
+      // Unknown Option: Type, Length, Data
+      0x70, 0x01, 0x02);
+
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqUnknownOption,
+                                       kOutboundConfigRspUnknownOption));
+
+  EXPECT_EQ(0u, open_cb_count);
+
+  RunLoopUntilIdle();
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap
