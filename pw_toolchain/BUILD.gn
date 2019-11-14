@@ -13,6 +13,7 @@
 # the License.
 
 import("arm_gcc.gni")
+import("host_clang.gni")
 import("x86_linux_gcc.gni")
 
 # Creates a series of toolchain targets with common compiler options.
@@ -114,6 +115,28 @@ generate_toolchains("linux") {
     {
       toolchain_name = "x86_linux_o2"
       additional_cflags = [ "-O2" ]
+    },
+  ]
+}
+
+generate_toolchains("host_clang_suite") {
+  toolchain_template = "host_clang"
+  common_toolchain_cflags = [
+    "-g3",
+  ]
+
+  toolchains = [
+    {
+      toolchain_name = "host_clang_og"
+      additional_cflags = [ "-Og" ]
+    },
+    {
+      toolchain_name = "host_clang_o2"
+      additional_cflags = [ "-O2" ]
+    },
+    {
+      toolchain_name = "host_clang_os"
+      additional_cflags = [ "-Os" ]
     },
   ]
 }

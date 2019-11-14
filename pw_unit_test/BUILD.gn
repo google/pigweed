@@ -74,8 +74,3 @@ pw_executable("framework_test") {
   ]
 }
 
-group("framework_test_linux") {
-  deps = [
-    ":framework_test($dir_pw_toolchain:x86_linux_o2)",
-  ]
-}
