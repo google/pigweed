@@ -14,4 +14,7 @@
 
 import("$dir_pigweed/pw_vars_default.gni")
 
-pw_target_toolchain = "$dir_pw_toolchain:x86_linux_o2"
+declare_args() {
+  # Specifies the toolchain to use for this build.
+  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+}

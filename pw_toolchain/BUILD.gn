@@ -14,7 +14,7 @@
 
 import("arm_gcc.gni")
 import("host_clang.gni")
-import("x86_linux_gcc.gni")
+import("host_gcc.gni")
 
 # Creates a series of toolchain targets with common compiler options.
 #
@@ -108,13 +108,21 @@ generate_toolchains("cortex_m4") {
   ]
 }
 
-generate_toolchains("linux") {
-  toolchain_template = "x86_gcc_toolchain"
+generate_toolchains("host_gcc_suite") {
+  toolchain_template = "host_gcc"
 
   toolchains = [
     {
-      toolchain_name = "x86_linux_o2"
+      toolchain_name = "host_gcc_og"
+      additional_cflags = [ "-Og" ]
+    },
+    {
+      toolchain_name = "host_gcc_o2"
       additional_cflags = [ "-O2" ]
+    },
+    {
+      toolchain_name = "host_gcc_os"
+      additional_cflags = [ "-Os" ]
     },
   ]
 }

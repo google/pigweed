@@ -31,7 +31,7 @@ template("host_clang") {
   # Toolchain LD flags
   _toolchain_ldflags = ""
   if (defined(invoker.toolchain_ldflags)) {
-    _toolchain_ldflags  = string_join(" ", invoker.toolchain_ldflags)
+    _toolchain_ldflags = string_join(" ", invoker.toolchain_ldflags)
   }
 
   # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
@@ -63,7 +63,7 @@ template("host_clang") {
 
     tool("cc") {
       depfile = "{{output}}.d"
-       command = string_join(" ",
+      command = string_join(" ",
                             [
                               "$_cc",
                               "-MMD -MF $depfile",  # Write out dependencies.
@@ -116,27 +116,41 @@ template("host_clang") {
     lib_dir_switch = "-L"
 
     _link_outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+
+    _link_flags = [
+      "$_cxx",
+      "{{ldflags}}",
+
+      "$_toolchain_cflags",
+      "$_toolchain_ldflags",
+
+      "{{inputs}}",
+      "{{libs}}",
+
+      "-o $_link_outfile",
+    ]
+
     _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
-    _link_command = string_join(
-            " ",
-            [
-              "$_cxx",
-              "{{ldflags}}",
 
-              "$_toolchain_cflags",
-              "$_toolchain_ldflags",
+    if (host_os == "linux") {
+      _link_flags += [
+        # Output a map file that shows symbols and their location.
+        "-Wl,-Map,$_link_mapfile",
 
-              # Delete unreferenced sections. Helpful with -ffunction-sections.
-              "-Wl,-dead_strip",
+        # Delete unreferenced sections. Helpful with -ffunction-sections.
+        "-Wl,--gc-sections",
+      ]
+    } else if (host_os == "mac") {
+      _link_flags += [
+        # Output a map file that shows symbols and their location.
+        "-Wl,-map,$_link_mapfile",
 
-              # Output a map file that shows symbols and their location.
-              "-Wl,-map,$_link_mapfile",
+        # Delete unreferenced sections. Helpful with -ffunction-sections.
+        "-Wl,-dead_strip",
+      ]
+    }
 
-              "{{inputs}}",
-              "{{libs}}",
-
-              "-o $_link_outfile",
-            ])
+    _link_command = string_join(" ", _link_flags)
 
     tool("link") {
       command = _link_command

@@ -17,7 +17,7 @@
 # Args:
 #   toolchain_cflags: Additional C/C++ compiler flags for the target.
 #   toolchain_ldflags: Additional linker flags for the target.
-template("x86_gcc_toolchain") {
+template("host_gcc") {
   _cflags_list = [
     # Colorize output. Ninja's GCC invocation disables color by default.
     "-fdiagnostics-color",
@@ -42,10 +42,7 @@ template("x86_gcc_toolchain") {
     _cflags_list += invoker.toolchain_cflags
   }
 
-  _toolchain_cflags = ""
-  foreach(flag, _cflags_list) {
-    _toolchain_cflags += " " + flag
-  }
+  _toolchain_cflags = string_join(" ", _cflags_list)
 
   _toolchain_ldflags = ""
   if (defined(invoker.toolchain_ldflags)) {
