@@ -14,7 +14,12 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//pw_build:pigweed.bzl", "pw_default_copts", "pw_default_linkopts")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_default_copts",
+    "pw_default_linkopts",
+    "pw_test",
+)
 
 cc_library(
     name = "pw_status",
@@ -25,4 +30,20 @@ cc_library(
     ],
     copts = pw_default_copts(),
     linkopts = pw_default_linkopts(),
+)
+
+pw_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    copts = pw_default_copts(),
+    linkopts = pw_default_linkopts(),
+    deps = ["//pw_status"],
+)
+
+pw_test(
+    name = "status_with_size_test",
+    srcs = ["status_with_size_test.cc"],
+    copts = pw_default_copts(),
+    linkopts = pw_default_linkopts(),
+    deps = ["//pw_status"],
 )

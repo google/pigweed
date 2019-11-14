@@ -24,7 +24,10 @@ load(
 cc_library(
     name = "pw_string",
     srcs = ["type_to_string.cc"],
-    hdrs = ["public/pw_string/type_to_string.h"],
+    hdrs = [
+        "public/pw_string/to_string.h",
+        "public/pw_string/type_to_string.h",
+    ],
     copts = pw_default_copts(),
     linkopts = pw_default_linkopts(),
     deps = [
@@ -37,6 +40,14 @@ cc_library(
 pw_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
+    copts = pw_default_copts(),
+    linkopts = pw_default_linkopts(),
+    deps = ["//pw_string"],
+)
+
+pw_test(
+    name = "to_string_test",
+    srcs = ["to_string_test.cc"],
     copts = pw_default_copts(),
     linkopts = pw_default_linkopts(),
     deps = ["//pw_string"],
