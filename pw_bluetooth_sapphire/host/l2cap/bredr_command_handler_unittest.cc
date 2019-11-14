@@ -106,7 +106,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRej) {
     EXPECT_EQ(BrEdrCommandHandler::Status::kReject, rsp.status());
     EXPECT_EQ(kInvalidChannelId, rsp.remote_cid());
     EXPECT_EQ(kBadLocalCId, rsp.local_cid());
-    return false;
+    return BrEdrCommandHandler::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kBadLocalCId, std::move(on_conn_rsp)));
@@ -137,7 +137,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejectio
   bool cb_called = false;
   auto on_conn_rsp = [&cb_called](const BrEdrCommandHandler::ConnectionResponse& rsp) {
     cb_called = true;
-    return false;
+    return BrEdrCommandHandler::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kBadLocalCId, std::move(on_conn_rsp)));
@@ -178,7 +178,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspOk) {
     EXPECT_EQ(kLocalCId, rsp.local_cid());
     EXPECT_EQ(ConnectionResult::kSuccess, rsp.result());
     EXPECT_EQ(ConnectionStatus::kNoInfoAvailable, rsp.conn_status());
-    return false;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
@@ -234,13 +234,13 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspPendingAuthThenOk) {
       EXPECT_EQ(BrEdrCommandHandler::Status::kSuccess, rsp.status());
       EXPECT_EQ(ConnectionResult::kPending, rsp.result());
       EXPECT_EQ(ConnectionStatus::kAuthorizationPending, rsp.conn_status());
-      return true;
+      return SignalingChannel::ResponseHandlerAction::kExpectAdditionalResponse;
     } else if (cb_count == 2) {
       EXPECT_EQ(BrEdrCommandHandler::Status::kSuccess, rsp.status());
       EXPECT_EQ(ConnectionResult::kSuccess, rsp.result());
       EXPECT_EQ(ConnectionStatus::kNoInfoAvailable, rsp.conn_status());
     }
-    return false;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
 
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
@@ -264,7 +264,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConnReqRspTimeOut) {
 
   auto on_conn_rsp = [](auto&) {
     ADD_FAILURE();
-    return false;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
   EXPECT_TRUE(cmd_handler()->SendConnectionRequest(kPsm, kLocalCId, std::move(on_conn_rsp)));
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -453,7 +453,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspPendingEmpty) {
         EXPECT_EQ(ConfigurationResult::kPending, rsp.result());
         EXPECT_TRUE(rsp.config().mtu_option().has_value());
         EXPECT_EQ(96u, rsp.config().mtu_option()->mtu());
-        return false;
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
       };
 
   ChannelConfiguration config;
@@ -494,7 +494,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
 
   set_request_fail_callback([this]() {
     // Should still be allowed to send requests even after one failed
-    auto on_discon_rsp = [](auto&) { return false; };
+    auto on_discon_rsp = [](auto&) {};
     EXPECT_TRUE(
         cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
   });
@@ -503,7 +503,7 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
 
   auto on_config_rsp = [](auto&) {
     ADD_FAILURE();
-    return false;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
   };
 
   ChannelConfiguration config;
@@ -539,7 +539,6 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRspOk) {
         EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
         EXPECT_EQ(kLocalCId, rsp.local_cid());
         EXPECT_EQ(kRemoteCId, rsp.remote_cid());
-        return false;
       };
 
   EXPECT_TRUE(
@@ -580,7 +579,6 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRej) {
         EXPECT_EQ(RejectReason::kInvalidCID, rsp.reject_reason());
         EXPECT_EQ(kLocalCId, rsp.local_cid());
         EXPECT_EQ(kRemoteCId, rsp.remote_cid());
-        return false;
       };
 
   EXPECT_TRUE(

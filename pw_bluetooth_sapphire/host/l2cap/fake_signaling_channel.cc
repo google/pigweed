@@ -177,7 +177,9 @@ size_t FakeSignalingChannel::TriggerResponses(
   size_t responses_handled = 0;
   for (auto& [status, payload] : responses) {
     responses_handled++;
-    if (!transaction.response_callback(status, payload) || ::testing::Test::HasFatalFailure()) {
+    if (transaction.response_callback(status, payload) ==
+            ResponseHandlerAction::kCompleteOutboundTransaction ||
+        ::testing::Test::HasFatalFailure()) {
       break;
     }
   }

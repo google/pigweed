@@ -216,8 +216,6 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
         if (self) {
           done_cb();
         }
-
-        return false;
       };
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
@@ -336,15 +334,14 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
   }
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
-
-  if (!cmd_handler.SendConfigurationRequest(remote_cid(), 0,
-                                            ChannelConfiguration::ConfigurationOptions(),
-                                            [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
-                                              if (self) {
-                                                return self->OnRxConfigRsp(rsp);
-                                              }
-                                              return false;
-                                            })) {
+  if (!cmd_handler.SendConfigurationRequest(
+          remote_cid(), 0, ChannelConfiguration::ConfigurationOptions(),
+          [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
+            if (self) {
+              return self->OnRxConfigRsp(rsp);
+            }
+            return ResponseHandlerAction::kCompleteOutboundTransaction;
+          })) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Configuration Request",
            local_cid());
     PassOpenError();
@@ -356,12 +353,13 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
   state_ |= kLocalConfigSent;
 }
 
-bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionResponse& rsp) {
+BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
+    const BrEdrCommandHandler::ConnectionResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Connection Request rejected reason %#.4hx",
            local_cid(), rsp.reject_reason());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if (rsp.local_cid() != local_cid()) {
@@ -369,14 +367,14 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
            "Channel %#.4x: Got Connection Response for another channel ID %#.4x", local_cid(),
            rsp.local_cid());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if ((state_ & kConnResponded) || !(state_ & kConnRequested)) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Unexpected Connection Response, state %#x",
            local_cid(), state_);
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if (rsp.result() == ConnectionResult::kPending) {
@@ -384,7 +382,7 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
            rsp.conn_status());
 
     if (rsp.remote_cid() == kInvalidChannelId) {
-      return true;
+      return ResponseHandlerAction::kExpectAdditionalResponse;
     }
 
     // If the remote provides a channel ID, then we store it. It can be used for
@@ -393,12 +391,12 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
       bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Remote channel ID %#.4x is not unique",
              local_cid(), rsp.remote_cid());
       PassOpenError();
-      return false;
+      return ResponseHandlerAction::kCompleteOutboundTransaction;
     }
 
     bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
            remote_cid());
-    return true;  // Final connection result still expected
+    return ResponseHandlerAction::kExpectAdditionalResponse;
   }
 
   if (rsp.result() != ConnectionResult::kSuccess) {
@@ -407,7 +405,7 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
            "status %#.4x",
            local_cid(), rsp.result(), rsp.status());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if (rsp.remote_cid() < kFirstDynamicChannelId) {
@@ -420,7 +418,7 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
     // which is probably what we want because there's no other way to send back
     // a failure in this case.
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   // TODO(xow): To be stricter, we can disconnect if the remote ID changes on us
@@ -438,17 +436,18 @@ bool BrEdrDynamicChannel::OnRxConnRsp(const BrEdrCommandHandler::ConnectionRespo
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Remote channel ID %#.4x is not unique",
            local_cid(), rsp.remote_cid());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
          rsp.remote_cid());
 
   TrySendLocalConfig();
-  return false;
+  return ResponseHandlerAction::kCompleteOutboundTransaction;
 }
 
-bool BrEdrDynamicChannel::OnRxConfigRsp(const BrEdrCommandHandler::ConfigurationResponse& rsp) {
+BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
+    const BrEdrCommandHandler::ConfigurationResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
     bt_log(ERROR, "l2cap-bredr",
            "Channel %#.4x: Configuration Request rejected, reason %#.4hx, "
@@ -458,26 +457,26 @@ bool BrEdrDynamicChannel::OnRxConfigRsp(const BrEdrCommandHandler::Configuration
     // Configuration Request being rejected is fatal because the remote is not
     // trying to negotiate parameters (any more).
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if (rsp.result() == ConfigurationResult::kPending) {
     bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: remote pending config", local_cid());
-    return true;
+    return ResponseHandlerAction::kExpectAdditionalResponse;
   }
 
   if (rsp.result() != ConfigurationResult::kSuccess) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: unsuccessful config reason %#.4hx", local_cid(),
            rsp.result());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   if (rsp.local_cid() != local_cid()) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: dropping Configuration Response for %#.4x",
            local_cid(), rsp.local_cid());
     PassOpenError();
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
   state_ |= kLocalConfigAccepted;
@@ -489,7 +488,7 @@ bool BrEdrDynamicChannel::OnRxConfigRsp(const BrEdrCommandHandler::Configuration
     PassOpenResult();
   }
 
-  return false;
+  return ResponseHandlerAction::kCompleteOutboundTransaction;
 }
 
 }  // namespace internal

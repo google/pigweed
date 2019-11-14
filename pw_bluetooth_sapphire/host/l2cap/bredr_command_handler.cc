@@ -371,7 +371,7 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
       if (fail_cb) {
         fail_cb();
       }
-      return false;
+      return ResponseHandlerAction::kCompleteOutboundTransaction;
     }
 
     ResponseT rsp(status);
@@ -379,7 +379,7 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
       if (!rsp.ParseReject(rsp_payload)) {
         bt_log(TRACE, "l2cap-bredr", "cmd: ignoring malformed Command Reject, size %zu",
                rsp_payload.size());
-        return false;
+        return ResponseHandlerAction::kCompleteOutboundTransaction;
       }
       return InvokeResponseCallback(&rsp_cb, std::move(rsp));
     }
@@ -387,11 +387,11 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
     if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
       bt_log(TRACE, "l2cap-bredr", "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
              ResponseT::kName, rsp_payload.size(), sizeof(typename ResponseT::PayloadT));
-      return false;
+      return ResponseHandlerAction::kCompleteOutboundTransaction;
     }
 
     if (!rsp.Decode(rsp_payload)) {
-      return false;
+      return ResponseHandlerAction::kCompleteOutboundTransaction;
     }
 
     return InvokeResponseCallback(&rsp_cb, std::move(rsp));
@@ -399,10 +399,11 @@ SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(Call
 }
 
 template <typename CallbackT, class ResponseT>
-bool BrEdrCommandHandler::InvokeResponseCallback(CallbackT* const rsp_cb, ResponseT rsp) {
+BrEdrCommandHandler::ResponseHandlerAction BrEdrCommandHandler::InvokeResponseCallback(
+    CallbackT* const rsp_cb, ResponseT rsp) {
   if constexpr (std::is_void_v<std::invoke_result_t<CallbackT, ResponseT>>) {
     (*rsp_cb)(rsp);
-    return false;
+    return ResponseHandlerAction::kCompleteOutboundTransaction;
   } else {
     return (*rsp_cb)(rsp);
   }

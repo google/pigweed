@@ -62,6 +62,8 @@ using BrEdrDynamicChannelPtr = std::unique_ptr<BrEdrDynamicChannel>;
 // Must be run only on the L2CAP thread.
 class BrEdrDynamicChannel final : public DynamicChannel {
  public:
+  using ResponseHandlerAction = SignalingChannel::ResponseHandlerAction;
+
   static BrEdrDynamicChannelPtr MakeOutbound(DynamicChannelRegistry* registry,
                                              SignalingChannelInterface* signaling_channel, PSM psm,
                                              ChannelId local_cid);
@@ -149,8 +151,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   void TrySendLocalConfig();
 
   // Response handlers for outbound requests
-  bool OnRxConnRsp(const BrEdrCommandHandler::ConnectionResponse& rsp);
-  bool OnRxConfigRsp(const BrEdrCommandHandler::ConfigurationResponse& rsp);
+  ResponseHandlerAction OnRxConnRsp(const BrEdrCommandHandler::ConnectionResponse& rsp);
+  ResponseHandlerAction OnRxConfigRsp(const BrEdrCommandHandler::ConfigurationResponse& rsp);
 
   SignalingChannelInterface* const signaling_channel_;
 

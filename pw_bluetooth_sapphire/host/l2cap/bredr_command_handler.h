@@ -29,26 +29,29 @@ namespace internal {
 // kind of request to register, and even ephemerally as a temporary around a
 // SignalingChannel.
 //
-// For outbound requests, use the BrEdrCommandHandler::Send*Req methods. They
+// For outbound requests, use the BrEdrCommandHandler::Send*Request methods. They
 // take parameters to be encoded into the request payload (with endian
 // conversion and bounds checking) and a *ResponseCallback callback. When a
 // matching response or rejection is received, the callback will be passed a
 // *Response object containing the decoded command's parameters. Its |status()|
 // shall be checked first to determine whether it's a rejection or response
-// command. Return true in the *ResponseCallback if additional responses are
-// expected from the peer for the request sent.
+// command. Return ResponseHandlerAction::kExpectAdditionalResponse if more
+// request responses from the peer will follow, or else
+// ResponseHandlerAction::kCompleteOutboundTransaction. Returning kCompleteOutboundTransaction
+// will destroy the *ResponseCallback object.
 //
 // Example:
-//   DisconnectionResponseCallback rsp_cb =
-//       [](const DisconnectionResponse& rsp) {
+//   ConnectionResponseCallback rsp_cb =
+//       [](const ConnectionResponse& rsp) {
 //         if (rsp.status() == Status::kReject) {
 //           // Do something with rsp.reject_reason()
 //         } else {
 //           // Do something with rsp.local_cid() and rsp.remote_cid()
 //         }
-//         return false;  // No further responses expected for this transaction
+//         // No additional responses expected in this transaction.
+//         return ResponseHandlerAction::kCompleteOutboundTransaction;
 //       };
-//   cmd_handler.SendDisconnectionRequest(id0, id1, std::move(rsp_cb));
+//   cmd_handler.SendConnectionRequest(psm, id, std::move(rsp_cb));
 //
 // For inbound requests, use the BrEdrCommandHandler::Serve*Req methods. They
 // each take a request-handling delegate that will be called with decoded
@@ -78,6 +81,7 @@ namespace internal {
 class BrEdrCommandHandler final {
  public:
   using Status = SignalingChannel::Status;
+  using ResponseHandlerAction = SignalingChannel::ResponseHandlerAction;
 
   // Base for all responses received, including Command Reject. If |status()|
   // evaluates as |Status::kReject|, then this holds a Command Reject; then
@@ -193,12 +197,13 @@ class BrEdrCommandHandler final {
     BufferView data_;
   };
 
-  using ConnectionResponseCallback = fit::function<bool(const ConnectionResponse& rsp)>;
-  using ConfigurationResponseCallback = fit::function<bool(const ConfigurationResponse& rsp)>;
-
-  // TODO(36062): DisconnectionResponseCallback should return void if no additional responses are
-  // necessary.
-  using DisconnectionResponseCallback = fit::function<bool(const DisconnectionResponse& rsp)>;
+  using ConnectionResponseCallback =
+      fit::function<ResponseHandlerAction(const ConnectionResponse& rsp)>;
+  using ConfigurationResponseCallback =
+      fit::function<ResponseHandlerAction(const ConfigurationResponse& rsp)>;
+  // Disconnection Responses never have additional responses.
+  using DisconnectionResponseCallback = fit::function<void(const DisconnectionResponse& rsp)>;
+  // Information Responses never have additional responses.
   using InformationResponseCallback = fit::function<void(const InformationResponse& rsp)>;
 
   // Base of response-sending objects passed to request delegates that they can
@@ -331,7 +336,8 @@ class BrEdrCommandHandler final {
   // returns void, otherwise passes along its return result. Used because not all *ResponseCallback
   // types return void (some can request additional continuations in their return value).
   template <typename CallbackT, class ResponseT>
-  static bool InvokeResponseCallback(CallbackT* rsp_cb, ResponseT rsp);
+  static BrEdrCommandHandler::ResponseHandlerAction InvokeResponseCallback(CallbackT* rsp_cb,
+                                                                           ResponseT rsp);
 
   SignalingChannelInterface* const sig_;  // weak
   fit::closure request_fail_callback_;

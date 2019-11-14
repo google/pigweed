@@ -40,12 +40,20 @@ class SignalingChannelInterface {
     kTimeOut,  // Timed out waiting for matching remote command
   };
 
+  // ResponseHandler return value. Indicates whether additional responses are expected in this
+  // transaction (e.g. in the case of receiving a response with a pending status or continuation
+  // flag).
+  enum class ResponseHandlerAction {
+    kExpectAdditionalResponse,
+    // No additional responses expected in this transaction.
+    kCompleteOutboundTransaction,
+  };
+
   // Callback invoked to handle a response received from the remote. If |status|
   // is kSuccess or kReject, then |rsp_payload| will contain any payload
-  // received. Return true if an additional response is expected.
-  //
-  // TODO(36062): Name the return type with an enum to make parsing code more readable.
-  using ResponseHandler = fit::function<bool(Status status, const ByteBuffer& rsp_payload)>;
+  // received.
+  using ResponseHandler =
+      fit::function<ResponseHandlerAction(Status, const ByteBuffer& rsp_payload)>;
 
   // Initiate an outbound transaction. The signaling channel will send a request
   // then expect reception of one or more responses with a code one greater than

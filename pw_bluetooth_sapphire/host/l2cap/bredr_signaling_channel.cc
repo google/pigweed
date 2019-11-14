@@ -50,7 +50,7 @@ bool BrEdrSignalingChannel::TestLink(const ByteBuffer& data, DataCallback cb) {
                        } else {
                          cb(BufferView());
                        }
-                       return false;
+                       return ResponseHandlerAction::kCompleteOutboundTransaction;
                      });
 }
 
@@ -179,7 +179,8 @@ void BrEdrSignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   }
 
   ResponseHandler& handler = iter->second.second;
-  if (!handler(status, packet.payload_data())) {
+  if (handler(status, packet.payload_data()) ==
+      ResponseHandlerAction::kCompleteOutboundTransaction) {
     pending_commands_.erase(iter);
   }
 }
