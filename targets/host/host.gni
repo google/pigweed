@@ -22,3 +22,6 @@ if (host_os == "linux") {
 } else {
   assert(false, "Please define a host config for your system: $host_os")
 }
+
+# Tests can always be run in parallel when building for the host.
+pw_unit_test_create_run_targets = true

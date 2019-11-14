@@ -44,3 +44,13 @@ pw_target_toolchain = ""
 
 # Implementation of a main function for "pw_test" unit test binaries.
 pw_unit_test_main = "$dir_pw_unit_test:main"
+
+# Whether GN unit test runner targets should be created.
+#
+# If set to true, the pw_test() template creates an action that invokes the test
+# runner script on each test executable. If false, the pw_test() template only
+# creates a test executable target.
+#
+# This should be enabled for targets which support parallelized running
+# of unit tests, such as desktops with multiple cores.
+pw_unit_test_create_run_targets = false

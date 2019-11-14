@@ -15,18 +15,6 @@
 import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_build/python_script.gni")
 
-declare_args() {
-  # Whether GN unit test runner targets should be created.
-  #
-  # If set to true, the pw_test_run() template will create an action that
-  # invokes the test runner script on a test executable.
-  # If false, the pw_test_run() template becomes a no-op.
-  #
-  # This should be enabled for targets which support parallelized running
-  # of unit tests, such as desktops with multiple cores.
-  pw_unit_test_create_run_targets = false
-}
-
 # Creates an executable target for a unit test.
 # Additionally, outputs a file containing unit test metadata in JSON format for
 # the test runner script.
