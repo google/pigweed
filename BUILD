@@ -17,5 +17,6 @@ SUBDIRS = [
     "pw_preprocessor",
     "pw_span",
     "pw_status",
+    "pw_string",
     "pw_unit_test",
 ]

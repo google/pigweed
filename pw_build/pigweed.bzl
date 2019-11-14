@@ -47,6 +47,7 @@ def includes_copts():
         "pw_preprocessor/public",
         "pw_span/public",
         "pw_status/public",
+        "pw_string/public",
         "pw_unit_test/public",
     ]
     return ["-I" + x for x in includes]

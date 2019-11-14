@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+package(default_visibility = ["//visibility:public"])
+
 load(
     "//pw_build:pigweed.bzl",
     "pw_default_copts",

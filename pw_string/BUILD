@@ -14,15 +14,30 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//pw_build:pigweed.bzl", "pw_default_copts", "pw_default_linkopts")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_default_copts",
+    "pw_default_linkopts",
+    "pw_test",
+)
 
 cc_library(
-    name = "pw_status",
-    srcs = ["status.cc"],
-    hdrs = [
-        "public/pw_status/status.h",
-        "public/pw_status/status_with_size.h",
-    ],
+    name = "pw_string",
+    srcs = ["type_to_string.cc"],
+    hdrs = ["public/pw_string/type_to_string.h"],
     copts = pw_default_copts(),
     linkopts = pw_default_linkopts(),
+    deps = [
+        "//pw_preprocessor",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+pw_test(
+    name = "type_to_string_test",
+    srcs = ["type_to_string_test.cc"],
+    copts = pw_default_copts(),
+    linkopts = pw_default_linkopts(),
+    deps = ["//pw_string"],
 )
