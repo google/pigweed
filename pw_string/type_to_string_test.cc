@@ -57,6 +57,39 @@ TEST(Digits, DecimalDigits_20) {
   }
 }
 
+TEST(Digits, HexDigits_AllOneDigit) {
+  for (uint64_t i = 0; i < 0x10; ++i) {
+    ASSERT_EQ(1u, HexDigitCount(i));
+  }
+}
+
+TEST(Digits, HexDigits_AllTwoDigit) {
+  for (uint64_t i = 0x10; i < 0x100u; ++i) {
+    ASSERT_EQ(2u, HexDigitCount(i));
+  }
+}
+
+TEST(Digits, HexDigits_1To15Digits) {
+  uint64_t value = 1;
+  for (unsigned digits = 1; digits <= 15u; ++digits) {
+    ASSERT_EQ(digits, HexDigitCount(value));
+    ASSERT_EQ(digits, HexDigitCount(value + 1));
+
+    value *= 0x10;
+    ASSERT_EQ(digits, HexDigitCount(value - 1));
+  }
+}
+
+TEST(Digits, HexDigits_16) {
+  for (uint64_t i : {
+           0x1000000000000000llu,
+           0x1000000000000001llu,
+           std::numeric_limits<unsigned long long>::max(),
+       }) {
+    ASSERT_EQ(16u, HexDigitCount(i));
+  }
+}
+
 class TestWithBuffer : public ::testing::Test {
  protected:
   static constexpr char kStartingString[] = "!@#$%^&*()!@#$%^&*()";
@@ -233,6 +266,57 @@ TEST(IntToString, UnsignedSweep) {
   }
 }
 
+class IntToHexStringTest : public TestWithBuffer {};
+
+TEST_F(IntToHexStringTest, Sweep) {
+  for (unsigned i = 0; i < 1030; ++i) {
+    char hex[16];
+    int bytes = std::snprintf(hex, sizeof(hex), "%x", static_cast<unsigned>(i));
+
+    auto result = IntToHexString(i, buffer_);
+    EXPECT_EQ(static_cast<size_t>(bytes), result.size());
+    EXPECT_TRUE(result.ok());
+    EXPECT_STREQ(hex, buffer_);
+  }
+}
+
+TEST_F(IntToHexStringTest, Uint32Max) {
+  EXPECT_EQ(
+      8u,
+      IntToHexString(std::numeric_limits<uint32_t>::max() - 1, buffer_).size());
+  EXPECT_STREQ("fffffffe", buffer_);
+
+  EXPECT_EQ(
+      8u, IntToHexString(std::numeric_limits<uint32_t>::max(), buffer_).size());
+  EXPECT_STREQ("ffffffff", buffer_);
+}
+
+TEST_F(IntToHexStringTest, Uint64Max) {
+  EXPECT_EQ(
+      16u,
+      IntToHexString(std::numeric_limits<uint64_t>::max() - 1, buffer_).size());
+  EXPECT_STREQ("fffffffffffffffe", buffer_);
+
+  EXPECT_EQ(
+      16u,
+      IntToHexString(std::numeric_limits<uint64_t>::max(), buffer_).size());
+  EXPECT_STREQ("ffffffffffffffff", buffer_);
+}
+
+TEST_F(IntToHexStringTest, EmptyBuffer_WritesNothing) {
+  auto result = IntToHexString(0xbeef, span(buffer_, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(IntToHexStringTest, TooSmall_Truncates) {
+  auto result = IntToHexString(0xbeef, span(buffer_, 3));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("", buffer_);
+}
+
 class FloatAsIntToStringTest : public TestWithBuffer {};
 
 TEST_F(FloatAsIntToStringTest, PositiveInfinity) {
@@ -393,9 +477,9 @@ TEST_F(PointerToStringTest, Nullptr_WritesNull) {
 }
 
 TEST_F(PointerToStringTest, WritesAddress) {
-  const void* pointer = reinterpret_cast<void*>(321);
-  EXPECT_EQ(3u, PointerToString(pointer, buffer_).size());
-  EXPECT_STREQ("321", buffer_);
+  const void* pointer = reinterpret_cast<void*>(0xbeef);
+  EXPECT_EQ(4u, PointerToString(pointer, buffer_).size());
+  EXPECT_STREQ("beef", buffer_);
 }
 
 class BoolToStringTest : public TestWithBuffer {};

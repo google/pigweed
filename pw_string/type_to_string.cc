@@ -47,6 +47,13 @@ constexpr std::array<uint64_t, 20> kPowersOf10{
     10000000000000000000ull,  // 10^19
 };
 
+StatusWithSize HandleExhaustedBuffer(const span<char>& buffer) {
+  if (!buffer.empty()) {
+    buffer[0] = '\0';
+  }
+  return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+}
+
 }  // namespace
 
 uint_fast8_t DecimalDigitCount(uint64_t integer) {
@@ -73,10 +80,7 @@ StatusWithSize IntToString(uint64_t value, const span<char>& buffer) {
   const uint_fast8_t total_digits = DecimalDigitCount(value);
 
   if (total_digits >= buffer.size()) {
-    if (!buffer.empty()) {
-      buffer[0] = '\0';
-    }
-    return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+    return HandleExhaustedBuffer(buffer);
   }
 
   buffer[total_digits] = '\0';
@@ -106,6 +110,22 @@ StatusWithSize IntToString(uint64_t value, const span<char>& buffer) {
   return StatusWithSize(total_digits);
 }
 
+StatusWithSize IntToHexString(uint64_t value, const span<char>& buffer) {
+  const uint_fast8_t digits = HexDigitCount(value);
+
+  if (digits >= buffer.size()) {
+    return HandleExhaustedBuffer(buffer);
+  }
+
+  for (int i = digits - 1; i >= 0; --i) {
+    buffer[i] = "0123456789abcdef"[value & 0xF];
+    value >>= 4;
+  }
+
+  buffer[digits] = '\0';
+  return StatusWithSize(digits);
+}
+
 template <>
 StatusWithSize IntToString(int64_t value, const span<char>& buffer) {
   if (value >= 0) {
@@ -121,10 +141,7 @@ StatusWithSize IntToString(int64_t value, const span<char>& buffer) {
     return StatusWithSize(result.size() + 1);
   }
 
-  if (!buffer.empty()) {
-    buffer[0] = '\0';
-  }
-  return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+  return HandleExhaustedBuffer(buffer);
 }
 
 // TODO(hepler): Look into using the float overload of std::to_chars when it is
@@ -147,10 +164,7 @@ StatusWithSize FloatAsIntToString(float value, const span<char>& buffer) {
     return StatusWithSize(written);
   }
 
-  if (!buffer.empty()) {
-    buffer[0] = '\0';
-  }
-  return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+  return HandleExhaustedBuffer(buffer);
 }
 
 StatusWithSize BoolToString(bool value, const span<char>& buffer) {
@@ -161,8 +175,7 @@ StatusWithSize PointerToString(const void* pointer, const span<char>& buffer) {
   if (pointer == nullptr) {
     return CopyEntireString("null", buffer);
   }
-  // TODO(hepler): Add support for hexadecimal output.
-  return IntToString(reinterpret_cast<uintptr_t>(pointer), buffer);
+  return IntToHexString(reinterpret_cast<uintptr_t>(pointer), buffer);
 }
 
 StatusWithSize CopyString(const std::string_view& value,
@@ -181,10 +194,7 @@ StatusWithSize CopyString(const std::string_view& value,
 StatusWithSize CopyEntireString(const std::string_view& value,
                                 const span<char>& buffer) {
   if (value.size() >= buffer.size()) {
-    if (!buffer.empty()) {
-      buffer[0] = '\0';
-    }
-    return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+    return HandleExhaustedBuffer(buffer);
   }
 
   std::memcpy(buffer.data(), value.data(), value.size());

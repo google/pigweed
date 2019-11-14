@@ -115,7 +115,7 @@ TEST(ToString, Pointer_NonNull_WritesValue) {
   CustomType custom;
   const size_t length = std::snprintf(expected,
                                       sizeof(expected),
-                                      "%" PRIdPTR,
+                                      "%" PRIxPTR,
                                       reinterpret_cast<intptr_t>(&custom));
 
   EXPECT_EQ(length, ToString(&custom, buffer).size());

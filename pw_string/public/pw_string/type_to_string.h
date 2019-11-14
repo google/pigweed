@@ -30,6 +30,12 @@ namespace pw::string {
 // non-negative integer. Returns 1 for 0 or 1 + log base 10 for other numbers.
 uint_fast8_t DecimalDigitCount(uint64_t integer);
 
+// Returns the number of digits in the hexadecimal representation of the
+// provided non-negative integer.
+constexpr uint_fast8_t HexDigitCount(uint64_t integer) {
+  return (64u - __builtin_clzll(integer | 1u) + 3u) / 4u;
+}
+
 // Writes an integer as a null-terminated string in base 10. Returns the number
 // of characters written, excluding the null terminator, and the status.
 //
@@ -62,6 +68,10 @@ StatusWithSize IntToString(uint64_t integer, const span<char>& buffer);
 
 template <>
 StatusWithSize IntToString(int64_t integer, const span<char>& buffer);
+
+// Writes an integer as a hexadecimal string. Semantics match IntToString. The
+// output is lowercase without a leading 0x.
+StatusWithSize IntToHexString(uint64_t value, const span<char>& buffer);
 
 // Rounds a floating point number to an integer and writes it as a
 // null-terminated string. Returns the number of characters written, excluding
