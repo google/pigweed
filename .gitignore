@@ -1,6 +1,7 @@
 # Build artifacts
 out/
 bazel-*
+.presubmit/
 
 # IDE artifacts
 .idea/
