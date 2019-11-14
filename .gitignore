@@ -1,5 +1,6 @@
 # Build artifacts
 out/
+bazel-*
 
 # IDE artifacts
 .idea/
