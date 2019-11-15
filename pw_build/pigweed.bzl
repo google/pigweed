@@ -43,14 +43,13 @@ def cpp17_copts():
     ]
 
 def includes_copts():
-    includes = [
-        "pw_preprocessor/public",
-        "pw_span/public",
-        "pw_status/public",
-        "pw_string/public",
-        "pw_unit_test/public",
+    return [
+        "-Ipw_preprocessor/public",
+        "-Ipw_span/public",
+        "-Ipw_status/public",
+        "-Ipw_string/public",
+        "-Ipw_unit_test/public",
     ]
-    return ["-I" + x for x in includes]
 
 def pw_default_copts():
     return (
