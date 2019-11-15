@@ -16,9 +16,5 @@
 
 int main() {
   pw::bloat::BloatThisBinary();
-
-  volatile int counter = 0;
-  while (1) {
-    counter++;
-  }
+  return 0;
 }

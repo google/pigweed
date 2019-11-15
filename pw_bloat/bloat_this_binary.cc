@@ -21,11 +21,13 @@ namespace pw::bloat {
 char* volatile non_optimizable_pointer;
 
 void BloatThisBinary() {
+  volatile unsigned counter = 0;
+
   // In case someone accidentally ends up flashing and running a bloat
-  // executable on their device, prevent the code below from running.
+  // executable on their device, loop forever instead of running this code.
   volatile bool clearly_false_condition = true;
-  if (clearly_false_condition) {
-    return;
+  while (clearly_false_condition) {
+    counter += 1;
   }
 
   // This code uses standard C/C++ functions such as memcpy to prevent them from
