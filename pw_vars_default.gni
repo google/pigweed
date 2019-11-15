@@ -24,7 +24,8 @@ pw_executable_config = {
   # The name of the GN target type used to build Pigweed executables.
   #
   # If this is a custom template, the .gni file containing the template must
-  # be imported at the top of this file to make it globally available.
+  # be imported at the top of the target configuration file to make it globally
+  # available.
   target_type = "executable"
 
   # Path to an instantiation of the "linker_script" GN template defining the

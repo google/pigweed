@@ -1,0 +1,49 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Target configuration for the STM32f429I-DISC1 development board.
+#
+# TODO(amontanez): This target configuration treats
+# pw_dumb_io_baremetal_stm32f429 as if it were a platform. This is for
+# testing/development and should eventually point to something more
+# sophisticated.
+
+import("$dir_pigweed/pw_vars_default.gni")
+
+declare_args() {
+  # Specifies the toolchain to use for this build.
+  pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m4_og"
+}
+
+# Executable wrapper that includes some baremetal startup code.
+template("stm32f429i_executable") {
+  target("executable", target_name) {
+    forward_variables_from(invoker, "*")
+    deps += [ dir_pw_dumb_io_baremetal_stm32f429 ]
+  }
+}
+
+# Configuration options for Pigweed executable targets.
+pw_executable_config.target_type = "stm32f429i_executable"
+
+# Path to the bloaty config file for the output binaries.
+pw_executable_config.bloaty_config_file =
+    "$dir_pw_dumb_io_baremetal_stm32f429/bloaty_config.bloaty"
+
+# Path to a linker script target. This must be a target (e.g. source_set)
+# that provides a linker script (through a public config, for example).
+linker_script_target =
+    "$dir_pw_dumb_io_baremetal_stm32f429:linker_script_target"
+
+dir_pw_dumb_io_backend = "$dir_pw_dumb_io_baremetal_stm32f429"
