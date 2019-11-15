@@ -14,7 +14,7 @@ binaries.
 
 Documentation integration
 =========================
-Bloat reports are easy to add to documentation files. All ``bloat_report``
+Bloat reports are easy to add to documentation files. All ``pw_size_report``
 targets output a ``.rst`` file containing a tabular report card. This file
 can be imported directly into a documentation file using the ``include``
 directive.

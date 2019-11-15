@@ -29,7 +29,7 @@ import("$dir_pw_build/python_script.gni")
 #     symbol size breakdown or a summary.
 #
 # Example:
-#   bloat_report("foo_bloat") {
+#   pw_size_report("foo_bloat") {
 #     base = ":foo_base"
 #     binaries = [
 #       {
@@ -44,16 +44,10 @@ import("$dir_pw_build/python_script.gni")
 #     title = "static vs. dynamic foo"
 #   }
 #
-template("bloat_report") {
-  assert(defined(invoker.base), "bloat template requires a 'base' file")
+template("pw_size_report") {
+  assert(defined(invoker.base), "pw_size_report requires a 'base' file")
 
-  # Allow the invoker to directly override the bloaty config, instead of
-  # expecting it to come in through a global pw_executable_config
-  if (defined(invoker.bloaty_config)) {
-    _bloaty_config = invoker.bloaty_config
-  } else {
-    _bloaty_config = pw_executable_config.bloaty_config_file
-  }
+  _bloaty_config = pw_executable_config.bloaty_config_file
 
   if (defined(invoker.title)) {
     _title = invoker.title

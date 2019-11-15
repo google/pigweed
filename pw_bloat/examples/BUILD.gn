@@ -32,9 +32,8 @@ executable("simple_function") {
   ]
 }
 
-bloat_report("simple_bloat") {
+pw_size_report("simple_bloat") {
   base = ":simple_base"
-  bloaty_config = "simple_base.bloaty"
   binaries = [
     {
       target = ":simple_loop"
