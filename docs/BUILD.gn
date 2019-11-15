@@ -12,22 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# All Pigweed modules that can be built using gn.
-group("pw_modules") {
-  deps = [
-    "$dir_pigweed/docs",
-    "$dir_pw_bloat",
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
-    "$dir_pw_status",
-    "$dir_pw_string",
-    "$dir_pw_unit_test",
-  ]
-}
+import("$dir_pw_docgen/docs.gni")
 
-# Targets for all module unit test groups.
-group("pw_module_tests") {
+pw_doc_gen("docs") {
+  conf = "conf.py"
+  index = "index.rst"
+  output_directory = target_gen_dir
   deps = [
-    "$dir_pw_preprocessor:unit_tests",
+    "$dir_pw_bloat:docs",
+    "$dir_pw_preprocessor:docs",
   ]
 }

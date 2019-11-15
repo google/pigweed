@@ -108,6 +108,7 @@ template("pw_doc_gen") {
       ":$_metadata_file_target",
     ]
     inputs = [
+      invoker.conf,
       invoker.index,
     ]
     stamp = true
