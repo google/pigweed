@@ -1,29 +1,40 @@
-# Build artifacts
+# Build
+compile_commands.json
 out/
 bazel-*
 .presubmit/
 
-# IDE artifacts
+# Editors
 .idea/
 .project
 .cproject
 .vscode
 .clangd/
+*.swp
 
-# Python artifacts
+# Python
+python-env/
 venv/
 *.pyc
 *.egg/
 *.eggs/
 *.egg-info/
 .cache/
-python-env/
 .mypy_cache/
 
-# Mac artifacts
+# Mac
 .DS_Store
 
-# Vim artifacts
-*.swp
-
+# GDB
 .gdb_history
+
+# Git
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+*_BACKUP_*.txt
+*_BASE_*.txt
+*_LOCAL_*.txt
+*_REMOTE_*.txt
