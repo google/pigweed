@@ -88,6 +88,8 @@ struct RunTestsSummary {
 // are executed and various test events occur.
 class EventHandler {
  public:
+  virtual ~EventHandler() = default;
+
   // Called before all tests are run.
   virtual void RunAllTestsStart() = 0;
 
