@@ -21,5 +21,6 @@ SUBDIRS = [
     "pw_span",
     "pw_status",
     "pw_string",
+    "pw_toolchain",
     "pw_unit_test",
 ]
