@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import subprocess
 
 
@@ -14,10 +13,6 @@ def gn_test():
     """Test with gn."""
     out = '.presubmit/gn'
     call('gn', 'gen', out)
-
-    with open(os.path.join(out, 'args.gn'), 'a') as outs:
-        print('pw_unit_test_create_run_targets = true', file=outs)
-
     call('ninja', '-C', out)
 
 
