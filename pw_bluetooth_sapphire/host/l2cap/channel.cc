@@ -17,7 +17,7 @@ namespace bt {
 namespace l2cap {
 
 Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-                 hci::ConnectionHandle link_handle)
+                 hci::ConnectionHandle link_handle, uint16_t tx_mtu, uint16_t rx_mtu)
     : id_(id),
       remote_id_(remote_id),
       link_type_(link_type),
@@ -25,8 +25,8 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 
       // TODO(armansito): IWBN if the MTUs could be specified dynamically
       // instead (see NET-308).
-      tx_mtu_(kDefaultMTU),
-      rx_mtu_(kDefaultMTU) {
+      tx_mtu_(tx_mtu),
+      rx_mtu_(rx_mtu) {
   ZX_DEBUG_ASSERT(id_);
   ZX_DEBUG_ASSERT(link_type_ == hci::Connection::LinkType::kLE ||
                   link_type_ == hci::Connection::LinkType::kACL);
@@ -35,8 +35,8 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 namespace internal {
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-                         std::list<PDU> buffered_pdus)
-    : Channel(id, remote_id, link->type(), link->handle()),
+                         std::list<PDU> buffered_pdus, uint16_t tx_mtu, uint16_t rx_mtu)
+    : Channel(id, remote_id, link->type(), link->handle(), tx_mtu, rx_mtu),
       active_(false),
       dispatcher_(nullptr),
       link_(link),

@@ -127,8 +127,9 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   }
 
   // A fixed channel's endpoints have the same local and remote identifiers.
-  auto chan = fbl::AdoptRef(
-      new ChannelImpl(id /* id */, id /* remote_id */, fbl::RefPtr(this), std::move(pending)));
+  // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
+  auto chan = fbl::AdoptRef(new ChannelImpl(id /* id */, id /* remote_id */, fbl::RefPtr(this),
+                                            std::move(pending), kDefaultMTU, kDefaultMTU));
   channels_[id] = chan;
 
   return chan;
@@ -424,8 +425,10 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   bt_log(TRACE, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
          local_cid, remote_cid);
 
-  auto chan = fbl::AdoptRef(
-      new ChannelImpl(local_cid, remote_cid, fbl::RefPtr(this), /*buffered_pdus=*/{}));
+  auto mtu_config = dyn_chan->mtu_configuration();
+
+  auto chan = fbl::AdoptRef(new ChannelImpl(local_cid, remote_cid, fbl::RefPtr(this),
+                                            /*buffered_pdus=*/{}, mtu_config.tx_mtu));
   channels_[local_cid] = chan;
   RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
 }

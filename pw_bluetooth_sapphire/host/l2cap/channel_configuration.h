@@ -187,6 +187,9 @@ class ChannelConfiguration final {
   // not include unknown options.
   ConfigurationOptions Options() const;
 
+  // Returns a user-friendly string representation. This is intended for debug messages
+  std::string ToString() const;
+
   void set_mtu_option(std::optional<MtuOption> option) { mtu_option_ = std::move(option); }
 
   void set_retransmission_flow_control_option(

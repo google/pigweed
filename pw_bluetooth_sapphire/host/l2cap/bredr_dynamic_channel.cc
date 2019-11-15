@@ -239,9 +239,18 @@ bool BrEdrDynamicChannel::IsOpen() const {
   return IsConnected() && (state_ & kLocalConfigAccepted) && (state_ & kRemoteConfigAccepted);
 }
 
+BrEdrDynamicChannel::MtuConfiguration BrEdrDynamicChannel::mtu_configuration() const {
+  MtuConfiguration config;
+  config.tx_mtu = remote_config().mtu_option() ? remote_config().mtu_option()->mtu() : kDefaultMTU;
+  // TODO(1209): set rx_mtu to configured mtu
+  config.rx_mtu = kDefaultMTU;
+  return config;
+}
+
 void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                                         BrEdrCommandHandler::ConfigurationResponder* responder) {
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request", local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request (options: %s)", local_cid(),
+         bt_str(config));
 
   if (!IsConnected()) {
     bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Unexpected Configuration Request, state %x",
@@ -255,32 +264,63 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
 
   state_ |= kRemoteConfigReceived;
 
-  // Options to include in response payload. Only include rejected or adjusted options.
+  // Reject request if it contains unknown options.
   // See Core Spec v5.1, Volume 3, Section 4.5: Configuration Options
-  ChannelConfiguration::ConfigurationOptions rsp_options;
-
-  // Reject request if it contains unknown options
   if (!config.unknown_options().empty()) {
+    ChannelConfiguration::ConfigurationOptions unknown_options;
     std::string unknown_string;
     for (auto& option : config.unknown_options()) {
-      rsp_options.push_back(std::make_unique<ChannelConfiguration::UnknownOption>(option));
+      unknown_options.push_back(std::make_unique<ChannelConfiguration::UnknownOption>(option));
       unknown_string += std::string(" ") + option.ToString();
     }
 
-    bt_log(TRACE, "l2cap", "Channel %#.4x: config request contained unknown options:%s\n",
-           local_cid(), unknown_string.c_str());
+    bt_log(TRACE, "l2cap",
+           "Channel %#.4x: config request contained unknown options (options: %s)\n", local_cid(),
+           unknown_string.c_str());
 
     responder->Send(remote_cid(), 0x0000, ConfigurationResult::kUnknownOptions,
-                    std::move(rsp_options));
+                    std::move(unknown_options));
+    return;
+  }
+
+  // TODO(40053): reject reconfiguring MTU if mode is Enhanced Retransmission or Streaming mode.
+  ChannelConfiguration::ConfigurationOptions unacceptable_options;
+
+  // Reject MTUs below minimum size
+  if (config.mtu_option() && config.mtu_option()->mtu() < kMinACLMTU) {
+    bt_log(TRACE, "l2cap",
+           "Channel %#.4x: config request contains MTU below minimum (mtu: %hu, min: %hu)",
+           local_cid(), config.mtu_option()->mtu(), kMinACLMTU);
+    // Respond back with a proposed MTU value of the required minimum (Core Spec v5.1, Vol 3, Part
+    // A, Section 5.1)
+    unacceptable_options.push_back(std::make_unique<ChannelConfiguration::MtuOption>(kMinACLMTU));
+  }
+
+  if (!unacceptable_options.empty()) {
+    responder->Send(remote_cid(), 0x0000, ConfigurationResult::kUnacceptableParameters,
+                    std::move(unacceptable_options));
     return;
   }
 
   // TODO(NET-1084): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
 
-  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, std::move(rsp_options));
+  ChannelConfiguration response_config;
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response", local_cid());
+  // Successful response should include actual MTU local device will use. This must be min(received
+  // MTU, local outgoing MTU capability). Currently, we accept any MTU.
+  // TODO(41376): determine the upper bound of what we are actually capable of sending
+  uint16_t actual_mtu = config.mtu_option() ? config.mtu_option()->mtu() : kDefaultMTU;
+  response_config.set_mtu_option(ChannelConfiguration::MtuOption(actual_mtu));
+  config.set_mtu_option(response_config.mtu_option());
+
+  responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, response_config.Options());
+
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response (options: %s)",
+         local_cid(), bt_str(response_config));
+
+  // Save accepted options.
+  remote_config_.Merge(config);
 
   if (IsOpen()) {
     set_opened();

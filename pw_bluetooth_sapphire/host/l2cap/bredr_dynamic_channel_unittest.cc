@@ -257,6 +257,18 @@ const ByteBuffer& kConfigReq = CreateStaticByteBuffer(
     // Flags
     0x00, 0x00);
 
+auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu) {
+  return CreateStaticByteBuffer(
+      // Destination CID
+      LowerBits(dest_cid), UpperBits(dest_cid),
+
+      // Flags
+      0x00, 0x00,
+
+      // MTU option (Type, Length, MTU value)
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
+}
+
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
     LowerBits(kLocalCId), UpperBits(kLocalCId),
@@ -303,15 +315,22 @@ const ByteBuffer& kPendingConfigRsp = CreateStaticByteBuffer(
     // Result (Pending)
     0x04, 0x00);
 
-const ByteBuffer& kInboundOkConfigRsp = CreateStaticByteBuffer(
-    // Source CID
-    LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu, uint16_t result = 0x0000) {
+  return CreateStaticByteBuffer(
+      // Source CID
+      LowerBits(source_cid), UpperBits(source_cid),
 
-    // Flags
-    0x00, 0x00,
+      // Flags
+      0x00, 0x00,
 
-    // Result (Successful)
-    0x00, 0x00);
+      // Result
+      LowerBits(result), UpperBits(result),
+
+      // MTU option (Type, Length, MTU value)
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
+}
+
+const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefaultMTU);
 
 class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
  public:
@@ -411,7 +430,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -452,7 +471,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -516,7 +535,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -579,7 +598,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -730,7 +749,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -775,7 +794,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -809,7 +828,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -836,7 +855,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -861,7 +880,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigPending) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
 }
@@ -917,7 +936,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
 
   // Complete opening the channel.
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
@@ -1007,7 +1026,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionOk) {
   EXPECT_EQ(0, open_cb_count);
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, service_request_cb_count);
   EXPECT_EQ(1, open_cb_count);
@@ -1046,7 +1065,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConf
   EXPECT_EQ(0, open_cb_count);
 
   RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kInboundOkConfigRsp));
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
   RETURN_IF_FATAL(
       sig()->ReceiveExpect(kDisconnectionRequest, kInboundDisconReq, kInboundDisconRsp));
 
@@ -1160,6 +1179,59 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
+
+struct ReceiveMtuTestParams {
+  std::optional<uint16_t> request_mtu;
+  uint16_t response_mtu;
+  ConfigurationResult response_status;
+};
+class ReceivedMtuTest : public L2CAP_BrEdrDynamicChannelTest,
+                        public ::testing::WithParamInterface<ReceiveMtuTestParams> {};
+
+TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConfigRsp.view()});
+
+  bool channel_opened = false;
+  auto open_cb = [&](auto chan) {
+    channel_opened = true;
+    ASSERT_TRUE(chan);
+    EXPECT_TRUE(chan->IsOpen());
+    EXPECT_EQ(chan->mtu_configuration().tx_mtu, GetParam().response_mtu);
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  const auto kOutboundConfigRsp = MakeConfigRspWithMtu(
+      kRemoteCId, GetParam().response_mtu, static_cast<uint16_t>(GetParam().response_status));
+
+  if (GetParam().request_mtu) {
+    RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
+                                         MakeConfigReqWithMtu(kLocalCId, *GetParam().request_mtu),
+                                         kOutboundConfigRsp));
+  } else {
+    RETURN_IF_FATAL(
+        sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundConfigRsp));
+  }
+
+  EXPECT_EQ(GetParam().response_status == ConfigurationResult::kSuccess, channel_opened);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    L2CAP_BrEdrDynamicChannelTest, ReceivedMtuTest,
+    ::testing::Values(
+        ReceiveMtuTestParams{std::nullopt, kDefaultMTU, ConfigurationResult::kSuccess},
+        ReceiveMtuTestParams{kMinACLMTU, kMinACLMTU, ConfigurationResult::kSuccess},
+        ReceiveMtuTestParams{kMinACLMTU - 1, kMinACLMTU,
+                             ConfigurationResult::kUnacceptableParameters},
+        ReceiveMtuTestParams{kDefaultMTU + 1, kDefaultMTU + 1, ConfigurationResult::kSuccess}));
 
 }  // namespace
 }  // namespace internal

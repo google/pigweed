@@ -79,6 +79,16 @@ class DynamicChannel {
   // can transfer data.
   virtual bool IsOpen() const = 0;
 
+  struct MtuConfiguration {
+    // Max SDU size peer is capable of accepting on this channel.
+    uint16_t tx_mtu;
+    // Max SDU size local device is capable of accepting on this channel.
+    uint16_t rx_mtu;
+  };
+
+  // Currently configured MTU parameters that are common to both LE and BR/EDR channels.
+  virtual MtuConfiguration mtu_configuration() const = 0;
+
   // Service identifier provided by the endpoint requesting the channel.
   PSM psm() const { return psm_; }
 

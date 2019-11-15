@@ -186,6 +186,8 @@ std::string ChannelConfiguration::UnknownOption::ToString() const {
   return fxl::StringPrintf("[type: %hhu, length: %zu]", type_, payload_.size());
 }
 
+// ChannelConfiguration implementation
+
 ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options() const {
   ConfigurationOptions options;
   if (mtu_option_) {
@@ -200,7 +202,17 @@ ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options() const
   return options;
 }
 
-// ChannelConfiguration implementation
+std::string ChannelConfiguration::ToString() const {
+  std::string str("{");
+  if (mtu_option_) {
+    str += mtu_option_->ToString();
+  }
+  if (retransmission_flow_control_option_) {
+    str += retransmission_flow_control_option_->ToString();
+  }
+  str += "}";
+  return str;
+}
 
 void ChannelConfiguration::Merge(const ChannelConfiguration& other) {
   if (other.mtu_option_) {

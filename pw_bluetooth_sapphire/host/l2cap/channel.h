@@ -167,7 +167,7 @@ class Channel : public fbl::RefCounted<Channel> {
  protected:
   friend class fbl::RefPtr<Channel>;
   Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-          hci::ConnectionHandle link_handle);
+          hci::ConnectionHandle link_handle, uint16_t tx_mtu, uint16_t rx_mtu);
   virtual ~Channel() = default;
 
   const ChannelId id_;
@@ -205,7 +205,8 @@ class ChannelImpl : public Channel {
   friend class internal::LogicalLink;
 
   ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-              std::list<PDU> buffered_pdus);
+              std::list<PDU> buffered_pdus, uint16_t tx_mtu = kDefaultMTU,
+              uint16_t rx_mtu = kDefaultMTU);
   ~ChannelImpl() override = default;
 
   // Called by |link_| to notify us when the channel can no longer process data.

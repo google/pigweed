@@ -86,6 +86,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override;
   bool IsOpen() const override;
 
+  MtuConfiguration mtu_configuration() const override;
+
   // Inbound request handlers. Request must have a destination channel ID that
   // matches this instance's |local_cid|.
   void OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
@@ -94,6 +96,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   // Reply with affirmative connection response and begin configuration.
   void CompleteInboundConnection(BrEdrCommandHandler::ConnectionResponder* responder);
+
+  // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
+  // Sections 5 and 7.1.1).
+  const ChannelConfiguration& remote_config() const { return remote_config_; }
 
  private:
   // The channel configuration state is described in v5.0 Vol 3 Part A Sec 6 (in
@@ -165,6 +171,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   fit::closure open_result_cb_;
 
   fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
+
+  // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
+  // Sections 5 and 7.1.1).
+  ChannelConfiguration remote_config_;
 };
 
 }  // namespace internal
