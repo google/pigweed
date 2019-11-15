@@ -25,8 +25,12 @@ load(
 
 cc_library(
     name = "pw_string",
-    srcs = ["type_to_string.cc"],
+    srcs = [
+        "format.cc",
+        "type_to_string.cc",
+    ],
     hdrs = [
+        "public/pw_string/format.h",
         "public/pw_string/to_string.h",
         "public/pw_string/type_to_string.h",
     ],
@@ -37,6 +41,14 @@ cc_library(
         "//pw_span",
         "//pw_status",
     ],
+)
+
+pw_test(
+    name = "format_test",
+    srcs = ["format_test.cc"],
+    copts = pw_default_copts(),
+    linkopts = pw_default_linkopts(),
+    deps = ["//pw_string"],
 )
 
 pw_test(

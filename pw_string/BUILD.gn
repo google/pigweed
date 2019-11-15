@@ -24,10 +24,12 @@ source_set("pw_string") {
     ":default_config",
   ]
   public = [
+    "public/pw_string/format.h",
     "public/pw_string/to_string.h",
     "public/pw_string/type_to_string.h",
   ]
   sources = [
+    "format.cc",
     "type_to_string.cc",
   ]
   sources += public
@@ -35,6 +37,16 @@ source_set("pw_string") {
     "$dir_pw_preprocessor",
     "$dir_pw_span",
     "$dir_pw_status",
+  ]
+}
+
+pw_test("format_test") {
+  deps = [
+    ":pw_string",
+    "$dir_pw_unit_test:main",
+  ]
+  sources = [
+    "format_test.cc",
   ]
 }
 
