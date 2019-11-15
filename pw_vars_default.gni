@@ -54,3 +54,17 @@ pw_unit_test_main = "$dir_pw_unit_test:main"
 # This should be enabled for targets which support parallelized running
 # of unit tests, such as desktops with multiple cores.
 pw_unit_test_create_run_targets = false
+
+################################# BACKENDS #####################################
+
+# This section of the file defines empty variables for each of the pigweed
+# facades that expect a backend. This allows minimal breakages when adding new
+# facades. Instead of GN always halting due to encountering an undefined
+# variable, GN will only emit an error if something in the build depends on the
+# empty (but defined) variable.
+#
+# All of these should default to empty strings. For target-specific defaults,
+# modify these variables in a target confiruation file.
+
+# Declare dir_pw_dumb_io_backend
+dir_pw_dumb_io_backend = ""

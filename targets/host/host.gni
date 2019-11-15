@@ -12,7 +12,20 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Config file for a host desktop system.
+# This is the target config to import when building for host. All this does is
+# import the appropriate target configuration for the current host OS.
+#
+# Due to GN-isms, lowest-precedence target variable definitions must be imported
+# at the deepest point. This causes the following structure:
+#
+# target_system.gni (e.g. Linux)
+#         └ host_common.gni
+#                  └ pw_vars_default.gni
+#
+# This allows host_common to override variables defined in pw_vars_default,
+# and target_system to override defaults in host_common.
+
+# Load target-specific config file for a host desktop system.
 if (host_os == "linux") {
   import("linux.gni")
 } else if (host_os == "mac") {
@@ -22,6 +35,3 @@ if (host_os == "linux") {
 } else {
   assert(false, "Please define a host config for your system: $host_os")
 }
-
-# Tests can always be run in parallel when building for the host.
-pw_unit_test_create_run_targets = true

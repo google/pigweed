@@ -12,4 +12,39 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("host_common.gni")
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+source_set("facade") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public_deps = [
+    "$dir_pw_span",
+    "$dir_pw_status",
+  ]
+  public = [
+    "public/pw_dumb_io/dumb_io.h",
+  ]
+  sources = public
+}
+
+source_set("default_putget_bytes") {
+  deps = [
+    ":facade",
+  ]
+  sources = [
+    "dumb_io.cc",
+  ]
+}
+
+source_set("pw_dumb_io") {
+  public_deps = [
+    ":facade",
+  ]
+  deps = [
+    "$dir_pw_dumb_io_backend",
+  ]
+}

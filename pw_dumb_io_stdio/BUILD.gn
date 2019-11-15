@@ -12,4 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("host_common.gni")
+source_set("pw_dumb_io_stdio") {
+  public_configs = [ "$dir_pw_build:pw_default_cpp" ]
+  deps = [
+    "$dir_pw_dumb_io:default_putget_bytes",
+    "$dir_pw_dumb_io:facade",
+  ]
+  sources = [
+    "dumb_io.cc",
+  ]
+}

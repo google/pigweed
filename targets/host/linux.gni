@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+import("host_common.gni")
 
 declare_args() {
   # Specifies the toolchain to use for this build.

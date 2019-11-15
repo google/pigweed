@@ -17,6 +17,7 @@ group("pw_modules") {
   deps = [
     "$dir_pigweed/docs",
     "$dir_pw_bloat",
+    "$dir_pw_dumb_io",
     "$dir_pw_preprocessor",
     "$dir_pw_span",
     "$dir_pw_status",
