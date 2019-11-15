@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+licenses(["notice"])  # Apache License 2.0
+
 SUBDIRS = [
     "pw_build",
     "pw_docgen",

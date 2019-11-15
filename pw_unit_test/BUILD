@@ -14,6 +14,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
+licenses(["notice"])  # Apache License 2.0
+
 load(
     "//pw_build:pigweed.bzl",
     "pw_default_copts",
