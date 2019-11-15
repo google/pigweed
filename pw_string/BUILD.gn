@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -80,5 +81,27 @@ pw_test("type_to_string_test") {
   ]
   sources = [
     "type_to_string_test.cc",
+  ]
+}
+
+pw_size_report("format_size_report") {
+  title = "Using pw::string::Format instead of snprintf"
+
+  binaries = [
+    {
+      target = "size_report:single_write_format"
+      base = "size_report:single_write_snprintf"
+      label = "One string, return size"
+    },
+    {
+      target = "size_report:multiple_writes_format"
+      base = "size_report:multiple_writes_snprintf"
+      label = "Ten strings, handle errors"
+    },
+    {
+      target = "size_report:many_writes_format"
+      base = "size_report:many_writes_snprintf"
+      label = "Fifty calls, same buffer"
+    },
   ]
 }
