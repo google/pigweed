@@ -146,18 +146,25 @@ def main() -> int:
             print(f'{sys.argv[0]}: failed to run diff on {binary}',
                   file=sys.stderr)
 
+    def write_file(filename: str, contents: str) -> None:
+        path = os.path.join(args.out_dir, filename)
+        with open(path, 'w') as output_file:
+            output_file.write(contents)
+        print(f'Output written to {path}')
+
     # TODO(frolv): Remove when custom output for full mode is added.
     if not args.full:
         out = bloat_output.TableOutput(
             args.title, diffs, charset=bloat_output.LineCharset)
         report.append(out.diff())
 
-    with open(os.path.join(
-            args.out_dir, f'{args.target}.txt'), 'w') as output_file:
-        output_file.write('\n'.join(report))
-        output_file.write('\n')
+        rst = bloat_output.RstOutput(diffs)
+        write_file(f'{args.target}.rst', rst.diff())
 
-    print('\n'.join(report))
+    complete_output = '\n'.join(report)
+    write_file(f'{args.target}.txt', complete_output)
+    print(complete_output)
+
     return 0
 
 

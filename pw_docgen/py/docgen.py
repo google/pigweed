@@ -44,9 +44,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--sphinx-build-dir', type=str, required=True,
                         help='Directory in which to build docs')
     parser.add_argument('--conf', type=str, required=True,
-                        'Path to conf.py file for Sphinx')
+                        help='Path to conf.py file for Sphinx')
     parser.add_argument('--gn-root', type=str, required=True,
-                        'Root of the GN build tree')
+                        help='Root of the GN build tree')
     parser.add_argument('--index', type=str, required=True,
                         help='Path to root index.rst file')
     parser.add_argument('--out-dir', type=str, required=True,

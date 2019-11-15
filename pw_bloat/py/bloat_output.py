@@ -16,7 +16,8 @@
 
 import abc
 import enum
-from typing import Collection, Dict, List, Optional, Tuple, Type, Union
+from typing import Callable, Collection, Dict, List, Optional, Tuple, Type
+from typing import TypeVar, Union
 
 from binary_diff import BinaryDiff, FormattedDiff
 
@@ -71,6 +72,11 @@ class LineCharset(enum.Enum):
     HH = '═'
 
 
+def identity(val: str) -> str:
+    """Returns a string unmodified."""
+    return val
+
+
 class TableOutput(Output):
     """Tabular output."""
 
@@ -80,8 +86,14 @@ class TableOutput(Output):
                  title: Optional[str],
                  diffs: Collection[BinaryDiff] = (),
                  charset: Union[Type[AsciiCharset],
-                                Type[LineCharset]] = AsciiCharset):
+                                Type[LineCharset]] = AsciiCharset,
+                 preprocess: Callable[[str], str] = identity,
+                 # TODO(frolv): Make this a Literal type.
+                 justify: str = 'rjust'):
         self._cs = charset
+        self._preprocess = preprocess
+        self._justify = justify
+
         super().__init__(title, diffs)
 
     def diff(self) -> str:
@@ -95,6 +107,7 @@ class TableOutput(Output):
             max_label = max(max_label, len(diff.label))
             for segment in diff.formatted_segments():
                 for i, val in enumerate(segment):
+                    val = self._preprocess(val)
                     column_widths[i] = max(column_widths[i], len(val))
 
         separators = self._row_separators([max_label] + column_widths)
@@ -128,8 +141,9 @@ class TableOutput(Output):
             for segment in diff.formatted_segments():
                 subrow: List[str] = []
                 label = diff.label if not subrows else ''
-                subrow.append(label.rjust(max_label, ' '))
-                subrow.extend([val.rjust(column_widths[i], ' ')
+                subrow.append(getattr(label, self._justify)(max_label, ' '))
+                subrow.extend([getattr(self._preprocess(val),
+                                       self._justify)(column_widths[i], ' ')
                                for i, val in enumerate(segment)])
                 subrows.append(self._table_row(subrow))
 
@@ -184,4 +198,10 @@ class RstOutput(TableOutput):
     """Tabular output in ASCII format, which is also valid RST."""
 
     def __init__(self, diffs: Collection[BinaryDiff] = ()):
-        super().__init__(None, diffs, AsciiCharset)
+        # Use RST line blocks within table cells to force each value to appear
+        # on a new line in the HTML output.
+        def add_rst_block(val: str) -> str:
+            return f'| {val}'
+
+        super().__init__(None, diffs, AsciiCharset,
+                         preprocess=add_rst_block, justify='ljust')

@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_docgen/docs.gni")
 
 group("pw_bloat") {
   deps = [
@@ -45,4 +46,11 @@ pw_executable("bloat_base") {
   sources = [
     "base_main.cc",
   ]
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "bloat.rst",
+  ]
+  report_deps = [ "examples:simple_bloat" ]
 }
