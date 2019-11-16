@@ -14,11 +14,19 @@
 
 import("$dir_pw_docgen/docs.gni")
 
+pw_doc_group("core_docs") {
+  sources = [
+    "embedded_cpp_guide.rst",
+    "style_guide.rst",
+  ]
+}
+
 pw_doc_gen("docs") {
   conf = "conf.py"
   index = "index.rst"
   output_directory = target_gen_dir
   deps = [
+    ":core_docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_preprocessor:docs",
   ]

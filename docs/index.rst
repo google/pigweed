@@ -11,5 +11,7 @@ facilitate easy integration into existing codebases.
    :maxdepth: 1
    :hidden:
 
+   docs/embedded_cpp_guide
+   docs/style_guide
    pw_bloat/bloat
    pw_preprocessor/docs
