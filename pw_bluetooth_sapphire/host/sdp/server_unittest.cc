@@ -428,7 +428,9 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
 //  - returns continuation state if too many services match
 //  - continuation state in request works correctly
 TEST_F(SDP_ServerTest, ServiceSearchContinuationState) {
-  l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad);
+  // Set the TX MTU to the lowest that's allowed (48)
+  l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad,
+                                      48 /* tx_mtu */);
   RunLoopUntilIdle();
 
   // Add enough services to generate a continuation state.

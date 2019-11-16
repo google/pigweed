@@ -22,9 +22,6 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
       remote_id_(remote_id),
       link_type_(link_type),
       link_handle_(link_handle),
-
-      // TODO(armansito): IWBN if the MTUs could be specified dynamically
-      // instead (see NET-308).
       tx_mtu_(tx_mtu),
       rx_mtu_(rx_mtu) {
   ZX_DEBUG_ASSERT(id_);

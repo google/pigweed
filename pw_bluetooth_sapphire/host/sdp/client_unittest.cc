@@ -16,6 +16,7 @@ namespace {
 
 using TestingBase = bt::l2cap::testing::FakeChannelTest;
 constexpr l2cap::ChannelId kTestChannelId = 0x0041;
+constexpr uint16_t kResponseMaxSize = 672;
 
 class SDP_ClientTest : public TestingBase {
  public:
@@ -125,7 +126,8 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
     rsp.SetAttribute(1, kBluetoothProfileDescriptorList,
                      rec.GetAttribute(kBluetoothProfileDescriptorList).Clone());
 
-    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    auto rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -185,7 +187,8 @@ TEST_F(SDP_ClientTest, TwoQueriesSubsequent) {
     // Receive the response (empty response)
     // Record makes building the response easier.
     ServiceSearchAttributeResponse rsp;
-    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    auto rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -199,7 +202,8 @@ TEST_F(SDP_ClientTest, TwoQueriesSubsequent) {
     RunLoopUntilIdle();
     EXPECT_TRUE(success);
 
-    rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -263,7 +267,8 @@ TEST_F(SDP_ClientTest, TwoQueriesQueued) {
     // Receive the response (empty response)
     // Record makes building the response easier.
     ServiceSearchAttributeResponse rsp;
-    auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    auto rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -273,7 +278,8 @@ TEST_F(SDP_ClientTest, TwoQueriesQueued) {
     EXPECT_EQ(2u, sent_packets);
 
     // Respond to the second request.
-    rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+    rsp_ptr =
+        rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
     fake_chan()->Receive(*rsp_ptr);
 
     RunLoopUntilIdle();
@@ -344,7 +350,7 @@ TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
         uint16_t request_tid = (*packet)[1] << 8 || (*packet)[2];
         ASSERT_EQ(kSearchExpectedParams, packet->view(5, kSearchExpectedParams.size()));
         // The stuff after the params is the continuation state.
-        auto rsp_ptr = rsp.GetPDU(16 /* Max attribute bytes */, request_tid,
+        auto rsp_ptr = rsp.GetPDU(16 /* Max attribute bytes */, request_tid, kResponseMaxSize,
                                   packet->view(5 + kSearchExpectedParams.size() + 1));
         fake_chan()->Receive(*rsp_ptr);
       },
@@ -415,7 +421,8 @@ TEST_F(SDP_ClientTest, NoResults) {
 
   // Receive an empty response
   ServiceSearchAttributeResponse rsp;
-  auto rsp_ptr = rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, BufferView());
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* Max attribute bytes */, request_tid, kResponseMaxSize, BufferView());
   fake_chan()->Receive(*rsp_ptr);
 
   RunLoopUntilIdle();

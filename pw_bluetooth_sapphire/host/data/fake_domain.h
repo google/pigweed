@@ -41,7 +41,8 @@ class FakeDomain final : public Domain {
   // Triggers the creation of an inbound dynamic channel on the given link. The
   // channels created will be provided to handlers passed to RegisterService.
   void TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelId id,
-                                  l2cap::ChannelId remote_id);
+                                  l2cap::ChannelId remote_id, uint16_t tx_mtu = l2cap::kDefaultMTU,
+                                  uint16_t rx_mtu = l2cap::kDefaultMTU);
 
   // Triggers a link error callback on the given link.
   void TriggerLinkError(hci::ConnectionHandle handle);
@@ -113,7 +114,9 @@ class FakeDomain final : public Domain {
                              l2cap::LinkErrorCallback link_error_callback,
                              async_dispatcher_t* dispatcher);
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                           l2cap::ChannelId remote_id);
+                                                           l2cap::ChannelId remote_id,
+                                                           uint16_t tx_mtu = l2cap::kDefaultMTU,
+                                                           uint16_t rx_mtu = l2cap::kDefaultMTU);
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeFixedChannel(LinkData* link,
                                                                 l2cap::ChannelId id);
 

@@ -33,7 +33,8 @@ void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 }
 
 void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                            l2cap::ChannelId id, l2cap::ChannelId remote_id) {
+                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
+                                            uint16_t tx_mtu, uint16_t rx_mtu) {
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
@@ -43,7 +44,7 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 
   l2cap::ChannelCallback& cb = cb_iter->second.first;
   async_dispatcher_t* const dispatcher = cb_iter->second.second;
-  auto chan = OpenFakeChannel(&link_data, id, remote_id);
+  auto chan = OpenFakeChannel(&link_data, id, remote_id, tx_mtu, rx_mtu);
   async::PostTask(dispatcher, [cb = cb.share(), chan = std::move(chan)] { cb(std::move(chan)); });
 }
 
@@ -187,10 +188,11 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
 }
 
 fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                     l2cap::ChannelId remote_id) {
+                                                     l2cap::ChannelId remote_id, uint16_t tx_mtu,
+                                                     uint16_t rx_mtu) {
   fbl::RefPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
-    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type));
+    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type, tx_mtu, rx_mtu));
     chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
   }
 

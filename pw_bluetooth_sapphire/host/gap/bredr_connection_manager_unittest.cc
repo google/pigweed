@@ -34,6 +34,9 @@ const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kTestDevAddr2(DeviceAddress::Type::kBREDR, {3});
 
+// A default size for PDUs when generating responses for testing.
+const uint16_t PDU_MAX = 0xFFF;
+
 #define TEST_DEV_ADDR_BYTES_LE 0x01, 0x00, 0x00, 0x00, 0x00, 0x00
 
 // clang-format off
@@ -1428,7 +1431,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
 
   sdp::ServiceSearchAttributeResponse rsp;
   rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(UUID()));
-  auto rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, BufferView());
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
 
   sdp_chan->Receive(*rsp_ptr);
 
@@ -1536,7 +1540,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   sdp::ServiceSearchAttributeResponse rsp;
   rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(UUID()));
-  auto rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, BufferView());
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
 
   sdp_chan->Receive(*rsp_ptr);
 
@@ -1568,7 +1573,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
   ASSERT_TRUE(sdp_request_tid);
   ASSERT_EQ(1u, search_cb_count);
 
-  rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, BufferView());
+  rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
 
   sdp_chan->Receive(*rsp_ptr);
 
@@ -2034,7 +2039,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
 
   sdp::ServiceSearchAttributeResponse rsp;
   rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(UUID()));
-  auto rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, BufferView());
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
 
   sdp_chan->Receive(*rsp_ptr);
 

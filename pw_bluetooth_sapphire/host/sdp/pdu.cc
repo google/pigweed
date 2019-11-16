@@ -26,12 +26,6 @@ constexpr size_t kMinAttributeIDListBytes = 5;
 // Spec v5.0, Vol 3, Part B, Sec 4.5.1
 constexpr size_t kMaxServiceSearchSize = 12;
 
-// Maximum number of services to return in a ServiceSearchResponse PDU
-// TODO(BT-366, BT-616): This is set to 9 because the minimum MTU size is 48.
-// Only returning 9 results results in a maximum packet size of 48 bytes.
-// PTS sets the MTU to 48 during qualification tests.
-constexpr size_t kMaxServiceSearchResponseServices = 9;
-
 // Validates continuation state in |buf|, which should be the configuration
 // state bytes of a PDU.
 // Returns true if the continuation state is valid here, false otherwise.
@@ -188,7 +182,8 @@ Status ErrorResponse::Parse(const ByteBuffer& buf) {
   return Status();
 }
 
-MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, const ByteBuffer&) const {
+MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, uint16_t,
+                                           const ByteBuffer&) const {
   auto ptr = GetNewPDU(kErrorResponse, tid, sizeof(ErrorCode));
   size_t written = sizeof(Header);
 
@@ -331,7 +326,8 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
 }
 
 // Continuation state: Index of the start record for the continued response.
-MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId tid,
+MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t req_max, TransactionId tid,
+                                                   uint16_t max_size,
                                                    const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
@@ -345,9 +341,10 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
   }
 
   uint16_t response_record_count = total_service_record_count_;
-  if (max < response_record_count) {
-    bt_log(SPEW, "sdp", "Limit ServiceSearchResponse to %d records", max);
-    response_record_count = max;
+  if (req_max < response_record_count) {
+    bt_log(SPEW, "sdp", "Limit ServiceSearchResponse to %d/%d records", req_max,
+           response_record_count);
+    response_record_count = req_max;
   }
 
   if (cont_state.size() > 0 && response_record_count <= start_idx) {
@@ -356,12 +353,26 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
   }
 
   uint16_t current_record_count = response_record_count - start_idx;
+
+  // Minimum size is zero records with no continuation state.
+  size_t min_size = (2 * sizeof(uint16_t)) + sizeof(uint8_t) + sizeof(uint16_t) + sizeof(Header);
+
+  if (max_size < min_size) {
+    // Can't generate a PDU, it's too small to hold even no records.
+    return nullptr;
+  }
+
+  // The most records we can send in a packet of max_size (including a continuation and Header)
+  size_t max_records = (max_size - min_size) / sizeof(ServiceHandle);
+
   uint8_t info_length = 0;
-  if (kMaxServiceSearchResponseServices < current_record_count) {
-    current_record_count = kMaxServiceSearchResponseServices;
+  if (max_records < current_record_count) {
+    bt_log(SPEW, "sdp", "Max Size limits to %zu/%d records", max_records, current_record_count);
+    current_record_count = max_records;
     info_length = sizeof(uint16_t);
   }
 
+  // Note: we remove the header & param size from size here
   size_t size = (2 * sizeof(uint16_t)) + (current_record_count * sizeof(ServiceHandle)) +
                 sizeof(uint8_t) + info_length;
 
@@ -369,10 +380,9 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t max, TransactionId t
   if (!buf) {
     return buf;
   }
+  ZX_ASSERT(buf->size() <= max_size);
 
   size_t written = sizeof(Header);
-  // The total service record count and current service record count is the
-  // same.
   buf->WriteObj(htobe16(response_record_count), written);
   written += sizeof(uint16_t);
   buf->WriteObj(htobe16(current_record_count), written);
@@ -584,7 +594,8 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
 }
 
 // Continuation state: index of # of bytes into the attribute list element
-MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t max, TransactionId tid,
+MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t req_max, TransactionId tid,
+                                                      uint16_t max_size,
                                                       const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
@@ -614,10 +625,31 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t max, TransactionI
     bt_log(SPEW, "sdp", "continuation out of range: %d > %zu", bytes_skipped, write_size);
     return nullptr;
   }
-  uint16_t attribute_list_byte_count = write_size - bytes_skipped;
+
+  // Minimum size is header, byte_count, 2 attribute bytes, and a zero length continuation state
+  size_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
+
+  if (min_size > max_size) {
+    // Can't make a PDU because we don't have enough space.
+    return nullptr;
+  }
+
   uint8_t info_length = 0;
-  if (attribute_list_byte_count > max) {
-    attribute_list_byte_count = max;
+  uint16_t attribute_list_byte_count = write_size - bytes_skipped;
+
+  size_t max_attribute_byte_count =
+      max_size - min_size + 2;  // Two attribute bytes counted in the min_size
+  if (attribute_list_byte_count > max_attribute_byte_count) {
+    info_length = sizeof(uint32_t);
+    bt_log(SPEW, "sdp", "Max size limits attribute size to %zu of %d",
+           max_attribute_byte_count - info_length, attribute_list_byte_count);
+    attribute_list_byte_count = max_attribute_byte_count - info_length;
+  }
+
+  if (attribute_list_byte_count > req_max) {
+    bt_log(SPEW, "sdp", "Requested size limits attribute size to %d of %d", req_max,
+           attribute_list_byte_count);
+    attribute_list_byte_count = req_max;
     info_length = sizeof(uint32_t);
   }
 
@@ -901,7 +933,8 @@ void ServiceSearchAttributeResponse::SetAttribute(uint32_t idx, AttributeId id, 
 }
 
 // Continuation state: index of # of bytes into the attribute list element
-MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t max, TransactionId tid,
+MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, TransactionId tid,
+                                                            uint16_t max_size,
                                                             const ByteBuffer& cont_state) const {
   if (!complete()) {
     return nullptr;
@@ -939,10 +972,30 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t max, Transa
     return nullptr;
   }
 
-  uint16_t attribute_lists_byte_count = write_size - bytes_skipped;
+  // Minimum size is header, byte_count, 2 attribute bytes, and a zero length continuation state
+  size_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
+
+  if (min_size > max_size) {
+    // Can't make a PDU because we don't have enough space.
+    return nullptr;
+  }
+
   uint8_t info_length = 0;
-  if (attribute_lists_byte_count > max) {
-    attribute_lists_byte_count = max;
+  uint16_t attribute_lists_byte_count = write_size - bytes_skipped;
+
+  size_t max_attribute_byte_count =
+      max_size - min_size + 2;  // Two attribute bytes counted in the min_size
+  if (attribute_lists_byte_count > max_attribute_byte_count) {
+    info_length = sizeof(uint32_t);
+    bt_log(SPEW, "sdp", "Max size limits attribute size to %zu of %d",
+           max_attribute_byte_count - info_length, attribute_lists_byte_count);
+    attribute_lists_byte_count = max_attribute_byte_count - info_length;
+  }
+
+  if (attribute_lists_byte_count > req_max) {
+    bt_log(SPEW, "sdp", "Requested size limits attribute size to %d of %d", req_max,
+           attribute_lists_byte_count);
+    attribute_lists_byte_count = req_max;
     info_length = sizeof(uint32_t);
   }
 
@@ -972,5 +1025,6 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t max, Transa
   ZX_DEBUG_ASSERT(written == sizeof(Header) + size);
   return buf;
 }
+
 }  // namespace sdp
 }  // namespace bt

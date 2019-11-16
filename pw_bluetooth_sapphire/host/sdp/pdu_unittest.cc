@@ -15,6 +15,11 @@ namespace bt {
 namespace sdp {
 namespace {
 
+// The Default MTU in basic mode (Spec v5.1, Vol 3 Part A Section 5.1)
+const uint16_t kDefaultMaxSize = 672;
+// The smallest MTU allowed by the spec.
+const uint16_t kMinMaxSize = 48;
+
 // Helper function to match one of two options, and print useful information on failure.
 template <class Container1, class Container2, class Container3>
 bool MatchesOneOf(const Container1& one, const Container2& two, const Container3& actual) {
@@ -57,7 +62,8 @@ TEST_F(SDP_PDUTest, ErrorResponse) {
   EXPECT_EQ(ErrorCode::kInvalidContinuationState, response.error_code());
 
   response.set_error_code(ErrorCode::kInvalidContinuationState);
-  auto ptr = response.GetPDU(0xF00F /* ignored */, 0xDEAD, BufferView());
+  auto ptr =
+      response.GetPDU(0xF00F /* ignored */, 0xDEAD, kDefaultMaxSize /* ignored */, BufferView());
 
   EXPECT_TRUE(ContainersEqual(kInvalidContState.view(0, 7), *ptr));
 }
@@ -188,7 +194,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                                                      0x00         // No continuation state
   );
 
-  auto pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
+  auto pdu = resp.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedEmpty, *pdu));
 
   resp.set_service_record_handle_list(results);
@@ -203,7 +209,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                                                 0x00                     // No continuation state
   );
 
-  pdu = resp.GetPDU(0xFFFF, 0x0110, BufferView());
+  pdu = resp.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 
   const auto kExpectedLimited =
@@ -216,7 +222,76 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                              0x00                     // No continuation state
       );
 
-  pdu = resp.GetPDU(1, 0x0110, BufferView());
+  pdu = resp.GetPDU(1, 0x0110, kDefaultMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedLimited, *pdu));
+
+  resp.set_service_record_handle_list({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
+  const auto kExpectedLarge =
+      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
+                             0x01, 0x10,              // Transaction ID (0x0110)
+                             0x00, 0x31,              // Parameter length: 49
+                             0x00, 0x0B,              // Total service record count: 11
+                             0x00, 0x0B,              // Current service record count: 11
+                             0x00, 0x00, 0x00, 0x01,  // Service record 1
+                             0x00, 0x00, 0x00, 0x02,  // Service record 2
+                             0x00, 0x00, 0x00, 0x03,  // Service record 3
+                             0x00, 0x00, 0x00, 0x04,  // Service record 4
+                             0x00, 0x00, 0x00, 0x05,  // Service record 5
+                             0x00, 0x00, 0x00, 0x06,  // Service record 6
+                             0x00, 0x00, 0x00, 0x07,  // Service record 7
+                             0x00, 0x00, 0x00, 0x08,  // Service record 8
+                             0x00, 0x00, 0x00, 0x09,  // Service record 9
+                             0x00, 0x00, 0x00, 0x0A,  // Service record 10
+                             0x00, 0x00, 0x00, 0x0B,  // Service record 11
+                             0x00                     // No continuation state.
+      );
+
+  pdu = resp.GetPDU(0x00FF, 0x0110, kDefaultMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedLarge, *pdu));
+};
+
+TEST_F(SDP_PDUTest, ServiceSearchResponsePDU_MaxSize) {
+  std::vector<ServiceHandle> results{1, 2};
+  ServiceSearchResponse resp;
+
+  // Empty results
+  const auto kExpectedEmpty = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
+                                                     0x01, 0x10,  // Transaction ID (0x0110)
+                                                     0x00, 0x05,  // Parameter length: 5 bytes
+                                                     0x00, 0x00,  // Total service record count: 0
+                                                     0x00, 0x00,  // Current service record count: 0
+                                                     0x00         // No continuation state
+  );
+
+  auto pdu = resp.GetPDU(0xFFFF, 0x0110, kMinMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedEmpty, *pdu));
+
+  resp.set_service_record_handle_list(results);
+
+  const auto kExpected = CreateStaticByteBuffer(0x03,        // ServiceSearch Response PDU ID
+                                                0x01, 0x10,  // Transaction ID (0x0110)
+                                                0x00, 0x0d,  // Parameter length: 13 bytes
+                                                0x00, 0x02,  // Total service record count: 2
+                                                0x00, 0x02,  // Current service record count: 2
+                                                0x00, 0x00, 0x00, 0x01,  // Service record 1
+                                                0x00, 0x00, 0x00, 0x02,  // Service record 2
+                                                0x00                     // No continuation state
+  );
+
+  pdu = resp.GetPDU(0xFFFF, 0x0110, kMinMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
+
+  const auto kExpectedLimited =
+      CreateStaticByteBuffer(0x03,                    // ServiceSearchResponse PDU ID
+                             0x01, 0x10,              // Transaction ID (0x0110)
+                             0x00, 0x09,              // Parameter length: 9
+                             0x00, 0x01,              // Total service record count: 1
+                             0x00, 0x01,              // Current service record count: 1
+                             0x00, 0x00, 0x00, 0x01,  // Service record 1
+                             0x00                     // No continuation state
+      );
+
+  pdu = resp.GetPDU(1, 0x0110, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedLimited, *pdu));
 
   resp.set_service_record_handle_list({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
@@ -238,7 +313,8 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                              0x02, 0x00, 0x09         // Continuation state.
       );
 
-  pdu = resp.GetPDU(0x00FF, 0x0110, BufferView());
+  // The MTU size here should limit the number of service records returned to 9.
+  pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, BufferView());
   EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
 
   const auto kExpectedRest = CreateStaticByteBuffer(0x03,        // ServiceSearchResponse PDU ID
@@ -251,7 +327,7 @@ TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
                                                     0x00  // No continuation state.
   );
 
-  pdu = resp.GetPDU(0x00FF, 0x0110, CreateStaticByteBuffer(0x00, 0x09));
+  pdu = resp.GetPDU(0x00FF, 0x0110, kMinMaxSize, CreateStaticByteBuffer(0x00, 0x09));
   EXPECT_TRUE(ContainersEqual(kExpectedRest, *pdu));
 };
 
@@ -529,6 +605,61 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
   status = resp.Parse(kInvalidByteCount);
 
   EXPECT_FALSE(status);
+}
+
+TEST_F(SDP_PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
+  ServiceAttributeResponse resp;
+
+  // Even if set in the wrong order, attributes should be sorted in the PDU.
+  resp.set_attribute(0x4000, DataElement(uint16_t(0xfeed)));
+  resp.set_attribute(0x4001, DataElement(protocol::kSDP));
+  resp.set_attribute(0x4002, DataElement(uint32_t(0xc0decade)));
+  DataElement str;
+  str.Set(std::string(u8"💖"));
+  resp.set_attribute(0x4003, std::move(str));
+  resp.set_attribute(0x4005, DataElement(uint32_t(0xC0DEB4BE)));
+  resp.set_attribute(kServiceRecordHandle, DataElement(uint32_t(0)));
+
+  const uint16_t kTransactionID = 0xfeed;
+
+  const auto kExpectedContinuation = CreateStaticByteBuffer(
+      0x05,                                                  // ServiceAttributeResponse
+      UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
+      0x00, 0x2B,                                            // Param Length (43 bytes)
+      0x00, 0x24,                                            // AttributeListsByteCount (36 bytes)
+      // AttributeLists
+      0x35, 0x2d,                    // Sequence uint8 46 bytes
+      0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
+      0x0A, 0x00, 0x00, 0x00, 0x00,  // uint32_t, 0
+      0x09, 0x40, 0x00,              // uint16_t (handle) = 0x4000
+      0x09, 0xfe, 0xed,              // uint16_t (0xfeed)
+      0x09, 0x40, 0x01,              // uint16_t (handle) = 0x4001
+      0x19, 0x00, 0x01,              // UUID (kSDP)
+      0x09, 0x40, 0x02,              // uint32_t (handle) = 0x4002
+      0x0A, 0xc0, 0xde, 0xca, 0xde,  // uint32_t = 0xc0decade
+      0x09, 0x40, 0x03,              // uint32_t (handle) = 0x4003
+      0x25, 0x04, 0xf0,              // Partial String: '💖' (type, length, first char)
+      0x04, 0x00, 0x00, 0x00, 0x24   // Continuation state (4 bytes: 36 bytes offset)
+  );
+
+  auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
+
+  const auto kExpectedRemaining = CreateStaticByteBuffer(
+      0x05,                                                  // ServiceSearchAttributeResponse
+      UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
+      0x00, 0x0e,                                            // Param Length (14 bytes)
+      0x00, 0x0b,                                            // AttributeListsByteCount (12 bytes)
+      // AttributeLists (continued)
+      0x9f, 0x92, 0x96,              // Remaining 3 bytes of String: '💖'
+      0x09, 0x40, 0x05,              // uint16_t (handle) = 0x4005
+      0x0A, 0xc0, 0xde, 0xb4, 0xbe,  // value: uint32_t (0xC0DEB4BE)
+      0x00                           // Continutation state (none)
+  );
+
+  pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
+                    CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x24));
+  EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
 TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
@@ -843,36 +974,96 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
       0x00                           // Continutation state (none)
   );
 
-  auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, BufferView());
+  auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kDefaultMaxSize, BufferView());
 
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
+}
+
+TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
+  ServiceSearchAttributeResponse resp;
+
+  // Even if set in the wrong order, attributes should be sorted in the PDU.
+  resp.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
+  resp.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
+  resp.SetAttribute(0, 0x4002, DataElement(uint32_t(0xc0decade)));
+  DataElement str;
+  str.Set(std::string(u8"💖"));
+  resp.SetAttribute(0, 0x4003, std::move(str));
+  resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
+
+  // Attributes do not need to be continuous
+  resp.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
+
+  const uint16_t kTransactionID = 0xfeed;
+
+  const auto kExpectedContinuation = CreateStaticByteBuffer(
+      0x07,                                                  // ServiceSearchAttributeResponse
+      UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
+      0x00, 0x2B,                                            // Param Length (43 bytes)
+      0x00, 0x24,                                            // AttributeListsByteCount (36 bytes)
+      // AttributeLists
+      0x35, 0x31,                    // Sequence uint8 49 bytes = 37 + 2 + 8 + 2
+      0x35, 0x25,                    // Sequence uint8 37 bytes
+      0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
+      0x0A, 0x00, 0x00, 0x00, 0x00,  // uint32_t, 0
+      0x09, 0x40, 0x00,              // uint16_t (handle) = 0x4000
+      0x09, 0xfe, 0xed,              // uint16_t (0xfeed)
+      0x09, 0x40, 0x01,              // uint16_t (handle) = 0x4001
+      0x19, 0x00, 0x01,              // UUID (kSDP)
+      0x09, 0x40, 0x02,              // uint32_t (handle) = 0x4002
+      0x0A, 0xc0, 0xde, 0xca, 0xde,  // uint32_t = 0xc0decade
+      0x09, 0x40, 0x03,              // uint32_t (handle) = 0x4003
+      0x25,                          // Partial String: '💖' (just the type)
+      0x04, 0x00, 0x00, 0x00, 0x24   // Continuation state (4 bytes: 36 bytes offset)
+  );
+
+  auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize, BufferView());
+  EXPECT_TRUE(ContainersEqual(kExpectedContinuation, *pdu));
+
+  const auto kExpectedRemaining = CreateStaticByteBuffer(
+      0x07,                                                  // ServiceSearchAttributeResponse
+      UpperBits(kTransactionID), LowerBits(kTransactionID),  // Transaction ID
+      0x00, 0x12,                                            // Param Length (18 bytes)
+      0x00, 0x0F,                                            // AttributeListsByteCount (14 bytes)
+      // AttributeLists (continued)
+      0x04, 0xf0, 0x9f, 0x92, 0x96,  // Remaining 5 bytes of String: '💖'
+      0x35, 0x08,                    // Sequence uint8 8 bytes
+      0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
+      0x0A, 0x10, 0x00, 0x20, 0x00,  // value: uint32_t (0x10002000)
+      0x00                           // Continutation state (none)
+  );
+
+  pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
+                    CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x24));
+  EXPECT_TRUE(ContainersEqual(kExpectedRemaining, *pdu));
 }
 
 TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
   ServiceSearchResponse rsp_search;
   rsp_search.set_service_record_handle_list({1, 2, 3, 4});
-  auto buf = rsp_search.GetPDU(0xFFFF, 0x0110, BufferView());
+  auto buf = rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(buf);
   // Out of Range (continuation is zero-indexed)
   uint16_t handle_count = htobe16(rsp_search.service_record_handle_list().size());
   auto service_search_cont = DynamicByteBuffer(sizeof(uint16_t));
   service_search_cont.WriteObj(handle_count, 0);
-  buf = rsp_search.GetPDU(0xFFFF, 0x0110, service_search_cont);
+  buf = rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, service_search_cont);
   EXPECT_FALSE(buf);
   // Wrong size continuation state
-  buf = rsp_search.GetPDU(0xFFFF, 0x0110, CreateStaticByteBuffer(0x01, 0xFF, 0xFF));
+  buf =
+      rsp_search.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, CreateStaticByteBuffer(0x01, 0xFF, 0xFF));
   EXPECT_FALSE(buf);
 
   ServiceAttributeResponse rsp_attr;
   rsp_attr.set_attribute(1, DataElement(uint32_t(45)));
 
-  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, BufferView());
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(buf);
 
   uint32_t rsp_size = htobe32(buf->size() + 5);
   auto too_large_cont = DynamicByteBuffer(sizeof(uint32_t));
   too_large_cont.WriteObj(rsp_size, 0);
-  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, too_large_cont);
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, too_large_cont);
 
   EXPECT_FALSE(buf);
 
@@ -883,13 +1074,13 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
   rsp_search_attr.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
   rsp_search_attr.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
 
-  buf = rsp_search_attr.GetPDU(0xFFFF, 0x0110, BufferView());
+  buf = rsp_search_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
 
   EXPECT_TRUE(buf);
 
   rsp_size = htobe32(buf->size() + 5);
   too_large_cont.WriteObj(rsp_size, 0);
-  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, too_large_cont);
+  buf = rsp_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, too_large_cont);
 
   EXPECT_FALSE(buf);
 }

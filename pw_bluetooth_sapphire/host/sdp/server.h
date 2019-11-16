@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 
-#include <fbl/function.h>
-#include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <lib/zx/socket.h>
 
 #include <map>
+
+#include <fbl/function.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -76,7 +77,7 @@ class Server final {
 
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
-  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu);
+  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t tx_mtu);
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.

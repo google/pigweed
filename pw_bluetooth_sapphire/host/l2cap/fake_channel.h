@@ -26,7 +26,8 @@ namespace testing {
 class FakeChannel : public Channel {
  public:
   FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
-              hci::Connection::LinkType link_type);
+              hci::Connection::LinkType link_type, uint16_t tx_mtu = kDefaultMTU,
+              uint16_t rx_mtu = kDefaultMTU);
   ~FakeChannel() override = default;
 
   // Routes the given data over to the rx handler as if it were received from

@@ -62,9 +62,9 @@ bool ContainersEqual(InputIt1 expected_begin, InputIt1 expected_end, InputIt2 ac
                      InputIt2 actual_end) {
   if (std::equal(expected_begin, expected_end, actual_begin, actual_end))
     return true;
-  std::cout << "Expected: { ";
+  std::cout << "Expected: (" << (expected_end - expected_begin) << " bytes) { ";
   PrintByteContainer(expected_begin, expected_end);
-  std::cout << "}\n   Found: { ";
+  std::cout << "}\n   Found: (" << (actual_end - actual_begin) << " bytes) { ";
   PrintByteContainer(actual_begin, actual_end);
   std::cout << "}" << std::endl;
   return false;
