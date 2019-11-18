@@ -14,4 +14,5 @@ facilitate easy integration into existing codebases.
    docs/embedded_cpp_guide
    docs/style_guide
    pw_bloat/bloat
+   pw_docgen/docgen
    pw_preprocessor/docs
