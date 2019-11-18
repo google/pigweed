@@ -16,9 +16,9 @@
 
 namespace pw::dumb_io {
 
-StatusWithSize GetBytes(span<std::byte> dest) {
+StatusWithSize ReadBytes(span<std::byte> dest) {
   for (size_t i = 0; i < dest.size_bytes(); ++i) {
-    Status result = GetByte(&dest[i]);
+    Status result = ReadByte(&dest[i]);
     if (!result.ok()) {
       return StatusWithSize(result, i);
     }
@@ -26,9 +26,9 @@ StatusWithSize GetBytes(span<std::byte> dest) {
   return StatusWithSize(dest.size_bytes());
 }
 
-StatusWithSize PutBytes(span<const std::byte> src) {
+StatusWithSize WriteBytes(span<const std::byte> src) {
   for (size_t i = 0; i < src.size_bytes(); ++i) {
-    Status result = PutByte(src[i]);
+    Status result = WriteByte(src[i]);
     if (!result.ok()) {
       return StatusWithSize(result, i);
     }

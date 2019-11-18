@@ -51,7 +51,7 @@ namespace pw::dumb_io {
 // from the pw_dumb_io backend.
 //
 // Returns Status::OK if a byte was successfully read.
-Status GetByte(std::byte* dest);
+Status ReadByte(std::byte* dest);
 
 // Write a single byte out the dumb io backend.
 // Implemented by: Backend
@@ -60,34 +60,46 @@ Status GetByte(std::byte* dest);
 // out the pw_dumb_io backend.
 //
 // Returns Status::OK if a byte was successfully read.
-Status PutByte(std::byte b);
+Status WriteByte(std::byte b);
 
-// Fill a byte span from the dumb io backend using GetByte().
+// Write a string out the dumb io backend.
+// Implemented by: Backend
+//
+// This function takes a null-terminated string and writes it out the dumb io
+// backend, adding any platform-specific newline character(s) (these are
+// accounted for in the returned StatusWithSize).
+//
+// Return status is Status::OK if all the bytes from the source string were
+// successfully written. In all cases, the number of bytes successfully written
+// are returned as part of the StatusWithSize.
+StatusWithSize WriteLine(const std::string_view& s);
+
+// Fill a byte span from the dumb io backend using ReadByte().
 // Implemented by: Facade
 //
-// This function is implemented by this facade and simply uses GetByte() to read
-// enough bytes to fill the destination span. If there's an error reading a
+// This function is implemented by this facade and simply uses ReadByte() to
+// read enough bytes to fill the destination span. If there's an error reading a
 // byte, the read is aborted and the contents of the destination span are
 // undefined. This function blocks until either an error occurs, or all bytes
-// are successfully read from the backend's GetByte() implementation.
+// are successfully read from the backend's ReadByte() implementation.
 //
 // Return status is Status::OK if the destination span was successfully filled.
 // In all cases, the number of bytes successuflly read to the destination span
 // are returned as part of the StatusWithSize.
-StatusWithSize GetBytes(span<std::byte> dest);
+StatusWithSize ReadBytes(span<std::byte> dest);
 
-// Write span of bytes out the dumb io backend using PutByte().
+// Write span of bytes out the dumb io backend using WriteByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply writes the source
-// contents using PutByte(). If an error writing a byte is encountered, the
+// contents using WriteByte(). If an error writing a byte is encountered, the
 // write is aborted and the error status returned. This function blocks until
 // either an error occurs, or all bytes are successfully read from the backend's
-// PutByte() implementation.
+// WriteByte() implementation.
 //
 // Return status is Status::OK if all the bytes from the source span were
 // successfully written. In all cases, the number of bytes successfully written
 // are returned as part of the StatusWithSize.
-StatusWithSize PutBytes(span<const std::byte> src);
+StatusWithSize WriteBytes(span<const std::byte> src);
 
 }  // namespace pw::dumb_io

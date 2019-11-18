@@ -30,6 +30,7 @@ source_set("pw_dumb_io_baremetal_stm32f429") {
     ":linker_script",
   ]
   deps = [
+    "$dir_pw_dumb_io:default_putget_bytes",
     "$dir_pw_dumb_io:facade",
     "$dir_pw_preprocessor",
   ]

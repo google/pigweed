@@ -168,7 +168,7 @@ namespace pw::dumb_io {
 // Wait for a byte to read on USART1. This blocks until a byte is read. This is
 // extremely inefficient as it requires the target to burn CPU cycles polling to
 // see if a byte is ready yet.
-Status GetByte(std::byte* dest) {
+Status ReadByte(std::byte* dest) {
   while (true) {
     if (usart1.status & kReadDataReady) {
       *dest = static_cast<std::byte>(usart1.data_register);
@@ -181,13 +181,29 @@ Status GetByte(std::byte* dest) {
 // inefficient. At the default baud rate of 115200, one byte blocks the CPU for
 // ~87 micro seconds. This means it takes only 10 bytes to block the CPU for
 // 1ms!
-Status PutByte(std::byte b) {
+Status WriteByte(std::byte b) {
   // Wait for TX buffer to be empty. When the buffer is empty, we can write
   // a value to be dumped out of UART.
   while (!(usart1.status & kTxRegisterEmpty)) {
   }
   usart1.data_register = static_cast<uint32_t>(b);
   return Status::OK;
+}
+
+// Writes a string using pw::dumb_io, and add newline characters at the end.
+StatusWithSize WriteLine(const std::string_view& s) {
+  size_t chars_written = 0;
+  StatusWithSize result = WriteBytes(as_bytes(span(s)));
+  if (!result.ok()) {
+    return result;
+  }
+  chars_written += result.size();
+
+  // Write trailing newline ("\n\r").
+  result = WriteBytes(as_bytes(span("\n\r", 2)));
+  chars_written += result.size();
+
+  return StatusWithSize(result.status(), chars_written);
 }
 
 }  // namespace pw::dumb_io

@@ -18,7 +18,7 @@
 
 namespace pw::dumb_io {
 
-Status GetByte(std::byte* dest) {
+Status ReadByte(std::byte* dest) {
   if (dest == nullptr) {
     return Status::FAILED_PRECONDITION;
   }
@@ -31,11 +31,28 @@ Status GetByte(std::byte* dest) {
   return Status::OK;
 }
 
-Status PutByte(std::byte b) {
+Status WriteByte(std::byte b) {
   if (std::putchar(static_cast<char>(b)) == EOF) {
     return Status::INTERNAL;
   }
   return Status::OK;
+}
+
+StatusWithSize WriteLine(const std::string_view& s) {
+  size_t chars_written = 0;
+  StatusWithSize size_result = WriteBytes(as_bytes(span(s)));
+  if (!size_result.ok()) {
+    return size_result;
+  }
+  chars_written += size_result.size();
+
+  // Write trailing newline character.
+  Status result = WriteByte(static_cast<std::byte>('\n'));
+  if (result.ok()) {
+    chars_written++;
+  }
+
+  return StatusWithSize(result, chars_written);
 }
 
 }  // namespace pw::dumb_io
