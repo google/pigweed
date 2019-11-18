@@ -42,8 +42,7 @@
 // In driver mode, the "tag" argument to bt_log is informational and gets
 // included in the log message.
 //
-// (refer to
-// https://fuchsia.googlesource.com/fuchsia/+/master/docs/zircon/kernel_cmdline.md#driver_name_log_flags
+// (refer to https://fuchsia.dev/fuchsia-src/reference/kernel/kernel_cmdline#drivernamelogflags
 // for all supported DDK debug log flags).
 //
 // PRINTF MODE:
