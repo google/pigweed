@@ -248,6 +248,7 @@ class Test {
   // Runs the unit test. Currently, this simply executes the test body, but it
   // could be expanded to perform more bookkeeping operations.
   void PigweedTestRun() { PigweedTestBody(); }
+  virtual ~Test() = default;
 
  protected:
   // Called by subclasses' constructors with their TestInfo instances.
