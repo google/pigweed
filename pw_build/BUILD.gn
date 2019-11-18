@@ -27,6 +27,7 @@ config("strict_warnings") {
   cflags = [
     "-Wall",
     "-Wextra",
+    "-Wnon-virtual-dtor",
 
     # Make all warnings errors, except for the exemptions below.
     "-Werror",

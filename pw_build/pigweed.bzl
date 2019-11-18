@@ -24,6 +24,7 @@ REDUCED_SIZE_COPTS = [
 STRICT_WARNINGS_COPTS = [
     "-Wall",
     "-Wextra",
+    "-Wnon-virtual-dtor",
     # Make all warnings errors, except for the exemptions below.
     "-Werror",
     "-Wno-error=cpp",  # preprocessor #warning statement
