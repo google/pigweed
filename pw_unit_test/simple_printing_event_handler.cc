@@ -16,27 +16,26 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <string_view>
 
 namespace pw::unit_test {
 
 void SimplePrintingEventHandler::RunAllTestsStart() {
-  WriteAndFlush("[==========] Running all tests.\n");
+  WriteAndFlush("[==========] Running all tests.");
 }
 
 void SimplePrintingEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
-  WriteAndFlush("[==========] Done running all tests.\n");
-  WriteAndFlush(
-      "[  PASSED  ] %d test(s).\n", run_tests_summary.passed_tests);
+  WriteAndFlush("[==========] Done running all tests.");
+  WriteAndFlush("[  PASSED  ] %d test(s).", run_tests_summary.passed_tests);
   if (run_tests_summary.failed_tests) {
-    WriteAndFlush(
-        "[  FAILED  ] %d test(s).\n", run_tests_summary.failed_tests);
+    WriteAndFlush("[  FAILED  ] %d test(s).", run_tests_summary.failed_tests);
   }
 }
 
 void SimplePrintingEventHandler::TestCaseStart(const TestCase& test_case) {
   WriteAndFlush(
-      "[ RUN      ] %s.%s\n", test_case.suite_name, test_case.test_name);
+      "[ RUN      ] %s.%s", test_case.suite_name, test_case.test_name);
 }
 
 void SimplePrintingEventHandler::TestCaseEnd(const TestCase& test_case,
@@ -45,11 +44,11 @@ void SimplePrintingEventHandler::TestCaseEnd(const TestCase& test_case,
   switch (result) {
     case TestResult::kSuccess:
       WriteAndFlush(
-          "[       OK ] %s.%s\n", test_case.suite_name, test_case.test_name);
+          "[       OK ] %s.%s", test_case.suite_name, test_case.test_name);
       break;
     case TestResult::kFailure:
       WriteAndFlush(
-          "[  FAILED  ] %s.%s\n", test_case.suite_name, test_case.test_name);
+          "[  FAILED  ] %s.%s", test_case.suite_name, test_case.test_name);
       break;
   }
 }
@@ -62,8 +61,8 @@ void SimplePrintingEventHandler::TestCaseExpect(
 
   const char* result = expectation.success ? "Success" : "Failure";
   WriteAndFlush(
-      "%s:%d: %s\n", test_case.file_name, expectation.line_number, result);
-  WriteAndFlush("      Expected: %s\n", expectation.expression);
+      "%s:%d: %s", test_case.file_name, expectation.line_number, result);
+  WriteAndFlush("      Expected: %s", expectation.expression);
 }
 
 int SimplePrintingEventHandler::WriteAndFlush(const char* format, ...) {

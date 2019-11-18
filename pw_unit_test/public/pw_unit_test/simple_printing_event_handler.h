@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string_view>
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_unit_test/event_handler.h"
@@ -33,7 +34,7 @@ namespace pw::unit_test {
 //
 class SimplePrintingEventHandler : public EventHandler {
  public:
-  using WriteFunction = int (*)(const char*);
+  using WriteFunction = int (*)(const std::string_view&);
 
   // Instantiates an event handler with a function to which to output results.
   // If verbose is set, information for successful tests is written as well as

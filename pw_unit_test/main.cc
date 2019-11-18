@@ -12,16 +12,17 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-#include <cstdio>
+#include <string_view>
 
+#include "pw_dumb_io/dumb_io.h"
 #include "pw_unit_test/framework.h"
 #include "pw_unit_test/simple_printing_event_handler.h"
 
-// Default main function for the pw_unit_test library. Prints all test results
-// to stdout using a SimplePrintingEventHandler.
 int main() {
   pw::unit_test::SimplePrintingEventHandler handler(
-      [](const char* s) { return std::printf("%s", s); });
+      [](const std::string_view& s) {
+        return static_cast<int>(pw::dumb_io::WriteLine(s).size());
+      });
   pw::unit_test::RegisterEventHandler(&handler);
   return RUN_ALL_TESTS();
 }
