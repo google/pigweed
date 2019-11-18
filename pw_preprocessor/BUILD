@@ -18,16 +18,13 @@ licenses(["notice"])  # Apache License 2.0
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_default_copts",
-    "pw_default_linkopts",
-    "pw_test",
+    "pw_cc_library",
+    "pw_cc_test",
 )
 
-cc_library(
+pw_cc_library(
     name = "pw_preprocessor",
     hdrs = glob(["public/pw_preprocessor/*.h"]),
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
 )
 
 TESTS = [
@@ -38,11 +35,9 @@ TESTS = [
 ]
 
 [
-    pw_test(
+    pw_cc_test(
         name = t,
         srcs = [t + ".cc"],
-        copts = pw_default_copts(),
-        linkopts = pw_default_linkopts(),
         deps = ["//pw_preprocessor"],
     )
     for t in TESTS

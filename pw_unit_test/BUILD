@@ -18,24 +18,21 @@ licenses(["notice"])  # Apache License 2.0
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_default_copts",
-    "pw_default_linkopts",
-    "pw_test",
+    "pw_cc_library",
+    "pw_cc_test",
 )
 
-cc_library(
+pw_cc_library(
     name = "simple_printing_event_handler",
     srcs = [
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/simple_printing_event_handler.h",
         "simple_printing_event_handler.cc",
     ],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_preprocessor"],
 )
 
-cc_library(
+pw_cc_library(
     name = "main",
     srcs = [
         "framework.cc",
@@ -46,8 +43,6 @@ cc_library(
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/framework.h",
     ],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = [
         ":simple_printing_event_handler",
         "//pw_preprocessor",
@@ -55,9 +50,7 @@ cc_library(
     ],
 )
 
-pw_test(
+pw_cc_test(
     name = "framework_test",
     srcs = ["framework_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
 )

@@ -18,34 +18,27 @@ licenses(["notice"])  # Apache License 2.0
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_default_copts",
-    "pw_default_linkopts",
-    "pw_test",
+    "pw_cc_library",
+    "pw_cc_test",
 )
 
-cc_library(
+pw_cc_library(
     name = "pw_status",
     srcs = ["status.cc"],
     hdrs = [
         "public/pw_status/status.h",
         "public/pw_status/status_with_size.h",
     ],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
 )
 
-pw_test(
+pw_cc_test(
     name = "status_test",
     srcs = ["status_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_status"],
 )
 
-pw_test(
+pw_cc_test(
     name = "status_with_size_test",
     srcs = ["status_with_size_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_status"],
 )

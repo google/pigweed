@@ -18,12 +18,11 @@ licenses(["notice"])  # Apache License 2.0
 
 load(
     "//pw_build:pigweed.bzl",
-    "pw_default_copts",
-    "pw_default_linkopts",
-    "pw_test",
+    "pw_cc_library",
+    "pw_cc_test",
 )
 
-cc_library(
+pw_cc_library(
     name = "pw_string",
     srcs = [
         "format.cc",
@@ -34,8 +33,6 @@ cc_library(
         "public/pw_string/to_string.h",
         "public/pw_string/type_to_string.h",
     ],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = [
         "//pw_preprocessor",
         "//pw_span",
@@ -43,26 +40,20 @@ cc_library(
     ],
 )
 
-pw_test(
+pw_cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_string"],
 )
 
-pw_test(
+pw_cc_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_string"],
 )
 
-pw_test(
+pw_cc_test(
     name = "to_string_test",
     srcs = ["to_string_test.cc"],
-    copts = pw_default_copts(),
-    linkopts = pw_default_linkopts(),
     deps = ["//pw_string"],
 )

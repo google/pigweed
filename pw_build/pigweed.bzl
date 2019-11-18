@@ -12,76 +12,63 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-def reduced_size_copts():
-    """Standard compiler flags to reduce output binary size."""
+# Standard compiler flags to reduce output binary size.
+REDUCED_SIZE_COPTS = [
+    "-fno-common",
+    "-fno-exceptions",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-rtti",
+]
 
-    return [
-        "-fno-common",
-        "-fno-exceptions",
-        "-ffunction-sections",
-        "-fdata-sections",
-        "-fno-rtti",
-    ]
+STRICT_WARNINGS_COPTS = [
+    "-Wall",
+    "-Wextra",
+    # Make all warnings errors, except for the exemptions below.
+    "-Werror",
+    "-Wno-error=cpp",  # preprocessor #warning statement
+    "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
+]
 
-def strict_warnings_copts():
-    return [
-        "-Wall",
-        "-Wextra",
+CPP17_COPTS = [
+    "-std=c++17",
+    # Allow uses of the register keyword, which may appear in C headers.
+    "-Wno-register",
+]
 
-        # Make all warnings errors, except for the exemptions below.
-        "-Werror",
-        "-Wno-error=cpp",  # preprocessor #warning statement
-        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
-    ]
+INCLUDES_COPTS = [
+    "-Ipw_preprocessor/public",
+    "-Ipw_span/public",
+    "-Ipw_status/public",
+    "-Ipw_string/public",
+    "-Ipw_unit_test/public",
+]
 
-def cpp17_copts():
-    return [
-        "-std=c++17",
+PW_DEFAULT_COPTS = (
+    REDUCED_SIZE_COPTS +
+    STRICT_WARNINGS_COPTS +
+    CPP17_COPTS +
+    INCLUDES_COPTS
+)
 
-        # Allow uses of the register keyword, which may appear in C headers.
-        "-Wno-register",
-    ]
+PW_DEFAULT_LINKOPTS = []
 
-def includes_copts():
-    return [
-        "-Ipw_preprocessor/public",
-        "-Ipw_span/public",
-        "-Ipw_status/public",
-        "-Ipw_string/public",
-        "-Ipw_unit_test/public",
-    ]
+def _add_defaults(kwargs):
+    kwargs.setdefault("copts", [])
+    kwargs["copts"].extend(PW_DEFAULT_COPTS)
+    kwargs.setdefault("linkopts", [])
+    kwargs["linkopts"].extend(PW_DEFAULT_LINKOPTS)
 
-def pw_default_copts():
-    return (
-        reduced_size_copts() +
-        strict_warnings_copts() +
-        cpp17_copts() +
-        includes_copts()
-    )
+def pw_cc_binary(**kwargs):
+    _add_defaults(kwargs)
+    native.cc_binary(**kwargs)
 
-def pw_default_linkopts():
-    return []
+def pw_cc_library(**kwargs):
+    _add_defaults(kwargs)
+    native.cc_library(**kwargs)
 
-def pw_test(
-        name,
-        srcs,
-        deps = None,
-        **kwargs):
-    """Create a Pigweed test.
-
-    Args:
-      name: name of target to create
-      srcs: test source files
-      deps: dependencies of target
-    """
-
-    if not deps:
-        deps = []
-    deps.append("//pw_unit_test:main")
-
-    native.cc_test(
-        name = name,
-        srcs = srcs,
-        deps = deps,
-        **kwargs
-    )
+def pw_cc_test(**kwargs):
+    _add_defaults(kwargs)
+    kwargs.setdefault("deps", [])
+    kwargs["deps"].append("//pw_unit_test:main")
+    native.cc_test(**kwargs)
