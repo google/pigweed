@@ -25,9 +25,11 @@ load(
 pw_cc_library(
     name = "simple_printing_event_handler",
     srcs = [
+        "simple_printing_event_handler.cc",
+    ],
+    hdrs = [
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/simple_printing_event_handler.h",
-        "simple_printing_event_handler.cc",
     ],
     deps = ["//pw_preprocessor"],
 )
