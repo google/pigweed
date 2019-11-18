@@ -427,8 +427,9 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
 
   auto mtu_config = dyn_chan->mtu_configuration();
 
-  auto chan = fbl::AdoptRef(new ChannelImpl(local_cid, remote_cid, fbl::RefPtr(this),
-                                            /*buffered_pdus=*/{}, mtu_config.tx_mtu));
+  auto chan =
+      fbl::AdoptRef(new ChannelImpl(local_cid, remote_cid, fbl::RefPtr(this),
+                                    /*buffered_pdus=*/{}, mtu_config.tx_mtu, mtu_config.rx_mtu));
   channels_[local_cid] = chan;
   RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
 }

@@ -210,6 +210,9 @@ std::string ChannelConfiguration::ToString() const {
   if (retransmission_flow_control_option_) {
     str += retransmission_flow_control_option_->ToString();
   }
+  for (auto& option : unknown_options_) {
+    str += option.ToString();
+  }
   str += "}";
   return str;
 }

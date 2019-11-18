@@ -936,14 +936,17 @@ auto OutboundConnectionRequest(CommandId id) {
 
 auto OutboundConfigurationRequest(CommandId id) {
   return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 12 bytes)
-      0x01, 0x00, 0x0c, 0x00,
+      // ACL data header (handle: 0x0001, length: 16 bytes)
+      0x01, 0x00, 0x10, 0x00,
 
-      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
-      0x08, 0x00, 0x01, 0x00,
+      // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
+      0x0c, 0x00, 0x01, 0x00,
 
-      // Configuration Request (ID, length: 4, dst cid, flags: 0)
-      0x04, id, 0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00);
+      // Configuration Request (ID, length: 8, dst cid, flags: 0)
+      0x04, id, 0x08, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00,
+
+      // Mtu option (ID, Length, MTU)
+      0x01, 0x02, LowerBits(kMaxMTU), UpperBits(kMaxMTU));
 }
 
 auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU) {
@@ -1582,6 +1585,7 @@ TEST_F(L2CAP_ChannelManagerTest, ChannelPriority) {
 
 TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
+  constexpr uint16_t kLocalMtu = kMaxMTU;
 
   RegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -1607,11 +1611,12 @@ TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
   EXPECT_EQ(kRemoteMtu, channel->tx_mtu());
-  EXPECT_EQ(kDefaultMTU, channel->rx_mtu());
+  EXPECT_EQ(kLocalMtu, channel->rx_mtu());
 }
 
 TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
+  constexpr uint16_t kLocalMtu = kMaxMTU;
 
   RegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
@@ -1639,7 +1644,7 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
   EXPECT_EQ(kRemoteMtu, channel->tx_mtu());
-  EXPECT_EQ(kDefaultMTU, channel->rx_mtu());
+  EXPECT_EQ(kLocalMtu, channel->rx_mtu());
 }
 
 }  // namespace

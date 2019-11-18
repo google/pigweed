@@ -95,6 +95,7 @@ constexpr FrameCheckSequence kInitialFcsValue = {0};
 constexpr uint16_t kDefaultMTU = 672;
 constexpr uint16_t kMinACLMTU = 48;
 constexpr uint16_t kMinLEMTU = 23;
+constexpr uint16_t kMaxMTU = 0xFFFF;
 
 // The maximum length of a L2CAP B-frame information payload.
 constexpr uint16_t kMaxBasicFramePayloadSize = 65535;

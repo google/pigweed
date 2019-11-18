@@ -240,10 +240,13 @@ bool BrEdrDynamicChannel::IsOpen() const {
 }
 
 BrEdrDynamicChannel::MtuConfiguration BrEdrDynamicChannel::mtu_configuration() const {
+  ZX_DEBUG_ASSERT(IsOpen());
+  ZX_DEBUG_ASSERT(local_config().mtu_option());
+  ZX_DEBUG_ASSERT(remote_config().mtu_option());
+
   MtuConfiguration config;
-  config.tx_mtu = remote_config().mtu_option() ? remote_config().mtu_option()->mtu() : kDefaultMTU;
-  // TODO(1209): set rx_mtu to configured mtu
-  config.rx_mtu = kDefaultMTU;
+  config.tx_mtu = remote_config().mtu_option()->mtu();
+  config.rx_mtu = local_config().mtu_option()->mtu();
   return config;
 }
 
@@ -368,6 +371,8 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(signaling_channel_);
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
+
+  local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMaxMTU));
 }
 
 void BrEdrDynamicChannel::PassOpenResult() {
@@ -394,7 +399,7 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
 
   BrEdrCommandHandler cmd_handler(signaling_channel_);
   if (!cmd_handler.SendConfigurationRequest(
-          remote_cid(), 0, ChannelConfiguration::ConfigurationOptions(),
+          remote_cid(), 0, local_config_.Options(),
           [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
             if (self) {
               return self->OnRxConfigRsp(rsp);
@@ -407,7 +412,8 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
     return;
   }
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Request", local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Request (options: %s)",
+         local_cid(), bt_str(local_config_));
 
   state_ |= kLocalConfigSent;
 }
@@ -519,14 +525,21 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
+  // Pending responses may contain return values and adjustments to non-negotiated values.
   if (rsp.result() == ConfigurationResult::kPending) {
-    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: remote pending config", local_cid());
+    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: remote pending config (options: %s)", local_cid(),
+           bt_str(rsp.config()));
+
+    if (rsp.config().mtu_option()) {
+      local_config_.set_mtu_option(rsp.config().mtu_option());
+    }
+
     return ResponseHandlerAction::kExpectAdditionalResponse;
   }
 
   if (rsp.result() != ConfigurationResult::kSuccess) {
-    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: unsuccessful config reason %#.4hx", local_cid(),
-           rsp.result());
+    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: unsuccessful config (result: %#.4hx, options: %s)",
+           local_cid(), rsp.result(), bt_str(rsp.config()));
     PassOpenError();
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
@@ -540,7 +553,12 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
 
   state_ |= kLocalConfigAccepted;
 
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Response", local_cid());
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Response (options: %s)",
+         local_cid(), bt_str(rsp.config()));
+
+  if (rsp.config().mtu_option()) {
+    local_config_.set_mtu_option(rsp.config().mtu_option());
+  }
 
   if (IsOpen()) {
     set_opened();

@@ -86,6 +86,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override;
   bool IsOpen() const override;
 
+  // Must not be called until channel is open.
   MtuConfiguration mtu_configuration() const override;
 
   // Inbound request handlers. Request must have a destination channel ID that
@@ -100,6 +101,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.1).
   const ChannelConfiguration& remote_config() const { return remote_config_; }
+
+  // Contains options configured by local configuration requests (Core Spec v5.1, Vol 3, Part A,
+  // Sections 5 and 7.1.2).
+  const ChannelConfiguration& local_config() const { return local_config_; }
 
  private:
   // The channel configuration state is described in v5.0 Vol 3 Part A Sec 6 (in
@@ -175,6 +180,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.1).
   ChannelConfiguration remote_config_;
+
+  // Contains options configured by local configuration requests (Core Spec v5.1, Vol 3, Part A,
+  // Sections 5 and 7.1.2).
+  ChannelConfiguration local_config_;
 };
 
 }  // namespace internal
