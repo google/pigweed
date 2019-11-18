@@ -38,6 +38,7 @@ CPP17_COPTS = [
 ]
 
 INCLUDES_COPTS = [
+    "-Ipw_dumb_io/public",
     "-Ipw_preprocessor/public",
     "-Ipw_span/public",
     "-Ipw_status/public",
