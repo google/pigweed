@@ -55,5 +55,8 @@ pw_cc_test(
 pw_cc_test(
     name = "to_string_test",
     srcs = ["to_string_test.cc"],
-    deps = ["//pw_string"],
+    deps = [
+        "//pw_status",
+        "//pw_string",
+    ],
 )
