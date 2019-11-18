@@ -56,8 +56,16 @@ PW_DEFAULT_LINKOPTS = []
 def _add_defaults(kwargs):
     kwargs.setdefault("copts", [])
     kwargs["copts"].extend(PW_DEFAULT_COPTS)
+
     kwargs.setdefault("linkopts", [])
     kwargs["linkopts"].extend(PW_DEFAULT_LINKOPTS)
+
+    kwargs.setdefault("features", [])
+
+    # Crosstool--adding this line to features disables header modules, which
+    # don't work with -fno-rtti. Note: this is not a command-line argument,
+    # it's "minus use_header_modules".
+    kwargs["features"].append("-use_header_modules")
 
 def pw_cc_binary(**kwargs):
     _add_defaults(kwargs)
