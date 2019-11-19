@@ -12,15 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
     "pw_cc_test",
 )
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_string",
