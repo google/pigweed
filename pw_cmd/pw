@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+# Pip requirements: watchdog, coloredlogs
+
+import sys
+import logging
+import pathlib
+import subprocess
+import time
+import enum
+
+import coloredlogs
+
+from pathtools.patterns import match_any_paths
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+from watchdog.utils import has_attribute
+from watchdog.utils import unicode_paths
+
+
+PASS_MESSAGE = """
+  ██████╗  █████╗ ███████╗███████╗██╗
+  ██╔══██╗██╔══██╗██╔════╝██╔════╝██║
+  ██████╔╝███████║███████╗███████╗██║
+  ██╔═══╝ ██╔══██║╚════██║╚════██║╚═╝
+  ██║     ██║  ██║███████║███████║██╗
+  ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝
+"""
+
+FAIL_MESSAGE = """
+  ██████▒░▄▄▄       ██▓  ░██▓                  
+▓██     ░▒████▄    ▓██▒  ░▓██▒                  
+▒█████   ░▒█▀  ▀█▄  ▒██▒ ▒██░                  
+░▓█▒    ░░██▄▄▄▄██ ░██░  ▒██░                  
+░▒█░      ▓█   ▓██▒░██░░ ████████▒              
+ ▒ ░      ▒▒   ▓▒█░░▓  ░  ▒░▓  ░              
+ ░         ▒   ▒▒ ░ ▒ ░░  ░ ▒  ░              
+ ░ ░       ░   ▒    ▒ ░   ░ ░                 
+               ░  ░ ░       ░  ░
+"""                            
+
+
+class State(enum.Enum):
+    WAITING_FOR_FILE_CHANGE_EVENT = 1
+    COOLDOWN_IGNORING_EVENTS = 2
+
+def print_red(x):
+    print('\u001b[31m' + x + '\u001b[0m')
+
+def print_green(x):
+    print('\u001b[32m' + x + '\u001b[0m')
+
+class PigweedBuildWatcher(FileSystemEventHandler):
+    def __init__(self,
+                 patterns=None,
+                 ignore_patterns=None,
+                 case_sensitive=False):
+        super(PigweedBuildWatcher, self).__init__()
+
+        self.patterns = patterns
+        self.ignore_patterns = ignore_patterns
+        self.case_sensitive = case_sensitive
+        self.state = State.WAITING_FOR_FILE_CHANGE_EVENT
+
+    def path_matches(self, path):
+        """Returns true if path matches according to the watcher patterns"""
+        pure_path = pathlib.PurePath(path)
+        return ((not any(map(pure_path.match, self.ignore_patterns))) and 
+                any(map(pure_path.match, self.patterns)))
+
+
+    def dispatch(self, event):
+        # There isn't any point in triggering builds on new directory creation.
+        # It's the creation or modification of files that indicate something
+        # meaningful enough changed for a build.
+        if event.is_directory:
+            return
+
+        # Collect paths of interest from the event.
+        paths = []
+        if has_attribute(event, 'dest_path'):
+            paths.append(unicode_paths.decode(event.dest_path))
+        if event.src_path:
+            paths.append(unicode_paths.decode(event.src_path))
+        log.debug('Got events for: %s', paths)
+
+        for path in paths:
+            if self.path_matches(path):
+                log.debug('Match for path: %s', path)
+                self.on_any_event()
+
+
+    def on_any_event(self):
+        if self.state == State.WAITING_FOR_FILE_CHANGE_EVENT:
+            log.info('Starting the build...🏗️...')
+            result = subprocess.run(['ninja', '-C', 'out'])
+            log.info('Finished the build.')
+            if result.returncode == 0:
+                self.on_success()
+            else:
+                self.on_fail()
+
+            # Don't set the cooldown end time until after the build.
+            self.state = State.COOLDOWN_IGNORING_EVENTS
+            log.debug('State: WAITING -> COOLDOWN (file change trigger)')
+
+            # 500ms is enough to allow the spurious events to get ignored.
+            self.cooldown_finish_time = time.time() + 0.5
+
+        elif self.state == State.COOLDOWN_IGNORING_EVENTS:
+            if time.time() < self.cooldown_finish_time:
+                log.debug('Skipping event; cooling down...')
+            else:
+                log.debug('State: COOLDOWN -> WAITING (cooldown expired)')
+                self.state = State.WAITING_FOR_FILE_CHANGE_EVENT
+                self.on_any_event()  # Retrigger.
+
+
+    def on_success(self):
+        log.debug('Build and tests passed')
+        print_green(PASS_MESSAGE)
+
+
+    def on_fail(self):
+        log.debug('Build and tests failed')
+        print_red(FAIL_MESSAGE)
+
+
+if __name__ == '__main__':
+    coloredlogs.install(level='INFO',
+                        fmt='WATCH - %(asctime)s - %(levelname)s - %(message)s')
+    log = logging.getLogger('pigweed.autobuilder')
+
+    log.info('Starting Pigweed build watcher')
+
+    # TODO(keir): This will need to be made more general; and needs to be more
+    # granular. Currently this will recieve events from Ninja in the 'out/'
+    # directory, which is not ideal. The proper way to handle this is to create
+    # a list of directories that are not Ninja and not Bazel, and watch those.
+    path = '.'
+    event_handler = PigweedBuildWatcher(
+            patterns='*.cc;*.h;*.rst;*.gni'.split(';'),
+            ignore_patterns=['out/*'])
+
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+    log.info('Watching for file modifications')
+    try:
+        while observer.isAlive():
+            observer.join(1)
+    except KeyboardInterrupt:
+        log.info('Got Ctrl-C; exiting...')
+        observer.stop()
+    observer.join()
