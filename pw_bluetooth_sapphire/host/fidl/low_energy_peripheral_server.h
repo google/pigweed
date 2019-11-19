@@ -32,46 +32,9 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
   void StartAdvertising(fuchsia::bluetooth::le::AdvertisingParameters parameters,
                         ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
                         StartAdvertisingCallback callback) override;
-  void StartAdvertisingDeprecated(
-      fuchsia::bluetooth::le::AdvertisingDataDeprecated advertising_data,
-      fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr scan_result, bool connectable,
-      uint32_t interval, bool anonymous, StartAdvertisingDeprecatedCallback callback) override;
-
-  void StopAdvertisingDeprecated(::std::string advertisement_id,
-                                 StopAdvertisingDeprecatedCallback callback) override;
 
  private:
   using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
-
-  // DEPRECATED
-  class InstanceData final {
-   public:
-    InstanceData() = default;
-    InstanceData(bt::gap::AdvertisementInstance instance,
-                 fxl::WeakPtr<LowEnergyPeripheralServer> owner);
-
-    InstanceData(InstanceData&& other) = default;
-    InstanceData& operator=(InstanceData&& other) = default;
-
-    bool connectable() const { return static_cast<bool>(owner_->binding()); }
-
-    // Takes ownership of |conn_ref| and notifies the delegate of the new
-    // connection.
-    void RetainConnection(ConnectionRefPtr conn_ref, fuchsia::bluetooth::le::RemoteDevice central);
-
-    // Deletes the connection reference and notifies the delegate of
-    // disconnection.
-    void ReleaseConnection();
-
-   private:
-    bt::gap::AdvertisementInstance instance_;
-    ConnectionRefPtr conn_ref_;
-    // The object that created and owns this InstanceData.
-    // |owner_| must outlive the InstanceData.
-    fxl::WeakPtr<LowEnergyPeripheralServer> owner_;  // weak
-
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(InstanceData);
-  };
 
   class AdvertisementInstance final {
    public:
@@ -98,13 +61,9 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
   };
 
-  bool StopAdvertisingInternal(bt::gap::AdvertisementId id);
-
   // Called when a central connects to us.  When this is called, the
   // advertisement in |advertisement_id| has been stopped.
   void OnConnected(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link);
-  void OnConnectedDeprecated(bt::gap::AdvertisementId advertisement_id,
-                             bt::hci::ConnectionPtr link);
 
   // Represents the current advertising instance:
   // - Contains no value if advertising was never requested.
@@ -118,9 +77,6 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
   // there is at most one active advertisement at a time).
   std::unordered_map<bt::gap::AdvertisementId, std::unique_ptr<LowEnergyConnectionServer>>
       connections_;
-
-  // Tracks currently active advertisements. DEPRECATED
-  std::unordered_map<bt::gap::AdvertisementId, InstanceData> instances_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

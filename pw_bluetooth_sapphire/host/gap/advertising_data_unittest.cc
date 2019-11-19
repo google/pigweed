@@ -16,10 +16,7 @@ constexpr uint16_t kGattUuid = 0x1801;
 constexpr uint16_t kEddystoneUuid = 0xFEAA;
 
 constexpr uint16_t kId1As16 = 0x0212;
-constexpr char kId1AsString[] = "00000212-0000-1000-8000-00805f9b34fb";
 constexpr uint16_t kId2As16 = 0x1122;
-
-constexpr char kId3AsString[] = "12341234-0000-1000-8000-00805f9b34fb";
 
 constexpr size_t kRandomDataSize = 100;
 
@@ -100,59 +97,6 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
   EXPECT_EQ("Test💖", *(data.local_name()));
   EXPECT_TRUE(data.tx_power());
   EXPECT_EQ(-113, *(data.tx_power()));
-}
-
-TEST(GAP_AdvertisingDataTest, ParseFIDL) {
-  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
-
-  // Confirming UTF-8 codepoints are working as well.
-  fidl_ad.name = "Test💖";
-  fidl_ad.service_uuids.emplace({kId1AsString, kId3AsString});
-
-  std::vector<uint8_t> svc_data(4);
-  for (size_t i = 0; i < svc_data.size(); i++) {
-    svc_data.at(i) = static_cast<uint8_t>(i * 3);
-  }
-
-  fuchsia::bluetooth::le::ServiceDataEntry service_data_entry;
-  service_data_entry.uuid = kId1AsString;
-  service_data_entry.data = std::move(svc_data);
-  fidl_ad.service_data = {std::move(service_data_entry)};
-
-  AdvertisingData data;
-
-  EXPECT_TRUE(AdvertisingData::FromFidl(fidl_ad, &data));
-
-  ASSERT_EQ(2u, data.service_uuids().size());
-  EXPECT_EQ("Test💖", *(data.local_name()));
-
-  UUID uuid1(kId1As16);
-  EXPECT_EQ(1u, data.service_data_uuids().size());
-  EXPECT_EQ(4u, data.service_data(uuid1).size());
-
-  EXPECT_FALSE(data.tx_power());
-}
-
-TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedUuid) {
-  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
-  fidl_ad.service_uuids.emplace({"12"});
-
-  AdvertisingData data;
-  EXPECT_FALSE(AdvertisingData::FromFidl(fidl_ad, &data));
-}
-
-TEST(GAP_AdvertisingDataTest, ParseFIDLFailsWithMalformedServiceDataUuid) {
-  fuchsia::bluetooth::le::AdvertisingDataDeprecated fidl_ad;
-
-  std::vector<uint8_t> svc_data(1);
-
-  fuchsia::bluetooth::le::ServiceDataEntry service_data_entry;
-  service_data_entry.uuid = "12";
-  service_data_entry.data = std::move(svc_data);
-  fidl_ad.service_data.emplace({std::move(service_data_entry)});
-
-  AdvertisingData data;
-  EXPECT_FALSE(AdvertisingData::FromFidl(fidl_ad, &data));
 }
 
 TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {

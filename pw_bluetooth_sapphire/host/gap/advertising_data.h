@@ -47,12 +47,6 @@ class AdvertisingData {
   // to merge multiple field blocks.
   static bool FromBytes(const ByteBuffer& data, AdvertisingData* out_ad);
 
-  // Populate AdvertisingData |out_ad| from the corresponding FIDL object
-  // |fidl_ad|. Overwrites existing contents of |out_ad|. Returns false if
-  // |fidl_ad| contains malformed entries.
-  static bool FromFidl(const fuchsia::bluetooth::le::AdvertisingDataDeprecated& fidl_ad,
-                       AdvertisingData* out_ad);
-
   // Copies all of the data in this object to |out|, including making a copy of
   // any data in manufacturing data or service data.
   // Overwrites any data which is already in |out|.
