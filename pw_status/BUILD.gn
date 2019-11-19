@@ -30,6 +30,13 @@ source_set("pw_status") {
   sources = [ "status.cc" ] + public
 }
 
+pw_test_group("tests") {
+  tests = [
+    ":status_test",
+    ":status_with_size_test",
+  ]
+}
+
 pw_test("status_test") {
   deps = [
     ":pw_status",

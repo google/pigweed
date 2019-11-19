@@ -40,6 +40,19 @@ source_set("pw_string") {
   ]
 }
 
+pw_test_group("tests") {
+  tests = [
+    ":format_test",
+    ":to_string_test",
+    ":type_to_string_test",
+  ]
+  group_deps = [
+    "$dir_pw_preprocessor:tests",
+    "$dir_pw_span:tests",
+    "$dir_pw_status:tests",
+  ]
+}
+
 pw_test("format_test") {
   deps = [
     ":pw_string",

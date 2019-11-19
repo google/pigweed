@@ -16,8 +16,10 @@ import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_build/python_script.gni")
 
 # Creates an executable target for a unit test.
-# Additionally, outputs a file containing unit test metadata in JSON format for
-# the test runner script.
+#
+# If the pw_unit_test_create_run_targets variable is set to true, this template
+# also creates a "${test_name}_run" target which runs the unit test executable
+# after building it.
 #
 # This template accepts all of the regular "executable" target args.
 template("pw_test") {
@@ -27,44 +29,19 @@ template("pw_test") {
   # shadowing the one in this scope.
   _test_target_name = target_name
 
-  # Metadata for the test runner script. This is a dummy target which doesn't
-  # require or produce anything; it simply exists to define the unit test
-  # metadata.
-  _metadata_group_target = _test_target_name + "_pw_metadata_group"
-  group(_metadata_group_target) {
+  pw_executable(_test_target_name) {
+    # Metadata for this test when used as part of a pw_test_group target.
     metadata = {
-      test_metadata = [
+      tests = [
         {
+          type = "test"
           test_name = _test_target_name
+          test_directory = rebase_path(target_out_dir, root_build_dir)
         },
       ]
     }
-  }
 
-  # Output file for the unit test metadata. Reads metadata from the dummy group
-  # target and outputs to a JSON file.
-  _metadata_file_target = _test_target_name + "_pw_test_metadata"
-  generated_file(_metadata_file_target) {
-    outputs = [
-      "$target_out_dir/$_test_target_name.meta.json",
-    ]
-    data_keys = [ "test_metadata" ]
-    output_conversion = "json"
-
-    deps = [
-      ":$_metadata_group_target",
-    ]
-  }
-
-  # Actual executable file for the unit test. Depends on the metadata output
-  # file in order to generate it as well.
-  pw_executable(_test_target_name) {
-    forward_variables_from(invoker, "*")
-
-    if (!defined(deps)) {
-      deps = []
-    }
-    deps += [ ":$_metadata_file_target" ]
+    forward_variables_from(invoker, "*", [ "metadata" ])
   }
 
   if (pw_unit_test_create_run_targets) {
@@ -80,5 +57,60 @@ template("pw_test") {
       args = [ get_path_info("$target_out_dir:$_test_target_name", "abspath") ]
       stamp = true
     }
+  }
+}
+
+# Defines a related collection of unit tests.
+#
+# pw_test_group targets output a JSON metadata file for the Pigweed test runner.
+#
+# Args:
+#  tests: List of pw_test targets for each of the tests in the group.
+#  group_deps: Optional pw_test_group targets on which this group depends.
+template("pw_test_group") {
+  if (defined(invoker.group_deps)) {
+    # If the group specified any other group dependencies, create a metadata
+    # entry for each of them indicating that they are another group and a group
+    # target to collect that metadata.
+    _group_deps = []
+    foreach(dep, invoker.group_deps) {
+      _group_deps += [
+        {
+          type = "dep"
+          group = get_path_info(dep, "abspath")
+        },
+      ]
+    }
+
+    _metadata_group_target = "${target_name}_pw_test_group_metadata"
+    group(_metadata_group_target) {
+      metadata = {
+        group_deps = _group_deps
+
+        # Metadata from the group's own unit test targets is forwarded through
+        # the group dependencies group. This entry is listed as a "walk_key" in
+        # the generated file so that only test targets' metadata (not group
+        # targets) appear in the output.
+        propagate_metadata_from = invoker.tests
+      }
+      deps = invoker.tests + invoker.group_deps
+    }
+
+    _test_group_deps = [ ":$_metadata_group_target" ]
+  } else {
+    _test_group_deps = invoker.tests
+  }
+
+  generated_file(target_name) {
+    outputs = [
+      "$target_out_dir/$target_name.utmeta.json",
+    ]
+    data_keys = [
+      "group_deps",
+      "tests",
+    ]
+    walk_keys = [ "propagate_metadata_from" ]
+    output_conversion = "json"
+    deps = _test_group_deps
   }
 }

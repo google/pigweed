@@ -41,8 +41,8 @@ pw_doc_group("docs") {
 }
 
 # All pw_preprocessor test binaries.
-group("unit_tests") {
-  deps = [
+pw_test_group("tests") {
+  tests = [
     ":boolean_test",
     ":concat_test",
     ":macro_arg_count_test",

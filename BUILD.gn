@@ -29,6 +29,9 @@ group("pw_modules") {
 # Targets for all module unit test groups.
 group("pw_module_tests") {
   deps = [
-    "$dir_pw_preprocessor:unit_tests",
+    "$dir_pw_preprocessor:tests",
+    "$dir_pw_span:tests",
+    "$dir_pw_status:tests",
+    "$dir_pw_string:tests",
   ]
 }

@@ -29,6 +29,10 @@ source_set("pw_span") {
   sources = public
 }
 
+pw_test_group("tests") {
+  tests = [ ":test" ]
+}
+
 pw_test("test") {
   deps = [
     ":pw_span",
