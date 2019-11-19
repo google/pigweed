@@ -55,19 +55,19 @@ constexpr uint_fast8_t HexDigitCount(uint64_t integer) {
 //      sites pass their arguments directly and casting instructions are shared.
 //
 template <typename T>
-StatusWithSize IntToString(T integer, const span<char>& buffer) {
+StatusWithSize IntToString(T value, const span<char>& buffer) {
   if constexpr (std::is_signed_v<T>) {
-    return IntToString<int64_t>(integer, buffer);
+    return IntToString<int64_t>(value, buffer);
   } else {
-    return IntToString<uint64_t>(integer, buffer);
+    return IntToString<uint64_t>(value, buffer);
   }
 }
 
 template <>
-StatusWithSize IntToString(uint64_t integer, const span<char>& buffer);
+StatusWithSize IntToString(uint64_t value, const span<char>& buffer);
 
 template <>
-StatusWithSize IntToString(int64_t integer, const span<char>& buffer);
+StatusWithSize IntToString(int64_t value, const span<char>& buffer);
 
 // Writes an integer as a hexadecimal string. Semantics match IntToString. The
 // output is lowercase without a leading 0x.
