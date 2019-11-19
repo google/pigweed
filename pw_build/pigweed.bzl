@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+"""Pigweed build environment for bazel."""
+
 # Standard compiler flags to reduce output binary size.
 REDUCED_SIZE_COPTS = [
     "-fno-common",
