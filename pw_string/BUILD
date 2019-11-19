@@ -43,7 +43,10 @@ pw_cc_library(
 pw_cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
-    deps = ["//pw_string"],
+    deps = [
+        "//pw_span",
+        "//pw_string",
+    ],
 )
 
 pw_cc_test(
