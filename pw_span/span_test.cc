@@ -63,7 +63,7 @@ TEST(SpanTest, DefaultConstructor) {
 
   constexpr span<int, 0> static_span;
   static_assert(nullptr == static_span.data(), "");
-  static_assert(0u == static_span.size(), "");
+  static_assert(static_span.empty(), "");
 }
 
 TEST(SpanTest, ConstructFromDataAndSize) {
@@ -332,7 +332,7 @@ TEST(SpanTest, TemplatedFirst) {
   {
     constexpr auto subspan = span.first<0>();
     static_assert(span.data() == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
@@ -371,7 +371,7 @@ TEST(SpanTest, TemplatedLast) {
   {
     constexpr auto subspan = span.last<0>();
     static_assert(span.data() + 3 == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
@@ -437,28 +437,28 @@ TEST(SpanTest, TemplatedSubspan) {
   {
     constexpr auto subspan = span.subspan<3>();
     static_assert(span.data() + 3 == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
   {
     constexpr auto subspan = span.subspan<0, 0>();
     static_assert(span.data() == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
   {
     constexpr auto subspan = span.subspan<1, 0>();
     static_assert(span.data() + 1 == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
   {
     constexpr auto subspan = span.subspan<2, 0>();
     static_assert(span.data() + 2 == subspan.data(), "");
-    static_assert(0u == subspan.size(), "");
+    static_assert(subspan.empty(), "");
     static_assert(0u == decltype(subspan)::extent, "");
   }
 
