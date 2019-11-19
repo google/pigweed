@@ -17,7 +17,8 @@ import("$dir_pw_build/python_script.gni")
 # Creates a target which runs a size report diff on a set of executables.
 #
 # Args:
-#   base: The default base executable target to run the diff against.
+#   base: The default base executable target to run the diff against. May be
+#     omitted if all binaries provide their own base.
 #   binaries: List of executables to compare in the diff.
 #     Each binary in the list is a scope containing up to three variables:
 #       label: Descriptive name for the executable. Required.
@@ -45,9 +46,14 @@ import("$dir_pw_build/python_script.gni")
 #   }
 #
 template("pw_size_report") {
-  assert(defined(invoker.base), "pw_size_report requires a 'base' file")
-
   _bloaty_config = pw_executable_config.bloaty_config_file
+
+  if (defined(invoker.base)) {
+    _global_base = invoker.base
+    _all_target_dependencies = [ _global_base ]
+  } else {
+    _all_target_dependencies = []
+  }
 
   if (defined(invoker.title)) {
     _title = invoker.title
@@ -61,15 +67,8 @@ template("pw_size_report") {
   # changed. Most of the code below builds the command-line arguments to pass
   # each of the targets into the script.
 
-  _all_target_dependencies = [ invoker.base ]
-
   _binary_paths = []
   _binary_labels = []
-
-  _base_target_dir = get_label_info(invoker.base, "target_out_dir")
-  _base_target_name = get_label_info(invoker.base, "name")
-  _base_target_path =
-      get_path_info(_base_target_dir, "abspath") + ":$_base_target_name"
 
   # Process each of the binaries, resolving their full output paths and building
   # them into a list of command-line arguments to the bloat script.
@@ -83,14 +82,19 @@ template("pw_size_report") {
     _target_name = get_label_info(binary.target, "name")
     _binary_path = get_path_info(_target_dir, "abspath") + ":$_target_name"
 
+    # If the binary defines its own base, use that instead of the global base.
     if (defined(binary.base)) {
-      # If the binary defines its own base, use that instead of the global base.
-      _all_target_dependencies += [ binary.base ]
-
-      _base_dir = get_label_info(binary.base, "target_out_dir")
-      _base_name = get_label_info(binary.base, "name")
-      _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
+      _binary_base = binary.base
+      _all_target_dependencies += [ _binary_base ]
+    } else if (defined(_global_base)) {
+      _binary_base = _global_base
+    } else {
+      assert(false, "pw_size_report requires a 'base' file")
     }
+
+    _base_dir = get_label_info(_binary_base, "target_out_dir")
+    _base_name = get_label_info(_binary_base, "name")
+    _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
 
     _binary_paths += [ _binary_path ]
     _binary_labels += [ binary.label ]
@@ -105,8 +109,6 @@ template("pw_size_report") {
     target_name,
     "--title",
     _title,
-    "--base-target",
-    _base_target_path,
     "--labels",
     string_join(";", _binary_labels),
   ]

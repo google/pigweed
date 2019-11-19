@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """
 bloat is a script which generates a size report card for binary files.
 """
@@ -29,30 +28,52 @@ import bloat_output
 
 def parse_args() -> argparse.Namespace:
     """Parses the script's arguments."""
+    def delimited_list(delimiter: str, items: Optional[int] = None):
+        def _parser(arg: str):
+            args = arg.split(delimiter)
 
-    def delimited_list(delimiter: str) -> Callable[[str], List[str]]:
-        return lambda s: s.split(delimiter)
+            if items and len(args) != items:
+                raise argparse.ArgumentTypeError(
+                    'Argument must be a '
+                    f'{delimiter}-delimited list with {items} items: "{arg}"')
+
+            return args
+
+        return _parser
 
     parser = argparse.ArgumentParser(
         'Generate a size report card for binaries')
-    parser.add_argument('--base-target', type=str,
-                        required=True, help='Base binary for a size diff')
-    parser.add_argument('--bloaty-config', type=str, required=True,
+    parser.add_argument('--bloaty-config',
+                        type=str,
+                        required=True,
                         help='Data source configuration for Bloaty')
-    parser.add_argument('--full', action='store_true',
+    parser.add_argument('--full',
+                        action='store_true',
                         help='Display full bloat breakdown by symbol')
-    parser.add_argument('--labels', type=delimited_list(';'), default='',
+    parser.add_argument('--labels',
+                        type=delimited_list(';'),
+                        default='',
                         help='Labels for output binaries')
-    parser.add_argument('--out-dir', type=str, required=True,
+    parser.add_argument('--out-dir',
+                        type=str,
+                        required=True,
                         help='Directory in which to write output files')
-    parser.add_argument('--target', type=str, required=True,
+    parser.add_argument('--target',
+                        type=str,
+                        required=True,
                         help='Build target name')
-    parser.add_argument('--title', type=str, default='pw_bloat',
+    parser.add_argument('--title',
+                        type=str,
+                        default='pw_bloat',
                         help='Report title')
-    parser.add_argument('--source-filter', type=str,
+    parser.add_argument('--source-filter',
+                        type=str,
                         help='Bloaty data source filter')
-    parser.add_argument('diff_targets', type=delimited_list(';'), nargs='+',
-                        metavar='DIFF_TARGET', help='Binaries to process')
+    parser.add_argument('diff_targets',
+                        type=delimited_list(';', 2),
+                        nargs='+',
+                        metavar='DIFF_TARGET',
+                        help='Binary;base pairs to process')
 
     return parser.parse_args()
 
@@ -82,9 +103,16 @@ def run_bloaty(filename: str,
     default_bloaty = 'bloaty'
     bloaty_path = os.getenv('BLOATY_PATH', default_bloaty)
 
-    cmd = [bloaty_path, '-c', config, '-d',
-           ','.join(data_sources), '--domain', 'vm', filename]
-    cmd.extend(extra_args)
+    # yapf: disable
+    cmd = [
+        bloaty_path,
+        '-c', config,
+        '-d', ','.join(data_sources),
+        '--domain', 'vm',
+        filename,
+        *extra_args
+    ]
+    # yapf: enable
 
     if base_file is not None:
         cmd.extend(['--', base_file])
@@ -101,10 +129,9 @@ def main() -> int:
     diff_binaries: List[str] = []
 
     try:
-        for binary in args.diff_targets:
-            diff_binaries.append(binary[0])
-            base_binaries.append(binary[1] if len(
-                binary) > 1 else args.base_target)
+        for binary, base in args.diff_targets:
+            diff_binaries.append(binary)
+            base_binaries.append(base)
     except RuntimeError as err:
         print(f'{sys.argv[0]}: {err}', file=sys.stderr)
         return 1
@@ -154,14 +181,15 @@ def main() -> int:
 
     # TODO(frolv): Remove when custom output for full mode is added.
     if not args.full:
-        out = bloat_output.TableOutput(
-            args.title, diffs, charset=bloat_output.LineCharset)
+        out = bloat_output.TableOutput(args.title,
+                                       diffs,
+                                       charset=bloat_output.LineCharset)
         report.append(out.diff())
 
         rst = bloat_output.RstOutput(diffs)
         write_file(f'{args.target}.rst', rst.diff())
 
-    complete_output = '\n'.join(report)
+    complete_output = '\n'.join(report) + '\n'
     write_file(f'{args.target}.txt', complete_output)
     print(complete_output)
 

@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """Script that preprocesses a Python command then runs it."""
 
 import argparse
@@ -25,13 +24,19 @@ def parse_args() -> argparse.Namespace:
     """Parses arguments for this script, splitting out the command to run."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--gn-root', type=str, required=True,
+    parser.add_argument('--gn-root',
+                        type=str,
+                        required=True,
                         help='Path to the root of the GN tree')
-    parser.add_argument('--out-dir', type=str, required=True,
+    parser.add_argument('--out-dir',
+                        type=str,
+                        required=True,
                         help='Path to the GN build output directory')
-    parser.add_argument('--touch', type=str,
+    parser.add_argument('--touch',
+                        type=str,
                         help='File to touch after command is run')
-    parser.add_argument('command', nargs=argparse.REMAINDER,
+    parser.add_argument('command',
+                        nargs=argparse.REMAINDER,
                         help='Python script with arguments to run')
     return parser.parse_args()
 
@@ -61,18 +66,8 @@ def find_binary(target: str) -> str:
         f'Could not find output binary for build target {target}')
 
 
-def resolve_path(gn_root: str, out_dir: str, string: str) -> str:
-    """Resolves a string to a filesystem path if it is a GN path.
-
-    GN paths are assumed to be absolute, starting with "//". This is replaced
-    with the relative filesystem path of the GN root directory.
-
-    If the string is not a GN path, it is returned unmodified.
-
-    If a path refers to the GN output directory and a target name is defined,
-    attempts to locate a binary file for the target within the out directory.
-    """
-
+def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
+    """Resolves a string to a filesystem path if it is a GN path."""
     if not string.startswith('//'):
         return string
 
@@ -85,6 +80,21 @@ def resolve_path(gn_root: str, out_dir: str, string: str) -> str:
     return resolved_path
 
 
+def resolve_path(gn_root: str, out_dir: str, string: str) -> str:
+    """Resolves GN paths to filesystem paths in a semicolon-separated string.
+
+    GN paths are assumed to be absolute, starting with "//". This is replaced
+    with the relative filesystem path of the GN root directory.
+
+    If the string is not a GN path, it is returned unmodified.
+
+    If a path refers to the GN output directory and a target name is defined,
+    attempts to locate a binary file for the target within the out directory.
+    """
+    return ';'.join(
+        _resolve_path(gn_root, out_dir, path) for path in string.split(';'))
+
+
 def main() -> int:
     """Script entry point."""
 
@@ -94,8 +104,10 @@ def main() -> int:
         return 1
 
     try:
-        resolved_command = [resolve_path(
-            args.gn_root, args.out_dir, arg) for arg in args.command[1:]]
+        resolved_command = [
+            resolve_path(args.gn_root, args.out_dir, arg)
+            for arg in args.command[1:]
+        ]
     except FileNotFoundError as err:
         print(f'{sys.argv[0]}: {err}', file=sys.stderr)
         return 1
