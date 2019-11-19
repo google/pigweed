@@ -468,26 +468,22 @@ constexpr void swap(span<T, X>& lhs, span<T, X>& rhs) noexcept {
 }
 
 // Type-deducing helpers for constructing a span.
-// Pigweed: These are user-defined deduction guides instead of a make_span
-//          function.
-template <int&... ExplicitArgumentBarrier, typename T>
-span(T* data, size_t size)->span<T, dynamic_extent>;
+// Pigweed: Instead of a make_span function, provide the deduction guides
+//     specified in the C++20 standard.
+template <class T, std::size_t N>
+span(T (&)[N]) -> span<T, N>;
 
-template <int&... ExplicitArgumentBarrier, typename T>
-span(T* begin, T* end)->span<T, dynamic_extent>;
+template <class T, std::size_t N>
+span(std::array<T, N>&) -> span<T, N>;
 
-template <int&... ExplicitArgumentBarrier, typename Container>
-span(Container& container)
-    ->span<
-        std::remove_pointer_t<decltype(std::data(std::declval<Container>()))>,
-        span_internal::Extent<Container>::value>;
+template <class T, std::size_t N>
+span(const std::array<T, N>&) -> span<const T, N>;
 
-template <
-    typename Container,
-    typename T =
-        std::remove_pointer_t<decltype(std::data(std::declval<Container&>()))>,
-    typename = span_internal::EnableIfSpanCompatibleContainer<Container&, T>>
-span(Container& container)->span<T>;
+template <class Container>
+span(Container&) -> span<typename Container::value_type>;
+
+template <class Container>
+span(const Container&) -> span<const typename Container::value_type>;
 
 }  // namespace pw
 

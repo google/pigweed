@@ -56,6 +56,70 @@ constexpr bool constexpr_equal(InputIterator1 first1,
 
 }  // namespace
 
+// Pigweed: Test deducing from std::string_view.
+TEST(SpanTest, DeductionGuides_MutableArray) {
+  char array[] = {'a', 'b', 'c', 'd', '\0'};
+
+  auto the_span = span(array);
+  static_assert(the_span.extent == 5u);
+  static_assert(the_span.size() == 5u);
+
+  the_span[0] = '!';
+  EXPECT_STREQ(the_span.data(), "!bcd");
+}
+
+TEST(SpanTest, DeductionGuides_ConstArray) {
+  static constexpr char array[] = {'a', 'b', 'c', 'd', '\0'};
+
+  constexpr auto the_span = span(array);
+  static_assert(the_span.extent == 5u);
+  static_assert(the_span.size() == 5u);
+
+  EXPECT_STREQ(the_span.data(), "abcd");
+}
+
+TEST(SpanTest, DeductionGuides_MutableStdArray) {
+  std::array<char, 5> array{'a', 'b', 'c', 'd'};
+
+  auto the_span = span(array);
+  static_assert(the_span.extent == 5u);
+  static_assert(the_span.size() == 5u);
+
+  the_span[0] = '?';
+  EXPECT_STREQ(the_span.data(), "?bcd");
+}
+
+TEST(SpanTest, DeductionGuides_ConstStdArray) {
+  static constexpr std::array<char, 5> array{'a', 'b', 'c', 'd'};
+
+  constexpr auto the_span = span(array);
+  static_assert(the_span.extent == 5u);
+  static_assert(the_span.size() == 5u);
+
+  EXPECT_STREQ(the_span.data(), "abcd");
+}
+
+TEST(SpanTest, DeductionGuides_MutableContainer) {
+  std::vector<int> foo = {3456};
+
+  auto the_span = span(foo);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(foo[0], the_span[0]);
+  EXPECT_EQ(foo.size(), the_span.size());
+
+  the_span[0] = 9876;
+  EXPECT_EQ(9876, foo[0]);
+}
+
+TEST(SpanTest, DeductionGuides_ConstContainer) {
+  auto the_span = span(std::string_view("Hello"));
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_STREQ("Hello", the_span.data());
+  EXPECT_EQ(5u, the_span.size());
+}
+
 TEST(SpanTest, DefaultConstructor) {
   span<int> dynamic_span;
   EXPECT_EQ(nullptr, dynamic_span.data());
@@ -1009,9 +1073,10 @@ TEST(SpanTest, ConstexprIterator) {
   static constexpr int kArray[] = {1, 6, 1, 8, 0};
   constexpr span<const int> span(kArray);
 
-  static_assert(constexpr_equal(std::begin(kArray), std::end(kArray),
-                                span.begin(), span.end()),
-                "");
+  static_assert(
+      constexpr_equal(
+          std::begin(kArray), std::end(kArray), span.begin(), span.end()),
+      "");
   static_assert(1 == span.begin()[0], "");
   // Pigweed: These tests assume an iterator object, but Pigweed's span uses a
   //          simple pointer.
@@ -1028,10 +1093,10 @@ TEST(SpanTest, ReverseIterator) {
   static constexpr int kArray[] = {1, 6, 1, 8, 0};
   constexpr span<const int> span(kArray);
 
-  EXPECT_TRUE(std::equal(std::rbegin(kArray), std::rend(kArray), span.rbegin(),
-                         span.rend()));
-  EXPECT_TRUE(std::equal(std::crbegin(kArray), std::crend(kArray),
-                         span.crbegin(), span.crend()));
+  EXPECT_TRUE(std::equal(
+      std::rbegin(kArray), std::rend(kArray), span.rbegin(), span.rend()));
+  EXPECT_TRUE(std::equal(
+      std::crbegin(kArray), std::crend(kArray), span.crbegin(), span.crend()));
 }
 
 // Pigweed: These are tests for make_span, which is not included in Pigweed's
