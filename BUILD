@@ -13,14 +13,3 @@
 # the License.
 
 licenses(["notice"])  # Apache License 2.0
-
-SUBDIRS = [
-    "pw_build",
-    "pw_docgen",
-    "pw_preprocessor",
-    "pw_span",
-    "pw_status",
-    "pw_string",
-    "pw_toolchain",
-    "pw_unit_test",
-]
