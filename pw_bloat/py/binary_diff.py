@@ -51,6 +51,10 @@ class BinaryDiff:
     def formatted_segments(self) -> Generator[FormattedDiff, None, None]:
         """Yields each of the segments in this diff with formatted data."""
 
+        if not self._segments:
+          yield FormattedDiff('(all)', '(same)', '0', '(same)')
+          return
+
         for segment in self._segments.values():
             if segment.delta == 0:
                 continue
