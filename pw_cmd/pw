@@ -2,6 +2,7 @@
 
 import argparse
 import enum
+import glob
 import logging
 import os
 import pathlib
@@ -91,13 +92,6 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         self.state = State.WAITING_FOR_FILE_CHANGE_EVENT
         self.build_dirs = build_dirs
 
-        # Verify that the build output directories exist.
-        for build_dir in build_dirs:
-            if not os.path.isdir(build_dir):
-                die("Build directory doesn't exist: %s", build_dir)
-            else:
-                log.info(f'Building directory: {build_dir}')
-
     def path_matches(self, path):
         """Returns true if path matches according to the watcher patterns"""
         pure_path = pathlib.PurePath(path)
@@ -128,10 +122,10 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         builds_succeeded = []
         num_builds = len(self.build_dirs)
         log.info(f'Starting build with {num_builds} directories')
-        for i, build_dir in enumerate(self.build_dirs):
-            log.info(f'[{i+1}/{num_builds}] Starting build: {build_dir}')
+        for i, build_dir in enumerate(self.build_dirs, 1):
+            log.info(f'[{i}/{num_builds}] Starting build: {build_dir}')
             result = subprocess.run(['ninja', '-C', build_dir])
-            log.info(f'[{i+1}/{num_builds}] Finished build: {build_dir}')
+            log.info(f'[{i}/{num_builds}] Finished build: {build_dir}')
             builds_succeeded.append(result.returncode == 0)
 
         if all(builds_succeeded):
@@ -191,15 +185,15 @@ class PigweedBuildWatcher(FileSystemEventHandler):
 
 WATCH_PATTERN_DELIMITER = ','
 WATCH_PATTERNS = [
+    '*.bloaty',
+    '*.c',
     '*.cc',
-    '*.h',
-    '*.rst',
     '*.gn',
     '*.gni',
-    '*.py',
-    '*.c',
-    '*.bloaty',
+    '*.h',
     '*.ld'
+    '*.py',
+    '*.rst',
 ]
 
 class WatchCommand:
@@ -224,7 +218,32 @@ class WatchCommand:
 
     def run(self, args):
         log.info('Starting Pigweed build watcher')
-        log.info('Patterns: %s', args.patterns)
+
+        # If no build directory was specified, search the tree for GN build
+        # directories and try to build them all. In the future this may cause
+        # slow startup, but for now this is fast enough.
+        build_dirs = args.build_dir
+        if not build_dirs:
+            build_dirs = []
+            log.info('Searching for GN build dirs...')
+            gn_args_files = glob.glob('**/args.gn', recursive=True)
+            for gn_args_file in gn_args_files:
+                gn_build_dir = pathlib.Path(gn_args_file).parent
+                if gn_build_dir.is_dir():
+                    build_dirs.append(str(gn_build_dir))
+
+        # Make sure we found something; if not, bail.
+        if not build_dirs:
+            die("No build dirs found. Did you forget to 'gn gen out'?")
+
+        # Verify that the build output directories exist.
+        for i, build_dir in enumerate(build_dirs, 1):
+            if not os.path.isdir(build_dir):
+                die("Build directory doesn't exist: %s", build_dir)
+            else:
+                log.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
+
+        log.debug('Patterns: %s', args.patterns)
         # TODO(keir): This will need to be made more general; and needs to be
         # more granular. Currently this will recieve events from Ninja in the
         # 'out/' directory, which is not ideal. The proper way to handle this
@@ -237,18 +256,18 @@ class WatchCommand:
         ignore_patterns= (args.ignore_patterns.split(WATCH_PATTERN_DELIMITER)
                           if args.ignore_patterns else [])
         ignore_patterns.extend([
-            f'{build_dir}/*' for build_dir in args.build_dir])
+            f'{build_dir}/*' for build_dir in build_dirs])
 
         event_handler = PigweedBuildWatcher(
                 patterns=args.patterns.split(WATCH_PATTERN_DELIMITER),
                 ignore_patterns=ignore_patterns,
-                build_dirs=args.build_dir)
+                build_dirs=build_dirs)
 
         observer = Observer()
         observer.schedule(event_handler, path, recursive=True)
         observer.start()
 
-        log.info('Watching for file modifications')
+        log.info('Watching for file changes. Ctrl-C exits.')
         try:
             while observer.isAlive():
                 observer.join(1)
