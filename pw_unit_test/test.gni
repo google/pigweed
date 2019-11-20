@@ -17,9 +17,9 @@ import("$dir_pw_build/python_script.gni")
 
 # Creates an executable target for a unit test.
 #
-# If the pw_unit_test_create_run_targets variable is set to true, this template
-# also creates a "${test_name}_run" target which runs the unit test executable
-# after building it.
+# If the pw_automatic_test_runner variable is set, this template also creates a
+# "${test_name}_run" target which runs the unit test executable after building
+# it.
 #
 # This template accepts all of the regular "executable" target args.
 template("pw_test") {
@@ -49,9 +49,9 @@ template("pw_test") {
     deps += [ pw_unit_test_main ]
   }
 
-  if (pw_unit_test_create_run_targets) {
-    # When the run targets arg is set, create an action which runs the unit test
-    # executable using the test runner script.
+  if (pw_automatic_test_runner != "") {
+    # When the automatic runner is set, create an action which runs the unit
+    # test executable using the test runner script.
     _run_action_name = _test_target_name + "_run"
 
     pw_python_script(_run_action_name) {
@@ -59,7 +59,12 @@ template("pw_test") {
         ":$_test_target_name",
       ]
       script = "$dir_pw_unit_test/py/test_runner.py"
-      args = [ get_path_info("$target_out_dir:$_test_target_name", "abspath") ]
+      args = [
+        "--runner",
+        pw_automatic_test_runner,
+        "--test",
+        get_path_info("$target_out_dir:$_test_target_name", "abspath"),
+      ]
       stamp = true
     }
   }
@@ -73,13 +78,16 @@ template("pw_test") {
 #  tests: List of pw_test targets for each of the tests in the group.
 #  group_deps: Optional pw_test_group targets on which this group depends.
 template("pw_test_group") {
+  _group_target = target_name
+  _group_deps_metadata = []
+  _deps = invoker.tests
+
   if (defined(invoker.group_deps)) {
     # If the group specified any other group dependencies, create a metadata
     # entry for each of them indicating that they are another group and a group
     # target to collect that metadata.
-    _group_deps = []
     foreach(dep, invoker.group_deps) {
-      _group_deps += [
+      _group_deps_metadata += [
         {
           type = "dep"
           group = get_path_info(dep, "abspath")
@@ -87,31 +95,38 @@ template("pw_test_group") {
       ]
     }
 
-    _metadata_group_target = "${target_name}_pw_test_group_metadata"
-    group(_metadata_group_target) {
-      metadata = {
-        group_deps = _group_deps
-
-        # Metadata from the group's own unit test targets is forwarded through
-        # the group dependencies group. This entry is listed as a "walk_key" in
-        # the generated file so that only test targets' metadata (not group
-        # targets) appear in the output.
-        propagate_metadata_from = invoker.tests
-      }
-      deps = invoker.tests + invoker.group_deps
-    }
-
-    _test_group_deps = [ ":$_metadata_group_target" ]
-  } else {
-    _test_group_deps = invoker.tests
+    _deps += invoker.group_deps
   }
 
-  generated_file(target_name) {
+  _metadata_group_target = "${target_name}_pw_test_group_metadata"
+  group(_metadata_group_target) {
+    metadata = {
+      group_deps = _group_deps_metadata
+      self = [
+        {
+          type = "self"
+          name = get_path_info(":$_group_target", "abspath")
+        },
+      ]
+
+      # Metadata from the group's own unit test targets is forwarded through
+      # the group dependencies group. This entry is listed as a "walk_key" in
+      # the generated file so that only test targets' metadata (not group
+      # targets) appear in the output.
+      propagate_metadata_from = invoker.tests
+    }
+    deps = _deps
+  }
+
+  _test_group_deps = [ ":$_metadata_group_target" ]
+
+  generated_file(_group_target) {
     outputs = [
-      "$target_out_dir/$target_name.utmeta.json",
+      "$target_out_dir/$target_name.testinfo.json",
     ]
     data_keys = [
       "group_deps",
+      "self",
       "tests",
     ]
     walk_keys = [ "propagate_metadata_from" ]

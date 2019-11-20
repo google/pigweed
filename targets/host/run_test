@@ -1,3 +1,4 @@
+#!/bin/sh
 # Copyright 2019 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -12,14 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("host_common.gni")
-
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
-}
-
-pw_executable_config.bloaty_config_file =
-    get_path_info("linux.bloaty", "abspath")
-
-pw_automatic_test_runner = get_path_info("run_test", "abspath")
+# Test runner for host Linux/macOS systems.
+# Called with the path to a test binary and directly executes it.
+$*

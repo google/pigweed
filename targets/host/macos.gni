@@ -21,3 +21,5 @@ declare_args() {
 
 pw_executable_config.bloaty_config_file =
     get_path_info("macos.bloaty", "abspath")
+
+pw_automatic_test_runner = get_path_info("run_test", "abspath")

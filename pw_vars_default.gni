@@ -46,19 +46,19 @@ pw_target_toolchain = ""
 # Implementation of a main function for "pw_test" unit test binaries.
 pw_unit_test_main = "$dir_pw_unit_test:main"
 
-# Whether GN unit test runner targets should be created.
+# Path to a test runner to automatically run unit tests after they are built.
 #
-# If set to true, the pw_test() template creates an action that invokes the test
-# runner script on each test executable. If false, the pw_test() template only
-# creates a test executable target.
+# If set, the pw_test() template creates an action that invokes the test runner
+# on each test executable. If unset, the pw_test() template only creates a test
+# executable target.
 #
-# This should be enabled for targets which support parallelized running
-# of unit tests, such as desktops with multiple cores.
-pw_unit_test_create_run_targets = false
+# This should only be enabled for targets which support parallelized running of
+# unit tests, such as desktops with multiple cores.
+pw_automatic_test_runner = ""
 
 ################################# BACKENDS #####################################
 
-# This section of the file defines empty variables for each of the pigweed
+# This section of the file defines empty variables for each of the Pigweed
 # facades that expect a backend. This allows minimal breakages when adding new
 # facades. Instead of GN always halting due to encountering an undefined
 # variable, GN will only emit an error if something in the build depends on the
@@ -67,5 +67,5 @@ pw_unit_test_create_run_targets = false
 # All of these should default to empty strings. For target-specific defaults,
 # modify these variables in a target confiruation file.
 
-# Declare dir_pw_dumb_io_backend
+# Backend for the dir_pw_dumb_io module.
 dir_pw_dumb_io_backend = ""
