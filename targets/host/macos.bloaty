@@ -12,12 +12,23 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("host_common.gni")
+custom_data_source: {
+  name: "segment_names"
+  base_data_source: "segments"
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_clang_og"
+  # TODO(keir): This isn't quite right; in some cases the change from a binary
+  # diff report shows up in the __LINKEDIT segment. It's not totally clear what
+  # the right thing to show is for Mach-O.
+  rewrite: {
+    pattern: "__DATA"
+    replacement: "RAM"
+  }
+  rewrite: {
+    pattern: "__LINKEDIT"
+    replacement: "SYMBOL & STRING TABLES"
+  }
+  rewrite: {
+    pattern: "__TEXT"
+    replacement: "CODE & READ-ONLY DATA"
+  }
 }
-
-pw_executable_config.bloaty_config_file =
-    get_path_info("macos.bloaty", "abspath")
