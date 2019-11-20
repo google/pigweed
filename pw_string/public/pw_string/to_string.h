@@ -64,20 +64,21 @@ namespace pw {
 // that convertible to a std::string_view, such as std::string.
 template <typename T>
 StatusWithSize ToString(const T& value, const span<char>& buffer) {
-  if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+  if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>) {
     return string::BoolToString(value, buffer);
-  } else if constexpr (std::is_same_v<std::decay_t<T>, char>) {
-    return string::CopyEntireString(std::string_view(&value, 1), buffer);
+  } else if constexpr (std::is_same_v<std::remove_cv_t<T>, char>) {
+    return string::CopyString(std::string_view(&value, 1), buffer);
   } else if constexpr (std::is_integral_v<T>) {
     return string::IntToString(value, buffer);
   } else if constexpr (std::is_enum_v<T>) {
     return string::IntToString<std::underlying_type_t<T>>(value, buffer);
   } else if constexpr (std::is_floating_point_v<T>) {
     return string::FloatAsIntToString(value, buffer);
-  } else if constexpr (std::is_pointer_v<T> || std::is_null_pointer_v<T>) {
-    return string::PointerToString(value, buffer);
   } else if constexpr (std::is_convertible_v<T, std::string_view>) {
     return string::CopyString(value, buffer);
+  } else if constexpr (std::is_pointer_v<std::remove_cv_t<T>> ||
+                       std::is_null_pointer_v<T>) {
+    return string::PointerToString(value, buffer);
   } else {
     // By default, no definition of UnknownTypeToString is provided.
     return string::UnknownTypeToString(value, buffer);

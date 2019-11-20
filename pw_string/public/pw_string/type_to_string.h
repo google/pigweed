@@ -97,7 +97,7 @@ StatusWithSize FloatAsIntToString(float value, const span<char>& buffer);
 // Writes a bool as "true" or "false". Semantics match CopyEntireString.
 StatusWithSize BoolToString(bool value, const span<char>& buffer);
 
-// Writes the pointer's address or "null". Semantics match CopyEntireString.
+// Writes the pointer's address or "(null)". Semantics match CopyEntireString.
 StatusWithSize PointerToString(const void* pointer, const span<char>& buffer);
 
 // Copies the string to the buffer, truncating if the full string does not fit.
@@ -108,6 +108,13 @@ StatusWithSize PointerToString(const void* pointer, const span<char>& buffer);
 StatusWithSize CopyString(const std::string_view& value,
                           const span<char>& buffer);
 
+inline StatusWithSize CopyString(const char* value, const span<char>& buffer) {
+  if (value == nullptr) {
+    return PointerToString(value, buffer);
+  }
+  return CopyString(std::string_view(value), buffer);
+}
+
 // Copies the string to the buffer, if the entire string fits. Always null
 // terminates if buffer.size() > 0.
 //
@@ -116,6 +123,14 @@ StatusWithSize CopyString(const std::string_view& value,
 // status is RESOURCE_EXHAUSTED.
 StatusWithSize CopyEntireString(const std::string_view& value,
                                 const span<char>& buffer);
+
+inline StatusWithSize CopyEntireString(const char* value,
+                                       const span<char>& buffer) {
+  if (value == nullptr) {
+    return PointerToString(value, buffer);
+  }
+  return CopyEntireString(std::string_view(value), buffer);
+}
 
 // This function is a fallback that is called if by ToString if no overload
 // matches. No definition is provided, so attempting to print an unsupported

@@ -172,8 +172,10 @@ StatusWithSize BoolToString(bool value, const span<char>& buffer) {
 }
 
 StatusWithSize PointerToString(const void* pointer, const span<char>& buffer) {
+  static constexpr std::string_view kNullString("(null)");
+
   if (pointer == nullptr) {
-    return CopyEntireString("null", buffer);
+    return CopyEntireString(kNullString, buffer);
   }
   return IntToHexString(reinterpret_cast<uintptr_t>(pointer), buffer);
 }

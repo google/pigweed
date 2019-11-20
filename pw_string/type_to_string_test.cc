@@ -472,8 +472,8 @@ TEST_F(CopyEntireStringTest, NullTerminatorsInString) {
 class PointerToStringTest : public TestWithBuffer {};
 
 TEST_F(PointerToStringTest, Nullptr_WritesNull) {
-  EXPECT_EQ(4u, PointerToString(nullptr, span(buffer_, 5)).size());
-  EXPECT_STREQ("null", buffer_);
+  EXPECT_EQ(6u, PointerToString(nullptr, span(buffer_, 7)).size());
+  EXPECT_STREQ("(null)", buffer_);
 }
 
 TEST_F(PointerToStringTest, WritesAddress) {

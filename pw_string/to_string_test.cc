@@ -95,6 +95,12 @@ TEST(ToString, Integer_AllTypesAreSupported) {
   EXPECT_STREQ("127", buffer);
 }
 
+TEST(ToString, Integer_EmptyBuffer_WritesNothing) {
+  auto result = ToString(-1234, span(buffer, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+}
+
 TEST(ToString, Integer_BufferTooSmall_WritesNullTerminator) {
   auto result = ToString(-1234, span(buffer, 5));
   EXPECT_EQ(0u, result.size());
@@ -111,6 +117,8 @@ TEST(ToString, Float) {
   EXPECT_STREQ("-NaN", buffer);
 }
 
+constexpr std::string_view kNullString = "(null)";
+
 TEST(ToString, Pointer_NonNull_WritesValue) {
   CustomType custom;
   const size_t length = std::snprintf(expected,
@@ -126,12 +134,25 @@ TEST(ToString, Pointer_NonNull_WritesValue) {
   EXPECT_STREQ("4", buffer);
 }
 
-TEST(ToString, Pointer_Null_WritesNull) {
-  EXPECT_EQ(4u, ToString(nullptr, buffer).size());
-  EXPECT_STREQ("null", buffer);
-  EXPECT_EQ(4u,
+TEST(ToString, Pointer_Nullptr_WritesNull) {
+  EXPECT_EQ(kNullString.size(), ToString(nullptr, buffer).size());
+  EXPECT_EQ(kNullString, buffer);
+}
+
+TEST(ToString, Pointer_NullValuedPointer_WritesNull) {
+  EXPECT_EQ(kNullString.size(),
             ToString(static_cast<const CustomType*>(nullptr), buffer).size());
-  EXPECT_STREQ("null", buffer);
+  EXPECT_EQ(kNullString, buffer);
+}
+
+TEST(ToString, Pointer_NullValuedCString_WritesNull) {
+  EXPECT_EQ(kNullString.size(),
+            ToString(static_cast<char*>(nullptr), buffer).size());
+  EXPECT_EQ(kNullString, buffer);
+
+  EXPECT_EQ(kNullString.size(),
+            ToString(static_cast<const char*>(nullptr), buffer).size());
+  EXPECT_EQ(kNullString, buffer);
 }
 
 TEST(ToString, String_Literal) {
@@ -141,10 +162,24 @@ TEST(ToString, String_Literal) {
   EXPECT_STREQ("hello", buffer);
 }
 
+TEST(ToString, String_Pointer) {
+  EXPECT_EQ(0u, ToString(static_cast<const char*>(""), buffer).size());
+  EXPECT_STREQ("", buffer);
+  EXPECT_EQ(5u, ToString(static_cast<const char*>("hello"), buffer).size());
+  EXPECT_STREQ("hello", buffer);
+}
+
 TEST(ToString, String_MutableBuffer) {
   char chars[] = {'C', 'o', 'o', 'l', '\0'};
   EXPECT_EQ(sizeof(chars) - 1, ToString(chars, buffer).size());
   EXPECT_STREQ("Cool", buffer);
+}
+
+TEST(ToString, String_MutablePointer) {
+  char chars[] = {'b', 'o', 'o', 'l', '\0'};
+  EXPECT_EQ(sizeof(chars) - 1,
+            ToString(static_cast<char*>(chars), buffer).size());
+  EXPECT_STREQ("bool", buffer);
 }
 
 TEST(ToString, Object) {
@@ -183,8 +218,9 @@ TEST(ToString, StdArrayAsBuffer) {
   EXPECT_STREQ("false", test_buffer.data());
   EXPECT_EQ(2u, ToString("Hi", test_buffer).size());
   EXPECT_STREQ("Hi", test_buffer.data());
-  EXPECT_EQ(4u, ToString(static_cast<void*>(nullptr), test_buffer).size());
-  EXPECT_STREQ("null", test_buffer.data());
+  EXPECT_EQ(kNullString.size(),
+            ToString(static_cast<void*>(nullptr), test_buffer).size());
+  EXPECT_EQ(kNullString, test_buffer.data());
 }
 
 TEST(ToString, StringView) {
