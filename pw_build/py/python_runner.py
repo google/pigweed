@@ -16,6 +16,7 @@
 import argparse
 import os
 import pathlib
+import shlex
 import subprocess
 import sys
 
@@ -113,7 +114,7 @@ def main() -> int:
         return 1
 
     command = [sys.executable] + resolved_command
-    print('RUN', ' '.join(command), flush=True)
+    print('RUN', ' '.join(shlex.quote(arg) for arg in command), flush=True)
 
     try:
         status = subprocess.call(command)
