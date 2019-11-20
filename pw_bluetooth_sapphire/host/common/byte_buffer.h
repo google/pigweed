@@ -201,12 +201,13 @@ class StaticByteBuffer : public MutableByteBuffer {
   StaticByteBuffer() { static_assert(BufferSize, "|BufferSize| must be non-zero"); }
   ~StaticByteBuffer() override = default;
 
-  // Variadic template constructor to initialize a StaticByteBuffer using an
-  // initializer_list e.g.:
+  // Variadic template constructor to initialize a StaticByteBuffer using a parameter pack e.g.:
   //
   //   StaticByteBuffer<3> foo{0x00, 0x01, 0x02};
   //   StaticByteBuffer<3> bar({0x00, 0x01, 0x02});
   //
+  // The class's |BufferSize| template parameter, if explicitly provided, will be checked against
+  // the number of initialization elements provided.
   template <typename... T>
   StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
     static_assert(BufferSize, "|BufferSize| must be non-zero");
@@ -226,6 +227,15 @@ class StaticByteBuffer : public MutableByteBuffer {
  private:
   std::array<uint8_t, BufferSize> buffer_;
 };
+
+// Template deduction guide for the |BufferSize| class template parameter using the number of
+// parameters passed into the templated parameter pack constructor. This allows |BufferSize| to be
+// omitted when it should be deduced from the initializer:
+//
+//   StaticByteBuffer buffer(0x00, 0x01, 0x02);
+//
+template <typename... T>
+StaticByteBuffer(T... bytes) -> StaticByteBuffer<sizeof...(T)>;
 
 // Wrapper for the variadic template StaticByteBuffer constructor that deduces
 // the value of the |BufferSize| template parameter from the given input. This

@@ -45,10 +45,12 @@ TEST(ByteBufferTest, StaticByteBufferVariadicConstructor) {
 
   StaticByteBuffer<kBufferSize> buffer1{0x01, 0x02, 0x03};
   auto buffer2 = CreateStaticByteBuffer(0x01, 0x02, 0x03);
+  StaticByteBuffer buffer3{0x01, 0x02, 0x03};
 
   EXPECT_TRUE(ContainersEqual(buffer0, buffer1));
   EXPECT_TRUE(ContainersEqual(buffer0, buffer2));
   EXPECT_TRUE(ContainersEqual(buffer1, buffer2));
+  EXPECT_TRUE(ContainersEqual(buffer1, buffer3));
 }
 
 TEST(ByteBufferTest, DynamicByteBuffer) {
