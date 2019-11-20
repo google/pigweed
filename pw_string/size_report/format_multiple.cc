@@ -20,6 +20,8 @@
 // std::snprintf and doing error handling. It demonstrates that the code for
 // using pw::string::Format is much simpler.
 
+#include "pw_bloat/bloat_this_binary.h"
+
 #ifndef USE_FORMAT
 #error "USE_FORMAT must be defined"
 #endif  // USE_FORMAT
@@ -107,4 +109,7 @@ unsigned OutputStringsToBuffer() {
 
 }  // namespace pw::string
 
-int main() { return pw::string::OutputStringsToBuffer(); }
+int main() {
+  pw::bloat::BloatThisBinary();
+  return pw::string::OutputStringsToBuffer();
+}

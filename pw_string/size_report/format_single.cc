@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <cstdio>
 
+#include "pw_bloat/bloat_this_binary.h"
 #include "pw_string/format.h"
 
 #ifndef USE_FORMAT
@@ -62,4 +63,7 @@ unsigned OutputStringsToBuffer() {
 
 }  // namespace pw::string
 
-int main() { return pw::string::OutputStringsToBuffer(); }
+int main() {
+  pw::bloat::BloatThisBinary();
+  return pw::string::OutputStringsToBuffer();
+}

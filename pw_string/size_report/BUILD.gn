@@ -19,6 +19,7 @@ pw_executable("single_write_snprintf") {
     "format_single.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=0" ]
@@ -29,6 +30,7 @@ pw_executable("single_write_format") {
     "format_single.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=1" ]
@@ -39,6 +41,7 @@ pw_executable("multiple_writes_snprintf") {
     "format_multiple.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=0" ]
@@ -49,6 +52,7 @@ pw_executable("multiple_writes_format") {
     "format_multiple.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=1" ]
@@ -59,6 +63,7 @@ pw_executable("many_writes_snprintf") {
     "format_many_without_error_handling.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=0" ]
@@ -69,7 +74,90 @@ pw_executable("many_writes_format") {
     "format_many_without_error_handling.cc",
   ]
   deps = [
+    "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
   defines = [ "USE_FORMAT=1" ]
+}
+
+pw_executable("build_string_with_snprintf_no_base_snprintf") {
+  sources = [
+    "string_builder_size_report.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=0",
+    "PROVIDE_BASE_SNPRINTF=0",
+  ]
+}
+
+pw_executable("build_string_with_string_builder_no_base_snprintf") {
+  sources = [
+    "string_builder_size_report.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=1",
+    "PROVIDE_BASE_SNPRINTF=0",
+  ]
+}
+
+pw_executable("build_string_with_snprintf") {
+  sources = [
+    "string_builder_size_report.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=0",
+    "PROVIDE_BASE_SNPRINTF=1",
+  ]
+}
+
+pw_executable("build_string_with_string_builder") {
+  sources = [
+    "string_builder_size_report.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=1",
+    "PROVIDE_BASE_SNPRINTF=1",
+  ]
+}
+
+pw_executable("build_string_incremental_with_snprintf") {
+  sources = [
+    "string_builder_size_report_incremental.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=0",
+  ]
+}
+
+pw_executable("build_string_incremental_with_string_builder") {
+  sources = [
+    "string_builder_size_report_incremental.cc",
+  ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
+  defines = [
+    "USE_STRING_BUILDER=1",
+  ]
 }

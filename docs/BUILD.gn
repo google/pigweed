@@ -33,5 +33,6 @@ pw_doc_gen("docs") {
     "$dir_pw_bloat:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_preprocessor:docs",
+    "$dir_pw_string:docs",
   ]
 }
