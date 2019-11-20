@@ -15,7 +15,6 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
-    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -23,37 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "simple_printing_event_handler",
-    srcs = [
-        "simple_printing_event_handler.cc",
-    ],
-    hdrs = [
-        "public/pw_unit_test/event_handler.h",
-        "public/pw_unit_test/simple_printing_event_handler.h",
-    ],
-    deps = ["//pw_preprocessor"],
-)
-
-pw_cc_library(
-    name = "main",
-    srcs = [
-        "framework.cc",
-        "main.cc",
-    ],
-    hdrs = [
-        "public/gtest/gtest.h",
-        "public/pw_unit_test/event_handler.h",
-        "public/pw_unit_test/framework.h",
-    ],
+    name = "pw_dumb_io_stdio",
+    srcs = ["dumb_io.cc"],
     deps = [
-        ":simple_printing_event_handler",
-        "//pw_dumb_io",
-        "//pw_preprocessor",
-        "//pw_status",
+        "//pw_dumb_io:default_putget_bytes",
+        "//pw_dumb_io:facade",
     ],
-)
-
-pw_cc_test(
-    name = "framework_test",
-    srcs = ["framework_test.cc"],
 )

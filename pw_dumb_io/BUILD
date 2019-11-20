@@ -22,10 +22,31 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "pw_dumb_io",
-    srcs = ["dumb_io.cc"],
+    name = "facade",
     hdrs = ["public/pw_dumb_io/dumb_io.h"],
     deps = [
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "default_putget_bytes",
+    srcs = ["dumb_io.cc"],
+    deps = [
+        ":facade",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_dumb_io",
+    deps = [
+        ":facade",
+        # For now, hard-code to depend on stdio until bazel build is updated
+        # to support multiple target configurations.
+        "//pw_dumb_io_stdio",
         "//pw_span",
         "//pw_status",
     ],
