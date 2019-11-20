@@ -21,21 +21,20 @@
 namespace pw::unit_test {
 
 void SimplePrintingEventHandler::RunAllTestsStart() {
-  WriteAndFlush("[==========] Running all tests.");
+  WriteLine("[==========] Running all tests.");
 }
 
 void SimplePrintingEventHandler::RunAllTestsEnd(
     const RunTestsSummary& run_tests_summary) {
-  WriteAndFlush("[==========] Done running all tests.");
-  WriteAndFlush("[  PASSED  ] %d test(s).", run_tests_summary.passed_tests);
+  WriteLine("[==========] Done running all tests.");
+  WriteLine("[  PASSED  ] %d test(s).", run_tests_summary.passed_tests);
   if (run_tests_summary.failed_tests) {
-    WriteAndFlush("[  FAILED  ] %d test(s).", run_tests_summary.failed_tests);
+    WriteLine("[  FAILED  ] %d test(s).", run_tests_summary.failed_tests);
   }
 }
 
 void SimplePrintingEventHandler::TestCaseStart(const TestCase& test_case) {
-  WriteAndFlush(
-      "[ RUN      ] %s.%s", test_case.suite_name, test_case.test_name);
+  WriteLine("[ RUN      ] %s.%s", test_case.suite_name, test_case.test_name);
 }
 
 void SimplePrintingEventHandler::TestCaseEnd(const TestCase& test_case,
@@ -43,11 +42,11 @@ void SimplePrintingEventHandler::TestCaseEnd(const TestCase& test_case,
   // Use a switch with no default to detect changes in the test result enum.
   switch (result) {
     case TestResult::kSuccess:
-      WriteAndFlush(
+      WriteLine(
           "[       OK ] %s.%s", test_case.suite_name, test_case.test_name);
       break;
     case TestResult::kFailure:
-      WriteAndFlush(
+      WriteLine(
           "[  FAILED  ] %s.%s", test_case.suite_name, test_case.test_name);
       break;
   }
@@ -60,19 +59,21 @@ void SimplePrintingEventHandler::TestCaseExpect(
   }
 
   const char* result = expectation.success ? "Success" : "Failure";
-  WriteAndFlush(
-      "%s:%d: %s", test_case.file_name, expectation.line_number, result);
-  WriteAndFlush("      Expected: %s", expectation.expression);
+  WriteLine("%s:%d: %s", test_case.file_name, expectation.line_number, result);
+  WriteLine("      Expected: %s", expectation.expression);
+
+  write_("        Actual: ", false);
+  write_(expectation.evaluated_expression, true);
 }
 
-int SimplePrintingEventHandler::WriteAndFlush(const char* format, ...) {
+void SimplePrintingEventHandler::WriteLine(const char* format, ...) {
   va_list args;
 
   va_start(args, format);
   std::vsnprintf(buffer_, sizeof(buffer_), format, args);
   va_end(args);
 
-  return write_(buffer_);
+  write_(buffer_, true);
 }
 
 }  // namespace pw::unit_test

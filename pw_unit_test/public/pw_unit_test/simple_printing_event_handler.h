@@ -34,7 +34,9 @@ namespace pw::unit_test {
 //
 class SimplePrintingEventHandler : public EventHandler {
  public:
-  using WriteFunction = int (*)(const std::string_view&);
+  // Function for writing output as a string.
+  using WriteFunction = void (*)(const std::string_view& string,
+                                 bool append_newline);
 
   // Instantiates an event handler with a function to which to output results.
   // If verbose is set, information for successful tests is written as well as
@@ -50,7 +52,7 @@ class SimplePrintingEventHandler : public EventHandler {
                       const TestExpectation& expectation) override;
 
  private:
-  int WriteAndFlush(const char* format, ...) PW_PRINTF_FORMAT(2, 3);
+  void WriteLine(const char* format, ...) PW_PRINTF_FORMAT(2, 3);
 
   WriteFunction write_;
   bool verbose_;

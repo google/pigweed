@@ -26,6 +26,7 @@ source_set("pw_unit_test") {
   ]
   public_deps = [
     "$dir_pw_preprocessor",
+    "$dir_pw_string",
   ]
   public = [
     "public/gtest/gtest.h",

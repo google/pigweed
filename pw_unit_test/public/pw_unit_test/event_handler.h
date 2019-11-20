@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <string_view>
+
 namespace pw::unit_test {
 
 // This file defines the interface through which the pw_unit_test framework
@@ -65,8 +67,11 @@ struct TestCase {
 };
 
 struct TestExpectation {
-  // The expression which was run.
+  // The source code for the expression which was run.
   const char* expression;
+
+  // The expression with arguments evaluated.
+  std::string_view evaluated_expression;
 
   // Line number at which the expectation is located.
   int line_number;

@@ -18,9 +18,11 @@
 #include <cstdint>
 #include <cstring>
 #include <new>
+#include <string_view>
 
 #include "pw_preprocessor/concat.h"
 #include "pw_preprocessor/util.h"
+#include "pw_string/string_builder.h"
 #include "pw_unit_test/event_handler.h"
 
 #define PW_TEST(test_suite_name, test_name) \
@@ -74,6 +76,32 @@
 //
 #define RUN_ALL_TESTS() \
   ::pw::unit_test::internal::Framework::Get().RunAllTests()
+
+namespace pw::string {
+
+// This function is used to print unknown types that are used in EXPECT or
+// ASSERT statements in tests.
+//
+// You can add support for displaying custom types by defining a ToString
+// overload. For example:
+//
+//   namespace pw {
+//
+//   StatusWithSize ToString(const MyType& value, const span<char>& buffer) {
+//     return string::Format("<MyType|%d>", value.id);
+//   }
+//
+//   }  // namespace pw
+//
+// See the documentation in pw_string/string_builder.h for more information.
+template <typename T>
+StatusWithSize UnknownTypeToString(const T& value, const span<char>& buffer) {
+  StringBuilder sb(buffer);
+  sb << '<' << sizeof(value) << "-byte object at 0x" << &value << '>';
+  return sb.status_with_size();
+}
+
+}  // namespace pw::string
 
 namespace pw::unit_test {
 
@@ -149,10 +177,21 @@ class Framework {
   bool CurrentTestExpect(Expectation expectation,
                          const Lhs& lhs,
                          const Rhs& rhs,
+                         const char* expectation_string,
                          const char* expression,
                          int line) {
+    // Size of the buffer into which to write the string with the evaluated
+    // version of the arguments. This buffer is allocated on the unit test's
+    // stack, so it shouldn't be too large.
+    // TODO(hepler): Make this configurable.
+    constexpr size_t kExpectationBufferSizeBytes = 128;
+
     bool result = expectation(lhs, rhs);
-    ExpectationResult(expression, line, result);
+    ExpectationResult(expression,
+                      MakeString<kExpectationBufferSizeBytes>(
+                          lhs, ' ', expectation_string, ' ', rhs),
+                      line,
+                      result);
     return result;
   }
 
@@ -164,7 +203,10 @@ class Framework {
   void EndTest(Test* test);
 
   // Dispatches an event indicating the result of an expectation.
-  void ExpectationResult(const char* expression, int line, bool success);
+  void ExpectationResult(const char* expression,
+                         const std::string_view& result,
+                         int line,
+                         bool success);
 
   // Singleton instance of the framework class.
   static Framework framework_;
@@ -248,6 +290,7 @@ class Test {
   // Runs the unit test. Currently, this simply executes the test body, but it
   // could be expanded to perform more bookkeeping operations.
   void PigweedTestRun() { PigweedTestBody(); }
+
   virtual ~Test() = default;
 
  protected:
@@ -304,6 +347,7 @@ class Test {
       expectation,                                                 \
       (lhs),                                                       \
       (rhs),                                                       \
+      expectation_string,                                          \
       #lhs " " expectation_string " " #rhs,                        \
       __LINE__)
 

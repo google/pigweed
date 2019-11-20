@@ -15,14 +15,20 @@
 #include <string_view>
 
 #include "pw_dumb_io/dumb_io.h"
+#include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 #include "pw_unit_test/simple_printing_event_handler.h"
 
 int main() {
   pw::unit_test::SimplePrintingEventHandler handler(
-      [](const std::string_view& s) {
-        return static_cast<int>(pw::dumb_io::WriteLine(s).size());
+      [](const std::string_view& s, bool append_newline) {
+        if (append_newline) {
+          pw::dumb_io::WriteLine(s);
+        } else {
+          pw::dumb_io::WriteBytes(pw::as_bytes(pw::span(s)));
+        }
       });
+
   pw::unit_test::RegisterEventHandler(&handler);
   return RUN_ALL_TESTS();
 }
