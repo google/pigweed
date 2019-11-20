@@ -37,6 +37,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <string_view>
 
 #include "pw_span/span.h"
 #include "pw_status/status.h"
