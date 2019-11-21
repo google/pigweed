@@ -8,8 +8,10 @@
 #include <zircon/assert.h>
 
 #include <limits>
+#include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
@@ -25,33 +27,67 @@ size_t CopyBounded(MutableBufferView destination, const ByteBuffer& source) {
 
 }  // namespace
 
-OutboundFrame::OutboundFrame(ChannelId channel_id, const ByteBuffer& data)
-    : channel_id_(channel_id), data_(data.view()) {}
+OutboundFrame::OutboundFrame(ChannelId channel_id, const ByteBuffer& data,
+                             FrameCheckSequenceOption fcs_option)
+    : channel_id_(channel_id),
+      data_(data.view()),
+      fcs_option_(fcs_option),
+      fcs_(include_fcs() ? std::optional(MakeFcs()) : std::nullopt) {}
 
-// TODO(1511): Account for FCS footer
-size_t OutboundFrame::size() const { return sizeof(BasicHeader) + data_.size(); }
+size_t OutboundFrame::size() const {
+  return sizeof(BasicHeader) + data_.size() + (include_fcs() ? sizeof(FrameCheckSequence) : 0);
+}
 
 void OutboundFrame::WriteToFragment(MutableBufferView fragment_payload, size_t offset) {
+  // Build a table of the pages making up the frame's content, in sorted order.
+  const StaticByteBuffer header_buffer = MakeBasicHeader();
+  const std::optional fcs_buffer = include_fcs() ? std::optional(MakeFcs()) : std::nullopt;
+  const BufferView footer_buffer = fcs_buffer ? fcs_buffer->view() : BufferView();
+  const std::array pages = {header_buffer.view(), data_.view(), footer_buffer, BufferView()};
+  const std::array offsets = {size_t{0}, header_buffer.size(), header_buffer.size() + data_.size(),
+                              size()};
+  static_assert(pages.size() == offsets.size());
+
   ZX_ASSERT(offset <= size());
   size_t output_offset = 0;
-  if (offset < sizeof(BasicHeader)) {
-    // Length is "the length of the entire L2CAP PDU in octets, excluding the Length and CID field"
-    // (v5.0 Vol 3, Part A, Section 3.3.1)
-    const size_t pdu_content_length = size() - sizeof(BasicHeader);
-    ZX_ASSERT_MSG(pdu_content_length <= std::numeric_limits<decltype(BasicHeader::length)>::max(),
-                  "PDU payload is too large to be encoded");
-    BasicHeader header = {};
-    header.length = htole16(pdu_content_length);
-    header.channel_id = htole16(channel_id_);
-    const BufferView header_buffer(&header, sizeof(header));
-    output_offset = CopyBounded(fragment_payload, header_buffer.view(offset));
-    offset += output_offset;
-  }
 
-  // TODO(1511): Check that offset isn't within FCS footer
-  output_offset += CopyBounded(fragment_payload.mutable_view(output_offset),
-                               data_.view(offset - sizeof(BasicHeader)));
+  // Find the last page whose offset is not greater than the current offset.
+  const auto page_iter = std::prev(std::upper_bound(offsets.begin(), offsets.end(), offset));
+  for (size_t page_index = page_iter - offsets.begin(); page_index < pages.size(); page_index++) {
+    if (fragment_payload.size() - output_offset == 0) {
+      break;
+    }
+    const auto& page_buffer = pages[page_index];
+    const size_t bytes_copied = CopyBounded(fragment_payload.mutable_view(output_offset),
+                                            page_buffer.view(offset - offsets[page_index]));
+    offset += bytes_copied;
+    output_offset += bytes_copied;
+  }
   ZX_ASSERT(output_offset <= fragment_payload.size());
+}
+
+OutboundFrame::BasicHeaderBuffer OutboundFrame::MakeBasicHeader() const {
+  // Length is "the length of the entire L2CAP PDU in octets, excluding the Length and CID field"
+  // (v5.0 Vol 3, Part A, Section 3.3.1)
+  const size_t pdu_content_length = size() - sizeof(BasicHeader);
+  ZX_ASSERT_MSG(pdu_content_length <= std::numeric_limits<decltype(BasicHeader::length)>::max(),
+                "PDU payload is too large to be encoded");
+  BasicHeader header = {};
+  header.length = htole16(pdu_content_length);
+  header.channel_id = htole16(channel_id_);
+  BasicHeaderBuffer buffer;
+  buffer.WriteObj(header);
+  return buffer;
+}
+
+OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
+  ZX_ASSERT(include_fcs());
+  const BasicHeaderBuffer header = MakeBasicHeader();
+  const FrameCheckSequence header_fcs = l2cap::ComputeFcs(header.view());
+  const FrameCheckSequence whole_fcs = l2cap::ComputeFcs(data_.view(), header_fcs);
+  FrameCheckSequenceBuffer buffer;
+  buffer.WriteObj(htole16(whole_fcs.fcs));
+  return buffer;
 }
 
 Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
@@ -92,7 +128,7 @@ PDU Fragmenter::BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
   ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
   ZX_DEBUG_ASSERT(channel_id);
 
-  OutboundFrame frame(channel_id, data);
+  OutboundFrame frame(channel_id, data, FrameCheckSequenceOption::kNoFcs);
   const size_t frame_size = frame.size();
   const size_t num_fragments =
       frame_size / max_acl_payload_size_ + (frame_size % max_acl_payload_size_ ? 1 : 0);

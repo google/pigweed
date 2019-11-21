@@ -14,12 +14,17 @@
 namespace bt {
 namespace l2cap {
 
+enum class FrameCheckSequenceOption {
+  kNoFcs,      // FCS is not appended to the L2CAP frame
+  kIncludeFcs  // FCS is appended to the L2CAP frame
+};
+
 // Represents an unfragmented view of a complete L2CAP frame, used to construct PDUs. Unlike PDU,
 // this does not own its underlying data and is read-only. To avoid extraneous copies, the only way
 // to access the view is to perform a copy from a slice of the view.
 class OutboundFrame final {
  public:
-  OutboundFrame(ChannelId channel_id, const ByteBuffer& data);
+  OutboundFrame(ChannelId channel_id, const ByteBuffer& data, FrameCheckSequenceOption fcs_option);
 
   // Returns the total size of the frame including the L2CAP Basic Header and Information payload.
   [[nodiscard]] size_t size() const;
@@ -29,8 +34,22 @@ class OutboundFrame final {
   void WriteToFragment(MutableBufferView fragment_payload, size_t offset);
 
  private:
+  using BasicHeaderBuffer = StaticByteBuffer<sizeof(BasicHeader)>;
+  using FrameCheckSequenceBuffer = StaticByteBuffer<sizeof(FrameCheckSequence)>;
+
+  bool include_fcs() const { return fcs_option_ == FrameCheckSequenceOption::kIncludeFcs; }
+
+  // Build wire representation of Basic L2CAP header for this frame.
+  BasicHeaderBuffer MakeBasicHeader() const;
+
+  // Build wire representation of Frame Check Sequence for this frame.
+  // Used to initialize |fcs_|. All other fields must have already been initialized.
+  FrameCheckSequenceBuffer MakeFcs() const;
+
   const ChannelId channel_id_;
   const BufferView data_;
+  const FrameCheckSequenceOption fcs_option_;
+  const std::optional<FrameCheckSequenceBuffer> fcs_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(OutboundFrame);
 };

@@ -17,31 +17,77 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayload) {
-  auto kExpectedFrame = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedFrame(
       // Basic L2CAP header (0-length Information Payload)
       0x00, 0x00, 0x01, 0x00);
 
-  OutboundFrame frame(kTestChannelId, BufferView());
-  EXPECT_EQ(4u, frame.size());
-  StaticByteBuffer<4> out_buffer;
+  OutboundFrame frame(kTestChannelId, BufferView(), FrameCheckSequenceOption::kNoFcs);
+  EXPECT_EQ(kExpectedFrame.size(), frame.size());
+  decltype(kExpectedFrame) out_buffer;
   frame.WriteToFragment(out_buffer.mutable_view(), 0);
 
   EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
 }
 
+TEST(L2CAP_FragmenterTest, OutboundFrameEmptyPayloadWithFcs) {
+  StaticByteBuffer kExpectedFrame(
+      // Basic L2CAP header (2-byte Information Payload)
+      0x02, 0x00, 0x01, 0x00,
+
+      // FCS over preceding header (no other informational data)
+      0x00, 0x28);
+
+  OutboundFrame frame(kTestChannelId, BufferView(), FrameCheckSequenceOption::kIncludeFcs);
+  EXPECT_EQ(kExpectedFrame.size(), frame.size());
+  decltype(kExpectedFrame) out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 0);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+
+  // Reset
+  out_buffer.Fill(0xaa);
+
+  // Copy just FCS footer
+  frame.WriteToFragment(out_buffer.mutable_view(4), 4);
+  EXPECT_EQ(0x00, out_buffer[4]);
+  EXPECT_EQ(0x28, out_buffer[5]);
+}
+
 TEST(L2CAP_FragmenterTest, OutboundFrameExactFit) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto kExpectedFrame = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedFrame(
       // Basic L2CAP header
       0x04, 0x00, 0x01, 0x00,
 
       // Payload
       'T', 'e', 's', 't');
 
-  OutboundFrame frame(kTestChannelId, payload);
-  EXPECT_EQ(8u, frame.size());
-  StaticByteBuffer<8> out_buffer;
+  OutboundFrame frame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
+  EXPECT_EQ(kExpectedFrame.size(), frame.size());
+  decltype(kExpectedFrame) out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), 0);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+}
+
+TEST(L2CAP_FragmenterTest, OutboundFrameExactFitWithFcs) {
+  // Test data from v5.0, Vol 3, Part A, Section 3.3.5, Example 1
+  StaticByteBuffer payload(0x02, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09);
+
+  StaticByteBuffer kExpectedFrame(
+      // Basic L2CAP header
+      0x0e, 0x00, 0x40, 0x00,
+
+      // Payload
+      0x02, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+
+      // FCS
+      0x38, 0x61);
+
+  OutboundFrame frame(ChannelId(0x0040), payload, FrameCheckSequenceOption::kIncludeFcs);
+  EXPECT_EQ(kExpectedFrame.size(), frame.size());
+  decltype(kExpectedFrame) out_buffer;
   frame.WriteToFragment(out_buffer.mutable_view(), 0);
 
   EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
@@ -50,40 +96,61 @@ TEST(L2CAP_FragmenterTest, OutboundFrameExactFit) {
 TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInHeader) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto kExpectedFrame = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedFrameChunk(
       // Basic L2CAP header (minus first byte)
       0x00, 0x01, 0x00,
 
       // Payload (first byte only, limited by size of output buffer)
-      'T');
+      'T', 'e', 's', 't',
 
-  OutboundFrame frame(kTestChannelId, payload);
-  EXPECT_EQ(8u, frame.size());
-  StaticByteBuffer<4> out_buffer;
+      // FCS
+      0xa4, 0xc3);
+
+  OutboundFrame frame(kTestChannelId, payload, FrameCheckSequenceOption::kIncludeFcs);
+  EXPECT_EQ(sizeof(BasicHeader) + payload.size() + sizeof(FrameCheckSequence), frame.size());
+  decltype(kExpectedFrameChunk) out_buffer;
   frame.WriteToFragment(out_buffer.mutable_view(), 1);
 
-  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+  EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
 TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInPayload) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto kExpectedFrame = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedFrameChunk(
       // Payload
-      'T', 'e', 's');
+      'e', 's', 't',
 
-  OutboundFrame frame(kTestChannelId, payload);
-  EXPECT_EQ(8u, frame.size());
-  StaticByteBuffer<3> out_buffer;
-  frame.WriteToFragment(out_buffer.mutable_view(), 4);
+      // First byte of FCS
+      0xa4);
 
-  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+  OutboundFrame frame(kTestChannelId, payload, FrameCheckSequenceOption::kIncludeFcs);
+  EXPECT_EQ(sizeof(BasicHeader) + payload.size() + sizeof(FrameCheckSequence), frame.size());
+  decltype(kExpectedFrameChunk) out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), sizeof(BasicHeader) + 1);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
+TEST(L2CAP_FragmenterTest, OutboundFrameOffsetInFcs) {
+  StaticByteBuffer payload('T', 'e', 's', 't');
+
+  // Second and last byte of FCS
+  StaticByteBuffer kExpectedFrameChunk(0xc3);
+
+  OutboundFrame frame(kTestChannelId, payload, FrameCheckSequenceOption::kIncludeFcs);
+  EXPECT_EQ(sizeof(BasicHeader) + payload.size() + sizeof(FrameCheckSequence), frame.size());
+  decltype(kExpectedFrameChunk) out_buffer;
+  frame.WriteToFragment(out_buffer.mutable_view(), sizeof(BasicHeader) + payload.size() + 1);
+
+  EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
+}
+
+// This isn't expected to happen from Fragmenter.
 TEST(L2CAP_FragmenterTest, OutboundFrameOutBufferBigger) {
   auto payload = CreateStaticByteBuffer('T', 'e', 's', 't');
 
-  auto kExpectedFrame = CreateStaticByteBuffer(
+  StaticByteBuffer kExpectedFrameChunk(
       // Basic L2CAP header (minus first two bytes)
       0x01, 0x00,
 
@@ -93,13 +160,13 @@ TEST(L2CAP_FragmenterTest, OutboundFrameOutBufferBigger) {
       // Extraneous unused bytes
       0, 0, 0);
 
-  OutboundFrame frame(kTestChannelId, payload);
-  EXPECT_EQ(8u, frame.size());
-  StaticByteBuffer<9> out_buffer;
+  OutboundFrame frame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs);
+  EXPECT_EQ(sizeof(BasicHeader) + payload.size(), frame.size());
+  decltype(kExpectedFrameChunk) out_buffer;
   out_buffer.SetToZeros();
   frame.WriteToFragment(out_buffer.mutable_view(), 2);
 
-  EXPECT_TRUE(ContainersEqual(kExpectedFrame, out_buffer));
+  EXPECT_TRUE(ContainersEqual(kExpectedFrameChunk, out_buffer));
 }
 
 TEST(L2CAP_FragmenterTest, EmptyPayload) {
