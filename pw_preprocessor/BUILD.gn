@@ -55,7 +55,6 @@ template("preprocessor_test") {
   pw_test(target_name) {
     deps = [
       ":pw_preprocessor",
-      "$dir_pw_unit_test:main",
     ]
     sources = [
       "$target_name.cc",

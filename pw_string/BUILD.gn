@@ -57,7 +57,6 @@ pw_test_group("tests") {
 pw_test("format_test") {
   deps = [
     ":pw_string",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "format_test.cc",
@@ -67,7 +66,6 @@ pw_test("format_test") {
 pw_test("to_string_test") {
   deps = [
     ":pw_string",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "to_string_test.cc",
@@ -77,7 +75,6 @@ pw_test("to_string_test") {
 pw_test("type_to_string_test") {
   deps = [
     ":pw_string",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "type_to_string_test.cc",

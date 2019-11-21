@@ -40,7 +40,6 @@ pw_test_group("tests") {
 pw_test("status_test") {
   deps = [
     ":pw_status",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "status_test.cc",
@@ -50,7 +49,6 @@ pw_test("status_test") {
 pw_test("status_with_size_test") {
   deps = [
     ":pw_status",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "status_with_size_test.cc",

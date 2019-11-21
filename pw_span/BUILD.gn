@@ -36,7 +36,6 @@ pw_test_group("tests") {
 pw_test("test") {
   deps = [
     ":pw_span",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "span_test.cc",
