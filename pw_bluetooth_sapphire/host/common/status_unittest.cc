@@ -11,6 +11,7 @@ namespace {
 
 enum class TestError : uint8_t {
   kFoo = 0,
+  kBar = 1,
 };
 
 using TestStatus = Status<TestError>;
@@ -40,6 +41,20 @@ TEST(StatusTest, ProtocolErrorAsInt) {
   EXPECT_FALSE(status);
   EXPECT_EQ(HostError::kProtocolError, status.error());
   EXPECT_EQ(kError, status.protocol_error());
+}
+
+TEST(StatusTest, CompareEquality) {
+  EXPECT_EQ(TestStatus(), TestStatus());
+  EXPECT_NE(TestStatus(TestError::kFoo), TestStatus());
+
+  EXPECT_NE(TestStatus(HostError::kFailed), TestStatus(HostError::kTimedOut));
+  EXPECT_NE(TestStatus(HostError::kFailed), TestStatus(TestError::kFoo));
+
+  EXPECT_EQ(TestStatus(TestError::kFoo), TestStatus(TestError::kFoo));
+  EXPECT_NE(TestStatus(TestError::kFoo), TestStatus(TestError::kBar));
+
+  // This should not compile.
+  // EXPECT_EQ(TestStatus(), Status<uint8_t>());
 }
 
 }  // namespace

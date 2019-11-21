@@ -107,7 +107,24 @@ class Status {
   ProtocolErrorCode protocol_error() const { return protocol_error_; }
 
   // Returns true if this is a success result.
-  operator bool() const { return is_success(); }
+  explicit operator bool() const { return is_success(); }
+
+  template <typename T>
+  constexpr bool operator==(const Status<T>& other) const {
+    // Do not disqualify incomparable Status types with SFINAE; instead, disqualify them with this
+    // static_assert in order to provide a more useful error message.
+    static_assert(std::is_same_v<ProtocolErrorCode, T>,
+                  "Can not compare Statuses of different protocols");
+    if (error() == HostError::kProtocolError && other.error() == HostError::kProtocolError) {
+      return protocol_error() == other.protocol_error();
+    }
+    return error() == other.error();
+  }
+
+  template <typename T>
+  constexpr bool operator!=(const Status<T>& other) const {
+    return !(*this == other);
+  }
 
   // Returns a string representation.
   inline std::string ToString() const {

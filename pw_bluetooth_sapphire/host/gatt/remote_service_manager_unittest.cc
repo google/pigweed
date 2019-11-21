@@ -1547,7 +1547,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
   const att::Status kStatus(HostError::kNotSupported);
 
-  ServiceData data(1, kValueHandle, kTestServiceUuid1);
+  ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
   CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
@@ -1556,13 +1556,14 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
 
   fake_client()->set_write_request_callback(
       [&](att::Handle handle, const auto& value, auto status_callback) {
-        EXPECT_EQ(kValueHandle, handle);
+        EXPECT_EQ(kDescrHandle, handle);
         EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
         status_callback(kStatus);
       });
 
   att::Status status;
-  service->WriteDescriptor(0, kValue, [&](att::Status cb_status) { status = cb_status; });
+  service->WriteDescriptor(kDescrHandle, kValue,
+                           [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
   EXPECT_EQ(kStatus, status);

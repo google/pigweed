@@ -220,7 +220,7 @@ TEST(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWith
   ASSERT_TRUE(pairing_status_handler.handle());
   EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
   ASSERT_TRUE(pairing_status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kCanceled), *pairing_status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kNotReady), *pairing_status_handler.status());
 }
 
 TEST(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
@@ -872,7 +872,12 @@ TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate
   RETURN_IF_FATAL(InjectEvent());
   EXPECT_LE(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  if (event() == IoCapabilityResponse) {
+    // Peer attempted to pair again, which raises an additional "not ready" error.
+    EXPECT_EQ(hci::Status(HostError::kNotReady), status_handler().status());
+  } else {
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
 }
 
 TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {

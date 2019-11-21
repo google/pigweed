@@ -20,15 +20,18 @@ class ScopedChannel final {
   ScopedChannel() = default;
   ~ScopedChannel();
 
+  // Returns true if there is an open underlying channel.
+  [[nodiscard]] bool is_active() const { return static_cast<bool>(chan_); }
+
   // Resets the underlying channel to the one that is provided. Any previous
   // channel will be deactivated.
   void Reset(fbl::RefPtr<Channel> new_channel);
 
-  inline void operator=(decltype(nullptr)) { Close(); }
-  inline operator bool() const { return static_cast<bool>(chan_); }
+  void operator=(decltype(nullptr)) { Close(); }
+  explicit operator bool() const { return is_active(); }
 
-  inline Channel* get() const { return chan_.get(); }
-  inline Channel* operator->() const { return get(); }
+  Channel* get() const { return chan_.get(); }
+  Channel* operator->() const { return get(); }
 
   // Returns a copy of the underlying Channel reference without releasing
   // ownership.  The channel will still be deactivated when this goes out
