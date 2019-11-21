@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright 2019 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -24,23 +22,17 @@ import subprocess
 import sys
 import time
 
-import coloredlogs
-
-from pathtools.patterns import match_any_paths
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
-PIGWEED_BANNER = '''
- ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
-'''
+from pw_cmd.color import Color as _Color
 
-PASS_MESSAGE = """
+import logging
+_LOG = logging.getLogger(__name__)
+
+_PASS_MESSAGE = """
   ██████╗  █████╗ ███████╗███████╗██╗
   ██╔══██╗██╔══██╗██╔════╝██╔════╝██║
   ██████╔╝███████║███████╗███████╗██║
@@ -51,45 +43,29 @@ PASS_MESSAGE = """
 
 # Pick a visually-distinct font from "PASS" to ensure that readers can't
 # possibly mistake the difference between the two states.
-FAIL_MESSAGE = """
-    ██████▒░▄▄▄       ██▓  ░██▓
-  ▓██     ░▒████▄    ▓██▒  ░▓██▒
-  ▒█████   ░▒█▀  ▀█▄  ▒██▒ ▒██░
+_FAIL_MESSAGE = """
+   ▄██████▒░▄▄▄       ██▓  ░██▓
+  ▓█▓     ░▒████▄    ▓██▒  ░▓██▒
+  ▒████▒   ░▒█▀  ▀█▄  ▒██▒ ▒██░
   ░▓█▒    ░░██▄▄▄▄██ ░██░  ▒██░
   ░▒█░      ▓█   ▓██▒░██░░ ████████▒
-   ▒ ░      ▒▒   ▓▒█░░▓  ░  ▒░▓  ░
-   ░         ▒   ▒▒ ░ ▒ ░░  ░ ▒  ░
+   ▒█░      ▒▒   ▓▒█░░▓  ░  ▒░▓  ░
+   ░▒        ▒   ▒▒ ░ ▒ ░░  ░ ▒  ░
    ░ ░       ░   ▒    ▒ ░   ░ ░
                  ░  ░ ░       ░  ░
 """
 
 
-class State(enum.Enum):
+class _State(enum.Enum):
     WAITING_FOR_FILE_CHANGE_EVENT = 1
     COOLDOWN_IGNORING_EVENTS = 2
 
 
-def make_color(*codes):
-    # Apply all the requested ANSI color codes. Note that this is unbalanced
-    # with respect to the reset, which only requires a '0' to erase all codes.
-    start = ''.join(f'\033[{code}m' for code in codes)
-    reset = '\033[0m'
-
-    return lambda msg: f'{start}{msg}{reset}'
-
-color_red = make_color(31, 1)
-color_bold_red = make_color(30, 41)
-color_yellow = make_color(33, 1)
-color_bold_yellow = make_color(30, 43, 1)
-color_green = make_color(32)
-color_bold_green = make_color(30, 42)
-color_blue = make_color(34, 1)
-color_cyan = make_color(36, 1)
-color_magenta = make_color(35, 1)
-color_bold_white = make_color(37, 1)
-
-def die(*args):
-    log.fatal(*args)
+# TODO(keir): Figure out a better strategy for exiting. The problem with the
+# watcher is that doing a "clean exit" is slow. However, by directly exiting,
+# we remove the possibility of the wrapper script from doing anything on exit.
+def _die(*args):
+    _LOG.fatal(*args)
     sys.exit(1)
 
 class PigweedBuildWatcher(FileSystemEventHandler):
@@ -98,12 +74,12 @@ class PigweedBuildWatcher(FileSystemEventHandler):
                  ignore_patterns=None,
                  case_sensitive=False,
                  build_dirs=[]):
-        super(PigweedBuildWatcher, self).__init__()
+        super().__init__()
 
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.case_sensitive = case_sensitive
-        self.state = State.WAITING_FOR_FILE_CHANGE_EVENT
+        self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
         self.build_dirs = build_dirs
 
     def path_matches(self, path):
@@ -125,121 +101,134 @@ class PigweedBuildWatcher(FileSystemEventHandler):
             paths.append(unicode_paths.decode(event.dest_path))
         if event.src_path:
             paths.append(unicode_paths.decode(event.src_path))
-        log.debug('Got events for: %s', paths)
+        _LOG.debug('Got events for: %s', paths)
 
         for path in paths:
             if self.path_matches(path):
-                log.debug('Match for path: %s', path)
+                _LOG.debug('Match for path: %s', path)
                 self.on_any_event()
 
     def run_builds(self):
+        # Run all the builds in serial and capture pass/fail for each.
         builds_succeeded = []
         num_builds = len(self.build_dirs)
-        log.info(f'Starting build with {num_builds} directories')
+        _LOG.info(f'Starting build with {num_builds} directories')
         for i, build_dir in enumerate(self.build_dirs, 1):
-            log.info(f'[{i}/{num_builds}] Starting build: {build_dir}')
+            _LOG.info(f'[{i}/{num_builds}] Starting build: {build_dir}')
+
+            # Run the build. Put a blank before/after for visual separation.
+            print()
             result = subprocess.run(['ninja', '-C', build_dir])
-            log.info(f'[{i}/{num_builds}] Finished build: {build_dir}')
-            builds_succeeded.append(result.returncode == 0)
+            print()
+
+            build_ok = (result.returncode == 0)
+            if build_ok:
+                tag = '(OK)'
+            else:
+                tag = '(FAIL)'
+            _LOG.info(f'[{i}/{num_builds}] Finished build: {build_dir} {tag}')
+            builds_succeeded.append(build_ok)
 
         if all(builds_succeeded):
-            log.info('Finished; all successful.')
+            _LOG.info('Finished; all successful.')
         else:
-            log.info('Finished; some builds failed.')
+            _LOG.info('Finished; some builds failed.')
 
         # Write out build summary table so you can tell which builds passed
         # and which builds failed.
         print()
         print(' .------------------------------------')
         print(' |')
-        for i, (succeeded, build_dir) in enumerate(zip(builds_succeeded,
-                                                       self.build_dirs)):
+        for (succeeded, build_dir) in zip(builds_succeeded, self.build_dirs):
             if succeeded:
-                slug = color_green('OK  ')
+                slug = _Color.green('OK  ')
             else:
-                slug = color_red('FAIL')
+                slug = _Color.red('FAIL')
 
-            print(f' |   {slug}   build: {build_dir}')
+            print(f' |   {slug}  {build_dir}')
         print(' |')
         print(" '------------------------------------")
-        print()
 
+        # Show a large color banner so it is obvious what the overall result is.
         if all(builds_succeeded):
-            print(color_green(PASS_MESSAGE))
+            print(_Color.green(_PASS_MESSAGE))
         else:
-            print(color_red(FAIL_MESSAGE))
+            print(_Color.red(_FAIL_MESSAGE))
 
     def on_any_event(self):
-        if self.state == State.WAITING_FOR_FILE_CHANGE_EVENT:
+        if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
             self.run_builds()
 
             # Don't set the cooldown end time until after the build.
-            self.state = State.COOLDOWN_IGNORING_EVENTS
-            log.debug('State: WAITING -> COOLDOWN (file change trigger)')
+            self.state = _State.COOLDOWN_IGNORING_EVENTS
+            _LOG.debug('State: WAITING -> COOLDOWN (file change trigger)')
 
             # 500ms is enough to allow the spurious events to get ignored.
             self.cooldown_finish_time = time.time() + 0.5
 
-        elif self.state == State.COOLDOWN_IGNORING_EVENTS:
+        elif self.state == _State.COOLDOWN_IGNORING_EVENTS:
             if time.time() < self.cooldown_finish_time:
-                log.debug('Skipping event; cooling down...')
+                _LOG.debug('Skipping event; cooling down...')
             else:
-                log.debug('State: COOLDOWN -> WAITING (cooldown expired)')
-                self.state = State.WAITING_FOR_FILE_CHANGE_EVENT
+                _LOG.debug('State: COOLDOWN -> WAITING (cooldown expired)')
+                self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
                 self.on_any_event()  # Retrigger.
 
     def on_success(self):
-        log.debug('Build and tests passed')
-        print(color_green(PASS_MESSAGE))
+        _LOG.debug('Build and tests passed')
+        print(_Color.green(PASS_MESSAGE))
 
     def on_fail(self):
-        log.debug('Build and tests failed')
-        print(color_red(FAIL_MESSAGE))
+        _LOG.debug('Build and tests failed')
+        print(_Color.red(_FAIL_MESSAGE))
 
 
-WATCH_PATTERN_DELIMITER = ','
-WATCH_PATTERNS = [
+_WATCH_PATTERN_DELIMITER = ','
+_WATCH_PATTERNS = (
     '*.bloaty',
     '*.c',
     '*.cc',
     '*.gn',
     '*.gni',
     '*.h',
-    '*.ld'
+    '*.ld',
     '*.py',
     '*.rst',
-]
+)
 
 class WatchCommand:
-    # A single command object can handle multiple commands.
-    def register_subcommand(self, subparsers):
-        parser = subparsers.add_parser('watch')
+    def name(self):
+        return 'watch'
+
+    def help(self):
+        return 'Watch files for changes'
+
+    def register(self, parser):
         parser.add_argument(
                 '--patterns',
-                help=(WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
+                help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
                       'watch to trigger recompile'),
-                default=WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS))
+                default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
         parser.add_argument(
                 '--ignore_patterns',
-                help=(WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
+                help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
                      'ignore events from'))
         parser.add_argument(
                 '--build_dir',
                 help=('Ninja directory to build. Can be specified '
                 'multiple times to build multiple configurations'),
                 action='append')
-        parser.set_defaults(func=self.run)
 
-    def run(self, args):
-        log.info('Starting Pigweed build watcher')
+    def run(self, build_dir='', patterns=None, ignore_patterns=None):
+        _LOG.info('Starting Pigweed build watcher')
 
         # If no build directory was specified, search the tree for GN build
         # directories and try to build them all. In the future this may cause
         # slow startup, but for now this is fast enough.
-        build_dirs = args.build_dir
+        build_dirs = build_dir
         if not build_dirs:
             build_dirs = []
-            log.info('Searching for GN build dirs...')
+            _LOG.info('Searching for GN build dirs...')
             gn_args_files = glob.glob('**/args.gn', recursive=True)
             for gn_args_file in gn_args_files:
                 gn_build_dir = pathlib.Path(gn_args_file).parent
@@ -248,40 +237,60 @@ class WatchCommand:
 
         # Make sure we found something; if not, bail.
         if not build_dirs:
-            die("No build dirs found. Did you forget to 'gn gen out'?")
+            _die("No build dirs found. Did you forget to 'gn gen out'?")
 
         # Verify that the build output directories exist.
         for i, build_dir in enumerate(build_dirs, 1):
             if not os.path.isdir(build_dir):
-                die("Build directory doesn't exist: %s", build_dir)
+                _die("Build directory doesn't exist: %s", build_dir)
             else:
-                log.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
+                _LOG.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
 
-        log.debug('Patterns: %s', args.patterns)
-        # TODO(keir): This will need to be made more general; and needs to be
-        # more granular. Currently this will recieve events from Ninja in the
-        # 'out/' directory, which is not ideal. The proper way to handle this
-        # is to create a list of directories that are not Ninja and not Bazel,
-        # and watch those.
-        path = '.'
+        _LOG.debug('Patterns: %s', patterns)
+        # TODO(keir): Change the watcher to selectively watch some
+        # subdirectories, rather than watching everything under a single path.
+        #
+        # The problem with the current approach is that Ninja's building
+        # triggers many events, which are needlessly sent to this script.
+        path_of_directory_to_watch = '.'
+
+        # Try to make a short display path for the watched directory that has
+        # "$HOME" instead of the full home directory. This is nice for users
+        # who have deeply nested home directories.
+        path_to_log = pathlib.Path(path_of_directory_to_watch).resolve()
+        try:
+            path_to_log = path_to_log.relative_to(pathlib.Path.home())
+            path_to_log = f'$HOME/{path_to_log}'
+        except ValueError:
+            # The directory is somewhere other than inside the users home.
+            path_to_log = path_of_directory_to_watch
 
         # We need to ignore both the user-specified patterns and also all
         # events for files in the build output directories.
-        ignore_patterns= (args.ignore_patterns.split(WATCH_PATTERN_DELIMITER)
-                          if args.ignore_patterns else [])
+        ignore_patterns= (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
+                          if ignore_patterns else [])
         ignore_patterns.extend([
             f'{build_dir}/*' for build_dir in build_dirs])
 
         event_handler = PigweedBuildWatcher(
-                patterns=args.patterns.split(WATCH_PATTERN_DELIMITER),
+                patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
                 ignore_patterns=ignore_patterns,
                 build_dirs=build_dirs)
 
         observer = Observer()
-        observer.schedule(event_handler, path, recursive=True)
+        observer.schedule(event_handler,
+                          path_of_directory_to_watch,
+                          recursive=True)
         observer.start()
 
-        log.info('Watching for file changes. Ctrl-C exits.')
+        _LOG.info('Directory to watch: %s', path_to_log)
+        _LOG.info('Watching for file changes. Ctrl-C exits.')
+
+        # Make a nice non-logging banner to motivate the user.
+        print()
+        print(_Color.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
+        print()
+
         try:
             while observer.isAlive():
                 observer.join(1)
@@ -289,40 +298,10 @@ class WatchCommand:
             # To keep the log lines aligned with each other in the presence of
             # a '^C' from the keyboard interrupt, add a newline before the log.
             print()
-            log.info('Got Ctrl-C; exiting...')
+            _LOG.info('Got Ctrl-C; exiting...')
 
             # Note: The "proper" way to exit is via observer.stop(), then
             # running a join. However it's slower, so just exit immediately.
             sys.exit(0)
 
         observer.join()
-
-
-def main():
-    # Start with the most critical part of the Pigweed command line tool.
-    print(color_magenta(PIGWEED_BANNER))
-
-    # Set up logs.
-    coloredlogs.install(level='INFO',
-                        fmt='PW - %(asctime)s - %(levelname)s - %(message)s')
-    # TODO(keir): Figure out a better logging policy for subcommands.
-    global log
-    log = logging.getLogger('pw')
-
-    parser = argparse.ArgumentParser()
-
-    # Add subcommands and their parsers.
-    subparsers = parser.add_subparsers(
-            title='subcommands')
-    subcommands = [
-            WatchCommand()
-    ]
-    for subcommand in subcommands:
-        subcommand.register_subcommand(subparsers)
-
-    args = parser.parse_args()
-    args.func(args)
-
-if __name__ == '__main__':
-    main()
-
