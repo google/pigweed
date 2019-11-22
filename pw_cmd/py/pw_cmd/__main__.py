@@ -16,18 +16,17 @@
 The Pigweed command line interface (CLI)
 
 Example uses:
-    pw watch     Watch for changes and re-build
-    pw logdemo   Show log examples
+    pw watch --build_dir out/clang
+    pw logdemo
 """
 
 import argparse
 import sys
 import logging
+import importlib
+import pkgutil
 
 import pw_cmd.log
-
-# TODO(keir): Make this a plugin mechanism that searches for plugins instead.
-from pw_cmd.watch import WatchCommand
 from pw_cmd.color import Color
 
 _LOG = logging.getLogger(__name__)
@@ -61,6 +60,7 @@ def main(raw_args=None):
     if raw_args is None:
         raw_args = sys.argv[1:]
 
+    # TODO(keir): Add support for configurable logging levels.
     pw_cmd.log.install()
 
     # Start with the most critical part of the Pigweed command line tool.
@@ -73,12 +73,28 @@ def main(raw_args=None):
 
     help_command = HelpCommand(parser)
 
-    # TODO(keir): Add proper subcommand discovery mechanism.
+    # Note: The help command is special since it accesses parser.print_help().
     commands = [
         help_command,
-        WatchCommand(),
-        pw_cmd.log.LogDemoCommand(),
     ]
+
+    # Find and load command line plugins.
+    #
+    # Plugins are located by finding modules starting with "pw_", loading that
+    # module, then searching for an iterable named 'PW_CLI_PLUGINS' containing
+    # Command classes. The classes are instantiated and added to the commands.
+    #
+    # Note: We may want to make plugin loading explicit rather than doing this
+    # via search, since it slows down starting 'pw' considerably.
+    for module in pkgutil.iter_modules():
+        if module.name.startswith('pw_'):
+            plugin = importlib.__import__(module.name)
+            _LOG.debug('Found module that may have plugins: %s', module.name)
+            if hasattr(plugin, 'PW_CLI_PLUGINS'):
+                for command_class in plugin.PW_CLI_PLUGINS:
+                    command_instance = command_class()
+                    commands.append(command_instance)
+                    _LOG.debug('Found plugins: %s', command_instance.name())
 
     # Setting this default on the top-level parser makes 'pw' show help by
     # default when invoked with no arguments.
