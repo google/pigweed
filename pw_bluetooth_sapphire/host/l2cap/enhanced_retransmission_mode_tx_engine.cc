@@ -31,9 +31,9 @@ uint8_t NumFramesBetween(uint8_t low, uint8_t high) {
 
 Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
                                            uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
-                                           SendBasicFrameCallback send_basic_frame_callback,
+                                           SendFrameCallback send_frame_callback,
                                            ConnectionFailureCallback connection_failure_callback)
-    : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)),
+    : TxEngine(channel_id, tx_mtu, std::move(send_frame_callback)),
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
@@ -192,8 +192,7 @@ void Engine::SendReceiverReadyPoll() {
                 "(n_receiver_ready_polls_sent_ = %u, "
                 "max_transmissions = %u)",
                 n_receiver_ready_polls_sent_, max_transmissions_);
-  send_basic_frame_callback_(
-      std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
+  send_frame_callback_(std::make_unique<DynamicByteBuffer>(BufferView(&frame, sizeof(frame))));
 }
 
 uint8_t Engine::GetNextTxSeq() {
@@ -228,7 +227,7 @@ void Engine::SendPdu(PendingPdu* pdu) {
   pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_request_seq_num(req_seqnum_);
   pdu->tx_count++;
   StartReceiverReadyPollTimer();
-  send_basic_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
+  send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
 Engine* Engine::RetransmitUnackedData() {

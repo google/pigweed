@@ -19,9 +19,8 @@ namespace internal {
 // concurrently with the destructor.
 class BasicModeTxEngine final : public TxEngine {
  public:
-  BasicModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
-                    SendBasicFrameCallback send_basic_frame_callback)
-      : TxEngine(channel_id, tx_mtu, std::move(send_basic_frame_callback)) {}
+  BasicModeTxEngine(ChannelId channel_id, uint16_t tx_mtu, SendFrameCallback send_frame_callback)
+      : TxEngine(channel_id, tx_mtu, std::move(send_frame_callback)) {}
   ~BasicModeTxEngine() override = default;
 
   // Queues |sdu| for transmission, returning true on success. This may fail,

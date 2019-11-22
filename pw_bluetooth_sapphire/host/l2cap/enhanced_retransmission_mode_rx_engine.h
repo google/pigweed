@@ -21,9 +21,9 @@ namespace internal {
 // THREAD-SAFETY: This class is not thread-safe.
 class EnhancedRetransmissionModeRxEngine final : public RxEngine {
  public:
-  using SendBasicFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
+  using SendFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
 
-  EnhancedRetransmissionModeRxEngine(SendBasicFrameCallback send_basic_frame_callback);
+  EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback);
   virtual ~EnhancedRetransmissionModeRxEngine() = default;
 
   ByteBufferPtr ProcessPdu(PDU) override;
@@ -40,7 +40,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   // Core Spec Ver 5, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t next_seqnum_;  // (AKA Expected-TxSeq)
 
-  SendBasicFrameCallback send_basic_frame_callback_;
+  SendFrameCallback send_frame_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };

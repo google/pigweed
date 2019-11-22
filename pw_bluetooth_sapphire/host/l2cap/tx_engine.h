@@ -25,20 +25,20 @@ class TxEngine {
   // Type defining the callback that a TxEngine uses to deliver a PDU to lower
   // layers. The callee may assume that the ByteBufferPtr owns an instance of a
   // DynamicByteBuffer or SlabBuffer.
-  using SendBasicFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
+  using SendFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
 
-  // Creates a transmit engine, which will invoke |send_basic_frame_callback|
+  // Creates a transmit engine, which will invoke |send_frame_callback|
   // when a PDU is ready for transmission. This callback may be invoked
   // synchronously from QueueSdu(), as well as asynchronously (e.g. when a
   // retransmission timer expires).
   //
   // NOTE: The user of this class must ensure that a synchronous invocation of
-  // |send_basic_frame_callback| does not deadlock. E.g., the callback must not
+  // |send_frame_callback| does not deadlock. E.g., the callback must not
   // attempt to lock the same mutex as the caller of QueueSdu().
-  TxEngine(ChannelId channel_id, uint16_t tx_mtu, SendBasicFrameCallback send_basic_frame_callback)
+  TxEngine(ChannelId channel_id, uint16_t tx_mtu, SendFrameCallback send_frame_callback)
       : channel_id_(channel_id),
         tx_mtu_(tx_mtu),
-        send_basic_frame_callback_(std::move(send_basic_frame_callback)) {
+        send_frame_callback_(std::move(send_frame_callback)) {
     ZX_ASSERT(tx_mtu_);
   }
   virtual ~TxEngine() = default;
@@ -46,7 +46,7 @@ class TxEngine {
   // Queues an SDU for transmission, returning true on success.
   //
   // * As noted in the ctor documentation, this _may_ result in a synchronous
-  //   invocation of |send_basic_frame_callback_|.
+  //   invocation of |send_frame_callback_|.
   // * It is presumed that the ByteBufferPtr owns an instance of a
   //   DynamicByteBuffer or SlabBuffer.
   virtual bool QueueSdu(ByteBufferPtr) = 0;
@@ -55,7 +55,7 @@ class TxEngine {
   const ChannelId channel_id_;
   const uint16_t tx_mtu_;
   // Invoked when a PDU is ready for transmission.
-  const SendBasicFrameCallback send_basic_frame_callback_;
+  const SendFrameCallback send_frame_callback_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);

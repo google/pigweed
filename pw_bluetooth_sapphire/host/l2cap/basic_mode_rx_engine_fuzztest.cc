@@ -23,6 +23,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Note that using a Fragmenter to build the PDU doesn't decrease the efficacy
   // of fuzzing, because the only guarantees provided by the Fragmenter are
   // those that are preconditions for RxEngine::ProcessPdu().
-  rx_engine.ProcessPdu(fragmenter.BuildBasicFrame(kTestChannelId, bt::BufferView(data, size)));
+  rx_engine.ProcessPdu(fragmenter.BuildFrame(kTestChannelId, bt::BufferView(data, size)));
   return 0;
 }

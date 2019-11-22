@@ -32,7 +32,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   // Create a transmit engine.
   //
-  // The engine will invoke |send_basic_frame_callback| when a PDU is ready for
+  // The engine will invoke |send_frame_callback| when a PDU is ready for
   // transmission; see tx_engine.h for further detail.
   //
   // The engine will invoke |connection_failure_callback| when a fatal error
@@ -41,7 +41,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // |connection_failure_callback|.
   EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
                                      uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
-                                     SendBasicFrameCallback send_basic_frame_callback,
+                                     SendFrameCallback send_frame_callback,
                                      ConnectionFailureCallback connection_failure_callback);
   ~EnhancedRetransmissionModeTxEngine() override = default;
 

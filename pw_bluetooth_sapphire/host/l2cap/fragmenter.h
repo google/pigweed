@@ -92,8 +92,8 @@ class Fragmenter final {
   // links based on the setting of an automatic flush timer. Only
   // non-automatically flushable PDUs can be sent over LE-U links (see Core Spec
   // v5.0, Vol 2, Part E, Section 5.4.2).
-  [[nodiscard]] PDU BuildBasicFrame(ChannelId channel_id, const ByteBuffer& data,
-                                    bool flushable = false) const;
+  [[nodiscard]] PDU BuildFrame(ChannelId channel_id, const ByteBuffer& data,
+                               bool flushable = false) const;
 
  private:
   hci::ConnectionHandle connection_handle_;

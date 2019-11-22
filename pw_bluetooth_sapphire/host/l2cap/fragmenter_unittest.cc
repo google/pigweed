@@ -181,7 +181,7 @@ TEST(L2CAP_FragmenterTest, EmptyPayload) {
 
   // Make the fragment limit a lot larger than the test frame size.
   Fragmenter fragmenter(kTestHandle, 1024);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
@@ -202,7 +202,7 @@ TEST(L2CAP_FragmenterTest, SingleFragment) {
 
   // Make the fragment limit a lot larger than the test frame size.
   Fragmenter fragmenter(kTestHandle, 1024);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
@@ -224,7 +224,7 @@ TEST(L2CAP_FragmenterTest, SingleFragmentExactFit) {
   // Make the fragment limit large enough to fit exactly one B-frame containing
   // |payload|.
   Fragmenter fragmenter(kTestHandle, payload.size() + sizeof(BasicHeader));
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
@@ -254,7 +254,7 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsOffByOne) {
   // 1 octet less than |payload|. The last octet should be placed in a second
   // fragment.
   Fragmenter fragmenter(kTestHandle, payload.size() + sizeof(BasicHeader) - 1);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(2u, pdu.fragment_count());
 
@@ -286,7 +286,7 @@ TEST(L2CAP_FragmenterTest, TwoFragmentsExact) {
   // containing |payload|. The frame should be evenly divided across two
   // fragments.
   Fragmenter fragmenter(kTestHandle, (payload.size() + sizeof(BasicHeader)) / 2);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(2u, pdu.fragment_count());
 
@@ -333,7 +333,7 @@ TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
       'X');
 
   Fragmenter fragmenter(kTestHandle, kMaxFragmentPayloadSize);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_EQ(kExpectedFragmentCount, pdu.fragment_count());
 
@@ -348,7 +348,7 @@ TEST(L2CAP_FragmenterTest, ManyFragmentsOffByOne) {
 TEST(L2CAP_FragmenterTest, MaximalSizedPayload) {
   DynamicByteBuffer payload(65535);
   Fragmenter fragmenter(kTestHandle, 1024);
-  PDU pdu = fragmenter.BuildBasicFrame(kTestChannelId, payload);
+  PDU pdu = fragmenter.BuildFrame(kTestChannelId, payload);
   ASSERT_TRUE(pdu.is_valid());
   EXPECT_LT(64u, pdu.fragment_count());
 }

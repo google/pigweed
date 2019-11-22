@@ -65,8 +65,8 @@ bool IsMpsValid(const PDU& pdu) {
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
-Engine::EnhancedRetransmissionModeRxEngine(SendBasicFrameCallback send_basic_frame_callback)
-    : next_seqnum_(0), send_basic_frame_callback_(std::move(send_basic_frame_callback)) {}
+Engine::EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback)
+    : next_seqnum_(0), send_frame_callback_(std::move(send_frame_callback)) {}
 
 ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   // A note on validation (see Vol 3, Part A, 3.3.7):
@@ -116,7 +116,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PD
 
   SimpleReceiverReadyFrame ack_frame;
   ack_frame.set_request_seq_num(next_seqnum_);
-  send_basic_frame_callback_(
+  send_frame_callback_(
       std::make_unique<DynamicByteBuffer>(BufferView(&ack_frame, sizeof(ack_frame))));
 
   const auto header_len = sizeof(header);
@@ -142,7 +142,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
     SimpleReceiverReadyFrame poll_response;
     poll_response.set_is_poll_response();
     poll_response.set_request_seq_num(next_seqnum_);
-    send_basic_frame_callback_(
+    send_frame_callback_(
         std::make_unique<DynamicByteBuffer>(BufferView(&poll_response, sizeof(poll_response))));
     return nullptr;
   }

@@ -260,7 +260,7 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
   security_ = security;
 }
 
-void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
+void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
@@ -271,7 +271,7 @@ void LogicalLink::SendBasicFrame(ChannelId id, const ByteBuffer& payload) {
   // TODO(armansito): The following makes a copy of |payload| when constructing
   // |pdu|. Think about how this could be optimized, especially when |payload|
   // fits inside a single ACL data fragment.
-  PDU pdu = fragmenter_.BuildBasicFrame(id, payload);
+  PDU pdu = fragmenter_.BuildFrame(id, payload);
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());

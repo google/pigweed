@@ -18,7 +18,7 @@ bool BasicModeTxEngine::QueueSdu(ByteBufferPtr sdu) {
     bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
   }
-  send_basic_frame_callback_(std::move(sdu));
+  send_frame_callback_(std::move(sdu));
   return true;
 }
 

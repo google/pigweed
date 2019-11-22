@@ -43,7 +43,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
             async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
               // |link| is expected to ignore this call and drop the
               // packet if it has been closed.
-              link->SendBasicFrame(rid, *pdu);
+              link->SendFrame(rid, *pdu);
             });
           })) {
   ZX_DEBUG_ASSERT(link_);

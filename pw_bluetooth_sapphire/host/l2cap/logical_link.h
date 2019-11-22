@@ -101,7 +101,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // thread.
   //
   // It is safe to call this function on a closed link; it will have no effect.
-  void SendBasicFrame(ChannelId remote_id, const ByteBuffer& payload);
+  void SendFrame(ChannelId remote_id, const ByteBuffer& payload);
 
   // Requests a security upgrade using the registered security upgrade callback.
   // Invokes the |callback| argument with the result of the operation.
