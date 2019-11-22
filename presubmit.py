@@ -17,15 +17,9 @@
 import os
 import subprocess
 
+from pw_presubmit.presubmit_tools import *
+
 BUILDTOOLS_GIT = 'https://pigweed.googlesource.com/infra/buildtools'
-
-
-def call(*args, **kwargs):
-    print()
-    for k, v in sorted(kwargs.items()):
-        print('#', k, '=', v)
-    print('$', *args)
-    subprocess.check_call(args=args, **kwargs)
 
 
 def init():
@@ -48,7 +42,7 @@ def init():
 def gn_test():
     """Test with gn."""
     out = '.presubmit/gn'
-    call('gn', 'gen', out)
+    call('gn', 'gen', '--check', out)
     call('ninja', '-C', out)
 
 
@@ -59,7 +53,26 @@ def bazel_test():
     call('bazel', 'test', '//...', '--symlink_prefix', prefix)
 
 
+@filter_paths(endswith=['.gn', '.gni'])
+def gn_format(paths):
+    call('gn', 'format', '--dry-run', *paths)
+
+
+@filter_paths(endswith='.py')
+def pylint(paths):
+    call(sys.executable, '-m', 'pylint', '-E', *paths)
+
+
+PRESUBMIT_PROGRAM = (
+  init,
+  pragma_once,
+  gn_format,
+  # pylint,  # TODO(hepler): enable pylint when it passes
+  bazel_test,
+  gn_test,
+)
+
+
+
 if __name__ == '__main__':
-    init()
-    bazel_test()
-    gn_test()
+    sys.exit(0 if parse_args_and_run_presubmit(PRESUBMIT_PROGRAM) else 1)

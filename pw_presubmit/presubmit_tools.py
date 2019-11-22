@@ -321,6 +321,23 @@ def filter_paths(endswith: Iterable[str] = (), skip_if_empty: bool = True):
     return filter_paths_for_function
 
 
+def call(*args, **kwargs) -> None:
+    """Optional subprocess wrapper with helpful output."""
+    print('[COMMAND]',
+          ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())))
+    print(' '.join(shlex.quote(arg) for arg in args))
+
+    process = subprocess.run(args,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             **kwargs)
+    if process.returncode:
+        print(f'[RESULT] Failed with return code {process.returncode}.')
+        print('[OUTPUT]')
+        print(process.stdout.decode(errors="backslashreplace"))
+        raise PresubmitFailure
+
+
 @filter_paths(endswith='.h')
 def pragma_once(paths: Iterable[str]) -> None:
     """Checks that all header files contain '#pragma once'."""
