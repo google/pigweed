@@ -1,0 +1,15 @@
+# This is the list of packages we want installed. When we want to update them
+# or install additional packages update this file and run
+# `pip-compile requirements.in` and it will update requirements.txt.
+
+# To help manage these files.
+pip-tools
+
+# For documentation generation.
+sphinx
+sphinx-rtd-theme
+
+# For pw.
+coloredlogs
+pathtools
+watchdog

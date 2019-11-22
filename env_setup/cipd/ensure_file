@@ -1,0 +1,75 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+# This file identifies the versions of tools required by the Pigweed build
+# system or by other parts of Pigweed infrastructure. To add or update a tool
+# use 'cipd ls' to find the path, 'cipd instances' to find a list of available
+# versions, and 'cipd describe' to find further details and the version label.
+# The instance ID will be different for the same upstream version across
+# platforms, but the same version label will be present for all architectures.
+# For further details and syntax see
+# https://godoc.org/go.chromium.org/luci/cipd/client/cipd/ensure.
+
+$VerifiedPlatform linux-amd64
+$VerifiedPlatform mac-amd64
+
+$ParanoidMode CheckPresence
+
+@Subdir tools
+
+# GN
+gn/gn/${platform} git_revision:6e5ba2e7210823cf7ccce3eb2a23336a4e7f1349
+
+# Ninja
+infra/ninja/${platform} version:1.9.0
+
+# CMake
+infra/cmake/${platform} version:3.14.6
+
+# Bazel
+fuchsia/third_party/bazel/${platform} version:0.25.1
+
+# Bloaty (Embedded Fork)
+pigweed/third_party/bloaty-embedded/${platform} git_revision:551e70f736e0dc40184c568095b25851f62ea0db
+
+# Gerrit CLI
+infra/tools/luci/gerrit/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# Isolated
+infra/tools/luci/isolated/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# LUCI editor
+infra/tools/luci/led/${platform} git_revision:dd18cbd33cd937377b79dde876265ea0c1d54273
+
+# LogDog CLI client
+infra/tools/luci/logdog/logdog/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# LUCI auth tool
+infra/tools/luci-auth/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# Lucicfg tool
+infra/tools/luci/lucicfg/${platform}  git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# Python 3
+infra/3pp/tools/cpython3/${platform} version:3.8.0.chromium.2
+
+# vpython
+infra/tools/luci/vpython/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# preview_email
+infra/tools/preview_email/${platform}  git_revision:2155d0d436bf346333810cc352791063e1dda952
+
+# YAPF
+# Keep in sync with tricium-recipes builder properties.
+infra/tools/yapf git_revision:2155d0d436bf346333810cc352791063e1dda952

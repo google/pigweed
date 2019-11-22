@@ -13,7 +13,8 @@ bazel-*
 *.swp
 
 # Python
-python-env/
+python*-env/
+.python*-env/
 venv/
 *.pyc
 *.egg/
