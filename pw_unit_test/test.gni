@@ -58,7 +58,7 @@ template("pw_test") {
       deps = [
         ":$_test_target_name",
       ]
-      script = "$dir_pw_unit_test/py/test_runner.py"
+      script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
       args = [
         "--runner",
         pw_automatic_test_runner,

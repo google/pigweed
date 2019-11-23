@@ -23,24 +23,19 @@ import shlex
 import subprocess
 import sys
 
-from typing import Dict, Iterable, List, Sequence, Set, Tuple
-
-import coloredlogs
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 # Global logger for the script.
-_LOG: logging.Logger = logging.getLogger('pw_test_runner')
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parses command-line arguments."""
+def register_arguments(parser: argparse.ArgumentParser) -> None:
+    """Registers command-line arguments."""
 
-    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=str, default='out',
                         help='Path to the root build directory')
     parser.add_argument('-r', '--runner', type=str, required=True,
                         help='Executable which runs a test on the target')
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Output additional logs as the script runs')
     parser.add_argument('runner_args', nargs=argparse.REMAINDER,
                         help='Arguments to forward to the test runner')
 
@@ -50,8 +45,6 @@ def parse_args() -> argparse.Namespace:
                        help='Test groups to run')
     group.add_argument('-t', '--test', action='append',
                        help='Test binaries to run')
-
-    return parser.parse_args()
 
 
 class TestResult(enum.Enum):
@@ -105,10 +98,9 @@ class TestGroup:
         for dep in self._deps:
             tests.update(dep._all_test_dependencies(processed_groups))
 
-        for test in self._tests:
-            tests.add(test)
-
+        tests.update(self._tests)
         processed_groups.add(self._name)
+
         return tests
 
     def __repr__(self) -> str:
@@ -258,7 +250,8 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
     return test_groups
 
 
-def tests_from_groups(args: argparse.Namespace) -> List[Test]:
+def tests_from_groups(group_names: Optional[Sequence[str]],
+                      root: str) -> List[Test]:
     """Returns unit tests belonging to test groups and their dependencies.
 
     If args.names is nonempty, only searches groups specified there.
@@ -266,10 +259,10 @@ def tests_from_groups(args: argparse.Namespace) -> List[Test]:
     """
 
     _LOG.info('Scanning for tests...')
-    metadata = find_test_metadata(args.root)
-    test_groups = parse_metadata(metadata, args.root)
+    metadata = find_test_metadata(root)
+    test_groups = parse_metadata(metadata, root)
 
-    groups_to_run = args.group if args.group else test_groups.keys()
+    groups_to_run = group_names if group_names else test_groups.keys()
     tests_to_run: Set[Test] = set()
 
     for name in groups_to_run:
@@ -283,7 +276,7 @@ def tests_from_groups(args: argparse.Namespace) -> List[Test]:
     return list(tests_to_run)
 
 
-def tests_from_paths(paths: List[str]) -> List[Test]:
+def tests_from_paths(paths: Sequence[str]) -> List[Test]:
     """Returns a list of tests from test executable paths."""
 
     tests: List[Test] = []
@@ -293,30 +286,26 @@ def tests_from_paths(paths: List[str]) -> List[Test]:
     return tests
 
 
-def main() -> int:
+# TODO(frolv): Try to figure out a better solution for passing through the
+# corrected sys.argv across all pw commands.
+def find_and_run_tests(argv_copy: List[str],
+                       root: str = '',
+                       runner: str = '',
+                       runner_args: Sequence[str] = (),
+                       group: Optional[Sequence[str]] = None,
+                       test: Optional[Sequence[str]] = None) -> int:
     """Runs some unit tests."""
-
-    args = parse_args()
-
-    log_level = 'DEBUG' if args.verbose else 'INFO'
-    coloredlogs.install(level=log_level,
-                        level_styles={'debug': {'color': 244},
-                                      'error': {'color': 'red'}},
-                        fmt='%(asctime)s | %(message)s')
-
-    runner_args = args.runner_args
 
     if runner_args:
         if runner_args[0] != '--':
-            _LOG.error('%s: Unrecognized argument: %s',
-                       sys.argv[0], runner_args[0])
+            _LOG.error('Unrecognized argument: %s', runner_args[0])
             _LOG.info('')
             _LOG.info('Did you mean to pass this argument to the runner?')
             _LOG.info('Insert a -- in front of it to forward it through:')
             _LOG.info('')
 
-            index = sys.argv.index(runner_args[0])
-            fixed_cmd = [*sys.argv[:index], '--', *sys.argv[index:]]
+            index = argv_copy.index(runner_args[0])
+            fixed_cmd = [*argv_copy[:index], '--', *argv_copy[index:]]
 
             _LOG.info('  %s', ' '.join(shlex.quote(arg) for arg in fixed_cmd))
             _LOG.info('')
@@ -325,15 +314,58 @@ def main() -> int:
 
         runner_args = runner_args[1:]
 
-    if args.test:
-        tests = tests_from_paths(args.test)
+    if test:
+        tests = tests_from_paths(test)
     else:
-        tests = tests_from_groups(args)
+        tests = tests_from_groups(group, root)
 
-    runner = TestRunner(args.runner, runner_args, tests)
-    runner.run_tests()
+    test_runner = TestRunner(runner, runner_args, tests)
+    test_runner.run_tests()
 
-    return 0 if runner.all_passed() else 1
+    return 0 if test_runner.all_passed() else 1
+
+
+def run_as_plugin(**kwargs) -> None:
+    """Entry point when running as a pw plugin."""
+
+    # Replace the virtualenv file path to the script in sys.argv[0] with the
+    # pw script so that users have a valid command to copy.
+    argv_copy = ['pw', *sys.argv[1:]]
+    find_and_run_tests(argv_copy, **kwargs)
+
+try:
+    import pw_cmd.plugins
+
+    pw_cmd.plugins.register(
+        name='test',
+        help='Runs groups of unit tests on a target',
+        command_function=run_as_plugin,
+        define_args_function=register_arguments,
+    )
+except ImportError:
+    pass
+
+
+def main() -> int:
+    """Standalone script entry point."""
+
+    import coloredlogs
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    register_arguments(parser)
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Output additional logs as the script runs')
+    args = parser.parse_args()
+
+    log_level = 'DEBUG' if args.verbose else 'INFO'
+    coloredlogs.install(level=log_level,
+                        level_styles={'debug': {'color': 244},
+                                      'error': {'color': 'red'}},
+                        fmt='%(asctime)s | %(message)s')
+
+    args_as_dict = dict(vars(args))
+    del args_as_dict['verbose']
+    return find_and_run_tests(sys.argv, **args_as_dict)
 
 
 if __name__ == '__main__':

@@ -12,17 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import argparse
 import logging
 from typing import Callable
 from typing import NamedTuple
 _LOG = logging.getLogger(__name__)
 
 
+DefineArgsFunction = Callable[[argparse.ArgumentParser], None]
+
+
 class Plugin(NamedTuple):
     name: str
     command_function: Callable
     help: str = ''
-    define_args_function: Callable = lambda _: None
+    define_args_function: DefineArgsFunction = lambda _: None
 
 
 # This is the global CLI plugin registry.
@@ -33,7 +37,7 @@ def register(
         name: str,
         command_function: Callable,
         help: str = '',
-        define_args_function: Callable = lambda _: None,
+        define_args_function: DefineArgsFunction = lambda _: None,
 ) -> None:
     registry.append(
         Plugin(
