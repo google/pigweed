@@ -27,6 +27,7 @@ from watchdog.observers import Observer
 from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
+import pw_cmd.plugins
 from pw_cmd.color import Color as _Color
 
 import logging
@@ -101,7 +102,8 @@ class PigweedBuildWatcher(FileSystemEventHandler):
             paths.append(unicode_paths.decode(event.dest_path))
         if event.src_path:
             paths.append(unicode_paths.decode(event.src_path))
-        _LOG.debug('Got events for: %s', paths)
+        for path in paths:
+            _LOG.debug('File event: %s', path)
 
         for path in paths:
             if self.path_matches(path):
@@ -196,112 +198,123 @@ _WATCH_PATTERNS = (
     '*.rst',
 )
 
-class WatchCommand:
-    def name(self):
-        return 'watch'
+def add_parser_arguments(parser):
+    parser.add_argument(
+            '--patterns',
+            help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
+                  'watch to trigger recompile'),
+            default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
+    parser.add_argument(
+            '--ignore_patterns',
+            help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
+                 'ignore events from'))
+    parser.add_argument(
+            '--build_dir',
+            help=('Ninja directory to build. Can be specified '
+            'multiple times to build multiple configurations'),
+            action='append')
 
-    def help(self):
-        return 'Watch files for changes'
+def watch(build_dir='', patterns=None, ignore_patterns=None):
+    _LOG.info('Starting Pigweed build watcher')
 
-    def register(self, parser):
-        parser.add_argument(
-                '--patterns',
-                help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-                      'watch to trigger recompile'),
-                default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
-        parser.add_argument(
-                '--ignore_patterns',
-                help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-                     'ignore events from'))
-        parser.add_argument(
-                '--build_dir',
-                help=('Ninja directory to build. Can be specified '
-                'multiple times to build multiple configurations'),
-                action='append')
+    # If no build directory was specified, search the tree for GN build
+    # directories and try to build them all. In the future this may cause
+    # slow startup, but for now this is fast enough.
+    build_dirs = build_dir
+    if not build_dirs:
+        build_dirs = []
+        _LOG.info('Searching for GN build dirs...')
+        gn_args_files = glob.glob('**/args.gn', recursive=True)
+        for gn_args_file in gn_args_files:
+            gn_build_dir = pathlib.Path(gn_args_file).parent
+            if gn_build_dir.is_dir():
+                build_dirs.append(str(gn_build_dir))
 
-    def run(self, build_dir='', patterns=None, ignore_patterns=None):
-        _LOG.info('Starting Pigweed build watcher')
+    # Make sure we found something; if not, bail.
+    if not build_dirs:
+        _die("No build dirs found. Did you forget to 'gn gen out'?")
 
-        # If no build directory was specified, search the tree for GN build
-        # directories and try to build them all. In the future this may cause
-        # slow startup, but for now this is fast enough.
-        build_dirs = build_dir
-        if not build_dirs:
-            build_dirs = []
-            _LOG.info('Searching for GN build dirs...')
-            gn_args_files = glob.glob('**/args.gn', recursive=True)
-            for gn_args_file in gn_args_files:
-                gn_build_dir = pathlib.Path(gn_args_file).parent
-                if gn_build_dir.is_dir():
-                    build_dirs.append(str(gn_build_dir))
+    # Verify that the build output directories exist.
+    for i, build_dir in enumerate(build_dirs, 1):
+        if not os.path.isdir(build_dir):
+            _die("Build directory doesn't exist: %s", build_dir)
+        else:
+            _LOG.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
 
-        # Make sure we found something; if not, bail.
-        if not build_dirs:
-            _die("No build dirs found. Did you forget to 'gn gen out'?")
+    _LOG.debug('Patterns: %s', patterns)
 
-        # Verify that the build output directories exist.
-        for i, build_dir in enumerate(build_dirs, 1):
-            if not os.path.isdir(build_dir):
-                _die("Build directory doesn't exist: %s", build_dir)
-            else:
-                _LOG.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
+    # TODO(keir): Change the watcher to selectively watch some
+    # subdirectories, rather than watching everything under a single path.
+    #
+    # The problem with the current approach is that Ninja's building
+    # triggers many events, which are needlessly sent to this script.
+    path_of_directory_to_watch = '.'
 
-        _LOG.debug('Patterns: %s', patterns)
-        # TODO(keir): Change the watcher to selectively watch some
-        # subdirectories, rather than watching everything under a single path.
-        #
-        # The problem with the current approach is that Ninja's building
-        # triggers many events, which are needlessly sent to this script.
-        path_of_directory_to_watch = '.'
+    # Try to make a short display path for the watched directory that has
+    # "$HOME" instead of the full home directory. This is nice for users
+    # who have deeply nested home directories.
+    path_to_log = pathlib.Path(path_of_directory_to_watch).resolve()
+    try:
+        path_to_log = path_to_log.relative_to(pathlib.Path.home())
+        path_to_log = f'$HOME/{path_to_log}'
+    except ValueError:
+        # The directory is somewhere other than inside the users home.
+        path_to_log = path_of_directory_to_watch
 
-        # Try to make a short display path for the watched directory that has
-        # "$HOME" instead of the full home directory. This is nice for users
-        # who have deeply nested home directories.
-        path_to_log = pathlib.Path(path_of_directory_to_watch).resolve()
-        try:
-            path_to_log = path_to_log.relative_to(pathlib.Path.home())
-            path_to_log = f'$HOME/{path_to_log}'
-        except ValueError:
-            # The directory is somewhere other than inside the users home.
-            path_to_log = path_of_directory_to_watch
+    # We need to ignore both the user-specified patterns and also all
+    # events for files in the build output directories.
+    ignore_patterns= (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
+                      if ignore_patterns else [])
+    ignore_patterns.extend([
+        f'{build_dir}/*' for build_dir in build_dirs])
 
-        # We need to ignore both the user-specified patterns and also all
-        # events for files in the build output directories.
-        ignore_patterns= (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
-                          if ignore_patterns else [])
-        ignore_patterns.extend([
-            f'{build_dir}/*' for build_dir in build_dirs])
+    event_handler = PigweedBuildWatcher(
+            patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
+            ignore_patterns=ignore_patterns,
+            build_dirs=build_dirs)
 
-        event_handler = PigweedBuildWatcher(
-                patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
-                ignore_patterns=ignore_patterns,
-                build_dirs=build_dirs)
+    observer = Observer()
+    observer.schedule(event_handler,
+                      path_of_directory_to_watch,
+                      recursive=True,)
+    observer.start()
 
-        observer = Observer()
-        observer.schedule(event_handler,
-                          path_of_directory_to_watch,
-                          recursive=True)
-        observer.start()
+    _LOG.info('Directory to watch: %s', path_to_log)
+    _LOG.info('Watching for file changes. Ctrl-C exits.')
 
-        _LOG.info('Directory to watch: %s', path_to_log)
-        _LOG.info('Watching for file changes. Ctrl-C exits.')
+    # Make a nice non-logging banner to motivate the user.
+    print()
+    print(_Color.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
+    print()
 
-        # Make a nice non-logging banner to motivate the user.
+    try:
+        while observer.isAlive():
+            observer.join(1)
+    except KeyboardInterrupt:
+        # To keep the log lines aligned with each other in the presence of
+        # a '^C' from the keyboard interrupt, add a newline before the log.
         print()
-        print(_Color.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
-        print()
+        _LOG.info('Got Ctrl-C; exiting...')
 
-        try:
-            while observer.isAlive():
-                observer.join(1)
-        except KeyboardInterrupt:
-            # To keep the log lines aligned with each other in the presence of
-            # a '^C' from the keyboard interrupt, add a newline before the log.
-            print()
-            _LOG.info('Got Ctrl-C; exiting...')
+        # Note: The "proper" way to exit is via observer.stop(), then
+        # running a join. However it's slower, so just exit immediately.
+        sys.exit(0)
 
-            # Note: The "proper" way to exit is via observer.stop(), then
-            # running a join. However it's slower, so just exit immediately.
-            sys.exit(0)
+    observer.join()
 
-        observer.join()
+pw_cmd.plugins.register(
+    name='watch',
+    help='Watch files for changes',
+    define_args_function=add_parser_arguments,
+    command_function=watch,
+)
+
+def main():
+    parser = argparse.ArgumentParser(description='Watch for changes')
+    add_parser_arguments(parser)
+    args = parser.parse_args()
+    watch(**vars(args))
+
+if __name__ == '__main__':
+    main()
+

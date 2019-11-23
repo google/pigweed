@@ -12,14 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# Note that these imports will trigger plugin registrations.
 import pw_cmd.log
 import pw_cmd.watch
-
-# This list is picked up by pw's main(), which adds these as subcommands.
-# Plugins are located by finding modules starting with "pw_", loading that
-# module, then searching for an iterable named 'PW_CLI_PLUGINS' containing
-# Command classes.
-PW_CLI_PLUGINS = (
-    pw_cmd.log.LogDemoCommand,
-    pw_cmd.watch.WatchCommand,
-)

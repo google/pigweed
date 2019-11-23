@@ -39,23 +39,6 @@ _PIGWEED_BANNER = '''
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 '''
 
-class HelpCommand:
-    """Default command to print help"""
-    def __init__(self, parser):
-        self.parser = parser
-
-    def name(self):
-        return 'help'
-
-    def help(self):
-        return 'Show the Pigweed CLI help'
-
-    def register(self, parser):
-        pass
-
-    def run(self):
-        self.parser.print_help()
-
 def main(raw_args=None):
     if raw_args is None:
         raw_args = sys.argv[1:]
@@ -71,46 +54,50 @@ def main(raw_args=None):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    help_command = HelpCommand(parser)
+    parser.add_argument('--loglevel', default='INFO')
 
-    # Note: The help command is special since it accesses parser.print_help().
-    commands = [
-        help_command,
-    ]
-
-    # Find and load command line plugins.
-    #
-    # Plugins are located by finding modules starting with "pw_", loading that
-    # module, then searching for an iterable named 'PW_CLI_PLUGINS' containing
-    # Command classes. The classes are instantiated and added to the commands.
-    #
-    # Note: We may want to make plugin loading explicit rather than doing this
-    # via search, since it slows down starting 'pw' considerably.
-    for module in pkgutil.iter_modules():
-        if module.name.startswith('pw_'):
-            plugin = importlib.__import__(module.name)
-            _LOG.debug('Found module that may have plugins: %s', module.name)
-            if hasattr(plugin, 'PW_CLI_PLUGINS'):
-                for command_class in plugin.PW_CLI_PLUGINS:
-                    command_instance = command_class()
-                    commands.append(command_instance)
-                    _LOG.debug('Found plugins: %s', command_instance.name())
-
+    # Default command is 'help'
+    pw_cmd.plugins.register(
+        name='help',
+        help='Show the Pigweed CLI help',
+        command_function=parser.print_help,
+    )
     # Setting this default on the top-level parser makes 'pw' show help by
     # default when invoked with no arguments.
-    parser.set_defaults(command=help_command)
+    parser.set_defaults(_command=parser.print_help)
 
+    # Find and load registered command line plugins.
+    #
+    # Plugins are located by finding modules starting with "pw_", and importing
+    # them. On import, modules must call pw_cmd.plugins.register(), which adds
+    # that plugin to the registry.
+    #
+    # Note: We may want to make plugin loading explicit rather than doing this
+    # via search, since the search slows down starting 'pw' considerably.
+    for module in pkgutil.iter_modules():
+        if module.name.startswith('pw_'):
+            _LOG.debug('Found module that may have plugins: %s', module.name)
+            plugin = importlib.__import__(module.name)
+
+    # Pull plugins out of the registry and set them up with the parser.
     subparsers = parser.add_subparsers(help='pw subcommand to run')
-    for command in commands:
-        subparser = subparsers.add_parser(command.name(), help=command.help())
-        command.register(subparser)
-        subparser.set_defaults(command=command)
+    for command in pw_cmd.plugins.registry:
+        subparser = subparsers.add_parser(command.name, help=command.help)
+        command.define_args_function(subparser)
+        subparser.set_defaults(_command=command.command_function)
 
     args = parser.parse_args(raw_args)
 
     args_as_dict = dict(vars(args))
-    del args_as_dict['command']
-    args.command.run(**args_as_dict)
+    del args_as_dict['_command']
+
+    # Set root log level; but then remove the arg to avoid breaking the command.
+    if 'loglevel' in args_as_dict:
+        logging.getLogger().setLevel(
+                getattr(logging, args_as_dict['loglevel'].upper()))
+        del args_as_dict['loglevel']
+
+    args._command(**args_as_dict)
 
 
 if __name__ == "__main__":
