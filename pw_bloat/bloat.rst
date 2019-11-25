@@ -4,9 +4,9 @@
 
 .. highlight:: sh
 
------
-Bloat
------
+--------
+pw_bloat
+--------
 The bloat module provides tools to generate size report cards for output
 binaries.
 

@@ -41,17 +41,20 @@ def parse_args() -> argparse.Namespace:
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--sphinx-build-dir', type=str, required=True,
+    parser.add_argument('--sphinx-build-dir', required=True,
                         help='Directory in which to build docs')
-    parser.add_argument('--conf', type=str, required=True,
+    parser.add_argument('--conf', required=True,
                         help='Path to conf.py file for Sphinx')
-    parser.add_argument('--gn-root', type=str, required=True,
+    parser.add_argument('--gn-root', required=True,
                         help='Root of the GN build tree')
-    parser.add_argument('--index', type=str, required=True,
-                        help='Path to root index.rst file')
-    parser.add_argument('--out-dir', type=str, required=True,
+    parser.add_argument('--gn-gen-root', required=True,
+                        help='Root of the GN gen tree')
+    parser.add_argument('sources', nargs='+',
+                        help='Paths to the root level rst source files')
+    parser.add_argument('--out-dir', required=True,
                         help='Output directory for rendered HTML docs')
-    parser.add_argument('metadata_file', type=argparse.FileType('r'))
+    parser.add_argument('--metadata', required=True,
+                        type=argparse.FileType('r'), help='Metadata JSON file')
     return parser.parse_args()
 
 
@@ -60,7 +63,7 @@ def build_docs(src_dir: str, dst_dir: str) -> int:
 
     # TODO(frolv): Specify the Sphinx script from a prebuilts path instead of
     # requiring it in the tree.
-    command = ['sphinx-build', '-b', 'html', '-d',
+    command = ['sphinx-build', '-W', '-b', 'html', '-d',
                f'{dst_dir}/help', src_dir, f'{dst_dir}/html']
     return subprocess.call(command)
 
@@ -82,13 +85,19 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
 
     def build_path(path):
         """Converts a source path to a filename in the build directory."""
-        return f'{args.sphinx_build_dir}/{path[len(args.gn_root):]}'
+        if path.startswith(args.gn_root):
+            path = os.path.relpath(path, args.gn_root)
+        elif path.startswith(args.gn_gen_root):
+            path = os.path.relpath(path, args.gn_gen_root)
 
-    source_files = json.load(args.metadata_file)
+        return os.path.join(args.sphinx_build_dir, path)
+
+    source_files = json.load(args.metadata)
     copy_paths = [build_path(f) for f in source_files]
 
     mkdir(args.sphinx_build_dir)
-    copy(args.index, f'{args.sphinx_build_dir}/index.rst')
+    for path in args.sources:
+      copy(path, f'{args.sphinx_build_dir}/')
     copy(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.

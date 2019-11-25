@@ -4,9 +4,9 @@
 
 .. highlight:: sh
 
-------------
-Preprocessor
-------------
+---------------
+pw_preprocessor
+---------------
 The preprocessor module provides various helpful preprocessor macros.
 
 Compatibility

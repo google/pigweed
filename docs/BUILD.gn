@@ -23,7 +23,10 @@ pw_doc_group("core_docs") {
 
 pw_doc_gen("docs") {
   conf = "conf.py"
-  index = "index.rst"
+  sources = [
+    "index.rst",
+    "modules.rst",
+  ]
   output_directory = target_gen_dir
   deps = [
     ":core_docs",

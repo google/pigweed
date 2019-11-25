@@ -4,9 +4,9 @@
 
 .. highlight:: sh
 
-------
-Docgen
-------
+---------
+pw_docgen
+---------
 The docgen module provides tools to generate documentation for Pigweed-based
 projects, and for Pigweed itself.
 

@@ -56,15 +56,14 @@ template("pw_doc_group") {
 #
 # Args:
 #   deps: List of pw_doc_group targets.
-#   index: Top-level documentation index file.
+#   sources: Top-level documentation .rst source files.
 #   conf: Configuration script (conf.py) for Sphinx.
 #   output_directory: Path to directory to which HTML output is rendered.
 template("pw_doc_gen") {
   assert(defined(invoker.deps),
          "pw_doc_gen requires doc groups as dependencies")
-  assert(
-      defined(invoker.index),
-      "pw_doc_gen requires an 'index' argument pointing a top-level index.rst")
+  assert(defined(invoker.sources) && invoker.sources != [],
+         "pw_doc_gen requires a 'sources' list with at least one .rst source")
   assert(defined(invoker.conf),
          "pw_doc_gen requires a 'conf' argument pointing a top-level conf.py")
   assert(defined(invoker.output_directory),
@@ -86,20 +85,25 @@ template("pw_doc_gen") {
 
   _script_args = [
     "--gn-root",
-    "//",
+    rebase_path("//", root_out_dir),
+    "--gn-gen-root",
+    rebase_path(root_gen_dir, root_out_dir) + "/",
     "--sphinx-build-dir",
     get_path_info("$target_gen_dir/pw_docgen_tree", "abspath"),
     "--conf",
     get_path_info(invoker.conf, "abspath"),
-    "--index",
-    get_path_info(invoker.index, "abspath"),
     "--out-dir",
     get_path_info(invoker.output_directory, "abspath"),
+    "--metadata",
   ]
 
   # Metadata JSON file path.
   _script_args +=
       get_path_info(get_target_outputs(":$_metadata_file_target"), "abspath")
+
+  foreach(path, invoker.sources) {
+    _script_args += [ get_path_info(path, "abspath") ]
+  }
 
   pw_python_script(target_name) {
     script = "$dir_pw_docgen/py/docgen.py"
@@ -109,8 +113,8 @@ template("pw_doc_gen") {
     ]
     inputs = [
       invoker.conf,
-      invoker.index,
     ]
+    inputs += invoker.sources
     stamp = true
   }
 }
