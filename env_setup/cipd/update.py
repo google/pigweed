@@ -19,30 +19,53 @@ Must be tested with Python 2 and Python 3.
 
 from __future__ import print_function
 
+import argparse
 import os
 import subprocess
 import sys
 import tempfile
 
 
-def update():
-    """Grab the tools listed in ensure_file."""
+def parse(argv=None):
+    """Parse arguments."""
 
     script_root = os.path.abspath(os.path.dirname(__file__))
 
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        '--install-dir', default=os.path.join(script_root, 'tools'))
+    parser.add_argument(
+        '--ensure-file', default=os.path.join(script_root, 'ensure_file'))
+    parser.add_argument(
+        '--cipd', default=os.path.join(script_root, 'cipd.py'))
+    parser.add_argument(
+        '--suppress-shell-commands', action='store_false',
+        dest='print_shell_commands')
+
+    return parser.parse_args(argv)
+
+
+def update(argv=None):
+    """Grab the tools listed in ensure_file."""
+
+    args = parse(argv)
+
     cmd = [
-        os.path.join(script_root, 'cipd.py'),
+        args.cipd,
         'ensure',
-        '-ensure-file', os.path.join(script_root, 'ensure_file'),
-        '-root', script_root,
+        '-ensure-file', args.ensure_file,
+        '-root', args.install_dir,
         '-log-level', 'warning',
     ]  # yapf: disable
 
+    os.environ['CIPD_PY_INSTALL_DIR'] = args.install_dir
+
+    os.makedirs(args.install_dir, exist_ok=True)
     subprocess.check_call(cmd, stdout=sys.stderr)
 
     paths = [
-        '{}/tools'.format(script_root),
-        '{}/tools/bin'.format(script_root),
+        args.install_dir,
+        os.path.join(args.install_dir, 'bin'),
     ]
 
     for path in paths:
@@ -50,11 +73,13 @@ def update():
 
     paths.append(os.environ['PATH'])
 
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
-        print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
-        print('export PATH', file=temp)
+    if args.print_shell_commands:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False,
+                                         prefix='cipdsetup') as temp:
+            print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
+            print('export PATH', file=temp)
 
-        print('. {}'.format(temp.name))
+            print('. {}'.format(temp.name))
 
 
 if __name__ == '__main__':

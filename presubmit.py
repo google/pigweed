@@ -15,28 +15,39 @@
 # under the License.
 
 import os
+import shutil
 import subprocess
 
 from pw_presubmit.presubmit_tools import *
 
-BUILDTOOLS_GIT = 'https://pigweed.googlesource.com/infra/buildtools'
+
+def _init_cipd():
+    cipd = os.path.abspath('.presubmit/cipd')
+    call(sys.executable, 'env_setup/cipd/update.py', '--install-dir', cipd)
+    os.environ['PATH'] = os.pathsep.join((
+        cipd, os.path.join(cipd, 'bin'), os.environ['PATH'],
+    ))
+    print('PATH', os.environ['PATH'])
+
+
+def _init_virtualenv():
+    """Set up virtualenv, assumes recent Python 3 is already installed."""
+    venv = os.path.abspath('.presubmit/venv')
+    call('python3', '-m', 'venv', venv)
+    os.environ['PATH'] = os.pathsep.join((
+        os.path.join(venv, 'bin'),
+        os.environ['PATH'],
+    ))  # yapf: disable
+
+    call('python3', '-m', 'pip', 'install', '--upgrade', 'pip')
+    call('python3', '-m', 'pip', 'install',
+         '--log', os.path.join(venv, 'pip.log'),
+         '-r', 'env_setup/virtualenv/requirements.txt')  # yapf: disable
 
 
 def init():
-    buildtools = '.presubmit/buildtools'
-    if os.path.isdir(buildtools):
-        call('git', 'fetch', BUILDTOOLS_GIT, 'master', cwd=buildtools)
-        call('git', 'reset', '--hard', 'FETCH_HEAD', cwd=buildtools)
-    else:
-        call('git', 'clone', BUILDTOOLS_GIT, buildtools)
-
-    call(os.path.join(buildtools, 'update.py'))
-    os.environ['PATH'] = os.pathsep.join((
-        os.path.join(buildtools, 'tools'),
-        os.path.join(buildtools, 'tools', 'bin'),
-        os.environ['PATH'],
-    ))
-    print('PATH', os.environ['PATH'])
+    _init_cipd()
+    _init_virtualenv()
 
 
 def gn_test():

@@ -42,8 +42,14 @@ SCRIPT_DIR = os.path.dirname(__file__)
 VERSION_FILE = os.path.join(SCRIPT_DIR, '.cipd_version')
 DIGESTS_FILE = VERSION_FILE + '.digests'
 # Put CIPD client in tools so that users can easily get it in their PATH.
-CLIENT = os.path.join(SCRIPT_DIR, 'tools', 'cipd')
 CIPD_HOST = 'chrome-infra-packages.appspot.com'
+
+# Get install dir from environment since args cannot be passed through this
+# script (args are passed as-is to cipd).
+INSTALL_DIR = os.environ.get(
+    'CIPD_PY_INSTALL_DIR',
+    os.path.join(SCRIPT_DIR, 'tools'))
+CLIENT = os.path.join(INSTALL_DIR, 'cipd')
 
 
 def platform_normalized():
@@ -163,7 +169,7 @@ def bootstrap():
 
     print('Bootstrapping cipd client for {}-{}'.format(platform_normalized(),
                                                        arch_normalized()))
-    tmp_path = os.path.join(SCRIPT_DIR, 'tools', '.cipd')
+    tmp_path = os.path.join(INSTALL_DIR, '.cipd.tmp')
     with open(tmp_path, 'wb') as tmp:
         tmp.write(client_bytes())
 

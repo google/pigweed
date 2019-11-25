@@ -26,8 +26,6 @@ $VerifiedPlatform mac-amd64
 
 $ParanoidMode CheckPresence
 
-@Subdir tools
-
 # GN
 gn/gn/${platform} git_revision:6e5ba2e7210823cf7ccce3eb2a23336a4e7f1349
 
