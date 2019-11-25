@@ -334,9 +334,9 @@ def run_as_plugin(**kwargs) -> None:
     find_and_run_tests(argv_copy, **kwargs)
 
 try:
-    import pw_cmd.plugins
+    import pw_cli.plugins
 
-    pw_cmd.plugins.register(
+    pw_cli.plugins.register(
         name='test',
         help='Runs groups of unit tests on a target',
         command_function=run_as_plugin,

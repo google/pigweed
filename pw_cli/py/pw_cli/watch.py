@@ -27,8 +27,8 @@ from watchdog.observers import Observer
 from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
-import pw_cmd.plugins
-from pw_cmd.color import Color as _Color
+import pw_cli.plugins
+from pw_cli.color import Color as _Color
 
 import logging
 _LOG = logging.getLogger(__name__)
@@ -302,7 +302,7 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
     observer.join()
 
-pw_cmd.plugins.register(
+pw_cli.plugins.register(
     name='watch',
     help='Watch files for changes',
     define_args_function=add_parser_arguments,

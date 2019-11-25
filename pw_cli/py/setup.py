@@ -12,19 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-"""pw_cmd"""
+"""pw_cli"""
 
 import unittest
 import setuptools
 
 
 def test_suite():
-    """Test suite for pw_cmd module."""
+    """Test suite for pw_cli module."""
     return unittest.TestLoader().discover('./', pattern='*_test.py')
 
 
 setuptools.setup(
-        name='pw_cmd',
+        name='pw_cli',
         version='0.0.1',
         author='Pigweed Authors',
         author_email='pigweed-developers@googlegroups.com',
@@ -33,7 +33,7 @@ setuptools.setup(
         test_suite='setup.test_suite',
         entry_points={
             'console_scripts': [
-                'pw = pw_cmd.__main__:main'
+                'pw = pw_cli.__main__:main'
             ]
         },
         install_requires=[

@@ -14,8 +14,8 @@
 
 import logging
 
-import pw_cmd.plugins
-from pw_cmd.color import Color as _Color
+import pw_cli.plugins
+from pw_cli.color import Color as _Color
 
 _LOG = logging.getLogger(__name__)
 
@@ -52,9 +52,9 @@ def install():
 
 
 # Note: normally this shouldn't be done at the top level without a try/catch
-# around the pw_cmd.plugins registry import, since pw_cmd might not be
+# around the pw_cli.plugins registry import, since pw_cli might not be
 # installed.
-pw_cmd.plugins.register(
+pw_cli.plugins.register(
     name='logdemo',
     help='Show how how logs look at various levels',
     command_function=main,

@@ -26,8 +26,8 @@ import logging
 import importlib
 import pkgutil
 
-import pw_cmd.log
-from pw_cmd.color import Color
+import pw_cli.log
+from pw_cli.color import Color
 
 _LOG = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def main(raw_args=None):
         raw_args = sys.argv[1:]
 
     # TODO(keir): Add support for configurable logging levels.
-    pw_cmd.log.install()
+    pw_cli.log.install()
 
     # Start with the most critical part of the Pigweed command line tool.
     print(Color.magenta(_PIGWEED_BANNER))
@@ -57,7 +57,7 @@ def main(raw_args=None):
     parser.add_argument('--loglevel', default='INFO')
 
     # Default command is 'help'
-    pw_cmd.plugins.register(
+    pw_cli.plugins.register(
         name='help',
         help='Show the Pigweed CLI help',
         command_function=parser.print_help,
@@ -69,7 +69,7 @@ def main(raw_args=None):
     # Find and load registered command line plugins.
     #
     # Plugins are located by finding modules starting with "pw_", and importing
-    # them. On import, modules must call pw_cmd.plugins.register(), which adds
+    # them. On import, modules must call pw_cli.plugins.register(), which adds
     # that plugin to the registry.
     #
     # Note: We may want to make plugin loading explicit rather than doing this
@@ -81,7 +81,7 @@ def main(raw_args=None):
 
     # Pull plugins out of the registry and set them up with the parser.
     subparsers = parser.add_subparsers(help='pw subcommand to run')
-    for command in pw_cmd.plugins.registry:
+    for command in pw_cli.plugins.registry:
         subparser = subparsers.add_parser(command.name, help=command.help)
         command.define_args_function(subparser)
         subparser.set_defaults(_command=command.command_function)
