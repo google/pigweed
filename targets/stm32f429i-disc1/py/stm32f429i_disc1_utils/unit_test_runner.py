@@ -70,7 +70,32 @@ def parse_args():
     return parser.parse_args()
 
 
-def read_serial(port, baud_rate, test_timeout) -> bytes:
+def reset_device(openocd_config):
+    """Uses openocd to reset the attached device."""
+
+    # Name/path of openocd.
+    default_flasher = 'openocd'
+    flash_tool = os.getenv('OPENOCD_PATH', default_flasher)
+
+    cmd = [
+        flash_tool, '-f', openocd_config, '-c', 'init', '-c', 'reset run',
+        '-c', 'exit'
+    ]
+    _LOG.info('Resetting device...')
+
+    process = subprocess.run(cmd,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+    if process.returncode:
+        _LOG.error(f'\n{process.stdout.decode("utf-8", errors="replace")}')
+        raise TestingFailure('Failed to reset target device.')
+    else:
+        _LOG.debug(f'\n{process.stdout.decode("utf-8", errors="replace")}')
+
+    _LOG.info('Successfully reset device!')
+
+
+def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
     """Reads lines from a serial port until a line read times out.
 
     Returns bytes object containing the read serial data.
@@ -80,6 +105,10 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
     device = serial.Serial(baudrate=baud_rate, port=port, timeout=test_timeout)
     if not device.is_open:
         raise TestingFailure('Failed to open device.')
+
+    # Flush input buffer and reset the device to begin the test.
+    device.reset_input_buffer()
+    reset_device(openocd_config)
 
     # Block and wait for the first byte.
     serial_data += device.read()
@@ -98,7 +127,10 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
             # passes, two lines if mixed.)
             device.timeout = 0.01
 
-    return serial_data
+    # Try to trim captured results to only contain most recent test run.
+    test_start_index = serial_data.rfind(_TESTS_STARTING_STRING)
+    return serial_data if test_start_index == -1 else serial_data[
+        test_start_index:]
 
 
 def flash_device(binary, openocd_config):
@@ -153,7 +185,7 @@ def run_device_test(binary, test_timeout, openocd_config, baud,
     _LOG.info('Launching test binary {}'.format(binary))
     try:
         flash_device(binary, openocd_config)
-        serial_data = read_serial(port, baud, test_timeout)
+        serial_data = read_serial(openocd_config, port, baud, test_timeout)
         handle_test_results(serial_data)
     except TestingFailure as err:
         traceback.print_tb(err.__traceback__)
