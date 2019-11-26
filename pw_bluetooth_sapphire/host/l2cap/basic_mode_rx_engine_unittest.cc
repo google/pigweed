@@ -21,8 +21,9 @@ constexpr ChannelId kTestChannelId = 0x0001;
 
 TEST(L2CAP_BasicModeRxEngineTest, ProcessPduReturnsSdu) {
   const auto payload = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
-  const auto sdu =
-      BasicModeRxEngine().ProcessPdu(Fragmenter(kTestHandle).BuildFrame(kTestChannelId, payload));
+  const auto sdu = BasicModeRxEngine().ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
   ASSERT_TRUE(sdu);
   EXPECT_TRUE(ContainersEqual(payload, *sdu));
 }

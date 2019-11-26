@@ -95,13 +95,16 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // The link MUST not be closed when this is called.
   void HandleRxPacket(hci::ACLDataPacketPtr packet);
 
-  // Sends a B-frame PDU out over the ACL data channel, where |payload| is the
-  // B-frame information payload. |remote_id| identifies the destination peer's
-  // L2CAP channel endpoint for this frame. This must be called on the creation
-  // thread.
+  // Sends a PDU out over the ACL data channel, where |payload| is the contents following the Basic
+  // L2CAP header and preceding the Frame Check Sequence (FCS; if enabled with |fcs_option|). Frame
+  // formats are defined in Core Spec v5.0, Vol 3, Part A, Section 3.
+  //
+  // |remote_id| identifies the peer's L2CAP channel endpoint for this frame. This must be called on
+  // the creation thread.
   //
   // It is safe to call this function on a closed link; it will have no effect.
-  void SendFrame(ChannelId remote_id, const ByteBuffer& payload);
+  void SendFrame(ChannelId remote_id, const ByteBuffer& payload,
+                 FrameCheckSequenceOption fcs_option);
 
   // Requests a security upgrade using the registered security upgrade callback.
   // Invokes the |callback| argument with the result of the operation.

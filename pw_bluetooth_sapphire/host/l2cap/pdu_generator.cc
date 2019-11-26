@@ -47,7 +47,8 @@ std::optional<PDU> PduGenerator::GetNextPdu() {
   // For the rationale behind using a Fragmenter to build the PDU, see the
   // comment in basic_mode_rx_engine_fuzztest.cc.
   auto pdu =
-      fragmenter_.BuildFrame(kTestChannelId, BufferView(input_buf_ + input_pos_, pdu_len_bytes_));
+      fragmenter_.BuildFrame(kTestChannelId, BufferView(input_buf_ + input_pos_, pdu_len_bytes_),
+                             FrameCheckSequenceOption::kNoFcs);
   input_pos_ += pdu_len_bytes_;
   return std::move(pdu);
 }

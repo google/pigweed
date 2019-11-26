@@ -123,11 +123,12 @@ Fragmenter::Fragmenter(hci::ConnectionHandle connection_handle, uint16_t max_acl
 //     2. channel -> fragmenter ->(move) HCI layer ->(move) bt-hci driver
 //     if buffering is needed:
 //       3. bt-hci driver -> transport driver
-PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data, bool flushable) const {
+PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
+                           FrameCheckSequenceOption fcs_option, bool flushable) const {
   ZX_DEBUG_ASSERT(data.size() <= kMaxBasicFramePayloadSize);
   ZX_DEBUG_ASSERT(channel_id);
 
-  OutboundFrame frame(channel_id, data, FrameCheckSequenceOption::kNoFcs);
+  OutboundFrame frame(channel_id, data, fcs_option);
   const size_t frame_size = frame.size();
   const size_t num_fragments =
       frame_size / max_acl_payload_size_ + (frame_size % max_acl_payload_size_ ? 1 : 0);

@@ -78,22 +78,20 @@ class Fragmenter final {
 
   void set_max_acl_payload_size(size_t value) { max_acl_payload_size_ = value; }
 
-  // Constructs and returns a PDU to be sent over the L2CAP channel
-  // |channel_id|. |data| will be treated as the Information payload of a
-  // B-frame, i.e. the PDU will contain:
+  // Constructs and returns a PDU to be sent over the L2CAP channel |channel_id|. |data| will be
+  // treated as the Information payload of a B-frame, i.e. the PDU will contain:
   //
-  //   [Basic L2CAP header][data]
+  //   <Basic L2CAP header><data>[FCS]
   //
-  // All other L2CAP frames are based on the B-frame and can be constructed
+  // All L2CAP frames have a Basic L2CAP header and optionally an FCS footer and can be constructed
   // using this method.
   //
-  // If |flushable| is true, then this will build an automatically flushable
-  // L2CAP PDU. Automatically flushable packets are sent over ACL-U logical
-  // links based on the setting of an automatic flush timer. Only
-  // non-automatically flushable PDUs can be sent over LE-U links (see Core Spec
-  // v5.0, Vol 2, Part E, Section 5.4.2).
+  // If |flushable| is true, then this will build an automatically flushable L2CAP PDU.
+  // Automatically flushable packets are sent over ACL-U logical links based on the setting of an
+  // automatic flush timer. Only non-automatically flushable PDUs can be sent over LE-U links (see
+  // Core Spec v5.0, Vol 2, Part E, Section 5.4.2).
   [[nodiscard]] PDU BuildFrame(ChannelId channel_id, const ByteBuffer& data,
-                               bool flushable = false) const;
+                               FrameCheckSequenceOption fcs_option, bool flushable = false) const;
 
  private:
   hci::ConnectionHandle connection_handle_;

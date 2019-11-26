@@ -260,7 +260,8 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
   security_ = security;
 }
 
-void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload) {
+void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
+                            FrameCheckSequenceOption fcs_option) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
@@ -268,10 +269,8 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload) {
     return;
   }
 
-  // TODO(armansito): The following makes a copy of |payload| when constructing
-  // |pdu|. Think about how this could be optimized, especially when |payload|
-  // fits inside a single ACL data fragment.
-  PDU pdu = fragmenter_.BuildFrame(id, payload);
+  // Copy payload into L2CAP frame fragments, sized for the HCI data transport.
+  PDU pdu = fragmenter_.BuildFrame(id, payload, fcs_option);
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());

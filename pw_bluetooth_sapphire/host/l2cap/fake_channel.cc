@@ -28,7 +28,7 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandl
 }
 
 void FakeChannel::Receive(const ByteBuffer& data) {
-  auto pdu = fragmenter_.BuildFrame(id(), data);
+  auto pdu = fragmenter_.BuildFrame(id(), data, FrameCheckSequenceOption::kNoFcs);
   auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   if (rx_cb_) {
