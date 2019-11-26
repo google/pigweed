@@ -121,14 +121,21 @@ class TestRunner:
     def run_tests(self) -> None:
         """Runs all registered unit tests through the runner script."""
 
-        for test in self._tests:
+        for idx, test in enumerate(self._tests, 1):
+            total = str(len(self._tests))
+            test_counter = f'Test {idx:{len(total)}}/{total}'
+
+            _LOG.info('%s: [RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
             try:
                 status = subprocess.call(command)
                 if status == 0:
                     test.status = TestResult.SUCCESS
+                    test_result = 'PASS'
                 else:
                     test.status = TestResult.FAILURE
+                    test_result = 'FAIL'
+                _LOG.info('%s: [%s] %s', test_counter, test_result, test.name)
             except subprocess.CalledProcessError as err:
                 _LOG.error(err)
                 return
