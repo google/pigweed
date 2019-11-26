@@ -1,3 +1,16 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
 """Tools for running presubmit checks in a Git repository.
 
 A presubmit checks are defined as a function or other callable. The function may
@@ -37,7 +50,7 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Callable, Iterable, Optional, Sequence
+from typing import Callable, Iterable, List, Optional, Sequence
 from inspect import signature
 
 
@@ -93,11 +106,12 @@ def _make_color(*codes: int):
     return f'{start}{{}}\033[0m'.format if os.name == 'posix' else str
 
 
-color_red = _make_color(31, 1)
-color_bold_red = _make_color(30, 41)
+color_red = _make_color(31)
+color_bold_red = _make_color(31, 1)
+color_black_on_red = _make_color(30, 41)
 color_yellow = _make_color(33, 1)
 color_green = _make_color(32)
-color_bold_green = _make_color(30, 42)
+color_black_on_green = _make_color(30, 42)
 
 
 def _make_box(section_alignments: Sequence[str]) -> str:
@@ -139,7 +153,7 @@ def _start_box(style, count, title, box=_make_box('><')):
 
 def _result_box(style, result, color, title, time_s, box=_make_box('^<^')):
     minutes, seconds = divmod(time_s, 60)
-    time_str = ' ' * 8 if time_s is None else f'{int(minutes)}:{seconds:04.1f}'
+    time_str = f' {int(minutes)}:{seconds:04.1f} '
     info = f' {title} '.ljust(WIDTH - 14 - len(time_str))
 
     return box.format(*style,
@@ -148,7 +162,7 @@ def _result_box(style, result, color, title, time_s, box=_make_box('^<^')):
                       section2=info,
                       width2=len(info),
                       section3=time_str,
-                      width3=len(time_str) + 2)
+                      width3=len(time_str))
 
 
 class PresubmitFailure(Exception):
@@ -167,7 +181,7 @@ class _Result(enum.Enum):
         if self is _Result.PASS:
             return color_green
         if self is _Result.FAIL:
-            return color_red
+            return color_bold_red
         if self is _Result.CANCEL:
             return color_yellow
 
@@ -179,13 +193,16 @@ class Presubmit:
         self.paths = paths
         self.log = print
 
-    def run(self, program: Sequence[Callable]) -> bool:
+    def run(self, program: Sequence[Callable],
+            continue_on_error: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
         self.log(_title(f'Presubmit checks for {os.path.basename(self.root)}'))
         self._log_presubmit_start(program)
 
-        start_time = time.time()
+        passed, failed = [], []
+
+        start_time: float = time.time()
 
         for i, check in enumerate(program):
             self.log(_start_box(_TOP, f'{i+1}/{len(program)}', check.__name__))
@@ -198,11 +215,13 @@ class Presubmit:
                 _result_box(_BOTTOM, result.value, result.color(),
                             check.__name__, time_s))
 
-            if result is not _Result.PASS:
-                passed, failed = program[:i], program[i:]
+            if result is _Result.PASS:
+                passed.append(check)
+            elif continue_on_error:
+                failed.append(check)
+            else:
+                failed = list(program[i:])
                 break
-        else:
-            passed, failed = program, []
 
         self._log_summary(time.time() - start_time, len(passed), len(failed))
         return not failed
@@ -212,7 +231,8 @@ class Presubmit:
             check(*([self.paths] if signature(check).parameters else []))
             return _Result.PASS
         except Exception as failure:
-            self.log(failure)
+            if str(failure):
+                self.log(failure)
             return _Result.FAIL
         except KeyboardInterrupt:
             self.log()
@@ -236,10 +256,10 @@ class Presubmit:
 
     def _log_summary(self, time_s: float, passed: int, failed: int) -> None:
         text = 'FAILED' if failed else 'PASSED'
-        color = color_bold_red if failed else color_bold_green
+        color = color_black_on_red if failed else color_black_on_green
         self.log(
             _result_box(_DOUBLE, text, color,
-                        f'Finished {passed} of {passed + failed} checks',
+                        f'Passed {passed} of {passed + failed} checks',
                         time_s))
 
 
@@ -271,18 +291,26 @@ def add_parser_arguments(parser) -> None:
         action='append',
         type=re.compile,
         help='Exclude paths matching any of these regular expressions.')
+    parser.add_argument('--continue',
+                        dest='continue_on_error',
+                        action='store_true',
+                        help='Continue instead of aborting when errors occur.')
 
 
-def run_presubmit(program: Sequence[Callable],
-                  base: Optional[str] = None,
-                  paths: Sequence[str] = (),
-                  exclude: Sequence = (),
-                  repository: str = '.') -> bool:
+def run_presubmit(
+        program: Sequence[Callable],
+        base: Optional[str] = None,
+        paths: Sequence[str] = (),
+        exclude: Sequence = (),
+        repository: str = '.',
+        continue_on_error: bool = False,
+) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them."""
 
     root = git_repo_root(repository)
     os.chdir(root)
-    return Presubmit(root, list_files(base, paths, exclude)).run(program)
+    return Presubmit(root, list_files(base, paths,
+                                      exclude)).run(program, continue_on_error)
 
 
 def parse_args_and_run_presubmit(
@@ -299,16 +327,29 @@ def parse_args_and_run_presubmit(
     return run_presubmit(program, **vars(arg_parser.parse_args()))
 
 
-def filter_paths(endswith: Iterable[str] = (), skip_if_empty: bool = True):
+def _wrap_if_str(value: Iterable[str]) -> List[str]:
+    return [value] if isinstance(value, str) else value
+
+
+def filter_paths(endswith: Iterable[str] = (''),
+                 exclude: Iterable = (),
+                 skip_if_empty: bool = True):
     """Decorator for filtering the files list for a presubmit check function."""
-    endswith = frozenset([endswith] if isinstance(endswith, str) else endswith)
+    endswith = frozenset(_wrap_if_str(endswith))
+    exclude = [re.compile(exp) for exp in _wrap_if_str(exclude)]
 
     def filter_paths_for_function(function: Callable):
+        if len(signature(function).parameters) != 1:
+            raise TypeError('Functions wrapped with @filter_paths must take '
+                            f'exactly one argument: {function.__name__} takes '
+                            f'{len(signature(function).parameters)}.')
+
         @functools.wraps(function)
         def wrapped_function(paths: Iterable[str]):
             paths = [
-                path for path in paths if any(
-                    path.endswith(end) for end in endswith)
+                path for path in paths
+                if any(path.endswith(end) for end in endswith) and not any(
+                    exp.fullmatch(path) for exp in exclude)
             ]
 
             if not paths and skip_if_empty:
@@ -334,7 +375,7 @@ def call(*args, **kwargs) -> None:
     if process.returncode:
         print(f'[RESULT] Failed with return code {process.returncode}.')
         print('[OUTPUT]')
-        print(process.stdout.decode(errors="backslashreplace"))
+        print(process.stdout.decode(errors='backslashreplace'))
         raise PresubmitFailure
 
 
