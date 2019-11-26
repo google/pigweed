@@ -50,6 +50,7 @@ pw_cc_library(
         "//pw_dumb_io",
         "//pw_preprocessor",
         "//pw_status",
+        "//pw_string",
     ],
 )
 
