@@ -80,7 +80,11 @@ template("pw_test") {
 template("pw_test_group") {
   _group_target = target_name
   _group_deps_metadata = []
-  _deps = invoker.tests
+  if (defined(invoker.tests)) {
+    _deps = invoker.tests
+  } else {
+    _deps = []
+  }
 
   if (defined(invoker.group_deps)) {
     # If the group specified any other group dependencies, create a metadata
@@ -113,7 +117,9 @@ template("pw_test_group") {
       # the group dependencies group. This entry is listed as a "walk_key" in
       # the generated file so that only test targets' metadata (not group
       # targets) appear in the output.
-      propagate_metadata_from = invoker.tests
+      if (defined(invoker.tests)) {
+        propagate_metadata_from = invoker.tests
+      }
     }
     deps = _deps
   }
@@ -132,5 +138,18 @@ template("pw_test_group") {
     walk_keys = [ "propagate_metadata_from" ]
     output_conversion = "json"
     deps = _test_group_deps
+  }
+
+  # If automatic test running is enabled, create a *_run group that collects all
+  # of the individual *_run targets and groups.
+  if (pw_automatic_test_runner != "") {
+    group(_group_target + "_run") {
+      deps = [
+        ":$_group_target",
+      ]
+      foreach(_target, _deps) {
+        deps += [ "${_target}_run" ]
+      }
+    }
   }
 }
