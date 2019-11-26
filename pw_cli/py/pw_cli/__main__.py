@@ -67,6 +67,7 @@ def main(raw_args=None):
     # Setting this default on the top-level parser makes 'pw' show help by
     # default when invoked with no arguments.
     parser.set_defaults(_command=parser.print_help)
+    parser.set_defaults(_run_async=False)
 
     # Find and load registered command line plugins.
     #
@@ -104,10 +105,11 @@ def main(raw_args=None):
             getattr(logging, args_as_dict['loglevel'].upper()))
         del args_as_dict['loglevel']
 
+    # Run the command and exit with the appropriate status.
     if args._run_async:
-        asyncio.run(args._command(**args_as_dict))
+        sys.exit(asyncio.run(args._command(**args_as_dict)))
     else:
-        args._command(**args_as_dict)
+        sys.exit(args._command(**args_as_dict))
 
 
 if __name__ == "__main__":
