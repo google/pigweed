@@ -33,14 +33,14 @@ def _init_cipd():
 def _init_virtualenv():
     """Set up virtualenv, assumes recent Python 3 is already installed."""
     venv = os.path.abspath('.presubmit/venv')
-    call('python3', '-m', 'venv', venv)
+    call('python', '-m', 'venv', venv)
     os.environ['PATH'] = os.pathsep.join((
         os.path.join(venv, 'bin'),
         os.environ['PATH'],
     ))  # yapf: disable
 
-    call('python3', '-m', 'pip', 'install', '--upgrade', 'pip')
-    call('python3', '-m', 'pip', 'install',
+    call('python', '-m', 'pip', 'install', '--upgrade', 'pip')
+    call('python', '-m', 'pip', 'install',
          '--log', os.path.join(venv, 'pip.log'),
          '-r', 'env_setup/virtualenv/requirements.txt')  # yapf: disable
 
