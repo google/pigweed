@@ -17,6 +17,9 @@ import logging
 import pw_cli.plugins
 from pw_cli.color import Color as _Color
 
+# Log level used for captured output of a subprocess run through pw.
+LOGLEVEL_STDOUT = 21
+
 _LOG = logging.getLogger(__name__)
 
 def main():
@@ -28,6 +31,7 @@ def main():
     _LOG.error('There was an error on our last operation')
     _LOG.warning('Looks like something is amiss; consider investigating')
     _LOG.info('The operation went as expected')
+    _LOG.log(LOGLEVEL_STDOUT, 'Standard output of subprocess')
     _LOG.debug('Adding 1 to i')
 
 
@@ -37,7 +41,7 @@ def install():
     # from other input, in a way that's easier to see than plain colored text.
     logging.basicConfig(format=_Color.black_on_white('%(asctime)s') +
                         ' %(levelname)s %(message)s',
-                        datefmt='%Y%m%d %I:%M:%S %p',
+                        datefmt='%Y%m%d %H:%M:%S',
                         level=logging.INFO)
 
     # Shorten all the log levels to 3 characters for column-aligned logs.
@@ -47,6 +51,7 @@ def install():
     logging.addLevelName(logging.ERROR,    _Color.red     ('ERR'))
     logging.addLevelName(logging.WARNING,  _Color.yellow  ('WRN'))
     logging.addLevelName(logging.INFO,     _Color.magenta ('INF'))
+    logging.addLevelName(LOGLEVEL_STDOUT,  _Color.cyan    ('OUT'))
     logging.addLevelName(logging.DEBUG,    _Color.blue    ('DBG'))
     # yapf: enable
 

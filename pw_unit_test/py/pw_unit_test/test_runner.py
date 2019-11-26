@@ -15,6 +15,7 @@
 """Runs Pigweed unit tests built using GN."""
 
 import argparse
+import asyncio
 import enum
 import json
 import logging
@@ -24,6 +25,8 @@ import subprocess
 import sys
 
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+
+import pw_cli.process
 
 # Global logger for the script.
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -118,7 +121,7 @@ class TestRunner:
         self._args: Sequence[str] = args
         self._tests: List[Test] = list(tests)
 
-    def run_tests(self) -> None:
+    async def run_tests(self) -> None:
         """Runs all registered unit tests through the runner script."""
 
         for idx, test in enumerate(self._tests, 1):
@@ -128,7 +131,7 @@ class TestRunner:
             _LOG.info('%s: [RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
             try:
-                status = subprocess.call(command)
+                status = await pw_cli.process.run_async(command)
                 if status == 0:
                     test.status = TestResult.SUCCESS
                     test_result = 'PASS'
@@ -295,12 +298,12 @@ def tests_from_paths(paths: Sequence[str]) -> List[Test]:
 
 # TODO(frolv): Try to figure out a better solution for passing through the
 # corrected sys.argv across all pw commands.
-def find_and_run_tests(argv_copy: List[str],
-                       root: str = '',
-                       runner: str = '',
-                       runner_args: Sequence[str] = (),
-                       group: Optional[Sequence[str]] = None,
-                       test: Optional[Sequence[str]] = None) -> int:
+async def find_and_run_tests(argv_copy: List[str],
+                             root: str,
+                             runner: str,
+                             runner_args: Sequence[str] = (),
+                             group: Optional[Sequence[str]] = None,
+                             test: Optional[Sequence[str]] = None) -> int:
     """Runs some unit tests."""
 
     if runner_args:
@@ -327,28 +330,28 @@ def find_and_run_tests(argv_copy: List[str],
         tests = tests_from_groups(group, root)
 
     test_runner = TestRunner(runner, runner_args, tests)
-    test_runner.run_tests()
+    await test_runner.run_tests()
 
     return 0 if test_runner.all_passed() else 1
 
 
-def run_as_plugin(**kwargs) -> None:
+async def run_as_plugin(**kwargs) -> None:
     """Entry point when running as a pw plugin."""
 
     # Replace the virtualenv file path to the script in sys.argv[0] with the
     # pw script so that users have a valid command to copy.
     argv_copy = ['pw', *sys.argv[1:]]
-    find_and_run_tests(argv_copy, **kwargs)
+    await find_and_run_tests(argv_copy, **kwargs)
 
 try:
     import pw_cli.plugins
-
     pw_cli.plugins.register(
         name='test',
         help='Runs groups of unit tests on a target',
         command_function=run_as_plugin,
         define_args_function=register_arguments,
     )
+
 except ImportError:
     pass
 
@@ -372,7 +375,7 @@ def main() -> int:
 
     args_as_dict = dict(vars(args))
     del args_as_dict['verbose']
-    return find_and_run_tests(sys.argv, **args_as_dict)
+    return asyncio.run(find_and_run_tests(sys.argv, **args_as_dict))
 
 
 if __name__ == '__main__':

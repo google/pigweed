@@ -15,3 +15,5 @@
 # Note that these imports will trigger plugin registrations.
 import pw_cli.log
 import pw_cli.watch
+
+import pw_cli.process

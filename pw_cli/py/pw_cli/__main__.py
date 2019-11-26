@@ -21,6 +21,7 @@ Example uses:
 """
 
 import argparse
+import asyncio
 import sys
 import logging
 import importlib
@@ -38,6 +39,7 @@ _PIGWEED_BANNER = '''
   ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 '''
+
 
 def main(raw_args=None):
     if raw_args is None:
@@ -86,18 +88,26 @@ def main(raw_args=None):
         command.define_args_function(subparser)
         subparser.set_defaults(_command=command.command_function)
 
+        # Check whether the sub-command's entry point is asynchronous.
+        subparser.set_defaults(
+            _run_async=asyncio.iscoroutinefunction(command.command_function))
+
     args = parser.parse_args(raw_args)
 
     args_as_dict = dict(vars(args))
     del args_as_dict['_command']
+    del args_as_dict['_run_async']
 
     # Set root log level; but then remove the arg to avoid breaking the command.
     if 'loglevel' in args_as_dict:
         logging.getLogger().setLevel(
-                getattr(logging, args_as_dict['loglevel'].upper()))
+            getattr(logging, args_as_dict['loglevel'].upper()))
         del args_as_dict['loglevel']
 
-    args._command(**args_as_dict)
+    if args._run_async:
+        asyncio.run(args._command(**args_as_dict))
+    else:
+        args._command(**args_as_dict)
 
 
 if __name__ == "__main__":
