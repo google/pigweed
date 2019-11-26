@@ -33,7 +33,8 @@ def _init_cipd():
 def _init_virtualenv():
     """Set up virtualenv, assumes recent Python 3 is already installed."""
     venv = os.path.abspath('.presubmit/venv')
-    call('python', '-m', 'venv', venv)
+    if not os.path.isdir(venv):
+        call('python', '-m', 'venv', venv)
     os.environ['PATH'] = os.pathsep.join((
         os.path.join(venv, 'bin'),
         os.environ['PATH'],
