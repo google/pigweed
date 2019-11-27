@@ -245,7 +245,6 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE = (
     r'.*\.md',
     r'.*\.rst',
     r'(?:.+/)?requirements.txt',
-    r'(?:.+/)?requirements.in',
 )
 
 
