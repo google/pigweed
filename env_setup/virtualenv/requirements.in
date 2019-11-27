@@ -5,11 +5,14 @@
 # To help manage these files.
 pip-tools
 
+# Code quality tools
+yapf
+mypy
+pylint
+
 # For documentation generation.
 sphinx
 sphinx-rtd-theme
 
-# For pw.
+# For the Pigweed test runner.
 coloredlogs
-pathtools
-watchdog
