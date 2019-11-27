@@ -204,7 +204,7 @@ class Framework {
 
   // Dispatches an event indicating the result of an expectation.
   void ExpectationResult(const char* expression,
-                         const std::string_view& result,
+                         const std::string_view& evaluated_expression,
                          int line,
                          bool success);
 

@@ -298,11 +298,13 @@ class StringBuffer : public StringBuilder {
 
   template <size_t kOtherSizeBytes>
   StringBuffer& operator=(const StringBuffer<kOtherSizeBytes>& other) {
-    return assign<kOtherSizeBytes>(other);
+    assign<kOtherSizeBytes>(other);
+    return *this;
   }
 
   StringBuffer& operator=(const StringBuffer& other) {
-    return assign<kSizeBytes>(other);
+    assign<kSizeBytes>(other);
+    return *this;
   }
 
   template <size_t kOtherSizeBytes>

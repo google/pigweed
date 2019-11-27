@@ -49,6 +49,7 @@ pw_cc_library(
         ":simple_printing_event_handler",
         "//pw_dumb_io",
         "//pw_preprocessor",
+        "//pw_span",
         "//pw_status",
         "//pw_string",
     ],

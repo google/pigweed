@@ -42,6 +42,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "pw_dumb_io",
+    hdrs = ["public/pw_dumb_io/dumb_io.h"],
     deps = [
         ":facade",
         # For now, hard-code to depend on stdio until bazel build is updated
