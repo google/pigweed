@@ -176,14 +176,6 @@ class PigweedBuildWatcher(FileSystemEventHandler):
                 self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
                 self.on_any_event()  # Retrigger.
 
-    def on_success(self):
-        _LOG.debug('Build and tests passed')
-        print(_Color.green(PASS_MESSAGE))
-
-    def on_fail(self):
-        _LOG.debug('Build and tests failed')
-        print(_Color.red(_FAIL_MESSAGE))
-
 
 _WATCH_PATTERN_DELIMITER = ','
 _WATCH_PATTERNS = (

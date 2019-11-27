@@ -50,7 +50,7 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Callable, Iterable, List, Optional, Sequence
+from typing import Callable, Dict, Iterable, List, Optional, Sequence
 from inspect import signature
 
 
@@ -327,6 +327,26 @@ def parse_args_and_run_presubmit(
     return run_presubmit(program, **vars(arg_parser.parse_args()))
 
 
+def find_python_packages(python_paths) -> Dict[str, List[str]]:
+    """Returns Python package directories for the files in python_paths."""
+    setup_pys = [
+        os.path.dirname(file)
+        for file in git_list_files('setup.py', '*/setup.py')
+    ]
+
+    package_dirs = collections.defaultdict(list)
+
+    for path in python_paths:
+        try:
+            setup_dir = max(setup for setup in setup_pys
+                            if path.startswith(setup))
+            package_dirs[os.path.abspath(setup_dir)].append(path)
+        except ValueError:
+            continue
+
+    return package_dirs
+
+
 def _wrap_if_str(value: Iterable[str]) -> List[str]:
     return [value] if isinstance(value, str) else value
 
@@ -362,7 +382,7 @@ def filter_paths(endswith: Iterable[str] = (''),
     return filter_paths_for_function
 
 
-def call(*args, **kwargs) -> None:
+def call(*args, print_output=True, **kwargs) -> None:
     """Optional subprocess wrapper with helpful output."""
     print('[COMMAND]',
           ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())))
@@ -374,9 +394,14 @@ def call(*args, **kwargs) -> None:
                              **kwargs)
     if process.returncode:
         print(f'[RESULT] Failed with return code {process.returncode}.')
-        print('[OUTPUT]')
-        print(process.stdout.decode(errors='backslashreplace'))
-        raise PresubmitFailure
+        output = process.stdout.decode(errors='backslashreplace')
+
+        if print_output:
+            print('[OUTPUT]')
+            print(output)
+            raise PresubmitFailure
+
+        raise PresubmitFailure(output)
 
 
 @filter_paths(endswith='.h')

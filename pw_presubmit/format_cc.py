@@ -31,8 +31,10 @@ def _make_color(*codes: int):
     return f'{start}{{}}\033[0m'.format if os.name == 'posix' else str
 
 
-color_green = _make_color(32)
 color_red = _make_color(31)
+color_green = _make_color(32)
+color_aqua = _make_color(36)
+color_bold_white = _make_color(37, 1)
 
 
 def _find_extensions(directory, extensions) -> Iterable[str]:
@@ -63,10 +65,14 @@ def clang_format(*args: str, formatter='clang-format') -> bytes:
 
 
 def _colorize_diff_line(line: str) -> str:
-    if line.startswith('-') and not line.startswith('--- '):
+    if line.startswith('--- ') or line.startswith('+++ '):
+        return color_bold_white(line)
+    if line.startswith('-'):
         return color_red(line)
-    if line.startswith('+') and not line.startswith('+++ '):
+    if line.startswith('+'):
         return color_green(line)
+    if line.startswith('@@ '):
+        return color_aqua(line)
     return line
 
 

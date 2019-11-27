@@ -25,7 +25,18 @@ from pw_presubmit.presubmit_tools import call, filter_paths, PresubmitFailure
 from pw_presubmit import format_cc, presubmit_tools
 
 
-def _init_cipd():
+def presubmit_dir(*paths):
+    return os.path.join('.presubmit', *paths)
+
+
+def run_python_module(*args, **kwargs):
+    return call('python', '-m', *args, **kwargs)
+
+
+#
+# Initialization
+#
+def init_cipd():
     cipd = os.path.abspath('.presubmit/cipd')
     call(sys.executable, 'env_setup/cipd/update.py', '--install-dir', cipd)
     os.environ['PATH'] = os.pathsep.join((
@@ -36,28 +47,27 @@ def _init_cipd():
     print('PATH', os.environ['PATH'])
 
 
-def _init_virtualenv():
+@filter_paths(endswith='.py')  # Only run if there are .py files.
+def init_virtualenv(unused_paths):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
     venv = os.path.abspath('.presubmit/venv')
+
+    # For speed, don't build the venv if it exists. Use --clean to recreate it.
     if not os.path.isdir(venv):
-        call('python', '-m', 'venv', venv)
+      call('python3',
+           'env_setup/virtualenv/init.py', f'--venv_path={venv}',
+           '--requirements=env_setup/virtualenv/requirements.txt')
+
     os.environ['PATH'] = os.pathsep.join((
         os.path.join(venv, 'bin'),
         os.environ['PATH'],
     ))
 
-    call('python', '-m', 'pip', 'install', '--upgrade', 'pip')
-    call('python', '-m', 'pip', 'install',
-         '--log', os.path.join(venv, 'pip.log'),
-         '-r', 'env_setup/virtualenv/requirements.txt')  # yapf: disable
 
-
-def init():
-    _init_cipd()
-    _init_virtualenv()
-
-
-presubmit_dir = lambda *paths: os.path.join('.presubmit', *paths)
+INIT = (
+    init_cipd,
+    init_virtualenv,
+)
 
 
 #
@@ -83,7 +93,8 @@ def gn_clang_build():
     call('ninja', '-C', presubmit_dir('clang'))
 
 
-def gn_gcc_build():
+@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+def gn_gcc_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('gcc'),
         gn_args(pw_target_config='"//targets/host/host.gni"',
@@ -91,7 +102,8 @@ def gn_gcc_build():
     call('ninja', '-C', presubmit_dir('gcc'))
 
 
-def gn_arm_build():
+@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+def gn_arm_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('arm'),
         gn_args(
@@ -137,43 +149,58 @@ CC = (
 # Python presubmit checks
 #
 @filter_paths(endswith='.py')
-def pylint_errors(paths):
-    call(sys.executable, '-m', 'pylint', '-E', *paths)
+def test_python_packages(paths):
+    packages = presubmit_tools.find_python_packages(paths)
+
+    if not packages:
+        print('No Python packages were found.')
+        return
+
+    for package in packages:
+        call('python', os.path.join(package, 'setup.py'), 'test')
+
+
+@filter_paths(endswith='.py')
+def pylint_errors_only(paths):
+    run_python_module('pylint', '-E', '-j', '0', *paths)
+
+
+@filter_paths(endswith='.py')
+def pylint(paths):
+    try:
+        run_python_module('pylint', '-j', '0', *paths)
+    except PresubmitFailure:
+        # TODO(hepler): Enforce pylint when it passes.
+        print('--> pylint checks FAILED!')
+        print('    Treating this as a warning... for now.')
 
 
 @filter_paths(endswith='.py')
 def yapf(paths):
-    from yapf.yapflib.yapf_api import FormatFile
-
-    errors = []
-
-    for path in paths:
-        diff, _, changed = FormatFile(path, print_diff=True, in_place=False)
-        if changed:
-            errors.append(path)
-            print(format_cc.colorize_diff(diff))
-
-    if errors:
-        print(f'--> Files with formatting errors: {len(errors)}')
-        print('   ', '\n    '.join(errors))
-        raise PresubmitFailure
+    try:
+        run_python_module('yapf',
+                          '--diff',
+                          '--parallel',
+                          *paths,
+                          print_output=False)
+    except PresubmitFailure as e:
+        # TODO(hepler): Enforce yapf when it passes.
+        print(format_cc.colorize_diff(str(e)))
+        print('--> Python formatting checks FAILED!')
+        print('    Treating this as a warning... for now.')
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
 def mypy(paths):
-    import mypy.api as mypy_api
-
-    report, errors, exit_status = mypy_api.run(paths)
-    if exit_status:
-        print(errors)
-        print(report)
-        raise PresubmitFailure
+    run_python_module('mypy', *paths)
 
 
 PYTHON = (
-    # TODO(hepler): Enable yapf, mypy, and pylint when they pass.
-    # pylint_errors,
-    # yapf,
+    test_python_packages,
+    pylint_errors_only,  # TODO(hepler): Remove this when pylint is passing.
+    pylint,
+    yapf,
+    # TODO(hepler): Enable mypy when it passes.
     # mypy,
 )
 
@@ -260,16 +287,17 @@ GENERAL = (copyright_notice, )
 # Presubmit check programs
 #
 QUICK_PRESUBMIT = (
-    *GENERAL,
+    *INIT,
     *PYTHON,
     gn_format,
     gn_clang_build,
     presubmit_tools.pragma_once,
     clang_format,
+    *GENERAL,
 )
 
 PROGRAMS = {
-    'full': GN + CC + PYTHON + BAZEL + GENERAL,
+    'full': INIT + GN + CC + PYTHON + BAZEL + GENERAL,
     'quick': QUICK_PRESUBMIT,
 }
 
@@ -280,10 +308,6 @@ def main() -> int:
         '--clean',
         action='store_true',
         help='Deletes the .presubmit directory before starting')
-    parser.add_argument(
-        '--skip_init',
-        action='store_true',
-        help='Clone the buildtools to prior to running the checks')
     parser.add_argument('-p',
                         '--program',
                         choices=PROGRAMS,
@@ -297,11 +321,10 @@ def main() -> int:
     if args.clean and os.path.exists(presubmit_dir()):
         shutil.rmtree(presubmit_dir())
 
-    init_step = () if args.skip_init else (init,)
-    program = init_step + PROGRAMS[args.program]
+    program = PROGRAMS[args.program]
 
     # Remove custom arguments so we can use args to call run_presubmit.
-    del args.clean, args.program, args.skip_init
+    del args.clean, args.program
 
     return 0 if presubmit_tools.run_presubmit(program, **vars(args)) else 1
 
