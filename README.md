@@ -12,6 +12,7 @@ Pigweed is in the early stages of development.
 ```bash
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
+$ env_setup/cipd/cipd.py auth-login  # Once per machine.
 $ . env_setup/setup.sh
 ```
 
