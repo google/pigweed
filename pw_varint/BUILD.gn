@@ -12,28 +12,38 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# All Pigweed modules that can be built using gn.
-group("pw_modules") {
-  deps = [
-    "$dir_pigweed/docs",
-    "$dir_pw_bloat",
-    "$dir_pw_dumb_io",
-    "$dir_pw_preprocessor",
+import("$dir_pw_unit_test/test.gni")
+
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+source_set("pw_varint") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public_deps = [
     "$dir_pw_span",
-    "$dir_pw_status",
-    "$dir_pw_string",
-    "$dir_pw_unit_test",
-    "$dir_pw_varint",
+  ]
+  sources = [
+    "public/pw_varint/varint.h",
+    "varint.cc",
+  ]
+  public = [
+    "public/pw_varint/varint.h",
   ]
 }
 
-# Targets for all module unit test groups.
-group("pw_module_tests") {
+pw_test_group("tests") {
+  tests = [ ":varint_test" ]
+}
+
+pw_test("varint_test") {
   deps = [
-    "$dir_pw_preprocessor:tests",
-    "$dir_pw_span:tests",
-    "$dir_pw_status:tests",
-    "$dir_pw_string:tests",
-    "$dir_pw_varint:tests",
+    ":pw_varint",
+  ]
+  sources = [
+    "varint_test.cc",
   ]
 }
