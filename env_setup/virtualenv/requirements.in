@@ -5,14 +5,13 @@
 # To help manage these files.
 pip-tools
 
-# Code quality tools
+# Code quality tools.
+# TODO(hepler): Create a setup.py for the presubmit and remove these.
 yapf
 mypy
 pylint
 
 # For documentation generation.
+# TODO(frolv): Create a setup.py for pw_docgen and remove these.
 sphinx
 sphinx-rtd-theme
-
-# For the Pigweed test runner.
-coloredlogs

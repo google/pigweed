@@ -22,10 +22,8 @@ setup_virtualenv () {
   local requirements_path
   requirements_path="$PW_ENVSETUP/virtualenv/requirements.txt"
 
-  python3 -m venv "$venv" && \
-  . "$venv/bin/activate" && \
-  python3 -m pip install --upgrade pip && \
-  python3 -m pip install --log "$venv/pip.log" -r "$requirements_path"
+  python3 "$PW_ENVSETUP/virtualenv/init.py" \
+    --venv_path "$venv" --r $requirements_path && . "$venv/bin/activate"
 }
 
 setup_virtualenv
