@@ -22,6 +22,7 @@ import pw_module.check
 
 _LOG = logging.getLogger(__name__)
 
+
 class TestWithTempDirectory(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory for the test.
@@ -43,11 +44,21 @@ class TestWithTempDirectory(unittest.TestCase):
         with open(full_file_path, 'w') as fd:
             fd.write(contents)
 
-    def assert_no_issues(self, checker):
-        return self.assertFalse(list(checker(self.test_dir)))
+        return full_file_path
 
-    def assert_issue(self, checker, match):
-        issues = list(checker(self.test_dir))
+    def assert_no_issues(self, checker, directory=None):
+        if directory != None:
+            directory = str(pathlib.Path(self.test_dir, directory))
+        else:
+            directory = self.test_dir
+        return self.assertFalse(list(checker(directory)))
+
+    def assert_issue(self, checker, match, directory=None):
+        if directory != None:
+            directory = str(pathlib.Path(self.test_dir, directory))
+        else:
+            directory = self.test_dir
+        issues = list(checker(directory))
         self.assertTrue(any((match in issue.message) for issue in issues))
 
     # Have Python code --> have setup.py.
@@ -55,7 +66,8 @@ class TestWithTempDirectory(unittest.TestCase):
         # Python files; no setup --> error.
         self.create_file('pw_foo/py/pw_foo/__init__.py')
         self.create_file('pw_foo/py/pw_foo/bar.py')
-        self.assert_issue(pw_module.check.check_python_proper_module, 'setup.py')
+        self.assert_issue(pw_module.check.check_python_proper_module,
+                          'setup.py')
 
         # Python files; have setup.py --> ok.
         self.create_file('pw_foo/py/setup.py')
@@ -78,6 +90,51 @@ class TestWithTempDirectory(unittest.TestCase):
 
         self.create_file('pw_foo/py/foo_test.py')
         self.assert_no_issues(pw_module.check.check_have_python_tests)
+
+    # Have README.md
+    def test_PWCK004_have_readme(self):
+        self.assert_issue(pw_module.check.check_has_readme, 'README')
+        self.create_file('README.md')
+        self.assert_no_issues(pw_module.check.check_has_readme)
+
+    # Have ReST docs of some kind
+    def test_PWCK005_have_rst_docs(self):
+        checker = pw_module.check.check_has_rst_docs
+        self.assert_issue(checker, 'ReST')
+        self.create_file('pw_foo/docs.rst')
+        self.assert_no_issues(checker)
+
+    # Have ReST docs of some kind
+    def test_PWCK006_have_public_or_override_headers(self):
+        checker = pw_module.check.check_has_public_or_override_headers
+        module_name = 'pw_foo'
+
+        # Only have a doc? Great.
+        self.create_file('pw_foo/docs.rst')
+        self.assert_no_issues(checker, directory=module_name)
+
+        # CC files with no public header --> error.
+        self.create_file('pw_foo/implementation.cc')
+        self.create_file('pw_foo/implementation_test.cc')
+        self.assert_issue(checker, 'public/pw_foo', directory=module_name)
+
+        # CC files with public header in unmatched module folder --> error.
+        bad_header = self.create_file('pw_foo/public/wrong/foo.h')
+        self.assert_issue(checker, 'public/pw_foo', directory=module_name)
+
+        # Remove the "bad" header.
+        bad_header_parent = bad_header.parent
+        bad_header.unlink()
+        bad_header_parent.rmdir()
+
+        # Finally create the correct header.
+        self.create_file('pw_foo/public/pw_foo/baz.h')
+        self.assert_no_issues(checker, directory=module_name)
+
+        # Reject if there are multiple directories in public/...
+        self.create_file('pw_foo/public/fake/fake.h')
+        self.assert_issue(checker, 'multiple', directory=module_name)
+
 
 if __name__ == '__main__':
     import sys

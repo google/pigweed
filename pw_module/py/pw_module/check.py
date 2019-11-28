@@ -142,6 +142,46 @@ def check_have_python_tests(directory):
         yield Issue('Python code present but no tests (you monster).')
 
 
+@checker('PWCK004', 'There is a README.md')
+def check_has_readme(directory):
+    if not glob.glob(f'{directory}/README.md'):
+        yield Issue('Missing module top-level README.md')
+
+
+@checker('PWCK005', 'There is ReST documentation (*.rst)')
+def check_has_rst_docs(directory):
+    if not glob.glob(f'{directory}/**/*.rst', recursive=True):
+        yield Issue(
+            'Missing ReST documentation; need at least e.g. "docs.rst"')
+
+
+@checker('PWCK006', 'If C++, have <mod>/public/<mod>/*.h or '
+         '<mod>/public_override/*.h')
+def check_has_public_or_override_headers(directory):
+    # TODO: Should likely have a decorator to check for C++ in a checker, or
+    # other more useful and cachable mechanisms.
+    if (not glob.glob(f'{directory}/**/*.cc', recursive=True)
+            and not glob.glob(f'{directory}/**/*.h', recursive=True)):
+        # No C++ files.
+        return
+
+    module_name = pathlib.Path(directory).name
+
+    has_public_cpp_headers = glob.glob(f'{directory}/public/{module_name}/*.h')
+    has_public_cpp_override_headers = glob.glob(
+        f'{directory}/public_overrides/**/*.h')
+
+    if not has_public_cpp_headers and not has_public_cpp_override_headers:
+        yield Issue(f'Have C++ code but no public/{module_name}/*.h '
+                    'found and no public_overrides/ found')
+
+    multiple_public_directories = glob.glob(f'{directory}/public/*')
+    if len(multiple_public_directories) != 1:
+        yield Issue(f'Have multiple directories under public/; there should '
+                    f'only be a single directory: "public/{module_name}". '
+                    'Perhaps you were looking for public_overrides/?.')
+
+
 # Register the checker plugin with the 'pw' command.
 try:
     import pw_cli.plugins
