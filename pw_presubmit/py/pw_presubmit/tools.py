@@ -334,7 +334,7 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
         for file in git_list_files('setup.py', '*/setup.py')
     ]
 
-    package_dirs = collections.defaultdict(list)
+    package_dirs: dict = collections.defaultdict(list)
 
     for path in python_paths:
         try:
@@ -347,7 +347,7 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
     return package_dirs
 
 
-def _wrap_if_str(value: Iterable[str]) -> List[str]:
+def _wrap_if_str(value: Iterable[str]) -> Iterable[str]:
     return [value] if isinstance(value, str) else value
 
 

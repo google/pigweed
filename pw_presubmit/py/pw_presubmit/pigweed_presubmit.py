@@ -13,16 +13,26 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Runs the Pigweed local presubmit checks."""
+"""Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
 import os
 import re
 import shutil
 import sys
+from typing import Callable, Dict, Sequence
 
-from pw_presubmit.presubmit_tools import call, filter_paths, PresubmitFailure
-from pw_presubmit import format_cc, presubmit_tools
+try:
+    import pw_presubmit
+except ImportError:
+    # Append the pw_presubmit package path to the module search path to allow
+    # running this module without installing the pw_presubmit package.
+    sys.path.append(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    import pw_presubmit
+
+from pw_presubmit import format_cc
+from pw_presubmit import call, filter_paths, PresubmitFailure
 
 
 def presubmit_dir(*paths):
@@ -54,9 +64,12 @@ def init_virtualenv(unused_paths):
 
     # For speed, don't build the venv if it exists. Use --clean to recreate it.
     if not os.path.isdir(venv):
-      call('python3',
-           'env_setup/virtualenv/init.py', f'--venv_path={venv}',
-           '--requirements=env_setup/virtualenv/requirements.txt')
+        call(
+            'python3',
+            'env_setup/virtualenv/init.py',
+            f'--venv_path={venv}',
+            '--requirements=env_setup/virtualenv/requirements.txt',
+        )
 
     os.environ['PATH'] = os.pathsep.join((
         os.path.join(venv, 'bin'),
@@ -138,7 +151,7 @@ def clang_tidy(paths):
 
 
 CC = (
-    presubmit_tools.pragma_once,
+    pw_presubmit.pragma_once,
     clang_format,
     # TODO(hepler): Enable clang-tidy when it passes.
     # clang_tidy,
@@ -150,7 +163,7 @@ CC = (
 #
 @filter_paths(endswith='.py')
 def test_python_packages(paths):
-    packages = presubmit_tools.find_python_packages(paths)
+    packages = pw_presubmit.find_python_packages(paths)
 
     if not packages:
         print('No Python packages were found.')
@@ -274,7 +287,7 @@ def copyright_notice(paths):
                     break
 
     if errors:
-        print('-->', presubmit_tools.plural(errors, 'file'),
+        print('-->', pw_presubmit.plural(errors, 'file'),
               'with a missing or incorrect copyright notice:')
         print('   ', '\n    '.join(errors))
         raise PresubmitFailure
@@ -285,24 +298,26 @@ GENERAL = (copyright_notice, )
 #
 # Presubmit check programs
 #
-QUICK_PRESUBMIT = (
+QUICK_PRESUBMIT: Sequence[Callable] = (
     *INIT,
     *PYTHON,
     gn_format,
     gn_clang_build,
-    presubmit_tools.pragma_once,
+    pw_presubmit.pragma_once,
     clang_format,
     *GENERAL,
 )
 
-PROGRAMS = {
+PROGRAMS: Dict[str, Sequence[Callable]] = {
     'full': INIT + GN + CC + PYTHON + BAZEL + GENERAL,
     'quick': QUICK_PRESUBMIT,
 }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+def argument_parser(parser=None) -> argparse.ArgumentParser:
+    if parser is None:
+        parser = argparse.ArgumentParser(description=__doc__)
+
     parser.add_argument(
         '--clean',
         action='store_true',
@@ -312,21 +327,20 @@ def main() -> int:
                         choices=PROGRAMS,
                         default='full',
                         help='Which presubmit program to run')
+    pw_presubmit.add_parser_arguments(parser)
 
-    presubmit_tools.add_parser_arguments(parser)
+    return parser
 
-    args = parser.parse_args()
 
-    if args.clean and os.path.exists(presubmit_dir()):
+def main(program: str, clean: bool, **presubmit_args) -> int:
+    if clean and os.path.exists(presubmit_dir()):
         shutil.rmtree(presubmit_dir())
 
-    program = PROGRAMS[args.program]
+    if pw_presubmit.run_presubmit(PROGRAMS[program], **presubmit_args):
+        return 0
 
-    # Remove custom arguments so we can use args to call run_presubmit.
-    del args.clean, args.program
-
-    return 0 if presubmit_tools.run_presubmit(program, **vars(args)) else 1
+    return 1
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(**vars(argument_parser().parse_args())))
