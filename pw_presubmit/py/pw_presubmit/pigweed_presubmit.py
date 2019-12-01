@@ -32,6 +32,7 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import format_cc
+from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, PresubmitFailure
 
 
@@ -322,19 +323,31 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
         '--clean',
         action='store_true',
         help='Deletes the .presubmit directory before starting')
-    parser.add_argument('-p',
-                        '--program',
-                        choices=PROGRAMS,
-                        default='full',
-                        help='Which presubmit program to run')
+
+    exclusive = parser.add_mutually_exclusive_group()
+    exclusive.add_argument(
+        '--install',
+        action='store_true',
+        help='Installs the presubmit as a Git pre-push hook and exits')
+    exclusive.add_argument('-p',
+                           '--program',
+                           choices=PROGRAMS,
+                           default='full',
+                           help='Which presubmit program to run')
     pw_presubmit.add_parser_arguments(parser)
 
     return parser
 
 
-def main(program: str, clean: bool, **presubmit_args) -> int:
+def main(program: str, clean: bool, install: bool = False,
+         **presubmit_args) -> int:
     if clean and os.path.exists(presubmit_dir()):
         shutil.rmtree(presubmit_dir())
+
+    if install:
+        install_hook(__file__, 'pre-push', ['--base', 'origin/master'],
+                     presubmit_args['repository'])
+        return 0
 
     if pw_presubmit.run_presubmit(PROGRAMS[program], **presubmit_args):
         return 0
