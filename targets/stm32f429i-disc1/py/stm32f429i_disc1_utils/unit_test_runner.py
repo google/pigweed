@@ -73,6 +73,14 @@ def parse_args():
     return parser.parse_args()
 
 
+def log_subprocess_output(level, output):
+    """Logs subprocess output line-by-line."""
+
+    lines = output.decode('utf-8', errors='replace').splitlines()
+    for line in lines:
+        _LOG.log(level, line)
+
+
 def reset_device(openocd_config):
     """Uses openocd to reset the attached device."""
 
@@ -84,18 +92,18 @@ def reset_device(openocd_config):
         flash_tool, '-f', openocd_config, '-c', 'init', '-c', 'reset run',
         '-c', 'exit'
     ]
-    _LOG.debug('Resetting device...')
+    _LOG.debug('Resetting device')
 
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
     if process.returncode:
-        _LOG.error(f'\n{process.stdout.decode("utf-8", errors="replace")}')
-        raise TestingFailure('Failed to reset target device.')
+        log_subprocess_output(logging.ERROR, process.stdout)
+        raise TestingFailure('Failed to reset target device')
     else:
-        _LOG.debug(f'\n{process.stdout.decode("utf-8", errors="replace")}')
+        log_subprocess_output(logging.DEBUG, process.stdout)
 
-    _LOG.debug('Successfully reset device!')
+    _LOG.debug('Successfully reset device')
 
 
 def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
@@ -107,7 +115,7 @@ def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
     serial_data = bytearray()
     device = serial.Serial(baudrate=baud_rate, port=port, timeout=test_timeout)
     if not device.is_open:
-        raise TestingFailure('Failed to open device.')
+        raise TestingFailure('Failed to open device')
 
     # Flush input buffer and reset the device to begin the test.
     device.reset_input_buffer()
@@ -116,7 +124,7 @@ def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
     # Block and wait for the first byte.
     serial_data += device.read()
     if not serial_data:
-        raise TestingFailure('Device not producing output. :(')
+        raise TestingFailure('Device not producing output')
 
     # Read with a reasonable timeout until we stop getting characters.
     while True:
@@ -148,36 +156,35 @@ def flash_device(binary, openocd_config):
 
     openocd_command = ' '.join(['program', binary, 'reset', 'exit'])
     cmd = [flash_tool, '-f', openocd_config, '-c', openocd_command]
-    _LOG.info('Flashing firmware to device...')
+    _LOG.info('Flashing firmware to device')
 
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
     if process.returncode:
-        _LOG.error(f'\n{process.stdout.decode("utf-8", errors="replace")}')
-        raise TestingFailure('Failed to flash target device.')
+        log_subprocess_output(logging.ERROR, process.stdout)
+        raise TestingFailure('Failed to flash target device')
     else:
-        _LOG.debug(f'\n{process.stdout.decode("utf-8", errors="replace")}')
+        log_subprocess_output(logging.DEBUG, process.stdout)
 
-    _LOG.info('Successfully flashed firmware to device!')
+    _LOG.debug('Successfully flashed firmware to device')
 
 
 def handle_test_results(test_output):
     """Parses test output to determine whether tests passed or failed."""
 
     if test_output.find(_TESTS_STARTING_STRING) == -1:
-        raise TestingFailure('Failed to find test start.')
+        raise TestingFailure('Failed to find test start')
 
     if test_output.rfind(_TESTS_DONE_STRING) == -1:
-        _LOG.info(f'\n{test_output.decode("utf-8", errors="replace")}')
-        raise TestingFailure('Tests did not complete.')
+        log_subprocess_output(logging.INFO, test_output)
+        raise TestingFailure('Tests did not complete')
 
     if test_output.rfind(_TEST_FAILURE_STRING) != -1:
-        _LOG.info(f'\n{test_output.decode("utf-8", errors="replace")}')
-        raise TestingFailure('Test suite had one or more failures.')
+        log_subprocess_output(logging.INFO, test_output)
+        raise TestingFailure('Test suite had one or more failures')
 
-    # TODO(amontanez): Do line-by-line logging of captured output.
-    _LOG.debug(f'\n{test_output.decode("utf-8", errors="replace")}')
+    log_subprocess_output(logging.DEBUG, test_output)
 
     _LOG.info('Test passed!')
 
@@ -192,6 +199,7 @@ def run_device_test(binary, test_timeout, openocd_config, baud,
     _LOG.debug('Launching test binary {}'.format(binary))
     try:
         flash_device(binary, openocd_config)
+        _LOG.info('Running test')
         serial_data = read_serial(openocd_config, port, baud, test_timeout)
         handle_test_results(serial_data)
     except TestingFailure as err:
@@ -205,16 +213,21 @@ def main(args=None):
     """Set up runner, and then flash/run device test."""
     args = parse_args()
 
-    coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
-                        level_styles={
-                            'debug': {
-                                'color': 244
+    # Try to use pw_cli logs, else default to something reasonable.
+    try:
+        import pw_cli.log
+        pw_cli.log.install()
+    except ImportError:
+        coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
+                            level_styles={
+                                'debug': {
+                                    'color': 244
+                                },
+                                'error': {
+                                    'color': 'red'
+                                }
                             },
-                            'error': {
-                                'color': 'red'
-                            }
-                        },
-                        fmt='%(asctime)s %(levelname)s | %(message)s')
+                            fmt='%(asctime)s %(levelname)s | %(message)s')
 
     if run_device_test(args.binary, args.test_timeout, args.openocd_config,
                        args.baud, args.port):
