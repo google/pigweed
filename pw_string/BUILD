@@ -74,3 +74,9 @@ pw_cc_test(
         "//pw_string",
     ],
 )
+
+pw_cc_test(
+    name = "util_test",
+    srcs = ["util_test.cc"],
+    deps = ["//pw_string"],
+)

@@ -47,6 +47,7 @@ INCLUDES_COPTS = [
     "-Ipw_status/public",
     "-Ipw_string/public",
     "-Ipw_unit_test/public",
+    "-Ipw_varint/public",
 ]
 
 PW_DEFAULT_COPTS = (
