@@ -200,7 +200,9 @@ class Presubmit:
         self.log(_title(f'Presubmit checks for {os.path.basename(self.root)}'))
         self._log_presubmit_start(program)
 
-        passed, failed = [], []
+        passed: List[Callable] = []
+        failed: List[Callable] = []
+        skipped: List[Callable] = []
 
         start_time: float = time.time()
 
@@ -217,14 +219,19 @@ class Presubmit:
 
             if result is _Result.PASS:
                 passed.append(check)
-            elif continue_on_error:
-                failed.append(check)
-            else:
-                failed = list(program[i:])
+            elif result is _Result.CANCEL:
+                skipped = list(program[i:])
                 break
+            else:
+                failed.append(check)
 
-        self._log_summary(time.time() - start_time, len(passed), len(failed))
-        return not failed
+                if not continue_on_error:
+                    skipped = list(program[i + 1:])
+                    break
+
+        self._log_summary(time.time() - start_time, len(passed), len(failed),
+                          len(skipped))
+        return not failed and not skipped
 
     def _run_check(self, check: Callable) -> _Result:
         try:
@@ -254,13 +261,24 @@ class Presubmit:
                     f'{ext:>{width}}: {plural(count, "file", max_count_width)}'
                 )
 
-    def _log_summary(self, time_s: float, passed: int, failed: int) -> None:
+    def _log_summary(self, time_s: float, passed: int, failed: int,
+                     skipped: int) -> None:
         text = 'FAILED' if failed else 'PASSED'
         color = color_black_on_red if failed else color_black_on_green
+
+        summary = []
+        if passed:
+            summary.append(f'{passed} passed')
+        if failed:
+            summary.append(f'{failed} failed')
+        if skipped:
+            summary.append(f'{skipped} skipped')
+
         self.log(
-            _result_box(_DOUBLE, text, color,
-                        f'Passed {passed} of {passed + failed} checks',
-                        time_s))
+            _result_box(
+                _DOUBLE, text, color,
+                f'{passed + failed + skipped} checks: {", ".join(summary)}',
+                time_s))
 
 
 def add_parser_arguments(parser) -> None:
