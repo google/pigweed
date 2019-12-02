@@ -13,6 +13,7 @@
 # the License.
 
 import logging
+import os
 
 import pw_cli.plugins
 from pw_cli.color import Color as _Color
@@ -21,6 +22,7 @@ from pw_cli.color import Color as _Color
 LOGLEVEL_STDOUT = 21
 
 _LOG = logging.getLogger(__name__)
+
 
 def main():
     # Force the log level to make sure all logs are shown.
@@ -37,10 +39,22 @@ def main():
 
 def install():
     """Configure the system logger for the default pw command log format."""
-    # This applies a gray background to the time to make the log lines distinct
-    # from other input, in a way that's easier to see than plain colored text.
-    logging.basicConfig(format=_Color.black_on_white('%(asctime)s') +
-                        ' %(levelname)s %(message)s',
+
+    PW_SUBPROCESS = os.getenv('PW_SUBPROCESS')
+    if PW_SUBPROCESS is None:
+        # This applies a gray background to the time to make the log lines
+        # distinct from other input, in a way that's easier to see than plain
+        # colored text.
+        timestamp_fmt = _Color.black_on_white('%(asctime)s') + ' '
+    elif PW_SUBPROCESS == '1':
+        # If the logger is being run in the context of a pw subprocess, the
+        # time and date are omitted (since pw_cli.process will provide them).
+        timestamp_fmt = ''
+    else:
+        raise ValueError(
+            f'Invalid environment variable PW_SUBPROCESS={PW_SUBPROCESS}')
+
+    logging.basicConfig(format=timestamp_fmt + '%(levelname)s %(message)s',
                         datefmt='%Y%m%d %H:%M:%S',
                         level=logging.INFO)
 
@@ -54,7 +68,6 @@ def install():
     logging.addLevelName(LOGLEVEL_STDOUT,  _Color.cyan    ('OUT'))
     logging.addLevelName(logging.DEBUG,    _Color.blue    ('DBG'))
     # yapf: enable
-
 
 # Note: normally this shouldn't be done at the top level without a try/catch
 # around the pw_cli.plugins registry import, since pw_cli might not be
