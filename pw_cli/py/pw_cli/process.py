@@ -16,12 +16,18 @@
 
 import asyncio
 import logging
+import os
 import shlex
 
 from pw_cli.color import Color
 import pw_cli.log
 
 _LOG = logging.getLogger(__name__)
+
+
+# Environment variable passed down to subprocesses to indicate that they are
+# running as a subprocess. Can be imported by other code.
+PW_SUBPROCESS_ENV = 'PW_SUBPROCESS'
 
 
 async def run_async(*args: str, silent: bool = False) -> int:
@@ -31,13 +37,17 @@ async def run_async(*args: str, silent: bool = False) -> int:
     """
 
     command = args[0]
-    _LOG.info('Running `%s`', shlex.join(command))
+    _LOG.debug('Running `%s`', shlex.join(command))
+
+    env = os.environ.copy()
+    env[PW_SUBPROCESS_ENV] = '1'
 
     stdout = asyncio.subprocess.DEVNULL if silent else asyncio.subprocess.PIPE
     process = await asyncio.create_subprocess_exec(
         *command,
         stdout=stdout,
-        stderr=asyncio.subprocess.STDOUT)
+        stderr=asyncio.subprocess.STDOUT,
+        env=env)
 
     if process.stdout is not None:
         while line := await process.stdout.readline():
