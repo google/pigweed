@@ -16,6 +16,12 @@ $ env_setup/cipd/cipd.py auth-login  # Once per machine.
 $ . env_setup/setup.sh
 ```
 
+If you're using Homebrew and you get an error saying
+`module 'http.client' has no attribute 'HTTPSConnection'` then your
+Homebrew Python was not set up to support SSL. Ensure it's installed with
+`brew install openssl` and then run
+`brew uninstall python && brew install python`. After that things should work.
+
 The environment setup script will pull down the versions of tools necessary
 to build Pigweed and add them to your environment. You can then build with
 either GN or Bazel. You can also confirm you're getting the right versions

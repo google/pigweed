@@ -128,7 +128,22 @@ def client_bytes():
     with open(VERSION_FILE, 'r') as ins:
         version = ins.read().strip()
 
-    conn = httplib.HTTPSConnection(CIPD_HOST)
+    try:
+        conn = httplib.HTTPSConnection(CIPD_HOST)
+    except AttributeError:
+        print('='*70)
+        print('''
+It looks like this version of Python does not support SSL. This is common
+when using Homebrew. If using Homebrew please run the following commands.
+If not using Homebrew check how your version of Python was built.
+
+brew install openssl  # Probably already installed, but good to confirm.
+brew uninstall python && brew install python
+'''.strip())
+        print('='*70)
+        raise
+
+
     path = '/client?platform={platform}-{arch}&version={version}'.format(
         platform=platform_normalized(),
         arch=arch_normalized(),
