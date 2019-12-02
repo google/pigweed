@@ -18,11 +18,14 @@ import os
 import serial
 import subprocess
 import sys
-import traceback
 
 import coloredlogs
 
-from serial.tools import list_ports
+# Path used to access non-python resources in this python module.
+_DIR = os.path.dirname(__file__)
+
+# Path to default openocd configuration file.
+_OPENOCD_CONFIG = os.path.join(_DIR, 'openocd_stm32f4xx.cfg')
 
 _LOG = logging.getLogger('unit_test_runner')
 
@@ -45,7 +48,7 @@ def parse_args():
         'Flashes and then runs on-device unit tests')
     parser.add_argument('binary', help='The target test binary to run')
     parser.add_argument('--openocd-config',
-                        required=True,
+                        default=_OPENOCD_CONFIG,
                         help='Path to openocd configuration file')
     parser.add_argument('--port',
                         required=True,
@@ -81,7 +84,7 @@ def reset_device(openocd_config):
         flash_tool, '-f', openocd_config, '-c', 'init', '-c', 'reset run',
         '-c', 'exit'
     ]
-    _LOG.info('Resetting device...')
+    _LOG.debug('Resetting device...')
 
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
@@ -92,7 +95,7 @@ def reset_device(openocd_config):
     else:
         _LOG.debug(f'\n{process.stdout.decode("utf-8", errors="replace")}')
 
-    _LOG.info('Successfully reset device!')
+    _LOG.debug('Successfully reset device!')
 
 
 def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
@@ -126,6 +129,9 @@ def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
             # lines should print out immediately. (one line if all fails or all
             # passes, two lines if mixed.)
             device.timeout = 0.01
+
+    # Remove carriage returns.
+    serial_data = serial_data.replace(b'\r', b'')
 
     # Try to trim captured results to only contain most recent test run.
     test_start_index = serial_data.rfind(_TESTS_STARTING_STRING)
@@ -170,6 +176,7 @@ def handle_test_results(test_output):
         _LOG.info(f'\n{test_output.decode("utf-8", errors="replace")}')
         raise TestingFailure('Test suite had one or more failures.')
 
+    # TODO(amontanez): Do line-by-line logging of captured output.
     _LOG.debug(f'\n{test_output.decode("utf-8", errors="replace")}')
 
     _LOG.info('Test passed!')
@@ -182,13 +189,12 @@ def run_device_test(binary, test_timeout, openocd_config, baud,
     Returns true on test pass.
     """
 
-    _LOG.info('Launching test binary {}'.format(binary))
+    _LOG.debug('Launching test binary {}'.format(binary))
     try:
         flash_device(binary, openocd_config)
         serial_data = read_serial(openocd_config, port, baud, test_timeout)
         handle_test_results(serial_data)
     except TestingFailure as err:
-        traceback.print_tb(err.__traceback__)
         _LOG.error(err)
         return False
 
@@ -208,7 +214,7 @@ def main(args=None):
                                 'color': 'red'
                             }
                         },
-                        fmt='TEST - %(asctime)s - %(levelname)s - %(message)s')
+                        fmt='%(asctime)s %(levelname)s | %(message)s')
 
     if run_device_test(args.binary, args.test_timeout, args.openocd_config,
                        args.baud, args.port):
