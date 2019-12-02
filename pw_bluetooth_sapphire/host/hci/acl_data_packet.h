@@ -48,7 +48,7 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
   void InitializeFromBuffer();
 
  protected:
-  Packet<EventHeader>() = default;
+  Packet<ACLDataHeader>() = default;
 
  private:
   // Writes the given header fields into the underlying buffer.

@@ -29,26 +29,42 @@ using SmallACLAllocator = fbl::SlabAllocator<SmallACLTraits>;
 
 namespace {
 
+// Type containing both a fixed packet storage buffer and a ACLDataPacket interface to the buffer.
+// Does not deallocate from a slab buffer when destroyed (unlike SlabPacket).
+using LargeACLDataPacket =
+    slab_allocators::internal::FixedSizePacket<ACLDataHeader,
+                                               slab_allocators::kLargeACLDataPayloadSize>;
+
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
   ZX_DEBUG_ASSERT(payload_size <= slab_allocators::kLargeACLDataPayloadSize);
 
   if (payload_size <= slab_allocators::kSmallACLDataPayloadSize) {
     auto buffer = slab_allocators::SmallACLAllocator::New(payload_size);
-    if (buffer)
+    if (buffer) {
       return buffer;
+    }
 
     // Fall back to the next allocator.
   }
 
   if (payload_size <= slab_allocators::kMediumACLDataPayloadSize) {
     auto buffer = slab_allocators::MediumACLAllocator::New(payload_size);
-    if (buffer)
+    if (buffer) {
       return buffer;
+    }
 
     // Fall back to the next allocator.
   }
 
-  return slab_allocators::LargeACLAllocator::New(payload_size);
+  auto buffer = slab_allocators::LargeACLAllocator::New(payload_size);
+  if (buffer) {
+    return buffer;
+  }
+
+  bt_log(DEBUG, "hci", "ACLDataPacket slab allocators capacity exhausted");
+
+  // Fall back to system allocator.
+  return std::make_unique<LargeACLDataPacket>(payload_size);
 }
 
 }  // namespace
