@@ -93,7 +93,7 @@ def list_files(commit: Optional[str] = None,
     return [
         path for path in
         (git_diff_names(commit, paths) if commit else git_list_files(*paths))
-        if not any(pattern.search(path) for pattern in exclude)
+        if os.path.exists(path) and not any(exp.search(path) for exp in exclude)
     ]
 
 

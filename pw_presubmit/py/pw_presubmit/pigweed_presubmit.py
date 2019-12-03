@@ -32,7 +32,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import format_cc
+from pw_presubmit import format_code
 from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, PresubmitFailure
 
@@ -108,7 +108,7 @@ def gn_clang_build():
     call('ninja', '-C', presubmit_dir('clang'))
 
 
-@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
 def gn_gcc_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('gcc'),
@@ -117,7 +117,7 @@ def gn_gcc_build(unused_paths):
     call('ninja', '-C', presubmit_dir('gcc'))
 
 
-@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
 def gn_arm_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('arm'),
@@ -137,13 +137,13 @@ GN = (
 #
 # C++ presubmit checks
 #
-@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
 def clang_format(paths):
-    if format_cc.check_format(paths):
+    if format_code.check_format(paths):
         raise PresubmitFailure
 
 
-@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
 def clang_tidy(paths):
     if not os.path.exists(presubmit_dir('clang', 'compile_commands.json')):
         raise PresubmitFailure('clang_tidy MUST be run after generating '
@@ -200,7 +200,7 @@ def yapf(paths):
                           print_output=False)
     except PresubmitFailure as e:
         # TODO(hepler): Enforce yapf when it passes.
-        print(format_cc.colorize_diff(str(e)))
+        print(format_code.colorize_diff(str(e)))
         print('--> Python formatting checks FAILED!')
         print('    Treating this as a warning... for now.')
 
@@ -223,7 +223,7 @@ PYTHON = (
 #
 # Bazel presubmit checks
 #
-@filter_paths(endswith=format_cc.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
 def bazel_test(unused_paths):
     prefix = '.presubmit/bazel-'
     call('bazel', 'build', '//...', '--symlink_prefix', prefix)
