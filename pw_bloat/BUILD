@@ -15,3 +15,24 @@
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
+    "pw_cc_library",
+)
+
+# Library which uses standard C/C++ functions such as memcpy to prevent them
+# from showing up within bloat diff reports.
+pw_cc_library(
+    name = "bloat_this_binary",
+    srcs = ["bloat_this_binary.cc"],
+    hdrs = ["public/pw_bloat/bloat_this_binary.h"],
+)
+
+# Standard minimal base binary for bloat reports.
+pw_cc_binary(
+    name = "bloat_base",
+    srcs = ["base_main.cc"],
+    deps = [":bloat_this_binary"],
+)
