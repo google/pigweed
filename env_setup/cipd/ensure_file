@@ -42,7 +42,7 @@ fuchsia/third_party/bazel/${platform} version:0.25.1
 pigweed/third_party/bloaty-embedded/${platform} git_revision:551e70f736e0dc40184c568095b25851f62ea0db
 
 # OpenOCD
-pigweed/third_party/openocd/${platform} git_revision:646566e006acd58fb9ac405511d3ecca79f26d55
+# pigweed/third_party/openocd/${platform} git_revision:646566e006acd58fb9ac405511d3ecca79f26d55
 
 # GCC ARM None EABI
 pigweed/third_party/gcc-arm-none-eabi/${platform} version:9-2019-q4-major
