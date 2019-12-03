@@ -61,10 +61,10 @@ PW_DEFAULT_LINKOPTS = []
 
 def _add_defaults(kwargs):
     kwargs.setdefault("copts", [])
-    kwargs["copts"].extend(PW_DEFAULT_COPTS)
+    kwargs["copts"] = PW_DEFAULT_COPTS + kwargs["copts"]
 
     kwargs.setdefault("linkopts", [])
-    kwargs["linkopts"].extend(PW_DEFAULT_LINKOPTS)
+    kwargs["linkopts"] = PW_DEFAULT_LINKOPTS + kwargs["linkopts"]
 
     kwargs.setdefault("features", [])
 
