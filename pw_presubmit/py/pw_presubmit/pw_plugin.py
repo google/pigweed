@@ -15,13 +15,20 @@
 
 try:
     import pw_cli.plugins
-    import pw_presubmit.pigweed_presubmit as presubmit
+    from pw_presubmit import format_code, pigweed_presubmit
 
     pw_cli.plugins.register(
         'presubmit',
-        presubmit.main,
-        presubmit.__doc__.rstrip('.'),
-        presubmit.argument_parser,
+        pigweed_presubmit.main,
+        pigweed_presubmit.__doc__.splitlines()[0].rstrip('.'),
+        pigweed_presubmit.argument_parser,
+    )
+
+    pw_cli.plugins.register(
+        'format',
+        format_code.main,
+        format_code.__doc__.splitlines()[0].rstrip('.'),
+        format_code.argument_parser,
     )
 except ImportError:
     pass

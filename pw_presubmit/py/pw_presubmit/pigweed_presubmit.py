@@ -95,11 +95,6 @@ def gn_args(**kwargs):
 GN_GEN = 'gn', 'gen', '--color=always', '--check'
 
 
-@filter_paths(endswith=['.gn', '.gni'])
-def gn_format(paths):
-    call('gn', 'format', '--dry-run', *paths)
-
-
 def gn_clang_build():
     call(
         *GN_GEN, '--export-compile-commands', presubmit_dir('clang'),
@@ -108,7 +103,7 @@ def gn_clang_build():
     call('ninja', '-C', presubmit_dir('clang'))
 
 
-@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('gcc'),
@@ -117,7 +112,7 @@ def gn_gcc_build(unused_paths):
     call('ninja', '-C', presubmit_dir('gcc'))
 
 
-@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(unused_paths):
     call(
         *GN_GEN, presubmit_dir('arm'),
@@ -127,7 +122,6 @@ def gn_arm_build(unused_paths):
 
 
 GN = (
-    gn_format,
     gn_clang_build,
     gn_gcc_build,
     gn_arm_build,
@@ -137,13 +131,7 @@ GN = (
 #
 # C++ presubmit checks
 #
-@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
-def clang_format(paths):
-    if format_code.check_format(paths):
-        raise PresubmitFailure
-
-
-@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(paths):
     if not os.path.exists(presubmit_dir('clang', 'compile_commands.json')):
         raise PresubmitFailure('clang_tidy MUST be run after generating '
@@ -154,7 +142,6 @@ def clang_tidy(paths):
 
 CC = (
     pw_presubmit.pragma_once,
-    clang_format,
     # TODO(hepler): Enable clang-tidy when it passes.
     # clang_tidy,
 )
@@ -190,21 +177,6 @@ def pylint(paths):
         print('    Treating this as a warning... for now.')
 
 
-@filter_paths(endswith='.py')
-def yapf(paths):
-    try:
-        run_python_module('yapf',
-                          '--diff',
-                          '--parallel',
-                          *paths,
-                          print_output=False)
-    except PresubmitFailure as e:
-        # TODO(hepler): Enforce yapf when it passes.
-        print(format_code.colorize_diff(str(e)))
-        print('--> Python formatting checks FAILED!')
-        print('    Treating this as a warning... for now.')
-
-
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
 def mypy(paths):
     run_python_module('mypy', *paths)
@@ -214,7 +186,6 @@ PYTHON = (
     test_python_packages,
     pylint_errors_only,  # TODO(hepler): Remove this when pylint is passing.
     pylint,
-    yapf,
     # TODO(hepler): Enable mypy when it passes.
     # mypy,
 )
@@ -223,7 +194,7 @@ PYTHON = (
 #
 # Bazel presubmit checks
 #
-@filter_paths(endswith=format_code.SOURCE_EXTENSIONS)
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
 def bazel_test(unused_paths):
     prefix = '.presubmit/bazel-'
     call('bazel', 'build', '//...', '--symlink_prefix', prefix)
@@ -295,7 +266,7 @@ def copyright_notice(paths):
         raise PresubmitFailure
 
 
-GENERAL = (copyright_notice, )
+CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 
 #
 # Presubmit check programs
@@ -303,15 +274,13 @@ GENERAL = (copyright_notice, )
 QUICK_PRESUBMIT: Sequence[Callable] = (
     *INIT,
     *PYTHON,
-    gn_format,
     gn_clang_build,
     pw_presubmit.pragma_once,
-    clang_format,
-    *GENERAL,
+    *CODE_FORMAT,
 )
 
 PROGRAMS: Dict[str, Sequence[Callable]] = {
-    'full': INIT + GN + CC + PYTHON + BAZEL + GENERAL,
+    'full': INIT + GN + CC + PYTHON + BAZEL + CODE_FORMAT,
     'quick': QUICK_PRESUBMIT,
 }
 
@@ -335,7 +304,7 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
                            choices=PROGRAMS,
                            default='full',
                            help='Which presubmit program to run')
-    pw_presubmit.add_parser_arguments(parser)
+    pw_presubmit.add_arguments(parser)
 
     return parser
 

@@ -44,6 +44,7 @@ import argparse
 import collections
 import enum
 import functools
+import logging
 import re
 import os
 import shlex
@@ -52,6 +53,8 @@ import sys
 import time
 from typing import Callable, Dict, Iterable, List, Optional, Sequence
 from inspect import signature
+
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def plural(items_or_count, singular: str, count_format='') -> str:
@@ -71,30 +74,50 @@ def plural(items_or_count, singular: str, count_format='') -> str:
     return f'{num} {singular}{"" if count == 1 else "s"}'
 
 
-def git_stdout(*args: str) -> str:
-    return subprocess.run(('git', ) + args, stdout=subprocess.PIPE,
+def git_stdout(*args: str, repo='.') -> str:
+    return subprocess.run(('git', '-C', repo, *args),
+                          stdout=subprocess.PIPE,
                           check=True).stdout.decode().strip()
 
 
-def git_list_files(*args: str) -> Sequence[str]:
-    return git_stdout('ls-files', *args).split()
+def _git_list_files(*args: str, repo='.') -> Sequence[str]:
+    files = [arg for arg in args if os.path.isfile(arg)]
+
+    try:
+        files += git_stdout('ls-files', *args, repo=repo).split()
+    except subprocess.CalledProcessError:
+        pass  # If this is not a git repo, just use the file paths provided.
+
+    return files
 
 
-def git_diff_names(against: str = 'HEAD',
-                   paths: Sequence[str] = ()) -> Sequence[str]:
-    return git_stdout('diff', '--name-only', against, '--', *paths).split()
+def git_diff_names(against: str = 'HEAD', paths: Sequence[str] = (),
+                   repo='.') -> Sequence[str]:
+    return git_stdout('diff', '--name-only', against, '--', *paths,
+                      repo=repo).split()
 
 
-def list_files(commit: Optional[str] = None,
-               paths: Sequence[str] = (),
-               exclude: Sequence = ()) -> Sequence[str]:
+def list_files(
+        commit: Optional[str] = None,
+        paths: Sequence[str] = (),
+        exclude: Sequence = (),
+        repo='.',
+) -> Sequence[str]:
     """Lists files changed since the specified commit."""
 
-    return [
-        path for path in
-        (git_diff_names(commit, paths) if commit else git_list_files(*paths))
-        if os.path.exists(path) and not any(exp.search(path) for exp in exclude)
-    ]
+    if commit:
+        all_files = git_diff_names(commit, paths, repo)
+    else:
+        all_files = _git_list_files(*paths, repo=repo)
+
+    files = set(path for path in all_files if os.path.exists(path) and not any(
+        exp.search(path) for exp in exclude))
+    return sorted(os.path.abspath(path) for path in files)
+
+
+def is_git_repo(path='.') -> bool:
+    return not subprocess.run(['git', '-C', path, 'rev-parse'],
+                              stderr=subprocess.DEVNULL).returncode
 
 
 def git_repo_root(path: str = './') -> str:
@@ -112,6 +135,8 @@ color_black_on_red = _make_color(30, 41)
 color_yellow = _make_color(33, 1)
 color_green = _make_color(32)
 color_black_on_green = _make_color(30, 42)
+color_aqua = _make_color(36)
+color_bold_white = _make_color(37, 1)
 
 
 def _make_box(section_alignments: Sequence[str]) -> str:
@@ -165,6 +190,21 @@ def _result_box(style, result, color, title, time_s, box=_make_box('^<^')):
                       width3=len(time_str))
 
 
+def file_summary(paths: Iterable) -> str:
+    files = collections.Counter(
+        os.path.splitext(path)[1] or os.path.basename(path) for path in paths)
+
+    if not files:
+        return ''
+
+    width = max(len(f) for f in files) + 2
+    max_count_width = len(str(max(files.values())))
+
+    return '\n'.join(
+        f'{ext:>{width}}: {plural(count, "file", max_count_width)}'
+        for ext, count in sorted(files.items()))
+
+
 class PresubmitFailure(Exception):
     """Optional exception to use for presubmit failures."""
     def __init__(self, description: str = '', path: Optional[str] = None):
@@ -198,7 +238,10 @@ class Presubmit:
         """Executes a series of presubmit checks on the paths."""
 
         self.log(_title(f'Presubmit checks for {os.path.basename(self.root)}'))
-        self._log_presubmit_start(program)
+
+        self.log(f'Running {plural(program, "check")} on '
+                 f'{plural(self.paths, "file")} in {self.root}\n')
+        self.log(file_summary(self.paths))
 
         passed: List[Callable] = []
         failed: List[Callable] = []
@@ -245,22 +288,6 @@ class Presubmit:
             self.log()
             return _Result.CANCEL
 
-    def _log_presubmit_start(self, program: Sequence[Callable]) -> None:
-        self.log(f'Running {plural(program, "check")} on '
-                 f'{plural(self.paths, "file")} in {self.root}\n')
-
-        files = collections.Counter(
-            os.path.splitext(path)[1] or os.path.basename(path)
-            for path in self.paths)
-        if files:
-            width = max(len(f) for f in files) + 2
-            max_count_width = len(str(max(files.values())))
-
-            for ext, count in sorted(files.items()):
-                self.log(
-                    f'{ext:>{width}}: {plural(count, "file", max_count_width)}'
-                )
-
     def _log_summary(self, time_s: float, passed: int, failed: int,
                      skipped: int) -> None:
         text = 'FAILED' if failed else 'PASSED'
@@ -281,26 +308,22 @@ class Presubmit:
                 time_s))
 
 
-def add_parser_arguments(parser) -> None:
+def add_path_arguments(parser) -> None:
     """Adds common presubmit check options to an argument parser."""
 
     parser.add_argument(
         'paths',
         nargs='*',
-        help=('Paths to which to restrict the presubmit checks. '
-              'Used in conjunction with --base, if provided.'))
+        help=(
+            'Paths to which to restrict the presubmit checks. '
+            'Directories are expanded with git ls-files. '
+            'If --base is provided, all paths are interpreted as Git paths.'))
     parser.add_argument(
         '-b',
         '--base',
         metavar='COMMIT',
         help=('Git revision against which to diff for changed files. '
               'If none is provided, the entire repository is used.'))
-    parser.add_argument(
-        '-r',
-        '--repository',
-        default='.',
-        help=('Path to the repository in which to run the checks; '
-              "defaults to the current directory's Git repo."))
     parser.add_argument(
         '-e',
         '--exclude',
@@ -309,6 +332,18 @@ def add_parser_arguments(parser) -> None:
         action='append',
         type=re.compile,
         help='Exclude paths matching any of these regular expressions.')
+
+
+def add_arguments(parser) -> None:
+    """Adds common presubmit check options to an argument parser."""
+
+    add_path_arguments(parser)
+    parser.add_argument(
+        '-r',
+        '--repository',
+        default='.',
+        help=('Path to the repository in which to run the checks; '
+              "defaults to the current directory's Git repo."))
     parser.add_argument('--continue',
                         dest='continue_on_error',
                         action='store_true',
@@ -324,11 +359,16 @@ def run_presubmit(
         continue_on_error: bool = False,
 ) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them."""
+    if not is_git_repo(repository):
+        _LOG.critical('Presubmit checks must be run from a Git repo')
+        return False
 
+    files = list_files(base, paths, exclude, repository)
     root = git_repo_root(repository)
     os.chdir(root)
-    return Presubmit(root, list_files(base, paths,
-                                      exclude)).run(program, continue_on_error)
+    files = [os.path.relpath(path, root) for path in files]
+
+    return Presubmit(root, files).run(program, continue_on_error)
 
 
 def parse_args_and_run_presubmit(
@@ -341,7 +381,7 @@ def parse_args_and_run_presubmit(
             description='Runs presubmit checks on a Git repository.',
             formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    add_parser_arguments(arg_parser)
+    add_arguments(arg_parser)
     return run_presubmit(program, **vars(arg_parser.parse_args()))
 
 
@@ -349,7 +389,7 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
     """Returns Python package directories for the files in python_paths."""
     setup_pys = [
         os.path.dirname(file)
-        for file in git_list_files('setup.py', '*/setup.py')
+        for file in _git_list_files('setup.py', '*/setup.py')
     ]
 
     package_dirs: dict = collections.defaultdict(list)
