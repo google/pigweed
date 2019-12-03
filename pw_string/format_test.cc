@@ -46,6 +46,12 @@ TEST(Format, InvalidConversionSpecifier_ReturnsInvalidArgumentAndTerminates) {
   // Make the format string volatile to prevent the compiler from potentially
   // checking this as a format string.
   const char* volatile fmt = "abc %9999999999999999999999999999999999d4%s";
+
+  if (std::snprintf(buffer, sizeof(buffer), fmt, 123, "5") >= 0) {
+    // This snprintf implementation does not detect invalid format strings.
+    return;
+  }
+
   auto result = Format(buffer, fmt, 123, "5");
 
   EXPECT_EQ(Status::INVALID_ARGUMENT, result.status());
