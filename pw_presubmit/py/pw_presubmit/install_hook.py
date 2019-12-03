@@ -34,8 +34,8 @@ def git_repo_root(path) -> str:
 def install_hook(script, hook: str, args: Sequence[str] = (),
                  repository='.') -> None:
     """Installs a simple Git hook that calls a script with arguments."""
-    root = pathlib.Path(git_repo_root(repository))
-    script = pathlib.Path(script).relative_to(root)
+    root = pathlib.Path(git_repo_root(repository)).resolve()
+    script = pathlib.Path(script).resolve().relative_to(root)
 
     hook_path = root.joinpath('.git', 'hooks', hook)
 

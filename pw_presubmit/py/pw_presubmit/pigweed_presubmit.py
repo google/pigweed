@@ -16,6 +16,7 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
+import logging
 import os
 import re
 import shutil
@@ -356,4 +357,6 @@ def main(program: str, clean: bool, install: bool = False,
 
 
 if __name__ == '__main__':
+    # By default, display log messages like a simple print statement.
+    logging.basicConfig(format='%(message)s', level=logging.INFO)
     sys.exit(main(**vars(argument_parser().parse_args())))
