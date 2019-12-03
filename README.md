@@ -40,12 +40,13 @@ $ which bazel
 $ bazel test //...
 ```
 
-And do the following to test on hardware. (The bazel build does not yet
-support building for hardware.)
+And do the following to test on the STM32F429 Discovery board. (The bazel build
+does not yet support building for hardware.)
 
 ```bash
 $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
 $ ninja -C out/disco
+$ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner -- --port /dev/ttyACM0
 ```
 
 If any of this doesn't work please
