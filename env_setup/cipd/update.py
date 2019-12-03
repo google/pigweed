@@ -78,6 +78,8 @@ def update(argv=None):
                                          prefix='cipdsetup') as temp:
             print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
             print('export PATH', file=temp)
+            print('CIPD_INSTALL_DIR="{}"'.format(args.install_dir), file=temp)
+            print('export CIPD_INSTALL_DIR', file=temp)
 
             print('. {}'.format(temp.name))
 

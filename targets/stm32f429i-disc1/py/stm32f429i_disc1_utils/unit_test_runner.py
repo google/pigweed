@@ -27,6 +27,10 @@ _DIR = os.path.dirname(__file__)
 # Path to default openocd configuration file.
 _OPENOCD_CONFIG = os.path.join(_DIR, 'openocd_stm32f4xx.cfg')
 
+# Path to scripts provided by openocd.
+_OPENOCD_SCRIPTS_DIR = os.path.join(os.getenv('CIPD_INSTALL_DIR'), 'share',
+                                    'openocd', 'scripts')
+
 _LOG = logging.getLogger('unit_test_runner')
 
 # Verification of test pass/failure depends on these strings. If the formatting
@@ -89,8 +93,8 @@ def reset_device(openocd_config):
     flash_tool = os.getenv('OPENOCD_PATH', default_flasher)
 
     cmd = [
-        flash_tool, '-f', openocd_config, '-c', 'init', '-c', 'reset run',
-        '-c', 'exit'
+        flash_tool, '-s', _OPENOCD_SCRIPTS_DIR, '-f', openocd_config, '-c',
+        'init', '-c', 'reset run', '-c', 'exit'
     ]
     _LOG.debug('Resetting device')
 
@@ -155,7 +159,10 @@ def flash_device(binary, openocd_config):
     flash_tool = os.getenv('OPENOCD_PATH', default_flasher)
 
     openocd_command = ' '.join(['program', binary, 'reset', 'exit'])
-    cmd = [flash_tool, '-f', openocd_config, '-c', openocd_command]
+    cmd = [
+        flash_tool, '-s', _OPENOCD_SCRIPTS_DIR, '-f', openocd_config, '-c',
+        openocd_command
+    ]
     _LOG.info('Flashing firmware to device')
 
     process = subprocess.run(cmd,
