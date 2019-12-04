@@ -121,6 +121,8 @@ class DynamicChannel {
 
   void set_opened() { opened_ = true; }
 
+  DynamicChannelRegistry* registry() { return registry_; }
+
  private:
   // Must be valid for the duration of this object.
   DynamicChannelRegistry* const registry_;

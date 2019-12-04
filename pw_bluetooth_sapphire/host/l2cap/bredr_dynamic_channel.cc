@@ -20,6 +20,7 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
                                                          ServiceRequestCallback service_request_cb)
     : DynamicChannelRegistry(kLastACLDynamicChannelId, std::move(close_cb),
                              std::move(service_request_cb)),
+      state_(0u),
       sig_(sig) {
   ZX_DEBUG_ASSERT(sig_);
   BrEdrCommandHandler cmd_handler(sig_);
@@ -31,15 +32,20 @@ BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterfa
       fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxDisconReq));
   cmd_handler.ServeInformationRequest(
       fit::bind_member(this, &BrEdrDynamicChannelRegistry::OnRxInfoReq));
+
+  TrySendInformationRequests();
 }
 
-DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(PSM psm, ChannelId local_cid) {
-  return BrEdrDynamicChannel::MakeOutbound(this, sig_, psm, local_cid);
+DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeOutbound(PSM psm, ChannelId local_cid,
+                                                            ChannelParameters params) {
+  return BrEdrDynamicChannel::MakeOutbound(this, sig_, psm, local_cid, params, PeerSupportsERTM());
 }
 
 DynamicChannelPtr BrEdrDynamicChannelRegistry::MakeInbound(PSM psm, ChannelId local_cid,
-                                                           ChannelId remote_cid) {
-  return BrEdrDynamicChannel::MakeInbound(this, sig_, psm, local_cid, remote_cid);
+                                                           ChannelId remote_cid,
+                                                           ChannelParameters params) {
+  return BrEdrDynamicChannel::MakeInbound(this, sig_, psm, local_cid, remote_cid, params,
+                                          PeerSupportsERTM());
 }
 
 void BrEdrDynamicChannelRegistry::OnRxConnReq(PSM psm, ChannelId remote_cid,
@@ -148,18 +154,82 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
   }
 }
 
+void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
+    const BrEdrCommandHandler::InformationResponse& rsp) {
+  if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
+    bt_log(ERROR, "l2cap-bredr",
+           "Extended Features Information Request rejected, reason %#.4hx, disconnecting",
+           rsp.reject_reason());
+    return;
+  }
+
+  if (rsp.type() != InformationType::kExtendedFeaturesSupported) {
+    bt_log(ERROR, "l2cap-bredr",
+           "Incorrect extended features information response type (type: %#.4hx)", rsp.type());
+    return;
+  }
+
+  if ((state_ & kExtendedFeaturesReceived) || !(state_ & kExtendedFeaturesSent)) {
+    bt_log(ERROR, "l2cap-bredr", "Unexpected extended features information response (state: %#x)",
+           state_);
+    return;
+  }
+
+  bt_log(SPEW, "l2cap-bredr",
+         "Received Extended Features Information Response (feature mask: %#.4x)",
+         rsp.extended_features());
+
+  state_ |= kExtendedFeaturesReceived;
+
+  extended_features_ = rsp.extended_features();
+
+  // Notify all channels created before extended features received.
+  bool ertm_support = *extended_features_ & kExtendedFeaturesBitEnhancedRetransmission;
+  ForEach([ertm_support](DynamicChannel* chan) {
+    static_cast<BrEdrDynamicChannel*>(chan)->SetEnhancedRetransmissionSupport(ertm_support);
+  });
+}
+
+void BrEdrDynamicChannelRegistry::TrySendInformationRequests() {
+  if (!(state_ & kExtendedFeaturesSent)) {
+    BrEdrCommandHandler cmd_handler(sig_);
+    if (!cmd_handler.SendInformationRequest(
+            InformationType::kExtendedFeaturesSupported, [self = GetWeakPtr()](auto& rsp) {
+              if (self) {
+                static_cast<BrEdrDynamicChannelRegistry*>(self.get())
+                    ->OnRxExtendedFeaturesInfoRsp(rsp);
+              }
+            })) {
+      bt_log(ERROR, "l2cap-bredr", "Failed to send Extended Features Information Request");
+      return;
+    }
+
+    bt_log(SPEW, "l2cap-bredr", "Sent Extended Features Information Request");
+
+    state_ |= kExtendedFeaturesSent;
+  }
+}
+
+std::optional<bool> BrEdrDynamicChannelRegistry::PeerSupportsERTM() const {
+  if (!extended_features_) {
+    return std::nullopt;
+  }
+  return *extended_features_ & kExtendedFeaturesBitEnhancedRetransmission;
+}
+
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeOutbound(
     DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
-    ChannelId local_cid) {
-  return std::unique_ptr<BrEdrDynamicChannel>(
-      new BrEdrDynamicChannel(registry, signaling_channel, psm, local_cid, kInvalidChannelId));
+    ChannelId local_cid, ChannelParameters params, std::optional<bool> peer_supports_ertm) {
+  return std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
+      registry, signaling_channel, psm, local_cid, kInvalidChannelId, params, peer_supports_ertm));
 }
 
 BrEdrDynamicChannelPtr BrEdrDynamicChannel::MakeInbound(
     DynamicChannelRegistry* registry, SignalingChannelInterface* signaling_channel, PSM psm,
-    ChannelId local_cid, ChannelId remote_cid) {
-  auto channel = std::unique_ptr<BrEdrDynamicChannel>(
-      new BrEdrDynamicChannel(registry, signaling_channel, psm, local_cid, remote_cid));
+    ChannelId local_cid, ChannelId remote_cid, ChannelParameters params,
+    std::optional<bool> peer_supports_ertm) {
+  auto channel = std::unique_ptr<BrEdrDynamicChannel>(new BrEdrDynamicChannel(
+      registry, signaling_channel, psm, local_cid, remote_cid, params, peer_supports_ertm));
   channel->state_ |= kConnRequested;
   return channel;
 }
@@ -364,10 +434,14 @@ void BrEdrDynamicChannel::CompleteInboundConnection(
 
 BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
                                          SignalingChannelInterface* signaling_channel, PSM psm,
-                                         ChannelId local_cid, ChannelId remote_cid)
+                                         ChannelId local_cid, ChannelId remote_cid,
+                                         ChannelParameters params,
+                                         std::optional<bool> peer_supports_ertm)
     : DynamicChannel(registry, psm, local_cid, remote_cid),
       signaling_channel_(signaling_channel),
       state_(0u),
+      peer_supports_ertm_(peer_supports_ertm),
+      params_(params),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(signaling_channel_);
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
@@ -393,7 +467,9 @@ void BrEdrDynamicChannel::PassOpenError() {
 }
 
 void BrEdrDynamicChannel::TrySendLocalConfig() {
-  if (state_ & kLocalConfigSent) {
+  bool awaiting_ext_features = params_.mode != ChannelMode::kBasic && !peer_supports_ertm_;
+
+  if ((state_ & kLocalConfigSent) || awaiting_ext_features) {
     return;
   }
 
@@ -566,6 +642,15 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
   }
 
   return ResponseHandlerAction::kCompleteOutboundTransaction;
+}
+
+void BrEdrDynamicChannel::SetEnhancedRetransmissionSupport(bool supported) {
+  peer_supports_ertm_ = supported;
+
+  // Don't send local config before connection response.
+  if (state_ & kConnResponded) {
+    TrySendLocalConfig();
+  }
 }
 
 }  // namespace internal

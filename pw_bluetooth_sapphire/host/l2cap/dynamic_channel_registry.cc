@@ -8,6 +8,7 @@
 
 #include "lib/zx/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 namespace l2cap {
@@ -25,7 +26,8 @@ DynamicChannelRegistry::~DynamicChannelRegistry() {
 
 // Run return callbacks on the L2CAP thread. LogicalLink takes care of out-of-
 // thread dispatch for delivering the pointer to the channel.
-void DynamicChannelRegistry::OpenOutbound(PSM psm, DynamicChannelCallback open_cb) {
+void DynamicChannelRegistry::OpenOutbound(PSM psm, DynamicChannelCallback open_cb,
+                                          ChannelParameters params) {
   const ChannelId id = FindAvailableChannelId();
   if (id == kInvalidChannelId) {
     bt_log(ERROR, "l2cap", "No dynamic channel IDs available");
@@ -33,7 +35,7 @@ void DynamicChannelRegistry::OpenOutbound(PSM psm, DynamicChannelCallback open_c
     return;
   }
 
-  auto iter = channels_.emplace(id, MakeOutbound(psm, id)).first;
+  auto iter = channels_.emplace(id, MakeOutbound(psm, id, params)).first;
   ActivateChannel(iter->second.get(), std::move(open_cb), true);
 }
 
@@ -75,7 +77,10 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
     return nullptr;
   }
 
-  auto iter = channels_.emplace(local_cid, MakeInbound(psm, local_cid, remote_cid)).first;
+  // TODO(872): use channel params provided when psm was registered
+  auto iter =
+      channels_.emplace(local_cid, MakeInbound(psm, local_cid, remote_cid, {ChannelMode::kBasic}))
+          .first;
   ActivateChannel(iter->second.get(), std::move(return_chan_cb), false);
   return iter->second.get();
 }
@@ -105,6 +110,12 @@ DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(ChannelId remote_c
     }
   }
   return nullptr;
+}
+
+void DynamicChannelRegistry::ForEach(fit::function<void(DynamicChannel*)> f) const {
+  for (auto& [id, channel_ptr] : channels_) {
+    f(channel_ptr.get());
+  }
 }
 
 void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,

@@ -108,11 +108,12 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
 
  private:
   // DynamicChannelRegistry overrides
-  DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid) override {
+  DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid, ChannelParameters params) override {
     return MakeChannelInternal(psm, local_cid, kInvalidChannelId);
   }
 
-  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid) override {
+  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid,
+                                ChannelParameters params) override {
     auto channel = MakeChannelInternal(psm, local_cid, remote_cid);
     channel->DoConnect(remote_cid);
     return channel;

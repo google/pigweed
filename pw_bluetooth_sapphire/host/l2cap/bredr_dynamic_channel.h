@@ -28,10 +28,13 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
                               ServiceRequestCallback service_request_cb);
   ~BrEdrDynamicChannelRegistry() override = default;
 
+  std::optional<ExtendedFeatures> extended_features() { return extended_features_; };
+
  private:
   // DynamicChannelRegistry override
-  DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid) override;
-  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid) override;
+  DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid, ChannelParameters params) override;
+  DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid,
+                                ChannelParameters params) override;
 
   // Signaling channel request handlers
   void OnRxConnReq(PSM psm, ChannelId remote_cid,
@@ -42,7 +45,31 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
                      BrEdrCommandHandler::DisconnectionResponder* responder);
   void OnRxInfoReq(InformationType type, BrEdrCommandHandler::InformationResponder* responder);
 
+  // Signaling channel response handlers
+  void OnRxExtendedFeaturesInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
+
+  // Send extended features information request.
+  void TrySendInformationRequests();
+
+  // If an extended features information response has been received, returns the value of the ERTM
+  // bit in the peer's feature mask.
+  std::optional<bool> PeerSupportsERTM() const;
+
+  using State = uint8_t;
+  enum StateBit : State {
+    // Extended Features Information Request (transmitted from local to remote)
+    kExtendedFeaturesSent = (1 << 0),
+
+    // Extended Features Information Response (transmitted from remote to local)
+    kExtendedFeaturesReceived = (1 << 1),
+  };
+
+  // Bit field assembled using the bit masks above.
+  State state_;
+
   SignalingChannelInterface* const sig_;
+
+  std::optional<ExtendedFeatures> extended_features_;
 };
 
 class BrEdrDynamicChannel;
@@ -66,11 +93,14 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   static BrEdrDynamicChannelPtr MakeOutbound(DynamicChannelRegistry* registry,
                                              SignalingChannelInterface* signaling_channel, PSM psm,
-                                             ChannelId local_cid);
+                                             ChannelId local_cid, ChannelParameters params,
+                                             std::optional<bool> peer_supports_ertm);
 
   static BrEdrDynamicChannelPtr MakeInbound(DynamicChannelRegistry* registry,
                                             SignalingChannelInterface* signaling_channel, PSM psm,
-                                            ChannelId local_cid, ChannelId remote_cid);
+                                            ChannelId local_cid, ChannelId remote_cid,
+                                            ChannelParameters params,
+                                            std::optional<bool> peer_supports_ertm);
 
   // DynamicChannel overrides
   ~BrEdrDynamicChannel() override = default;
@@ -94,6 +124,10 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   void OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                      BrEdrCommandHandler::ConfigurationResponder* responder);
   void OnRxDisconReq(BrEdrCommandHandler::DisconnectionResponder* responder);
+
+  // Called when the peer indicates whether it supports Enhanced Retransmission Mode.
+  // Kicks off the configuration process if the preferred channel mode is ERTM.
+  void SetEnhancedRetransmissionSupport(bool supported);
 
   // Reply with affirmative connection response and begin configuration.
   void CompleteInboundConnection(BrEdrCommandHandler::ConnectionResponder* responder);
@@ -144,7 +178,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   BrEdrDynamicChannel(DynamicChannelRegistry* registry,
                       SignalingChannelInterface* signaling_channel, PSM psm, ChannelId local_cid,
-                      ChannelId remote_cid);
+                      ChannelId remote_cid, ChannelParameters params,
+                      std::optional<bool> peer_supports_ertm);
 
   // Deliver the result of channel connection and configuration to the |Open|
   // originator. Can be called multiple times but only the first invocation
@@ -175,7 +210,14 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // semantics. See |DynamicChannel::Open| for details.
   fit::closure open_result_cb_;
 
-  fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
+  // Support for ERTM is indicated in the peer's extended features mask, received in the extended
+  // features information response. Since the response may not yet have been received when this
+  // channel is created, this value may be assigned in either the constructor or in the
+  // |SetEnhancedRetransmissionSupport| callback.
+  std::optional<bool> peer_supports_ertm_;
+
+  // Preferred channel configuration parameters.
+  ChannelParameters params_;
 
   // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.1).
@@ -184,6 +226,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Contains options configured by local configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.2).
   ChannelConfiguration local_config_;
+
+  fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
 };
 
 }  // namespace internal

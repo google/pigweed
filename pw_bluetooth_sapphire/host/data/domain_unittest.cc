@@ -98,9 +98,9 @@ class DATA_DomainTest : public TestingBase {
         // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
         0x0a, 0x00, 0x01, 0x00,
 
-        // Configuration Response (ID: 1, length: 6, src cid: |dst_id|, flags: 0,
+        // Configuration Response (ID: 2, length: 6, src cid: |dst_id|, flags: 0,
         // result: success)
-        0x05, 0x01, 0x06, 0x00,
+        0x05, 0x02, 0x06, 0x00,
         LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
         0x00, 0x00));
     // clang-format on
@@ -413,7 +413,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   EXPECT_EQ(u8"🔰", socket_bytes.view(0, bytes_read).AsString());
 }
 
-TEST_F(DATA_DomainTest, OutboundL2apSocket) {
+TEST_F(DATA_DomainTest, OutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -423,6 +423,7 @@ TEST_F(DATA_DomainTest, OutboundL2apSocket) {
   acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
   domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
                              NopSecurityCallback, dispatcher());
+  RunLoopUntilIdle();
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -494,8 +495,9 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   constexpr l2cap::ChannelId kLocalId1 = 0x0041;
   constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
 
-  // connection request/response, config request, config response
-  constexpr size_t kConnectionPacketCount = 3;
+  // info req, connection request/response, config request, config response
+  constexpr size_t kConnectionCreationPacketCount = 1;
+  constexpr size_t kChannelCreationPacketCount = 3;
 
   TestController::DataCallback data_cb = [](const ByteBuffer& packet) {};
   size_t data_cb_count = 0;
@@ -523,9 +525,9 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   ASSERT_TRUE(sock0);
 
   // Channel creation packet count
-  EXPECT_EQ(kConnectionPacketCount, data_cb_count);
-  test_device()->SendCommandChannelPacket(
-      MakeNumCompletedPacketsEvent(kLinkHandle, kConnectionPacketCount));
+  EXPECT_EQ(kConnectionCreationPacketCount + kChannelCreationPacketCount, data_cb_count);
+  test_device()->SendCommandChannelPacket(MakeNumCompletedPacketsEvent(
+      kLinkHandle, kConnectionCreationPacketCount + kChannelCreationPacketCount));
 
   // Dummy dynamic channel packet
   const auto kPacket0 = CreateStaticByteBuffer(
@@ -568,14 +570,14 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   data_cb_count = 0;
   data_cb = OutgoingChannelCreationDataCallback(kLinkHandle, kRemoteId1, kLocalId1, kPSM1);
 
-  for (size_t i = 0; i < kConnectionPacketCount; i++) {
+  for (size_t i = 0; i < kChannelCreationPacketCount; i++) {
     test_device()->SendCommandChannelPacket(MakeNumCompletedPacketsEvent(kLinkHandle, 1));
     // Wait for next connection creation packet to be queued (eg. configuration request/response).
     RunLoopUntilIdle();
   }
 
   EXPECT_TRUE(sock1);
-  EXPECT_EQ(kConnectionPacketCount, data_cb_count);
+  EXPECT_EQ(kChannelCreationPacketCount, data_cb_count);
 
   data_cb_count = 0;
   data_cb = [&kPacket0](const ByteBuffer& packet) {

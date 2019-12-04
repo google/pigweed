@@ -321,6 +321,37 @@ auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
 
 const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefaultMTU);
 
+// Information Requests
+
+auto MakeInfoReq(InformationType info_type) {
+  const auto type = static_cast<uint16_t>(info_type);
+  return CreateStaticByteBuffer(LowerBits(type), UpperBits(type));
+}
+
+const ByteBuffer& kExtendedFeaturesInfoReq =
+    MakeInfoReq(InformationType::kExtendedFeaturesSupported);
+
+// Information Responses
+
+auto MakeExtendedFeaturesInfoRsp(InformationResult result = InformationResult::kSuccess,
+                                 ExtendedFeatures features = 0u) {
+  const auto type = static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported);
+  const auto res = static_cast<uint16_t>(result);
+  const auto features_bytes = ToBytes(features);
+  return CreateStaticByteBuffer(
+      // Type
+      LowerBits(type), UpperBits(type),
+
+      // Result
+      LowerBits(res), UpperBits(res),
+
+      // Data
+      features_bytes[0], features_bytes[1], features_bytes[2], features_bytes[3]);
+}
+
+const ByteBuffer& kExtendedFeaturesInfoRsp =
+    MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess, kExtendedFeaturesBitFixedChannels);
+
 class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
  public:
   L2CAP_BrEdrDynamicChannelTest() = default;
@@ -337,6 +368,9 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
     channel_close_cb_ = nullptr;
     service_request_cb_ = nullptr;
     signaling_channel_ = std::make_unique<testing::FakeSignalingChannel>(dispatcher());
+
+    ext_info_transaction_id_ =
+        EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         sig(), fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnChannelClose),
         fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnServiceRequest));
@@ -363,6 +397,10 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
     service_request_cb_ = std::move(service_request_cb);
   }
 
+  testing::FakeSignalingChannel::TransactionId ext_info_transaction_id() {
+    return ext_info_transaction_id_;
+  }
+
  private:
   void OnChannelClose(const DynamicChannel* channel) {
     if (channel_close_cb_) {
@@ -382,6 +420,7 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   ServiceRequestCallback service_request_cb_;
   std::unique_ptr<testing::FakeSignalingChannel> signaling_channel_;
   std::unique_ptr<BrEdrDynamicChannelRegistry> registry_;
+  testing::FakeSignalingChannel::TransactionId ext_info_transaction_id_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_BrEdrDynamicChannelTest);
 };
@@ -472,7 +511,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq2.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRspSamePeerCId.view()});
 
-  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId2);
+  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId2,
+                                                   {ChannelMode::kBasic}, false);
   EXPECT_FALSE(channel->IsConnected());
   EXPECT_FALSE(channel->IsOpen());
 
@@ -604,7 +644,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
 
   // Build channel and operate it directly to be able to inspect it in the
   // connected but not open state.
-  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId);
+  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId,
+                                                   {ChannelMode::kBasic}, false);
   EXPECT_FALSE(channel->IsConnected());
   EXPECT_FALSE(channel->IsOpen());
   EXPECT_EQ(kLocalCId, channel->local_cid());
@@ -644,7 +685,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailConfig) {
 
   // Build channel and operate it directly to be able to inspect it in the
   // connected but not open state.
-  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId);
+  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId,
+                                                   {ChannelMode::kBasic}, false);
   EXPECT_FALSE(channel->IsConnected());
   EXPECT_FALSE(channel->IsOpen());
   EXPECT_EQ(kLocalCId, channel->local_cid());
@@ -683,7 +725,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
 
   // Build channel and operate it directly to be able to inspect it in the
   // connected but not open state.
-  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId);
+  auto channel = BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId,
+                                                   {ChannelMode::kBasic}, false);
 
   int open_result_cb_count = 0;
   auto open_result_cb = [&open_result_cb_count, &channel] {
@@ -1301,6 +1344,73 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
 
 INSTANTIATE_TEST_SUITE_P(L2CAP_BrEdrDynamicChannelTest, ConfigRspWithMtuTest,
                          ::testing::Values(std::nullopt, kMinACLMTU));
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
+  const auto kExpectedExtendedFeatures =
+      kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;
+  const auto kInfoRsp =
+      MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess, kExpectedExtendedFeatures);
+
+  EXPECT_FALSE(registry()->extended_features());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess, kInfoRsp.view()}});
+  EXPECT_TRUE(registry()->extended_features());
+  EXPECT_EQ(kExpectedExtendedFeatures, *registry()->extended_features());
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelWaitsForExtendedFeaturesBeforeStartingConfigFlow) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  // Config request should not be sent.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
+
+  RunLoopUntilIdle();
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  // Config should have been sent, so channel should be open.
+  EXPECT_EQ(1u, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspReceived) {
+  auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(), {});
+
+  registry()->OpenOutbound(kPsm, {}, {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Channel will be notified that extended features received.
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
+
+  // Config request should not be sent before connection response received.
+  RunLoopUntilIdle();
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  sig()->ReceiveResponses(conn_id, {{SignalingChannel::Status::kSuccess, kOkConnRsp.view()}});
+  RunLoopUntilIdle();
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
 
 }  // namespace
 }  // namespace internal

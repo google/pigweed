@@ -197,6 +197,12 @@ constexpr FixedChannelsSupported kFixedChannelsSupportedBitSMP = 1ULL << 6;
 constexpr FixedChannelsSupported kFixedChannelsSupportedBitSM = 1ULL << 7;
 constexpr FixedChannelsSupported kFixedChannelsSupportedBitAMPTestManager = 1ULL << 63;
 
+// Channel configuration parameters specified by higher layers.
+// TODO(872): add all parameters needed by profiles
+struct ChannelParameters {
+  ChannelMode mode;
+};
+
 enum class ConnectionParameterUpdateResult : uint16_t {
   kAccepted = 0x0000,
   kRejected = 0x0001,

@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -44,8 +45,10 @@ class DynamicChannelRegistry {
   // calling |open_cb| on the L2CAP thread the channel is ready for data
   // transfer, with a nullptr if unsuccessful. The DynamicChannel passed will
   // contain the local and remote channel IDs to be used for user data transfer
-  // over the new channel.
-  void OpenOutbound(PSM psm, DynamicChannelCallback open_cb);
+  // over the new channel. Preferred channel parameters can be set in |params|.
+  // TODO(872): Return negotiated channel parameters in |open_cb|.
+  void OpenOutbound(PSM psm, DynamicChannelCallback open_cb,
+                    ChannelParameters params = {ChannelMode::kBasic});
 
   // Disconnect and remove the channel identified by |local_cid|. After this
   // call completes, incoming PDUs with |local_cid| should be discarded as in
@@ -79,12 +82,14 @@ class DynamicChannelRegistry {
 
   // Factory method for a DynamicChannel implementation that represents an
   // outbound channel with an endpoint on this device identified by |local_cid|.
-  virtual DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid) = 0;
+  virtual DynamicChannelPtr MakeOutbound(PSM psm, ChannelId local_cid,
+                                         ChannelParameters params) = 0;
 
   // Factory method for a DynamicChannel implementation that represents an
   // inbound channel from a remote endpoint identified by |remote_cid| to an
   // endpoint on this device identified by |local_cid|.
-  virtual DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid) = 0;
+  virtual DynamicChannelPtr MakeInbound(PSM psm, ChannelId local_cid, ChannelId remote_cid,
+                                        ChannelParameters params) = 0;
 
   // Open an inbound channel for a service |psm| from the remote endpoint
   // identified by |remote_cid| to the local endpoint by |local_cid|.
@@ -102,6 +107,11 @@ class DynamicChannelRegistry {
   // Searches for alive dynamic channel with given remote channel id.
   // Returns null if not found.
   DynamicChannel* FindChannelByRemoteId(ChannelId remote_cid) const;
+
+  // Iterates over all channels, running |f| on each entry synchronously.
+  void ForEach(fit::function<void(DynamicChannel*)> f) const;
+
+  fxl::WeakPtr<DynamicChannelRegistry> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   friend class DynamicChannel;
@@ -131,7 +141,8 @@ class DynamicChannelRegistry {
   ServiceRequestCallback service_request_cb_;
 
   // Maps local CIDs to alive dynamic channels on this logical link.
-  std::unordered_map<ChannelId, DynamicChannelPtr> channels_;
+  using ChannelMap = std::unordered_map<ChannelId, DynamicChannelPtr>;
+  ChannelMap channels_;
 
   fxl::WeakPtrFactory<DynamicChannelRegistry> weak_ptr_factory_;
 
