@@ -9,6 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "util.h"
 
@@ -29,12 +30,14 @@ MutableByteBufferPtr NewPDU(size_t param_size) {
 }  // namespace
 
 Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role, bool sc_supported,
-               IOCapability io_capability, fxl::WeakPtr<Listener> listener)
+               bool bondable_preference, IOCapability io_capability,
+               fxl::WeakPtr<Listener> listener)
     : chan_(std::move(chan)),
       role_(role),
       oob_available_(false),
       mitm_required_(false),
       sc_supported_(sc_supported),
+      bondable_preference_(bondable_preference),
       io_capability_(io_capability),
       listener_(listener),
       feature_exchange_pending_(false),
@@ -286,6 +289,11 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator, const PairingRequestPara
     return ErrorCode::kEncryptionKeySize;
   }
 
+  bool bondable_mode = (preq.auth_req & kBondingFlag) && (pres.auth_req & kBondingFlag);
+  if (!bondable_mode) {
+    bt_log(INFO, "sm", "negotiated non-bondable pairing (local mode: %s)",
+           bondable_preference_ ? "bondable" : "non-bondable");
+  }
   bool sc = (preq.auth_req & AuthReq::kSC) && (pres.auth_req & AuthReq::kSC);
   bool mitm = (preq.auth_req & AuthReq::kMITM) || (pres.auth_req & AuthReq::kMITM);
   bool init_oob = preq.oob_data_flag == OOBDataFlag::kPresent;
@@ -318,7 +326,7 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator, const PairingRequestPara
     local_keys = pres.initiator_key_dist_gen;
     remote_keys = pres.responder_key_dist_gen;
 
-    // v5.1, Vol 3, Part H requires that the responder shall not set to one
+    // v5.1, Vol 3, Part H Section 3.6.1 requires that the responder shall not set to one
     // any flag in the key dist gen fields that the initiator has set to zero.
     // Hence we reject the pairing if the responder requests keys that we don't
     // support.
@@ -334,9 +342,16 @@ ErrorCode Bearer::ResolveFeatures(bool local_initiator, const PairingRequestPara
     ZX_DEBUG_ASSERT((preq.initiator_key_dist_gen & remote_keys) == remote_keys);
     ZX_DEBUG_ASSERT((preq.responder_key_dist_gen & local_keys) == local_keys);
   }
+  // v5.1 Vol 3 Part C Section 9.4.2.2 says that bonding information shall not be exchanged or
+  // stored in non-bondable mode. This check ensures that we avoid a situation where, if we were in
+  // bondable mode and a peer requested non-bondable mode with a non-zero keydistgen field, we pair
+  // in non-bondable mode but also attempt to distribute keys.
+  if (!bondable_mode && (local_keys || remote_keys)) {
+    return ErrorCode::kInvalidParameters;
+  }
 
-  *out_features =
-      PairingFeatures(local_initiator, sc, method, enc_key_size, local_keys, remote_keys);
+  *out_features = PairingFeatures(local_initiator, sc, bondable_mode, method, enc_key_size,
+                                  local_keys, remote_keys);
 
   return ErrorCode::kNoError;
 }
@@ -347,8 +362,32 @@ void Bearer::BuildPairingParameters(PairingRequestParams* params, KeyDistGenFiel
   ZX_DEBUG_ASSERT(out_local_keys);
   ZX_DEBUG_ASSERT(out_remote_keys);
 
-  // We always request bonding.
-  AuthReqField auth_req = AuthReq::kBondingFlag;
+  AuthReqField auth_req = 0u;
+  // If we are in non-bondable mode we will not distribute or request distribution of any bonding
+  // data (i.e. there will be no key distribution phase) per V5.1 Vol 3 Part C Section 9.4.2.2
+  if (!bondable_preference_) {
+    auth_req = 0u;
+    *out_remote_keys = *out_local_keys = 0;
+  } else {
+    auth_req = AuthReq::kBondingFlag;
+    // We always request identity information from the remote.
+    *out_remote_keys = KeyDistGen::kIdKey;
+    *out_local_keys = 0;
+
+    ZX_DEBUG_ASSERT(listener_);
+    if (listener_->HasIdentityInformation()) {
+      *out_local_keys |= KeyDistGen::kIdKey;
+    }
+
+    // When we are the master, we request that the peer send us encryption
+    // information as it is required to do so (Vol 3, Part H, 2.4.2.3). Otherwise
+    // we always request to distribute it.
+    if (role_ == hci::Connection::Role::kMaster) {
+      *out_remote_keys |= KeyDistGen::kEncKey;
+    } else {
+      *out_local_keys |= KeyDistGen::kEncKey;
+    }
+  }
   if (sc_supported_) {
     auth_req |= AuthReq::kSC;
   }
@@ -360,24 +399,6 @@ void Bearer::BuildPairingParameters(PairingRequestParams* params, KeyDistGenFiel
   params->auth_req = auth_req;
   params->max_encryption_key_size = kMaxEncryptionKeySize;
   params->oob_data_flag = oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
-
-  // We always request identity information from the remote.
-  *out_remote_keys = KeyDistGen::kIdKey;
-  *out_local_keys = 0;
-
-  ZX_DEBUG_ASSERT(listener_);
-  if (listener_->HasIdentityInformation()) {
-    *out_local_keys |= KeyDistGen::kIdKey;
-  }
-
-  // When we are the master, we request that the peer send us encryption
-  // information as it is required to do so (Vol 3, Part H, 2.4.2.3). Otherwise
-  // we always request to distribute it.
-  if (role_ == hci::Connection::Role::kMaster) {
-    *out_remote_keys |= KeyDistGen::kEncKey;
-  } else {
-    *out_local_keys |= KeyDistGen::kEncKey;
-  }
 }
 
 void Bearer::OnPairingFailed(const PacketReader& reader) {
@@ -453,7 +474,12 @@ void Bearer::OnPairingRequest(const PacketReader& reader) {
     Abort(ecode);
     return;
   }
-
+  // If we've already decided that we will accept a non-bondable pairing request while
+  // in bondable mode as indicated by making features.bondable_mode false, we should
+  // reflect that by updating the rsp_params we send to the peer.
+  if (!features.bondable_mode && bondable_preference_) {
+    rsp_params->auth_req &= ~AuthReq::kBondingFlag;
+  }
   // Copy the pairing response so that it's available after moving |pdu|. (We
   // want to make sure that we send the pairing response before calling
   // Listener::OnFeatureExchange which may trigger other SMP transactions.

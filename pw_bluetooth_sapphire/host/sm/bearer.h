@@ -108,9 +108,11 @@ class Bearer final {
   //   - |role|: The local connection role.
   //   - |secure_connections_supported|: True if the local device supports LE
   //     Secure Connections pairing.
+  //   - |bondable_preference|: True if the device wishes to pair with
+  //     bonding, false for non-bondable mode
   //   - |io_capability|: The local I/O capability.
   Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role,
-         bool secure_connections_supported, IOCapability io_capability,
+         bool secure_connections_supported, bool bondable_preference, IOCapability io_capability,
          fxl::WeakPtr<Listener> listener);
   ~Bearer() = default;
 
@@ -218,6 +220,7 @@ class Bearer final {
   bool oob_available_;
   bool mitm_required_;
   bool sc_supported_;
+  bool bondable_preference_;
   IOCapability io_capability_;
   fxl::WeakPtr<Listener> listener_;
 

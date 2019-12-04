@@ -80,7 +80,7 @@ class PairingState final : public Bearer::Listener {
   // |delegate|: Delegate responsible for handling authentication challenges and
   //             storing pairing information.
   PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
-               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate);
+               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, bool bondable_mode);
   ~PairingState() override;
 
   // Returns the current security properties of the LE link.

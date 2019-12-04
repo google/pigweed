@@ -18,8 +18,8 @@ namespace sm {
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
   PairingFeatures();
-  PairingFeatures(bool initiator, bool sc, PairingMethod method, uint8_t enc_key_size,
-                  KeyDistGenField local_kd, KeyDistGenField remote_kd);
+  PairingFeatures(bool initiator, bool sc, bool bondable_mode, PairingMethod method,
+                  uint8_t enc_key_size, KeyDistGenField local_kd, KeyDistGenField remote_kd);
 
   // True if the local device is in the "initiator" role.
   bool initiator;
@@ -27,6 +27,10 @@ struct PairingFeatures final {
   // True if LE Secure Connections pairing should be used. Otherwise, LE Legacy
   // Pairing should be used.
   bool secure_connections;
+
+  // True if pairing is to be performed without bonding, i.e. LTKs should not be
+  // exchanged across the link nor stored on either side
+  bool bondable_mode;
 
   // Indicates the key generation model used for Phase 2.
   PairingMethod method;

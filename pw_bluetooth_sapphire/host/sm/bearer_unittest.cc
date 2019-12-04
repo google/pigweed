@@ -25,7 +25,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest, public Bearer::Li
 
   void NewBearer(hci::Connection::Role role = hci::Connection::Role::kMaster,
                  hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
-                 bool sc_supported = false,
+                 bool sc_supported = false, bool bondable_mode = true,
                  IOCapability io_capability = IOCapability::kNoInputNoOutput) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
@@ -33,7 +33,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest, public Bearer::Li
     options.link_type = ll_type;
 
     fake_chan_ = CreateFakeChannel(options);
-    bearer_ = std::make_unique<Bearer>(fake_chan_, role, sc_supported, io_capability,
+    bearer_ = std::make_unique<Bearer>(fake_chan_, role, sc_supported, bondable_mode, io_capability,
                                        weak_ptr_factory_.GetWeakPtr());
   }
 
@@ -225,7 +225,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartDefaultParams) {
 
 TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
-            IOCapability::kDisplayYesNo);
+            false /* bondable_mode */, IOCapability::kDisplayYesNo);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
 
@@ -234,10 +234,10 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
       0x01,        // code: "Pairing Request"
       0x01,        // IO cap.: DisplayYesNo
       0x01,        // OOB: present
-      0b00001101,  // AuthReq: Bonding, SC, MITM
+      0b00001100,  // AuthReq: no bonding, SC, MITM
       0x10,        // encr. key size: 16 (default max)
-      0x00,        // initiator keys: none
-      0x03         // responder keys: enc key and identity info
+      0x00,        // initiator keys: none - non-bondable mode
+      0x00         // responder keys: none - non-bondable mode
   );
   // clang-format on
 
@@ -259,7 +259,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
 
 TEST_F(SMP_BearerTest, FeatureExchangeInitiatorWithIdentityInfo) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
-            IOCapability::kDisplayYesNo);
+            true /* bondable_mode */, IOCapability::kDisplayYesNo);
   set_has_identity_info(true);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
@@ -481,7 +481,7 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseJustWorks) {
       0x02,  // code: Pairing Response
       0x00,  // IO cap.: DisplayOnly
       0x00,  // OOB: not present
-      0x00,  // AuthReq: MITM not required
+      0x01,  // AuthReq: bonding, MITM not required
       0x07,  // encr. key size: 7 (default min)
       0x00,  // initiator keys: none
       0x01   // responder keys: enc key only
@@ -515,7 +515,7 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseJustWorks) {
 // provide it.
 TEST_F(SMP_BearerTest, FeatureExchangePairingResponseMITM) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -531,7 +531,7 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseMITM) {
       0x02,  // code: Pairing Response
       0x02,  // IO cap.: KeyboardOnly
       0x00,  // OOB: not present
-      0x04,  // AuthReq: MITM required
+      0x05,  // AuthReq: MITM required, bondable mode
       0x07,  // encr. key size: 7 (default min)
       0x00,  // initiator keys: none
       0x01   // responder keys: enc key only
@@ -649,7 +649,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeLocalResponderRespectsInitiator) {
       0x01,  // code: Pairing Request
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x00,  // AuthReq: no auth. request by default
+      0x01,  // AuthReq: bondable, no MITM
       0x10,  // encr. key size: 16 (default max)
       0x01,  // initiator key dist.: encr. key only
       0x00   // responder key dist.: none
@@ -682,7 +682,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderDistributesIdKey) {
       0x01,  // code: Pairing Request
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x00,  // AuthReq: no auth. request by default
+      0x01,  // AuthReq: bondable mode
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x02   // responder keys: identity info
@@ -717,7 +717,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderRespectsInitiatorForIdKey) {
       0x01,  // code: Pairing Request
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x00,  // AuthReq: no auth. request by default
+      0x01,  // AuthReq: no auth. request by default
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x00   // responder keys: none
@@ -755,8 +755,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderTimerRestarted) {
                                                0x00,  // OOB: not present
                                                0x00,  // AuthReq: no auth. request by default
                                                0x10,  // encr. key size: 16 (default max)
-                                               0x01,  // initiator key dist.: encr. key only
-                                               0x01   // responder key dist.: encr. key only
+                                               0x00,  // initiator key dist.: encr. key only
+                                               0x00   // responder key dist.: encr. key only
   );
   fake_chan()->Receive(kRequest);
   RunLoopUntilIdle();
@@ -819,7 +819,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderJustWorks) {
       0x01,  // code: Pairing Response
       0x00,  // IO cap.: DisplayOnly
       0x00,  // OOB: not present
-      0x00,  // AuthReq: MITM not required
+      0x01,  // AuthReq: bondable mode, ITM not required
       0x07,  // encr. key size: 7 (default min)
       0x02,  // initiator keys: identity only
       0x03   // responder keys: enc key and identity
@@ -863,7 +863,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderSendsOnlyRequestedKeys) {
       0x01,  // code: Pairing Response
       0x00,  // IO cap.: DisplayOnly
       0x00,  // OOB: not present
-      0x00,  // AuthReq: MITM not required
+      0x01,  // AuthReq: bondable mode, MITM not required
       0x07,  // encr. key size: 7 (default min)
       0x02,  // initiator keys: identity only
       0x02   // responder keys: identity only. Responder shouldn't send it.
@@ -884,14 +884,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderSendsOnlyRequestedKeys) {
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderMITM) {
   NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
-            IOCapability::kDisplayYesNo);
+            true /* bondable_mode */, IOCapability::kDisplayYesNo);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
       0x02,  // IO cap.: KeyboardOnly
       0x00,  // OOB: not present
-      0x04,  // AuthReq: MITM required
+      0b00000101,  // AuthReq: Bonding, MITM required
       0x07,  // encr. key size: 7 (default min)
       0x02,  // initiator keys: identity only
       0x03   // responder keys: enc key and identity
@@ -925,6 +925,9 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderMITM) {
   // The remote should send us identity information since we requested it and it
   // promised it.
   EXPECT_TRUE(KeyDistGen::kIdKey & features().remote_key_distribution);
+
+  // We should have set bondable mode as both sides enabled it
+  EXPECT_EQ(features().bondable_mode, true);
 }
 
 TEST_F(SMP_BearerTest, UnsupportedCommandDuringPairing) {
@@ -942,7 +945,7 @@ TEST_F(SMP_BearerTest, StopTimer) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x00,  // IO cap.: DisplayOnly
                                                 0x00,  // OOB: not present
-                                                0x00,  // AuthReq: MITM not required
+                                                0x01,  // AuthReq: bonding,  MITM not required
                                                 0x07,  // encr. key size: 7 (default min)
                                                 0x00,  // initiator key dist.: none
                                                 0x01   // responder key dist.: encr. key only
@@ -973,7 +976,7 @@ TEST_F(SMP_BearerTest, SendConfirmValueNotPairing) {
 
 TEST_F(SMP_BearerTest, SendConfirmValueNotLE) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1020,7 +1023,7 @@ TEST_F(SMP_BearerTest, OnPairingConfirmNotPairing) {
 
 TEST_F(SMP_BearerTest, OnPairingConfirmNotLE) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1095,7 +1098,7 @@ TEST_F(SMP_BearerTest, SendRandomValueNotPairing) {
 
 TEST_F(SMP_BearerTest, SendRandomValueNotLE) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1142,7 +1145,7 @@ TEST_F(SMP_BearerTest, OnPairingRandomNotPairing) {
 
 TEST_F(SMP_BearerTest, OnPairingRandomNotLE) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, IOCapability::kDisplayYesNo);
+            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1413,6 +1416,185 @@ TEST_F(SMP_BearerTest, OnSecurityRequest) {
   // The request should be ignored during pairing.
   EXPECT_EQ(1, security_request_count());
   EXPECT_EQ(kAuthReq, security_request_auth_req());
+}
+
+// Tests whether a request from a device with bondable mode enabled to a peer with
+// non-bondable mode enabled will return a PairingFeatures with non-bondable mode
+// enabled, the desired result.
+TEST_F(SMP_BearerTest, FeatureExchangeInitiatorReqBondResNoBond) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x03   // responder keys: enc key and identity info
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x00,  // IO cap.: DisplayOnly
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: no bonding, MITM not required
+      0x07,  // encr. key size: 7 (default min)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none due to non-bondable mode
+  );
+  // clang-format on
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
+  ASSERT_TRUE(Expect(kRequest));
+  ASSERT_TRUE(bearer()->pairing_started());
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+
+  // Should be in non-bondable mode even though the Initiator specifies bonding, as kResponse
+  // indicated that the peer follower does not support bonding.
+  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_EQ(features().local_key_distribution, 0u);
+  EXPECT_EQ(features().remote_key_distribution, 0u);
+}
+
+TEST_F(SMP_BearerTest, FeatureExchangeInitiatorReqNoBondResBond) {
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
+            false /* sc_supported */, false /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: non-bondable, SC/MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x00,  // IO cap.: DisplayOnly
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, MITM not required
+      0x07,  // encr. key size: 7 (default min)
+      0x00,  // initiator keys: none - should not change request field
+      0x00   // responder keys: none - should not change request field
+  );
+  // clang-format on
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { bearer()->InitiateFeatureExchange(); });
+  ASSERT_TRUE(Expect(kRequest));
+  ASSERT_TRUE(bearer()->pairing_started());
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+
+  // Should be in non-bondable mode even though kResponse specifies bonding as local Bearer
+  // is in non-bondable mode.
+  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_EQ(features().local_key_distribution, 0u);
+  EXPECT_EQ(features().remote_key_distribution, 0u);
+}
+
+TEST_F(SMP_BearerTest, FeatureExchangeResponderReqBondResNoBond) {
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
+            false /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bondable, SC/MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: non-bondable to match local mode, even though kRequest was bondable
+             //          MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none - should not change request field
+      0x00   // responder keys: none - should not change request field
+  );
+  // clang-format on
+
+  async::PostTask(dispatcher(), [this, kRequest] { fake_chan()->Receive(kRequest); });
+  ASSERT_TRUE(Expect(kResponse));
+  ASSERT_TRUE(bearer()->pairing_started());
+  RunLoopUntilIdle();
+
+  // Should be in non-bondable mode even though the peer requested bondable, as the Bearer was
+  // created in non-bondable mode.
+  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_EQ(features().local_key_distribution, 0u);
+  EXPECT_EQ(features().remote_key_distribution, 0u);
+}
+
+TEST_F(SMP_BearerTest, FeatureExchangeResponderReqNoBondResNoBond) {
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
+            true /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: non-bondable, SC/MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: non-bondable to match peer mode, even though local bearer is bondable
+             //          MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none - should not change request field
+      0x00   // responder keys: none - should not change request field
+  );
+  // clang-format on
+
+  async::PostTask(dispatcher(), [this, kRequest] { fake_chan()->Receive(kRequest); });
+  ASSERT_TRUE(Expect(kResponse));
+  ASSERT_TRUE(bearer()->pairing_started());
+  RunLoopUntilIdle();
+
+  // Should be in non-bondable mode even though Bearer was created in bondable mode as
+  // kRequest indicated that peer does not support bonding.
+  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_EQ(features().local_key_distribution, 0u);
+  EXPECT_EQ(features().remote_key_distribution, 0u);
+}
+
+TEST_F(SMP_BearerTest, FeatureExchangeResponderReqNoBondWithKeys) {
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
+            true /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: non-bondable, SC/MITM not required
+      0x10,  // encr. key size: 16 (default max)
+      0x03,  // initiator keys: enc key and identity info
+      0x03   // responder keys: enc key and identity info
+  );
+  // clang-format on
+
+  async::PostTask(dispatcher(), [this, kRequest] { fake_chan()->Receive(kRequest); });
+  RunLoopUntilIdle();
+
+  // Check that we fail with invalid parameters when a peer requests nonbondable mode
+  // with a non-zero KeyDistGen field
+  EXPECT_EQ(ErrorCode::kInvalidParameters, last_error().protocol_error());
+  EXPECT_FALSE(bearer()->pairing_started());
+  EXPECT_FALSE(fake_chan()->link_error());
+  EXPECT_EQ(1, pairing_error_count());
 }
 
 }  // namespace

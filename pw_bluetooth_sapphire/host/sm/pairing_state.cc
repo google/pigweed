@@ -91,7 +91,8 @@ PairingState::PendingRequest::PendingRequest(SecurityLevel level, PairingCallbac
     : level(level), callback(std::move(callback)) {}
 
 PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
-                           IOCapability io_capability, fxl::WeakPtr<Delegate> delegate)
+                           IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+                           bool bondable_mode)
     : next_pairing_id_(0), delegate_(delegate), le_link_(link), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(delegate_);
   ZX_DEBUG_ASSERT(le_link_);
@@ -102,8 +103,8 @@ PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap
 
   // Set up SMP data bearer.
   // TODO(armansito): Enable SC when we support it.
-  le_smp_ = std::make_unique<Bearer>(std::move(smp), link->role(), false /* sc */, io_capability,
-                                     weak_ptr_factory_.GetWeakPtr());
+  le_smp_ = std::make_unique<Bearer>(std::move(smp), link->role(), false /* sc */, bondable_mode,
+                                     io_capability, weak_ptr_factory_.GetWeakPtr());
 
   // Set up HCI encryption event.
   le_link_->set_encryption_change_callback(
@@ -366,8 +367,8 @@ bool PairingState::SendLocalKeys() {
 void PairingState::CompleteLegacyPairing() {
   ZX_DEBUG_ASSERT(legacy_state_);
   ZX_DEBUG_ASSERT(legacy_state_->IsComplete());
+  ZX_DEBUG_ASSERT(legacy_state_->features.has_value());
   ZX_DEBUG_ASSERT(le_smp_->pairing_started());
-
   le_smp_->StopTimer();
 
   // The security properties of all keys are determined by the security
@@ -386,13 +387,22 @@ void PairingState::CompleteLegacyPairing() {
   }
 
   bt_log(TRACE, "sm", "LE legacy pairing complete");
-  legacy_state_ = nullptr;
-
   // TODO(armansito): Report CSRK when we support it.
   ZX_DEBUG_ASSERT(delegate_);
   delegate_->OnPairingComplete(Status());
-  delegate_->OnNewPairingData(pairing_data);
-
+  if (legacy_state_->features->bondable_mode) {
+    delegate_->OnNewPairingData(pairing_data);
+  } else if (ltk_ || legacy_state_->has_irk) {
+    bt_log(INFO, "gap-le", "Received pairing data in non-bondable mode [%s%s%s%sid: %lu]",
+           pairing_data.ltk ? "ltk " : "", pairing_data.irk ? "irk " : "",
+           pairing_data.identity_address
+               ? fxl::StringPrintf("(identity: %s) ",
+                                   pairing_data.identity_address->ToString().c_str())
+                     .c_str()
+               : "",
+           pairing_data.csrk ? "csrk " : "", legacy_state_->id);
+  }
+  legacy_state_ = nullptr;
   // Separate out the requests that are satisfied by the current security level
   // from the ones that require a higher level. We'll retry pairing for the
   // latter.
@@ -459,7 +469,6 @@ void PairingState::OnFeatureExchange(const PairingFeatures& features, const Byte
 
     legacy_state_ = std::make_unique<LegacyState>(next_pairing_id_++);
   }
-
   ZX_DEBUG_ASSERT(legacy_state_);
   legacy_state_->features = features;
   BeginLegacyPairingPhase2(preq, pres);
