@@ -14,11 +14,14 @@
 """Script that preprocesses a Python command then runs it."""
 
 import argparse
+import logging
 import os
 import pathlib
 import shlex
 import subprocess
 import sys
+
+_LOG = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -101,7 +104,7 @@ def main() -> int:
 
     args = parse_args()
     if not args.command or args.command[0] != '--':
-        print(f'{sys.argv[0]} requires a command to run', file=sys.stderr)
+        _LOG.error(f'{sys.argv[0]} requires a command to run')
         return 1
 
     try:
@@ -110,23 +113,28 @@ def main() -> int:
             for arg in args.command[1:]
         ]
     except FileNotFoundError as err:
-        print(f'{sys.argv[0]}: {err}', file=sys.stderr)
+        _LOG.error(f'{sys.argv[0]}: {err}')
         return 1
 
     command = [sys.executable] + resolved_command
-    print('RUN', ' '.join(shlex.quote(arg) for arg in command), flush=True)
+    _LOG.debug('RUN ' + ' '.join(shlex.quote(arg) for arg in command))
+
+    # Add PW_SUBPROCESS to suppress unnecessary extra log headers; supported by
+    # most PW subcommands.
+    new_env = os.environ.copy()
+    new_env['PW_SUBPROCESS'] = '1'
 
     try:
-        status = subprocess.call(command)
+        status = subprocess.call(command, env=new_env)
     except subprocess.CalledProcessError as err:
-        print(f'{sys.argv[0]}: {err}', file=sys.stderr)
+        _LOG.error(f'{sys.argv[0]}: {err}')
         return 1
 
     if status == 0 and args.touch:
         # If a touch file is provided, touch it to indicate a successful run of
         # the command.
         touch_file = resolve_path(args.gn_root, args.out_dir, args.touch)
-        print('TOUCH', touch_file)
+        _LOG.debug('TOUCH %s', touch_file)
         pathlib.Path(touch_file).touch()
 
     return status
