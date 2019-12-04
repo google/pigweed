@@ -41,7 +41,9 @@ pygments_style = 'sphinx'
 html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['_themes',]
+html_theme_path = [
+    '_themes',
+]
 import sphinx_rtd_theme
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
@@ -73,14 +75,12 @@ htmlhelp_basename = 'Pigweeddoc'
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'pigweed', u'Pigweed', [u'Google'], 1)
-]
+man_pages = [('index', 'pigweed', u'Pigweed', [u'Google'], 1)]
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Pigweed', u'Pigweed', u'Google', 'Pigweed', 'Firmware framework',
-   'Miscellaneous'),
+    ('index', 'Pigweed', u'Pigweed', u'Google', 'Pigweed',
+     'Firmware framework', 'Miscellaneous'),
 ]

@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """Runs Pigweed unit tests built using GN."""
 
 import argparse
@@ -35,18 +34,28 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 def register_arguments(parser: argparse.ArgumentParser) -> None:
     """Registers command-line arguments."""
 
-    parser.add_argument('--root', type=str, default='out',
+    parser.add_argument('--root',
+                        type=str,
+                        default='out',
                         help='Path to the root build directory')
-    parser.add_argument('-r', '--runner', type=str, required=True,
+    parser.add_argument('-r',
+                        '--runner',
+                        type=str,
+                        required=True,
                         help='Executable which runs a test on the target')
-    parser.add_argument('runner_args', nargs=argparse.REMAINDER,
+    parser.add_argument('runner_args',
+                        nargs=argparse.REMAINDER,
                         help='Arguments to forward to the test runner')
 
     # The runner script can either run binaries directly or groups.
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-g', '--group', action='append',
+    group.add_argument('-g',
+                       '--group',
+                       action='append',
                        help='Test groups to run')
-    group.add_argument('-t', '--test', action='append',
+    group.add_argument('-t',
+                       '--test',
+                       action='append',
                        help='Test binaries to run')
 
 
@@ -59,7 +68,6 @@ class TestResult(enum.Enum):
 
 class Test:
     """A unit test executable."""
-
     def __init__(self, name: str, file_path: str):
         self.name: str = name
         self.file_path: str = file_path
@@ -79,7 +87,6 @@ class Test:
 
 class TestGroup:
     """Graph node representing a group of unit tests."""
-
     def __init__(self, name: str, tests: Iterable[Test]):
         self._name: str = name
         self._deps: Iterable['TestGroup'] = []
@@ -112,10 +119,7 @@ class TestGroup:
 
 class TestRunner:
     """Runs unit tests by calling out to a runner script."""
-
-    def __init__(self,
-                 executable: str,
-                 args: Sequence[str],
+    def __init__(self, executable: str, args: Sequence[str],
                  tests: Iterable[Test]):
         self._executable: str = executable
         self._args: Sequence[str] = args
@@ -207,7 +211,6 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
         populated with the paths to their unit tests and references to their
         dependencies.
     """
-
     def canonicalize(path: str) -> str:
         """Removes a trailing slash from a GN target's directory.
 
@@ -242,8 +245,8 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
                     f'{test_directory}:{entry["test_name"]}')
 
                 if test_binary not in all_tests:
-                    all_tests[test_binary] = Test(
-                        entry['test_name'], test_binary)
+                    all_tests[test_binary] = Test(entry['test_name'],
+                                                  test_binary)
 
                 tests.append(all_tests[test_binary])
 
@@ -343,6 +346,7 @@ async def run_as_plugin(**kwargs) -> None:
     argv_copy = ['pw', *sys.argv[1:]]
     await find_and_run_tests(argv_copy, **kwargs)
 
+
 try:
     import pw_cli.plugins
     pw_cli.plugins.register(
@@ -363,14 +367,22 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     register_arguments(parser)
-    parser.add_argument('-v', '--verbose', action='store_true',
+    parser.add_argument('-v',
+                        '--verbose',
+                        action='store_true',
                         help='Output additional logs as the script runs')
     args = parser.parse_args()
 
     log_level = 'DEBUG' if args.verbose else 'INFO'
     coloredlogs.install(level=log_level,
-                        level_styles={'debug': {'color': 244},
-                                      'error': {'color': 'red'}},
+                        level_styles={
+                            'debug': {
+                                'color': 244
+                            },
+                            'error': {
+                                'color': 'red'
+                            }
+                        },
                         fmt='%(asctime)s | %(message)s')
 
     args_as_dict = dict(vars(args))

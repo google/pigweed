@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+
 def _make_color(*codes):
     # Apply all the requested ANSI color codes. Note that this is unbalanced
     # with respect to the reset, which only requires a '0' to erase all codes.
@@ -35,6 +36,4 @@ class Color:
     cyan = _make_color(36, 1)
     magenta = _make_color(35, 1)
     bold_white = _make_color(37, 1)
-    black_on_white = _make_color(30, 47) # black fg white bg
-
-
+    black_on_white = _make_color(30, 47)  # black fg white bg

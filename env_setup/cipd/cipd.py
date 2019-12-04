@@ -46,9 +46,8 @@ CIPD_HOST = 'chrome-infra-packages.appspot.com'
 
 # Get install dir from environment since args cannot be passed through this
 # script (args are passed as-is to cipd).
-INSTALL_DIR = os.environ.get(
-    'CIPD_PY_INSTALL_DIR',
-    os.path.join(SCRIPT_DIR, 'tools'))
+INSTALL_DIR = os.environ.get('CIPD_PY_INSTALL_DIR',
+                             os.path.join(SCRIPT_DIR, 'tools'))
 CLIENT = os.path.join(INSTALL_DIR, 'cipd')
 
 
@@ -131,7 +130,7 @@ def client_bytes():
     try:
         conn = httplib.HTTPSConnection(CIPD_HOST)
     except AttributeError:
-        print('='*70)
+        print('=' * 70)
         print('''
 It looks like this version of Python does not support SSL. This is common
 when using Homebrew. If using Homebrew please run the following commands.
@@ -140,9 +139,8 @@ If not using Homebrew check how your version of Python was built.
 brew install openssl  # Probably already installed, but good to confirm.
 brew uninstall python && brew install python
 '''.strip())
-        print('='*70)
+        print('=' * 70)
         raise
-
 
     path = '/client?platform={platform}-{arch}&version={version}'.format(
         platform=platform_normalized(),

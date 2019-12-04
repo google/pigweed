@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """Module containing different output formatters for the bloat script."""
 
 import abc
@@ -24,7 +23,6 @@ from binary_diff import BinaryDiff, FormattedDiff
 
 class Output(abc.ABC):
     """An Output produces a size report card in a specific format."""
-
     def __init__(self,
                  title: Optional[str],
                  diffs: Collection[BinaryDiff] = ()):
@@ -34,7 +32,6 @@ class Output(abc.ABC):
     @abc.abstractmethod
     def diff(self) -> str:
         """Creates a report card for a size diff between binaries and a base."""
-
     @abc.abstractmethod
     def absolute(self) -> str:
         """Creates a report card for the absolute size breakdown of binaries."""
@@ -82,14 +79,15 @@ class TableOutput(Output):
 
     LABEL_COLUMN = 'Label'
 
-    def __init__(self,
-                 title: Optional[str],
-                 diffs: Collection[BinaryDiff] = (),
-                 charset: Union[Type[AsciiCharset],
-                                Type[LineCharset]] = AsciiCharset,
-                 preprocess: Callable[[str], str] = identity,
-                 # TODO(frolv): Make this a Literal type.
-                 justify: str = 'rjust'):
+    def __init__(
+            self,
+            title: Optional[str],
+            diffs: Collection[BinaryDiff] = (),
+            charset: Union[Type[AsciiCharset],
+                           Type[LineCharset]] = AsciiCharset,
+            preprocess: Callable[[str], str] = identity,
+            # TODO(frolv): Make this a Literal type.
+            justify: str = 'rjust'):
         self._cs = charset
         self._preprocess = preprocess
         self._justify = justify
@@ -116,10 +114,12 @@ class TableOutput(Output):
             padding = (len(separators['top']) - len(string)) // 2
             return ' ' * padding + string
 
-        titles = [self._center_align(val.capitalize(), column_widths[i])
-                  for i, val in enumerate(FormattedDiff._fields)]
-        column_names = [self._center_align(
-            self.LABEL_COLUMN, max_label)] + titles
+        titles = [
+            self._center_align(val.capitalize(), column_widths[i])
+            for i, val in enumerate(FormattedDiff._fields)
+        ]
+        column_names = [self._center_align(self.LABEL_COLUMN, max_label)
+                        ] + titles
 
         rows: List[str] = []
 
@@ -142,14 +142,16 @@ class TableOutput(Output):
                 subrow: List[str] = []
                 label = diff.label if not subrows else ''
                 subrow.append(getattr(label, self._justify)(max_label, ' '))
-                subrow.extend([getattr(self._preprocess(val),
-                                       self._justify)(column_widths[i], ' ')
-                               for i, val in enumerate(segment)])
+                subrow.extend([
+                    getattr(self._preprocess(val),
+                            self._justify)(column_widths[i], ' ')
+                    for i, val in enumerate(segment)
+                ])
                 subrows.append(self._table_row(subrow))
 
             rows.append('\n'.join(subrows))
-            rows.append(separators['bot' if row ==
-                                   len(self._diffs) - 1 else 'mid'])
+            rows.append(separators['bot' if row == len(self._diffs) -
+                                   1 else 'mid'])
 
         return '\n'.join(rows)
 
@@ -196,12 +198,14 @@ class TableOutput(Output):
 
 class RstOutput(TableOutput):
     """Tabular output in ASCII format, which is also valid RST."""
-
     def __init__(self, diffs: Collection[BinaryDiff] = ()):
         # Use RST line blocks within table cells to force each value to appear
         # on a new line in the HTML output.
         def add_rst_block(val: str) -> str:
             return f'| {val}'
 
-        super().__init__(None, diffs, AsciiCharset,
-                         preprocess=add_rst_block, justify='ljust')
+        super().__init__(None,
+                         diffs,
+                         AsciiCharset,
+                         preprocess=add_rst_block,
+                         justify='ljust')

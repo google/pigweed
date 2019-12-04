@@ -18,7 +18,6 @@ from typing import Callable
 from typing import NamedTuple
 _LOG = logging.getLogger(__name__)
 
-
 DefineArgsFunction = Callable[[argparse.ArgumentParser], None]
 
 

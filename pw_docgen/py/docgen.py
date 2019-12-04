@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """Renders HTML documentation using Sphinx."""
 
 # TODO(frolv): Figure out a solution for installing all library dependencies
@@ -41,20 +40,28 @@ def parse_args() -> argparse.Namespace:
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--sphinx-build-dir', required=True,
+    parser.add_argument('--sphinx-build-dir',
+                        required=True,
                         help='Directory in which to build docs')
-    parser.add_argument('--conf', required=True,
+    parser.add_argument('--conf',
+                        required=True,
                         help='Path to conf.py file for Sphinx')
-    parser.add_argument('--gn-root', required=True,
+    parser.add_argument('--gn-root',
+                        required=True,
                         help='Root of the GN build tree')
-    parser.add_argument('--gn-gen-root', required=True,
+    parser.add_argument('--gn-gen-root',
+                        required=True,
                         help='Root of the GN gen tree')
-    parser.add_argument('sources', nargs='+',
+    parser.add_argument('sources',
+                        nargs='+',
                         help='Paths to the root level rst source files')
-    parser.add_argument('--out-dir', required=True,
+    parser.add_argument('--out-dir',
+                        required=True,
                         help='Output directory for rendered HTML docs')
-    parser.add_argument('--metadata', required=True,
-                        type=argparse.FileType('r'), help='Metadata JSON file')
+    parser.add_argument('--metadata',
+                        required=True,
+                        type=argparse.FileType('r'),
+                        help='Metadata JSON file')
     return parser.parse_args()
 
 
@@ -63,8 +70,10 @@ def build_docs(src_dir: str, dst_dir: str) -> int:
 
     # TODO(frolv): Specify the Sphinx script from a prebuilts path instead of
     # requiring it in the tree.
-    command = ['sphinx-build', '-W', '-b', 'html', '-d',
-               f'{dst_dir}/help', src_dir, f'{dst_dir}/html']
+    command = [
+        'sphinx-build', '-W', '-b', 'html', '-d', f'{dst_dir}/help', src_dir,
+        f'{dst_dir}/html'
+    ]
     return subprocess.call(command)
 
 
@@ -82,7 +91,6 @@ def copy(src: str, dst: str) -> None:
 
 def copy_doc_tree(args: argparse.Namespace) -> None:
     """Copies doc source and input files into a build tree."""
-
     def build_path(path):
         """Converts a source path to a filename in the build directory."""
         if path.startswith(args.gn_root):
@@ -97,7 +105,7 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
 
     mkdir(args.sphinx_build_dir)
     for path in args.sources:
-      copy(path, f'{args.sphinx_build_dir}/')
+        copy(path, f'{args.sphinx_build_dir}/')
     copy(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.

@@ -144,9 +144,7 @@ pw_executable("build_string_incremental_with_snprintf") {
     "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
-  defines = [
-    "USE_STRING_BUILDER=0",
-  ]
+  defines = [ "USE_STRING_BUILDER=0" ]
 }
 
 pw_executable("build_string_incremental_with_string_builder") {
@@ -157,7 +155,5 @@ pw_executable("build_string_incremental_with_string_builder") {
     "$dir_pw_bloat:bloat_this_binary",
     "..",
   ]
-  defines = [
-    "USE_STRING_BUILDER=1",
-  ]
+  defines = [ "USE_STRING_BUILDER=1" ]
 }

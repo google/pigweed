@@ -52,9 +52,9 @@ def init(venv_path, requirements=()) -> None:
 
     pip_install('--upgrade', 'pip')
 
-    package_args = tuple(
-        f'--editable={os.path.dirname(path)}' for path in git_list_files(
-            'setup.py', '*/setup.py', cwd=git_repo_root()))
+    package_args = tuple(f'--editable={os.path.dirname(path)}'
+                         for path in git_list_files(
+                             'setup.py', '*/setup.py', cwd=git_repo_root()))
 
     requirement_args = tuple(f'--requirement={req}' for req in requirements)
 

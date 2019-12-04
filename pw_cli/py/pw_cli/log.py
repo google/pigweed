@@ -69,6 +69,7 @@ def install():
     logging.addLevelName(logging.DEBUG,    _Color.blue    ('DBG'))
     # yapf: enable
 
+
 # Note: normally this shouldn't be done at the top level without a try/catch
 # around the pw_cli.plugins registry import, since pw_cli might not be
 # installed.
@@ -77,7 +78,6 @@ pw_cli.plugins.register(
     help='Show how how logs look at various levels',
     command_function=main,
 )
-
 
 if __name__ == '__main__':
     install()

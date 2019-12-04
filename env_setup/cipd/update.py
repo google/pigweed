@@ -32,15 +32,14 @@ def parse(argv=None):
     script_root = os.path.abspath(os.path.dirname(__file__))
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument(
-        '--install-dir', default=os.path.join(script_root, 'tools'))
-    parser.add_argument(
-        '--ensure-file', default=os.path.join(script_root, 'ensure_file'))
-    parser.add_argument(
-        '--cipd', default=os.path.join(script_root, 'cipd.py'))
-    parser.add_argument(
-        '--suppress-shell-commands', action='store_false',
-        dest='print_shell_commands')
+    parser.add_argument('--install-dir',
+                        default=os.path.join(script_root, 'tools'))
+    parser.add_argument('--ensure-file',
+                        default=os.path.join(script_root, 'ensure_file'))
+    parser.add_argument('--cipd', default=os.path.join(script_root, 'cipd.py'))
+    parser.add_argument('--suppress-shell-commands',
+                        action='store_false',
+                        dest='print_shell_commands')
 
     return parser.parse_args(argv)
 
@@ -52,13 +51,14 @@ def check_auth(cipd, print_shell_commands):
         return True
 
     except subprocess.CalledProcessError:
-        print('='*60, file=sys.stderr)
+        print('=' * 60, file=sys.stderr)
         print('ERROR: not logged into CIPD--please run this command:')
         print(cipd, 'auth-login`', file=sys.stderr)
-        print('='*60, file=sys.stderr)
+        print('=' * 60, file=sys.stderr)
 
         if print_shell_commands:
-            with tempfile.NamedTemporaryFile(mode='w', delete=False,
+            with tempfile.NamedTemporaryFile(mode='w',
+                                             delete=False,
                                              prefix='cipdsetup') as temp:
                 print('ABORT_PW_ENVSETUP=1', file=temp)
 
@@ -99,7 +99,8 @@ def update(argv=None):
     paths.append(os.environ['PATH'])
 
     if args.print_shell_commands:
-        with tempfile.NamedTemporaryFile(mode='w', delete=False,
+        with tempfile.NamedTemporaryFile(mode='w',
+                                         delete=False,
                                          prefix='cipdsetup') as temp:
             print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
             print('export PATH', file=temp)

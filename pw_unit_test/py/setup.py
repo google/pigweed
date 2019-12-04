@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """pw_unit_test"""
 
 import unittest
@@ -24,14 +23,14 @@ def test_suite():
 
 
 setuptools.setup(
-        name='pw_unit_test',
-        version='0.1.0',
-        author='Pigweed Authors',
-        author_email='pigweed-developers@googlegroups.com',
-        description='Unit tests for Pigweed projects',
-        packages=setuptools.find_packages(),
-        test_suite='setup.test_suite',
-        install_requires=[
-            'coloredlogs',
-        ],
+    name='pw_unit_test',
+    version='0.1.0',
+    author='Pigweed Authors',
+    author_email='pigweed-developers@googlegroups.com',
+    description='Unit tests for Pigweed projects',
+    packages=setuptools.find_packages(),
+    test_suite='setup.test_suite',
+    install_requires=[
+        'coloredlogs',
+    ],
 )

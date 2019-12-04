@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """The binary_diff module defines a class which stores size diff information."""
 
 import collections
@@ -21,8 +20,8 @@ from typing import List, Generator, Type
 
 DiffSegment = collections.namedtuple(
     'DiffSegment', ['name', 'before', 'after', 'delta', 'capacity'])
-FormattedDiff = collections.namedtuple(
-    'FormattedDiff', ['segment', 'before', 'delta', 'after'])
+FormattedDiff = collections.namedtuple('FormattedDiff',
+                                       ['segment', 'before', 'delta', 'after'])
 
 
 def format_integer(num: int, force_sign: bool = False) -> str:
@@ -39,7 +38,6 @@ def format_percent(num: float, force_sign: bool = False) -> str:
 
 class BinaryDiff:
     """A size diff between two binary files."""
-
     def __init__(self, label: str):
         self.label = label
         self._segments: collections.OrderedDict = collections.OrderedDict()
@@ -52,8 +50,8 @@ class BinaryDiff:
         """Yields each of the segments in this diff with formatted data."""
 
         if not self._segments:
-          yield FormattedDiff('(all)', '(same)', '0', '(same)')
-          return
+            yield FormattedDiff('(all)', '(same)', '0', '(same)')
+            return
 
         for segment in self._segments.values():
             if segment.delta == 0:
@@ -67,15 +65,15 @@ class BinaryDiff:
             )
 
     @classmethod
-    def from_csv(cls: Type['BinaryDiff'],
-                 label: str,
+    def from_csv(cls: Type['BinaryDiff'], label: str,
                  raw_csv: List[str]) -> 'BinaryDiff':
         """Parses a BinaryDiff from bloaty's CSV output."""
 
         diff = cls(label)
         reader = csv.reader(raw_csv)
         for row in reader:
-            diff.add_segment(DiffSegment(row[0], int(
-                row[5]), int(row[7]), int(row[1]), int(row[3])))
+            diff.add_segment(
+                DiffSegment(row[0], int(row[5]), int(row[7]), int(row[1]),
+                            int(row[3])))
 
         return diff

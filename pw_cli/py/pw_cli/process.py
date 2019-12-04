@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 """Module for running subprocesses from pw and capturing their output."""
 
 import asyncio
@@ -23,7 +22,6 @@ from pw_cli.color import Color
 import pw_cli.log
 
 _LOG = logging.getLogger(__name__)
-
 
 # Environment variable passed down to subprocesses to indicate that they are
 # running as a subprocess. Can be imported by other code.
@@ -44,15 +42,15 @@ async def run_async(*args: str, silent: bool = False) -> int:
 
     stdout = asyncio.subprocess.DEVNULL if silent else asyncio.subprocess.PIPE
     process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=stdout,
-        stderr=asyncio.subprocess.STDOUT,
-        env=env)
+        *command, stdout=stdout, stderr=asyncio.subprocess.STDOUT, env=env)
 
     if process.stdout is not None:
-        while line := await process.stdout.readline():
-            _LOG.log(pw_cli.log.LOGLEVEL_STDOUT,
-                     '[%s] %s',
+        while True:
+            line = await process.stdout.readline()
+            if not line:
+                break
+
+            _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[%s] %s',
                      Color.bold_white(process.pid),
                      line.decode().rstrip())
 

@@ -129,9 +129,7 @@ generate_toolchains("host_gcc_suite") {
 
 generate_toolchains("host_clang_suite") {
   toolchain_template = "host_clang"
-  common_toolchain_cflags = [
-    "-g3",
-  ]
+  common_toolchain_cflags = [ "-g3" ]
 
   toolchains = [
     {

@@ -69,6 +69,7 @@ def _die(*args):
     _LOG.fatal(*args)
     sys.exit(1)
 
+
 class PigweedBuildWatcher(FileSystemEventHandler):
     def __init__(self,
                  patterns=None,
@@ -86,8 +87,8 @@ class PigweedBuildWatcher(FileSystemEventHandler):
     def path_matches(self, path):
         """Returns true if path matches according to the watcher patterns"""
         pure_path = pathlib.PurePath(path)
-        return ((not any(pure_path.match(x) for x in self.ignore_patterns)) and
-                any(pure_path.match(x) for x in self.patterns))
+        return ((not any(pure_path.match(x) for x in self.ignore_patterns))
+                and any(pure_path.match(x) for x in self.patterns))
 
     def dispatch(self, event):
         # There isn't any point in triggering builds on new directory creation.
@@ -190,21 +191,23 @@ _WATCH_PATTERNS = (
     '*.rst',
 )
 
+
 def add_parser_arguments(parser):
+    parser.add_argument('--patterns',
+                        help=(_WATCH_PATTERN_DELIMITER +
+                              '-delimited list of globs to '
+                              'watch to trigger recompile'),
+                        default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
+    parser.add_argument('--ignore_patterns',
+                        help=(_WATCH_PATTERN_DELIMITER +
+                              '-delimited list of globs to '
+                              'ignore events from'))
     parser.add_argument(
-            '--patterns',
-            help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-                  'watch to trigger recompile'),
-            default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
-    parser.add_argument(
-            '--ignore_patterns',
-            help=(_WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-                 'ignore events from'))
-    parser.add_argument(
-            '--build_dir',
-            help=('Ninja directory to build. Can be specified '
-            'multiple times to build multiple configurations'),
-            action='append')
+        '--build_dir',
+        help=('Ninja directory to build. Can be specified '
+              'multiple times to build multiple configurations'),
+        action='append')
+
 
 def watch(build_dir='', patterns=None, ignore_patterns=None):
     _LOG.info('Starting Pigweed build watcher')
@@ -255,20 +258,21 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
     # We need to ignore both the user-specified patterns and also all
     # events for files in the build output directories.
-    ignore_patterns= (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
-                      if ignore_patterns else [])
-    ignore_patterns.extend([
-        f'{build_dir}/*' for build_dir in build_dirs])
+    ignore_patterns = (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
+                       if ignore_patterns else [])
+    ignore_patterns.extend([f'{build_dir}/*' for build_dir in build_dirs])
 
     event_handler = PigweedBuildWatcher(
-            patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
-            ignore_patterns=ignore_patterns,
-            build_dirs=build_dirs)
+        patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
+        ignore_patterns=ignore_patterns,
+        build_dirs=build_dirs)
 
     observer = Observer()
-    observer.schedule(event_handler,
-                      path_of_directory_to_watch,
-                      recursive=True,)
+    observer.schedule(
+        event_handler,
+        path_of_directory_to_watch,
+        recursive=True,
+    )
     observer.start()
 
     _LOG.info('Directory to watch: %s', path_to_log)
@@ -294,6 +298,7 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
     observer.join()
 
+
 pw_cli.plugins.register(
     name='watch',
     help='Watch files for changes',
@@ -301,12 +306,13 @@ pw_cli.plugins.register(
     command_function=watch,
 )
 
+
 def main():
     parser = argparse.ArgumentParser(description='Watch for changes')
     add_parser_arguments(parser)
     args = parser.parse_args()
     watch(**vars(args))
 
+
 if __name__ == '__main__':
     main()
-
