@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2019 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -45,10 +45,36 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
+def check_auth(cipd, print_shell_commands):
+    """Check logged into CIPD."""
+    try:
+        subprocess.check_output([cipd, 'auth-info'], stderr=subprocess.STDOUT)
+        return True
+
+    except subprocess.CalledProcessError:
+        print('='*60, file=sys.stderr)
+        print('ERROR: not logged into CIPD--please run this command:')
+        print(cipd, 'auth-login`', file=sys.stderr)
+        print('='*60, file=sys.stderr)
+
+        if print_shell_commands:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False,
+                                             prefix='cipdsetup') as temp:
+                print('ABORT_PW_ENVSETUP=1', file=temp)
+
+            print('. {}'.format(temp.name))
+        return False
+
+
 def update(argv=None):
     """Grab the tools listed in ensure_file."""
 
     args = parse(argv)
+
+    os.environ['CIPD_PY_INSTALL_DIR'] = args.install_dir
+
+    if not check_auth(args.cipd, args.print_shell_commands):
+        return
 
     cmd = [
         args.cipd,
@@ -58,9 +84,8 @@ def update(argv=None):
         '-log-level', 'warning',
     ]  # yapf: disable
 
-    os.environ['CIPD_PY_INSTALL_DIR'] = args.install_dir
-
-    os.makedirs(args.install_dir, exist_ok=True)
+    if not os.path.isdir(args.install_dir):
+        os.makedirs(args.install_dir)
     subprocess.check_call(cmd, stdout=sys.stderr)
 
     paths = [

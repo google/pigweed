@@ -14,19 +14,23 @@
 
 # This script must be tested on bash, zsh, and dash.
 
+function _realpath () {
+  python -c "import os.path; print(os.path.realpath('$@'))"
+}
+
 # Shell: bash.
 if test -n "$BASH"; then
-  PW_SETUP_SCRIPT_PATH=$(realpath $BASH_SOURCE)
+  PW_SETUP_SCRIPT_PATH=$(_realpath $BASH_SOURCE)
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
-  PW_SETUP_SCRIPT_PATH=$(realpath ${(%):-%N})
+  PW_SETUP_SCRIPT_PATH=$(_realpath ${(%):-%N})
 # Shell: dash.
 elif test ${0##*/} = dash; then
-  PW_SETUP_SCRIPT_PATH=$(realpath \
+  PW_SETUP_SCRIPT_PATH=$(_realpath \
     $(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;'))
 # If everything else fails, try $0. It could work.
 else
-  PW_SETUP_SCRIPT_PATH=$(realpath $0)
+  PW_SETUP_SCRIPT_PATH=$(_realpath $0)
 fi
 
 PW_ENVSETUP=$(dirname $PW_SETUP_SCRIPT_PATH)
@@ -35,5 +39,10 @@ export PW_ENVSETUP
 PW_ROOT=$(dirname "$PW_ENVSETUP")
 export PW_ROOT
 
+unset ABORT_PW_ENVSETUP
+
 . "$PW_ENVSETUP/cipd/init.sh"
-. "$PW_ENVSETUP/virtualenv/init.sh"
+
+if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
+  . "$PW_ENVSETUP/virtualenv/init.sh"
+fi
