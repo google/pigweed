@@ -4,7 +4,6 @@
 
 #include "low_energy_discovery_manager.h"
 
-#include <lib/async/default.h>
 #include <zircon/assert.h>
 
 #include "peer.h"

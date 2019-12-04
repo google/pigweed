@@ -4,7 +4,6 @@
 
 #include "low_energy_peripheral_server.h"
 
-#include <lib/async/default.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
 

@@ -4,8 +4,6 @@
 
 #include "low_energy_address_manager.h"
 
-#include <lib/async/default.h>
-
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"

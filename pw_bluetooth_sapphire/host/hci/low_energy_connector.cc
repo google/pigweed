@@ -5,7 +5,6 @@
 #include "low_energy_connector.h"
 
 #include <endian.h>
-#include <lib/async/default.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
