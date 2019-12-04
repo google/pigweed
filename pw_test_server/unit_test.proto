@@ -1,0 +1,52 @@
+// Copyright 2019 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+package pw.test_server;
+
+service TestServer {
+  // Queues a single unit test, blocking until it has run.
+  rpc RunUnitTest(UnitTestDescriptor) returns (UnitTestRunStatus) {}
+
+  // Returns information about the server.
+  rpc Status(Empty) returns (ServerStatus) {}
+}
+
+message Empty {}
+
+enum TestStatus {
+  PENDING = 0;
+  SUCCESS = 1;
+  FAILURE = 2;
+  SKIPPED = 3;
+}
+
+message UnitTestDescriptor {
+  // Local file path to the unit test binary.
+  string file_path = 1;
+}
+
+message UnitTestRunStatus {
+  TestStatus result = 1;
+  uint64 queue_time_ns = 2;
+  uint64 run_time_ns = 3;
+  bytes output = 4;
+}
+
+message ServerStatus {
+  uint64 uptime_ns = 1;
+  uint32 tests_queued = 2;
+  uint32 tests_passed = 3;
+  uint32 tests_failed = 4;
+}

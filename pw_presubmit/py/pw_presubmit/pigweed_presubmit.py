@@ -221,13 +221,14 @@ COPYRIGHT_LINES = tuple("""\
  the License.
 """.splitlines(True))
 
-_EXCLUDE_FROM_COPYRIGHT_NOTICE = (
+_EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'(?:.+/)?\..+',
     r'AUTHORS',
     r'LICENSE',
     r'.*\.md',
     r'.*\.rst',
     r'(?:.+/)?requirements.txt',
+    r'(.+/)?go.(mod|sum)',
 )
 
 
