@@ -12,15 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
     "pw_cc_library",
 )
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
 
 # Library which uses standard C/C++ functions such as memcpy to prevent them
 # from showing up within bloat diff reports.
