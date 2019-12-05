@@ -21,7 +21,7 @@ import os
 import re
 import shutil
 import sys
-from typing import Callable, Dict, Sequence
+from typing import Dict, Sequence
 
 try:
     import pw_presubmit
@@ -35,6 +35,8 @@ except ImportError:
 from pw_presubmit import format_code
 from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, PresubmitFailure
+
+_LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def presubmit_dir(*paths):
@@ -56,7 +58,7 @@ def init_cipd():
         os.path.join(cipd, 'bin'),
         os.environ['PATH'],
     ))
-    print('PATH', os.environ['PATH'])
+    _LOG.debug('PATH %s', os.environ['PATH'])
 
 
 @filter_paths(endswith='.py')  # Only run if there are .py files.
@@ -155,7 +157,7 @@ def test_python_packages(paths):
     packages = pw_presubmit.find_python_packages(paths)
 
     if not packages:
-        print('No Python packages were found.')
+        _LOG.info('No Python packages were found.')
         return
 
     for package in packages:
@@ -173,8 +175,8 @@ def pylint(paths):
         run_python_module('pylint', '-j', '0', *paths)
     except PresubmitFailure:
         # TODO(hepler): Enforce pylint when it passes.
-        print('--> pylint checks FAILED!')
-        print('    Treating this as a warning... for now.')
+        _LOG.warning('pylint checks FAILED!')
+        _LOG.warning('Treating this as a warning... for now.')
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
@@ -204,7 +206,7 @@ def bazel_test(unused_paths):
 BAZEL = (bazel_test, )
 
 #
-# General presubmit checks
+# Code format presubmit checks
 #
 COPYRIGHT_FIRST_LINE = re.compile(
     r'^(#|//| \*) Copyright 20\d\d The Pigweed Authors$')
@@ -260,9 +262,8 @@ def copyright_notice(paths):
                     break
 
     if errors:
-        print('-->', pw_presubmit.plural(errors, 'file'),
-              'with a missing or incorrect copyright notice:')
-        print('   ', '\n    '.join(errors))
+        _LOG.warning('%s with a missing or incorrect copyright notice:\n%s',
+                     pw_presubmit.plural(errors, 'file'), '\n'.join(errors))
         raise PresubmitFailure
 
 
@@ -271,7 +272,7 @@ CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 #
 # Presubmit check programs
 #
-QUICK_PRESUBMIT: Sequence[Callable] = (
+QUICK_PRESUBMIT: Sequence = (
     *INIT,
     *PYTHON,
     gn_clang_build,
@@ -279,7 +280,7 @@ QUICK_PRESUBMIT: Sequence[Callable] = (
     *CODE_FORMAT,
 )
 
-PROGRAMS: Dict[str, Sequence[Callable]] = {
+PROGRAMS: Dict[str, Sequence] = {
     'full': INIT + GN + CC + PYTHON + BAZEL + CODE_FORMAT,
     'quick': QUICK_PRESUBMIT,
 }

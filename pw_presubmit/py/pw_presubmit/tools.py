@@ -43,7 +43,6 @@ pragma_once function for an example.
 import argparse
 import collections
 import enum
-import functools
 import logging
 import re
 import os
@@ -155,10 +154,13 @@ def _make_box(section_alignments: Sequence[str]) -> str:
 
 
 _DOUBLE = '╔═╦╗║║║╚═╩╝'
-_TOP = '┏━┯┓┃│┃┖┄┴┚'
-_BOTTOM = '┎┄┬┒┃│┃┗━┷┛'
+_TOP = '┏━┯┓┃│┃┃ │┃'
+_BOTTOM = '┃ │┃┃│┃┗━┷┛'
 
 WIDTH = 80
+
+_LEFT = 8
+_RIGHT = 11
 
 
 def _title(msg, style=_DOUBLE):
@@ -166,28 +168,19 @@ def _title(msg, style=_DOUBLE):
     return _make_box('^').format(*style, section1=msg, width1=len(msg))
 
 
-def _start_box(style, count, title, box=_make_box('><')):
-    info = f' {title} '.ljust(WIDTH - 13)
-
-    return box.format(*style,
-                      section1=count + ' ',
-                      width1=8,
-                      section2=info,
-                      width2=len(info))
-
-
-def _result_box(style, result, color, title, time_s, box=_make_box('^<^')):
+def _format_time(time_s: float) -> str:
     minutes, seconds = divmod(time_s, 60)
-    time_str = f' {int(minutes)}:{seconds:04.1f} '
-    info = f' {title} '.ljust(WIDTH - 14 - len(time_str))
+    return f' {int(minutes)}:{seconds:04.1f}'
 
+
+def _box(style, left, middle, right, box=_make_box('><>')):
     return box.format(*style,
-                      section1=f' {color(result.center(6))} ',
-                      width1=8,
-                      section2=info,
-                      width2=len(info),
-                      section3=time_str,
-                      width3=len(time_str))
+                      section1=left + ('' if left.endswith(' ') else ' '),
+                      width1=_LEFT,
+                      section2=' ' + middle,
+                      width2=WIDTH - _LEFT - _RIGHT - 4,
+                      section3=right + ' ',
+                      width3=_RIGHT)
 
 
 def file_summary(paths: Iterable) -> str:
@@ -217,13 +210,18 @@ class _Result(enum.Enum):
     FAIL = 'FAILED'  # Check failed.
     CANCEL = 'CANCEL'  # Check didn't complete.
 
-    def color(self) -> Callable:
+    def colorized(self, width: int, invert=False) -> Callable:
         if self is _Result.PASS:
-            return color_green
-        if self is _Result.FAIL:
-            return color_bold_red
-        if self is _Result.CANCEL:
-            return color_yellow
+            color = color_black_on_green if invert else color_green
+        elif self is _Result.FAIL:
+            color = color_black_on_red if invert else color_red
+        elif self is _Result.CANCEL:
+            color = color_yellow
+        else:
+            color = lambda value: value
+
+        padding = (width - len(self.value)) // 2 * ' '
+        return padding + color(self.value) + padding
 
 
 class Presubmit:
@@ -231,17 +229,17 @@ class Presubmit:
     def __init__(self, root: str, paths: Sequence[str]):
         self.root = root
         self.paths = paths
-        self.log = print
 
-    def run(self, program: Sequence[Callable],
-            continue_on_error: bool = False) -> bool:
+    def run(self, program, continue_on_error: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
-        self.log(_title(f'Presubmit checks for {os.path.basename(self.root)}'))
+        print(_title(f'Presubmit checks for {os.path.basename(self.root)}'))
 
-        self.log(f'Running {plural(program, "check")} on '
-                 f'{plural(self.paths, "file")} in {self.root}\n')
-        self.log(file_summary(self.paths))
+        _LOG.info('Running %s on %s in %s', plural(program, 'check'),
+                  plural(self.paths, 'file'), self.root)
+
+        print(file_summary(self.paths))
+        _LOG.debug('Paths:\n%s', '\n'.join(self.paths))
 
         passed: List[Callable] = []
         failed: List[Callable] = []
@@ -250,15 +248,10 @@ class Presubmit:
         start_time: float = time.time()
 
         for i, check in enumerate(program):
-            self.log(_start_box(_TOP, f'{i+1}/{len(program)}', check.__name__))
+            if not isinstance(check, _Check):
+                check = _Check(check)
 
-            time_s = time.time()
-            result = self._run_check(check)
-            time_s = time.time() - time_s
-
-            self.log(
-                _result_box(_BOTTOM, result.value, result.color(),
-                            check.__name__, time_s))
+            result = check.run(self.paths, i + 1, len(program))
 
             if result is _Result.PASS:
                 passed.append(check)
@@ -272,40 +265,30 @@ class Presubmit:
                     skipped = list(program[i + 1:])
                     break
 
-        self._log_summary(time.time() - start_time, len(passed), len(failed),
-                          len(skipped))
+        _log_summary(time.time() - start_time, len(passed), len(failed),
+                     len(skipped))
         return not failed and not skipped
 
-    def _run_check(self, check: Callable) -> _Result:
-        try:
-            check(*([self.paths] if signature(check).parameters else []))
-            return _Result.PASS
-        except Exception as failure:
-            if str(failure):
-                self.log(failure)
-            return _Result.FAIL
-        except KeyboardInterrupt:
-            self.log()
-            return _Result.CANCEL
 
-    def _log_summary(self, time_s: float, passed: int, failed: int,
-                     skipped: int) -> None:
-        text = 'FAILED' if failed else 'PASSED'
-        color = color_black_on_red if failed else color_black_on_green
+def _log_summary(time_s: float, passed: int, failed: int,
+                 skipped: int) -> None:
+    summary = []
+    if passed:
+        summary.append(f'{passed} passed')
+    if failed:
+        summary.append(f'{failed} failed')
+    if skipped:
+        summary.append(f'{skipped} skipped')
 
-        summary = []
-        if passed:
-            summary.append(f'{passed} passed')
-        if failed:
-            summary.append(f'{failed} failed')
-        if skipped:
-            summary.append(f'{skipped} skipped')
+    if failed or skipped:
+        result_text = _Result.FAIL.colorized(_LEFT, invert=True)
+    else:
+        result_text = _Result.PASS.colorized(_LEFT, invert=True)
 
-        self.log(
-            _result_box(
-                _DOUBLE, text, color,
-                f'{passed + failed + skipped} checks: {", ".join(summary)}',
-                time_s))
+    print(
+        _box(_DOUBLE, result_text,
+             f'{passed + failed + skipped} checks: {", ".join(summary)}',
+             _format_time(time_s)))
 
 
 def add_path_arguments(parser) -> None:
@@ -405,16 +388,92 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
     return package_dirs
 
 
+class _Check:
+    """Wraps a presubmit check function.
+
+    This class consolidates the logic for running and logging a presubmit check.
+    It also supports filtering the paths passed to the presubmit check.
+    """
+    def __init__(self,
+                 check_function: Callable,
+                 path_filter: Callable = lambda paths: paths,
+                 always_run: bool = True):
+        self._check: Callable = check_function
+        self._filter: Callable = path_filter
+        self._always_run: bool = always_run
+
+        # The presubmit uses __name__ as the title for the check. Since _Check
+        # wraps a presubmit function, adopt that function's name.
+        self.__name__ = self._check.__name__
+
+    def run(self, paths: Iterable, count: int, total: int) -> _Result:
+        """Filters the paths list and runs the presubmit check with them."""
+
+        paths = self._filter(paths)
+
+        print('\n'.join(
+            _box(_TOP, f'{count}/{total}', self.__name__,
+                 plural(paths, "file")).splitlines()[:-1]))
+
+        if paths or self._always_run:
+            _LOG.debug('[%d/%d] Running %s on %s', count, total, self.__name__,
+                       plural(paths, "file"))
+
+            start_time_s = time.time()
+            result = self._call_function(paths)
+            time_str = _format_time(time.time() - start_time_s)
+            _LOG.debug('%s %s', self.__name__, result.value)
+        else:
+            _LOG.debug('Skipping %s: no affected files', self.__name__)
+            result = _Result.PASS
+            time_str = 'skipped'
+
+        print(_box(_BOTTOM, result.colorized(_LEFT), self.__name__, time_str))
+
+        return result
+
+    def _call_function(self, paths: Iterable) -> _Result:
+        try:
+            if signature(self._check).parameters:
+                self._check(paths)
+            else:
+                self._check()
+        except Exception as failure:  # pylint: disable=broad-except
+            if str(failure):
+                print(failure)
+            return _Result.FAIL
+        except KeyboardInterrupt:
+            print()
+            return _Result.CANCEL
+
+        return _Result.PASS
+
+
 def _wrap_if_str(value: Iterable[str]) -> Iterable[str]:
     return [value] if isinstance(value, str) else value
 
 
 def filter_paths(endswith: Iterable[str] = (''),
                  exclude: Iterable = (),
-                 skip_if_empty: bool = True):
-    """Decorator for filtering the files list for a presubmit check function."""
-    endswith = frozenset(_wrap_if_str(endswith))
+                 always_run: bool = False):
+    """Decorator for filtering the paths list for a presubmit check function.
+
+    Args:
+        endswith: str or iterable of path endings to include
+        exclude: regular expressions of paths to exclude
+
+    Returns:
+        a wrapped version of the presubmit function
+    """
+    endswith = _wrap_if_str(endswith)
     exclude = [re.compile(exp) for exp in _wrap_if_str(exclude)]
+
+    def path_filter(paths: Iterable) -> List:
+        return [
+            path for path in paths
+            if any(path.endswith(end) for end in endswith) and not any(
+                exp.fullmatch(path) for exp in exclude)
+        ]
 
     def filter_paths_for_function(function: Callable):
         if len(signature(function).parameters) != 1:
@@ -422,44 +481,32 @@ def filter_paths(endswith: Iterable[str] = (''),
                             f'exactly one argument: {function.__name__} takes '
                             f'{len(signature(function).parameters)}.')
 
-        @functools.wraps(function)
-        def wrapped_function(paths: Iterable[str]):
-            paths = [
-                path for path in paths
-                if any(path.endswith(end) for end in endswith) and not any(
-                    exp.fullmatch(path) for exp in exclude)
-            ]
-
-            if not paths and skip_if_empty:
-                print('Skipping check: no affected files')
-            else:
-                return function(paths)
-
-        return wrapped_function
+        return _Check(function, path_filter, always_run=always_run)
 
     return filter_paths_for_function
 
 
-def call(*args, print_output=True, **kwargs) -> None:
+def call(*args, **kwargs) -> None:
     """Optional subprocess wrapper with helpful output."""
-    print('[COMMAND]',
-          ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())))
-    print(' '.join(shlex.quote(arg) for arg in args))
-
     process = subprocess.run(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              **kwargs)
+    log = _LOG.warning if process.returncode else _LOG.debug
+
+    log('[COMMAND] %s\n%s',
+        ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
+        ' '.join(shlex.quote(arg) for arg in args))
+
+    log('[RESULT] %s with return code %d',
+        'Failed' if process.returncode else 'Passed', process.returncode)
+
+    output = process.stdout.decode(errors='backslashreplace')
+    if output:
+        log('[OUTPUT]\n%s', output)
+
     if process.returncode:
-        print(f'[RESULT] Failed with return code {process.returncode}.')
-        output = process.stdout.decode(errors='backslashreplace')
-
-        if print_output:
-            print('[OUTPUT]')
-            print(output)
-            raise PresubmitFailure
-
-        raise PresubmitFailure(output)
+        raise PresubmitFailure
 
 
 @filter_paths(endswith='.h')

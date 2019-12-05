@@ -222,7 +222,7 @@ def presubmit_check(code_format: CodeFormat) -> Callable:
         if print_format_check(code_format.check(paths)):
             raise pw_presubmit.PresubmitFailure
 
-    check_code_format.__name__ = f'Check {code_format.language} format'
+    check_code_format.__name__ = f'{code_format.language} format'
 
     return check_code_format
 
