@@ -16,3 +16,4 @@
 from stm32f429i_disc1_utils.unit_test_runner import TestingFailure
 from stm32f429i_disc1_utils.unit_test_runner import flash_device
 from stm32f429i_disc1_utils.unit_test_runner import run_device_test
+from stm32f429i_disc1_utils.stm32f429i_detector import detect_boards

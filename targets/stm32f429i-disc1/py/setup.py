@@ -32,9 +32,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
     entry_points={
-        'console_scripts': {
+        'console_scripts': [
             'stm32f429i_disc1_unit_test_runner = '
-            'stm32f429i_disc1_utils.unit_test_runner:main'
-        }
+            '    stm32f429i_disc1_utils.unit_test_runner:main',
+            'stm32f429i_disc1_detector = '
+            '    stm32f429i_disc1_utils.stm32f429i_detector:main'
+        ]
     },
-    install_requires=['pyserial', 'coloredlogs'])
+    install_requires=['pyserial', 'coloredlogs'],
+)

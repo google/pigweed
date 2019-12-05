@@ -12,15 +12,17 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""This script flashes and runs unit tests on stm32f429i-disc1 boards."""
 
 import argparse
 import logging
 import os
-import serial
 import subprocess
 import sys
 
 import coloredlogs
+import serial
+from stm32f429i_disc1_utils import stm32f429i_detector
 
 # Path used to access non-python resources in this python module.
 _DIR = os.path.dirname(__file__)
@@ -55,8 +57,12 @@ def parse_args():
     parser.add_argument('--openocd-config',
                         default=_OPENOCD_CONFIG,
                         help='Path to openocd configuration file')
+    parser.add_argument('--stlink-serial',
+                        default=None,
+                        help='The serial number of the stlink to use when '
+                        'flashing the target device')
     parser.add_argument('--port',
-                        required=True,
+                        default=None,
                         help='The name of the serial port to connect to when '
                         'running tests')
     parser.add_argument('--baud',
@@ -86,7 +92,7 @@ def log_subprocess_output(level, output):
         _LOG.log(level, line)
 
 
-def reset_device(openocd_config):
+def reset_device(openocd_config, stlink_serial):
     """Uses openocd to reset the attached device."""
 
     # Name/path of openocd.
@@ -99,19 +105,24 @@ def reset_device(openocd_config):
     ]
     _LOG.debug('Resetting device')
 
+    env = os.environ.copy()
+    if stlink_serial:
+        env['PW_STLINK_SERIAL'] = stlink_serial
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+                             stderr=subprocess.STDOUT,
+                             env=env)
     if process.returncode:
         log_subprocess_output(logging.ERROR, process.stdout)
         raise TestingFailure('Failed to reset target device')
-    else:
-        log_subprocess_output(logging.DEBUG, process.stdout)
+
+    log_subprocess_output(logging.DEBUG, process.stdout)
 
     _LOG.debug('Successfully reset device')
 
 
-def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
+def read_serial(openocd_config, stlink_serial, port, baud_rate,
+                test_timeout) -> bytes:
     """Reads lines from a serial port until a line read times out.
 
     Returns bytes object containing the read serial data.
@@ -124,7 +135,7 @@ def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
 
     # Flush input buffer and reset the device to begin the test.
     device.reset_input_buffer()
-    reset_device(openocd_config)
+    reset_device(openocd_config, stlink_serial)
 
     # Block and wait for the first byte.
     serial_data += device.read()
@@ -152,7 +163,7 @@ def read_serial(openocd_config, port, baud_rate, test_timeout) -> bytes:
         test_start_index:]
 
 
-def flash_device(binary, openocd_config):
+def flash_device(binary, openocd_config, stlink_serial):
     """Flash binary to a connected device using the provided configuration."""
 
     # Name/path of openocd.
@@ -166,14 +177,18 @@ def flash_device(binary, openocd_config):
     ]
     _LOG.info('Flashing firmware to device')
 
+    env = os.environ.copy()
+    if stlink_serial:
+        env['PW_STLINK_SERIAL'] = stlink_serial
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+                             stderr=subprocess.STDOUT,
+                             env=env)
     if process.returncode:
         log_subprocess_output(logging.ERROR, process.stdout)
         raise TestingFailure('Failed to flash target device')
-    else:
-        log_subprocess_output(logging.DEBUG, process.stdout)
+
+    log_subprocess_output(logging.DEBUG, process.stdout)
 
     _LOG.debug('Successfully flashed firmware to device')
 
@@ -197,18 +212,31 @@ def handle_test_results(test_output):
     _LOG.info('Test passed!')
 
 
-def run_device_test(binary, test_timeout, openocd_config, baud,
+def run_device_test(binary,
+                    test_timeout,
+                    openocd_config,
+                    baud,
+                    stlink_serial=None,
                     port=None) -> bool:
     """Flashes, runs, and checks an on-device test binary.
 
     Returns true on test pass.
     """
 
-    _LOG.debug('Launching test binary {}'.format(binary))
+    if stlink_serial is None and port is None:
+        _LOG.debug('Attempting to automatically detect dev board')
+        boards = stm32f429i_detector.detect_boards()
+        if not boards:
+            _LOG.fatal('Could not find an attached device')
+        stlink_serial = boards[0].serial_number
+        port = boards[0].dev_name
+
+    _LOG.debug('Launching test binary %s', binary)
     try:
-        flash_device(binary, openocd_config)
+        flash_device(binary, openocd_config, stlink_serial)
         _LOG.info('Running test')
-        serial_data = read_serial(openocd_config, port, baud, test_timeout)
+        serial_data = read_serial(openocd_config, stlink_serial, port, baud,
+                                  test_timeout)
         handle_test_results(serial_data)
     except TestingFailure as err:
         _LOG.error(err)
@@ -223,7 +251,7 @@ def main(args=None):
 
     # Try to use pw_cli logs, else default to something reasonable.
     try:
-        import pw_cli.log
+        import pw_cli.log  # pylint: disable=import-outside-toplevel
         pw_cli.log.install()
     except ImportError:
         coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
@@ -238,7 +266,7 @@ def main(args=None):
                             fmt='%(asctime)s %(levelname)s | %(message)s')
 
     if run_device_test(args.binary, args.test_timeout, args.openocd_config,
-                       args.baud, args.port):
+                       args.baud, args.stlink_serial, args.port):
         sys.exit(0)
     else:
         sys.exit(1)
