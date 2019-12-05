@@ -13,35 +13,6 @@
 # the License.
 
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_unit_test/test.gni")
-
-config("default_config") {
-  include_dirs = [ "public" ]
-}
-
-source_set("pw_span") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
-  public = [
-    "public/pw_span/span.h",
-  ]
-  sources = public
-}
-
-pw_test_group("tests") {
-  tests = [ ":test" ]
-}
-
-pw_test("test") {
-  deps = [
-    ":pw_span",
-  ]
-  sources = [
-    "span_test.cc",
-  ]
-}
 
 pw_doc_group("docs") {
   sources = [

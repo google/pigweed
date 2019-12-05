@@ -36,6 +36,9 @@ pw_doc_gen("docs") {
     "$dir_pw_dumb_io_baremetal_stm32f429:docs",
     "$dir_pw_dumb_io_stdio:docs",
     "$dir_pw_preprocessor:docs",
+    "$dir_pw_presubmit:docs",
+    "$dir_pw_span:docs",
+    "$dir_pw_status:docs",
     "$dir_pw_string:docs",
     "$dir_pw_test_server:docs",
   ]

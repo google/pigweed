@@ -1,4 +1,4 @@
-.. _chapter-string:
+.. _chapter-pw-string:
 
 .. default-domain:: cpp
 
@@ -7,14 +7,16 @@
 ---------
 pw_string
 ---------
-The string module provides utilities for working with strings.
+The string module provides efficient utilities for safely working with strings.
+The pw_string functions and classes always null-terminate strings and never
+overrun buffers. They do not allocate their own memory.
 
-Requirements
+Compatibility
 =============
 C++17
 
-Module Dependencies
--------------------
+Dependencies
+============
 * pw_preprocessor
 * pw_status
 * pw_span
@@ -39,8 +41,8 @@ using ``Format``.
 pw::StringBuilder
 -----------------
 StringBuilder facilitates building formatted strings in a fixed-size buffer.
-StringBuilder is safe, flexible, and results in much smaller code size than
-using std::ostringstream. However, applications sensitive to code size should
+It is designed to give the flexibility of std::string and std::ostringstream,
+but with a small footprint. However, applications sensitive to code size should
 use StringBuilder with care.
 
 Size report: replacing snprintf with pw::StringBuilder

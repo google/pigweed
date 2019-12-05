@@ -1,4 +1,4 @@
-.. _chapter-preprocessor:
+.. _chapter-pw-preprocessor:
 
 .. default-domain:: cpp
 
@@ -12,10 +12,6 @@ The preprocessor module provides various helpful preprocessor macros.
 Compatibility
 =============
 C and C++
-
-Dependencies
-============
-This module has no dependencies.
 
 Headers
 =======

@@ -13,18 +13,19 @@
 # the License.
 """Tools for running presubmit checks in a Git repository.
 
-A presubmit checks are defined as a function or other callable. The function may
+Presubmit checks are defined as a function or other callable. The function may
 take either no arguments or a list of the paths on which to run. Presubmit
 checks communicate failure by raising any exception.
 
 For example, either of these functions may be used as presubmit checks:
 
+  @pw_presubmit.filter_paths(endswith='.py')
   def file_contains_ni(paths):
       for path in paths:
           with open(path) as file:
-            contents = file.read()
-            if 'ni' not in contents and 'nee' not in contents:
-              raise PresumitFailure('Files must say "ni"!', path=path)
+              contents = file.read()
+              if 'ni' not in contents and 'nee' not in contents:
+                  raise PresumitFailure('Files must say "ni"!', path=path)
 
   def run_the_build():
       subprocess.run(['make', 'release'], check=True)
@@ -543,7 +544,7 @@ def call(*args, **kwargs) -> None:
 
 @filter_paths(endswith='.h')
 def pragma_once(paths: Iterable[str]) -> None:
-    """Checks that all header files contain '#pragma once'."""
+    """Presubmit check that ensures all header files contain '#pragma once'."""
 
     for path in paths:
         with open(path) as file:
