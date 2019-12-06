@@ -249,6 +249,29 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
   EXPECT_EQ(0x70, static_cast<uint8_t>(config.unknown_options()[0].type()));
 }
 
+TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
+  const auto kOptionBuffer = CreateStaticByteBuffer(
+      // MTU Option
+      static_cast<uint8_t>(OptionType::kMTU), MtuOption::kPayloadLength, LowerBits(kMinACLMTU),
+      UpperBits(kMinACLMTU),
+      // Rtx Option
+      static_cast<uint8_t>(OptionType::kRetransmissionAndFlowControl),
+      RetransmissionAndFlowControlOption::kPayloadLength,
+      static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00,
+      // Unknown option, Type = 0x70, Length = 1, payload = 0x03
+      0x70, 0x01, 0x03);
+
+  ChannelConfiguration config;
+  EXPECT_TRUE(config.ReadOptions(kOptionBuffer));
+  const std::string kExpected =
+      "{[type: MTU, mtu: 48], "
+      "[type: RtxFlowControl, mode: 1, tx window size: 0, max transmit: 0, rtx timeout: 0, monitor "
+      "timeout: 0, max pdu payload size: 0], "
+      "[type: 0x70, length: 1]}";
+  EXPECT_EQ(kExpected, config.ToString());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

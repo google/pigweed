@@ -183,7 +183,7 @@ bool ChannelConfiguration::UnknownOption::IsHint() const {
 }
 
 std::string ChannelConfiguration::UnknownOption::ToString() const {
-  return fxl::StringPrintf("[type: %hhu, length: %zu]", type_, payload_.size());
+  return fxl::StringPrintf("[type: %#.2hhx, length: %zu]", type_, payload_.size());
 }
 
 // ChannelConfiguration implementation
@@ -204,14 +204,23 @@ ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options() const
 
 std::string ChannelConfiguration::ToString() const {
   std::string str("{");
+
+  std::vector<std::string> options;
   if (mtu_option_) {
-    str += mtu_option_->ToString();
+    options.push_back(mtu_option_->ToString());
   }
   if (retransmission_flow_control_option_) {
-    str += retransmission_flow_control_option_->ToString();
+    options.push_back(retransmission_flow_control_option_->ToString());
   }
   for (auto& option : unknown_options_) {
-    str += option.ToString();
+    options.push_back(option.ToString());
+  }
+
+  for (auto it = options.begin(); it != options.end(); it++) {
+    str += *it;
+    if (it != options.end() - 1) {
+      str += ", ";
+    }
   }
   str += "}";
   return str;
