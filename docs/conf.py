@@ -11,8 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Pigweed's Sphinx configuration."""
 
-import sys, os
+import sphinx_rtd_theme
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -21,8 +22,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Pigweed'
-copyright = u'2019 Google LLC'
+project = 'Pigweed'
+copyright = '2019 Google LLC'  # pylint: disable=redefined-builtin
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -34,7 +35,9 @@ version = '0.1'
 release = '0.1.0'
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygm = 'sphinx'
+
+extensions = ['sphinx.ext.autodoc']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
@@ -44,7 +47,7 @@ html_theme = 'sphinx_rtd_theme'
 html_theme_path = [
     '_themes',
 ]
-import sphinx_rtd_theme
+
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
@@ -75,12 +78,12 @@ htmlhelp_basename = 'Pigweeddoc'
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'pigweed', u'Pigweed', [u'Google'], 1)]
+man_pages = [('index', 'pigweed', 'Pigweed', ['Google'], 1)]
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Pigweed', u'Pigweed', u'Google', 'Pigweed',
-     'Firmware framework', 'Miscellaneous'),
+    ('index', 'Pigweed', 'Pigweed', 'Google', 'Pigweed', 'Firmware framework',
+     'Miscellaneous'),
 ]
