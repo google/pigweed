@@ -34,7 +34,7 @@ except ImportError:
 
 from pw_presubmit import format_code
 from pw_presubmit.install_hook import install_hook
-from pw_presubmit import call, filter_paths, PresubmitFailure
+from pw_presubmit import call, filter_paths, plural, PresubmitFailure
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -171,12 +171,7 @@ def pylint_errors_only(paths):
 
 @filter_paths(endswith='.py')
 def pylint(paths):
-    try:
-        run_python_module('pylint', '-j', '0', *paths)
-    except PresubmitFailure:
-        # TODO(hepler): Enforce pylint when it passes.
-        _LOG.warning('pylint checks FAILED!')
-        _LOG.warning('Treating this as a warning... for now.')
+    run_python_module('pylint', '-j', '0', *paths)
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
@@ -270,6 +265,52 @@ def copyright_notice(paths):
 CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 
 #
+# General presubmit checks
+#
+
+
+def _read_contents(paths, comment: bytes = b'#') -> bytearray:
+    contents = bytearray()
+
+    for path in paths:
+        with open(path, 'rb') as file:
+            for line in file:
+                line = line.strip()
+                if not line.startswith(comment):
+                    contents += line
+
+    return contents
+
+
+@filter_paths(endswith=('.rst', *format_code.C_FORMAT.extensions))
+def source_is_in_build_files(paths):
+    build = _read_contents(
+        pw_presubmit.git_stdout('ls-files', 'BUILD', '*/BUILD').split())
+    build_gn = _read_contents(
+        pw_presubmit.git_stdout('ls-files', 'BUILD.gn', '*/BUILD.gn').split())
+
+    failed = []
+
+    for path in paths:
+        filename = os.path.basename(path).encode()
+
+        if not filename.endswith(b'.rst') and filename not in build:
+            _LOG.warning('Missing from Bazel BUILD files: %s', path)
+            failed.append(path)
+
+        if filename not in build_gn:
+            _LOG.warning('Missing from GN BUILD.gn files: %s', path)
+            failed.append(path)
+
+    if failed:
+        _LOG.warning('%s are missing from build files!',
+                     plural(failed, 'source'))
+        raise PresubmitFailure
+
+
+GENERAL = (source_is_in_build_files, )
+
+#
 # Presubmit check programs
 #
 QUICK_PRESUBMIT: Sequence = (
@@ -278,10 +319,11 @@ QUICK_PRESUBMIT: Sequence = (
     gn_clang_build,
     pw_presubmit.pragma_once,
     *CODE_FORMAT,
+    *GENERAL,
 )
 
 PROGRAMS: Dict[str, Sequence] = {
-    'full': INIT + GN + CC + PYTHON + BAZEL + CODE_FORMAT,
+    'full': INIT + GN + CC + PYTHON + BAZEL + CODE_FORMAT + GENERAL,
     'quick': QUICK_PRESUBMIT,
 }
 
