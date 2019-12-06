@@ -26,6 +26,9 @@ class FakeDomain final : public Domain {
  public:
   inline static fbl::RefPtr<FakeDomain> Create() { return fbl::AdoptRef(new FakeDomain()); }
 
+  // Returns true if and only if a link identified by |handle| has been added and connected.
+  [[nodiscard]] bool IsLinkConnected(hci::ConnectionHandle handle) const;
+
   // Triggers a LE connection parameter update callback on the given link.
   void TriggerLEConnectionParameterUpdate(hci::ConnectionHandle handle,
                                           const hci::LEPreferredConnectionParameters& params);

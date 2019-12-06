@@ -28,15 +28,19 @@ class ConnectionRequest final {
     callbacks_.push_back(std::move(callback));
   }
 
+  ConnectionRequest(ConnectionRequest&&) = default;
+  ConnectionRequest& operator=(ConnectionRequest&&) = default;
+
   void AddCallback(OnComplete cb) { callbacks_.push_back(std::move(cb)); }
 
   // Notifies all elements in |callbacks| with |status| and the result of
   // |generate_ref|. Called by the appropriate manager once a connection request
   // has completed, successfully or otherwise
   void NotifyCallbacks(hci::Status status, const RefFactory& generate_ref) {
-    ZX_DEBUG_ASSERT(!callbacks_.empty());
-    for (const auto& callback : callbacks_)
+    // If this request has been moved from, |callbacks_| may be empty.
+    for (const auto& callback : callbacks_) {
       callback(status, generate_ref());
+    }
   }
 
   DeviceAddress address() const { return address_; }

@@ -5,6 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_MANAGER_H_
 
+#include <functional>
+#include <optional>
+
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
@@ -31,27 +34,41 @@ class PairingDelegate;
 class PeerCache;
 class BrEdrConnectionManager;
 
-// Represents an established Br/Edr connection, after we have performed
-// interrogation
+// Represents a connection that is currently open with the controller (i.e. after receiving a
+// Connection Complete and before either user disconnection or Disconnection Complete).
 class BrEdrConnection final {
  public:
+  using Request = ConnectionRequest<BrEdrConnection*>;
   BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
-                  std::unique_ptr<hci::Connection> link);
+                  std::unique_ptr<hci::Connection> link, std::optional<Request> request);
+
+  ~BrEdrConnection();
 
   BrEdrConnection(BrEdrConnection&&) = default;
   BrEdrConnection& operator=(BrEdrConnection&&) = default;
 
+  // Called after interrogation completes to mark this connection as available for upper layers,
+  // i.e. L2CAP on |domain|. Also signals any requesters with a successful status and this
+  // connection. If not called and this connection is deleted (e.g. by disconnection), requesters
+  // will be signaled with |HostError::kNotSupported| (to indicate interrogation error).
+  void Start(data::Domain& domain);
+
+  // If |Start| has been called, opens an L2CAP channel on the Domain provided. Otherwise, calls
+  // |cb| with a |ZX_HANDLE_INVALID| socket on |dispatcher|.
+  void OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallback cb,
+                        async_dispatcher_t* dispatcher);
+
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
-
   PeerId peer_id() const { return peer_id_; }
-
   PairingState& pairing_state() { return pairing_state_; }
 
  private:
   PeerId peer_id_;
   std::unique_ptr<hci::Connection> link_;
   PairingState pairing_state_;
+  std::optional<Request> request_;
+  std::optional<std::reference_wrapper<data::Domain>> domain_;  // clear until Start is called
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };
@@ -124,10 +141,7 @@ class BrEdrConnectionManager final {
   // TODO(BT-820) - implement a timeout
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
-  // Intialize a GAP-level ACL connection from the hci connection_handle
-  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle);
-
-  // Called when an outgoing connection fails to establish
+  // Called when the controller can not begin a new connection.
   void OnConnectFailure(hci::Status status, PeerId peer_id);
 
   // Called to cancel an outgoing connection request
@@ -164,6 +178,17 @@ class BrEdrConnectionManager final {
   std::optional<std::pair<hci::ConnectionHandle, BrEdrConnection*>> FindConnectionByAddress(
       const DeviceAddressBytes& bd_addr);
 
+  // Find a peer with |addr| or create one if not found.
+  Peer* FindOrInitPeer(DeviceAddress addr);
+
+  // Initialize ACL connection state from |connection_handle| obtained from the controller and begin
+  // interrogation.
+  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle);
+
+  // Called once interrogation completes to make connection identified by |handle| available to
+  // upper layers and begin new connection procedures.
+  void CompleteConnectionSetup(Peer* peer, hci::ConnectionHandle handle);
+
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
@@ -176,13 +201,6 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(const hci::EventPacket& event);
-
-  // Called once interrogation is complete to establish a BrEdrConnection and,
-  // if in response to an outgoing connection request, completes the request
-  void EstablishConnection(Peer* peer, hci::Status status,
-                           std::unique_ptr<hci::Connection> conn_ptr);
-
-  Peer* FindOrInitPeer(DeviceAddress addr);
 
   // Called when we complete a pending request. Initiates a new connection
   // attempt for the next peer in the pending list, if any.

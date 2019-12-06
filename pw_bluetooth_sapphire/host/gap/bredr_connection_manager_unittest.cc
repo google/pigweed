@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt {
 namespace gap {
@@ -604,14 +605,14 @@ const auto kRemoteNameRequestCompleteFailed =
                            hci::StatusCode::kHardwareFailure);
 
 const auto kReadRemoteSupportedFeaturesCompleteFailed =
-    CreateStaticByteBuffer(hci::kRemoteNameRequestCompleteEventCode,
+    CreateStaticByteBuffer(hci::kReadRemoteSupportedFeaturesCompleteEventCode,
                            0x01,  // parameter_total_size (1 bytes)
                            hci::StatusCode::kHardwareFailure);
 
 // Test: if the interrogation fails, we disconnect.
 //  - Receiving extra responses after a command fails will not fail
 //  - We don't query extended features if we don't receive an answer.
-TEST_F(GAP_BrEdrConnectionManagerTest, IncommingConnectionFailedInterrogation) {
+TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
   test_device()->QueueCommandTransaction(CommandTransaction(
       kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
   test_device()->QueueCommandTransaction(CommandTransaction(
@@ -1892,6 +1893,90 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
   QueueDisconnection(kConnectionHandle);
 }
 
+// Test: when pairing is in progress, opening an L2CAP channel waits for the pairing to complete
+// before retrying.
+TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2cap) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Trigger inbound connection and respond to some (but not all) of interrogation.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kReadRemoteSupportedFeatures, {&kReadRemoteSupportedFeaturesRsp}));
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  // Ensure that the interrogation has begun but the peer hasn't yet bonded
+  EXPECT_EQ(4, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_FALSE(peer->bredr()->connected());
+  ASSERT_FALSE(peer->bredr()->bonded());
+
+  // Approve pairing requests
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  // Initiate pairing from the peer before interrogation completes
+  test_device()->SendCommandChannelPacket(
+      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding));
+  test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                      AuthRequirements::kMITMGeneralBonding),
+                         {&kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kUserConfirmationRequestReply,
+      {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess, &kLinkKeyNotification}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp}));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // At this point the peer is bonded and the link is encrypted but interrogation has not completed
+  // so host-side L2CAP should still be inactive on this link (though it may be buffering packets).
+  EXPECT_FALSE(data_domain()->IsLinkConnected(kConnectionHandle));
+
+  bool socket_cb_called = false;
+  auto socket_fails_cb = [&socket_cb_called](zx::socket s) {
+    EXPECT_FALSE(s);
+    socket_cb_called = true;
+  };
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_fails_cb, dispatcher());
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(socket_cb_called);
+
+  // Complete interrogation successfully.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kReadRemoteExtended1, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kReadRemoteExtended2, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_TRUE(data_domain()->IsLinkConnected(kConnectionHandle));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectUnknownPeer) {
   EXPECT_FALSE(connmgr()->Connect(PeerId(456), {}));
 }
@@ -2205,7 +2290,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
 
   // Initialize as error to verify that |callback| assigns success.
   hci::Status status(HostError::kFailed);
-  BrEdrConnection* conn_ref;
+  BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
     status = cb_status;
@@ -2222,6 +2307,42 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_TRUE(IsConnected(peer));
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
+
+  // Queue up outbound connection.
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+
+  // Queue up most of interrogation.
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
+  test_device()->QueueCommandTransaction(CommandTransaction(
+      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kReadRemoteSupportedFeatures, {&kReadRemoteSupportedFeaturesRsp}));
+
+  hci::Status status;
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_FALSE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesCompleteFailed);
+  QueueDisconnection(kConnectionHandle);
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kNotSupported, status.error()) << status.ToString();
+  EXPECT_TRUE(NotConnected(peer));
+}
+
 // Connecting to an already connected peer should complete instantly
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
@@ -2236,7 +2357,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   // Initialize as error to verify that |callback| assigns success.
   hci::Status status(HostError::kFailed);
   int num_callbacks = 0;
-  BrEdrConnection* conn_ref;
+  BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
     status = cb_status;
@@ -2280,7 +2401,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   // Initialize as error to verify that |callback| assigns success.
   hci::Status status(HostError::kFailed);
   int num_callbacks = 0;
-  BrEdrConnection* conn_ref;
+  BrEdrConnection* conn_ref = nullptr;
   auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
     status = cb_status;
@@ -2330,7 +2451,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
 
   // Initialize as error to verify that |callback_b| assigns success.
   hci::Status status_b(HostError::kFailed);
-  BrEdrConnection* connection;
+  BrEdrConnection* connection = nullptr;
   auto callback_b = [&status_b, &connection](auto cb_status, auto cb_conn_ref) {
     EXPECT_TRUE(cb_conn_ref);
     status_b = cb_status;

@@ -16,6 +16,14 @@ using l2cap::testing::FakeChannel;
 namespace data {
 namespace testing {
 
+bool FakeDomain::IsLinkConnected(hci::ConnectionHandle handle) const {
+  auto link_iter = links_.find(handle);
+  if (link_iter == links_.end()) {
+    return false;
+  }
+  return link_iter->second.connected;
+}
+
 void FakeDomain::TriggerLEConnectionParameterUpdate(
     hci::ConnectionHandle handle, const hci::LEPreferredConnectionParameters& params) {
   ZX_DEBUG_ASSERT(initialized_);

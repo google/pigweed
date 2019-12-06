@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_INTERROGATOR_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -18,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
@@ -51,8 +53,8 @@ class BrEdrInterrogator {
 
   // Starts interrogation. Calls |callback| when the sequence is completed or
   // abandoned.
-  using ResultCallback = fit::function<void(hci::Status status, hci::ConnectionPtr conn_ptr)>;
-  void Start(PeerId peer_id, hci::ConnectionPtr conn_ptr, ResultCallback callback);
+  using ResultCallback = fit::function<void(hci::Status status)>;
+  void Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback callback);
 
   // Abandons any interrogation of |peer_id|.  Their callbacks will be called
   // with a Status of Canceled.
@@ -80,12 +82,12 @@ class BrEdrInterrogator {
   using CancelableCommandCallback = fxl::CancelableCallback<void(
       hci::CommandChannel::TransactionId id, const hci::EventPacket& event)>;
   struct Interrogation {
-    Interrogation(hci::ConnectionPtr conn_ptr, ResultCallback callback);
+    Interrogation(hci::ConnectionHandle handle, ResultCallback callback);
     ~Interrogation();
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Interrogation);
 
-    // Connection to |peer|
-    hci::ConnectionPtr conn_ptr;
+    // Connection handle to |peer|
+    hci::ConnectionHandle handle;
 
     // Callback for results.
     ResultCallback result_cb;

@@ -55,7 +55,8 @@ void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
 }  // namespace
 
 BrEdrConnection::BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
-                                 std::unique_ptr<hci::Connection> link)
+                                 std::unique_ptr<hci::Connection> link,
+                                 std::optional<Request> request)
     : peer_id_(peer_id),
       link_(std::move(link)),
       pairing_state_(peer_id, link_.get(),
@@ -63,9 +64,43 @@ BrEdrConnection::BrEdrConnection(BrEdrConnectionManager* connection_manager, Pee
                        if (!status) {
                          mgr->Disconnect(peer_id);
                        }
-                     }) {
+                     }),
+      request_(std::move(request)),
+      domain_(std::nullopt) {
   link_->set_peer_disconnect_callback(
       fit::bind_member(connection_manager, &BrEdrConnectionManager::OnPeerDisconnect));
+}
+
+BrEdrConnection::~BrEdrConnection() {
+  if (request_.has_value()) {
+    // Connection never completed so signal the requester(s).
+    request_->NotifyCallbacks(hci::Status(HostError::kNotSupported), [] { return nullptr; });
+  }
+}
+
+void BrEdrConnection::Start(data::Domain& domain) {
+  ZX_ASSERT_MSG(!domain_.has_value(), "Start on a connection that's already started");
+  domain_ = std::ref(domain);
+
+  // Fulfill and clear request so that the dtor does not signal requester(s) with errors.
+  if (auto request = std::exchange(request_, std::nullopt); request.has_value()) {
+    request->NotifyCallbacks(hci::Status(), [this] { return this; });
+  }
+}
+
+void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallback cb,
+                                       async_dispatcher_t* dispatcher) {
+  if (!domain_.has_value()) {
+    // Connection is not yet ready for L2CAP; return a ZX_HANDLE_INVALID socket.
+    bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling socket to PSM %.4x",
+           bt_str(peer_id()), psm);
+    async::PostTask(dispatcher,
+                    [cb = std::move(cb), handle = link().handle()]() { cb(zx::socket(), handle); });
+    return;
+  }
+
+  bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
+  domain_->get().OpenL2capChannel(link().handle(), psm, std::move(cb), dispatcher);
 }
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
@@ -237,9 +272,8 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, So
     return true;
   }
 
-  bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id));
-  data_domain_->OpenL2capChannel(
-      handle, psm, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
+  connection->OpenL2capChannel(
+      psm, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
   return true;
 }
 
@@ -347,6 +381,123 @@ BrEdrConnectionManager::FindConnectionByAddress(const DeviceAddressBytes& bd_add
   return FindConnectionById(peer->identifier());
 }
 
+Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
+  Peer* peer = cache_->FindByAddress(addr);
+  if (!peer) {
+    peer = cache_->NewPeer(addr, /*connectable*/ true);
+  }
+  return peer;
+}
+
+// Build connection state for a new connection and begin interrogation. L2CAP is not enabled for
+// this link but pairing is allowed before interrogation completes.
+void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
+                                                  hci::ConnectionHandle connection_handle) {
+  // TODO(BT-288): support non-master connections.
+  auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
+                                         local_address_, addr, hci_);
+  Peer* const peer = FindOrInitPeer(addr);
+
+  // We should never have more than one link to a given peer
+  ZX_DEBUG_ASSERT(!FindConnectionById(peer->identifier()));
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
+
+  // The controller has completed the HCI connection procedure, so the connection request can no
+  // longer be failed by a lower layer error. Now tie error reporting of the request to the lifetime
+  // of the connection state object (BrEdrConnection RAII).
+  auto request_node = connection_requests_.extract(peer->identifier());
+  std::optional<BrEdrConnection::Request> request =
+      request_node ? std::move(request_node.mapped()) : std::optional<BrEdrConnection::Request>();
+  const hci::ConnectionHandle handle = link->handle();
+  BrEdrConnection& connection =
+      connections_
+          .try_emplace(handle, this, peer->identifier(), std::move(link), std::move(request))
+          .first->second;
+  connection.pairing_state().SetPairingDelegate(pairing_delegate_);
+
+  // Interrogate this peer to find out its version/capabilities.
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  interrogator_.Start(peer->identifier(), handle, [peer, self, handle](auto status) {
+    if (!self) {
+      return;
+    }
+    if (bt_is_error(status, WARN, "gap-bredr", "interrogate failed, dropping connection")) {
+      // If this connection was locally requested, requester(s) are notified by the disconnection.
+      self->Disconnect(peer->identifier());
+      return;
+    }
+    bt_log(SPEW, "gap-bredr", "interrogation complete for %#.4x", handle);
+    self->CompleteConnectionSetup(peer, handle);
+  });
+
+  // If this was our in-flight request, close it
+  if (pending_request_.has_value() && addr == pending_request_->peer_address()) {
+    pending_request_.reset();
+  }
+  TryCreateNextConnection();
+}
+
+// Finish connection setup after a successful interrogation.
+void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::ConnectionHandle handle) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+
+  auto connections_iter = connections_.find(handle);
+  if (connections_iter == connections_.end()) {
+    bt_log(WARN, "gap-bredr", "Connection to complete not found, handle: %#.4x", handle);
+    return;
+  }
+  BrEdrConnection& conn_state = connections_iter->second;
+  if (conn_state.peer_id() != peer->identifier()) {
+    bt_log(WARN, "gap-bredr",
+           "Connection %#.4x is no longer to peer %s (now to %s), ignoring interrogation result",
+           handle, bt_str(peer->identifier()), bt_str(conn_state.peer_id()));
+    return;
+  }
+  hci::Connection* const connection = &conn_state.link();
+
+  auto error_handler = [self, peer_id = peer->identifier(), connection = connection->WeakPtr()] {
+    if (!self || !connection)
+      return;
+    bt_log(WARN, "gap-bredr", "Link error received, closing connection %#.4x",
+           connection->handle());
+
+    self->Disconnect(peer_id);
+  };
+
+  // TODO(37650): Implement this callback as a call to InitiatePairing().
+  auto security_callback = [](hci::ConnectionHandle handle, sm::SecurityLevel level, auto cb) {
+    bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
+    cb(sm::Status(HostError::kNotSupported));
+  };
+
+  // Register with L2CAP to handle services on the ACL signaling channel.
+  data_domain_->AddACLConnection(handle, connection->role(), error_handler,
+                                 std::move(security_callback), dispatcher_);
+
+  peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
+
+  if (discoverer_.search_count()) {
+    data_domain_->OpenL2capChannel(
+        handle, l2cap::kSDP,
+        [self, peer_id = peer->identifier()](auto channel) {
+          if (!self)
+            return;
+
+          if (!channel) {
+            bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer id: %s)",
+                   bt_str(peer_id));
+            return;
+          }
+
+          auto client = sdp::Client::Create(std::move(channel));
+          self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
+        },
+        dispatcher_);
+  }
+
+  conn_state.Start(*data_domain_);
+}
+
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticationComplete(
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kAuthenticationCompleteEventCode);
@@ -389,7 +540,6 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
     hci_->command_channel()->SendCommand(std::move(accept), dispatcher_, nullptr,
                                          hci::kCommandStatusEventCode);
     return hci::CommandChannel::EventCallbackResult::kContinue;
-    ;
   }
 
   // Reject this connection.
@@ -404,15 +554,6 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   hci_->command_channel()->SendCommand(std::move(reject), dispatcher_, nullptr,
                                        hci::kCommandStatusEventCode);
   return hci::CommandChannel::EventCallbackResult::kContinue;
-}
-
-Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
-  Peer* peer = cache_->FindByAddress(addr);
-  if (!peer) {
-    bool connectable = true;
-    peer = cache_->NewPeer(addr, connectable);
-  }
-  return peer;
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionComplete(
@@ -430,8 +571,9 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionCom
     auto status = hci::Status(params.status);
     status = pending_request_->CompleteRequest(status);
 
-    if (!status)
+    if (!status) {
       OnConnectFailure(status, pending_request_->peer_id());
+    }
   }
 
   if (params.link_type != hci::LinkType::kACL) {
@@ -440,98 +582,9 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionCom
   }
 
   if (!hci_is_error(event, WARN, "gap-bredr", "connection error")) {
-    InitializeConnection(addr, std::move(connection_handle));
+    InitializeConnection(addr, connection_handle);
   }
   return hci::CommandChannel::EventCallbackResult::kContinue;
-}
-
-// Initialize a full Br/Edr connection from the hci::Connection |link|
-// Initialization begins the interrogation process, once completed we establish
-// a fully usable Br/Edr connection
-void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr, uint16_t connection_handle) {
-  // TODO(BT-288): support non-master connections.
-  auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
-                                         local_address_, addr, hci_);
-
-  Peer* peer = FindOrInitPeer(addr);
-  // We should never establish more than one link to a given peer
-  ZX_DEBUG_ASSERT(!FindConnectionById(peer->identifier()));
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-
-  // Interrogate this peer to find out its version/capabilities.
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  interrogator_.Start(
-      peer->identifier(), std::move(link), [peer, self](auto status, auto conn_ptr) {
-        if (bt_is_error(status, WARN, "gap-bredr", "interrogate failed, dropping connection"))
-          return;
-        bt_log(SPEW, "gap-bredr", "interrogation complete for %#.4x", conn_ptr->handle());
-        if (!self)
-          return;
-        self->EstablishConnection(peer, status, std::move(conn_ptr));
-      });
-}
-
-// Establish a full BrEdrConnection for a link that has been interrogated
-void BrEdrConnectionManager::EstablishConnection(Peer* peer, hci::Status status,
-                                                 unique_ptr<hci::Connection> connection) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-
-  auto handle = connection->handle();
-
-  auto error_handler = [self, peer_id = peer->identifier(), connection = connection->WeakPtr()] {
-    if (!self || !connection)
-      return;
-    bt_log(ERROR, "gap-bredr", "Link error received, closing connection %#.4x",
-           connection->handle());
-
-    self->Disconnect(peer_id);
-  };
-
-  // TODO(armansito): Implement this callback.
-  auto security_callback = [](hci::ConnectionHandle handle, sm::SecurityLevel level, auto cb) {
-    bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
-    cb(sm::Status(HostError::kNotSupported));
-  };
-
-  // Register with L2CAP to handle services on the ACL signaling channel.
-  data_domain_->AddACLConnection(connection->handle(), connection->role(), error_handler,
-                                 std::move(security_callback), dispatcher_);
-
-  auto conn =
-      connections_.try_emplace(handle, this, peer->identifier(), std::move(connection)).first;
-
-  peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
-  conn->second.pairing_state().SetPairingDelegate(pairing_delegate_);
-
-  if (discoverer_.search_count()) {
-    data_domain_->OpenL2capChannel(
-        handle, l2cap::kSDP,
-        [self, peer_id = peer->identifier()](auto channel) {
-          if (!self)
-            return;
-
-          if (!channel) {
-            bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer id: %s)",
-                   bt_str(peer_id));
-            return;
-          }
-
-          auto client = sdp::Client::Create(std::move(channel));
-          self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
-        },
-        dispatcher_);
-  }
-
-  auto request = connection_requests_.extract(peer->identifier());
-  if (request) {
-    auto conn_ptr = &(conn->second);
-    request.mapped().NotifyCallbacks(hci::Status(), [conn_ptr] { return conn_ptr; });
-    // If this was our in-flight request, close it
-    if (peer->address() == pending_request_->peer_address()) {
-      pending_request_.reset();
-    }
-    TryCreateNextConnection();
-  }
 }
 
 void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection) {
@@ -862,8 +915,9 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto on_failure = [self](hci::Status status, auto peer_id) {
-    if (self && !status)
+    if (self && !status) {
       self->OnConnectFailure(status, peer_id);
+    }
   };
   auto on_timeout = [self] {
     if (self)

@@ -7,28 +7,31 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
 namespace bt {
 namespace gap {
 
-BrEdrInterrogator::Interrogation::Interrogation(hci::ConnectionPtr conn, ResultCallback cb)
-    : conn_ptr(std::move(conn)), result_cb(std::move(cb)) {
-  ZX_DEBUG_ASSERT(conn_ptr);
+BrEdrInterrogator::Interrogation::Interrogation(hci::ConnectionHandle handle, ResultCallback cb)
+    : result_cb(std::move(cb)) {
   ZX_DEBUG_ASSERT(result_cb);
 }
 
 BrEdrInterrogator::Interrogation::~Interrogation() { Finish(hci::Status(HostError::kFailed)); }
 
 void BrEdrInterrogator::Interrogation::Finish(hci::Status status) {
-  // If the connection is gone, we are finished already.
-  if (!conn_ptr) {
+  // Each interrogation step may fail but only invoke the status callback once, for the earliest
+  // failure encountered.
+  if (!result_cb) {
     return;
   }
+
   // Cancel any callbacks we might receive.
   callbacks.clear();
 
-  result_cb(status, std::move(conn_ptr));
+  result_cb(status);
+  result_cb = nullptr;
 }
 
 BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci,
@@ -45,14 +48,11 @@ BrEdrInterrogator::~BrEdrInterrogator() {
   }
 }
 
-void BrEdrInterrogator::Start(PeerId peer_id, hci::ConnectionPtr conn_ptr,
+void BrEdrInterrogator::Start(PeerId peer_id, hci::ConnectionHandle handle,
                               ResultCallback callback) {
-  ZX_DEBUG_ASSERT(conn_ptr);
-  ZX_DEBUG_ASSERT(callback);
+  ZX_ASSERT(callback);
 
-  hci::ConnectionHandle handle = conn_ptr->handle();
-
-  auto placed = pending_.try_emplace(peer_id, std::move(conn_ptr), std::move(callback));
+  auto placed = pending_.try_emplace(peer_id, handle, std::move(callback));
   ZX_DEBUG_ASSERT_MSG(placed.second, "interrogating peer %s twice at once", bt_str(peer_id));
 
   Peer* peer = cache_->FindById(peer_id);
@@ -124,7 +124,7 @@ void BrEdrInterrogator::Complete(PeerId peer_id, hci::Status status) {
   auto node = pending_.extract(peer_id);
   ZX_DEBUG_ASSERT(node);
 
-  node.mapped().Finish(std::move(status));
+  node.mapped().Finish(status);
 }
 
 void BrEdrInterrogator::MakeRemoteNameRequest(PeerId peer_id) {
