@@ -72,7 +72,7 @@ infra/tools/luci-auth/${platform} git_revision:2155d0d436bf346333810cc352791063e
 infra/tools/luci/lucicfg/${platform}  git_revision:2155d0d436bf346333810cc352791063e1dda952
 
 # Python 3
-infra/python/cpython3/${platform} version:3.8.0b1.chromium.1
+infra/3pp/tools/cpython3/${platform} version:3.8.0.chromium.7
 
 # vpython
 infra/tools/luci/vpython/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
