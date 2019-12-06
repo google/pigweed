@@ -11,8 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+# TODO(keir) add docstring
+# pylint: disable=missing-module-docstring
 
-import argparse
 import logging
 import pathlib
 import glob
@@ -28,7 +29,9 @@ def register_arguments(parser):
     parser.add_argument('module', help='The module to check')
 
 
-def main(module):
+def main(module):  # pylint: disable=missing-function-docstring
+    # TODO(keir) add function docstring
+
     if not pathlib.Path(module).is_dir():
         _LOG.error('No directory found: %s', module)
         return 1
@@ -38,13 +41,13 @@ def main(module):
 
     _LOG.info('Checking module: %s', module)
     # Run each checker.
-    for checker in _checkers:
+    for check in _checkers:
         _LOG.debug(
             'Running checker: %s - %s',
-            checker.name,
-            checker.description,
+            check.name,
+            check.description,
         )
-        issues = list(checker.run(module))
+        issues = list(check.run(module))
 
         # Log any issues found
         for issue in issues:
@@ -66,16 +69,16 @@ def main(module):
             ]
             editor_error_line = ':'.join(components)
             if editor_error_line:
-                _LOG.log(log_level, '%s', checker.name)
+                _LOG.log(log_level, '%s', check.name)
                 print(editor_error_line, issue.message)
             else:
                 # No per-file error to put in a "cerr" list, so just log.
-                _LOG.log(log_level, '%s: %s', checker.name, issue.message)
+                _LOG.log(log_level, '%s: %s', check.name, issue.message)
 
         if issues:
-            _LOG.debug('Done running checker: %s (issues found)', checker.name)
+            _LOG.debug('Done running checker: %s (issues found)', check.name)
         else:
-            _LOG.debug('Done running checker: %s (OK)', checker.name)
+            _LOG.debug('Done running checker: %s (OK)', check.name)
 
     # TODO(keir): Give this a proper ASCII art treatment.
     if not found_any_warnings and not found_any_errors:
@@ -84,6 +87,8 @@ def main(module):
     if found_any_errors:
         _LOG.error('FAIL: Found errors when checking module %s', module)
         return 1
+
+    return 0
 
 
 class Checker(NamedTuple):

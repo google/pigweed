@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Tests for pw_module.check."""
 
 import logging
 import pathlib
@@ -24,6 +25,7 @@ _LOG = logging.getLogger(__name__)
 
 
 class TestWithTempDirectory(unittest.TestCase):
+    """Tests for pw_module.check."""
     def setUp(self):
         # Create a temporary directory for the test.
         self.test_dir = tempfile.mkdtemp()
@@ -47,14 +49,14 @@ class TestWithTempDirectory(unittest.TestCase):
         return full_file_path
 
     def assert_no_issues(self, checker, directory=None):
-        if directory != None:
+        if directory is not None:
             directory = str(pathlib.Path(self.test_dir, directory))
         else:
             directory = self.test_dir
         return self.assertFalse(list(checker(directory)))
 
     def assert_issue(self, checker, match, directory=None):
-        if directory != None:
+        if directory is not None:
             directory = str(pathlib.Path(self.test_dir, directory))
         else:
             directory = self.test_dir
@@ -62,7 +64,7 @@ class TestWithTempDirectory(unittest.TestCase):
         self.assertTrue(any((match in issue.message) for issue in issues))
 
     # Have Python code --> have setup.py.
-    def test_PWCK001_have_setup_py(self):
+    def test_pwck001_have_setup_py(self):
         # Python files; no setup --> error.
         self.create_file('pw_foo/py/pw_foo/__init__.py')
         self.create_file('pw_foo/py/pw_foo/bar.py')
@@ -74,7 +76,7 @@ class TestWithTempDirectory(unittest.TestCase):
         self.assert_no_issues(pw_module.check.check_python_proper_module)
 
     # Have C++ code --> have C++ tests.
-    def test_PWCK002_have_python_tests(self):
+    def test_pwck002_have_python_tests(self):
         self.create_file('pw_foo/public/foo.h')
         self.create_file('pw_foo/foo.cc')
         self.assert_issue(pw_module.check.check_have_cc_tests, 'tests')
@@ -83,7 +85,7 @@ class TestWithTempDirectory(unittest.TestCase):
         self.assert_no_issues(pw_module.check.check_have_cc_tests)
 
     # Have Python code --> have Python tests.
-    def test_PWCK003_have_python_tests(self):
+    def test_pwck003_have_python_tests(self):
         self.create_file('pw_foo/py/pw_foo/__init__.py')
         self.create_file('pw_foo/py/setup.py')
         self.assert_issue(pw_module.check.check_have_python_tests, 'tests')
@@ -92,20 +94,20 @@ class TestWithTempDirectory(unittest.TestCase):
         self.assert_no_issues(pw_module.check.check_have_python_tests)
 
     # Have README.md
-    def test_PWCK004_have_readme(self):
+    def test_pwck004_have_readme(self):
         self.assert_issue(pw_module.check.check_has_readme, 'README')
         self.create_file('README.md')
         self.assert_no_issues(pw_module.check.check_has_readme)
 
     # Have ReST docs of some kind
-    def test_PWCK005_have_rst_docs(self):
+    def test_pwck005_have_rst_docs(self):
         checker = pw_module.check.check_has_rst_docs
         self.assert_issue(checker, 'ReST')
         self.create_file('pw_foo/docs.rst')
         self.assert_no_issues(checker)
 
     # Have ReST docs of some kind
-    def test_PWCK006_have_public_or_override_headers(self):
+    def test_pwck006_have_public_or_override_headers(self):
         checker = pw_module.check.check_has_public_or_override_headers
         module_name = 'pw_foo'
 
