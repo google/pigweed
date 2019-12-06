@@ -16,6 +16,6 @@ import("docs.gni")
 
 pw_doc_group("docs") {
   sources = [
-    "docgen.rst",
+    "docs.rst",
   ]
 }

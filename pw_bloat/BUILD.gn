@@ -50,7 +50,7 @@ pw_executable("bloat_base") {
 
 pw_doc_group("docs") {
   sources = [
-    "bloat.rst",
+    "docs.rst",
   ]
   report_deps = [ "examples:simple_bloat" ]
 }
