@@ -24,6 +24,7 @@ import collections
 import difflib
 import logging
 import os
+from pathlib import Path
 import re
 import subprocess
 import sys
@@ -39,7 +40,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import plural
+from pw_presubmit import list_git_files, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -266,19 +267,29 @@ class CodeFormatter:
 
 def main(paths, exclude, base, fix) -> int:
     """Checks or fixes formatting for files in a Git repo."""
+    files = [os.path.abspath(path) for path in paths if os.path.isfile(path)]
+
+    # If this is a Git repo, list the original paths with git ls-files or diff.
     if pw_presubmit.is_git_repo():
-        _LOG.info('Checking files in the %s repository',
-                  os.path.basename(pw_presubmit.git_repo_root()))
+        repo = pw_presubmit.git_repo_path()
+        if repo.samefile(Path.cwd()):
+            _LOG.info('Checking files in the %s repository', repo)
+        else:
+            _LOG.info(
+                'Checking files in the %s subdirectory of the %s repository',
+                Path.cwd().relative_to(repo), repo)
+
+        # Add files from Git and remove duplicates.
+        files = sorted({*files, *list_git_files(base, paths, exclude)})
     elif base:
         _LOG.critical(
             'A base commit may only be provided if running from a Git repo')
         return 1
 
-    formatter = CodeFormatter(pw_presubmit.list_files(base, paths, exclude))
+    formatter = CodeFormatter(files)
 
+    _LOG.debug('Found %s files:\n%s', len(files), '\n'.join(f for f in files))
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
-    for path in formatter.paths:
-        _LOG.debug('    %s', path)
 
     errors = print_format_check(formatter.check())
 

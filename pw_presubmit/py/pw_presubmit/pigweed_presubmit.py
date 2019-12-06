@@ -38,9 +38,12 @@ from pw_presubmit import call, filter_paths, plural, PresubmitFailure
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
+PRESUBMIT_PREFIX = '.presubmit'
+
 
 def presubmit_dir(*paths):
-    return os.path.join('.presubmit', *paths)
+    """Returns a relative path from the presubmit output directory."""
+    return os.path.join(PRESUBMIT_PREFIX, *paths)
 
 
 def run_python_module(*args, **kwargs):
@@ -61,7 +64,6 @@ def init_cipd():
     _LOG.debug('PATH %s', os.environ['PATH'])
 
 
-@filter_paths(endswith='.py')  # Only run if there are .py files.
 def init_virtualenv(unused_paths):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
     venv = os.path.abspath('.presubmit/venv')
@@ -336,7 +338,12 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     parser.add_argument(
         '--clean',
         action='store_true',
-        help='Deletes the .presubmit directory before starting')
+        help='Deletes the entire .presubmit directory before starting')
+    parser.add_argument(
+        '--clean-py',
+        action='store_true',
+        help='Deletes the Python virtualenv at .presubmit/venv before starting'
+    )
 
     exclusive = parser.add_mutually_exclusive_group()
     exclusive.add_argument(
@@ -353,17 +360,30 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     return parser
 
 
-def main(program: str, clean: bool, install: bool = False,
-         **presubmit_args) -> int:
-    if clean and os.path.exists(presubmit_dir()):
-        shutil.rmtree(presubmit_dir())
+def main(
+        program: str,
+        clean: bool,
+        clean_py: bool,
+        install: bool,
+        repository: str,
+        **presubmit_args,
+) -> int:
+    environment = pw_presubmit.git_repo_path(PRESUBMIT_PREFIX, repo=repository)
+    _LOG.debug('Using environment at %s', environment)
+
+    if clean and environment.exists():
+        shutil.rmtree(environment)
+    elif clean_py and environment.joinpath('venv').exists():
+        shutil.rmtree(environment.joinpath('venv'))
 
     if install:
         install_hook(__file__, 'pre-push', ['--base', 'origin/master'],
                      presubmit_args['repository'])
         return 0
 
-    if pw_presubmit.run_presubmit(PROGRAMS[program], **presubmit_args):
+    if pw_presubmit.run_presubmit(PROGRAMS[program],
+                                  repository=repository,
+                                  **presubmit_args):
         return 0
 
     return 1
