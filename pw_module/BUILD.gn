@@ -14,33 +14,8 @@
 
 import("$dir_pw_docgen/docs.gni")
 
-pw_doc_group("core_docs") {
+pw_doc_group("docs") {
   sources = [
-    "embedded_cpp_guide.rst",
-    "style_guide.rst",
-  ]
-}
-
-pw_doc_gen("docs") {
-  conf = "conf.py"
-  sources = [
-    "index.rst",
-    "modules.rst",
-  ]
-  output_directory = target_gen_dir
-  deps = [
-    ":core_docs",
-    "$dir_pw_bloat:docs",
-    "$dir_pw_docgen:docs",
-    "$dir_pw_dumb_io_baremetal_stm32f429:docs",
-    "$dir_pw_dumb_io:docs",
-    "$dir_pw_dumb_io_stdio:docs",
-    "$dir_pw_module:docs",
-    "$dir_pw_preprocessor:docs",
-    "$dir_pw_presubmit:docs",
-    "$dir_pw_span:docs",
-    "$dir_pw_status:docs",
-    "$dir_pw_string:docs",
-    "$dir_pw_test_server:docs",
+    "docs.rst",
   ]
 }
