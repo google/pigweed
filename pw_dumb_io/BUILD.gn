@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -46,5 +48,11 @@ source_set("pw_dumb_io") {
   ]
   deps = [
     "$dir_pw_dumb_io_backend",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
   ]
 }

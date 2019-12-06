@@ -12,13 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-source_set("pw_dumb_io_stdio") {
-  public_configs = [ "$dir_pw_build:pw_default_cpp" ]
-  deps = [
-    "$dir_pw_dumb_io:default_putget_bytes",
-    "$dir_pw_dumb_io:facade",
-  ]
+import("$dir_pw_docgen/docs.gni")
+
+# This if statement allows docs to always build even if the target isn't
+# compatible with this backend.
+if (dir_pw_dumb_io_backend == dir_pw_dumb_io_stdio) {
+  source_set("pw_dumb_io_stdio") {
+    public_configs = [ "$dir_pw_build:pw_default_cpp" ]
+    deps = [
+      "$dir_pw_dumb_io:default_putget_bytes",
+      "$dir_pw_dumb_io:facade",
+    ]
+    sources = [
+      "dumb_io.cc",
+    ]
+  }
+}
+
+pw_doc_group("docs") {
   sources = [
-    "dumb_io.cc",
+    "docs.rst",
   ]
 }

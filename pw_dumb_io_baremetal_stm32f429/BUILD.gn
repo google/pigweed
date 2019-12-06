@@ -12,30 +12,42 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-config("linker_script_config") {
-  _linker_script = "stm32f429.ld"
-  inputs = [
-    _linker_script,
-  ]
-  ldflags = [ "-T" + rebase_path("$_linker_script") ]
+import("$dir_pw_docgen/docs.gni")
+
+# This if statement allows docs to always build even if the target isn't
+# compatible with this backend.
+if (dir_pw_dumb_io_backend == dir_pw_dumb_io_baremetal_stm32f429) {
+  config("linker_script_config") {
+    _linker_script = "stm32f429.ld"
+    inputs = [
+      _linker_script,
+    ]
+    ldflags = [ "-T" + rebase_path("$_linker_script") ]
+  }
+
+  source_set("linker_script") {
+    public_configs = [ ":linker_script_config" ]
+  }
+
+  source_set("pw_dumb_io_baremetal_stm32f429") {
+    public_configs = [ "$dir_pw_build:pw_default_cpp" ]
+    public_deps = [
+      ":linker_script",
+    ]
+    deps = [
+      "$dir_pw_dumb_io:default_putget_bytes",
+      "$dir_pw_dumb_io:facade",
+      "$dir_pw_preprocessor",
+    ]
+    sources = [
+      "core_init.c",
+      "dumb_io_baremetal.cc",
+    ]
+  }
 }
 
-source_set("linker_script") {
-  public_configs = [ ":linker_script_config" ]
-}
-
-source_set("pw_dumb_io_baremetal_stm32f429") {
-  public_configs = [ "$dir_pw_build:pw_default_cpp" ]
-  public_deps = [
-    ":linker_script",
-  ]
-  deps = [
-    "$dir_pw_dumb_io:default_putget_bytes",
-    "$dir_pw_dumb_io:facade",
-    "$dir_pw_preprocessor",
-  ]
+pw_doc_group("docs") {
   sources = [
-    "core_init.c",
-    "dumb_io_baremetal.cc",
+    "docs.rst",
   ]
 }
