@@ -27,6 +27,21 @@ DynamicByteBuffer EncodeOption(PayloadT payload) {
   return buffer;
 }
 
+// Compares length field in option header with expected option payload length for that option type.
+// Returns true if lengths match, false otherwise.
+template <typename OptionT>
+bool CheckHeaderLengthField(PacketView<ConfigurationOption> option) {
+  if (option.header().length != OptionT::kPayloadLength) {
+    bt_log(WARN, "l2cap",
+           "received channel configuration option with incorrect length (type: %#.2x, "
+           "length: %hhu, expected length: %hhu)",
+           static_cast<uint8_t>(option.header().type), option.header().length,
+           OptionT::kPayloadLength);
+    return false;
+  }
+  return true;
+}
+
 // ChannelConfiguration::Reader implementation
 bool ChannelConfiguration::ReadOptions(const ByteBuffer& options_payload) {
   auto remaining_view = options_payload.view();
@@ -65,28 +80,24 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
 
   switch (option.header().type) {
     case OptionType::kMTU:
-      if (option.header().length != MtuOption::kPayloadLength) {
-        bt_log(WARN, "l2cap",
-               "received channel configuration option with incorrect length (type: MTU, "
-               "length: %hhu, expected length: %hhu)",
-               option.header().length, MtuOption::kPayloadLength);
+      if (!CheckHeaderLengthField<MtuOption>(option)) {
         return 0;
       }
-
       OnReadMtuOption(MtuOption(option.payload_data()));
-
       return MtuOption::kEncodedSize;
     case OptionType::kRetransmissionAndFlowControl:
-      if (option.header().length != RetransmissionAndFlowControlOption::kPayloadLength) {
-        bt_log(WARN, "l2cap",
-               "received channel configuration option with incorrect length (type: RtxFlowControl, "
-               "length: %hhu, expected length: %hhu)",
-               option.header().length, RetransmissionAndFlowControlOption::kPayloadLength);
+      if (!CheckHeaderLengthField<RetransmissionAndFlowControlOption>(option)) {
         return 0;
       }
       OnReadRetransmissionAndFlowControlOption(
           RetransmissionAndFlowControlOption(option.payload_data()));
       return RetransmissionAndFlowControlOption::kEncodedSize;
+    case OptionType::kFlushTimeout:
+      if (!CheckHeaderLengthField<FlushTimeoutOption>(option)) {
+        return 0;
+      }
+      OnReadFlushTimeoutOption(FlushTimeoutOption(option.payload_data()));
+      return FlushTimeoutOption::kEncodedSize;
     default:
       bt_log(TRACE, "l2cap", "decoded unsupported channel configuration option (type: %#.2x)",
              static_cast<uint8_t>(option.header().type));
@@ -158,6 +169,23 @@ std::string ChannelConfiguration::RetransmissionAndFlowControlOption::ToString()
       mps_);
 }
 
+// FlushTimeoutOption implementation
+
+ChannelConfiguration::FlushTimeoutOption::FlushTimeoutOption(const ByteBuffer& data_buf) {
+  auto& option_payload = data_buf.As<FlushTimeoutOptionPayload>();
+  flush_timeout_ = letoh16(option_payload.flush_timeout);
+}
+
+DynamicByteBuffer ChannelConfiguration::FlushTimeoutOption::Encode() const {
+  FlushTimeoutOptionPayload payload;
+  payload.flush_timeout = htole16(flush_timeout_);
+  return EncodeOption<FlushTimeoutOption>(payload);
+}
+
+std::string ChannelConfiguration::FlushTimeoutOption::ToString() const {
+  return fxl::StringPrintf("[type: FlushTimeout, flush timeout: %hu]", flush_timeout_);
+}
+
 // UnknownOption implementation
 
 ChannelConfiguration::UnknownOption::UnknownOption(OptionType type, uint8_t length,
@@ -199,6 +227,10 @@ ChannelConfiguration::ConfigurationOptions ChannelConfiguration::Options() const
         new RetransmissionAndFlowControlOption(*retransmission_flow_control_option_)));
   }
 
+  if (flush_timeout_option_) {
+    options.push_back(ConfigurationOptionPtr(new FlushTimeoutOption(*flush_timeout_option_)));
+  }
+
   return options;
 }
 
@@ -211,6 +243,9 @@ std::string ChannelConfiguration::ToString() const {
   }
   if (retransmission_flow_control_option_) {
     options.push_back(retransmission_flow_control_option_->ToString());
+  }
+  if (flush_timeout_option_) {
+    options.push_back(flush_timeout_option_->ToString());
   }
   for (auto& option : unknown_options_) {
     options.push_back(option.ToString());
@@ -233,6 +268,10 @@ void ChannelConfiguration::Merge(const ChannelConfiguration& other) {
 
   if (other.retransmission_flow_control_option_) {
     retransmission_flow_control_option_ = other.retransmission_flow_control_option_;
+  }
+
+  if (other.flush_timeout_option_) {
+    flush_timeout_option_ = other.flush_timeout_option_;
   }
 }
 

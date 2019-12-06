@@ -17,13 +17,15 @@ namespace {
 
 using MtuOption = ChannelConfiguration::MtuOption;
 using RetransmissionAndFlowControlOption = ChannelConfiguration::RetransmissionAndFlowControlOption;
+using FlushTimeoutOption = ChannelConfiguration::FlushTimeoutOption;
 using UnknownOption = ChannelConfiguration::UnknownOption;
 
 constexpr auto kUnknownOptionType = static_cast<OptionType>(0x10);
 
-const ChannelConfiguration::MtuOption kMtuOption(48);
-const ChannelConfiguration::RetransmissionAndFlowControlOption kRetransmissionAndFlowControlOption(
-    ChannelMode::kBasic, 1, 1, 1, 1, 1);
+const MtuOption kMtuOption(48);
+const RetransmissionAndFlowControlOption kRetransmissionAndFlowControlOption(ChannelMode::kBasic, 0,
+                                                                             0, 0, 0, 0);
+const FlushTimeoutOption kFlushTimeoutOption(200);
 
 class L2CAP_ChannelConfigurationTest : public ::testing::Test {
  public:
@@ -42,6 +44,9 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadAllOptionTypes) {
       RetransmissionAndFlowControlOption::kPayloadLength,
       static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00,
+      // Flush Timeout option (timeout = 200)
+      static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
+      0x00,
       // Unknown option, Type = 0x70, Length = 1, payload = 0x03
       0x70, 0x01, 0x03);
 
@@ -54,6 +59,9 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadAllOptionTypes) {
 
   EXPECT_TRUE(config.retransmission_flow_control_option());
   EXPECT_EQ(ChannelMode::kRetransmission, config.retransmission_flow_control_option()->mode());
+
+  EXPECT_TRUE(config.flush_timeout_option());
+  EXPECT_EQ(200u, config.flush_timeout_option()->flush_timeout());
 
   EXPECT_EQ(1u, config.unknown_options().size());
   auto& option = config.unknown_options().front();
@@ -102,6 +110,12 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadIncorrectOptionLength) {
   //clang-format on
 
   EXPECT_FALSE(config.ReadOptions(kEncodedRetransmissionOption));
+
+  auto kEncodedFlushTimeoutOption = CreateStaticByteBuffer(
+    // Type, Length = 1 (spec length is 2)
+    OptionType::kFlushTimeout, 0x01, 0x00);
+
+  EXPECT_FALSE(config.ReadOptions(kEncodedFlushTimeoutOption));
 }
 
 TEST_F(L2CAP_ChannelConfigurationTest, MtuOptionDecodeEncode) {
@@ -151,6 +165,19 @@ TEST_F(L2CAP_ChannelConfigurationTest, RetransmissionAndFlowControlOptionDecodeE
       ContainersEqual(rtx_option.Encode(), kExpectedEncodedRetransmissionAndFlowControlOption));
 }
 
+TEST_F(L2CAP_ChannelConfigurationTest, FlushTimeoutOptionDecodeEncode) {
+  const uint16_t kFlushTimeout = 200;
+
+  auto kExpectedEncodedFlushTimeoutOption = CreateStaticByteBuffer(
+      // flush timeout type = 0x02, length = 2
+      0x02, 0x02, LowerBits(kFlushTimeout), UpperBits(kFlushTimeout));
+
+  FlushTimeoutOption option(kExpectedEncodedFlushTimeoutOption.view(sizeof(ConfigurationOption)));
+
+  EXPECT_EQ(kFlushTimeout, option.flush_timeout());
+  EXPECT_EQ(kExpectedEncodedFlushTimeoutOption, option.Encode());
+}
+
 TEST_F(L2CAP_ChannelConfigurationTest, UnknownOptionDecodeEncode) {
   // clang-format off
   auto kExpectedEncodedUnknownOption = CreateStaticByteBuffer(
@@ -177,50 +204,67 @@ TEST_F(L2CAP_ChannelConfigurationTest, OptionsReturnsKnownOptions) {
   // Empty configuration
   EXPECT_EQ(0u, ChannelConfiguration().Options().size());
 
+  // Single option
   ChannelConfiguration config;
-  constexpr uint8_t kMtu = 50;
-  config.set_mtu_option(MtuOption(kMtu));
+  config.set_mtu_option(kMtuOption);
   auto options0 = config.Options();
   // |options0| should not include all options
   EXPECT_EQ(1u, options0.size());
   EXPECT_EQ(OptionType::kMTU, options0[0]->type());
 
-  // Set all options
+  // All options
   config.set_retransmission_flow_control_option(kRetransmissionAndFlowControlOption);
+  config.set_flush_timeout_option(kFlushTimeoutOption);
   auto options1 = config.Options();
-  EXPECT_EQ(2u, options1.size());
-  EXPECT_TRUE(std::find_if(options1.begin(), options1.end(), [](auto& option) {
-                return option->type() == OptionType::kRetransmissionAndFlowControl;
-              }) != options1.end());
-  EXPECT_TRUE(std::find_if(options1.begin(), options1.end(), [](auto& option) {
-                return option->type() == OptionType::kMTU;
-              }) != options1.end());
+  EXPECT_EQ(3u, options1.size());
+
+  const auto OptionsContainsOptionOfType = [](ChannelConfiguration::ConfigurationOptions& options,
+                                              OptionType type) {
+    return std::find_if(options.begin(), options.end(),
+                        [&](auto& option) { return option->type() == type; }) != options.end();
+  };
+  constexpr std::array<OptionType, 3> AllOptionTypes = {
+      OptionType::kRetransmissionAndFlowControl, OptionType::kMTU, OptionType::kFlushTimeout};
+  for (auto& type : AllOptionTypes) {
+    EXPECT_TRUE(OptionsContainsOptionOfType(options1, type));
+  }
 
   // Remove mtu option
   config.set_mtu_option(std::nullopt);
   auto options2 = config.Options();
-  EXPECT_EQ(1u, options2.size());
-  EXPECT_EQ(OptionType::kRetransmissionAndFlowControl, options2[0]->type());
+  EXPECT_EQ(2u, options2.size());
+  EXPECT_FALSE(OptionsContainsOptionOfType(options2, OptionType::kMTU));
 }
 
 TEST_F(L2CAP_ChannelConfigurationTest, MergingConfigurations) {
   ChannelConfiguration config0;
   config0.set_mtu_option(kMtuOption);
+  config0.set_retransmission_flow_control_option(kRetransmissionAndFlowControlOption);
+  config0.set_flush_timeout_option(kFlushTimeoutOption);
 
+  // Test merging options to empty config
   ChannelConfiguration config1;
-  config1.set_retransmission_flow_control_option(kRetransmissionAndFlowControlOption);
+  config1.Merge(config0);
 
-  EXPECT_FALSE(config0.retransmission_flow_control_option().has_value());
-  config0.Merge(config1);
-  EXPECT_TRUE(config0.mtu_option().has_value());
-  EXPECT_TRUE(config0.retransmission_flow_control_option().has_value());
+  EXPECT_EQ(kMtuOption.mtu(), config1.mtu_option()->mtu());
+  EXPECT_EQ(kRetransmissionAndFlowControlOption.mode(),
+            config1.retransmission_flow_control_option()->mode());
+  EXPECT_EQ(kFlushTimeoutOption.flush_timeout(), config1.flush_timeout_option()->flush_timeout());
 
-  // Test that |config2|'s MTU option overwrites |config0|'s MTU option.
-  ChannelConfiguration config2;
-  config2.set_mtu_option(MtuOption(96));
+  // Test overwriting options
+  constexpr uint16_t kMtu = 96;
+  config0.set_mtu_option(MtuOption(kMtu));
+  constexpr auto kMode = ChannelMode::kStreaming;
+  config0.set_retransmission_flow_control_option(
+      RetransmissionAndFlowControlOption(kMode, 0, 0, 0, 0, 0));
+  constexpr uint16_t kTimeout = 150;
+  config0.set_flush_timeout_option(FlushTimeoutOption(kTimeout));
 
-  config0.Merge(config2);
-  EXPECT_EQ(96u, config0.mtu_option()->mtu());
+  config1.Merge(config0);
+
+  EXPECT_EQ(kMtu, config1.mtu_option()->mtu());
+  EXPECT_EQ(kMode, config1.retransmission_flow_control_option()->mode());
+  EXPECT_EQ(kTimeout, config1.flush_timeout_option()->flush_timeout());
 }
 
 TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
@@ -231,8 +275,11 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
       OptionType::kRetransmissionAndFlowControl, RetransmissionAndFlowControlOption::kPayloadLength,
       static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00,
-      // Unknown option, Type = 0x70, Length = 0
-      0x70, 0x00,
+      // Flush Timeout option (timeout = 200)
+      static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
+      0x00,
+      // Unknown option, Type = 0x70, Length = 1
+      0x70, 0x01, 0x03,
       // Unknown option (hint), Type = 0x80, Length = 0
       0x80, 0x00);
   ChannelConfiguration config;
@@ -244,9 +291,15 @@ TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
   EXPECT_TRUE(config.retransmission_flow_control_option().has_value());
   EXPECT_EQ(ChannelMode::kRetransmission, config.retransmission_flow_control_option()->mode());
 
+  EXPECT_TRUE(config.flush_timeout_option().has_value());
+  EXPECT_EQ(200u, config.flush_timeout_option()->flush_timeout());
+
   // Hint should have been dropped
   EXPECT_EQ(1u, config.unknown_options().size());
-  EXPECT_EQ(0x70, static_cast<uint8_t>(config.unknown_options()[0].type()));
+  auto& option = config.unknown_options().front();
+  EXPECT_EQ(0x70, static_cast<uint8_t>(option.type()));
+  EXPECT_EQ(1u, option.payload().size());
+  EXPECT_EQ(0x03, option.payload().data()[0]);
 }
 
 TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
@@ -259,6 +312,9 @@ TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
       RetransmissionAndFlowControlOption::kPayloadLength,
       static_cast<uint8_t>(ChannelMode::kRetransmission), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00,
+      // Flush Timeout option (timeout = 200)
+      static_cast<uint8_t>(OptionType::kFlushTimeout), FlushTimeoutOption::kPayloadLength, 0xc8,
+      0x00,
       // Unknown option, Type = 0x70, Length = 1, payload = 0x03
       0x70, 0x01, 0x03);
 
@@ -268,6 +324,7 @@ TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
       "{[type: MTU, mtu: 48], "
       "[type: RtxFlowControl, mode: 1, tx window size: 0, max transmit: 0, rtx timeout: 0, monitor "
       "timeout: 0, max pdu payload size: 0], "
+      "[type: FlushTimeout, flush timeout: 200], "
       "[type: 0x70, length: 1]}";
   EXPECT_EQ(kExpected, config.ToString());
 }

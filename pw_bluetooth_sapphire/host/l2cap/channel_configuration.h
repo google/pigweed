@@ -80,7 +80,7 @@ class ChannelConfiguration final {
 
     uint16_t mtu() const { return mtu_; };
 
-    // ConfigurationOption overrides
+    // ConfigurationOptionInterface overrides
 
     DynamicByteBuffer Encode() const override;
 
@@ -123,7 +123,7 @@ class ChannelConfiguration final {
     // Maximum PDU size
     uint16_t mps() const { return mps_; }
 
-    // ConfigurationOption overrides
+    // ConfigurationOptionInterface overrides
 
     DynamicByteBuffer Encode() const override;
 
@@ -140,6 +140,36 @@ class ChannelConfiguration final {
     uint16_t rtx_timeout_;
     uint16_t monitor_timeout_;
     uint16_t mps_;
+  };
+
+  // Flush Timeout option (Core Spec v5.1, Vol 3, Part A, Sec 5.2).
+  // Specifies flush timeout that sender of this option is going to use.
+  class FlushTimeoutOption final : public ConfigurationOptionInterface {
+   public:
+    static constexpr OptionType kType = OptionType::kFlushTimeout;
+    static constexpr uint8_t kPayloadLength = sizeof(FlushTimeoutOptionPayload);
+    static constexpr size_t kEncodedSize = sizeof(ConfigurationOption) + kPayloadLength;
+
+    explicit FlushTimeoutOption(uint16_t flush_timeout) : flush_timeout_(flush_timeout) {}
+
+    // |data_buf| must contain encoded Flush Timeout option data. The option will be initialized
+    // with the encoded flush timeout field.
+    explicit FlushTimeoutOption(const ByteBuffer& data_buf);
+
+    uint16_t flush_timeout() const { return flush_timeout_; };
+
+    // ConfigurationOptionInterface overrides
+
+    DynamicByteBuffer Encode() const override;
+
+    std::string ToString() const override;
+
+    OptionType type() const override { return kType; }
+
+    size_t size() const override { return kEncodedSize; }
+
+   private:
+    uint16_t flush_timeout_;
   };
 
   // Unknown options that are not hints must be stored and sent in the Configuration Response.
@@ -197,6 +227,10 @@ class ChannelConfiguration final {
     retransmission_flow_control_option_ = std::move(option);
   }
 
+  void set_flush_timeout_option(std::optional<FlushTimeoutOption> option) {
+    flush_timeout_option_ = std::move(option);
+  }
+
   // Returns MtuOption only if it has been previously read or set.
   const std::optional<MtuOption>& mtu_option() const { return mtu_option_; }
 
@@ -205,6 +239,10 @@ class ChannelConfiguration final {
       const {
     return retransmission_flow_control_option_;
   };
+
+  const std::optional<FlushTimeoutOption>& flush_timeout_option() const {
+    return flush_timeout_option_;
+  }
 
   // Returns unknown options previously decoded by |ReadOptions|. Used for responding to peer with
   // rejected options.
@@ -216,6 +254,7 @@ class ChannelConfiguration final {
   void OnReadRetransmissionAndFlowControlOption(RetransmissionAndFlowControlOption option) {
     retransmission_flow_control_option_ = option;
   }
+  void OnReadFlushTimeoutOption(FlushTimeoutOption option) { flush_timeout_option_ = option; }
   void OnReadUnknownOption(UnknownOption option);
 
   // Returns number of bytes read. A return value of 0 indicates failure to read option.
@@ -223,6 +262,7 @@ class ChannelConfiguration final {
 
   std::optional<MtuOption> mtu_option_;
   std::optional<RetransmissionAndFlowControlOption> retransmission_flow_control_option_;
+  std::optional<FlushTimeoutOption> flush_timeout_option_;
   std::vector<UnknownOption> unknown_options_;
 };  // ChannelConfiguration
 

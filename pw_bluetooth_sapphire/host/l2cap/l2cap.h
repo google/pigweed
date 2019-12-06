@@ -303,12 +303,18 @@ struct ConfigurationOption {
   uint8_t data[];
 } __PACKED;
 
-// Payload of ConfigurationOption (see Vol 3, Part A, Section 5.1)
+// Payload of Configuration Option (see Vol 3, Part A, Section 5.1)
 struct MtuOptionPayload {
   uint16_t mtu;
 } __PACKED;
 
-// Payload of ConfigurationOption (see Vol 3, Part A, Section 5.4)
+
+// Payload of Configuration Option (see Vol 3, Part A, Section 5.2)
+struct FlushTimeoutOptionPayload {
+  uint16_t flush_timeout;
+} __PACKED;
+
+// Payload of Configuration Option (see Vol 3, Part A, Section 5.4)
 struct RetransmissionAndFlowControlOptionPayload {
   ChannelMode mode;
   uint8_t tx_window_size;
