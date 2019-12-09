@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Registry for plugins."""
 
 import argparse
 import logging
@@ -35,7 +36,7 @@ registry = []
 def register(
         name: str,
         command_function: Callable,
-        help: str = '',
+        help: str = '',  # pylint: disable=redefined-builtin
         define_args_function: DefineArgsFunction = lambda _: None,
 ) -> None:
     registry.append(

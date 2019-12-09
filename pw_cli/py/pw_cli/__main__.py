@@ -41,6 +41,8 @@ _PIGWEED_BANNER = '''
 
 
 def main(raw_args=None):
+    """Entry point for pw command."""
+
     if raw_args is None:
         raw_args = sys.argv[1:]
 
@@ -79,7 +81,7 @@ def main(raw_args=None):
     for module in pkgutil.iter_modules():
         if module.name.startswith('pw_'):
             _LOG.debug('Found module that may have plugins: %s', module.name)
-            plugin = importlib.__import__(module.name)
+            unused_plugin = importlib.__import__(module.name)
 
     # Pull plugins out of the registry and set them up with the parser.
     subparsers = parser.add_subparsers(help='pw subcommand to run')
@@ -105,10 +107,12 @@ def main(raw_args=None):
         del args_as_dict['loglevel']
 
     # Run the command and exit with the appropriate status.
+    # pylint: disable=protected-access
     if args._run_async:
         sys.exit(asyncio.run(args._command(**args_as_dict)))
     else:
         sys.exit(args._command(**args_as_dict))
+    # pylint: enable=protected-access
 
 
 if __name__ == "__main__":

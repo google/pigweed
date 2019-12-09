@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Color codes for use by rest of pw_cli."""
 
 
 def _make_color(*codes):
@@ -24,6 +25,7 @@ def _make_color(*codes):
 
 # TODO(keir): Totally replace this Color object with something more complete
 # like the 'colorful' module.
+# pylint: disable=too-few-public-methods
 class Color:
     """Helpers to surround text with ASCII color escapes"""
     red = _make_color(31, 1)
@@ -37,3 +39,6 @@ class Color:
     magenta = _make_color(35, 1)
     bold_white = _make_color(37, 1)
     black_on_white = _make_color(30, 47)  # black fg white bg
+
+
+# pylint: enable=too-few-public-methods

@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Configure the system logger for the default pw command log format."""
 
 import logging
 import os
@@ -40,19 +41,19 @@ def main():
 def install():
     """Configure the system logger for the default pw command log format."""
 
-    PW_SUBPROCESS = os.getenv('PW_SUBPROCESS')
-    if PW_SUBPROCESS is None:
+    pw_subprocess = os.getenv('PW_SUBPROCESS')
+    if pw_subprocess is None:
         # This applies a gray background to the time to make the log lines
         # distinct from other input, in a way that's easier to see than plain
         # colored text.
         timestamp_fmt = _Color.black_on_white('%(asctime)s') + ' '
-    elif PW_SUBPROCESS == '1':
+    elif pw_subprocess == '1':
         # If the logger is being run in the context of a pw subprocess, the
         # time and date are omitted (since pw_cli.process will provide them).
         timestamp_fmt = ''
     else:
         raise ValueError(
-            f'Invalid environment variable PW_SUBPROCESS={PW_SUBPROCESS}')
+            f'Invalid environment variable PW_SUBPROCESS={pw_subprocess}')
 
     logging.basicConfig(format=timestamp_fmt + '%(levelname)s %(message)s',
                         datefmt='%Y%m%d %H:%M:%S',
@@ -60,6 +61,7 @@ def install():
 
     # Shorten all the log levels to 3 characters for column-aligned logs.
     # Color the logs using ANSI codes.
+    # pylint: disable=bad-whitespace
     # yapf: disable
     logging.addLevelName(logging.CRITICAL, _Color.bold_red('CRT'))
     logging.addLevelName(logging.ERROR,    _Color.red     ('ERR'))
@@ -68,6 +70,7 @@ def install():
     logging.addLevelName(LOGLEVEL_STDOUT,  _Color.cyan    ('OUT'))
     logging.addLevelName(logging.DEBUG,    _Color.blue    ('DBG'))
     # yapf: enable
+    # pylint: enable=bad-whitespace
 
 
 # Note: normally this shouldn't be done at the top level without a try/catch

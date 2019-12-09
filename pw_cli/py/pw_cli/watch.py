@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Rebuild every time a file is chanegd."""
 
 import argparse
 import enum
@@ -30,7 +31,6 @@ from watchdog.utils import unicode_paths
 import pw_cli.plugins
 from pw_cli.color import Color as _Color
 
-import logging
 _LOG = logging.getLogger(__name__)
 
 _PASS_MESSAGE = """
@@ -70,19 +70,24 @@ def _die(*args):
     sys.exit(1)
 
 
+# pylint: disable=logging-format-interpolation
+
+
 class PigweedBuildWatcher(FileSystemEventHandler):
+    """Process filesystem events and launch builds if necessary."""
     def __init__(self,
                  patterns=None,
                  ignore_patterns=None,
                  case_sensitive=False,
-                 build_dirs=[]):
+                 build_dirs=None):
         super().__init__()
 
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.case_sensitive = case_sensitive
         self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
-        self.build_dirs = build_dirs
+        self.build_dirs = build_dirs or []
+        self.cooldown_finish_time = None
 
     def path_matches(self, path):
         """Returns true if path matches according to the watcher patterns"""
@@ -109,10 +114,10 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         for path in paths:
             if self.path_matches(path):
                 _LOG.debug('Match for path: %s', path)
-                self.on_any_event()
+                self.on_any_event(event)
 
     def run_builds(self):
-        # Run all the builds in serial and capture pass/fail for each.
+        """Run all the builds in serial and capture pass/fail for each."""
         builds_succeeded = []
         num_builds = len(self.build_dirs)
         _LOG.info(f'Starting build with {num_builds} directories')
@@ -158,7 +163,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         else:
             print(_Color.red(_FAIL_MESSAGE))
 
-    def on_any_event(self):
+    def on_any_event(self, unused_event=None):
         if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
             self.run_builds()
 
@@ -210,6 +215,8 @@ def add_parser_arguments(parser):
 
 
 def watch(build_dir='', patterns=None, ignore_patterns=None):
+    """TODO(keir) docstring"""
+
     _LOG.info('Starting Pigweed build watcher')
 
     # If no build directory was specified, search the tree for GN build
@@ -230,11 +237,13 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
         _die("No build dirs found. Did you forget to 'gn gen out'?")
 
     # Verify that the build output directories exist.
+    # pylint: disable=redefined-argument-from-local
     for i, build_dir in enumerate(build_dirs, 1):
         if not os.path.isdir(build_dir):
             _die("Build directory doesn't exist: %s", build_dir)
         else:
             _LOG.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
+    # pylint: enable=redefined-argument-from-local
 
     _LOG.debug('Patterns: %s', patterns)
 
