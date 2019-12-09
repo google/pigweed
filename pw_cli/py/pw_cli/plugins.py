@@ -36,14 +36,14 @@ registry = []
 def register(
         name: str,
         command_function: Callable,
-        help: str = '',  # pylint: disable=redefined-builtin
+        short_help: str = '',
         define_args_function: DefineArgsFunction = lambda _: None,
 ) -> None:
     registry.append(
         Plugin(
             name=name,
             command_function=command_function,
-            help=help,
+            help=short_help,
             define_args_function=define_args_function,
         ))
     _LOG.debug('Registered plugin: %s', name)

@@ -62,7 +62,7 @@ def main(raw_args=None):
     # Default command is 'help'
     pw_cli.plugins.register(
         name='help',
-        help='Show the Pigweed CLI help',
+        short_help='Show the Pigweed CLI help',
         command_function=parser.print_help,
     )
     # Setting this default on the top-level parser makes 'pw' show help by

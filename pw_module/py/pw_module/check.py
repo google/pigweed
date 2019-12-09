@@ -192,7 +192,7 @@ try:
     import pw_cli.plugins
     pw_cli.plugins.register(
         name='module-check',
-        help="Check that a module matches Pigweed's module guidelines",
+        short_help="Check that a module matches Pigweed's module guidelines",
         command_function=main,
         define_args_function=register_arguments,
     )

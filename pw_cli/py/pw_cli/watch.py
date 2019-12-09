@@ -310,7 +310,7 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
 pw_cli.plugins.register(
     name='watch',
-    help='Watch files for changes',
+    short_help='Watch files for changes',
     define_args_function=add_parser_arguments,
     command_function=watch,
 )

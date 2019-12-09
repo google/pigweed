@@ -106,7 +106,9 @@ class TestGroup:
 
         tests: Set[Test] = set()
         for dep in self._deps:
-            tests.update(dep._all_test_dependencies(processed_groups))
+            tests.update(
+                dep._all_test_dependencies(  # pylint: disable=protected-access
+                    processed_groups))
 
         tests.update(self._tests)
         processed_groups.add(self._name)
@@ -351,7 +353,7 @@ try:
     import pw_cli.plugins
     pw_cli.plugins.register(
         name='test',
-        help='Runs groups of unit tests on a target',
+        short_help='Runs groups of unit tests on a target',
         command_function=run_as_plugin,
         define_args_function=register_arguments,
     )
@@ -363,7 +365,8 @@ except ImportError:
 def main() -> int:
     """Standalone script entry point."""
 
-    import coloredlogs
+    # Don't assume coloredlogs is available unless this was invoked as a script.
+    import coloredlogs  # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser(description=__doc__)
     register_arguments(parser)

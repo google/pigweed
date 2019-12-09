@@ -78,7 +78,7 @@ def install():
 # installed.
 pw_cli.plugins.register(
     name='logdemo',
-    help='Show how how logs look at various levels',
+    short_help='Show how how logs look at various levels',
     command_function=main,
 )
 
