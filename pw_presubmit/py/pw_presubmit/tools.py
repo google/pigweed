@@ -459,9 +459,12 @@ class _Check:
                 self._check(paths)
             else:
                 self._check()
-        except Exception as failure:  # pylint: disable=broad-except
+        except PresubmitFailure as failure:
             if str(failure):
-                print(failure)
+                _LOG.warning('%s', failure)
+            return _Result.FAIL
+        except Exception as failure:  # pylint: disable=broad-except
+            _LOG.exception('Presubmit check %s failed!', self.__name__)
             return _Result.FAIL
         except KeyboardInterrupt:
             print()
@@ -507,8 +510,16 @@ def filter_paths(endswith: Iterable[str] = (''),
     return filter_paths_for_function
 
 
+def log_run(*args, **kwargs) -> subprocess.CompletedProcess:
+    """Logs a command then runs it with subprocess.run."""
+    _LOG.debug('[COMMAND] %s\n%s',
+               ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
+               ' '.join(shlex.quote(arg) for arg in args))
+    return subprocess.run(args, **kwargs)
+
+
 def call(*args, **kwargs) -> None:
-    """Optional subprocess wrapper with helpful output."""
+    """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
     process = subprocess.run(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,

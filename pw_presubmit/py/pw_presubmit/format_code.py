@@ -40,7 +40,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import list_git_files, plural
+from pw_presubmit import list_git_files, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -97,10 +97,12 @@ def _check_files(files,
 
 
 def _clang_format(*args: str, **kwargs) -> bytes:
-    return subprocess.run(['clang-format', '--style=file', *args],
-                          stdout=subprocess.PIPE,
-                          check=True,
-                          **kwargs).stdout
+    return log_run('clang-format',
+                   '--style=file',
+                   *args,
+                   stdout=subprocess.PIPE,
+                   check=True,
+                   **kwargs).stdout
 
 
 def check_c_format(files: Iterable) -> Dict[str, str]:
@@ -116,33 +118,39 @@ def fix_c_format(files: Iterable) -> None:
 def check_gn_format(files: Iterable) -> Dict[str, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
-        files, lambda _, data: subprocess.run(['gn', 'format', '--stdin'],
-                                              input=data,
-                                              stdout=subprocess.PIPE,
-                                              check=True).stdout)
+        files, lambda _, data: log_run('gn',
+                                       'format',
+                                       '--stdin',
+                                       input=data,
+                                       stdout=subprocess.PIPE,
+                                       check=True).stdout)
 
 
 def fix_gn_format(files: Iterable) -> None:
     """Fixes formatting for the provided files in place."""
-    subprocess.run(['gn', 'format', *files], check=True)
+    log_run('gn', 'format', *files, check=True)
 
 
 def check_go_format(files: Iterable) -> Dict[str, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
-        files, lambda _, data: subprocess.run(
-            ['gofmt'], input=data, stdout=subprocess.PIPE, check=True).stdout)
+        files, lambda path, _: log_run(
+            'gofmt', path, stdout=subprocess.PIPE, check=True).stdout)
 
 
 def fix_go_format(files: Iterable) -> None:
     """Fixes formatting for the provided files in place."""
-    subprocess.run(['gofmt', '-w', *files], check=True)
+    log_run('gofmt', '-w', *files, check=True)
 
 
 def _yapf(*args: str, **kwargs) -> subprocess.CompletedProcess:
-    return subprocess.run(['python', '-m', 'yapf', '--parallel', *args],
-                          capture_output=True,
-                          **kwargs)
+    return log_run('python',
+                   '-m',
+                   'yapf',
+                   '--parallel',
+                   *args,
+                   capture_output=True,
+                   **kwargs)
 
 
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
@@ -202,8 +210,8 @@ C_FORMAT: CodeFormat = CodeFormat(
 GN_FORMAT: CodeFormat = CodeFormat('GN', ('.gn', '.gni'), check_gn_format,
                                    fix_gn_format)
 
-GO_FORMAT: CodeFormat = CodeFormat('Go', ('.go', ), check_c_format,
-                                   fix_c_format)
+GO_FORMAT: CodeFormat = CodeFormat('Go', ('.go', ), check_go_format,
+                                   fix_go_format)
 
 PYTHON_FORMAT: CodeFormat = CodeFormat('Python', ('.py', ), check_py_format,
                                        fix_py_format)
@@ -228,12 +236,8 @@ def presubmit_check(code_format: CodeFormat) -> Callable:
     return check_code_format
 
 
-PRESUBMIT_CHECKS: Sequence[Callable] = (
-    presubmit_check(C_FORMAT),
-    presubmit_check(GN_FORMAT),
-    presubmit_check(GO_FORMAT),
-    presubmit_check(PYTHON_FORMAT),
-)
+PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
+    presubmit_check(code_format) for code_format in CODE_FORMATS)
 
 
 class CodeFormatter:

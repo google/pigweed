@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import sys
 from typing import Dict, Sequence
 
@@ -34,7 +35,7 @@ except ImportError:
 
 from pw_presubmit import format_code
 from pw_presubmit.install_hook import install_hook
-from pw_presubmit import call, filter_paths, plural, PresubmitFailure
+from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -96,32 +97,38 @@ def gn_args(**kwargs):
     return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
 
 
-GN_GEN = 'gn', 'gen', '--color=always', '--check'
+def gn_gen(*args):
+    call('gn', 'gen', '--color=always', '--check', *args)
+
+
+_CLANG_GEN_ARGS = (presubmit_dir('clang'),
+                   gn_args(
+                       pw_target_config='"//targets/host/host.gni"',
+                       pw_target_toolchain='"//pw_toolchain:host_clang_os"'))
 
 
 def gn_clang_build():
-    call(
-        *GN_GEN, '--export-compile-commands', presubmit_dir('clang'),
-        gn_args(pw_target_config='"//targets/host/host.gni"',
-                pw_target_toolchain='"//pw_toolchain:host_clang_os"'))
+    gn_gen('--export-compile-commands', *_CLANG_GEN_ARGS)
     call('ninja', '-C', presubmit_dir('clang'))
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(unused_paths):
-    call(
-        *GN_GEN, presubmit_dir('gcc'),
+    gn_gen(
+        presubmit_dir('gcc'),
         gn_args(pw_target_config='"//targets/host/host.gni"',
                 pw_target_toolchain='"//pw_toolchain:host_gcc_os"'))
     call('ninja', '-C', presubmit_dir('gcc'))
 
 
+_ARM_GEN_ARGS = (
+    presubmit_dir('arm'),
+    gn_args(pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"'))
+
+
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(unused_paths):
-    call(
-        *GN_GEN, presubmit_dir('arm'),
-        gn_args(
-            pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"'))
+    gn_gen(*_ARM_GEN_ARGS)
     call('ninja', '-C', presubmit_dir('arm'))
 
 
@@ -167,11 +174,6 @@ def test_python_packages(paths):
 
 
 @filter_paths(endswith='.py')
-def pylint_errors_only(paths):
-    run_python_module('pylint', '-E', '-j', '0', *paths)
-
-
-@filter_paths(endswith='.py')
 def pylint(paths):
     run_python_module('pylint', '-j', '0', *paths)
 
@@ -183,7 +185,6 @@ def mypy(paths):
 
 PYTHON = (
     test_python_packages,
-    pylint_errors_only,  # TODO(hepler): Remove this when pylint is passing.
     pylint,
     # TODO(hepler): Enable mypy when it passes.
     # mypy,
@@ -272,42 +273,50 @@ CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 #
 
 
-def _read_contents(paths, comment: bytes = b'#') -> bytearray:
-    contents = bytearray()
+def _get_paths_from_command(*args):
+    """Runs a command and reads Bazel or GN //-style paths from it."""
+    process = log_run(*args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    files = set()
 
-    for path in paths:
-        with open(path, 'rb') as file:
-            for line in file:
-                line = line.strip()
-                if not line.startswith(comment):
-                    contents += line
+    for line in process.stdout.splitlines():
+        path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
+        if os.path.isfile(path):
+            files.add(path)
 
-    return contents
+    return files
 
 
 @filter_paths(endswith=('.rst', *format_code.C_FORMAT.extensions))
 def source_is_in_build_files(paths):
-    build = _read_contents(
-        pw_presubmit.git_stdout('ls-files', 'BUILD', '*/BUILD').split())
-    build_gn = _read_contents(
-        pw_presubmit.git_stdout('ls-files', 'BUILD.gn', '*/BUILD.gn').split())
+    """Checks that source files are in the GN and Bazel builds."""
 
-    failed = []
+    # Collect all paths in the Bazel build.
+    build = _get_paths_from_command('bazel', 'query',
+                                    'kind("source file", //...:*)')
+
+    # Collect all paths in the ARM and Clang GN builds.
+    gn_gen(*_ARM_GEN_ARGS)
+    build_gn = _get_paths_from_command('gn', 'desc', presubmit_dir('arm'), '*')
+    gn_gen(*_CLANG_GEN_ARGS)
+    build_gn.update(
+        _get_paths_from_command('gn', 'desc', presubmit_dir('clang'), '*'))
+
+    missing_bazel = []
+    missing_gn = []
 
     for path in paths:
-        filename = os.path.basename(path).encode()
+        if not path.endswith('.rst') and path not in build:
+            missing_bazel.append(path)
+        if path not in build_gn:
+            missing_gn.append(path)
 
-        if not filename.endswith(b'.rst') and filename not in build:
-            _LOG.warning('Missing from Bazel BUILD files: %s', path)
-            failed.append(path)
+    if missing_bazel or missing_gn:
+        for build, files in [('Bazel', missing_bazel), ('GN', missing_gn)]:
+            _LOG.warning('%s are missing from the %s build:\n%s',
+                         plural(files, 'file'), build, '\n'.join(files))
 
-        if filename not in build_gn:
-            _LOG.warning('Missing from GN BUILD.gn files: %s', path)
-            failed.append(path)
-
-    if failed:
-        _LOG.warning('%s are missing from build files!',
-                     plural(failed, 'source'))
+        _LOG.warning(
+            'All source files must appear in BUILD and BUILD.gn files')
         raise PresubmitFailure
 
 
