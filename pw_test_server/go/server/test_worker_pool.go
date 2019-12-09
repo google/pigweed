@@ -85,11 +85,11 @@ type UnitTestRunner interface {
 // tests among its available workers.
 type TestWorkerPool struct {
 	activeWorkers uint32
-	logger      *log.Logger
-	workers     []UnitTestRunner
-	waitGroup   sync.WaitGroup
-	testChannel chan *UnitTestRunRequest
-	quitChannel chan bool
+	logger        *log.Logger
+	workers       []UnitTestRunner
+	waitGroup     sync.WaitGroup
+	testChannel   chan *UnitTestRunRequest
+	quitChannel   chan bool
 }
 
 var (

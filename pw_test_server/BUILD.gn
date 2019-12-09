@@ -18,7 +18,5 @@ pw_doc_group("docs") {
   sources = [
     "docs.rst",
   ]
-  group_deps = [
-    "go:docs",
-  ]
+  group_deps = [ "go:docs" ]
 }
