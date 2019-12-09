@@ -18,6 +18,7 @@
 #include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -145,6 +146,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Returns the current local name set in the controller
   const std::string& local_name() const { return local_name_; }
 
+  // Returns the current class of device.
+  const DeviceClass& device_class() const { return device_class_; }
+
   // Adds a fake remote peer. Returns false if a peer with the same address was previously
   // added.
   bool AddPeer(std::unique_ptr<FakePeer> peer);
@@ -156,6 +160,15 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Returns a pointer to the FakePeer with the given |address|. Returns nullptr if the |address|
   // is unknown.
   FakePeer* FindPeer(const DeviceAddress& address);
+
+  // Sets a callback to be invoked when the the base controller parameters change due to a HCI
+  // command. These parameters are:
+  //
+  //   - The local name.
+  //   - The local class of device.
+  void set_controller_parameters_callback(fit::closure callback) {
+    controller_parameters_cb_ = std::move(callback);
+  }
 
   // Sets a callback to be invoked when the scan state changes.
   using ScanStateCallback = fit::function<void(bool enabled)>;
@@ -280,6 +293,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Does nothing if a LE scan is not currently enabled or if the peer doesn't support advertising.
   void SendSingleAdvertisingReport(const FakePeer& peer);
 
+  // Notifies |controller_parameters_cb_|.
+  void NotifyControllerParametersChanged();
+
   // Notifies |advertising_state_cb_|
   void NotifyAdvertisingState();
 
@@ -325,6 +341,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // HCI commands carry the name in a 248 byte buffer, |local_name_| contains the intended value.
   std::string local_name_;
 
+  // The local device class configured by HCI_Write_Class_of_Device.
+  DeviceClass device_class_;
+
   // Variables used for
   // HCI_LE_Create_Connection/HCI_LE_Create_Connection_Cancel.
   uint16_t next_conn_handle_;
@@ -355,6 +374,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // The set of fake peers that are visible.
   std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;
 
+  fit::closure controller_parameters_cb_;
   ScanStateCallback scan_state_cb_;
   fit::closure advertising_state_cb_;
   ConnectionStateCallback conn_state_cb_;

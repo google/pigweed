@@ -19,6 +19,8 @@ namespace bt {
 // for the format.
 class DeviceClass {
  public:
+  using Bytes = std::array<uint8_t, 3>;
+
   enum class MajorClass : uint8_t {
     kMiscellaneous = 0x00,
     kComputer = 0x01,
@@ -61,6 +63,8 @@ class DeviceClass {
 
   uint8_t minor_class() const { return (bytes_[0] >> 2) & 0b11'1111; }
 
+  const Bytes& bytes() const { return bytes_; }
+
   // Sets the major service classes of this.
   // Clears any service classes that are not set.
   void SetServiceClasses(const std::unordered_set<ServiceClass>& classes);
@@ -77,7 +81,7 @@ class DeviceClass {
 
   // TODO(jamuraa): add MinorClass
  private:
-  std::array<uint8_t, 3> bytes_;
+  Bytes bytes_;
 };
 
 static_assert(sizeof(DeviceClass) == 3, "DeviceClass must take up exactly 3 bytes");

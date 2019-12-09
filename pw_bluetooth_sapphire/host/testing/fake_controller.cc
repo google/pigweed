@@ -100,6 +100,7 @@ void FakeController::Settings::AddBREDRSupportedCommands() {
   SetBit(supported_commands + 7, hci::SupportedCommand::kWriteScanEnable);
   SetBit(supported_commands + 8, hci::SupportedCommand::kReadPageScanActivity);
   SetBit(supported_commands + 8, hci::SupportedCommand::kWritePageScanActivity);
+  SetBit(supported_commands + 9, hci::SupportedCommand::kWriteClassOfDevice);
   SetBit(supported_commands + 12, hci::SupportedCommand::kReadInquiryMode);
   SetBit(supported_commands + 12, hci::SupportedCommand::kWriteInquiryMode);
   SetBit(supported_commands + 13, hci::SupportedCommand::kReadPageScanType);
@@ -484,6 +485,12 @@ void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
   // a separate event.
   if (need_scan_rsp && !peer.should_batch_reports()) {
     SendCommandChannelPacket(peer.CreateScanResponseReportEvent());
+  }
+}
+
+void FakeController::NotifyControllerParametersChanged() {
+  if (controller_parameters_cb_) {
+    controller_parameters_cb_();
   }
 }
 
@@ -929,6 +936,7 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
         }
       }
       local_name_ = std::string(in_params.local_name, in_params.local_name + name_len);
+      NotifyControllerParametersChanged();
       RespondWithSuccess(opcode);
       break;
     }
@@ -970,6 +978,13 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       page_scan_interval_ = letoh16(in_params.page_scan_interval);
       page_scan_window_ = letoh16(in_params.page_scan_window);
 
+      RespondWithSuccess(opcode);
+      break;
+    }
+    case hci::kWriteClassOfDevice: {
+      const auto& in_params = command_packet.payload<hci::WriteClassOfDeviceCommandParams>();
+      device_class_ = in_params.class_of_device;
+      NotifyControllerParametersChanged();
       RespondWithSuccess(opcode);
       break;
     }
