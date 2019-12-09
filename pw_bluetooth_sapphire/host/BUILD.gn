@@ -65,6 +65,7 @@ source_set("sources") {
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//src/connectivity/bluetooth/fidl:host",
+    "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/fxl",
     "//zircon/public/lib/ddk",
     "//zircon/public/lib/fbl",

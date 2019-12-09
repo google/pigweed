@@ -6,16 +6,18 @@
 
 #include <gtest/gtest.h>
 
+#include "adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
+namespace fsys = fuchsia::bluetooth::sys;
 
 namespace bthost {
 namespace fidl_helpers {
 namespace {
 
-TEST(FidlHelpersTest, AddressBytesFrommString) {
+TEST(FIDL_HelpersTest, AddressBytesFrommString) {
   EXPECT_FALSE(AddressBytesFromString(""));
   EXPECT_FALSE(AddressBytesFromString("FF"));
   EXPECT_FALSE(AddressBytesFromString("FF:FF:FF:FF:"));
@@ -34,7 +36,7 @@ TEST(FidlHelpersTest, AddressBytesFrommString) {
   EXPECT_EQ("03:7F:FF:02:0F:01", addr2->ToString());
 }
 
-TEST(FidlHelpersTest, AdvertisingIntervalFromFidl) {
+TEST(FIDL_HelpersTest, AdvertisingIntervalFromFidl) {
   EXPECT_EQ(bt::gap::AdvertisingInterval::FAST1,
             AdvertisingIntervalFromFidl(fble::AdvertisingModeHint::VERY_FAST));
   EXPECT_EQ(bt::gap::AdvertisingInterval::FAST2,
@@ -43,7 +45,7 @@ TEST(FidlHelpersTest, AdvertisingIntervalFromFidl) {
             AdvertisingIntervalFromFidl(fble::AdvertisingModeHint::SLOW));
 }
 
-TEST(FidlHelpersTest, UuidFromFidl) {
+TEST(FIDL_HelpersTest, UuidFromFidl) {
   fbt::Uuid input;
   input.value = {{0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x0d,
                   0x18, 0x00, 0x00}};
@@ -54,7 +56,7 @@ TEST(FidlHelpersTest, UuidFromFidl) {
   EXPECT_EQ(2u, output.CompactSize());
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlEmpty) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlEmpty) {
   fble::AdvertisingData input;
   ASSERT_TRUE(input.IsEmpty());
 
@@ -68,7 +70,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlEmpty) {
   EXPECT_FALSE(output.local_name());
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlName) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlName) {
   constexpr char kTestName[] = "💩";
   fble::AdvertisingData input;
   input.set_name(kTestName);
@@ -78,7 +80,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlName) {
   EXPECT_EQ(kTestName, *output.local_name());
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlAppearance) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlAppearance) {
   fble::AdvertisingData input;
   input.set_appearance(fuchsia::bluetooth::Appearance::HID_DIGITIZER_TABLET);
 
@@ -89,7 +91,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlAppearance) {
   EXPECT_EQ(0x03C5, *output.appearance());
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlTxPower) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlTxPower) {
   constexpr int8_t kTxPower = -50;
   fble::AdvertisingData input;
   input.set_tx_power_level(kTxPower);
@@ -99,7 +101,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlTxPower) {
   EXPECT_EQ(kTxPower, *output.tx_power());
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlUuids) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlUuids) {
   // The first two entries are duplicated. The resulting structure should contain no duplicates.
   const fbt::Uuid kUuid1{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
   const fbt::Uuid kUuid2{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
@@ -113,7 +115,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlUuids) {
   EXPECT_EQ(1u, output.service_uuids().count(bt::UUID(kUuid2.value)));
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlServiceData) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlServiceData) {
   const fbt::Uuid kUuid1{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
   const fbt::Uuid kUuid2{{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
   const std::vector<uint8_t> kData1{{'h', 'e', 'l', 'l', 'o'}};
@@ -128,7 +130,7 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlServiceData) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.service_data(bt::UUID(kUuid2.value))));
 }
 
-TEST(FidlHelpersTest, AdvertisingDataFromFidlManufacturerData) {
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   constexpr uint16_t kCompanyId1 = 1;
   constexpr uint16_t kCompanyId2 = 2;
   const std::vector<uint8_t> kData1{{'h', 'e', 'l', 'l', 'o'}};
@@ -141,6 +143,36 @@ TEST(FidlHelpersTest, AdvertisingDataFromFidlManufacturerData) {
   EXPECT_EQ(2u, output.manufacturer_data_ids().size());
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData1), output.manufacturer_data(kCompanyId1)));
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.manufacturer_data(kCompanyId2)));
+}
+
+TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
+  EXPECT_EQ(fsys::TechnologyType::LOW_ENERGY,
+            TechnologyTypeToFidl(bt::gap::TechnologyType::kLowEnergy));
+  EXPECT_EQ(fsys::TechnologyType::CLASSIC, TechnologyTypeToFidl(bt::gap::TechnologyType::kClassic));
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE,
+            TechnologyTypeToFidl(bt::gap::TechnologyType::kDualMode));
+}
+
+class FIDL_HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
+
+TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
+  // Verify that the default parameters are populated as expected.
+  auto host_info = HostInfoToFidl(*adapter());
+  ASSERT_TRUE(host_info.has_id());
+  ASSERT_TRUE(host_info.has_technology());
+  ASSERT_TRUE(host_info.has_address());
+  ASSERT_TRUE(host_info.has_local_name());
+  ASSERT_TRUE(host_info.has_discoverable());
+  ASSERT_TRUE(host_info.has_discovering());
+
+  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address().bytes(), host_info.address().bytes));
+  EXPECT_EQ("fuchsia", host_info.local_name());
+  EXPECT_FALSE(host_info.discoverable());
+  EXPECT_FALSE(host_info.discovering());
 }
 
 }  // namespace

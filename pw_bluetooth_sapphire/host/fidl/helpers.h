@@ -79,9 +79,12 @@ bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::control::Inp
                                           const fuchsia::bluetooth::control::OutputCapabilityType);
 
 // Functions to construct FIDL control library objects from library objects.
-fuchsia::bluetooth::control::AdapterInfo NewAdapterInfo(const bt::gap::Adapter& adapter);
 fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer);
 fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer);
+
+// fuchsia.bluetooth.sys library helpers.
+fuchsia::bluetooth::sys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type);
+fuchsia::bluetooth::sys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter);
 
 // Functions to convert Control FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(const fuchsia::bluetooth::control::LEData& data);

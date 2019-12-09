@@ -22,6 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
+#include "src/connectivity/bluetooth/lib/fidl/hanging_getter.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
@@ -37,15 +38,14 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
              fbl::RefPtr<GattHost> gatt_host);
   ~HostServer() override;
 
- private:
-  // ::fuchsia::bluetooth::Host overrides:
-  void GetInfo(GetInfoCallback callback) override;
+  // ::fuchsia::bluetooth::host::Host overrides:
+  void WatchState(WatchStateCallback callback) override;
   void SetLocalData(::fuchsia::bluetooth::control::HostData host_data) override;
   void ListDevices(ListDevicesCallback callback) override;
   void AddBondedDevices(::std::vector<fuchsia::bluetooth::control::BondingData> bonds,
                         AddBondedDevicesCallback callback) override;
   void SetLocalName(::std::string local_name, SetLocalNameCallback callback) override;
-  void SetDeviceClass(fuchsia::bluetooth::control::DeviceClass device_class,
+  void SetDeviceClass(fuchsia::bluetooth::DeviceClass device_class,
                       SetDeviceClassCallback callback) override;
 
   void StartDiscovery(StartDiscoveryCallback callback) override;
@@ -72,6 +72,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile) override;
   void Close() override;
 
+ private:
   // bt::gap::PairingDelegate overrides:
   bt::sm::IOCapability io_capability() const override;
   void CompletePairing(bt::PeerId id, bt::sm::Status status) override;
@@ -111,6 +112,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // to reject incoming pairing requests.
   void ResetPairingDelegate();
 
+  // Resolves any HostInfo watcher with the current adapter state.
+  void NotifyInfoChange();
+
   // Helper for binding a fidl::InterfaceRequest to a FIDL server of type
   // ServerType.
   template <typename ServerType, typename... Args>
@@ -146,6 +150,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // TODO(armansito): Consider storing auto-connected references separately from
   // directly connected references.
   std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr> le_connections_;
+
+  // Used to drive the WatchState() method.
+  bt_lib_fidl::HangingGetter<fuchsia::bluetooth::sys::HostInfo> info_getter_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

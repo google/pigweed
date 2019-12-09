@@ -9,6 +9,7 @@
 
 #include "adapter_test_fixture.h"
 #include "gmock/gmock.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
@@ -25,6 +26,9 @@ using fuchsia::bluetooth::control::InputCapabilityType;
 using fuchsia::bluetooth::control::OutputCapabilityType;
 using FidlPairingDelegate = fuchsia::bluetooth::control::PairingDelegate;
 using FidlRemoteDevice = fuchsia::bluetooth::control::RemoteDevice;
+
+namespace fbt = fuchsia::bluetooth;
+namespace fsys = fuchsia::bluetooth::sys;
 
 const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 
@@ -289,6 +293,83 @@ TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFid
   RunLoopUntilIdle();
   ASSERT_TRUE(passkey_response.has_value());
   EXPECT_EQ(12345, passkey_response.value());
+}
+
+TEST_F(FIDL_HostServerTest, WatchState) {
+  std::optional<fsys::HostInfo> info;
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_id());
+  ASSERT_TRUE(info->has_technology());
+  ASSERT_TRUE(info->has_address());
+  ASSERT_TRUE(info->has_local_name());
+  ASSERT_TRUE(info->has_discoverable());
+  ASSERT_TRUE(info->has_discovering());
+
+  EXPECT_EQ(adapter()->identifier().value(), info->id().value);
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, info->technology());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, info->address().type);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address().bytes(), info->address().bytes));
+  EXPECT_EQ("fuchsia", info->local_name());
+  EXPECT_FALSE(info->discoverable());
+  EXPECT_FALSE(info->discovering());
+}
+
+TEST_F(FIDL_HostServerTest, WatchDiscoveryState) {
+  std::optional<fsys::HostInfo> info;
+
+  // Make initial watch call so that subsequent calls remain pending.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  ASSERT_TRUE(info.has_value());
+  info.reset();
+
+  // Watch for updates.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+
+  host_server()->StartDiscovery([](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_discovering());
+  EXPECT_TRUE(info->discovering());
+
+  info.reset();
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+  host_server()->StopDiscovery([](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_discovering());
+  EXPECT_FALSE(info->discovering());
+}
+
+TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
+  std::optional<fsys::HostInfo> info;
+
+  // Make initial watch call so that subsequent calls remain pending.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  ASSERT_TRUE(info.has_value());
+  info.reset();
+
+  // Watch for updates.
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+
+  host_server()->SetDiscoverable(true, [](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_discoverable());
+  EXPECT_TRUE(info->discoverable());
+
+  info.reset();
+  host_server()->WatchState([&](auto value) { info = std::move(value); });
+  EXPECT_FALSE(info.has_value());
+  host_server()->SetDiscoverable(false, [](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(info.has_value());
+  ASSERT_TRUE(info->has_discoverable());
+  EXPECT_FALSE(info->discoverable());
 }
 
 }  // namespace

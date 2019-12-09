@@ -72,12 +72,15 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
       self->RegisterLowEnergyConnection(std::move(conn_ref), true);
     }
   });
+
+  // Initialize the HostInfo getter with the initial state.
+  NotifyInfoChange();
 }
 
 HostServer::~HostServer() { Close(); }
 
-void HostServer::GetInfo(GetInfoCallback callback) {
-  callback(fidl_helpers::NewAdapterInfo(*adapter()));
+void HostServer::WatchState(WatchStateCallback callback) {
+  info_getter_.Watch(std::move(callback));
 }
 
 void HostServer::SetLocalData(::fuchsia::bluetooth::control::HostData host_data) {
@@ -100,6 +103,7 @@ void HostServer::ListDevices(ListDevicesCallback callback) {
   callback(std::vector<RemoteDevice>(std::move(fidl_devices)));
 }
 
+// TODO(35008): Add a unit test for this method.
 void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback callback) {
   ZX_DEBUG_ASSERT(!local_name.empty());
   // Make a copy of |local_name| to move separately into the lambda.
@@ -110,15 +114,14 @@ void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback cal
                             // Send adapter state update on success and if the connection is still
                             // open.
                             if (status && self) {
-                              AdapterState state;
-                              state.local_name = std::move(local_name);
-                              self->binding()->events().OnAdapterStateChanged(std::move(state));
+                              self->NotifyInfoChange();
                             }
                             callback(StatusToFidl(status, "Can't Set Local Name"));
                           });
 }
 
-void HostServer::SetDeviceClass(fuchsia::bluetooth::control::DeviceClass device_class,
+// TODO(35008): Add a unit test for this method.
+void HostServer::SetDeviceClass(fuchsia::bluetooth::DeviceClass device_class,
                                 SetDeviceClassCallback callback) {
   // Device Class values must only contain data in the lower 3 bytes.
   if (device_class.value >= 1 << 24) {
@@ -170,10 +173,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
         self->requesting_discovery_ = false;
 
         // Send the adapter state update.
-        AdapterState state;
-        state.discovering = Bool::New();
-        state.discovering->value = true;
-        self->binding()->events().OnAdapterStateChanged(std::move(state));
+        self->NotifyInfoChange();
 
         callback(Status());
       });
@@ -231,11 +231,7 @@ void HostServer::StopDiscovery(StopDiscoveryCallback callback) {
 
   bredr_discovery_session_ = nullptr;
   le_discovery_session_ = nullptr;
-
-  AdapterState state;
-  state.discovering = Bool::New();
-  state.discovering->value = false;
-  this->binding()->events().OnAdapterStateChanged(std::move(state));
+  NotifyInfoChange();
 
   callback(Status());
 }
@@ -357,12 +353,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
   // TODO(NET-830): advertise LE here
   if (!discoverable) {
     bredr_discoverable_session_ = nullptr;
-
-    AdapterState state;
-    state.discoverable = Bool::New();
-    state.discoverable->value = false;
-    this->binding()->events().OnAdapterStateChanged(std::move(state));
-
+    NotifyInfoChange();
     callback(Status());
     return;
   }
@@ -399,10 +390,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
 
         self->bredr_discoverable_session_ = std::move(session);
         self->requesting_discoverable_ = false;
-        AdapterState state;
-        state.discoverable = Bool::New();
-        state.discoverable->value = true;
-        self->binding()->events().OnAdapterStateChanged(std::move(state));
+        self->NotifyInfoChange();
         callback(Status());
       });
 }
@@ -613,27 +601,9 @@ void HostServer::Close() {
   requesting_discovery_ = false;
   requesting_discoverable_ = false;
 
-  // Diff for final adapter state update.
-  bool send_update = false;
-  AdapterState state;
-
-  // Stop all procedures initiated via host.
-  if (le_discovery_session_ || bredr_discovery_session_) {
-    send_update = true;
-    le_discovery_session_ = nullptr;
-    bredr_discovery_session_ = nullptr;
-
-    state.discovering = Bool::New();
-    state.discovering->value = false;
-  }
-
-  if (bredr_discoverable_session_) {
-    send_update = true;
-    bredr_discoverable_session_ = nullptr;
-
-    state.discoverable = Bool::New();
-    state.discoverable->value = false;
-  }
+  le_discovery_session_ = nullptr;
+  bredr_discovery_session_ = nullptr;
+  bredr_discoverable_session_ = nullptr;
 
   // Drop all connections that are attached to this HostServer.
   le_connections_.clear();
@@ -654,8 +624,8 @@ void HostServer::Close() {
   ResetPairingDelegate();
 
   // Send adapter state change.
-  if (send_update && binding()->is_bound()) {
-    binding()->events().OnAdapterStateChanged(std::move(state));
+  if (binding()->is_bound()) {
+    NotifyInfoChange();
   }
 }
 
@@ -774,5 +744,7 @@ void HostServer::ResetPairingDelegate() {
   io_capability_ = IOCapability::kNoInputNoOutput;
   adapter()->SetPairingDelegate(fxl::WeakPtr<HostServer>());
 }
+
+void HostServer::NotifyInfoChange() { info_getter_.Set(fidl_helpers::HostInfoToFidl(*adapter())); }
 
 }  // namespace bthost

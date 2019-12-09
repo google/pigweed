@@ -23,12 +23,23 @@ namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
 namespace fctrl = fuchsia::bluetooth::control;
 namespace fhost = fuchsia::bluetooth::host;
+namespace fsys = fuchsia::bluetooth::sys;
 
 namespace bthost {
 namespace fidl_helpers {
 namespace {
 
-fctrl::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
+// TODO(36378): Add an AddressToFidl helper with a backend that can be used for both HostInfo and
+// Peer types.
+fbt::Address ControllerAddressToFidl(const bt::DeviceAddressBytes& input) {
+  fbt::Address output;
+  output.type = fbt::AddressType::PUBLIC;
+  bt::MutableBufferView value_dst(output.bytes.data(), output.bytes.size());
+  value_dst.Write(input.bytes());
+  return output;
+}
+
+fctrl::TechnologyType TechnologyTypeToFidlDeprecated(bt::gap::TechnologyType type) {
   switch (type) {
     case bt::gap::TechnologyType::kLowEnergy:
       return fctrl::TechnologyType::LOW_ENERGY;
@@ -245,29 +256,11 @@ std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fctrl::BREDRData& data) {
   return std::nullopt;
 }
 
-fctrl::AdapterInfo NewAdapterInfo(const bt::gap::Adapter& adapter) {
-  fctrl::AdapterInfo adapter_info;
-  adapter_info.identifier = adapter.identifier().ToString();
-  adapter_info.technology = TechnologyTypeToFidl(adapter.state().type());
-  adapter_info.address = adapter.state().controller_address().ToString();
-
-  adapter_info.state = fctrl::AdapterState::New();
-  adapter_info.state->local_name = adapter.state().local_name();
-  adapter_info.state->discoverable = Bool::New();
-  adapter_info.state->discoverable->value = false;
-  adapter_info.state->discovering = Bool::New();
-  adapter_info.state->discovering->value = adapter.IsDiscovering();
-
-  // TODO(armansito): Populate |local_service_uuids| as well.
-
-  return adapter_info;
-}
-
 fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
   fctrl::RemoteDevice fidl_device;
   fidl_device.identifier = peer.identifier().ToString();
   fidl_device.address = peer.address().value().ToString();
-  fidl_device.technology = TechnologyTypeToFidl(peer.technology());
+  fidl_device.technology = TechnologyTypeToFidlDeprecated(peer.technology());
   fidl_device.connected = peer.connected();
   fidl_device.bonded = peer.bonded();
 
@@ -314,6 +307,34 @@ fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer) {
   auto fidl_device = fctrl::RemoteDevice::New();
   *fidl_device = NewRemoteDevice(peer);
   return fidl_device;
+}
+
+fsys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
+  switch (type) {
+    case bt::gap::TechnologyType::kLowEnergy:
+      return fsys::TechnologyType::LOW_ENERGY;
+    case bt::gap::TechnologyType::kClassic:
+      return fsys::TechnologyType::CLASSIC;
+    case bt::gap::TechnologyType::kDualMode:
+      return fsys::TechnologyType::DUAL_MODE;
+    default:
+      ZX_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
+      break;
+  }
+
+  // This should never execute.
+  return fsys::TechnologyType::DUAL_MODE;
+}
+
+fsys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter) {
+  fsys::HostInfo info;
+  info.set_id(fbt::Id{adapter.identifier().value()});
+  info.set_technology(TechnologyTypeToFidl(adapter.state().type()));
+  info.set_address(ControllerAddressToFidl(adapter.state().controller_address()));
+  info.set_local_name(adapter.state().local_name());
+  info.set_discoverable(adapter.IsDiscoverable());
+  info.set_discovering(adapter.IsDiscovering());
+  return info;
 }
 
 fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap::Peer& peer) {
