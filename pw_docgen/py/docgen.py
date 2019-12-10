@@ -104,8 +104,8 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
     copy_paths = [build_path(f) for f in source_files]
 
     mkdir(args.sphinx_build_dir)
-    for path in args.sources:
-        copy(path, f'{args.sphinx_build_dir}/')
+    for source_path in args.sources:
+        copy(source_path, f'{args.sphinx_build_dir}/')
     copy(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.

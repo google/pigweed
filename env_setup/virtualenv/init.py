@@ -77,4 +77,4 @@ def _main() -> None:
 
 
 if __name__ == '__main__':
-    _main()
+    sys.exit(_main())

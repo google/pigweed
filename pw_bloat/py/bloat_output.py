@@ -16,7 +16,7 @@
 import abc
 import enum
 from typing import Callable, Collection, Dict, List, Optional, Tuple, Type
-from typing import TypeVar, Union
+from typing import Union
 
 from binary_diff import BinaryDiff, FormattedDiff
 

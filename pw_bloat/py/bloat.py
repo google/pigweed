@@ -20,7 +20,7 @@ import os
 import subprocess
 import sys
 
-from typing import Callable, List, Iterable, Optional
+from typing import List, Iterable, Optional
 
 from binary_diff import BinaryDiff
 import bloat_output
