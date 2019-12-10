@@ -5,6 +5,7 @@
 #include "legacy_low_energy_advertiser.h"
 
 #include <endian.h>
+#include <lib/async/default.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
