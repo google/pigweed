@@ -250,7 +250,8 @@ const ByteBuffer& kDisconRsp = kDisconReq;
 
 // Configuration Requests
 
-auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu) {
+auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
+                          ChannelMode mode = ChannelMode::kBasic) {
   return CreateStaticByteBuffer(
       // Destination CID
       LowerBits(dest_cid), UpperBits(dest_cid),
@@ -259,10 +260,16 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu) {
       0x00, 0x00,
 
       // MTU option (Type, Length, MTU value)
-      0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+
+      // Retransmission & Flow Control option (Type, Length = 9, mode, unused fields)
+      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 }
 
-const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kMaxMTU);
+const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
+
+const ByteBuffer& kOutboundConfigReqWithErtm =
+    MakeConfigReqWithMtu(kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission);
 
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
@@ -277,6 +284,16 @@ const ByteBuffer& kInboundConfigReq2 = CreateStaticByteBuffer(
 
     // Flags
     0x00, 0x00);
+
+const ByteBuffer& kInboundConfigReqWithERTM = CreateStaticByteBuffer(
+    // Destination CID
+    LowerBits(kLocalCId), UpperBits(kLocalCId),
+
+    // Flags
+    0x00, 0x00,
+
+    // Retransmission & Flow Control option (Type, Length = 9, mode = ERTM, dummy parameters)
+    0x04, 0x09, 0x03, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
 
 // Configuration Responses
 
@@ -321,6 +338,30 @@ auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
 
 const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefaultMTU);
 
+auto MakeUnacceptableParamsWithRfcConfigRsp(ChannelId source_cid, ChannelMode mode) {
+  return CreateStaticByteBuffer(
+      // Source CID
+      LowerBits(source_cid), UpperBits(source_cid),
+
+      // Flags
+      0x00, 0x00,
+
+      // Result (Unacceptable Parameters)
+      0x01, 0x00,
+
+      // Retransmission & Flow Control option (Type, Length: 9, mode, unused parameters)
+      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+}
+
+const ByteBuffer& kInboundUnacceptableParamsWithRFCBasicConfigRsp =
+    MakeUnacceptableParamsWithRfcConfigRsp(kLocalCId, ChannelMode::kBasic);
+
+const ByteBuffer& kOutboundUnacceptableParamsWithRFCBasicConfigRsp =
+    MakeUnacceptableParamsWithRfcConfigRsp(kRemoteCId, ChannelMode::kBasic);
+
+const ByteBuffer& kOutboundUnacceptableParamsWithRFCERTMConfigRsp =
+    MakeUnacceptableParamsWithRfcConfigRsp(kRemoteCId, ChannelMode::kEnhancedRetransmission);
+
 // Information Requests
 
 auto MakeInfoReq(InformationType info_type) {
@@ -350,7 +391,9 @@ auto MakeExtendedFeaturesInfoRsp(InformationResult result = InformationResult::k
 }
 
 const ByteBuffer& kExtendedFeaturesInfoRsp =
-    MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess, kExtendedFeaturesBitFixedChannels);
+    MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess);
+const ByteBuffer& kExtendedFeaturesInfoRspWithERTM = MakeExtendedFeaturesInfoRsp(
+    InformationResult::kSuccess, kExtendedFeaturesBitEnhancedRetransmission);
 
 class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
  public:
@@ -1359,7 +1402,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   EXPECT_EQ(kExpectedExtendedFeatures, *registry()->extended_features());
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelWaitsForExtendedFeaturesBeforeStartingConfigFlow) {
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeStartingConfigFlow) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
 
@@ -1410,6 +1453,396 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRs
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+// When the peer rejects ERTM with the result Unacceptable Parameters and the R&FC
+// option specifying basic mode, the local device should send a new request with basic mode.
+// When the peer then requests basic mode, it should be accepted.
+// PTS: L2CAP/CMC/BV-03-C
+TEST_F(L2CAP_BrEdrDynamicChannelTest, PeerRejectsERTM) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+// Local device that prefers ERTM will renegotiate channel mode to basic mode after peer negotiates
+// basic mode and rejects ERTM.
+// PTS: L2CAP/CMC/BV-07-C
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       RenegotiateChannelModeAfterPeerRequestsBasicModeAndRejectsERTM) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  auto config_req_id =
+      EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view());
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_TRUE(chan->IsOpen());
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RunLoopUntilIdle();
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  RunLoopUntilIdle();
+
+  // Peer requests basic mode.
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+  RunLoopUntilIdle();
+
+  // New config request requesting basic mode should be sent in response to unacceptable params
+  // response.
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  sig()->ReceiveResponses(config_req_id,
+                          {{SignalingChannel::Status::kSuccess,
+                            kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()}});
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+}
+
+// The local device should configure basic mode if peer does not indicate support for ERTM when it
+// is preferred.
+// PTS: L2CAP/CMC/BV-10-C
+TEST_F(L2CAP_BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, [](auto chan) {}, {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Receive features mask without ERTM bit set.
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, [](auto chan) {}, {ChannelMode::kBasic});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Peer requests ERTM. Local device should reject with unacceptable params.
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+}
+
+// Core Spec v5.1, Vol 3, Part A, Sec 5.4:
+// If the mode in the remote device's negative Configuration Response does
+// not match the mode in the remote device's Configuration Request then the
+// local device shall disconnect the channel.
+//
+// Inbound config request received BEFORE outbound config request:
+// <- ConfigurationRequest (with ERTM)
+// -> ConfigurationResponse (Ok)
+// -> ConfigurationRequest (with ERTM)
+// <- ConfigurationResponse (Unacceptable, with Basic)
+TEST_F(
+    L2CAP_BrEdrDynamicChannelTest,
+    DisconnectWhenInboundConfigReqReceivedBeforeOutboundConfigReqSentModeInInboundUnacceptableParamsConfigRspDoesNotMatchPeerConfigReq) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Receive inbound config request.
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  // Send outbound config request.
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+// Same as above, but inbound config request received AFTER outbound configuration request:
+// -> ConfigurationRequest (with ERTM)
+// <- ConfigurationRequest (with ERTM)
+// -> ConfigurationResponse (Ok)
+// <- ConfigurationResponse (Unacceptable, with Basic)
+TEST_F(
+    L2CAP_BrEdrDynamicChannelTest,
+    DisconnectWhenInboundConfigReqReceivedAfterOutboundConfigReqSentAndModeInInboundUnacceptableParamsConfigRspDoesNotMatchPeerConfigReq) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  const auto outbound_config_req_id =
+      EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view());
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  // Send outbound config request.
+  RunLoopUntilIdle();
+
+  // Receive inbound config request.
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+
+  sig()->ReceiveResponses(outbound_config_req_id,
+                          {{SignalingChannel::Status::kSuccess,
+                            kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()}});
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsWithoutDesiredMode) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kBasic});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectWhenPeerRejectsConfigReqWithBasicMode) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kBasic});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       SendUnacceptableParamsResponseWhenPeerRequestsUnsupportedChannelMode) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, [](auto chan) {}, {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Retransmission mode is not supported.
+  const auto kInboundConfigReqWithRetransmissionMode =
+      MakeConfigReqWithMtu(kLocalCId, kMaxMTU, ChannelMode::kRetransmission);
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
+                                       kInboundConfigReqWithRetransmissionMode,
+                                       kOutboundUnacceptableParamsWithRFCERTMConfigRsp));
+}
+
+// Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
+// the local device must accept. These modes are incompatible, so the local device should
+// disconnect.
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       DisconnectOnInconsistentChannelModeNegotiationFailureWhenPeerConfigRequestIsLast) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  // Request ERTM.
+  RunLoopUntilIdle();
+
+  // Peer requests basic mode.
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  // Disconnect
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+// Same as above, but the local config response is last.
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       DisconnectOnInconsistentChannelModeNegotiationFailureWhenLocalConfigResponseIsLast) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, std::move(open_cb), {ChannelMode::kEnhancedRetransmission});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Peer requests basic mode.
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  // Local device will request ERTM.
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  // Request ERTM & Disconnect
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
 }
 
 }  // namespace

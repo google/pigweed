@@ -49,7 +49,8 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
   void OnRxExtendedFeaturesInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Send extended features information request.
-  void TrySendInformationRequests();
+  // TODO(929): Send fixed channels information request.
+  void SendInformationRequests();
 
   // If an extended features information response has been received, returns the value of the ERTM
   // bit in the peer's feature mask.
@@ -85,6 +86,29 @@ using BrEdrDynamicChannelPtr = std::unique_ptr<BrEdrDynamicChannel>;
 // This implements the state machine described by v5.0 Vol 3 Part A Sec 6. The
 // state of OPEN ("user data transfer state") matches the implementation of the
 // |DynamicChannel::IsOpen()|.
+//
+// Channel Configuration design:
+// Implementation-defined behavior:
+// * Inbound and outbound configuration requests/responses are exchanged simultaneously
+// * If the desired channel mode is ERTM, the configuration request is not sent until the extended
+//   features mask is received from the peer.
+//   * If the peer doesn't support ERTM, the local device will negotiate Basic Mode instead of ERTM
+// * after both configuration requests have been accepted, if they are inconsistent, the channel
+//   is disconnected (this can happen if the peer doesn't follow the spec)
+// Configuration Request Handling:
+// * when the peer requests an MTU below the minumum, send an Unacceptable Parameters response
+//     suggesting the minimum MTU.
+// * allow peer to send a maximum of 2 configuration requests with undesired channel modes
+//   before disconnecting
+// * reject all channel modes other than Basic Mode and ERTM
+// Negative Configuration Response Handling:
+// A maximum of 2 negotiation attempts will be made before disconnecting, according to the
+// following rules:
+// * if the response does not contain the Retransmission & Flow Control option, disconnect
+// * when the response specifies a different channel mode than the peer sent in a configuration
+//   request, disconnect
+// * when the response rejected Basic Mode, disconnect
+// * otherwise, send a second configuration request with Basic Mode
 //
 // Must be run only on the L2CAP thread.
 class BrEdrDynamicChannel final : public DynamicChannel {
@@ -192,9 +216,43 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // use |Disconnect| instead.
   void PassOpenError();
 
+  // The local configuration channel mode may need to be changed from ERTM to Basic Mode if the peer
+  // does not support ERTM. This channel must not be waiting for extended features when this method
+  // is called. No-op if extended features have not been received yet (e.g. when a basic mode
+  // channel configuration flow is initiated before extended features have been received).
+  void UpdateLocalConfigForErtm();
+
+  // Returns true if the preferred channel parameters require waiting for an extended features
+  // information response and the response has not yet been received. Must be false before sending
+  // local config.
+  bool IsWaitingForPeerErtmSupport();
+
   // Begin the local channel Configuration Request flow if it has not yet
-  // happened.
+  // happened. The channel must not be waiting for the extended features info response.
   void TrySendLocalConfig();
+
+  // Send local configuration request.
+  void SendLocalConfig();
+
+  // Returns true if both the remote and local configs have been accepted.
+  bool BothConfigsAccepted() const;
+
+  // Returns true if negotiated channel modes are consistent. Must not be called until after both
+  // configs have been accepted (|BothConfigsAccepted()| is true).
+  [[nodiscard]] bool AcceptedChannelModesAreConsistent() const;
+
+  // Checks options in a configuration request for unacceptable MTU and Retransmission and Flow
+  // Control options. Returns a configuration object where for each unacceptable option, there
+  // is a corresponding option with a value that would have been accepted if sent in the
+  // original request.
+  [[nodiscard]] ChannelConfiguration CheckForUnacceptableConfigReqOptions(
+      const ChannelConfiguration& config);
+
+  // Try to recover from a configuration response with the "Unacceptable Parameters" result.
+  // Returns true if the negative reponse could be recovered from, and false otherwise (in which
+  // case an error should be reported).
+  [[nodiscard]] bool TryRecoverFromUnacceptableParametersConfigRsp(
+      const ChannelConfiguration& config);
 
   // Response handlers for outbound requests
   ResponseHandlerAction OnRxConnRsp(const BrEdrCommandHandler::ConnectionResponse& rsp);
@@ -215,9 +273,6 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // channel is created, this value may be assigned in either the constructor or in the
   // |SetEnhancedRetransmissionSupport| callback.
   std::optional<bool> peer_supports_ertm_;
-
-  // Preferred channel configuration parameters.
-  ChannelParameters params_;
 
   // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.1).

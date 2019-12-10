@@ -23,8 +23,8 @@ using UnknownOption = ChannelConfiguration::UnknownOption;
 constexpr auto kUnknownOptionType = static_cast<OptionType>(0x10);
 
 const MtuOption kMtuOption(48);
-const RetransmissionAndFlowControlOption kRetransmissionAndFlowControlOption(ChannelMode::kBasic, 0,
-                                                                             0, 0, 0, 0);
+const RetransmissionAndFlowControlOption kRetransmissionAndFlowControlOption =
+    RetransmissionAndFlowControlOption::MakeBasicMode();
 const FlushTimeoutOption kFlushTimeoutOption(200);
 
 class L2CAP_ChannelConfigurationTest : public ::testing::Test {
@@ -254,9 +254,9 @@ TEST_F(L2CAP_ChannelConfigurationTest, MergingConfigurations) {
   // Test overwriting options
   constexpr uint16_t kMtu = 96;
   config0.set_mtu_option(MtuOption(kMtu));
-  constexpr auto kMode = ChannelMode::kStreaming;
+  constexpr auto kMode = ChannelMode::kEnhancedRetransmission;
   config0.set_retransmission_flow_control_option(
-      RetransmissionAndFlowControlOption(kMode, 0, 0, 0, 0, 0));
+      RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(0, 0, 0, 0, 0));
   constexpr uint16_t kTimeout = 150;
   config0.set_flush_timeout_option(FlushTimeoutOption(kTimeout));
 

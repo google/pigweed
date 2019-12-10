@@ -984,17 +984,20 @@ auto OutboundConnectionRequest(CommandId id) {
 
 auto OutboundConfigurationRequest(CommandId id) {
   return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 16 bytes)
-      0x01, 0x00, 0x10, 0x00,
+      // ACL data header (handle: 0x0001, length: 27 bytes)
+      0x01, 0x00, 0x1b, 0x00,
 
-      // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
-      0x0c, 0x00, 0x01, 0x00,
+      // L2CAP B-frame header (length: 23 bytes, channel-id: 0x0001 (ACL sig))
+      0x17, 0x00, 0x01, 0x00,
 
-      // Configuration Request (ID, length: 8, dst cid, flags: 0)
-      0x04, id, 0x08, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00,
+      // Configuration Request (ID, length: 19, dst cid, flags: 0)
+      0x04, id, 0x13, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00,
 
       // Mtu option (ID, Length, MTU)
-      0x01, 0x02, LowerBits(kMaxMTU), UpperBits(kMaxMTU));
+      0x01, 0x02, LowerBits(kMaxMTU), UpperBits(kMaxMTU),
+
+      // Retransmission & Flow Control option (type, length: 9, mode: Basic, unused parameters)
+      0x04, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 }
 
 auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU) {

@@ -102,9 +102,11 @@ class ChannelConfiguration final {
     static constexpr uint8_t kPayloadLength = sizeof(RetransmissionAndFlowControlOptionPayload);
     static constexpr size_t kEncodedSize = sizeof(ConfigurationOption) + kPayloadLength;
 
-    RetransmissionAndFlowControlOption(ChannelMode mode, uint8_t tx_window_size,
-                                       uint8_t max_transmit, uint16_t rtx_timeout,
-                                       uint16_t monitor_timeout, uint16_t mps);
+    static RetransmissionAndFlowControlOption MakeBasicMode();
+
+    static RetransmissionAndFlowControlOption MakeEnhancedRetransmissionMode(
+        uint8_t tx_window_size, uint8_t max_transmit, uint16_t rtx_timeout,
+        uint16_t monitor_timeout, uint16_t mps);
 
     // |data_buf| must contain encoded Retransmission And Flow Control option data. The option will
     // be initialized with the decoded fields.
@@ -134,6 +136,11 @@ class ChannelConfiguration final {
     size_t size() const override { return kEncodedSize; }
 
    private:
+    // If |mode| is kBasic, all other parameters are ignored.
+    RetransmissionAndFlowControlOption(ChannelMode mode, uint8_t tx_window_size,
+                                       uint8_t max_transmit, uint16_t rtx_timeout,
+                                       uint16_t monitor_timeout, uint16_t mps);
+
     ChannelMode mode_;
     uint8_t tx_window_size_;
     uint8_t max_transmit_;
