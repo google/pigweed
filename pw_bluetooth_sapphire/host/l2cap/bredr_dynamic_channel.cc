@@ -479,9 +479,22 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
   ZX_DEBUG_ASSERT(signaling_channel_);
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
-  local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMaxMTU));
+  if (params.max_sdu_size) {
+    const auto mtu = *params.max_sdu_size;
+    if (mtu < kMinACLMTU) {
+      bt_log(WARN, "l2cap-bredr",
+             "Channel %#.4x: preferred MTU channel parameter below minimum allowed, using minimum "
+             "instead (mtu param: %#.2x, min mtu: %#.2x)",
+             local_cid, mtu, kMinACLMTU);
+      local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMinACLMTU));
+    } else {
+      local_config_.set_mtu_option(ChannelConfiguration::MtuOption(mtu));
+    }
+  } else {
+    local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMaxMTU));
+  }
 
-  if (params.mode == ChannelMode::kEnhancedRetransmission) {
+  if (params.mode && *params.mode == ChannelMode::kEnhancedRetransmission) {
     // TODO(xow): select reasonable ERTM option values
     auto option =
         ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(

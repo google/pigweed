@@ -198,9 +198,10 @@ constexpr FixedChannelsSupported kFixedChannelsSupportedBitSM = 1ULL << 7;
 constexpr FixedChannelsSupported kFixedChannelsSupportedBitAMPTestManager = 1ULL << 63;
 
 // Channel configuration parameters specified by higher layers.
-// TODO(872): add all parameters needed by profiles
 struct ChannelParameters {
-  ChannelMode mode;
+  std::optional<ChannelMode> mode;
+  // MTU
+  std::optional<uint16_t> max_sdu_size;
 };
 
 enum class ConnectionParameterUpdateResult : uint16_t {

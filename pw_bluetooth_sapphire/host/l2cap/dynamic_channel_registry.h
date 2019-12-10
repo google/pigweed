@@ -48,7 +48,7 @@ class DynamicChannelRegistry {
   // over the new channel. Preferred channel parameters can be set in |params|.
   // TODO(872): Return negotiated channel parameters in |open_cb|.
   void OpenOutbound(PSM psm, DynamicChannelCallback open_cb,
-                    ChannelParameters params = {ChannelMode::kBasic});
+                    ChannelParameters params = {ChannelMode::kBasic, std::nullopt});
 
   // Disconnect and remove the channel identified by |local_cid|. After this
   // call completes, incoming PDUs with |local_cid| should be discarded as in

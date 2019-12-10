@@ -78,9 +78,10 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
   }
 
   // TODO(872): use channel params provided when psm was registered
-  auto iter =
-      channels_.emplace(local_cid, MakeInbound(psm, local_cid, remote_cid, {ChannelMode::kBasic}))
-          .first;
+  auto iter = channels_
+                  .emplace(local_cid, MakeInbound(psm, local_cid, remote_cid,
+                                                  {ChannelMode::kBasic, std::nullopt}))
+                  .first;
   ActivateChannel(iter->second.get(), std::move(return_chan_cb), false);
   return iter->second.get();
 }
