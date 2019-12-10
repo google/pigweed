@@ -64,7 +64,7 @@ class _State(enum.Enum):
 
 # TODO(keir): Figure out a better strategy for exiting. The problem with the
 # watcher is that doing a "clean exit" is slow. However, by directly exiting,
-# we remove the possibility of the wrapper script from doing anything on exit.
+# we remove the possibility of the wrapper script doing anything on exit.
 def _die(*args):
     _LOG.fatal(*args)
     sys.exit(1)
@@ -111,10 +111,16 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         for path in paths:
             _LOG.debug('File event: %s', path)
 
+        # Check for matching paths among the one or two in the event.
+        matching_path = None
         for path in paths:
             if self.path_matches(path):
-                _LOG.debug('Match for path: %s', path)
-                self.on_any_event(event)
+                _LOG.debug('Detected event: %s', path)
+                matching_path = path
+                break
+
+        if matching_path:
+            self.on_any_event(matching_path)
 
     def run_builds(self):
         """Run all the builds in serial and capture pass/fail for each."""
@@ -163,8 +169,10 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         else:
             print(_Color.red(_FAIL_MESSAGE))
 
-    def on_any_event(self, unused_event=None):
+    def on_any_event(self, matching_path):
         if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
+            if matching_path:
+                _LOG.info('Filesystem change: %s', matching_path)
             self.run_builds()
 
             # Don't set the cooldown end time until after the build.
@@ -180,7 +188,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
             else:
                 _LOG.debug('State: COOLDOWN -> WAITING (cooldown expired)')
                 self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
-                self.on_any_event()  # Retrigger.
+                self.on_any_event(matching_path)  # Retrigger.
 
 
 _WATCH_PATTERN_DELIMITER = ','
