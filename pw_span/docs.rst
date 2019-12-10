@@ -40,13 +40,13 @@ Pointer and size arguments can be replaced with a ``pw::span``:
   bool DoStuff() {
     ProcessBuffer(c_array);
     ProcessBuffer(array_object);
-    ProcessBuffer(span(data_pointer, data_size));
+    ProcessBuffer(pw::span(data_pointer, data_size));
   }
 
 .. tip::
-  Use ``pw::span<std::byte>`` or ``pw::span<const std::bytes>`` to represent
-  spans of binary data. The ``pw::as_bytes`` or ``pw::as_writeable_bytes``
-  functions make converting to byte arrays very simple.
+  Use ``pw::span<std::byte>`` or ``pw::span<const std::byte>`` to represent
+  spans of binary data. Use ``pw::as_bytes`` or ``pw::as_writeable_bytes``
+  to convert any span to a byte span.
 
   .. code-block:: cpp
 
@@ -54,7 +54,7 @@ Pointer and size arguments can be replaced with a ``pw::span``:
 
     void DoStuff() {
       std::array<AnyType, 7> data = { ... };
-      ProcessData(pw::as_bytes(data));
+      ProcessData(pw::as_bytes(pw::span(data)));
     }
 
 Compatibility
