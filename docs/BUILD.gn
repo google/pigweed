@@ -41,6 +41,8 @@ pw_doc_gen("docs") {
     ":target_docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_build:docs",
+    "$dir_pw_cpu_exception:docs",
+    "$dir_pw_cpu_exception_armv7m:docs",
     "$dir_pw_docgen:docs",
     "$dir_pw_dumb_io:docs",
     "$dir_pw_dumb_io_baremetal_stm32f429:docs",

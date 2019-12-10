@@ -1,0 +1,498 @@
+// Copyright 2019 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include <cstdint>
+#include <type_traits>
+
+#include "gtest/gtest.h"
+#include "pw_cpu_exception/cpu_exception.h"
+#include "pw_cpu_exception_armv7m/cpu_state.h"
+#include "pw_span/span.h"
+
+namespace pw::cpu_exception {
+namespace {
+
+// CMSIS/Cortex-M/ARMv7 related constants.
+// These values are from the ARMv7-M Architecture Reference Manual DDI 0403E.b.
+// https://static.docs.arm.com/ddi0403/e/DDI0403E_B_armv7m_arm.pdf
+
+// Exception ISR number. (ARMv7-M Section B1.5.2)
+constexpr uint32_t kHardFaultIsrNum = 0x3u;
+constexpr uint32_t kMemFaultIsrNum = 0x4u;
+constexpr uint32_t kBusFaultIsrNum = 0x5u;
+constexpr uint32_t kUsageFaultIsrNum = 0x6u;
+
+// Masks for individual bits of HFSR. (ARMv7-M Section B3.2.16)
+constexpr uint32_t kForcedHardfaultMask = 0x1u << 30;
+
+// Masks for individual bits of CFSR. (ARMv7-M Section B3.2.15)
+constexpr uint32_t kUseageFaultStart = 0x1u << 16;
+constexpr uint32_t kDivByZeroFaultMask = kUseageFaultStart << 9;
+
+// CCR flags. (ARMv7-M Section B3.2.8)
+constexpr uint32_t kDivByZeroTrapEnableMask = 0x1u << 4;
+
+// Masks for individual bits of SHCSR. (ARMv7-M Section B3.2.13)
+constexpr uint32_t kMemFaultEnableMask = 0x1 << 16;
+constexpr uint32_t kBusFaultEnableMask = 0x1 << 17;
+constexpr uint32_t kUseageFaultEnableMask = 0x1 << 18;
+
+// Bit masks for an exception return value. (ARMv7-M Section B1.5.8)
+constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
+
+// CPCAR mask that enables FPU. (ARMv7-M Section B3.2.20)
+constexpr uint32_t kFpuEnableMask = (0xFu << 20);
+
+// Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
+volatile uint32_t& arm_v7m_vtor =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED08u);
+volatile uint32_t& arm_v7m_ccr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED14u);
+volatile uint32_t& arm_v7m_shcsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
+volatile uint32_t& arm_v7m_cfsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
+volatile uint32_t& arm_v7m_cpacr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
+
+// Begin a critical section that must not be interrupted.
+// This function disables interrupts to prevent any sort of context switch until
+// the critical section ends. This is done by setting PRIMASK to 1 using the cps
+// instruction.
+//
+// Returns the state of PRIMASK before it was disabled.
+inline uint32_t BeginCriticalSection() {
+  uint32_t previous_state;
+  asm volatile(
+      " mrs %[previous_state], primask              \n"
+      " cpsid i                                     \n"
+      // clang-format off
+      : /*output=*/[previous_state]"=r"(previous_state)
+      : /*input=*/
+      : /*clobbers=*/"memory"
+      // clang-format on
+  );
+  return previous_state;
+}
+
+// Ends a critical section.
+// Restore previous previous state produced by BeginCriticalSection().
+// Note: This does not always re-enable interrupts.
+inline void EndCriticalSection(uint32_t previous_state) {
+  asm volatile(
+      // clang-format off
+      "msr primask, %0"
+      : /*output=*/
+      : /*input=*/"r"(previous_state)
+      : /*clobbers=*/"memory"
+      // clang-format on
+  );
+}
+
+void EnableFpu() {
+#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+  // TODO(pwbug/17): Replace when Pigweed config system is added.
+  arm_v7m_cpacr |= kFpuEnableMask;
+#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+}
+
+void DisableFpu() {
+#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+  // TODO(pwbug/17): Replace when Pigweed config system is added.
+  arm_v7m_cpacr &= ~kFpuEnableMask;
+#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+}
+
+// Simple boolean that is set to true if the test's exception handler correctly
+// handles a triggered exception.
+bool exception_handled = false;
+
+// Flag used to check if the contents of span matches the captured state.
+bool span_matches = false;
+
+// Faulting CpuState is copied here so values can be validated after exiting
+// exception handler.
+CpuState captured_state = {};
+
+// Variable to be manipulated by function that uses floating
+// point to test that exceptions push Fpu state correctly.
+// Note: don't use double because a cortex-m4f with fpv4-sp-d16
+// will result in gcc generating code to use the software floating
+// point support for double.
+volatile float float_test_value;
+
+// Magic pattern to help identify if the exception handler's CpuState pointer
+// was pointing to captured CPU state that was pushed onto the stack when
+// the faulting context uses the VFP. Has to be computed at runtime
+// because it uses values only available at link time.
+const float kFloatTestPattern = 12.345f * 67.89f;
+
+volatile float fpu_lhs_val = 12.345f;
+volatile float fpu_rhs_val = 67.89f;
+
+// This macro provides a calculation that equals kFloatTestPattern.
+#define _PW_TEST_FPU_OPERATION (fpu_lhs_val * fpu_rhs_val)
+
+// Magic pattern to help identify if the exception handler's CpuState pointer
+// was pointing to captured CPU state that was pushed onto the stack.
+constexpr uint32_t kMagicPattern = 0xDEADBEEF;
+
+// The manually captured PC won't be the exact same as the faulting PC. This is
+// the maximum tolerated distance between the two to allow the test to pass.
+constexpr int32_t kMaxPcDistance = 4;
+
+// In-memory interrupt service routine vector table.
+using InterruptVectorTable = std::aligned_storage_t<512, 512>;
+InterruptVectorTable ram_vector_table;
+
+// Populate the device's registers with testable values, then trigger exception.
+void BeginBaseFaultTest() {
+  // Make sure divide by zero causes a fault.
+  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  uint32_t magic = kMagicPattern;
+  asm volatile(
+      " mov r0, %[magic]                                      \n"
+      " mov r1, #0                                            \n"
+      " mov r2, pc                                            \n"
+      " mov r3, lr                                            \n"
+      // This instruction divides by zero.
+      " udiv r1, r1, r1                                       \n"
+      // clang-format off
+      : /*output=*/
+      : /*input=*/[magic]"r"(magic)
+      : /*clobbers=*/"r0", "r1", "r2", "r3"
+      // clang-format on
+  );
+
+  // Check that the stack align bit was not set.
+  EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit, 0u);
+}
+
+// Populate the device's registers with testable values, then trigger exception.
+// This version causes stack to not be 4-byte aligned initially, testing
+// the fault handlers correction for psp.
+void BeginBaseFaultUnalignedStackTest() {
+  // Make sure divide by zero causes a fault.
+  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  uint32_t magic = kMagicPattern;
+  asm volatile(
+      // Push one register to cause $sp to be no longer 8-byte aligned,
+      // assuming it started 8-byte aligned as expected.
+      " push {r0}                                             \n"
+      " mov r0, %[magic]                                      \n"
+      " mov r1, #0                                            \n"
+      " mov r2, pc                                            \n"
+      " mov r3, lr                                            \n"
+      // This instruction divides by zero. Our fault handler should
+      // ultimately advance the pc to the pop instruction.
+      " udiv r1, r1, r1                                       \n"
+      " pop {r0}                                              \n"
+      // clang-format off
+      : /*output=*/
+      : /*input=*/[magic]"r"(magic)
+      : /*clobbers=*/"r0", "r1", "r2", "r3"
+      // clang-format on
+  );
+
+  // Check that the stack align bit was set.
+  EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit,
+            kPsrExtraStackAlignBit);
+}
+
+// Populate some of the extended set of captured registers, then trigger
+// exception.
+void BeginExtendedFaultTest() {
+  // Make sure divide by zero causes a fault.
+  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  uint32_t magic = kMagicPattern;
+  volatile uint32_t local_msp = 0;
+  volatile uint32_t local_psp = 0;
+  asm volatile(
+      " mov r4, %[magic]                                      \n"
+      " mov r5, #0                                            \n"
+      " mov r11, %[magic]                                     \n"
+      " mrs %[local_msp], msp                                 \n"
+      " mrs %[local_psp], psp                                 \n"
+      // This instruction divides by zero.
+      " udiv r5, r5, r5                                       \n"
+      // clang-format off
+      : /*output=*/[local_msp]"=r"(local_msp), [local_psp]"=r"(local_psp)
+      : /*input=*/[magic]"r"(magic)
+      : /*clobbers=*/"r4", "r5", "r11", "memory"
+      // clang-format on
+  );
+
+  // Check that the stack align bit was not set.
+  EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit, 0u);
+
+  // Check that the captured stack pointers matched the ones in the context of
+  // the fault.
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.extended.msp), local_msp);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.extended.psp), local_psp);
+}
+
+// Populate some of the extended set of captured registers, then trigger
+// exception.
+// This version causes stack to not be 4-byte aligned initially, testing
+// the fault handlers correction for psp.
+void BeginExtendedFaultUnalignedStackTest() {
+  // Make sure divide by zero causes a fault.
+  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  uint32_t magic = kMagicPattern;
+  volatile uint32_t local_msp = 0;
+  volatile uint32_t local_psp = 0;
+  asm volatile(
+      // Push one register to cause $sp to be no longer 8-byte aligned,
+      // assuming it started 8-byte aligned as expected.
+      " push {r0}                                             \n"
+      " mov r4, %[magic]                                      \n"
+      " mov r5, #0                                            \n"
+      " mov r11, %[magic]                                     \n"
+      " mrs %[local_msp], msp                                 \n"
+      " mrs %[local_psp], psp                                 \n"
+      // This instruction divides by zero. Our fault handler should
+      // ultimately advance the pc to the pop instruction.
+      " udiv r5, r5, r5                                       \n"
+      " pop {r0}                                              \n"
+      // clang-format off
+      : /*output=*/[local_msp]"=r"(local_msp), [local_psp]"=r"(local_psp)
+      : /*input=*/[magic]"r"(magic)
+      : /*clobbers=*/"r4", "r5", "r11", "memory"
+      // clang-format on
+  );
+
+  // Check that the stack align bit was set.
+  EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit,
+            kPsrExtraStackAlignBit);
+
+  // Check that the captured stack pointers matched the ones in the context of
+  // the fault.
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.extended.msp), local_msp);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.extended.psp), local_psp);
+}
+
+void InstallVectorTableEntries() {
+  uint32_t prev_state = BeginCriticalSection();
+  // If vector table is installed already, this is done.
+  if (arm_v7m_vtor == reinterpret_cast<uint32_t>(&ram_vector_table)) {
+    EndCriticalSection(prev_state);
+    return;
+  }
+  // Copy table to new location since it's not guaranteed that we can write to
+  // the original one.
+  std::memcpy(&ram_vector_table,
+              reinterpret_cast<uint32_t*>(arm_v7m_vtor),
+              sizeof(ram_vector_table));
+
+  // Override exception handling vector table entries.
+  uint32_t* exception_entry_addr =
+      reinterpret_cast<uint32_t*>(pw::cpu_exception::pw_CpuExceptionEntry);
+  uint32_t** interrupts = reinterpret_cast<uint32_t**>(&ram_vector_table);
+  interrupts[kHardFaultIsrNum] = exception_entry_addr;
+  interrupts[kMemFaultIsrNum] = exception_entry_addr;
+  interrupts[kBusFaultIsrNum] = exception_entry_addr;
+  interrupts[kUsageFaultIsrNum] = exception_entry_addr;
+
+  uint32_t old_vector_table = arm_v7m_vtor;
+  // Dismiss unused variable warning for non-debug builds.
+  PW_UNUSED(old_vector_table);
+
+  // Update Vector Table Offset Register (VTOR) to point to new vector table.
+  arm_v7m_vtor = reinterpret_cast<uint32_t>(&ram_vector_table);
+  EndCriticalSection(prev_state);
+}
+
+void EnableAllFaultHandlers() {
+  arm_v7m_shcsr |=
+      kMemFaultEnableMask | kBusFaultEnableMask | kUseageFaultEnableMask;
+}
+
+void Setup(bool use_fpu) {
+  if (use_fpu) {
+    EnableFpu();
+  } else {
+    DisableFpu();
+  }
+  EnableAllFaultHandlers();
+  InstallVectorTableEntries();
+  exception_handled = false;
+  captured_state = {};
+  float_test_value = 0.0f;
+}
+
+TEST(FaultEntry, BasicFault) {
+  Setup(/*use_fpu=*/false);
+  BeginBaseFaultTest();
+  ASSERT_TRUE(exception_handled);
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r0), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r1), 0u);
+  // PC is manually saved in r2 before the exception occurs (where PC is also
+  // stored). Ensure these numbers are within a reasonable distance.
+  int32_t captured_pc_distance =
+      captured_state.base.pc - captured_state.base.r2;
+  EXPECT_LT(captured_pc_distance, kMaxPcDistance);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r3),
+            static_cast<uint32_t>(captured_state.base.lr));
+}
+
+TEST(FaultEntry, BasicUnalignedStackFault) {
+  Setup(/*use_fpu=*/false);
+  BeginBaseFaultUnalignedStackTest();
+  ASSERT_TRUE(exception_handled);
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r0), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r1), 0u);
+  // PC is manually saved in r2 before the exception occurs (where PC is also
+  // stored). Ensure these numbers are within a reasonable distance.
+  int32_t captured_pc_distance =
+      captured_state.base.pc - captured_state.base.r2;
+  EXPECT_LT(captured_pc_distance, kMaxPcDistance);
+  EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r3),
+            static_cast<uint32_t>(captured_state.base.lr));
+}
+
+TEST(FaultEntry, ExtendedFault) {
+  Setup(/*use_fpu=*/false);
+  BeginExtendedFaultTest();
+  ASSERT_TRUE(exception_handled);
+  ASSERT_TRUE(span_matches);
+  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r11), kMagicPattern);
+
+  // Check expected values for this crash.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
+            static_cast<uint32_t>(kDivByZeroFaultMask));
+  EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
+}
+
+TEST(FaultEntry, ExtendedUnalignedStackFault) {
+  Setup(/*use_fpu=*/false);
+  BeginExtendedFaultUnalignedStackTest();
+  ASSERT_TRUE(exception_handled);
+  ASSERT_TRUE(span_matches);
+  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r11), kMagicPattern);
+
+  // Check expected values for this crash.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
+            static_cast<uint32_t>(kDivByZeroFaultMask));
+  EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
+}
+
+// TODO(pwbug/17): Replace when Pigweed config system is added.
+// Disable tests that rely on hardware FPU if this module wasn't built with
+// hardware FPU support.
+#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+
+// Populate some of the extended set of captured registers, then trigger
+// exception. This function uses floating point to validate float context
+// is pushed correctly.
+void BeginExtendedFaultFloatTest() {
+  float_test_value = _PW_TEST_FPU_OPERATION;
+  BeginExtendedFaultTest();
+}
+
+// Populate some of the extended set of captured registers, then trigger
+// exception.
+// This version causes stack to not be 4-byte aligned initially, testing
+// the fault handlers correction for psp.
+// This function uses floating point to validate float context
+// is pushed correctly.
+void BeginExtendedFaultUnalignedStackFloatTest() {
+  float_test_value = _PW_TEST_FPU_OPERATION;
+  BeginExtendedFaultUnalignedStackTest();
+}
+
+TEST(FaultEntry, FloatFault) {
+  Setup(/*use_fpu=*/true);
+  BeginExtendedFaultFloatTest();
+  ASSERT_TRUE(exception_handled);
+  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r11), kMagicPattern);
+
+  // Check expected values for this crash.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
+            static_cast<uint32_t>(kDivByZeroFaultMask));
+  EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
+
+  // Check fpu state was pushed during exception
+  EXPECT_FALSE(extended_registers.exc_return & kExcReturnBasicFrameMask);
+
+  // Check float_test_value is correct
+  EXPECT_EQ(float_test_value, kFloatTestPattern);
+}
+
+TEST(FaultEntry, FloatUnalignedStackFault) {
+  Setup(/*use_fpu=*/true);
+  BeginExtendedFaultUnalignedStackFloatTest();
+  ASSERT_TRUE(exception_handled);
+  ASSERT_TRUE(span_matches);
+  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.r11), kMagicPattern);
+
+  // Check expected values for this crash.
+  EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
+            static_cast<uint32_t>(kDivByZeroFaultMask));
+  EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
+
+  // Check fpu state was pushed during exception.
+  EXPECT_FALSE(extended_registers.exc_return & kExcReturnBasicFrameMask);
+
+  // Check float_test_value is correct
+  EXPECT_EQ(float_test_value, kFloatTestPattern);
+}
+
+#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+
+}  // namespace
+
+void HandleCpuException(CpuState* state) {
+  if (arm_v7m_cfsr & kDivByZeroFaultMask) {
+    // Disable divide-by-zero trapping to "handle" exception.
+    arm_v7m_ccr &= ~kDivByZeroTrapEnableMask;
+    // Copy captured state to check later.
+    std::memcpy(&captured_state, state, sizeof(CpuState));
+    exception_handled = true;
+
+    // Ensure span compares to be the same.
+    span<const uint8_t> state_span = RawFaultingCpuState(*state);
+    EXPECT_EQ(state_span.size(), sizeof(CpuState));
+    if (std::memcmp(state, state_span.data(), state_span.size()) == 0) {
+      span_matches = true;
+    } else {
+      span_matches = false;
+    }
+
+    return;
+  }
+
+  // If an unexpected exception occurred, just enter an infinite loop.
+  while (true) {
+  }
+}
+
+}  // namespace pw::cpu_exception

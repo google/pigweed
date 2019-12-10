@@ -24,6 +24,7 @@ group("default") {
 
 group("pw_facades") {
   deps = [
+    "$dir_pw_cpu_exception",
     "$dir_pw_dumb_io",
   ]
 }
@@ -51,4 +52,9 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_string:tests",
     "$dir_pw_varint:tests",
   ]
+
+  # TODO(pwbug/17): Re-think when Pigweed config system is added.
+  if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
+    group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
+  }
 }

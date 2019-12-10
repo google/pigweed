@@ -69,3 +69,6 @@ pw_automatic_test_runner = ""
 
 # Backend for the pw_dumb_io module.
 dir_pw_dumb_io_backend = ""
+
+# Backend for the pw_cpu_exception module.
+dir_pw_cpu_exception_backend = ""

@@ -1,0 +1,65 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+# TODO(pwbug/17): Replace when Pigweed config system is added.
+# This if statement allows docs to always build even if the target isn't
+# compatible with this backend.
+if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
+  config("default_config") {
+    include_dirs = [ "public" ]
+  }
+
+  source_set("pw_cpu_exception_armv7m") {
+    public_configs = [
+      "$dir_pw_build:pw_default_cpp",
+      ":default_config",
+    ]
+    deps = [
+      "$dir_pw_cpu_exception:facade",
+      "$dir_pw_dumb_io:default_putget_bytes",
+      "$dir_pw_preprocessor",
+    ]
+    public = [
+      "public/pw_cpu_exception_armv7m/cpu_state.h",
+    ]
+    sources = [
+      "cpu_exception_entry.cc",
+      "cpu_state.cc",
+    ]
+    sources += public
+  }
+
+  pw_test_group("tests") {
+    tests = [ ":cpu_exception_entry_test" ]
+  }
+
+  pw_test("cpu_exception_entry_test") {
+    deps = [
+      ":pw_cpu_exception_armv7m",
+      "$dir_pw_cpu_exception",
+    ]
+    sources = [
+      "exception_entry_test.cc",
+    ]
+  }
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
+}
