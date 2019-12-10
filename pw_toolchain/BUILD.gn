@@ -74,10 +74,20 @@ template("generate_toolchains") {
 generate_toolchains("cortex_m4") {
   toolchain_template = "arm_gcc_toolchain"
 
+  software_fpu_cflags = [ "-mfloat-abi=soft" ]
+
+  hardware_fpu_cflags = [
+    # When hardware FPU is enabled, PW_ARMV7M_ENABLE_FPU is set to 1.
+    # TODO(pwbug/17): Replace when there's a more sophisticated configuration
+    # system.
+    "-DPW_ARMV7M_ENABLE_FPU=1",
+    "-mfloat-abi=hard",
+    "-mfpu=fpv4-sp-d16",
+  ]
+
   common_toolchain_cflags = [
     "-mabi=aapcs",
     "-mcpu=cortex-m4",
-    "-mfloat-abi=soft",
     "-mthumb",
     "-specs=nano.specs",
     "-specs=nosys.specs",
@@ -89,21 +99,48 @@ generate_toolchains("cortex_m4") {
   ]
 
   toolchains = [
+    # Cortex-M4 toolchains that use software-emulated floating point.
     {
       toolchain_name = "arm_gcc_cortex_m4_og"
       additional_cflags = [ "-Og" ]
+      additional_cflags += software_fpu_cflags
     },
     {
       toolchain_name = "arm_gcc_cortex_m4_o1"
       additional_cflags = [ "-O1" ]
+      additional_cflags += software_fpu_cflags
     },
     {
       toolchain_name = "arm_gcc_cortex_m4_o2"
       additional_cflags = [ "-O2" ]
+      additional_cflags += software_fpu_cflags
     },
     {
       toolchain_name = "arm_gcc_cortex_m4_os"
       additional_cflags = [ "-Os" ]
+      additional_cflags += software_fpu_cflags
+    },
+
+    # Cortex-M4 toolchains that use hardware FPU instructions.
+    {
+      toolchain_name = "arm_gcc_cortex_m4f_og"
+      additional_cflags = [ "-Og" ]
+      additional_cflags += hardware_fpu_cflags
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4f_o1"
+      additional_cflags = [ "-O1" ]
+      additional_cflags += hardware_fpu_cflags
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4f_o2"
+      additional_cflags = [ "-O2" ]
+      additional_cflags += hardware_fpu_cflags
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m4f_os"
+      additional_cflags = [ "-Os" ]
+      additional_cflags += hardware_fpu_cflags
     },
   ]
 }
