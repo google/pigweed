@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 package server
 
 import (
@@ -96,9 +97,9 @@ func (s *Server) RunTest(path string) (*UnitTestRunResponse, error) {
 	}
 
 	if res.Status == pb.TestStatus_SUCCESS {
-		s.testsPassed += 1
+		s.testsPassed++
 	} else {
-		s.testsFailed += 1
+		s.testsFailed++
 	}
 
 	return res, nil

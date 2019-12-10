@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 package server
 
 import (
@@ -37,11 +38,13 @@ func NewExecTestRunner(id int, command []string) *ExecTestRunner {
 	return &ExecTestRunner{command, logger}
 }
 
+// WorkerStart starts the worker. Part of UnitTestRunner interface.
 func (r *ExecTestRunner) WorkerStart() error {
 	r.logger.Printf("Starting worker")
 	return nil
 }
 
+// WorkerExit exits the worker. Part of UnitTestRunner interface.
 func (r *ExecTestRunner) WorkerExit() {
 	r.logger.Printf("Exiting worker")
 }
