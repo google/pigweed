@@ -148,11 +148,9 @@ def _make_box(section_alignments: Sequence[str]) -> str:
                               for i in indices)
     bot_sections = '{9}'.join('{8:{8}^{width%d}}' % i for i in indices)
 
-    # yapf: disable
     return ''.join(['{0}', *top_sections, '{3}\n',
                     '{4}', *mid_sections, '{6}\n',
-                    '{7}', *bot_sections, '{10}'])
-    # yapf: enable
+                    '{7}', *bot_sections, '{10}'])  # yapf: disable
 
 
 _DOUBLE = '╔═╦╗║║║╚═╩╝'
@@ -166,7 +164,7 @@ _RIGHT = 11
 
 
 def _title(msg, style=_DOUBLE):
-    msg = f' {msg} '.center(WIDTH - 4)
+    msg = f' {msg} '.center(WIDTH - 2)
     return _make_box('^').format(*style, section1=msg, width1=len(msg))
 
 

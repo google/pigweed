@@ -16,6 +16,7 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
+import glob
 import logging
 import os
 import re
@@ -57,11 +58,15 @@ def run_python_module(*args, **kwargs):
 def init_cipd():
     cipd = os.path.abspath('.presubmit/cipd')
     call(sys.executable, 'env_setup/cipd/update.py', '--install-dir', cipd)
-    os.environ['PATH'] = os.pathsep.join((
-        cipd,
-        os.path.join(cipd, 'bin'),
-        os.environ['PATH'],
-    ))
+
+    paths = [cipd, os.path.join(cipd, 'bin')]
+    for base in glob.glob(os.path.join(cipd, '*')):
+        paths.append(base)
+        paths.append(os.path.join(base, 'bin'))
+
+    paths.append(os.environ['PATH'])
+
+    os.environ['PATH'] = os.pathsep.join(paths)
     _LOG.debug('PATH %s', os.environ['PATH'])
 
 
@@ -170,7 +175,7 @@ def test_python_packages(paths):
         return
 
     for package in packages:
-        call('python', os.path.join(package, 'setup.py'), 'test')
+        call('python', os.path.join(package, 'setup.py'), 'test', cwd=package)
 
 
 @filter_paths(endswith='.py')
@@ -312,8 +317,9 @@ def source_is_in_build_files(paths):
 
     if missing_bazel or missing_gn:
         for build, files in [('Bazel', missing_bazel), ('GN', missing_gn)]:
-            _LOG.warning('%s are missing from the %s build:\n%s',
-                         plural(files, 'file'), build, '\n'.join(files))
+            if files:
+                _LOG.warning('%s are missing from the %s build:\n%s',
+                             plural(files, 'file'), build, '\n'.join(files))
 
         _LOG.warning(
             'All source files must appear in BUILD and BUILD.gn files')
