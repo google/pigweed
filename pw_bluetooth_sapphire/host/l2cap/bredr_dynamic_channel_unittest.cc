@@ -813,6 +813,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
       EXPECT_TRUE(chan->IsConnected());
       EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kRemoteCId, chan->remote_cid());
+      EXPECT_EQ(ChannelMode::kBasic, chan->parameters().mode.value());
     }
     open_cb_count++;
   };
@@ -1473,6 +1474,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_TRUE(chan->IsOpen());
+      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->parameters().mode.value());
     }
     open_cb_count++;
   };
@@ -1855,8 +1857,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 }
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
-  constexpr uint16_t kMtu = kDefaultMTU + 1;
-  const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kMtu);
+  constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
+  const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kPreferredMtu);
 
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
@@ -1865,8 +1867,21 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
-  registry()->OpenOutbound(kPsm, [](auto chan) {}, {ChannelMode::kBasic, kMtu});
+  int open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(kPreferredMtu, chan->parameters().max_sdu_size.value());
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, open_cb, {ChannelMode::kBasic, kPreferredMtu});
   RunLoopUntilIdle();
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
 }
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
@@ -1880,8 +1895,21 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
-  registry()->OpenOutbound(kPsm, [](auto chan) {}, {ChannelMode::kBasic, kMtu});
+  int open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(kMinACLMTU, chan->parameters().max_sdu_size.value());
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, open_cb, {ChannelMode::kBasic, kMtu});
   RunLoopUntilIdle();
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
 }
 
 }  // namespace

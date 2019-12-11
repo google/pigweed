@@ -140,6 +140,9 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override;
   bool IsOpen() const override;
 
+  // Current high-level channel configuration parameters. Must not be called until channel is open.
+  ChannelParameters parameters() const override;
+
   // Must not be called until channel is open.
   MtuConfiguration mtu_configuration() const override;
 

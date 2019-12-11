@@ -79,6 +79,9 @@ class DynamicChannel {
   // can transfer data.
   virtual bool IsOpen() const = 0;
 
+  // Current high-level channel configuration parameters.
+  virtual ChannelParameters parameters() const = 0;
+
   struct MtuConfiguration {
     // Max SDU size peer is capable of accepting on this channel.
     uint16_t tx_mtu;

@@ -309,6 +309,17 @@ bool BrEdrDynamicChannel::IsOpen() const {
   return IsConnected() && BothConfigsAccepted() && AcceptedChannelModesAreConsistent();
 }
 
+ChannelParameters BrEdrDynamicChannel::parameters() const {
+  ZX_ASSERT(IsOpen());
+  ZX_ASSERT(local_config().retransmission_flow_control_option());
+  ZX_ASSERT(local_config().mtu_option());
+
+  ChannelParameters params;
+  params.mode = local_config().retransmission_flow_control_option()->mode();
+  params.max_sdu_size = local_config().mtu_option()->mtu();
+  return params;
+}
+
 BrEdrDynamicChannel::MtuConfiguration BrEdrDynamicChannel::mtu_configuration() const {
   ZX_DEBUG_ASSERT(IsOpen());
   ZX_DEBUG_ASSERT(local_config().mtu_option());

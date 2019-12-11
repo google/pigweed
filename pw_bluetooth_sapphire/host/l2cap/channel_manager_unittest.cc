@@ -317,6 +317,13 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   EXPECT_FALSE(closed_called);
 }
 
+TEST_F(L2CAP_ChannelManagerTest, FixedChannelsUseBasicMode) {
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
+  auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
+  ASSERT_TRUE(chan);
+  EXPECT_EQ(ChannelMode::kBasic, chan->mode());
+}
+
 TEST_F(L2CAP_ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
@@ -1060,6 +1067,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   EXPECT_FALSE(closed_cb_called);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
+  EXPECT_EQ(ChannelMode::kBasic, channel->mode());
 
   // Test SDU transmission.
   // SDU must have remote channel ID (unlike for fixed channels).

@@ -88,6 +88,8 @@ class Channel : public fbl::RefCounted<Channel> {
     return (link_handle() << (sizeof(ChannelId) * CHAR_BIT)) | id();
   }
 
+  ChannelMode mode() const { return mode_; }
+
   uint16_t tx_mtu() const { return tx_mtu_; }
   uint16_t rx_mtu() const { return rx_mtu_; }
 
@@ -168,13 +170,14 @@ class Channel : public fbl::RefCounted<Channel> {
   friend class fbl::RefPtr<Channel>;
   // TODO(1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-          hci::ConnectionHandle link_handle, uint16_t tx_mtu, uint16_t rx_mtu);
+          hci::ConnectionHandle link_handle, ChannelMode mode, uint16_t tx_mtu, uint16_t rx_mtu);
   virtual ~Channel() = default;
 
   const ChannelId id_;
   const ChannelId remote_id_;
   const hci::Connection::LinkType link_type_;
   const hci::ConnectionHandle link_handle_;
+  const ChannelMode mode_;
 
   // The maximum SDU sizes for this channel.
   const uint16_t tx_mtu_;
@@ -190,6 +193,24 @@ class LogicalLink;
 // Channel implementation used in production.
 class ChannelImpl : public Channel {
  public:
+  static fbl::RefPtr<ChannelImpl> CreateFixedChannel(ChannelId id,
+                                                     fbl::RefPtr<internal::LogicalLink> link,
+                                                     std::list<PDU> buffered_pdus);
+
+  static fbl::RefPtr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
+                                                       fbl::RefPtr<internal::LogicalLink> link,
+                                                       ChannelMode mode, uint16_t tx_mtu,
+                                                       uint16_t rx_mtu);
+
+  // Called by |link_| to notify us when the channel can no longer process data.
+  // This MUST NOT call any locking methods of |link_| as that WILL cause a
+  // deadlock.
+  void OnClosed();
+
+  // Called by |link_| when a PDU targeting this channel has been received.
+  // Contents of |pdu| will be moved.
+  void HandleRxPdu(PDU&& pdu);
+
   // Channel overrides:
   const sm::SecurityProperties security() override;
   bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
@@ -203,21 +224,11 @@ class ChannelImpl : public Channel {
 
  private:
   friend class fbl::RefPtr<ChannelImpl>;
-  friend class internal::LogicalLink;
 
   ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-              std::list<PDU> buffered_pdus, uint16_t tx_mtu = kDefaultMTU,
+              ChannelMode mode, std::list<PDU> buffered_pdus, uint16_t tx_mtu = kDefaultMTU,
               uint16_t rx_mtu = kDefaultMTU);
   ~ChannelImpl() override = default;
-
-  // Called by |link_| to notify us when the channel can no longer process data.
-  // This MUST NOT call any locking methods of |link_| as that WILL cause a
-  // deadlock.
-  void OnClosed();
-
-  // Called by |link_| when a PDU targeting this channel has been received.
-  // Contents of |pdu| will be moved.
-  void HandleRxPdu(PDU&& pdu);
 
   // TODO(armansito): Add MPS fields when we support segmentation/flow-control.
 

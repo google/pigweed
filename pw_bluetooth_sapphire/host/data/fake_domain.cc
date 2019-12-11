@@ -200,7 +200,8 @@ fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::Chan
                                                      uint16_t rx_mtu) {
   fbl::RefPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
-    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type, tx_mtu, rx_mtu));
+    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type,
+                                         l2cap::ChannelMode::kBasic, tx_mtu, rx_mtu));
     chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
   }
 

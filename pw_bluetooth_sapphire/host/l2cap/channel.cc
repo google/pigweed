@@ -17,11 +17,13 @@ namespace bt {
 namespace l2cap {
 
 Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-                 hci::ConnectionHandle link_handle, uint16_t tx_mtu, uint16_t rx_mtu)
+                 hci::ConnectionHandle link_handle, ChannelMode mode, uint16_t tx_mtu,
+                 uint16_t rx_mtu)
     : id_(id),
       remote_id_(remote_id),
       link_type_(link_type),
       link_handle_(link_handle),
+      mode_(mode),
       tx_mtu_(tx_mtu),
       rx_mtu_(rx_mtu) {
   ZX_DEBUG_ASSERT(id_);
@@ -31,9 +33,26 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 
 namespace internal {
 
+fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
+                                                         fbl::RefPtr<internal::LogicalLink> link,
+                                                         std::list<PDU> buffered_pdus) {
+  // A fixed channel's endpoints have the same local and remote identifiers.
+  // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
+  return fbl::AdoptRef(new ChannelImpl(id, id, link, ChannelMode::kBasic, std::move(buffered_pdus),
+                                       kDefaultMTU, kDefaultMTU));
+}
+
+fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
+                                                           fbl::RefPtr<internal::LogicalLink> link,
+                                                           ChannelMode mode, uint16_t tx_mtu,
+                                                           uint16_t rx_mtu) {
+  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, mode, {}, tx_mtu, rx_mtu));
+}
+
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-                         std::list<PDU> buffered_pdus, uint16_t tx_mtu, uint16_t rx_mtu)
-    : Channel(id, remote_id, link->type(), link->handle(), tx_mtu, rx_mtu),
+                         ChannelMode mode, std::list<PDU> buffered_pdus, uint16_t tx_mtu,
+                         uint16_t rx_mtu)
+    : Channel(id, remote_id, link->type(), link->handle(), mode, tx_mtu, rx_mtu),
       active_(false),
       dispatcher_(nullptr),
       link_(link),

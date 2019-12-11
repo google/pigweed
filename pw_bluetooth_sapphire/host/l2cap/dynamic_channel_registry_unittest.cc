@@ -31,6 +31,8 @@ class FakeDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override { return connected_; }
   bool IsOpen() const override { return open_; }
 
+  ChannelParameters parameters() const override { return ChannelParameters(); }
+
   MtuConfiguration mtu_configuration() const override { return {kDefaultMTU, kDefaultMTU}; }
 
   void DoConnect(ChannelId remote_cid) {
