@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Package server implements a unit test gRPC server which queues and
+// distributes unit tests among a group of worker routines.
 package server
 
 import (

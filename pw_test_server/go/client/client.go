@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Package client implements a gRPC client for a unit test server.
 package client
 
 import (
