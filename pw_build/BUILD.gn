@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
+
 # Standard compiler flags to reduce output binary size.
 config("reduced_size") {
   cflags = [
@@ -48,4 +50,10 @@ config("cpp17") {
 # Default C++ version for Pigweed modules.
 config("pw_default_cpp") {
   configs = [ ":cpp17" ]
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
 }

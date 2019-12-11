@@ -31,9 +31,10 @@ pw_doc_gen("docs") {
   deps = [
     ":core_docs",
     "$dir_pw_bloat:docs",
+    "$dir_pw_build:docs",
     "$dir_pw_docgen:docs",
-    "$dir_pw_dumb_io_baremetal_stm32f429:docs",
     "$dir_pw_dumb_io:docs",
+    "$dir_pw_dumb_io_baremetal_stm32f429:docs",
     "$dir_pw_dumb_io_stdio:docs",
     "$dir_pw_module:docs",
     "$dir_pw_preprocessor:docs",
