@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 
 namespace bt {
 namespace l2cap {
@@ -899,31 +900,11 @@ TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
 
 // clang-format off
 auto OutboundConnectionResponse(CommandId id) {
-  return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 16 bytes)
-      0x01, 0x00, 0x10, 0x00,
-
-      // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
-      0x0c, 0x00, 0x01, 0x00,
-
-      // Connection Response (ID, length: 8, dst cid, src cid, result: success, status: none)
-      0x03, id, 0x08, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId),
-      UpperBits(kRemoteId), 0x00, 0x00, 0x00, 0x00);
+  return testing::AclConnectionRsp(id, kTestHandle1, kRemoteId, kLocalId);
 }
 
 auto InboundConnectionResponse(CommandId id) {
-  return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 16 bytes)
-      0x01, 0x00, 0x10, 0x00,
-
-      // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
-      0x0c, 0x00, 0x01, 0x00,
-
-      // Connection Response (ID, length: 8, dst cid,
-      // src cid, result: success, status: none)
-      0x03, id, 0x08, 0x00,
-      LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId),
-      0x00, 0x00, 0x00, 0x00);
+  return testing::AclConnectionRsp(id, kTestHandle1, kLocalId, kRemoteId);
 }
 
 auto InboundConfigurationRequest(CommandId id, uint16_t mtu = kDefaultMTU) {

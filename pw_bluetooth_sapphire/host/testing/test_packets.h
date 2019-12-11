@@ -25,6 +25,7 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
 DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address);
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn);

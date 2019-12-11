@@ -91,6 +91,13 @@ DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn) {
       ));
 }
 
+DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets) {
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      0x13, 0x05,  // Number Of Completed Packet HCI event header, parameters length
+      0x01,        // Number of handles
+      LowerBits(conn), UpperBits(conn), LowerBits(num_packets), UpperBits(num_packets)));
+}
+
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(

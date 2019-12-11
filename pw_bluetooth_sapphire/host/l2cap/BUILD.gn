@@ -84,6 +84,8 @@ source_set("testing") {
     "fake_signaling_channel.h",
     "pdu_generator.cc",
     "pdu_generator.h",
+    "test_packets.cc",
+    "test_packets.h",
   ]
 
   public_deps = [
