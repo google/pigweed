@@ -28,6 +28,9 @@ import sys
 import tempfile
 
 SCRIPT_ROOT = os.path.abspath(os.path.dirname(__file__))
+GIT_ROOT = subprocess.check_output(
+    ['git', 'rev-parse', '--show-toplevel'],
+    cwd=SCRIPT_ROOT).decode('utf-8').strip()
 
 
 def parse(argv=None):
@@ -35,7 +38,7 @@ def parse(argv=None):
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--install-dir',
-                        default=os.path.join(SCRIPT_ROOT, 'tools'))
+                        default=os.path.join(GIT_ROOT, '.cipd'))
     parser.add_argument('--ensure-file', action='append')
     parser.add_argument('--cipd', default=os.path.join(SCRIPT_ROOT, 'cipd.py'))
     parser.add_argument('--suppress-shell-commands',
