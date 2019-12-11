@@ -27,9 +27,8 @@ import sys
 import tempfile
 
 SCRIPT_ROOT = os.path.abspath(os.path.dirname(__file__))
-GIT_ROOT = subprocess.check_output(
-    ['git', 'rev-parse', '--show-toplevel'],
-    cwd=SCRIPT_ROOT).decode('utf-8').strip()
+GIT_ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
+                                   cwd=SCRIPT_ROOT).decode('utf-8').strip()
 
 
 def parse(argv=None):
@@ -86,8 +85,8 @@ def update(argv=None):
 
     default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
     for ensure_file in args.ensure_file or glob.glob(default_ensures):
-        install_dir = os.path.join(
-            args.install_dir, os.path.basename(ensure_file))
+        install_dir = os.path.join(args.install_dir,
+                                   os.path.basename(ensure_file))
         cmd = [
             args.cipd,
             'ensure',
