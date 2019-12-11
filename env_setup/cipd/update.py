@@ -20,23 +20,24 @@ Must be tested with Python 2 and Python 3.
 from __future__ import print_function
 
 import argparse
+import glob
+import itertools
 import os
 import subprocess
 import sys
 import tempfile
 
+SCRIPT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 def parse(argv=None):
     """Parse arguments."""
 
-    script_root = os.path.abspath(os.path.dirname(__file__))
-
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--install-dir',
-                        default=os.path.join(script_root, 'tools'))
-    parser.add_argument('--ensure-file',
-                        default=os.path.join(script_root, 'ensure_file'))
-    parser.add_argument('--cipd', default=os.path.join(script_root, 'cipd.py'))
+                        default=os.path.join(SCRIPT_ROOT, 'tools'))
+    parser.add_argument('--ensure-file', action='append')
+    parser.add_argument('--cipd', default=os.path.join(SCRIPT_ROOT, 'cipd.py'))
     parser.add_argument('--suppress-shell-commands',
                         action='store_false',
                         dest='print_shell_commands')
@@ -76,27 +77,33 @@ def update(argv=None):
     if not check_auth(args.cipd, args.print_shell_commands):
         return
 
-    cmd = [
-        args.cipd,
-        'ensure',
-        '-ensure-file', args.ensure_file,
-        '-root', args.install_dir,
-        '-log-level', 'warning',
-    ]  # yapf: disable
-
     if not os.path.isdir(args.install_dir):
         os.makedirs(args.install_dir)
-    subprocess.check_call(cmd, stdout=sys.stderr)
 
-    paths = [
-        args.install_dir,
-        os.path.join(args.install_dir, 'bin'),
-    ]
+    paths = []
+
+    default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
+    for ensure_file in args.ensure_file or glob.glob(default_ensures):
+        install_dir = os.path.join(
+            args.install_dir, os.path.basename(ensure_file))
+        cmd = [
+            args.cipd,
+            'ensure',
+            '-ensure-file', ensure_file,
+            '-root', install_dir,
+            '-log-level', 'warning',
+        ]  # yapf: disable
+
+        print(*cmd, file=sys.stderr)
+        subprocess.check_call(cmd, stdout=sys.stderr)
+
+        paths.append(install_dir)
+        paths.append(os.path.join(install_dir, 'bin'))
 
     for path in paths:
         print('adding {} to path'.format(path), file=sys.stderr)
 
-    paths.append(os.environ['PATH'])
+    paths.append('$PATH')
 
     if args.print_shell_commands:
         with tempfile.NamedTemporaryFile(mode='w',

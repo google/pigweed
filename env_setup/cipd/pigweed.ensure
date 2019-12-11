@@ -13,12 +13,8 @@
 # the License.
 
 # This file identifies the versions of tools required by the Pigweed build
-# system or by other parts of Pigweed infrastructure. To add or update a tool
-# use 'cipd ls' to find the path, 'cipd instances' to find a list of available
-# versions, and 'cipd describe' to find further details and the version label.
-# The instance ID will be different for the same upstream version across
-# platforms, but the same version label will be present for all architectures.
-# For further details and syntax see
+# system or by other parts of Pigweed infrastructure. For details see
+# http://go/pigweed-cipd and
 # https://godoc.org/go.chromium.org/luci/cipd/client/cipd/ensure.
 
 $VerifiedPlatform linux-amd64
@@ -52,34 +48,3 @@ infra/tools/protoc/${platform} protobuf_version:v3.8.0
 
 # clang/llvm
 fuchsia/third_party/clang/${platform} git_revision:fc31b58eff9da4447f9f332f07de3cd07ab4b56c
-
-# Gerrit CLI
-infra/tools/luci/gerrit/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# Isolated
-infra/tools/luci/isolated/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# LUCI editor
-infra/tools/luci/led/${platform} git_revision:dd18cbd33cd937377b79dde876265ea0c1d54273
-
-# LogDog CLI client
-infra/tools/luci/logdog/logdog/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# LUCI auth tool
-infra/tools/luci-auth/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# Lucicfg tool
-infra/tools/luci/lucicfg/${platform}  git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# Python 3
-infra/3pp/tools/cpython3/${platform} version:3.8.0.chromium.7
-
-# vpython
-infra/tools/luci/vpython/${platform} git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# preview_email
-infra/tools/preview_email/${platform}  git_revision:2155d0d436bf346333810cc352791063e1dda952
-
-# YAPF
-# Keep in sync with tricium-recipes builder properties.
-infra/tools/yapf git_revision:2155d0d436bf346333810cc352791063e1dda952
