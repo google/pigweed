@@ -19,6 +19,9 @@
 # to build for it. This is done in a .gni file specific to the target by first
 # importing this file, then changing the variables as desired.
 
+# Whether to build host-side tooling.
+pw_build_host_tools = true
+
 # Options which configure the executable targets created in Pigweed builds.
 pw_executable_config = {
   # The name of the GN target type used to build Pigweed executables.
