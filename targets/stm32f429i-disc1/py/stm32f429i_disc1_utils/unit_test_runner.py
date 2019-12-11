@@ -51,8 +51,7 @@ class TestingFailure(Exception):
 def parse_args():
     """Parses command-line arguments."""
 
-    parser = argparse.ArgumentParser(
-        'Flashes and then runs on-device unit tests')
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', help='The target test binary to run')
     parser.add_argument('--openocd-config',
                         default=_OPENOCD_CONFIG,
@@ -108,6 +107,9 @@ def reset_device(openocd_config, stlink_serial):
     env = os.environ.copy()
     if stlink_serial:
         env['PW_STLINK_SERIAL'] = stlink_serial
+
+    # Disable GDB port to support multi-device testing.
+    env['PW_GDB_PORT'] = 'disabled'
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
@@ -180,6 +182,9 @@ def flash_device(binary, openocd_config, stlink_serial):
     env = os.environ.copy()
     if stlink_serial:
         env['PW_STLINK_SERIAL'] = stlink_serial
+
+    # Disable GDB port to support multi-device testing.
+    env['PW_GDB_PORT'] = 'disabled'
     process = subprocess.run(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
@@ -245,7 +250,7 @@ def run_device_test(binary,
     return True
 
 
-def main(args=None):
+def main():
     """Set up runner, and then flash/run device test."""
     args = parse_args()
 
@@ -254,7 +259,7 @@ def main(args=None):
         import pw_cli.log  # pylint: disable=import-outside-toplevel
         pw_cli.log.install()
     except ImportError:
-        coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
+        coloredlogs.install(level='INFO',
                             level_styles={
                                 'debug': {
                                     'color': 244
@@ -264,6 +269,9 @@ def main(args=None):
                                 }
                             },
                             fmt='%(asctime)s %(levelname)s | %(message)s')
+
+    if args.verbose:
+        _LOG.setLevel(logging.DEBUG)
 
     if run_device_test(args.binary, args.test_timeout, args.openocd_config,
                        args.baud, args.stlink_serial, args.port):

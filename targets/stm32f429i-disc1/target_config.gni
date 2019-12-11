@@ -24,6 +24,9 @@ import("$dir_pigweed/pw_vars_default.gni")
 declare_args() {
   # Specifies the toolchain to use for this build.
   pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m4f_og"
+
+  # Experimental! Enable the pw_test_server for distributed testing.
+  pw_use_test_server = false
 }
 
 # Executable wrapper that includes some baremetal startup code.
@@ -49,6 +52,10 @@ pw_executable_config.bloaty_config_file =
 linker_script_target =
     "$dir_pw_dumb_io_baremetal_stm32f429:linker_script_target"
 
-dir_pw_dumb_io_backend = "$dir_pw_dumb_io_baremetal_stm32f429"
+if (pw_use_test_server) {
+  pw_automatic_test_runner = "stm32f429i_disc1_test_client"
+}
 
+# Facade backends
 dir_pw_cpu_exception_backend = "$dir_pw_cpu_exception_armv7m"
+dir_pw_dumb_io_backend = "$dir_pw_dumb_io_baremetal_stm32f429"

@@ -105,7 +105,7 @@ def main(args=None):
         import pw_cli.log  # pylint: disable=import-outside-toplevel
         pw_cli.log.install()
     except ImportError:
-        coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
+        coloredlogs.install(level='INFO',
                             level_styles={
                                 'debug': {
                                     'color': 244
@@ -115,6 +115,10 @@ def main(args=None):
                                 }
                             },
                             fmt='%(asctime)s %(levelname)s | %(message)s')
+
+    if args.verbose:
+        _LOG.setLevel(logging.DEBUG)
+
     boards = detect_boards()
     if not boards:
         _LOG.info('No attached boards detected')

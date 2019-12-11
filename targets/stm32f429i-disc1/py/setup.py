@@ -36,7 +36,11 @@ setuptools.setup(
             'stm32f429i_disc1_unit_test_runner = '
             '    stm32f429i_disc1_utils.unit_test_runner:main',
             'stm32f429i_disc1_detector = '
-            '    stm32f429i_disc1_utils.stm32f429i_detector:main'
+            '    stm32f429i_disc1_utils.stm32f429i_detector:main',
+            'stm32f429i_disc1_test_server = '
+            '    stm32f429i_disc1_utils.unit_test_server:main',
+            'stm32f429i_disc1_test_client = '
+            '    stm32f429i_disc1_utils.unit_test_client:main',
         ]
     },
     install_requires=['pyserial', 'coloredlogs'],

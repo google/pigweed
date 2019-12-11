@@ -63,3 +63,60 @@ Individual test binaries can be specified with the ``--test`` flag as well.
   $ . env_setup/setup.sh
   # Run test.
   $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
+
+Run affected tests (EXPERIMENTAL)
+---------------------------------
+When writing code that will impact multiple modules, it's helpful to only run
+all tests that are affected by a given code change. Thanks to the GN/ninja
+build, this is possible! This is done by using a pw_test_server that ninja
+can send the tests to as it rebuilds affected targets.
+
+Additionally, this method enables distributed testing. If you connect multiple
+devices, the tests will be run across the attached devices to further speed up
+testing.
+
+
+.. warning::
+
+  This requires pw_test_server has been built and is in your PATH. See the
+  ``pw_test_server`` module for more information.
+
+.. warning::
+
+  At this time device auto-detection only works on Linux, and this takes
+  more work to set up on other operating systems.
+
+Step 1: Start test server
+^^^^^^^^^^^^^^^^^^^^^^^^^
+To allow ninja to properly serialize tests to run on an arbitrary number of
+devices, ninja will send test requests to a server running in the background.
+The first step is to launch this server. By default, the script will attempt
+to automatically detect all attached STM32f429I-DISC1 boards and use them for
+testing. To override this behavior, provide a custom server configuration file
+with ``--server-config``.
+
+.. tip::
+
+  If you unplug or plug in any boards, you'll need to restart the test server
+  for hardware changes to properly be detected.
+
+.. code:: sh
+
+  $ stm32f429i_disc1_test_server
+
+Step 2: Configure GN
+^^^^^^^^^^^^^^^^^^^^
+By default, this hardware target has incremental testing via pw_test_server
+disabled. Enabling this build arg tells GN to send requests to
+
+.. code:: sh
+
+  $ gn args out/disco
+  # Modify and save the args file to use pw_test_server.
+  pw_use_test_server = true
+
+Step 3: Build changes
+^^^^^^^^^^^^^^^^^^^^^
+Whenever you run ``ninja -C out/disco``, affected tests will be built and run on
+the attached device(s). Alternatively, you may use ``pw watch`` to set up
+Pigweed to build/test whenever it sees changes to source files.
