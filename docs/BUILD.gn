@@ -21,15 +21,24 @@ pw_doc_group("core_docs") {
   ]
 }
 
+# Documentation for upstream Pigweed targets.
+group("target_docs") {
+  deps = [
+    "$dir_pigweed/targets/stm32f429i-disc1:target_docs",
+  ]
+}
+
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
     "index.rst",
     "modules.rst",
+    "targets.rst",
   ]
   output_directory = target_gen_dir
   deps = [
     ":core_docs",
+    ":target_docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_build:docs",
     "$dir_pw_docgen:docs",

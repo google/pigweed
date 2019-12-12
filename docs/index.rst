@@ -13,4 +13,5 @@ facilitate easy integration into existing codebases.
 
   docs/embedded_cpp_guide
   docs/style_guide
+  targets
   modules
