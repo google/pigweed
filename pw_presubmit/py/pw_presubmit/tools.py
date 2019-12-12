@@ -42,7 +42,7 @@ pragma_once function for an example.
 """
 
 import argparse
-import collections
+from collections import Counter, defaultdict
 import enum
 import logging
 import re
@@ -52,7 +52,8 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Callable, Dict, Iterable, List, Optional, Sequence
+from typing import Callable, Dict, Iterable, List, NamedTuple, Optional
+from typing import Sequence, Tuple
 from inspect import signature
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -184,7 +185,7 @@ def _box(style, left, middle, right, box=_make_box('><>')):
 
 
 def file_summary(paths: Iterable) -> str:
-    files = collections.Counter(
+    files = Counter(
         os.path.splitext(path)[1] or os.path.basename(path) for path in paths)
 
     if not files:
@@ -230,44 +231,79 @@ class Presubmit:
         self.root: pathlib.Path = pathlib.Path(root)
         self.paths: Sequence[str] = paths
 
-    def run(self, program, keep_going: bool = False) -> bool:
+    def run(self, full_program: Sequence, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
+        program = _apply_filters(full_program, self.paths)
+
         print(_title(f'Presubmit checks for {self.root.name}'))
+        _LOG.info('Running %d of %s on %s in %s', len(program),
+                  plural(full_program, 'check'), plural(self.paths, 'file'),
+                  self.root)
 
-        _LOG.info('Running %s on %s in %s', plural(program, 'check'),
-                  plural(self.paths, 'file'), self.root)
-
-        print(file_summary(self.paths))
         _LOG.debug('Paths:\n%s', '\n'.join(self.paths))
+        print(
+            file_summary(self.paths)
+            or color_yellow('No files are being checked!'))
 
-        passed: List[Callable] = []
-        failed: List[Callable] = []
-        skipped: List[Callable] = []
+        _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in program))
 
         start_time: float = time.time()
+        passed, failed, skipped = _execute_checks(program, keep_going)
+        _log_summary(time.time() - start_time, passed, failed, skipped)
 
-        for i, check in enumerate(program):
-            if not isinstance(check, _Check):
-                check = _Check(check)
-
-            result = check.run(self.paths, i + 1, len(program))
-
-            if result is _Result.PASS:
-                passed.append(check)
-            elif result is _Result.CANCEL:
-                skipped = list(program[i:])
-                break
-            else:
-                failed.append(check)
-
-                if not keep_going:
-                    skipped = list(program[i + 1:])
-                    break
-
-        _log_summary(time.time() - start_time, len(passed), len(failed),
-                     len(skipped))
         return not failed and not skipped
+
+
+def _execute_checks(program, keep_going: bool) -> Tuple[int, int, int]:
+    """Runs presubmit checks; returns (passed, failed, skipped) lists."""
+    passed = failed = 0
+
+    for i, (check, paths) in enumerate(program, 1):
+        result = check.run(paths, i, len(program))
+
+        if result is _Result.PASS:
+            passed += 1
+        elif result is _Result.CANCEL:
+            break
+        else:
+            failed += 1
+            if not keep_going:
+                break
+
+    return passed, failed, len(program) - passed - failed
+
+
+def _apply_filters(program, paths) -> List[Tuple['_Check', List]]:
+    """Returns a list of (check, paths_to_check) for checks that should run."""
+    program = [c if isinstance(c, _Check) else _Check(c) for c in program]
+    filter_to_paths: Dict[_PathFilter, List[str]] = defaultdict(list)
+
+    for check in program:
+        filter_to_paths[check.filter].append(check)
+
+    check_to_paths = _map_checks_to_paths(filter_to_paths, paths)
+    return [(c, check_to_paths[c]) for c in program if c in check_to_paths]
+
+
+def _map_checks_to_paths(filter_to_paths, paths):
+    checks_to_paths = {}
+
+    for filt, checks in filter_to_paths.items():
+        exclude = [re.compile(exp) for exp in filt.exclude]
+
+        filtered_paths = tuple(
+            path for path in paths
+            if any(path.endswith(end) for end in filt.endswith) and not any(
+                exp.fullmatch(path) for exp in exclude))
+
+        for check in checks:
+            if filtered_paths or check.always_run:
+                checks_to_paths[check] = filtered_paths
+            else:
+                _LOG.debug('Skipping "%s": no relevant files', check.name)
+
+    return checks_to_paths
 
 
 def _log_summary(time_s: float, passed: int, failed: int,
@@ -278,7 +314,8 @@ def _log_summary(time_s: float, passed: int, failed: int,
     if failed:
         summary.append(f'{failed} failed')
     if skipped:
-        summary.append(f'{skipped} skipped')
+        summary.append(f'{skipped} did not run')
+    summary_str = ', '.join(summary) or 'nothing was done'
 
     if failed or skipped:
         result_text = _Result.FAIL.colorized(_LEFT, invert=True)
@@ -287,7 +324,7 @@ def _log_summary(time_s: float, passed: int, failed: int,
 
     print(
         _box(_DOUBLE, result_text,
-             f'{passed + failed + skipped} checks: {", ".join(summary)}',
+             f'{passed + failed + skipped} checks: {summary_str}',
              _format_time(time_s)))
 
 
@@ -333,14 +370,12 @@ def add_arguments(parser) -> None:
                         help='Continue instead of aborting when errors occur.')
 
 
-def run_presubmit(
-        program: Sequence[Callable],
-        base: Optional[str] = None,
-        paths: Sequence[str] = (),
-        exclude: Sequence = (),
-        repository: str = '.',
-        keep_going: bool = False,
-) -> bool:
+def run_presubmit(program: Sequence[Callable],
+                  base: Optional[str] = None,
+                  paths: Sequence[str] = (),
+                  exclude: Sequence = (),
+                  repository: str = '.',
+                  keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
     This changes the directory to the root of the Git repository after listing
@@ -395,7 +430,7 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
             'setup.py', '*/setup.py', repo=git_repo_path())
     ]
 
-    package_dirs: dict = collections.defaultdict(list)
+    package_dirs: Dict[str, List[str]] = defaultdict(list)
 
     for path in (os.path.abspath(p) for p in python_paths):
         try:
@@ -408,6 +443,11 @@ def find_python_packages(python_paths) -> Dict[str, List[str]]:
     return package_dirs
 
 
+class _PathFilter(NamedTuple):
+    endswith: Tuple[str, ...] = ('', )
+    exclude: Tuple[str, ...] = ()
+
+
 class _Check:
     """Wraps a presubmit check function.
 
@@ -416,39 +456,35 @@ class _Check:
     """
     def __init__(self,
                  check_function: Callable,
-                 path_filter: Callable = lambda paths: paths,
+                 path_filter: _PathFilter = _PathFilter(),
                  always_run: bool = True):
         self._check: Callable = check_function
-        self._filter: Callable = path_filter
-        self._always_run: bool = always_run
+        self.filter: _PathFilter = path_filter
+        self.always_run: bool = always_run
 
-        # The presubmit uses __name__ as the title for the check. Since _Check
-        # wraps a presubmit function, adopt that function's name.
+        # Since _Check wraps a presubmit function, adopt that function's name.
         self.__name__ = self._check.__name__
 
-    def run(self, paths: Iterable, count: int, total: int) -> _Result:
-        """Filters the paths list and runs the presubmit check with them."""
+    @property
+    def name(self):
+        return self.__name__
 
-        paths = self._filter(paths)
+    def run(self, paths: Iterable, count: int, total: int) -> _Result:
+        """Runs the presubmit check on the provided paths."""
 
         print('\n'.join(
-            _box(_TOP, f'{count}/{total}', self.__name__,
+            _box(_TOP, f'{count}/{total}', self.name,
                  plural(paths, "file")).splitlines()[:-1]))
 
-        if paths or self._always_run:
-            _LOG.debug('[%d/%d] Running %s on %s', count, total, self.__name__,
-                       plural(paths, "file"))
+        _LOG.debug('[%d/%d] Running %s on %s', count, total, self.name,
+                   plural(paths, "file"))
 
-            start_time_s = time.time()
-            result = self._call_function(paths)
-            time_str = _format_time(time.time() - start_time_s)
-            _LOG.debug('%s %s', self.__name__, result.value)
-        else:
-            _LOG.debug('Skipping %s: no affected files', self.__name__)
-            result = _Result.PASS
-            time_str = 'skipped'
+        start_time_s = time.time()
+        result = self._call_function(paths)
+        time_str = _format_time(time.time() - start_time_s)
+        _LOG.debug('%s %s', self.name, result.value)
 
-        print(_box(_BOTTOM, result.colorized(_LEFT), self.__name__, time_str))
+        print(_box(_BOTTOM, result.colorized(_LEFT), self.name, time_str))
 
         return result
 
@@ -463,7 +499,7 @@ class _Check:
                 _LOG.warning('%s', failure)
             return _Result.FAIL
         except Exception as failure:  # pylint: disable=broad-except
-            _LOG.exception('Presubmit check %s failed!', self.__name__)
+            _LOG.exception('Presubmit check %s failed!', self.name)
             return _Result.FAIL
         except KeyboardInterrupt:
             print()
@@ -472,12 +508,12 @@ class _Check:
         return _Result.PASS
 
 
-def _wrap_if_str(value: Iterable[str]) -> Iterable[str]:
-    return [value] if isinstance(value, str) else value
+def _make_tuple(value: Iterable[str]) -> Tuple[str, ...]:
+    return tuple([value] if isinstance(value, str) else value)
 
 
 def filter_paths(endswith: Iterable[str] = (''),
-                 exclude: Iterable = (),
+                 exclude: Iterable[str] = (),
                  always_run: bool = False):
     """Decorator for filtering the paths list for a presubmit check function.
 
@@ -488,23 +524,15 @@ def filter_paths(endswith: Iterable[str] = (''),
     Returns:
         a wrapped version of the presubmit function
     """
-    endswith = _wrap_if_str(endswith)
-    exclude = [re.compile(exp) for exp in _wrap_if_str(exclude)]
-
-    def path_filter(paths: Iterable) -> List:
-        return [
-            path for path in paths
-            if any(path.endswith(end) for end in endswith) and not any(
-                exp.fullmatch(path) for exp in exclude)
-        ]
-
     def filter_paths_for_function(function: Callable):
         if len(signature(function).parameters) != 1:
             raise TypeError('Functions wrapped with @filter_paths must take '
                             f'exactly one argument: {function.__name__} takes '
                             f'{len(signature(function).parameters)}.')
 
-        return _Check(function, path_filter, always_run=always_run)
+        return _Check(function,
+                      _PathFilter(_make_tuple(endswith), _make_tuple(exclude)),
+                      always_run=always_run)
 
     return filter_paths_for_function
 
