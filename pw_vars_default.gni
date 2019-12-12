@@ -59,6 +59,13 @@ pw_unit_test_main = "$dir_pw_unit_test:main"
 # unit tests, such as desktops with multiple cores.
 pw_automatic_test_runner = ""
 
+# Languages for which to generate protobuf code. These are used by the
+# pw_proto_library template to determine which build targets to create.
+#
+# Supported languages:
+#   "cc"
+pw_protobuf_langs = [ "cc" ]
+
 ################################# BACKENDS #####################################
 
 # This section of the file defines empty variables for each of the Pigweed

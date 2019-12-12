@@ -192,6 +192,7 @@ _WATCH_PATTERNS = (
     '*.gni',
     '*.h',
     '*.ld',
+    '*.proto',
     '*.py',
     '*.rst',
 )

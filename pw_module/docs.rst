@@ -91,6 +91,10 @@ tl;dr example module structure
     size_report/use_case_a.cc
     size_report/use_case_b.cc
 
+    # Protobuf definition files go into <module>_protos/...
+    pw_foo_protos/foo.proto
+    pw_foo_protos/internal/zap.proto
+
     # Other directories are fine, but should be private.
     data/...
     graphics/...
