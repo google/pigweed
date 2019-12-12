@@ -58,10 +58,6 @@ class COBALT_CobaltLoggerTest : public ::gtest::TestLoopFixture {
                         int64_t bytes, LogMemoryUsageCallback callback) override {
       FAIL() << "Mock method unimplemented";
     };
-
-    void LogString(uint32_t metric_id, ::std::string s, LogStringCallback callback) override {
-      FAIL() << "Mock method unimplemented";
-    };
     void StartTimer(uint32_t metric_id, uint32_t event_code, ::std::string component,
                     ::std::string timer_id, uint64_t timestamp, uint32_t timeout_s,
                     StartTimerCallback callback) override {
