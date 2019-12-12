@@ -1,0 +1,59 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_build/python_script.gni")
+
+# Declare a facade.
+# A Pigweed facade is an API layer that has a single implementation it must link
+# against. Typically this will be done by pointing `dir_pw_[module]_backend` at
+# a backend implementation for that module.
+#
+# Example facade:
+#
+#   pw_facade("module_name") {
+#     backend = dir_module_name_backend
+#     public_deps = [
+#       ":module_api_layer"
+#     ]
+#   }
+#
+# Args:
+#  - backend: the dependency that implements this facade
+#
+template("pw_facade") {
+  if (invoker.backend == "") {
+    # If backend is not set to anything, emit an error.
+    pw_python_script(target_name) {
+      stamp = true
+      script = "$dir_pw_build/py/null_backend.py"
+      args = [ target_name ]
+      not_needed(invoker, "*")
+    }
+  } else {
+    source_set(target_name) {
+      # If the backend is set, create a new source_set.
+      _ignore_vars = [
+        "backend",
+        "deps",
+      ]
+      if (defined(invoker.deps)) {
+        deps = invoker.deps
+      } else {
+        deps = []
+      }
+      deps += [ invoker.backend ]
+      forward_variables_from(invoker, "*", _ignore_vars)
+    }
+  }
+}

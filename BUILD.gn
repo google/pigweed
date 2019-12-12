@@ -14,12 +14,25 @@
 
 import("$dir_pw_unit_test/test.gni")
 
-# All Pigweed modules that can be built using gn.
+# By default, Pigweed will build this target when invoking ninja.
+group("default") {
+  deps = [
+    ":pw_module_tests",
+    "$dir_pigweed/docs",
+  ]
+}
+
+group("pw_facades") {
+  deps = [
+    "$dir_pw_dumb_io",
+  ]
+}
+
+# All Pigweed modules that can be built using gn. This is not built by default.
 group("pw_modules") {
   deps = [
     "$dir_pigweed/docs",
     "$dir_pw_bloat",
-    "$dir_pw_dumb_io",
     "$dir_pw_preprocessor",
     "$dir_pw_span",
     "$dir_pw_status",

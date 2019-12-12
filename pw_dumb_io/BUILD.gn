@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
 
 config("default_config") {
@@ -42,12 +43,10 @@ source_set("default_putget_bytes") {
   ]
 }
 
-source_set("pw_dumb_io") {
+pw_facade("pw_dumb_io") {
+  backend = dir_pw_dumb_io_backend
   public_deps = [
     ":facade",
-  ]
-  deps = [
-    "$dir_pw_dumb_io_backend",
   ]
 }
 

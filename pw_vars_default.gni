@@ -67,5 +67,5 @@ pw_automatic_test_runner = ""
 # All of these should default to empty strings. For target-specific defaults,
 # modify these variables in a target confiruation file.
 
-# Backend for the dir_pw_dumb_io module.
+# Backend for the pw_dumb_io module.
 dir_pw_dumb_io_backend = ""
