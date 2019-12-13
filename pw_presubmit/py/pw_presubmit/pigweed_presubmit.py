@@ -347,6 +347,8 @@ PROGRAMS: Dict[str, Sequence] = {
 
 
 def argument_parser(parser=None) -> argparse.ArgumentParser:
+    """Create argument parser."""
+
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)
 
@@ -370,6 +372,14 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
                            choices=PROGRAMS,
                            default='full',
                            help='Which presubmit program to run')
+
+    exclusive.add_argument(
+        '--step',
+        choices=[x.__name__ for x in PROGRAMS['full']],
+        action='append',
+        help='Provide explicit steps instead of running a predefined program.',
+    )
+
     pw_presubmit.add_arguments(parser)
 
     return parser
@@ -381,8 +391,11 @@ def main(
         clean_py: bool,
         install: bool,
         repository: str,
+        step: Sequence[str],
         **presubmit_args,
 ) -> int:
+    """Entry point for presubmit."""
+
     environment = pw_presubmit.git_repo_path(PRESUBMIT_PREFIX, repo=repository)
     _LOG.debug('Using environment at %s', environment)
 
@@ -396,7 +409,11 @@ def main(
                      presubmit_args['repository'])
         return 0
 
-    if pw_presubmit.run_presubmit(PROGRAMS[program],
+    program = PROGRAMS[program]
+    if step:
+        program = [x for x in PROGRAMS['full'] if x.__name__ in step]
+
+    if pw_presubmit.run_presubmit(program,
                                   repository=repository,
                                   **presubmit_args):
         return 0
