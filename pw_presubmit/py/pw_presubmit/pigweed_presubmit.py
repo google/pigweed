@@ -355,20 +355,21 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     parser.add_argument(
         '--clean',
         action='store_true',
-        help='Deletes the entire .presubmit directory before starting')
+        help='Delete the entire .presubmit directory before starting.')
     parser.add_argument(
         '--clean-py',
         action='store_true',
-        help='Deletes the Python virtualenv at .presubmit/venv before starting'
+        help='Delete the Python virtualenv at .presubmit/venv before starting.'
     )
 
     exclusive = parser.add_mutually_exclusive_group()
     exclusive.add_argument(
         '--install',
         action='store_true',
-        help='Installs the presubmit as a Git pre-push hook and exits')
+        help='Install the presubmit as a Git pre-push hook and exits.')
     exclusive.add_argument('-p',
                            '--program',
+                           dest='program_name',
                            choices=PROGRAMS,
                            default='full',
                            help='Which presubmit program to run')
@@ -386,17 +387,17 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
 
 
 def main(
-        program: str,
+        program_name: str,
         clean: bool,
         clean_py: bool,
         install: bool,
-        repository: str,
+        directory: str,
         step: Sequence[str],
         **presubmit_args,
 ) -> int:
     """Entry point for presubmit."""
 
-    environment = pw_presubmit.git_repo_path(PRESUBMIT_PREFIX, repo=repository)
+    environment = pw_presubmit.git_repo_path(PRESUBMIT_PREFIX, repo=directory)
     _LOG.debug('Using environment at %s', environment)
 
     if clean and environment.exists():
@@ -406,15 +407,15 @@ def main(
 
     if install:
         install_hook(__file__, 'pre-push', ['--base', 'origin/master'],
-                     presubmit_args['repository'])
+                     presubmit_args['directory'])
         return 0
 
-    program = PROGRAMS[program]
+    program = PROGRAMS[program_name]
     if step:
         program = [x for x in PROGRAMS['full'] if x.__name__ in step]
 
     if pw_presubmit.run_presubmit(program,
-                                  repository=repository,
+                                  directory=directory,
                                   **presubmit_args):
         return 0
 

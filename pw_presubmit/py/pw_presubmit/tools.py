@@ -359,11 +359,12 @@ def add_arguments(parser) -> None:
 
     add_path_arguments(parser)
     parser.add_argument(
-        '-r',
-        '--repository',
+        '-C',
+        dest='directory',
         default='.',
-        help=('Path to the repository in which to run the checks; '
-              "defaults to the current directory's Git repo."))
+        help=(
+            'Change to this directory before resolving paths or running the '
+            'presubmit. Presubmit checks must be run from a Git repository.'))
     parser.add_argument('-k',
                         '--keep-going',
                         action='store_true',
@@ -374,7 +375,7 @@ def run_presubmit(program: Sequence[Callable],
                   base: Optional[str] = None,
                   paths: Sequence[str] = (),
                   exclude: Sequence = (),
-                  repository: str = '.',
+                  directory=None,
                   keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -386,18 +387,21 @@ def run_presubmit(program: Sequence[Callable],
         base: optional base Git commit to list files against
         paths: optional list of paths to run the presubmit checks against
         exclude: regular expressions of paths to exclude from checks
-        repository: path to the repository in which to run the checks
+        directory: change to this directory before resolving paths or running
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
         True if all presubmit checks succeeded
     """
-    if not is_git_repo(repository):
+    if directory:
+        os.chdir(directory)
+
+    if not is_git_repo():
         _LOG.critical('Presubmit checks must be run from a Git repo')
         return False
 
     files = list_git_files(base, paths, exclude)
-    root = git_repo_path(repo=repository)
+    root = git_repo_path()
 
     if not root.samefile(pathlib.Path.cwd()):
         _LOG.info('Checking files in the %s subdirectory of the %s repository',
