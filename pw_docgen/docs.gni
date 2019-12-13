@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_script.gni")
 
 # Defines a group of documentation files and assets.
@@ -38,17 +39,15 @@ template("pw_doc_group") {
     _all_deps += invoker.report_deps
   }
 
-  # Creates an action which depends on all of the source and input files so that
-  # docs are rebuilt on file modifications. The action does not do anything.
-  pw_python_script(target_name) {
+  # Create a group containing the source and input files so that docs are
+  # rebuilt on file modifications.
+  pw_input_group(target_name) {
     metadata = {
       pw_doc_sources = rebase_path(invoker.sources, root_build_dir)
       pw_doc_inputs = rebase_path(_inputs, root_build_dir)
     }
     deps = _all_deps
-    script = "$dir_pw_build/py/nop.py"
     inputs = invoker.sources + _inputs
-    stamp = true
   }
 }
 
