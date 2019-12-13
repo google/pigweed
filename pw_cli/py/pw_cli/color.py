@@ -13,6 +13,9 @@
 # the License.
 """Color codes for use by rest of pw_cli."""
 
+import sys
+from typing import Optional, Union
+
 
 def _make_color(*codes):
     # Apply all the requested ANSI color codes. Note that this is unbalanced
@@ -23,10 +26,9 @@ def _make_color(*codes):
     return lambda msg: f'{start}{msg}{reset}'
 
 
-# TODO(keir): Totally replace this Color object with something more complete
-# like the 'colorful' module.
-# pylint: disable=too-few-public-methods
-class Color:
+# TODO(keir): Totally replace this object with something more complete like the
+# 'colorful' module.
+class _Color:  # pylint: disable=too-few-public-methods
     """Helpers to surround text with ASCII color escapes"""
     red = _make_color(31, 1)
     bold_red = _make_color(30, 41)
@@ -41,4 +43,18 @@ class Color:
     black_on_white = _make_color(30, 47)  # black fg white bg
 
 
-# pylint: enable=too-few-public-methods
+class _NoColor:
+    """Fake version of the _Color class that doesn't colorize."""
+    def __getattr__(self, _):
+        return str
+
+
+def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
+    """Returns an object for colorizing strings.
+
+    By default, the object only colorizes if both stderr and stdout are TTYs.
+    """
+    if enabled is None:
+        enabled = sys.stdout.isatty() and sys.stderr.isatty()
+
+    return _Color if enabled else _NoColor()

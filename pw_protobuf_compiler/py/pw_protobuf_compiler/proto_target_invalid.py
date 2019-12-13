@@ -19,14 +19,14 @@ import sys
 
 from typing import Optional
 
-from pw_cli.color import Color
+from pw_cli.color import colors
 import pw_cli.log
 
 _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-        parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
@@ -52,7 +52,7 @@ def main() -> int:
 
     _LOG.error('')
     _LOG.error('The target %s is not a compiled protobuf library.',
-               Color.bold_white(args.target))
+               colors().bold_white(args.target))
     _LOG.error('')
     _LOG.error('A different target is generated for each supported language.')
     _LOG.error('Depend on one of the following targets instead:')

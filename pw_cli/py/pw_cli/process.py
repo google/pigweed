@@ -18,9 +18,10 @@ import logging
 import os
 import shlex
 
-from pw_cli.color import Color
+import pw_cli.color
 import pw_cli.log
 
+_COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 
 # Environment variable passed down to subprocesses to indicate that they are
@@ -51,7 +52,7 @@ async def run_async(*args: str, silent: bool = False) -> int:
                 break
 
             _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[%s] %s',
-                     Color.bold_white(process.pid),
+                     _COLOR.bold_white(process.pid),
                      line.decode().rstrip())
 
     status = await process.wait()

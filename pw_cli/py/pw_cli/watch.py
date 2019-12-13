@@ -28,9 +28,10 @@ from watchdog.observers import Observer
 from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
+import pw_cli.color
 import pw_cli.plugins
-from pw_cli.color import Color as _Color
 
+_COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 
 _PASS_MESSAGE = """
@@ -155,9 +156,9 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         print(' |')
         for (succeeded, build_dir) in zip(builds_succeeded, self.build_dirs):
             if succeeded:
-                slug = _Color.green('OK  ')
+                slug = _COLOR.green('OK  ')
             else:
-                slug = _Color.red('FAIL')
+                slug = _COLOR.red('FAIL')
 
             print(f' |   {slug}  {build_dir}')
         print(' |')
@@ -165,9 +166,9 @@ class PigweedBuildWatcher(FileSystemEventHandler):
 
         # Show a large color banner so it is obvious what the overall result is.
         if all(builds_succeeded):
-            print(_Color.green(_PASS_MESSAGE))
+            print(_COLOR.green(_PASS_MESSAGE))
         else:
-            print(_Color.red(_FAIL_MESSAGE))
+            print(_COLOR.red(_FAIL_MESSAGE))
 
     def handle_matched_event(self, matching_path):
         if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
@@ -298,7 +299,7 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
     # Make a nice non-logging banner to motivate the user.
     print()
-    print(_Color.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
+    print(_COLOR.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
     print()
 
     try:

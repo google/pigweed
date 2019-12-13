@@ -15,9 +15,11 @@
 
 import logging
 import os
+import sys
+from typing import Optional
 
+import pw_cli.color
 import pw_cli.plugins
-from pw_cli.color import Color as _Color
 
 # Log level used for captured output of a subprocess run through pw.
 LOGLEVEL_STDOUT = 21
@@ -38,15 +40,18 @@ def main():
     _LOG.debug('Adding 1 to i')
 
 
-def install():
+def install(use_color: Optional[bool] = None) -> None:
     """Configure the system logger for the default pw command log format."""
+
+    colors = pw_cli.color.colors(
+        sys.stderr.isatty() if use_color is None else use_color)
 
     pw_subprocess = os.getenv('PW_SUBPROCESS')
     if pw_subprocess is None:
         # This applies a gray background to the time to make the log lines
         # distinct from other input, in a way that's easier to see than plain
         # colored text.
-        timestamp_fmt = _Color.black_on_white('%(asctime)s') + ' '
+        timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
     elif pw_subprocess == '1':
         # If the logger is being run in the context of a pw subprocess, the
         # time and date are omitted (since pw_cli.process will provide them).
@@ -63,12 +68,12 @@ def install():
     # Color the logs using ANSI codes.
     # pylint: disable=bad-whitespace
     # yapf: disable
-    logging.addLevelName(logging.CRITICAL, _Color.bold_red('CRT'))
-    logging.addLevelName(logging.ERROR,    _Color.red     ('ERR'))
-    logging.addLevelName(logging.WARNING,  _Color.yellow  ('WRN'))
-    logging.addLevelName(logging.INFO,     _Color.magenta ('INF'))
-    logging.addLevelName(LOGLEVEL_STDOUT,  _Color.cyan    ('OUT'))
-    logging.addLevelName(logging.DEBUG,    _Color.blue    ('DBG'))
+    logging.addLevelName(logging.CRITICAL, colors.bold_red('CRT'))
+    logging.addLevelName(logging.ERROR,    colors.red     ('ERR'))
+    logging.addLevelName(logging.WARNING,  colors.yellow  ('WRN'))
+    logging.addLevelName(logging.INFO,     colors.magenta ('INF'))
+    logging.addLevelName(LOGLEVEL_STDOUT,  colors.cyan    ('OUT'))
+    logging.addLevelName(logging.DEBUG,    colors.blue    ('DBG'))
     # yapf: enable
     # pylint: enable=bad-whitespace
 

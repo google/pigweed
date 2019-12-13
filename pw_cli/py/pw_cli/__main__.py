@@ -26,8 +26,8 @@ import logging
 import importlib
 import pkgutil
 
+from pw_cli.color import colors
 import pw_cli.log
-from pw_cli.color import Color
 
 _LOG = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def main(raw_args=None):
     pw_cli.log.install()
 
     # Start with the most critical part of the Pigweed command line tool.
-    print(Color.magenta(_PIGWEED_BANNER))
+    print(colors().magenta(_PIGWEED_BANNER))
 
     # Add commands and their parsers.
     parser = argparse.ArgumentParser(
