@@ -104,7 +104,7 @@ def main() -> int:
 
     args = parse_args()
     if not args.command or args.command[0] != '--':
-        _LOG.error(f'{sys.argv[0]} requires a command to run')
+        _LOG.error('%s requires a command to run', sys.argv[0])
         return 1
 
     try:
@@ -113,21 +113,16 @@ def main() -> int:
             for arg in args.command[1:]
         ]
     except FileNotFoundError as err:
-        _LOG.error(f'{sys.argv[0]}: {err}')
+        _LOG.error('%s: %s', sys.argv[0], err)
         return 1
 
     command = [sys.executable] + resolved_command
-    _LOG.debug('RUN ' + ' '.join(shlex.quote(arg) for arg in command))
-
-    # Add PW_SUBPROCESS to suppress unnecessary extra log headers; supported by
-    # most PW subcommands.
-    new_env = os.environ.copy()
-    new_env['PW_SUBPROCESS'] = '1'
+    _LOG.debug('RUN %s', shlex.join(command))
 
     try:
-        status = subprocess.call(command, env=new_env)
+        status = subprocess.call(command)
     except subprocess.CalledProcessError as err:
-        _LOG.error(f'{sys.argv[0]}: {err}')
+        _LOG.error('%s: %s', sys.argv[0], err)
         return 1
 
     if status == 0 and args.touch:
