@@ -53,7 +53,8 @@ linker_script_target =
     "$dir_pw_dumb_io_baremetal_stm32f429:linker_script_target"
 
 if (pw_use_test_server) {
-  pw_automatic_test_runner = "stm32f429i_disc1_test_client"
+  pw_automatic_test_runner =
+      get_path_info("py/stm32f429i_disc1_utils/unit_test_client.py", "abspath")
 }
 
 # Facade backends

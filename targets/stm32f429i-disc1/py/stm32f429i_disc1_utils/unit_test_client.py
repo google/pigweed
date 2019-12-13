@@ -15,10 +15,8 @@
 """Launch a pw_test_server client that sends a test request."""
 
 import argparse
+import subprocess
 import sys
-
-import pw_cli.process
-import pw_cli.log
 
 _TEST_SERVER_COMMAND = 'pw_test_server'
 
@@ -42,13 +40,12 @@ def launch_client(binary: str, server_port: int) -> int:
     if server_port is not None:
         cmd.extend(['-port', str(server_port)])
 
-    return pw_cli.process.run(*cmd)
+    return subprocess.call(cmd)
 
 
 def main():
     """Launch a test by sending a request to a pw_test_server."""
     args = parse_args()
-    pw_cli.log.install()
     exit_code = launch_client(args.binary, args.server_port)
     sys.exit(exit_code)
 

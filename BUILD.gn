@@ -17,7 +17,7 @@ import("$dir_pw_unit_test/test.gni")
 # By default, Pigweed will build this target when invoking ninja.
 group("default") {
   deps = [
-    ":pw_module_tests",
+    ":pw_module_tests_run",
     "$dir_pigweed/docs",
   ]
 }
