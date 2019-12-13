@@ -778,7 +778,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedConnectableEvent) {
   test_device()->AddPeer(std::move(fake_peer));
 
   int count = 0;
-  discovery_manager()->set_bonded_peer_connectable_callback([&](const auto&) { count++; });
+  discovery_manager()->set_peer_connectable_callback([&](const auto&) { count++; });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   // Start discovery. Advertisements from the peer should be ignored since the
@@ -1097,7 +1097,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanOnlyHandlesEventsFromBon
   EXPECT_EQ(2u, peer_cache()->count());
 
   int count = 0;
-  discovery_manager()->set_bonded_peer_connectable_callback([&](const auto& id) {
+  discovery_manager()->set_peer_connectable_callback([&](const auto& id) {
     count++;
     EXPECT_TRUE(id == kBondedPeerId1 || id == kBondedPeerId2) << id.ToString();
   });

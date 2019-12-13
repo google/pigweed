@@ -483,7 +483,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   // Initialize the LE manager objects
   le_discovery_manager_ =
       std::make_unique<LowEnergyDiscoveryManager>(hci_, hci_le_scanner_.get(), &peer_cache_);
-  le_discovery_manager_->set_bonded_peer_connectable_callback(
+  le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, data_domain_, gatt_);

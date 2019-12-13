@@ -200,9 +200,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   //
   // Note: this callback can be triggered during a background scan as well as
   // general discovery.
-  using BondedPeerConnectableCallback = fit::function<void(PeerId id)>;
-  void set_bonded_peer_connectable_callback(BondedPeerConnectableCallback callback) {
-    bonded_conn_cb_ = std::move(callback);
+  using PeerConnectableCallback = fit::function<void(PeerId id)>;
+  void set_peer_connectable_callback(PeerConnectableCallback callback) {
+    connectable_cb_ = std::move(callback);
   }
 
  private:
@@ -247,7 +247,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // Called when a directed connectable advertisement is received during an
   // active or passive scan.
-  BondedPeerConnectableCallback bonded_conn_cb_;
+  PeerConnectableCallback connectable_cb_;
 
   // The list of currently pending calls to start discovery.
   std::queue<SessionCallback> pending_;

@@ -177,9 +177,9 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto peer = peer_cache_->FindByAddress(result.address);
-  if (peer && peer->bonded() && bonded_conn_cb_) {
-    bt_log(SPEW, "gap-le", "found connectable bonded peer (id: %s)", bt_str(peer->identifier()));
-    bonded_conn_cb_(peer->identifier());
+  if (peer && connectable_cb_) {
+    bt_log(SPEW, "gap-le", "found connectable peer (id: %s)", bt_str(peer->identifier()));
+    connectable_cb_(peer->identifier());
   }
 
   // Do not process further during a passive scan.
@@ -225,14 +225,14 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
     return;
   }
 
-  if (!peer->le() || !peer->le()->bonded()) {
-    bt_log(TRACE, "gap-le", "rejecting connection request from unbonded peripheral: %s",
+  if (!peer->le()) {
+    bt_log(TRACE, "gap-le", "rejecting connection request from non-LE peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
-  if (bonded_conn_cb_) {
-    bonded_conn_cb_(peer->identifier());
+  if (connectable_cb_) {
+    connectable_cb_(peer->identifier());
   }
 }
 
