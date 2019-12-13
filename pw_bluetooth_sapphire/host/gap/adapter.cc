@@ -625,9 +625,13 @@ void Adapter::OnTransportClosed() {
 void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
 
-  // TODO(BT-888): We shouldn't always accept connection requests from all
-  // bonded peripherals (e.g. if one is explicitly disconnected). Maybe add an
-  // "auto_connect()" property to Peer?
+  auto peer = peer_cache()->FindById(peer_id);
+
+  if (peer && peer->le() && !peer->le()->should_auto_connect()) {
+    bt_log(TRACE, "gap", "ignoring auto-connection (peer->should_autoconnect() is false)");
+    return;
+  }
+
   auto self = weak_ptr_factory_.GetWeakPtr();
   le_connection_manager_->Connect(peer_id, [self](auto status, auto conn) {
     if (!self) {

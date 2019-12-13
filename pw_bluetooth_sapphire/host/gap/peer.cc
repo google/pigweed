@@ -33,7 +33,9 @@ std::string ConnectionStateToString(Peer::ConnectionState state) {
 }  // namespace
 
 Peer::LowEnergyData::LowEnergyData(Peer* owner)
-    : peer_(owner), conn_state_(ConnectionState::kNotConnected) {
+    : peer_(owner),
+      conn_state_(ConnectionState::kNotConnected),
+      auto_conn_behavior_(AutoConnectBehavior::kAlways) {
   ZX_DEBUG_ASSERT(peer_);
 }
 

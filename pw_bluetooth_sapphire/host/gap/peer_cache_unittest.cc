@@ -379,6 +379,23 @@ TEST_F(GAP_PeerCacheTest, AppendScanResponseOnAdvertisingData) {
   EXPECT_TRUE(ContainersEqual(kAppended, peer()->le()->advertising_data()));
 }
 
+TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
+  ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
+
+  // As documented `should_auto_connect` is config/metadata, ie. its value
+  // is not impacted whether the peer is currently connectable or not.
+  EXPECT_TRUE(peer()->le()->should_auto_connect());
+
+  // Connecting peer leaves `should_auto_connect` unaffected.
+  sm::PairingData data;
+  data.ltk = sm::LTK();
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+  peer()->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+
+  EXPECT_TRUE(peer()->le()->should_auto_connect());  
+}
+
 class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
  public:
   void SetUp() override {

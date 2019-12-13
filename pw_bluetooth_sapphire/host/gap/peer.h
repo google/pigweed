@@ -49,6 +49,19 @@ class Peer final {
     kConnected
   };
 
+  // Description of auto-connect behaviors.
+  //
+  // By default, the stack will auto-connect to any bonded devices as soon as
+  // soon as they become available.
+  enum class AutoConnectBehavior {
+    // Always auto-connect device when possible.
+    kAlways,
+
+    // Ignore auto-connection possibilities, but reset to kAlways after the next
+    // manual connection.
+    kSkipUntilNextConnection,
+  };
+
   // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
    public:
@@ -58,6 +71,7 @@ class Peer final {
     ConnectionState connection_state() const { return conn_state_; }
     bool connected() const { return connection_state() == ConnectionState::kConnected; }
     bool bonded() const { return bond_data_.has_value(); }
+    bool should_auto_connect() const { return auto_conn_behavior_ == AutoConnectBehavior::kAlways; }
 
     // Advertising (and optionally scan response) data obtained during
     // discovery.
@@ -126,6 +140,8 @@ class Peer final {
     DynamicByteBuffer adv_data_buffer_;
 
     std::optional<sm::PairingData> bond_data_;
+
+    AutoConnectBehavior auto_conn_behavior_ = AutoConnectBehavior::kAlways;
 
     // TODO(armansito): Store all keys
     // TODO(armansito): Store GATT service UUIDs.
