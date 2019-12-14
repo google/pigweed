@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""The Pigweed meta-module, with documentation about modules themselves."""
 
 # Note that these imports will trigger plugin registrations.
 import pw_module.check

@@ -120,7 +120,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
                 break
 
         if matching_path:
-            self.on_any_event(matching_path)
+            self.handle_matched_event(matching_path)
 
     def run_builds(self):
         """Run all the builds in serial and capture pass/fail for each."""
@@ -169,7 +169,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         else:
             print(_Color.red(_FAIL_MESSAGE))
 
-    def on_any_event(self, matching_path):
+    def handle_matched_event(self, matching_path):
         if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
             if matching_path:
                 _LOG.info('Filesystem change: %s', matching_path)
@@ -188,7 +188,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
             else:
                 _LOG.debug('State: COOLDOWN -> WAITING (cooldown expired)')
                 self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
-                self.on_any_event(matching_path)  # Retrigger.
+                self.handle_matched_event(matching_path)  # Retrigger.
 
 
 _WATCH_PATTERN_DELIMITER = ','
