@@ -73,8 +73,8 @@ def _diff(path, original: bytes, formatted: bytes) -> str:
             f'{path}  (original)', f'{path}  (reformatted)'))
 
 
-def _diff_formatted(path,
-                    formatter: Callable[[str, bytes], bytes]) -> Optional[str]:
+def _diff_formatted(path, formatter: Callable[[str, bytes],
+                                              bytes]) -> Optional[str]:
     """Returns a diff comparing a file to its formatted version."""
     with open(path, 'rb') as fd:
         original = fd.read()
@@ -84,8 +84,8 @@ def _diff_formatted(path,
     return None if formatted == original else _diff(path, original, formatted)
 
 
-def _check_files(files,
-                 formatter: Callable[[str, bytes], bytes]) -> Dict[str, str]:
+def _check_files(files, formatter: Callable[[str, bytes],
+                                            bytes]) -> Dict[str, str]:
     errors = {}
 
     for path in files:
@@ -185,13 +185,21 @@ def fix_py_format(files):
 
 def print_format_check(errors: Dict[str, str]) -> Dict[str, str]:
     """Prints and returns the result of a check_*_format function."""
-    if errors:
-        for diff in errors.values():
-            print(diff, end='')
+    if not errors:
+        return
 
-        _LOG.warning('Files with formatting errors: %d', len(errors))
-        for path in errors:
-            _LOG.warning('    %s', path)
+    # Show the format fixing diff suggested by the tooling (with colors).
+    _LOG.warning('Found %d files with formatting errors. Format changes:',
+                 len(errors))
+    for diff in errors.values():
+        print(diff, end='')
+
+    # Show a copy-and-pastable command to fix the issues.
+    path_relative_to_cwd = (
+        lambda p: Path(p).resolve().relative_to(Path('.').resolve()))
+    message = (f'  pw format --fix {path_relative_to_cwd(path)}'
+               for path in errors)
+    _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
 
     return errors
 
