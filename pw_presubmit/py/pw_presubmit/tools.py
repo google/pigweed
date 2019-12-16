@@ -76,26 +76,27 @@ def plural(items_or_count, singular: str, count_format='') -> str:
     return f'{num} {singular}{"" if count == 1 else "s"}'
 
 
-def git_stdout(*args: str, repo='.') -> str:
+def git_stdout(*args: str, repo: str = '.') -> str:
     return subprocess.run(('git', '-C', repo, *args),
                           stdout=subprocess.PIPE,
                           check=True).stdout.decode().strip()
 
 
-def _git_ls_files(*args: str, repo='.') -> Sequence[str]:
+def _git_ls_files(*args: str, repo: str = '.') -> Sequence[str]:
     return [
         os.path.abspath(os.path.join(repo, path))
-        for path in git_stdout('-C', repo, 'ls-files', '--', *args).split()
+        for path in git_stdout('ls-files', '--', *args, repo=repo).split()
     ]
 
 
 def git_diff_names(commit: str = 'HEAD',
-                   paths: Sequence[str] = ()) -> Sequence[str]:
+                   paths: Sequence[str] = (),
+                   repo: str = '.') -> Sequence[str]:
     """Returns absolute paths of files changed since the specified commit."""
     root = git_repo_path()
     return [
         os.path.join(root, path) for path in git_stdout(
-            'diff', '--name-only', commit, '--', *paths).split()
+            'diff', '--name-only', commit, '--', *paths, repo=repo).split()
     ]
 
 
@@ -103,13 +104,17 @@ def list_git_files(
         commit: Optional[str] = None,
         paths: Sequence[str] = (),
         exclude: Sequence = (),
+        repo: str = '.',
 ) -> Sequence[str]:
     """Lists files with git ls-files or git diff --name-only.
 
     This function may only be called if os.getcwd() is in a Git repository.
     """
 
-    files = git_diff_names(commit, paths) if commit else _git_ls_files(*paths)
+    if commit:
+        files = git_diff_names(commit, paths, repo=repo)
+    else:
+        files = _git_ls_files(*paths, repo=repo)
     return sorted(
         set(path for path in files
             if not any(exp.search(path) for exp in exclude)))
@@ -122,8 +127,8 @@ def is_git_repo(path='.') -> bool:
 
 def git_repo_path(*paths, repo: str = '.') -> pathlib.Path:
     """Returns a path relative to a Git repository's root."""
-    return pathlib.Path(git_stdout('-C', repo, 'rev-parse',
-                                   '--show-toplevel')).joinpath(*paths)
+    return pathlib.Path(git_stdout('rev-parse', '--show-toplevel',
+                                   repo=repo)).joinpath(*paths)
 
 
 def _make_color(*codes: int):
