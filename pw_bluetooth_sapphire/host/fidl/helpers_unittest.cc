@@ -7,7 +7,9 @@
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
+#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
@@ -173,6 +175,19 @@ TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
   EXPECT_EQ("fuchsia", host_info.local_name());
   EXPECT_FALSE(host_info.discoverable());
   EXPECT_FALSE(host_info.discovering());
+}
+
+TEST(FIDL_HelpersTest, SecurityLevelFromFidl) {
+  using FidlSecurityLevel = fuchsia::bluetooth::control::PairingSecurityLevel;
+  const FidlSecurityLevel level = FidlSecurityLevel::AUTHENTICATED;
+  EXPECT_EQ(bt::sm::SecurityLevel::kAuthenticated, SecurityLevelFromFidl(level));
+}
+
+TEST(FIDL_HelpersTest, SecurityLevelFromBadFidlFails) {
+  using FidlSecurityLevel = fuchsia::bluetooth::control::PairingSecurityLevel;
+  int nonexistant_security_level = 500000;
+  auto level = static_cast<FidlSecurityLevel>(nonexistant_security_level);
+  EXPECT_EQ(std::nullopt, SecurityLevelFromFidl(level));
 }
 
 }  // namespace

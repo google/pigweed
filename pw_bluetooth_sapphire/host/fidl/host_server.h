@@ -14,14 +14,17 @@
 
 #include <fbl/macros.h>
 
+#include "fuchsia/bluetooth/cpp/fidl.h"
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/lib/fidl/hanging_getter.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -60,6 +63,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate> delegate) override;
   void Connect(::std::string device_id, ConnectCallback callback) override;
   void Disconnect(::std::string device_id, DisconnectCallback callback) override;
+  void Pair(::fuchsia::bluetooth::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
+            PairCallback callback) override;
   void Forget(::std::string peer_id, ForgetCallback callback) override;
 
   void RequestLowEnergyCentral(
@@ -98,6 +103,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void ConnectLowEnergy(bt::PeerId id, ConnectCallback callback);
   void ConnectBrEdr(bt::PeerId peer_id, ConnectCallback callback);
 
+  void PairLowEnergy(bt::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
+                     PairCallback callback);
+  void PairBrEdr(bt::PeerId id, PairCallback callback);
   // Called when a connection is established to a peer, either when initiated
   // by a user via a client of Host.fidl, or automatically by the GAP adapter
   void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect);

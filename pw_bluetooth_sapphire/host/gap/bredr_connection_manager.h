@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -141,6 +142,11 @@ class BrEdrConnectionManager final {
   // TODO(BT-820) - implement a timeout
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
+  // Initiate pairing to the peer with |peer_id| using the bondable preference. All pairing config,
+  // such as authentication requirements, bonding preference, etc. will be determined by defaults.
+  // |callback| will be called with the result of the procedure, successful or not.
+  void Pair(PeerId peer_id, hci::StatusCallback callback);
+
   // Called when the controller can not begin a new connection.
   void OnConnectFailure(hci::Status status, PeerId peer_id);
 
@@ -238,6 +244,12 @@ class BrEdrConnectionManager final {
   // will be decoded for its status, which is passed to |cb|.
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
+
+  // Acts as both a command to initiate pairing and a query to see if that pairing was actually
+  // initiated. If true, the connnection was not already pairing, and this function has started the
+  // pairing process. If false, the PairingState could not start pairing.
+  bool InitiatesPairing(PeerId peer_id, BrEdrConnection* connection, hci::ConnectionHandle handle,
+                        PairingState::StatusCallback pairing_callback);
 
   using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 

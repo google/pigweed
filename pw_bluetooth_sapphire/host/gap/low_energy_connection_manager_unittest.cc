@@ -11,6 +11,7 @@
 
 #include <fbl/macros.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -19,7 +20,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -32,6 +36,7 @@ using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
 using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using l2cap::testing::FakeChannel;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
@@ -1123,6 +1128,76 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(connected_peers().empty());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, PairUnconnectedPeer) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+  ASSERT_EQ(peer_cache()->count(), 1u);
+  uint count_cb_called = 0;
+  auto cb = [&count_cb_called](sm::Status status) {
+    ASSERT_EQ(status.error(), bt::HostError::kNotFound);
+    count_cb_called++;
+  };
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, cb);
+  ASSERT_EQ(count_cb_called, 1u);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, Pair) {
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, no MITM
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x03   // responder keys: enc key and identity info
+  );
+
+  // clang-format on
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+  // This is to capture the channel created during the Connection process
+  FakeChannel* fake_chan = nullptr;
+  fake_l2cap()->set_channel_callback(
+      [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->le());
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status);
+  ASSERT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  ASSERT_TRUE(fake_chan);
+
+  bool cb_called = false;
+  // This test only checks that PairingState kicks off a pairing feature exchange correctly, as
+  // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
+  auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    cb_called = true;
+  };
+  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, [](sm::Status cb_status) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_called);
 }
 
 // Test fixture for tests that disconnect a connection in various ways and expect that

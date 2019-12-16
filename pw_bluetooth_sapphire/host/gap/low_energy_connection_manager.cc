@@ -11,6 +11,7 @@
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -19,6 +20,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
@@ -101,10 +105,24 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
         },
         [self](auto handle, auto level, auto cb) {
           if (self) {
-            self->OnSecurityUpgradeRequest(handle, level, std::move(cb));
+            bt_log(TRACE, "gap-le", "received security upgrade request on L2CAP channel");
+            ZX_DEBUG_ASSERT(self->link_->handle() == handle);
+            self->UpgradeSecurity(level, std::move(cb));
           }
         },
         dispatcher_);
+  }
+
+  // Handles a pairing request (i.e. security upgrade) received from "higher levels", likely
+  // initiated from GAP. This will only be used by pairing requests that are initiated
+  // in the context of testing. May only be called on an already-established connection.
+  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback cb) {
+    ZX_ASSERT(pairing_);
+
+    pairing_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
+      bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", bt_str(status), bt_str(sp));
+      cb(status);
+    });
   }
 
   // Cancels any on-going pairing procedures and sets up SMP to use the provided
@@ -158,21 +176,6 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
     gatt_->DiscoverServices(peer_id());
-  }
-
-  // Handles a security upgrade request received from the L2CAP layer.
-  void OnSecurityUpgradeRequest(hci::ConnectionHandle handle, sm::SecurityLevel level,
-                                sm::StatusCallback callback) {
-    ZX_DEBUG_ASSERT(link_->handle() == handle);
-    ZX_DEBUG_ASSERT(pairing_);
-
-    bt_log(TRACE, "gap-le", "received security upgrade request");
-
-    pairing_->UpgradeSecurity(level, [cb = std::move(callback)](sm::Status status, const auto& sp) {
-      bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", status.ToString().c_str(),
-             sp.ToString().c_str());
-      cb(status);
-    });
   }
 
   // sm::PairingState::Delegate override:
@@ -516,6 +519,18 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   bt_log(INFO, "gap-le", "disconnecting link: %s", bt_str(*conn->link()));
   CleanUpConnection(std::move(conn));
   return true;
+}
+
+void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_level,
+                                      sm::StatusCallback cb) {
+  auto iter = connections_.find(peer_id);
+  if (iter == connections_.end()) {
+    bt_log(WARN, "gap-le", "cannot pair: peer not connected (id: %s)", bt_str(peer_id));
+    cb(bt::sm::Status(bt::HostError::kNotFound));
+    return;
+  }
+  bt_log(TRACE, "gap-le", "pairing with security level: %d", pairing_level);
+  iter->second->UpgradeSecurity(pairing_level, std::move(cb));
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::RegisterRemoteInitiatedLink(

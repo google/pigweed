@@ -92,6 +92,8 @@ bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::control::LocalKey& key);
 std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fuchsia::bluetooth::control::BREDRData& data);
 fuchsia::bluetooth::control::BondingData NewBondingData(const bt::gap::Adapter& adapter,
                                                         const bt::gap::Peer& peer);
+std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
+    const fuchsia::bluetooth::control::PairingSecurityLevel level);
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer);

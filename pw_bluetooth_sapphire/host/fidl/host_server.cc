@@ -6,10 +6,12 @@
 
 #include <zircon/assert.h>
 
+#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "helpers.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
 #include "profile_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
@@ -19,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/logging.h"
 #include "src/lib/fxl/strings/join_strings.h"
@@ -32,13 +35,16 @@ using bt::sm::IOCapability;
 using fidl_helpers::AddressBytesFromString;
 using fidl_helpers::NewFidlError;
 using fidl_helpers::PeerIdFromString;
+using fidl_helpers::SecurityLevelFromFidl;
 using fidl_helpers::StatusToFidl;
 using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
 using fuchsia::bluetooth::control::AdapterState;
 using fuchsia::bluetooth::control::BondingData;
+using fuchsia::bluetooth::control::PairingOptions;
 using fuchsia::bluetooth::control::RemoteDevice;
+using fuchsia::bluetooth::control::TechnologyType;
 
 HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
                        fbl::RefPtr<GattHost> gatt_host)
@@ -495,7 +501,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [self, callback = std::move(callback), peer_id](auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
+      bt_log(TRACE, "bt-host", "failed to connect to peer (id %s)", bt_str(peer_id));
       callback(StatusToFidl(status, "failed to connect"));
       return;
     }
@@ -520,7 +526,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [callback = std::move(callback), peer_id](auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
+      bt_log(TRACE, "bt-host", "failed to connect to peer (id %s)", bt_str(peer_id));
       callback(StatusToFidl(status, "failed to connect"));
       return;
     }
@@ -563,6 +569,62 @@ void HostServer::Forget(::std::string peer_id, ForgetCallback callback) {
     ZX_ASSERT(peer_removed);
     callback(Status());
   }
+}
+
+void HostServer::Pair(fuchsia::bluetooth::PeerId id,
+                      fuchsia::bluetooth::control::PairingOptions options, PairCallback callback) {
+  auto peer_id = bt::PeerId(id.value);
+  auto peer = adapter()->peer_cache()->FindById(peer_id);
+  if (!peer) {
+    // We don't support pairing to peers that are not in our cache
+    callback(NewFidlError(ErrorCode::NOT_FOUND, "Cannot find peer with the given ID"));
+    return;
+  }
+  // If options specifies a transport preference for LE or BR/EDR, we use that. Otherwise, we use
+  // whatever transport exists, defaulting to LE for dual-mode connections.
+  bool pair_bredr = !peer->le();
+  if (options.has_transport() && options.transport() != TechnologyType::DUAL_MODE) {
+    pair_bredr = (options.transport() == TechnologyType::CLASSIC);
+  }
+  if (pair_bredr) {
+    PairBrEdr(peer_id, std::move(callback));
+    return;
+  }
+  PairLowEnergy(peer_id, std::move(options), std::move(callback));
+}
+
+void HostServer::PairLowEnergy(PeerId peer_id, PairingOptions options, PairCallback callback) {
+  std::optional<bt::sm::SecurityLevel> security_level;
+  if (options.has_le_security_level()) {
+    security_level = SecurityLevelFromFidl(options.le_security_level());
+    if (!security_level.has_value()) {
+      callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid security level"));
+      return;
+    }
+  } else {
+    security_level = bt::sm::SecurityLevel::kAuthenticated;
+  }
+  auto on_complete = [peer_id, callback = std::move(callback)](bt::sm::Status status) {
+    if (!status) {
+      bt_log(WARN, "bt-host", "failed to pair to peer (id %s)", bt_str(peer_id));
+      callback(NewFidlError(fidl_helpers::HostErrorToFidl(status.error()), "Failed to pair"));
+      return;
+    }
+    callback(Status());
+  };
+  adapter()->le_connection_manager()->Pair(peer_id, *security_level, std::move(on_complete));
+}
+
+void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
+  auto on_complete = [peer_id, callback = std::move(callback)](bt::hci::Status status) {
+    if (!status) {
+      bt_log(WARN, "bt-host", "failed to pair to peer (id %s)", bt_str(peer_id));
+      callback(NewFidlError(fidl_helpers::HostErrorToFidl(status.error()), "Failed to pair"));
+      return;
+    }
+    callback(Status());
+  };
+  adapter()->bredr_connection_manager()->Pair(peer_id, std::move(on_complete));
 }
 
 void HostServer::RequestLowEnergyCentral(

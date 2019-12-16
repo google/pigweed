@@ -8,8 +8,10 @@
 
 #include <unordered_set>
 
+#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
@@ -394,6 +396,18 @@ fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap
   }
 
   return out_data;
+}
+
+std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
+    const fuchsia::bluetooth::control::PairingSecurityLevel level) {
+  switch (level) {
+    case fuchsia::bluetooth::control::PairingSecurityLevel::ENCRYPTED:
+      return bt::sm::SecurityLevel::kEncrypted;
+    case fuchsia::bluetooth::control::PairingSecurityLevel::AUTHENTICATED:
+      return bt::sm::SecurityLevel::kAuthenticated;
+    default:
+      return std::nullopt;
+  };
 }
 
 fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {

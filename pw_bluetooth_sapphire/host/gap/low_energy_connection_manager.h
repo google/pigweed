@@ -22,6 +22,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -179,6 +181,13 @@ class LowEnergyConnectionManager final {
 
   // Callback for hci::Connection, called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);
+
+  // Initiates the pairing process. This is expected to only be called during higher-level testing.
+  // |peer_id| is the peer to pair to - if the peer is not connected, this function will return
+  // false. |pairing_level| determines the security level of the resulting pairing. |cb| will be
+  // called upon completion of the pairing. If the security level of the link is already >=
+  // |pairing_level|, then nothing will be done, and |cb| will be called with a success status.
+  void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::StatusCallback cb);
 
  private:
   friend class LowEnergyConnectionRef;

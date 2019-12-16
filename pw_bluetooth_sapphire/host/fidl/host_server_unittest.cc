@@ -8,29 +8,49 @@
 #include <lib/zx/channel.h>
 
 #include "adapter_test_fixture.h"
+#include "fuchsia/bluetooth/control/cpp/fidl.h"
+#include "fuchsia/bluetooth/cpp/fidl.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bthost {
 namespace {
 
 // Limiting the de-scoped aliases here helps test cases be more specific about whether they're using
 // FIDL names or bt-host internal names.
+using bt::CreateStaticByteBuffer;
+using bt::LowerBits;
+using bt::UpperBits;
+using bt::l2cap::testing::FakeChannel;
+using bt::testing::FakePeer;
 using HostPairingDelegate = bt::gap::PairingDelegate;
 using fuchsia::bluetooth::control::InputCapabilityType;
 using fuchsia::bluetooth::control::OutputCapabilityType;
+using FidlErrorCode = fuchsia::bluetooth::ErrorCode;
+using FidlStatus = fuchsia::bluetooth::Status;
+using fuchsia::bluetooth::control::PairingOptions;
 using FidlPairingDelegate = fuchsia::bluetooth::control::PairingDelegate;
+using fuchsia::bluetooth::control::PairingSecurityLevel;
+
 using FidlRemoteDevice = fuchsia::bluetooth::control::RemoteDevice;
 
 namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 
-const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
+const bt::DeviceAddress kLETestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
+const bt::DeviceAddress kBrEdrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
 
 class MockPairingDelegate : public fuchsia::bluetooth::control::testing::PairingDelegate_TestBase {
  public:
@@ -108,6 +128,32 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
     return pairing_delegate;
   }
 
+  std::tuple<bt::gap::Peer*, FakeChannel*> ConnectFakePeer(bool connect_le = true) {
+    auto device_addr = connect_le ? kLETestAddr : kBrEdrTestAddr;
+    auto* peer = adapter()->peer_cache()->NewPeer(device_addr, true);
+    EXPECT_TRUE(peer->temporary());
+    // This is to capture the channel created during the Connection process
+    FakeChannel* fake_chan = nullptr;
+    fake_domain()->set_channel_callback(
+        [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
+
+    auto fake_peer = std::make_unique<FakePeer>(device_addr);
+    test_device()->AddPeer(std::move(fake_peer));
+    // Initialize with error to ensure callback is called
+    FidlStatus connect_status =
+        fidl_helpers::NewFidlError(FidlErrorCode::BAD_STATE, "This should disappear");
+    host_client()->Connect(peer->identifier().ToString(), [&connect_status](FidlStatus cb_status) {
+      ASSERT_FALSE(cb_status.error);
+      connect_status = std::move(cb_status);
+    });
+    RunLoopUntilIdle();
+    if (connect_status.error != nullptr) {
+      peer = nullptr;
+      fake_chan = nullptr;
+    }
+    return std::make_tuple(peer, fake_chan);
+  }
+
  private:
   std::unique_ptr<HostServer> host_server_;
   fbl::RefPtr<GattHost> gatt_host_;
@@ -157,7 +203,7 @@ TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   EXPECT_CALL(*fidl_pairing_delegate,
@@ -187,7 +233,7 @@ TEST_F(FIDL_HostServerTest,
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   // This call should use PASSKEY_DISPLAY to request that the user perform peer passkey entry.
@@ -239,7 +285,7 @@ TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFid
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   using OnPairingRequestCallback = FidlPairingDelegate::OnPairingRequestCallback;
@@ -370,6 +416,102 @@ TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
   ASSERT_TRUE(info.has_value());
   ASSERT_TRUE(info->has_discoverable());
   EXPECT_FALSE(info->discoverable());
+}
+
+TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x05,  // AuthReq: bonding, MITM (Authenticated)
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x03   // responder keys: enc key and identity info
+  );
+  // clang-format on
+
+  auto [peer, fake_chan] = ConnectFakePeer();
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(fake_chan);
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  bool pairing_request_sent = false;
+  // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
+  // the call to Pair is only responsible for starting pairing, not for completing it.
+  auto expect_default_bytebuffer = [&pairing_request_sent, kExpected](bt::ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    pairing_request_sent = true;
+  };
+  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  FidlStatus pair_status;
+  PairingOptions opts;
+  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
+                      std::move(opts),
+                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(pair_status.error, nullptr);
+  ASSERT_TRUE(pairing_request_sent);
+}
+
+TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bonding, no MITM (not authenticated)
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x03   // responder keys: enc key and identity info
+  );
+  // clang-format on
+
+  auto [peer, fake_chan] = ConnectFakePeer();
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(fake_chan);
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  bool pairing_request_sent = false;
+  // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
+  // the call to Pair is only responsible for starting pairing, not for completing it.
+  auto expect_default_bytebuffer = [&pairing_request_sent, kExpected](bt::ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    pairing_request_sent = true;
+  };
+  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+
+  FidlStatus pair_status;
+  PairingOptions opts;
+  opts.set_le_security_level(PairingSecurityLevel::ENCRYPTED);
+  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
+                      std::move(opts),
+                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(pair_status.error, nullptr);
+  ASSERT_TRUE(pairing_request_sent);
+}
+
+TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
+  auto [peer, fake_chan] = ConnectFakePeer();
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(fake_chan);
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  FidlStatus pair_status;
+  PairingOptions opts;
+  // Set pairing option with classic
+  opts.set_transport(fuchsia::bluetooth::control::TechnologyType::CLASSIC);
+  auto pair_cb = [&pair_status](FidlStatus cb_status) {
+    ASSERT_TRUE(cb_status.error);
+    pair_status = std::move(cb_status);
+  };
+  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
+                      std::move(opts), pair_cb);
+  RunLoopUntilIdle();
+  ASSERT_EQ(pair_status.error->error_code, FidlErrorCode::NOT_FOUND);
 }
 
 }  // namespace

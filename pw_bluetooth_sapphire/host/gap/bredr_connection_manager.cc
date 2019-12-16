@@ -7,10 +7,13 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
 namespace bt {
@@ -231,6 +234,29 @@ PeerId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   return peer->identifier();
 }
 
+void BrEdrConnectionManager::Pair(PeerId peer_id, hci::StatusCallback callback) {
+  auto conn_pair = FindConnectionById(peer_id);
+  if (!conn_pair) {
+    bt_log(WARN, "gap-bredr", "can't pair to peer_id %s: connection not found", bt_str(peer_id));
+    callback(hci::Status(HostError::kNotFound));
+    return;
+  }
+  auto& [handle, connection] = *conn_pair;
+  if (!connection->link().ltk()) {
+    auto pairing_callback = [pair_callback = std::move(callback)](auto, hci::Status status) {
+      pair_callback(status);
+    };
+    if (!InitiatesPairing(peer_id, connection, handle, std::move(pairing_callback))) {
+      bt_log(INFO, "gap-bredr",
+             "pairing to peer_id %s already in progress, call again to initiate pairing",
+             bt_str(peer_id));
+    }
+  } else {
+    // Already paired, return success status
+    callback(hci::Status());
+  }
+}
+
 bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, SocketCallback cb,
                                               async_dispatcher_t* dispatcher) {
   auto conn_pair = FindConnectionById(peer_id);
@@ -258,15 +284,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, So
       }
     };
 
-    if (connection->pairing_state().InitiatePairing(std::move(retry_cb)) ==
-        PairingState::InitiatorAction::kSendAuthenticationRequest) {
-      auto auth_request = hci::CommandPacket::New(
-          hci::kAuthenticationRequested, sizeof(hci::AuthenticationRequestedCommandParams));
-      auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()
-          ->connection_handle = htole16(handle);
-      bt_log(SPEW, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
-      hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_, nullptr);
-    } else {
+    if (!InitiatesPairing(peer_id, connection, handle, std::move(retry_cb))) {
       bt_log(SPEW, "gap-bredr", "pairing ongoing to peer %s, waiting for result", bt_str(peer_id));
     }
     return true;
@@ -1056,6 +1074,22 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
   }
   hci_->command_channel()->SendCommand(std::move(command_packet), dispatcher_,
                                        std::move(command_cb));
+}
+
+bool BrEdrConnectionManager::InitiatesPairing(PeerId peer_id, BrEdrConnection* connection,
+                                              hci::ConnectionHandle handle,
+                                              PairingState::StatusCallback pairing_callback) {
+  if (connection->pairing_state().InitiatePairing(std::move(pairing_callback)) ==
+      PairingState::InitiatorAction::kSendAuthenticationRequest) {
+    auto auth_request = hci::CommandPacket::New(hci::kAuthenticationRequested,
+                                                sizeof(hci::AuthenticationRequestedCommandParams));
+    auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()->connection_handle =
+        htole16(handle);
+    bt_log(SPEW, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
+    hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_, nullptr);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace gap

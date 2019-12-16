@@ -4,11 +4,13 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -34,6 +36,7 @@ const DeviceAddress kLocalDevAddr(DeviceAddress::Type::kBREDR, {0});
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kTestDevAddr2(DeviceAddress::Type::kBREDR, {3});
+constexpr uint32_t kPasskey = 123456;
 
 // A default size for PDUs when generating responses for testing.
 const uint16_t PDU_MAX = 0xFFF;
@@ -275,6 +278,138 @@ const auto kDisconnectionComplete =
                            0x13                        // Reason (Remote User Terminated Connection)
     );
 
+const auto kAuthenticationRequested = CreateStaticByteBuffer(
+    LowerBits(hci::kAuthenticationRequested), UpperBits(hci::kAuthenticationRequested),
+    0x02,       // parameter_total_size (2 bytes)
+    0xAA, 0x0B  // Connection_Handle
+);
+
+const auto kAuthenticationRequestedStatus =
+    COMMAND_STATUS_RSP(hci::kAuthenticationRequested, hci::StatusCode::kSuccess);
+
+const auto kAuthenticationComplete = CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
+                                                            0x03,  // parameter_total_size (3 bytes)
+                                                            hci::StatusCode::kSuccess,  // status
+                                                            0xAA, 0x0B  // connection_handle
+);
+
+const auto kLinkKeyRequest = CreateStaticByteBuffer(hci::kLinkKeyRequestEventCode,
+                                                    0x06,  // parameter_total_size (6 bytes)
+                                                    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+const auto kLinkKeyRequestNegativeReply = CreateStaticByteBuffer(
+    LowerBits(hci::kLinkKeyRequestNegativeReply), UpperBits(hci::kLinkKeyRequestNegativeReply),
+    0x06,                   // parameter_total_size (6 bytes)
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+const auto kLinkKeyRequestNegativeReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kLinkKeyRequestNegativeReply),
+    UpperBits(hci::kLinkKeyRequestNegativeReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+auto MakeIoCapabilityResponse(IOCapability io_cap, AuthRequirements auth_req) {
+  return CreateStaticByteBuffer(hci::kIOCapabilityResponseEventCode,
+                                0x09,                    // parameter_total_size (9 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // address
+                                io_cap,
+                                0x00,  // OOB authentication data not present
+                                auth_req);
+}
+
+const auto kIoCapabilityRequest = CreateStaticByteBuffer(hci::kIOCapabilityRequestEventCode,
+                                                         0x06,  // parameter_total_size (6 bytes)
+                                                         TEST_DEV_ADDR_BYTES_LE  // address
+);
+
+auto MakeIoCapabilityRequestReply(IOCapability io_cap, AuthRequirements auth_req) {
+  return CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestReply),
+                                UpperBits(hci::kIOCapabilityRequestReply),
+                                0x09,                    // parameter_total_size (9 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                io_cap,
+                                0x00,  // No OOB data present
+                                auth_req);
+}
+
+const auto kIoCapabilityRequestReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestReply),
+    UpperBits(hci::kIOCapabilityRequestReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+auto MakeUserConfirmationRequest(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(hci::kUserConfirmationRequestEventCode,
+                                0x0A,                    // parameter_total_size (10 byte payload)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
+const auto kUserConfirmationRequestReply = CreateStaticByteBuffer(
+    LowerBits(hci::kUserConfirmationRequestReply), UpperBits(hci::kUserConfirmationRequestReply),
+    0x06,                   // parameter_total_size (6 bytes)
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+const auto kUserConfirmationRequestReplyRsp =
+    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestReply);
+
+const auto kSimplePairingCompleteSuccess =
+    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
+                           0x07,                   // parameter_total_size (7 byte payload)
+                           0x00,                   // status (success)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kLinkKeyNotification =
+    CreateStaticByteBuffer(hci::kLinkKeyNotificationEventCode,
+                           0x17,                    // parameter_total_size (17 bytes)
+                           TEST_DEV_ADDR_BYTES_LE,  // peer address
+                           0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e,
+                           0xca, 0x1e, 0xca, 0xfe,  // link key
+                           0x05  // key type (Authenticated Combination Key generated from P-192)
+    );
+
+const auto kSetConnectionEncryption = CreateStaticByteBuffer(
+    LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
+    0x03,        // parameter total size
+    0xAA, 0x0B,  // connection handle
+    0x01         // encryption enable
+);
+
+const auto kSetConnectionEncryptionRsp =
+    COMMAND_STATUS_RSP(hci::kSetConnectionEncryption, hci::StatusCode::kSuccess);
+
+const auto kEncryptionChangeEvent = CreateStaticByteBuffer(hci::kEncryptionChangeEventCode,
+                                                           4,           // parameter total size
+                                                           0x00,        // status
+                                                           0xAA, 0x0B,  // connection handle
+                                                           0x01         // encryption enabled
+);
+
+const auto kReadEncryptionKeySize = CreateStaticByteBuffer(LowerBits(hci::kReadEncryptionKeySize),
+                                                           UpperBits(hci::kReadEncryptionKeySize),
+                                                           0x02,       // parameter size
+                                                           0xAA, 0x0B  // connection handle
+);
+
+const auto kReadEncryptionKeySizeRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode,
+    0x07,  // parameters total size
+    0xFF,  // num command packets allowed (255)
+    LowerBits(hci::kReadEncryptionKeySize), UpperBits(hci::kReadEncryptionKeySize),
+    hci::kSuccess,  // status
+    0xAA, 0x0B,     // connection handle
+    0x10            // encryption key size: 16
+);
+
 const hci::DataBufferInfo kBrEdrBufferInfo(1024, 1);
 const hci::DataBufferInfo kLeBufferInfo(1024, 1);
 
@@ -382,6 +517,28 @@ class BrEdrConnectionManagerTest : public TestingBase {
     test_device()->QueueCommandTransaction(
         CommandTransaction(testing::ReadRemoteExtended2Packet(conn),
                            {&kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet}));
+  }
+
+  void QueueSuccessfulPairing() {
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        kAuthenticationRequested, {&kAuthenticationRequestedStatus, &kLinkKeyRequest}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        kLinkKeyRequestNegativeReply, {&kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest}));
+    const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
+        IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+    const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                     AuthRequirements::kMITMGeneralBonding),
+        {&kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest}));
+    test_device()->QueueCommandTransaction(
+        CommandTransaction(kUserConfirmationRequestReply,
+                           {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                            &kLinkKeyNotification, &kAuthenticationComplete}));
+    test_device()->QueueCommandTransaction(CommandTransaction(
+        kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
+    test_device()->QueueCommandTransaction(
+        CommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp}));
   }
 
   void QueueDisconnection(hci::ConnectionHandle conn) const {
@@ -633,37 +790,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
   EXPECT_EQ(5, transaction_count());
 }
 
-auto MakeIoCapabilityResponse(IOCapability io_cap, AuthRequirements auth_req) {
-  return CreateStaticByteBuffer(hci::kIOCapabilityResponseEventCode,
-                                0x09,                    // parameter_total_size (9 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // address
-                                io_cap,
-                                0x00,  // OOB authentication data not present
-                                auth_req);
-}
-
-const auto kIoCapabilityRequest = CreateStaticByteBuffer(hci::kIOCapabilityRequestEventCode,
-                                                         0x06,  // parameter_total_size (6 bytes)
-                                                         TEST_DEV_ADDR_BYTES_LE  // address
-);
-
-auto MakeIoCapabilityRequestReply(IOCapability io_cap, AuthRequirements auth_req) {
-  return CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestReply),
-                                UpperBits(hci::kIOCapabilityRequestReply),
-                                0x09,                    // parameter_total_size (9 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                io_cap,
-                                0x00,  // No OOB data present
-                                auth_req);
-}
-
-const auto kIoCapabilityRequestReplyRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestReply),
-    UpperBits(hci::kIOCapabilityRequestReply),
-    hci::kSuccess,          // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
 const auto kIoCapabilityRequestNegativeReply =
     CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestNegativeReply),
                            UpperBits(hci::kIOCapabilityRequestNegativeReply),
@@ -734,27 +860,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
   QueueDisconnection(kConnectionHandle);
 }
 
-constexpr uint32_t kPasskey = 123456;
-
-auto MakeUserConfirmationRequest(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(hci::kUserConfirmationRequestEventCode,
-                                0x0A,                    // parameter_total_size (10 byte payload)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
-  );
-}
-
-const auto kUserConfirmationRequestReply = CreateStaticByteBuffer(
-    LowerBits(hci::kUserConfirmationRequestReply), UpperBits(hci::kUserConfirmationRequestReply),
-    0x06,                   // parameter_total_size (6 bytes)
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
-const auto kUserConfirmationRequestReplyRsp =
-    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestReply);
-
 const auto kUserConfirmationRequestNegativeReply =
     CreateStaticByteBuffer(LowerBits(hci::kUserConfirmationRequestNegativeReply),
                            UpperBits(hci::kUserConfirmationRequestNegativeReply),
@@ -764,13 +869,6 @@ const auto kUserConfirmationRequestNegativeReply =
 
 const auto kUserConfirmationRequestNegativeReplyRsp =
     COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestNegativeReply);
-
-const auto kSimplePairingCompleteSuccess =
-    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
-                           0x07,                   // parameter_total_size (7 byte payload)
-                           0x00,                   // status (success)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
 
 const auto kSimplePairingCompleteError =
     CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
@@ -888,24 +986,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   RunLoopUntilIdle();
 }
 
-const auto kLinkKeyRequest = CreateStaticByteBuffer(hci::kLinkKeyRequestEventCode,
-                                                    0x06,  // parameter_total_size (6 bytes)
-                                                    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
-const auto kLinkKeyRequestNegativeReply = CreateStaticByteBuffer(
-    LowerBits(hci::kLinkKeyRequestNegativeReply), UpperBits(hci::kLinkKeyRequestNegativeReply),
-    0x06,                   // parameter_total_size (6 bytes)
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
-const auto kLinkKeyRequestNegativeReplyRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kLinkKeyRequestNegativeReply),
-    UpperBits(hci::kLinkKeyRequestNegativeReply),
-    hci::kSuccess,          // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
 // Test: replies negative to Link Key Requests for unknown and unbonded peers
 TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
@@ -947,15 +1027,6 @@ const hci::LinkKey kRawKey({0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7
                            0, 0);
 const sm::LTK kLinkKey(sm::SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination192),
                        kRawKey);
-
-const auto kLinkKeyNotification =
-    CreateStaticByteBuffer(hci::kLinkKeyNotificationEventCode,
-                           0x17,                    // parameter_total_size (17 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e,
-                           0xca, 0x1e, 0xca, 0xfe,  // link key
-                           0x05  // key type (Authenticated Combination Key generated from P-192)
-    );
 
 const auto kLinkKeyRequestReply = CreateStaticByteBuffer(
     LowerBits(hci::kLinkKeyRequestReply), UpperBits(hci::kLinkKeyRequestReply),
@@ -1016,39 +1087,6 @@ const auto kLinkKeyRequestReplyChanged = CreateStaticByteBuffer(
     TEST_DEV_ADDR_BYTES_LE,  // peer address
     0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
     0xd5  // link key
-);
-
-const auto kSetConnectionEncryption = CreateStaticByteBuffer(
-    LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
-    0x03,        // parameter total size
-    0xAA, 0x0B,  // connection handle
-    0x01         // encryption enable
-);
-
-const auto kSetConnectionEncryptionRsp =
-    COMMAND_STATUS_RSP(hci::kSetConnectionEncryption, hci::StatusCode::kSuccess);
-
-const auto kEncryptionChangeEvent = CreateStaticByteBuffer(hci::kEncryptionChangeEventCode,
-                                                           4,           // parameter total size
-                                                           0x00,        // status
-                                                           0xAA, 0x0B,  // connection handle
-                                                           0x01         // encryption enabled
-);
-
-const auto kReadEncryptionKeySize = CreateStaticByteBuffer(LowerBits(hci::kReadEncryptionKeySize),
-                                                           UpperBits(hci::kReadEncryptionKeySize),
-                                                           0x02,       // parameter size
-                                                           0xAA, 0x0B  // connection handle
-);
-
-const auto kReadEncryptionKeySizeRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode,
-    0x07,  // parameters total size
-    0xFF,  // num command packets allowed (255)
-    LowerBits(hci::kReadEncryptionKeySize), UpperBits(hci::kReadEncryptionKeySize),
-    hci::kSuccess,  // status
-    0xAA, 0x0B,     // connection handle
-    0x10            // encryption key size: 16
 );
 
 auto MakeUserPasskeyRequestReply(uint32_t passkey) {
@@ -1584,21 +1622,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   QueueDisconnection(kConnectionHandle);
 }
-
-const auto kAuthenticationRequested = CreateStaticByteBuffer(
-    LowerBits(hci::kAuthenticationRequested), UpperBits(hci::kAuthenticationRequested),
-    0x02,       // parameter_total_size (2 bytes)
-    0xAA, 0x0B  // Connection_Handle
-);
-
-const auto kAuthenticationRequestedStatus =
-    COMMAND_STATUS_RSP(hci::kAuthenticationRequested, hci::StatusCode::kSuccess);
-
-const auto kAuthenticationComplete = CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
-                                                            0x03,  // parameter_total_size (3 bytes)
-                                                            hci::StatusCode::kSuccess,  // status
-                                                            0xAA, 0x0B  // connection_handle
-);
 
 const auto kAuthenticationCompleteFailed =
     CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
@@ -2614,6 +2637,118 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   QueueDisconnection(kConnectionHandle2);
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, PairUnconnectedPeer) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
+  ASSERT_EQ(peer_cache()->count(), 1u);
+  uint count_cb_called = 0;
+  auto cb = [&count_cb_called](hci::Status status) {
+    ASSERT_EQ(status.error(), bt::HostError::kNotFound);
+    count_cb_called++;
+  };
+  connmgr()->Pair(peer->identifier(), cb);
+  ASSERT_EQ(count_cb_called, 1u);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, Pair) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(peer->bonded());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  QueueSuccessfulPairing();
+
+  // Make the pairing error a "bad" error to confirm the callback is called at the end of the
+  // pairing process.
+  auto pairing_error = HostError::kPacketMalformed;
+  auto pairing_complete_cb = [&pairing_error](hci::Status status) {
+    ASSERT_TRUE(status);
+    pairing_error = status.error();
+  };
+
+  connmgr()->Pair(peer->identifier(), pairing_complete_cb);
+  ASSERT_FALSE(peer->bonded());
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_TRUE(peer->bonded());
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, PairTwice) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+  ASSERT_FALSE(peer->bonded());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  QueueSuccessfulPairing();
+
+  // Make the pairing error a "bad" error to confirm the callback is called at the end of the
+  // pairing process.
+  auto pairing_error = HostError::kPacketMalformed;
+  auto pairing_complete_cb = [&pairing_error](hci::Status status) {
+    ASSERT_TRUE(status);
+    pairing_error = status.error();
+  };
+
+  connmgr()->Pair(peer->identifier(), pairing_complete_cb);
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_TRUE(peer->bonded());
+
+  pairing_error = HostError::kPacketMalformed;
+  connmgr()->Pair(peer->identifier(), pairing_complete_cb);
+
+  // Note that we do not call QueueSuccessfulPairing twice, even though we pair twice - this is to
+  // test that pairing on an already-paired link succeeds without sending any messages to the peer.
+  RunLoopUntilIdle();
+  ASSERT_EQ(pairing_error, HostError::kNoError);
+  ASSERT_TRUE(peer->bonded());
+
+  QueueDisconnection(kConnectionHandle);
+}
 // TODO(BT-819) Connecting a peer that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP
