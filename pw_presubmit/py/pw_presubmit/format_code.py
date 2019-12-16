@@ -183,9 +183,11 @@ def fix_py_format(files):
     _yapf('--in-place', *files, check=True)
 
 
-def print_format_check(errors: Dict[str, str]) -> Dict[str, str]:
+def print_format_check(errors: Dict[str, str],
+                       show_fix_commands: bool) -> None:
     """Prints and returns the result of a check_*_format function."""
     if not errors:
+        # Don't print anything in the all-good case.
         return
 
     # Show the format fixing diff suggested by the tooling (with colors).
@@ -195,13 +197,12 @@ def print_format_check(errors: Dict[str, str]) -> Dict[str, str]:
         print(diff, end='')
 
     # Show a copy-and-pastable command to fix the issues.
-    path_relative_to_cwd = (
-        lambda p: Path(p).resolve().relative_to(Path('.').resolve()))
-    message = (f'  pw format --fix {path_relative_to_cwd(path)}'
-               for path in errors)
-    _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
-
-    return errors
+    if show_fix_commands:
+        path_relative_to_cwd = (
+            lambda p: Path(p).resolve().relative_to(Path.cwd().resolve()))
+        message = (f'  pw format --fix {path_relative_to_cwd(path)}'
+                   for path in errors)
+        _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
 
 
 class CodeFormat(NamedTuple):
@@ -236,7 +237,13 @@ def presubmit_check(code_format: CodeFormat) -> Callable:
     """Creates a presubmit check function from a CodeFormat object."""
     @pw_presubmit.filter_paths(endswith=code_format.extensions)
     def check_code_format(paths):
-        if print_format_check(code_format.check(paths)):
+        errors = code_format.check(paths)
+        print_format_check(
+            errors,
+            # When running as part of presubmit, show the fix command help.
+            show_fix_commands=True,
+        )
+        if errors:
             raise pw_presubmit.PresubmitFailure
 
     check_code_format.__name__ = f'{code_format.language} format'
@@ -303,13 +310,21 @@ def main(paths, exclude, base, fix) -> int:
     _LOG.debug('Found %s files:\n%s', len(files), '\n'.join(f for f in files))
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
 
-    errors = print_format_check(formatter.check())
+    errors = formatter.check()
+    print_format_check(errors, show_fix_commands=(not fix))
 
-    if fix:
-        formatter.fix()
-        return 0
+    if errors:
+        if fix:
+            formatter.fix()
+            # TODO: This should perhaps check that the fixes were successful.
+            _LOG.info('Formatting fixes applied successfully')
+            return 0
 
-    return 1 if errors else 0
+        _LOG.error('Formatting errors found')
+        return 1
+
+    _LOG.info('Congratulations! No formatting changes needed')
+    return 0
 
 
 def argument_parser(parser=None) -> argparse.ArgumentParser:

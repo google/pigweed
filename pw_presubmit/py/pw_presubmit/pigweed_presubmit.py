@@ -180,7 +180,21 @@ def test_python_packages(paths):
 
 @filter_paths(endswith='.py')
 def pylint(paths):
-    run_python_module('pylint', '-j', '0', *paths)
+    disable_checkers = [
+        # BUG(pwbug/22): Hanging indent check conflicts with YAPF 0.29. For
+        # now, use YAPF's version even if Pylint is doing the correct thing
+        # just to keep operations simpler. When YAPF upstream fixes the issue,
+        # delete this code.
+        #
+        # See also: https://github.com/google/yapf/issues/781
+        'bad-continuation',
+    ]
+    run_python_module(
+        'pylint',
+        '--jobs=0',
+        f'--disable={",".join(disable_checkers)}',
+        *paths,
+    )
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
