@@ -26,7 +26,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
+        parser: Optional[argparse.ArgumentParser] = None
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
