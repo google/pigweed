@@ -43,6 +43,10 @@ template("_pw_cc_proto_library") {
            ] + get_path_info(invoker.protos, "abspath")
     inputs = invoker.protos
     outputs = _outputs
+
+    if (defined(invoker.protoc_deps)) {
+      deps = invoker.protoc_deps
+    }
   }
 
   # For C++ proto files, the generated proto directory is added as an include
@@ -105,6 +109,16 @@ template("pw_proto_library") {
       _pw_cc_proto_library(_lang_target) {
         protos = invoker.sources
         deps = _lang_deps
+
+        # List the pw_protobuf plugin's files as a dependency to recompile
+        # generated code if they are modified.
+        #
+        # TODO(frolv): This check is currently true as pw_protobuf is the
+        # only supported plugin. It should be updated to support other proto
+        # libraries such as nanopb.
+        if (true) {
+          protoc_deps = [ "$dir_pw_protobuf:codegen_protoc_plugin" ]
+        }
       }
     } else {
       assert(false,

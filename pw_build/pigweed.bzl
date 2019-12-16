@@ -43,6 +43,7 @@ INCLUDES_COPTS = [
     "-Ipw_bloat/public",
     "-Ipw_dumb_io/public",
     "-Ipw_preprocessor/public",
+    "-Ipw_protobuf/public",
     "-Ipw_span/public",
     "-Ipw_status/public",
     "-Ipw_string/public",

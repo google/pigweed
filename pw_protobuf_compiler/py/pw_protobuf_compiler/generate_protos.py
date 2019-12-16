@@ -15,6 +15,7 @@
 
 import argparse
 import logging
+import shutil
 import sys
 
 from typing import Optional
@@ -27,8 +28,7 @@ _LOG = logging.getLogger(__name__)
 # Default protoc codegen plugins for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_PLUGINS = {
-    # TODO(frolv): Enable this when porting the pw_protobuf module.
-    # 'cc': 'protoc-gen-custom=pw_protobuf_codegen',
+    'cc': f'protoc-gen-custom={shutil.which("pw_protobuf_codegen")}',
 }
 
 
