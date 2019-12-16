@@ -31,7 +31,9 @@ def git_repo_root(path) -> str:
                           stdout=subprocess.PIPE).stdout.strip().decode()
 
 
-def install_hook(script, hook: str, args: Sequence[str] = (),
+def install_hook(script,
+                 hook: str,
+                 args: Sequence[str] = (),
                  repository='.') -> None:
     """Installs a simple Git hook that calls a script with arguments."""
     root = pathlib.Path(git_repo_root(repository)).resolve()

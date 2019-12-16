@@ -15,5 +15,7 @@
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+  ]
 }

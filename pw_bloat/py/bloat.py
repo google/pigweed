@@ -78,11 +78,13 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_bloaty(filename: str,
-               config: str,
-               base_file: Optional[str] = None,
-               data_sources: Iterable[str] = (),
-               extra_args: Iterable[str] = ()) -> bytes:
+def run_bloaty(
+    filename: str,
+    config: str,
+    base_file: Optional[str] = None,
+    data_sources: Iterable[str] = (),
+    extra_args: Iterable[str] = ()
+) -> bytes:
     """Executes a Bloaty size report on some binary file(s).
 
     Args:
