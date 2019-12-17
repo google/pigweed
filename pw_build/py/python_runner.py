@@ -72,10 +72,7 @@ def find_binary(target: str) -> str:
 
 def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
     """Resolves a string to a filesystem path if it is a GN path."""
-    if not string.startswith('//'):
-        return string
-
-    resolved_path = gn_root + string[2:]
+    resolved_path = gn_root + string[2:] if string.startswith('//') else string
 
     # GN targets have the format '/path/to/directory:target_name'.
     if string.startswith(out_dir) and ':' in string:
