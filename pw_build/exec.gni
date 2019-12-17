@@ -1,0 +1,49 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("python_script.gni")
+
+# Runs a program which isn't in Python.
+#
+# This is provided to avoid having to write a new Python wrapper script every
+# time a program needs to be run from GN.
+#
+# Args:
+#  program: The program to run. Can be a full path or just a name (in which case
+#    $PATH is searched).
+#  args: Optional list of arguments to the program.
+#  inputs: Optional list of build inputs to the program.
+#  outputs: Optional list of artifacts produced by the program's execution.
+template("pw_exec") {
+  assert(defined(invoker.program), "pw_exec requires a program to run")
+
+  pw_python_script(target_name) {
+    script = "$dir_pw_build/py/exec.py"
+    args = [ invoker.program ]
+
+    if (defined(invoker.args)) {
+      args += invoker.args
+    }
+
+    if (defined(invoker.inputs)) {
+      inputs = invoker.inputs
+    }
+
+    if (defined(invoker.outputs)) {
+      outputs = invoker.outputs
+    } else {
+      stamp = true
+    }
+  }
+}
