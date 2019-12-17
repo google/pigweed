@@ -27,6 +27,7 @@ source_set("pw_string") {
   ]
   public = [
     "public/pw_string/format.h",
+    "public/pw_string/string_builder.h",
     "public/pw_string/to_string.h",
     "public/pw_string/type_to_string.h",
     "public/pw_string/util.h",
