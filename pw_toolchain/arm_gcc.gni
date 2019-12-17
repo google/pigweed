@@ -150,13 +150,20 @@ template("arm_gcc_toolchain") {
               _toolchain_cflags,
               _toolchain_ldflags,
 
-              # The start groups / end groups tag causes the linker to repeatedly
-              # re-link until there are no more missing symbols.
-              "-Wl,--start-group",
               "{{inputs}}",
-              "-Wl,--end-group",
 
+              # Load all object files from all libraries to resolve symbols.
+              # Short of living in the ideal world where all dependency graphs
+              # among static libs are acyclic and all developers diligently
+              # express such graphs in terms that GN understands, this is the
+              # safest option.
+              # Make sure you use this with --gc-sections, otherwise the
+              # resulting binary will contain every symbol defined in every
+              # input file and every static library. That could be quite a lot.
+              "-Wl,--whole-archive",
               "{{libs}}",
+              "-Wl,--no-whole-archive",
+
               "-o $_link_outfile",
             ])
 
