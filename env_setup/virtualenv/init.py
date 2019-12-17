@@ -34,7 +34,14 @@ def git_list_files(*args, **kwargs) -> Sequence[str]:
 
 
 def git_repo_root(path: str = './') -> str:
-    return git_stdout('-C', path, 'rev-parse', '--show-toplevel')
+    try:
+        return git_stdout('-C', path, 'rev-parse', '--show-toplevel')
+    except subprocess.CalledProcessError:
+        return None
+
+
+class GitRepoNotFound(Exception):
+    pass
 
 
 def init(venv_path, requirements=()) -> None:
@@ -52,9 +59,13 @@ def init(venv_path, requirements=()) -> None:
 
     pip_install('--upgrade', 'pip')
 
-    package_args = tuple(f'--editable={os.path.dirname(path)}'
-                         for path in git_list_files(
-                             'setup.py', '*/setup.py', cwd=git_repo_root()))
+    pw_root = os.environ.get('PW_ROOT', git_repo_root())
+    if not pw_root:
+        raise GitRepoNotFound()
+
+    package_args = tuple(
+        f'--editable={os.path.join(pw_root, os.path.dirname(path))}'
+        for path in git_list_files('setup.py', '*/setup.py', cwd=pw_root))
 
     requirement_args = tuple(f'--requirement={req}' for req in requirements)
 
@@ -73,7 +84,13 @@ def _main() -> None:
                         action='append',
                         help='requirements.txt files to install')
 
-    init(**vars(parser.parse_args()))
+    try:
+        init(**vars(parser.parse_args()))
+    except GitRepoNotFound:
+        print('git repository not found', file=sys.stderr)
+        return -1
+
+    return 0
 
 
 if __name__ == '__main__':
