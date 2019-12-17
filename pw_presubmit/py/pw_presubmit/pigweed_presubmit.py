@@ -305,7 +305,10 @@ def _get_paths_from_command(*args):
     return files
 
 
-@filter_paths(endswith=('.rst', *format_code.C_FORMAT.extensions))
+_SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
+
+
+@filter_paths(endswith=(*_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
 
@@ -323,7 +326,7 @@ def source_is_in_build_files(ctx: PresubmitContext):
     missing_bazel = []
     missing_gn = []
 
-    for path in ctx.paths:
+    for path in (p for p in ctx.paths if p.endswith(_SOURCES_IN_BUILD)):
         if not path.endswith('.rst') and path not in build:
             missing_bazel.append(path)
         if path not in build_gn:
