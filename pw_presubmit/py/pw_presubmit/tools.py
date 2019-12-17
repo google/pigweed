@@ -20,8 +20,8 @@ checks communicate failure by raising any exception.
 For example, either of these functions may be used as presubmit checks:
 
   @pw_presubmit.filter_paths(endswith='.py')
-  def file_contains_ni(paths):
-      for path in paths:
+  def file_contains_ni(ctx: PresubmitContext):
+      for path in ctx.paths:
           with open(path) as file:
               contents = file.read()
               if 'ni' not in contents and 'nee' not in contents:
@@ -43,6 +43,7 @@ pragma_once function for an example.
 
 import argparse
 from collections import Counter, defaultdict
+import dataclasses
 import enum
 import logging
 import re
@@ -230,53 +231,65 @@ class _Result(enum.Enum):
         return padding + color(self.value) + padding
 
 
+@dataclasses.dataclass(frozen=True)
+class PresubmitContext:
+    """Context passed into presubmit checks."""
+    repository_root: pathlib.Path
+    paths: List[str]
+
+
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
-    def __init__(self, root, paths: Sequence[str]):
-        self.root: pathlib.Path = pathlib.Path(root)
-        self.paths: Sequence[str] = paths
+    def __init__(self, repository_root: pathlib.Path, paths: List[str]):
+        self._repository_root = repository_root
+        self._paths = paths
 
     def run(self, full_program: Sequence, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
-        program = _apply_filters(full_program, self.paths)
+        program = _apply_filters(full_program, self._paths)
 
-        print(_title(f'Presubmit checks for {self.root.name}'))
+        print(_title(f'Presubmit checks for {self._repository_root.name}'))
         _LOG.info('Running %d of %s on %s in %s', len(program),
-                  plural(full_program, 'check'), plural(self.paths, 'file'),
-                  self.root)
+                  plural(full_program, 'check'), plural(self._paths, 'file'),
+                  self._repository_root)
 
-        _LOG.debug('Paths:\n%s', '\n'.join(self.paths))
+        _LOG.debug('Paths:\n%s', '\n'.join(self._paths))
         print(
-            file_summary(self.paths)
+            file_summary(self._paths)
             or color_yellow('No files are being checked!'))
 
         _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in program))
 
         start_time: float = time.time()
-        passed, failed, skipped = _execute_checks(program, keep_going)
+        passed, failed, skipped = self._execute_checks(program, keep_going)
         _log_summary(time.time() - start_time, passed, failed, skipped)
 
         return not failed and not skipped
 
+    def _create_context(self, paths):
+        return PresubmitContext(repository_root=self._repository_root,
+                                paths=paths)
 
-def _execute_checks(program, keep_going: bool) -> Tuple[int, int, int]:
-    """Runs presubmit checks; returns (passed, failed, skipped) lists."""
-    passed = failed = 0
+    def _execute_checks(self, program,
+                        keep_going: bool) -> Tuple[int, int, int]:
+        """Runs presubmit checks; returns (passed, failed, skipped) lists."""
+        passed = failed = 0
 
-    for i, (check, paths) in enumerate(program, 1):
-        result = check.run(paths, i, len(program))
+        for i, (check, paths) in enumerate(program, 1):
+            ctx = self._create_context(paths=paths)
+            result = check.run(ctx, i, len(program))
 
-        if result is _Result.PASS:
-            passed += 1
-        elif result is _Result.CANCEL:
-            break
-        else:
-            failed += 1
-            if not keep_going:
+            if result is _Result.PASS:
+                passed += 1
+            elif result is _Result.CANCEL:
                 break
+            else:
+                failed += 1
+                if not keep_going:
+                    break
 
-    return passed, failed, len(program) - passed - failed
+        return passed, failed, len(program) - passed - failed
 
 
 def _apply_filters(program, paths) -> List[Tuple['_Check', List]]:
@@ -415,7 +428,8 @@ def run_presubmit(program: Sequence[Callable],
     os.chdir(root)
     files = [os.path.relpath(path, root) for path in files]
 
-    return Presubmit(root, files).run(program, keep_going)
+    presubmit = Presubmit(repository_root=root, paths=files)
+    return presubmit.run(program, keep_going)
 
 
 def parse_args_and_run_presubmit(
@@ -478,18 +492,18 @@ class _Check:
     def name(self):
         return self.__name__
 
-    def run(self, paths: Iterable, count: int, total: int) -> _Result:
+    def run(self, ctx: PresubmitContext, count: int, total: int) -> _Result:
         """Runs the presubmit check on the provided paths."""
 
         print('\n'.join(
             _box(_TOP, f'{count}/{total}', self.name,
-                 plural(paths, "file")).splitlines()[:-1]))
+                 plural(ctx.paths, "file")).splitlines()[:-1]))
 
         _LOG.debug('[%d/%d] Running %s on %s', count, total, self.name,
-                   plural(paths, "file"))
+                   plural(ctx.paths, "file"))
 
         start_time_s = time.time()
-        result = self._call_function(paths)
+        result = self._call_function(ctx)
         time_str = _format_time(time.time() - start_time_s)
         _LOG.debug('%s %s', self.name, result.value)
 
@@ -497,12 +511,9 @@ class _Check:
 
         return result
 
-    def _call_function(self, paths: Iterable) -> _Result:
+    def _call_function(self, ctx: PresubmitContext) -> _Result:
         try:
-            if signature(self._check).parameters:
-                self._check(paths)
-            else:
-                self._check()
+            self._check(ctx)
         except PresubmitFailure as failure:
             if str(failure):
                 _LOG.warning('%s', failure)
@@ -578,10 +589,10 @@ def call(*args, **kwargs) -> None:
 
 
 @filter_paths(endswith='.h')
-def pragma_once(paths: Iterable[str]) -> None:
+def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 
-    for path in paths:
+    for path in ctx.paths:
         with open(path) as file:
             for line in file:
                 if line.startswith('#pragma once'):

@@ -73,8 +73,10 @@ def _diff(path, original: bytes, formatted: bytes) -> str:
             f'{path}  (original)', f'{path}  (reformatted)'))
 
 
-def _diff_formatted(path, formatter: Callable[[str, bytes],
-                                              bytes]) -> Optional[str]:
+Formatter = Callable[[str, bytes], bytes]
+
+
+def _diff_formatted(path, formatter: Formatter) -> Optional[str]:
     """Returns a diff comparing a file to its formatted version."""
     with open(path, 'rb') as fd:
         original = fd.read()
@@ -84,8 +86,7 @@ def _diff_formatted(path, formatter: Callable[[str, bytes],
     return None if formatted == original else _diff(path, original, formatted)
 
 
-def _check_files(files, formatter: Callable[[str, bytes],
-                                            bytes]) -> Dict[str, str]:
+def _check_files(files, formatter: Formatter) -> Dict[str, str]:
     errors = {}
 
     for path in files:
@@ -156,7 +157,7 @@ def _yapf(*args: str, **kwargs) -> subprocess.CompletedProcess:
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
 
 
-def check_py_format(files) -> Dict[str, str]:
+def check_py_format(files: Iterable) -> Dict[str, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     process = _yapf('--diff', *files)
 
@@ -178,7 +179,7 @@ def check_py_format(files) -> Dict[str, str]:
     return errors
 
 
-def fix_py_format(files):
+def fix_py_format(files: Iterable):
     """Fixes formatting for the provided files in place."""
     _yapf('--in-place', *files, check=True)
 
@@ -208,8 +209,8 @@ def print_format_check(errors: Dict[str, str],
 class CodeFormat(NamedTuple):
     language: str
     extensions: Collection[str]
-    check: Callable[[Iterable], Dict[str, str]]
-    fix: Callable[[Iterable], None]
+    check: Callable[[pw_presubmit.PresubmitContext], Dict[str, str]]
+    fix: Callable[[pw_presubmit.PresubmitContext], None]
 
 
 C_FORMAT: CodeFormat = CodeFormat(
@@ -236,8 +237,8 @@ CODE_FORMATS: Sequence[CodeFormat] = (
 def presubmit_check(code_format: CodeFormat) -> Callable:
     """Creates a presubmit check function from a CodeFormat object."""
     @pw_presubmit.filter_paths(endswith=code_format.extensions)
-    def check_code_format(paths):
-        errors = code_format.check(paths)
+    def check_code_format(ctx: pw_presubmit.PresubmitContext):
+        errors = code_format.check(ctx.paths)
         print_format_check(
             errors,
             # When running as part of presubmit, show the fix command help.
@@ -258,7 +259,7 @@ PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
     def __init__(self, files: Iterable[str]):
-        self.paths: List[str] = list(files)
+        self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
         for path in files:

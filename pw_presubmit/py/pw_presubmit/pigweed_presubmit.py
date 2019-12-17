@@ -34,7 +34,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import format_code
+from pw_presubmit import format_code, PresubmitContext
 from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
 
@@ -55,7 +55,7 @@ def run_python_module(*args, **kwargs):
 #
 # Initialization
 #
-def init_cipd():
+def init_cipd(unused_ctx: PresubmitContext):
     cipd = os.path.abspath('.presubmit/cipd')
     call(sys.executable, 'env_setup/cipd/update.py', '--install-dir', cipd)
 
@@ -70,7 +70,7 @@ def init_cipd():
     _LOG.debug('PATH %s', os.environ['PATH'])
 
 
-def init_virtualenv(unused_paths):
+def init_virtualenv(unused_ctx: PresubmitContext):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
     venv = os.path.abspath('.presubmit/venv')
 
@@ -112,13 +112,13 @@ _CLANG_GEN_ARGS = (presubmit_dir('clang'),
                        pw_target_toolchain='"//pw_toolchain:host_clang_os"'))
 
 
-def gn_clang_build():
+def gn_clang_build(unused_ctx: PresubmitContext):
     gn_gen('--export-compile-commands', *_CLANG_GEN_ARGS)
     call('ninja', '-C', presubmit_dir('clang'))
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
-def gn_gcc_build(unused_paths):
+def gn_gcc_build(unused_ctx: PresubmitContext):
     gn_gen(
         presubmit_dir('gcc'),
         gn_args(pw_target_config='"//targets/host/host.gni"',
@@ -132,7 +132,7 @@ _ARM_GEN_ARGS = (
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
-def gn_arm_build(unused_paths):
+def gn_arm_build(unused_ctx: PresubmitContext):
     gn_gen(*_ARM_GEN_ARGS)
     call('ninja', '-C', presubmit_dir('arm'))
 
@@ -148,12 +148,12 @@ GN = (
 # C++ presubmit checks
 #
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
-def clang_tidy(paths):
+def clang_tidy(ctx: PresubmitContext):
     if not os.path.exists(presubmit_dir('clang', 'compile_commands.json')):
         raise PresubmitFailure('clang_tidy MUST be run after generating '
                                'compile_commands.json in a clang build!')
 
-    call('clang-tidy', f'-p={presubmit_dir("clang")}', *paths)
+    call('clang-tidy', f'-p={presubmit_dir("clang")}', *ctx.paths)
 
 
 CC = (
@@ -167,8 +167,8 @@ CC = (
 # Python presubmit checks
 #
 @filter_paths(endswith='.py')
-def test_python_packages(paths):
-    packages = pw_presubmit.find_python_packages(paths)
+def test_python_packages(ctx: PresubmitContext):
+    packages = pw_presubmit.find_python_packages(ctx.paths)
 
     if not packages:
         _LOG.info('No Python packages were found.')
@@ -179,7 +179,7 @@ def test_python_packages(paths):
 
 
 @filter_paths(endswith='.py')
-def pylint(paths):
+def pylint(ctx: PresubmitContext):
     disable_checkers = [
         # BUG(pwbug/22): Hanging indent check conflicts with YAPF 0.29. For
         # now, use YAPF's version even if Pylint is doing the correct thing
@@ -193,13 +193,13 @@ def pylint(paths):
         'pylint',
         '--jobs=0',
         f'--disable={",".join(disable_checkers)}',
-        *paths,
+        *ctx.paths,
     )
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
-def mypy(paths):
-    run_python_module('mypy', *paths)
+def mypy(ctx: PresubmitContext):
+    run_python_module('mypy', *ctx.paths)
 
 
 PYTHON = (
@@ -255,12 +255,12 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
 
 
 @filter_paths(exclude=_EXCLUDE_FROM_COPYRIGHT_NOTICE)
-def copyright_notice(paths):
+def copyright_notice(ctx: PresubmitContext):
     """Checks that the copyright notice is present."""
 
     errors = []
 
-    for path in paths:
+    for path in ctx.paths:
         with open(path) as file:
             # Skip shebang and blank lines
             line = file.readline()
@@ -306,7 +306,7 @@ def _get_paths_from_command(*args):
 
 
 @filter_paths(endswith=('.rst', *format_code.C_FORMAT.extensions))
-def source_is_in_build_files(paths):
+def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
 
     # Collect all paths in the Bazel build.
@@ -323,7 +323,7 @@ def source_is_in_build_files(paths):
     missing_bazel = []
     missing_gn = []
 
-    for path in paths:
+    for path in ctx.paths:
         if not path.endswith('.rst') and path not in build:
             missing_bazel.append(path)
         if path not in build_gn:
