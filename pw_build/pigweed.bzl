@@ -47,6 +47,7 @@ INCLUDES_COPTS = [
     "-Ipw_status/public",
     "-Ipw_string/public",
     "-Ipw_unit_test/public",
+    "-Ipw_unit_test/public_overrides",
     "-Ipw_varint/public",
 ]
 

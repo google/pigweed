@@ -41,9 +41,9 @@ pw_cc_library(
         "main.cc",
     ],
     hdrs = [
-        "public/gtest/gtest.h",
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/framework.h",
+        "public_overrides/gtest/gtest.h",
     ],
     deps = [
         ":simple_printing_event_handler",

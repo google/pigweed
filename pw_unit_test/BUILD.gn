@@ -15,7 +15,10 @@
 import("$dir_pw_build/pw_executable.gni")
 
 config("default_config") {
-  include_dirs = [ "public" ]
+  include_dirs = [
+    "public",
+    "public_overrides",
+  ]
 }
 
 # pw_unit_test core library.
@@ -29,9 +32,9 @@ source_set("pw_unit_test") {
     "$dir_pw_string",
   ]
   public = [
-    "public/gtest/gtest.h",
     "public/pw_unit_test/event_handler.h",
     "public/pw_unit_test/framework.h",
+    "public_overrides/gtest/gtest.h",
   ]
   sources = [ "framework.cc" ] + public
 }
