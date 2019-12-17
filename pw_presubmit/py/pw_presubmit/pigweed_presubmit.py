@@ -420,8 +420,8 @@ def main(
         shutil.rmtree(environment.joinpath('venv'))
 
     if install:
-        install_hook(__file__, 'pre-push', ['--base', 'origin/master'],
-                     presubmit_args['directory'])
+        install_hook(__file__, 'pre-push', ['--base', 'origin/master..HEAD'],
+                     directory)
         return 0
 
     program = PROGRAMS[program_name]
