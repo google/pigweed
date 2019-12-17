@@ -33,7 +33,7 @@ DEFAULT_PROTOC_PLUGINS = {
 
 
 def argument_parser(
-        parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
