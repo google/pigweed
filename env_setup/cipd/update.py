@@ -15,6 +15,8 @@
 """Installs or updates prebuilt tools.
 
 Must be tested with Python 2 and Python 3.
+
+The stdout of this script is meant to be executed by the invoking shell.
 """
 
 from __future__ import print_function
@@ -54,8 +56,9 @@ def check_auth(cipd, print_shell_commands):
 
     except subprocess.CalledProcessError:
         print('=' * 60, file=sys.stderr)
-        print('ERROR: not logged into CIPD--please run this command:')
-        print(cipd, 'auth-login`', file=sys.stderr)
+        print('ERROR: not logged into CIPD--please run this command:',
+              file=sys.stderr)
+        print(cipd, 'auth-login', file=sys.stderr)
         print('=' * 60, file=sys.stderr)
 
         if print_shell_commands:
