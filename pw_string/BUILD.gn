@@ -70,7 +70,6 @@ pw_test("format_test") {
 pw_test("string_builder_test") {
   deps = [
     ":pw_string",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "string_builder_test.cc",
@@ -98,7 +97,6 @@ pw_test("type_to_string_test") {
 pw_test("util_test") {
   deps = [
     ":pw_string",
-    "$dir_pw_unit_test:main",
   ]
   sources = [
     "util_test.cc",
