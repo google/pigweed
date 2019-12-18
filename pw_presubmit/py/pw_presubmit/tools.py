@@ -94,9 +94,9 @@ def git_diff_names(commit: str = 'HEAD',
                    paths: Sequence[str] = (),
                    repo: str = '.') -> Sequence[str]:
     """Returns absolute paths of files changed since the specified commit."""
-    root = git_repo_path()
+    root = git_repo_path(repo=repo)
     return [
-        os.path.join(root, path) for path in git_stdout(
+        os.path.abspath(os.path.join(root, path)) for path in git_stdout(
             'diff', '--name-only', commit, '--', *paths, repo=repo).split()
     ]
 
@@ -109,7 +109,7 @@ def list_git_files(
 ) -> Sequence[str]:
     """Lists files with git ls-files or git diff --name-only.
 
-    This function may only be called if os.getcwd() is in a Git repository.
+    This function may only be called if repo is or is in a Git repository.
     """
 
     if commit:
@@ -235,13 +235,16 @@ class _Result(enum.Enum):
 class PresubmitContext:
     """Context passed into presubmit checks."""
     repository_root: pathlib.Path
+    output_directory: pathlib.Path
     paths: List[str]
 
 
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
-    def __init__(self, repository_root: pathlib.Path, paths: List[str]):
+    def __init__(self, repository_root: pathlib.Path,
+                 output_directory: pathlib.Path, paths: List[str]):
         self._repository_root = repository_root
+        self._output_directory = output_directory
         self._paths = paths
 
     def run(self, full_program: Sequence, keep_going: bool = False) -> bool:
@@ -267,9 +270,14 @@ class Presubmit:
 
         return not failed and not skipped
 
-    def _create_context(self, paths):
-        return PresubmitContext(repository_root=self._repository_root,
-                                paths=paths)
+    def _create_context(self, name, paths):
+        sanitized_name = re.sub(r'[\W_]+', '_', name).lower()
+        output_directory = self._output_directory.joinpath(sanitized_name)
+        os.makedirs(output_directory, exist_ok=True)
+        return PresubmitContext(
+            repository_root=self._repository_root.absolute(),
+            output_directory=output_directory.absolute(),
+            paths=paths)
 
     def _execute_checks(self, program,
                         keep_going: bool) -> Tuple[int, int, int]:
@@ -277,7 +285,8 @@ class Presubmit:
         passed = failed = 0
 
         for i, (check, paths) in enumerate(program, 1):
-            ctx = self._create_context(paths=paths)
+            paths = [self._repository_root.joinpath(p) for p in paths]
+            ctx = self._create_context(check.name, paths=paths)
             result = check.run(ctx, i, len(program))
 
             if result is _Result.PASS:
@@ -377,8 +386,8 @@ def add_arguments(parser) -> None:
 
     add_path_arguments(parser)
     parser.add_argument(
-        '-C',
-        dest='directory',
+        '-r',
+        '--repository',
         default='.',
         help=(
             'Change to this directory before resolving paths or running the '
@@ -393,7 +402,8 @@ def run_presubmit(program: Sequence[Callable],
                   base: Optional[str] = None,
                   paths: Sequence[str] = (),
                   exclude: Sequence = (),
-                  directory=None,
+                  repository=None,
+                  output_directory=None,
                   keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -405,30 +415,35 @@ def run_presubmit(program: Sequence[Callable],
         base: optional base Git commit to list files against
         paths: optional list of paths to run the presubmit checks against
         exclude: regular expressions of paths to exclude from checks
-        directory: change to this directory before resolving paths or running
+        repository: git repository to check
+        output_directory: where to place output files
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
         True if all presubmit checks succeeded
     """
-    if directory:
-        os.chdir(directory)
 
-    if not is_git_repo():
+    if not is_git_repo(repository):
         _LOG.critical('Presubmit checks must be run from a Git repo')
         return False
 
-    files = list_git_files(base, paths, exclude)
-    root = git_repo_path()
+    files = list_git_files(base, paths, exclude, repository)
+    root = git_repo_path(repo=repository)
 
-    if not root.samefile(pathlib.Path.cwd()):
+    if not root.samefile(repository):
         _LOG.info('Checking files in the %s subdirectory of the %s repository',
                   pathlib.Path.cwd().relative_to(root), root)
 
-    os.chdir(root)
     files = [os.path.relpath(path, root) for path in files]
 
-    presubmit = Presubmit(repository_root=root, paths=files)
+    if not output_directory:
+        output_directory = root.joinpath('.presubmit')
+
+    presubmit = Presubmit(
+        repository_root=root,
+        output_directory=output_directory,
+        paths=files,
+    )
     return presubmit.run(program, keep_going)
 
 
@@ -446,11 +461,11 @@ def parse_args_and_run_presubmit(
     return run_presubmit(program, **vars(arg_parser.parse_args()))
 
 
-def find_python_packages(python_paths) -> Dict[str, List[str]]:
+def find_python_packages(python_paths, repo='.') -> Dict[str, List[str]]:
     """Returns Python package directories for the files in python_paths."""
     setup_pys = [
-        os.path.dirname(file) for file in _git_ls_files(
-            'setup.py', '*/setup.py', repo=git_repo_path())
+        os.path.dirname(file)
+        for file in _git_ls_files('setup.py', '*/setup.py', repo=repo)
     ]
 
     package_dirs: Dict[str, List[str]] = defaultdict(list)
@@ -561,7 +576,7 @@ def log_run(*args, **kwargs) -> subprocess.CompletedProcess:
     """Logs a command then runs it with subprocess.run."""
     _LOG.debug('[COMMAND] %s\n%s',
                ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-               ' '.join(shlex.quote(arg) for arg in args))
+               ' '.join(shlex.quote(str(arg)) for arg in args))
     return subprocess.run(args, **kwargs)
 
 
@@ -575,7 +590,7 @@ def call(*args, **kwargs) -> None:
 
     log('[COMMAND] %s\n%s',
         ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-        ' '.join(shlex.quote(arg) for arg in args))
+        ' '.join(shlex.quote(str(arg)) for arg in args))
 
     log('[RESULT] %s with return code %d',
         'Failed' if process.returncode else 'Passed', process.returncode)

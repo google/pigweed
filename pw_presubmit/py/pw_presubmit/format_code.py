@@ -199,8 +199,13 @@ def print_format_check(errors: Dict[str, str],
 
     # Show a copy-and-pastable command to fix the issues.
     if show_fix_commands:
-        path_relative_to_cwd = (
-            lambda p: Path(p).resolve().relative_to(Path.cwd().resolve()))
+
+        def path_relative_to_cwd(path):
+            try:
+                return Path(path).resolve().relative_to(Path.cwd().resolve())
+            except ValueError:
+                return Path(path).resolve()
+
         message = (f'  pw format --fix {path_relative_to_cwd(path)}'
                    for path in errors)
         _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))

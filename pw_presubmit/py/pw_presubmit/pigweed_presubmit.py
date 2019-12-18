@@ -16,9 +16,9 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
-import glob
 import logging
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -40,13 +40,6 @@ from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
-PRESUBMIT_PREFIX = '.presubmit'
-
-
-def presubmit_dir(*paths):
-    """Returns a relative path from the presubmit output directory."""
-    return os.path.join(PRESUBMIT_PREFIX, *paths)
-
 
 def run_python_module(*args, **kwargs):
     return call('python', '-m', *args, **kwargs)
@@ -55,36 +48,38 @@ def run_python_module(*args, **kwargs):
 #
 # Initialization
 #
-def init_cipd(unused_ctx: PresubmitContext):
-    cipd = os.path.abspath('.presubmit/cipd')
-    call(sys.executable, 'env_setup/cipd/update.py', '--install-dir', cipd)
+def init_cipd(ctx: PresubmitContext):
+    call(sys.executable,
+         ctx.repository_root.joinpath('env_setup/cipd/update.py'),
+         '--install-dir', ctx.output_directory)
 
-    paths = [cipd, os.path.join(cipd, 'bin')]
-    for base in glob.glob(os.path.join(cipd, '*')):
+    paths = [ctx.output_directory, ctx.output_directory.joinpath('bin')]
+    for base in ctx.output_directory.glob('*'):
         paths.append(base)
         paths.append(os.path.join(base, 'bin'))
 
     paths.append(os.environ['PATH'])
 
-    os.environ['PATH'] = os.pathsep.join(paths)
+    os.environ['PATH'] = os.pathsep.join(str(x) for x in paths)
     _LOG.debug('PATH %s', os.environ['PATH'])
 
 
-def init_virtualenv(unused_ctx: PresubmitContext):
+def init_virtualenv(ctx: PresubmitContext):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
-    venv = os.path.abspath('.presubmit/venv')
+    virtualenv_source = ctx.repository_root.joinpath('env_setup/virtualenv')
 
     # For speed, don't build the venv if it exists. Use --clean to recreate it.
-    if not os.path.isdir(venv):
+    if not ctx.output_directory.joinpath('pyvenv.cfg').is_file():
         call(
             'python3',
-            'env_setup/virtualenv/init.py',
-            f'--venv_path={venv}',
-            '--requirements=env_setup/virtualenv/requirements.txt',
+            virtualenv_source.joinpath('init.py'),
+            f'--venv_path={ctx.output_directory}',
+            '--requirements={}'.format(
+                virtualenv_source.joinpath('requirements.txt')),
         )
 
     os.environ['PATH'] = os.pathsep.join((
-        os.path.join(venv, 'bin'),
+        str(ctx.output_directory.joinpath('bin')),
         os.environ['PATH'],
     ))
 
@@ -102,39 +97,43 @@ def gn_args(**kwargs):
     return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
 
 
-def gn_gen(*args):
-    call('gn', 'gen', '--color=always', '--check', *args)
+def gn_gen(*args, path, repo):
+    call('gn', 'gen', path, '--color=always', '--check', *args, cwd=repo)
 
 
-_CLANG_GEN_ARGS = (presubmit_dir('clang'),
-                   gn_args(
-                       pw_target_config='"//targets/host/host.gni"',
-                       pw_target_toolchain='"//pw_toolchain:host_clang_os"'))
+def ninja(path, repo):
+    call('ninja', '-C', path.absolute(), cwd=repo)
 
 
-def gn_clang_build(unused_ctx: PresubmitContext):
-    gn_gen('--export-compile-commands', *_CLANG_GEN_ARGS)
-    call('ninja', '-C', presubmit_dir('clang'))
+_CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
+                          pw_target_toolchain='"//pw_toolchain:host_clang_os"')
 
 
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
-def gn_gcc_build(unused_ctx: PresubmitContext):
-    gn_gen(
-        presubmit_dir('gcc'),
-        gn_args(pw_target_config='"//targets/host/host.gni"',
-                pw_target_toolchain='"//pw_toolchain:host_gcc_os"'))
-    call('ninja', '-C', presubmit_dir('gcc'))
-
-
-_ARM_GEN_ARGS = (
-    presubmit_dir('arm'),
-    gn_args(pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"'))
+def gn_clang_build(ctx: PresubmitContext):
+    gn_gen('--export-compile-commands',
+           _CLANG_GEN_ARGS,
+           path=ctx.output_directory,
+           repo=ctx.repository_root)
+    ninja(path=ctx.output_directory, repo=ctx.repository_root)
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
-def gn_arm_build(unused_ctx: PresubmitContext):
-    gn_gen(*_ARM_GEN_ARGS)
-    call('ninja', '-C', presubmit_dir('arm'))
+def gn_gcc_build(ctx: PresubmitContext):
+    gn_gen(gn_args(pw_target_config='"//targets/host/host.gni"',
+                   pw_target_toolchain='"//pw_toolchain:host_gcc_os"'),
+           path=ctx.output_directory,
+           repo=ctx.repository_root)
+    ninja(path=ctx.output_directory, repo=ctx.repository_root)
+
+
+_ARM_GEN_ARGS = gn_args(
+    pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"')
+
+
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
+def gn_arm_build(ctx: PresubmitContext):
+    gn_gen(_ARM_GEN_ARGS, path=ctx.output_directory, repo=ctx.repository_root)
+    ninja(path=ctx.output_directory, repo=ctx.repository_root)
 
 
 GN = (
@@ -149,11 +148,13 @@ GN = (
 #
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(ctx: PresubmitContext):
-    if not os.path.exists(presubmit_dir('clang', 'compile_commands.json')):
+    # TODO(mohrr) should this check just do a new clang build?
+    out = ctx.output_directory.joinpath('..', 'gn_clang_build')
+    if not out.joinpath('compile_commands.json').exists():
         raise PresubmitFailure('clang_tidy MUST be run after generating '
                                'compile_commands.json in a clang build!')
 
-    call('clang-tidy', f'-p={presubmit_dir("clang")}', *ctx.paths)
+    call('clang-tidy', f'-p={out}', *ctx.paths)
 
 
 CC = (
@@ -168,7 +169,8 @@ CC = (
 #
 @filter_paths(endswith='.py')
 def test_python_packages(ctx: PresubmitContext):
-    packages = pw_presubmit.find_python_packages(ctx.paths)
+    packages = pw_presubmit.find_python_packages(ctx.paths,
+                                                 repo=ctx.repository_root)
 
     if not packages:
         _LOG.info('No Python packages were found.')
@@ -194,6 +196,7 @@ def pylint(ctx: PresubmitContext):
         '--jobs=0',
         f'--disable={",".join(disable_checkers)}',
         *ctx.paths,
+        cwd=ctx.repository_root,
     )
 
 
@@ -214,10 +217,13 @@ PYTHON = (
 # Bazel presubmit checks
 #
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
-def bazel_test(unused_paths):
-    prefix = '.presubmit/bazel-'
-    call('bazel', 'build', '//...', '--symlink_prefix', prefix)
-    call('bazel', 'test', '//...', '--symlink_prefix', prefix)
+def bazel_test(ctx: PresubmitContext):
+    call('bazel',
+         'test',
+         '//...',
+         '--symlink_prefix',
+         ctx.output_directory.joinpath('bazel-'),
+         cwd=ctx.repository_root)
 
 
 BAZEL = (bazel_test, )
@@ -261,6 +267,7 @@ def copyright_notice(ctx: PresubmitContext):
     errors = []
 
     for path in ctx.paths:
+        path = ctx.repository_root.joinpath(path)
         with open(path) as file:
             # Skip shebang and blank lines
             line = file.readline()
@@ -292,14 +299,19 @@ CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 #
 
 
-def _get_paths_from_command(*args):
+def _get_paths_from_command(*args, cwd: pathlib.Path, **kwargs):
     """Runs a command and reads Bazel or GN //-style paths from it."""
-    process = log_run(*args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    process = log_run(*args,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.DEVNULL,
+                      cwd=cwd,
+                      **kwargs)
     files = set()
 
     for line in process.stdout.splitlines():
         path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
-        if os.path.isfile(path):
+        path = cwd.joinpath(path)
+        if path.is_file():
             files.add(path)
 
     return files
@@ -313,21 +325,34 @@ def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
 
     # Collect all paths in the Bazel build.
-    build = _get_paths_from_command('bazel', 'query',
-                                    'kind("source file", //...:*)')
+    build_bazel = _get_paths_from_command('bazel',
+                                          'query',
+                                          'kind("source file", //...:*)',
+                                          cwd=ctx.repository_root)
 
     # Collect all paths in the ARM and Clang GN builds.
-    gn_gen(*_ARM_GEN_ARGS)
-    build_gn = _get_paths_from_command('gn', 'desc', presubmit_dir('arm'), '*')
-    gn_gen(*_CLANG_GEN_ARGS)
+    arm_dir = ctx.output_directory.joinpath('arm')
+    gn_gen(_ARM_GEN_ARGS, path=arm_dir, repo=ctx.repository_root)
+    build_gn = _get_paths_from_command('gn',
+                                       'desc',
+                                       arm_dir,
+                                       '*',
+                                       cwd=ctx.repository_root)
+
+    clang_dir = ctx.output_directory.joinpath('clang')
+    gn_gen(_CLANG_GEN_ARGS, path=clang_dir, repo=ctx.repository_root)
     build_gn.update(
-        _get_paths_from_command('gn', 'desc', presubmit_dir('clang'), '*'))
+        _get_paths_from_command('gn',
+                                'desc',
+                                clang_dir,
+                                '*',
+                                cwd=ctx.repository_root))
 
     missing_bazel = []
     missing_gn = []
 
-    for path in (p for p in ctx.paths if p.endswith(_SOURCES_IN_BUILD)):
-        if not path.endswith('.rst') and path not in build:
+    for path in (p for p in ctx.paths if p.suffix in _SOURCES_IN_BUILD):
+        if path.suffix != '.rst' and path not in build_bazel:
             missing_bazel.append(path)
         if path not in build_gn:
             missing_gn.append(path)
@@ -336,7 +361,8 @@ def source_is_in_build_files(ctx: PresubmitContext):
         for build, files in [('Bazel', missing_bazel), ('GN', missing_gn)]:
             if files:
                 _LOG.warning('%s are missing from the %s build:\n%s',
-                             plural(files, 'file'), build, '\n'.join(files))
+                             plural(files, 'file'), build,
+                             '\n'.join(str(x) for x in files))
 
         _LOG.warning(
             'All source files must appear in BUILD and BUILD.gn files')
@@ -370,13 +396,22 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument(
+        '-o',
+        '--output-directory',
+        type=pathlib.Path,
+        help='Output directory (default: <repo root>/.presubmit)',
+    )
+
+    parser.add_argument(
         '--clean',
         action='store_true',
-        help='Delete the entire .presubmit directory before starting.')
+        help='Delete the entire output directory before starting.',
+    )
     parser.add_argument(
         '--clean-py',
         action='store_true',
-        help='Delete the Python virtualenv at .presubmit/venv before starting.'
+        help=('Delete the Python virtualenv in the output directory before '
+              'starting.'),
     )
 
     exclusive = parser.add_mutually_exclusive_group()
@@ -408,13 +443,17 @@ def main(
         clean: bool,
         clean_py: bool,
         install: bool,
-        directory: str,
+        repository: str,
+        output_directory: str,
         step: Sequence[str],
         **presubmit_args,
 ) -> int:
     """Entry point for presubmit."""
 
-    environment = pw_presubmit.git_repo_path(PRESUBMIT_PREFIX, repo=directory)
+    if not output_directory:
+        output_directory = pw_presubmit.git_repo_path('.presubmit',
+                                                      repo=repository)
+    environment = output_directory
     _LOG.debug('Using environment at %s', environment)
 
     if clean and environment.exists():
@@ -424,7 +463,7 @@ def main(
 
     if install:
         install_hook(__file__, 'pre-push', ['--base', 'origin/master..HEAD'],
-                     directory)
+                     repository)
         return 0
 
     program = PROGRAMS[program_name]
@@ -432,7 +471,8 @@ def main(
         program = [x for x in PROGRAMS['full'] if x.__name__ in step]
 
     if pw_presubmit.run_presubmit(program,
-                                  directory=directory,
+                                  repository=repository,
+                                  output_directory=output_directory,
                                   **presubmit_args):
         return 0
 
