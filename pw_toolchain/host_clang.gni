@@ -26,6 +26,17 @@ template("host_clang") {
   if (defined(invoker.toolchain_cflags)) {
     _cflags_list += invoker.toolchain_cflags
   }
+
+  if (host_os == "mac") {
+    _xcode_sysroot = exec_script("$dir_pw_build/py/exec.py",
+                                 [
+                                   "/usr/bin/xcrun",
+                                   "--show-sdk-path",
+                                 ],
+                                 "trim string")
+    _cflags_list += [ "--sysroot=$_xcode_sysroot" ]
+  }
+
   _toolchain_cflags = string_join(" ", _cflags_list)
 
   # Toolchain LD flags
