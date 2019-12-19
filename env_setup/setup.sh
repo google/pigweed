@@ -57,6 +57,6 @@ if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
   . "$PW_ENVSETUP/virtualenv/init.sh"
 fi
 
-if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
+if [[ -n "$ABORT_PW_ENVSETUP" ]]; then
   echo "Environment setup failed! Please see messages above." 1>&2
 fi
