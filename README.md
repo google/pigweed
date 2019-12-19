@@ -29,14 +29,14 @@ of tools&mdash;they should be installed under `env_setup/`.
 
 ```bash
 $ which gn
-~/pigweed/env_setup/cipd/tools/gn
+~/pigweed/.cipd/pigweed.ensure/gn
 $ gn gen out/host
 $ ninja -C out/host
 ```
 
 ```bash
 $ which bazel
-~/pigweed/env_setup/cipd/tools/bazel
+~/pigweed/.cipd/pigweed.ensure/bazel
 $ bazel test //...
 ```
 
