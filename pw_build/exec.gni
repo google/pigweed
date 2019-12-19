@@ -23,21 +23,71 @@ import("python_script.gni")
 #  program: The program to run. Can be a full path or just a name (in which case
 #    $PATH is searched).
 #  args: Optional list of arguments to the program.
+#  deps: Dependencies for this target.
 #  inputs: Optional list of build inputs to the program.
 #  outputs: Optional list of artifacts produced by the program's execution.
+#  env: Optional list of key-value pairs defining environment variables for
+#    the program.
+#  env_file: Optional path to a file containing a list of newline-separated
+#    key-value pairs defining environment variables for the program.
+#
+# Example:
+#
+#   pw_exec("hello_world") {
+#     program = "/bin/sh"
+#     args = [
+#       "-c",
+#       "echo hello \$WORLD",
+#     ]
+#     env = [
+#       "WORLD=world",
+#     ]
+#   }
+#
 template("pw_exec") {
   assert(defined(invoker.program), "pw_exec requires a program to run")
 
+  _script_args = []
+
+  if (defined(invoker.env_file)) {
+    _script_args += [
+      "--env-file",
+      get_path_info(invoker.env_file, "abspath"),
+    ]
+  }
+
+  if (defined(invoker.env)) {
+    foreach(_env, invoker.env) {
+      _script_args += [
+        "--env",
+        _env,
+      ]
+    }
+  }
+
+  _script_args += [
+    "--",
+    invoker.program,
+  ]
+  if (defined(invoker.args)) {
+    _script_args += invoker.args
+  }
+
   pw_python_script(target_name) {
     script = "$dir_pw_build/py/exec.py"
-    args = [ invoker.program ]
+    args = _script_args
 
-    if (defined(invoker.args)) {
-      args += invoker.args
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "inputs",
+                           ])
+
+    if (!defined(inputs)) {
+      inputs = []
     }
-
-    if (defined(invoker.inputs)) {
-      inputs = invoker.inputs
+    if (defined(invoker.env_file)) {
+      inputs += [ invoker.env_file ]
     }
 
     if (defined(invoker.outputs)) {
