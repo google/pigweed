@@ -39,7 +39,6 @@ group("pw_facades") {
 group("pw_modules") {
   deps = [
     "$dir_pigweed/docs",
-    "$dir_pw_bloat",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",
     "$dir_pw_span",

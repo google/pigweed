@@ -15,12 +15,6 @@
 import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_docgen/docs.gni")
 
-group("pw_bloat") {
-  deps = [
-    "$dir_pw_bloat/examples:simple_bloat",
-  ]
-}
-
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -52,5 +46,8 @@ pw_doc_group("docs") {
   sources = [
     "docs.rst",
   ]
-  report_deps = [ "examples:simple_bloat" ]
+  report_deps = [
+    "examples:simple_bloat_loop",
+    "examples:simple_bloat_function",
+  ]
 }

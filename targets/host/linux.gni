@@ -19,6 +19,39 @@ declare_args() {
   pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
 }
 
+pw_size_report_toolchains = [
+  {
+    name = "x86_64-gcc -Og"
+    target = "$dir_pw_toolchain:host_gcc_og"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+  {
+    name = "x86_64-gcc -Os"
+    target = "$dir_pw_toolchain:host_gcc_os"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+  {
+    name = "x86_64-gcc -O2"
+    target = "$dir_pw_toolchain:host_gcc_o2"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+  {
+    name = "x86_64-clang -Og"
+    target = "$dir_pw_toolchain:host_clang_og"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+  {
+    name = "x86_64-clang -Os"
+    target = "$dir_pw_toolchain:host_clang_os"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+  {
+    name = "x86_64-clang -O2"
+    target = "$dir_pw_toolchain:host_clang_o2"
+    bloaty_config = get_path_info("linux.bloaty", "abspath")
+  },
+]
+
 pw_executable_config.bloaty_config_file =
     get_path_info("linux.bloaty", "abspath")
 

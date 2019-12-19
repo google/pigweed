@@ -46,6 +46,20 @@ pw_executable_config = {
 # the previous toolchain's build before building again.
 pw_target_toolchain = ""
 
+# List of toolchains to use in pw_toolchain_size_report templates.
+#
+# Each entry is a scope containing the following variables:
+#
+#   name: Human-readable toolchain name.
+#   target: GN target that defines the toolchain.
+#   linker_script: Optional path to a linker script file to build for the
+#     toolchain's target.
+#   bloaty_config: Optional Bloaty confirugation file defining the memory
+#     layout of the binaries as specified in the linker script.
+#
+# If this list is empty, pw_toolchain_size_report targets become no-ops.
+pw_size_report_toolchains = []
+
 # Implementation of a main function for "pw_test" unit test binaries.
 pw_unit_test_main = "$dir_pw_unit_test:main"
 

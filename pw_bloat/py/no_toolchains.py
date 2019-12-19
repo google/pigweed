@@ -11,31 +11,27 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Outputs a ReST warning about the size toolchains variable being empty."""
 
-import("../bloat.gni")
+import os
+import sys
 
-pw_toolchain_size_report("simple_bloat_loop") {
-  base_executable = {
-    sources = [
-      "simple_base.cc",
-    ]
-  }
-  diff_executable = {
-    sources = [
-      "simple_loop.cc",
-    ]
-  }
-}
+_NO_TOOLCHAIN_ERROR: str = '''
+.. warning::
 
-pw_toolchain_size_report("simple_bloat_function") {
-  base_executable = {
-    sources = [
-      "simple_base.cc",
-    ]
-  }
-  diff_executable = {
-    sources = [
-      "simple_function.cc",
-    ]
-  }
-}
+  The ``pw_size_report_toolchains`` build variable is empty for this target.
+  Size reports will not be generated.
+
+  See :ref:`bloat-howto` for details on how to set up size reports.
+'''
+
+
+def main() -> int:
+    os.makedirs(os.path.dirname(sys.argv[1]), exist_ok=True)
+    with open(sys.argv[1], 'w') as fd:
+        fd.write(_NO_TOOLCHAIN_ERROR)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         'Generate a size report card for binaries')
     parser.add_argument('--bloaty-config',
-                        type=str,
+                        type=delimited_list(';'),
                         required=True,
                         help='Data source configuration for Bloaty')
     parser.add_argument('--full',
@@ -153,11 +153,11 @@ def main() -> int:
     report = []
 
     for i, binary in enumerate(diff_binaries):
-        binary_name = args.labels[i] if i < len(
-            args.labels) else os.path.basename(binary)
+        binary_name = (args.labels[i]
+                       if i < len(args.labels) else os.path.basename(binary))
         try:
-            output = run_bloaty(binary, args.bloaty_config, base_binaries[i],
-                                data_sources, extra_args)
+            output = run_bloaty(binary, args.bloaty_config[i],
+                                base_binaries[i], data_sources, extra_args)
             if not output:
                 continue
 
