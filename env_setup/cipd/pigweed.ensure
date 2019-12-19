@@ -50,4 +50,6 @@ infra/tools/protoc/${platform} protobuf_version:v3.8.0
 fuchsia/third_party/clang/${platform} git_revision:fc31b58eff9da4447f9f332f07de3cd07ab4b56c
 
 # Python 3
+# When bumping the minor version (e.g., to 3.9.x) also update
+# env_setup/virtualenv/init.py to check for the new version.
 infra/3pp/tools/cpython3/${platform} version:3.8.0.chromium.7

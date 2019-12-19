@@ -41,8 +41,22 @@ export PW_ROOT
 
 unset ABORT_PW_ENVSETUP
 
+# Initialize CIPD.
 . "$PW_ENVSETUP/cipd/init.sh"
 
+# Check that Python 3 comes from CIPD.
+if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
+  if [[ $(which python3) != *"cipd"* ]]; then
+    echo "Python not from CIPD--found $(which python3) instead" 1>&2
+    ABORT_PW_ENVSETUP=1
+  fi
+fi
+
+# Initialize Python 3 virtual environment.
 if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
   . "$PW_ENVSETUP/virtualenv/init.sh"
+fi
+
+if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
+  echo "Environment setup failed! Please see messages above." 1>&2
 fi

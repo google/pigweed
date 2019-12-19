@@ -74,6 +74,15 @@ def init(venv_path, requirements=()) -> None:
 
 
 def _main() -> None:
+    expected_version = (3, 8)
+    if sys.version_info[0:2] != expected_version:
+        print('Bad Python version detected: {}'.format(sys.version),
+              file=sys.stderr)
+        print('Expected: {}'.format('.'.join(str(x)
+                                             for x in expected_version)),
+              file=sys.stderr)
+        return -1
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--venv_path',
                         required=True,
