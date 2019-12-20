@@ -32,6 +32,7 @@ pw_cc_library(
         "public/pw_protobuf/encoder.h",
     ],
     deps = [
+        "//pw_span",
         "//pw_status",
         "//pw_varint",
     ],
