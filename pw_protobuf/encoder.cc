@@ -25,7 +25,7 @@ Status Encoder::WriteUint64(uint32_t field_number, uint64_t value) {
 }
 
 // Encodes a base-128 varint to the buffer.
-Status Encoder::WriteVarint(uint64_t integer) {
+Status Encoder::WriteVarint(uint64_t value) {
   if (!encode_status_.ok()) {
     return encode_status_;
   }
@@ -36,7 +36,7 @@ Status Encoder::WriteVarint(uint64_t integer) {
     return encode_status_;
   }
 
-  size_t written = pw::varint::EncodeLittleEndianBase128(integer, varint_buf);
+  size_t written = pw::varint::EncodeLittleEndianBase128(value, varint_buf);
   if (written == 0) {
     encode_status_ = Status::RESOURCE_EXHAUSTED;
     return encode_status_;
