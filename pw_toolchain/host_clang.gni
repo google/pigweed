@@ -30,6 +30,7 @@ template("host_clang") {
   if (host_os == "mac") {
     _xcode_sysroot = exec_script("$dir_pw_build/py/exec.py",
                                  [
+                                   "--",
                                    "/usr/bin/xcrun",
                                    "--show-sdk-path",
                                  ],
