@@ -221,6 +221,9 @@ def bazel_test(ctx: PresubmitContext):
     call('bazel',
          'test',
          '//...',
+         '--verbose_failures',
+         '--verbose_explanations',
+         '--worker_verbose',
          '--symlink_prefix',
          ctx.output_directory.joinpath('bazel-'),
          cwd=ctx.repository_root)
