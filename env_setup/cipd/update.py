@@ -101,6 +101,7 @@ def update(argv=None):
             '-ensure-file', ensure_file,
             '-root', install_dir,
             '-log-level', 'warning',
+            '-max-threads', '0',  # 0 means use CPU count.
         ]  # yapf: disable
 
         print(*cmd, file=sys.stderr)
