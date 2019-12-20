@@ -184,8 +184,10 @@ def fix_py_format(files: Iterable):
     _yapf('--in-place', *files, check=True)
 
 
-def print_format_check(errors: Dict[str, str],
-                       show_fix_commands: bool) -> None:
+def print_format_check(
+        errors: Dict[str, str],
+        show_fix_commands: bool,
+) -> None:
     """Prints and returns the result of a check_*_format function."""
     if not errors:
         # Don't print anything in the all-good case.
@@ -214,8 +216,8 @@ def print_format_check(errors: Dict[str, str],
 class CodeFormat(NamedTuple):
     language: str
     extensions: Collection[str]
-    check: Callable[[pw_presubmit.PresubmitContext], Dict[str, str]]
-    fix: Callable[[pw_presubmit.PresubmitContext], None]
+    check: Callable[[Iterable], Dict[str, str]]
+    fix: Callable[[Iterable], None]
 
 
 C_FORMAT: CodeFormat = CodeFormat(

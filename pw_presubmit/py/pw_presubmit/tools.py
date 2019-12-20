@@ -43,6 +43,7 @@ pragma_once function for an example.
 
 import argparse
 from collections import Counter, defaultdict
+import contextlib
 import dataclasses
 import enum
 import logging
@@ -58,6 +59,7 @@ from typing import Sequence, Tuple
 from inspect import signature
 
 _LOG: logging.Logger = logging.getLogger(__name__)
+_LOG.setLevel(logging.DEBUG)
 
 
 def plural(items_or_count, singular: str, count_format='') -> str:
@@ -270,14 +272,30 @@ class Presubmit:
 
         return not failed and not skipped
 
-    def _create_context(self, name, paths):
+    @contextlib.contextmanager
+    def _context(self, name, paths):
+        # There are many characters banned from filenames on Windows. To
+        # simplify things, just strip everything that's not a letter, digit,
+        # or underscore.
         sanitized_name = re.sub(r'[\W_]+', '_', name).lower()
         output_directory = self._output_directory.joinpath(sanitized_name)
         os.makedirs(output_directory, exist_ok=True)
-        return PresubmitContext(
-            repository_root=self._repository_root.absolute(),
-            output_directory=output_directory.absolute(),
-            paths=paths)
+
+        handler = logging.FileHandler(output_directory.joinpath(f'step.log'),
+                                      mode='w')
+        handler.setLevel(logging.DEBUG)
+
+        try:
+            _LOG.addHandler(handler)
+
+            yield PresubmitContext(
+                repository_root=self._repository_root.absolute(),
+                output_directory=output_directory.absolute(),
+                paths=paths,
+            )
+
+        finally:
+            _LOG.removeHandler(handler)
 
     def _execute_checks(self, program,
                         keep_going: bool) -> Tuple[int, int, int]:
@@ -286,8 +304,8 @@ class Presubmit:
 
         for i, (check, paths) in enumerate(program, 1):
             paths = [self._repository_root.joinpath(p) for p in paths]
-            ctx = self._create_context(check.name, paths=paths)
-            result = check.run(ctx, i, len(program))
+            with self._context(check.name, paths) as ctx:
+                result = check.run(ctx, i, len(program))
 
             if result is _Result.PASS:
                 passed += 1
@@ -523,6 +541,7 @@ class _Check:
         _LOG.debug('%s %s', self.name, result.value)
 
         print(_box(_BOTTOM, result.colorized(_LEFT), self.name, time_str))
+        _LOG.debug('%s duration:%s', self.name, time_str)
 
         return result
 
@@ -582,22 +601,23 @@ def log_run(*args, **kwargs) -> subprocess.CompletedProcess:
 
 def call(*args, **kwargs) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
+    _LOG.debug('call: %s %s', args, kwargs)
     process = subprocess.run(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              **kwargs)
-    log = _LOG.warning if process.returncode else _LOG.debug
+    logfunc = _LOG.warning if process.returncode else _LOG.debug
 
-    log('[COMMAND] %s\n%s',
-        ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-        ' '.join(shlex.quote(str(arg)) for arg in args))
+    logfunc('[COMMAND] %s\n%s',
+            ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
+            ' '.join(shlex.quote(str(arg)) for arg in args))
 
-    log('[RESULT] %s with return code %d',
-        'Failed' if process.returncode else 'Passed', process.returncode)
+    logfunc('[RESULT] %s with return code %d',
+            'Failed' if process.returncode else 'Passed', process.returncode)
 
     output = process.stdout.decode(errors='backslashreplace')
     if output:
-        log('[OUTPUT]\n%s', output)
+        logfunc('[OUTPUT]\n%s', output)
 
     if process.returncode:
         raise PresubmitFailure
@@ -608,6 +628,7 @@ def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 
     for path in ctx.paths:
+        _LOG.debug('Checking %s', path)
         with open(path) as file:
             for line in file:
                 if line.startswith('#pragma once'):

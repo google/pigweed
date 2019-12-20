@@ -38,7 +38,7 @@ from pw_presubmit import format_code, PresubmitContext
 from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
 
-_LOG: logging.Logger = logging.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 def run_python_module(*args, **kwargs):
@@ -97,12 +97,23 @@ def gn_args(**kwargs):
     return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
 
 
-def gn_gen(*args, path, repo):
-    call('gn', 'gen', path, '--color=always', '--check', *args, cwd=repo)
+def gn_gen(*args, ctx, path=None, **kwargs):
+    call('gn',
+         'gen',
+         path or ctx.output_directory,
+         '--color=always',
+         '--check',
+         *args,
+         cwd=ctx.repository_root,
+         **kwargs)
 
 
-def ninja(path, repo):
-    call('ninja', '-C', path.absolute(), cwd=repo)
+def ninja(ctx, **kwargs):
+    call('ninja',
+         '-C',
+         ctx.output_directory,
+         cwd=ctx.repository_root,
+         **kwargs)
 
 
 _CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
@@ -110,20 +121,16 @@ _CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
 
 
 def gn_clang_build(ctx: PresubmitContext):
-    gn_gen('--export-compile-commands',
-           _CLANG_GEN_ARGS,
-           path=ctx.output_directory,
-           repo=ctx.repository_root)
-    ninja(path=ctx.output_directory, repo=ctx.repository_root)
+    gn_gen('--export-compile-commands', _CLANG_GEN_ARGS, ctx=ctx)
+    ninja(ctx=ctx)
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(ctx: PresubmitContext):
     gn_gen(gn_args(pw_target_config='"//targets/host/host.gni"',
                    pw_target_toolchain='"//pw_toolchain:host_gcc_os"'),
-           path=ctx.output_directory,
-           repo=ctx.repository_root)
-    ninja(path=ctx.output_directory, repo=ctx.repository_root)
+           ctx=ctx)
+    ninja(ctx=ctx)
 
 
 _ARM_GEN_ARGS = gn_args(
@@ -132,8 +139,8 @@ _ARM_GEN_ARGS = gn_args(
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(ctx: PresubmitContext):
-    gn_gen(_ARM_GEN_ARGS, path=ctx.output_directory, repo=ctx.repository_root)
-    ninja(path=ctx.output_directory, repo=ctx.repository_root)
+    gn_gen(_ARM_GEN_ARGS, ctx=ctx)
+    ninja(ctx=ctx)
 
 
 GN = (
@@ -270,7 +277,7 @@ def copyright_notice(ctx: PresubmitContext):
     errors = []
 
     for path in ctx.paths:
-        path = ctx.repository_root.joinpath(path)
+        _LOG.debug('Checking %s', path)
         with open(path) as file:
             # Skip shebang and blank lines
             line = file.readline()
@@ -279,6 +286,7 @@ def copyright_notice(ctx: PresubmitContext):
 
             first_line = COPYRIGHT_FIRST_LINE.match(line)
             if not first_line:
+                _LOG.debug('%s: invalid first line %r', path, line)
                 errors.append(path)
                 continue
 
@@ -286,6 +294,8 @@ def copyright_notice(ctx: PresubmitContext):
 
             for expected, actual in zip(COPYRIGHT_LINES, file):
                 if comment + expected != actual:
+                    _LOG.debug('  bad line: %r', actual)
+                    _LOG.debug('  expected: %r', comment + expected)
                     errors.append(path)
                     break
 
@@ -302,19 +312,21 @@ CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
 #
 
 
-def _get_paths_from_command(*args, cwd: pathlib.Path, **kwargs):
+def _get_paths_from_command(*args, ctx: PresubmitContext, **kwargs):
     """Runs a command and reads Bazel or GN //-style paths from it."""
     process = log_run(*args,
                       stdout=subprocess.PIPE,
                       stderr=subprocess.DEVNULL,
-                      cwd=cwd,
+                      cwd=ctx.repository_root,
                       **kwargs)
     files = set()
 
     for line in process.stdout.splitlines():
+        _LOG.debug('processing line %r', line)
         path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
-        path = cwd.joinpath(path)
+        path = ctx.repository_root.joinpath(path)
         if path.is_file():
+            _LOG.debug('  file %s', path)
             files.add(path)
 
     return files
@@ -331,25 +343,17 @@ def source_is_in_build_files(ctx: PresubmitContext):
     build_bazel = _get_paths_from_command('bazel',
                                           'query',
                                           'kind("source file", //...:*)',
-                                          cwd=ctx.repository_root)
+                                          ctx=ctx)
 
     # Collect all paths in the ARM and Clang GN builds.
     arm_dir = ctx.output_directory.joinpath('arm')
-    gn_gen(_ARM_GEN_ARGS, path=arm_dir, repo=ctx.repository_root)
-    build_gn = _get_paths_from_command('gn',
-                                       'desc',
-                                       arm_dir,
-                                       '*',
-                                       cwd=ctx.repository_root)
+    gn_gen(_ARM_GEN_ARGS, ctx=ctx, path=arm_dir)
+    build_gn = _get_paths_from_command('gn', 'desc', arm_dir, '*', ctx=ctx)
 
     clang_dir = ctx.output_directory.joinpath('clang')
-    gn_gen(_CLANG_GEN_ARGS, path=clang_dir, repo=ctx.repository_root)
+    gn_gen(_CLANG_GEN_ARGS, ctx=ctx, path=clang_dir)
     build_gn.update(
-        _get_paths_from_command('gn',
-                                'desc',
-                                clang_dir,
-                                '*',
-                                cwd=ctx.repository_root))
+        _get_paths_from_command('gn', 'desc', clang_dir, '*', ctx=ctx))
 
     missing_bazel = []
     missing_gn = []

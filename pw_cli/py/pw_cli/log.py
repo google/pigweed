@@ -60,9 +60,18 @@ def install(use_color: Optional[bool] = None) -> None:
         raise ValueError(
             f'Invalid environment variable PW_SUBPROCESS={pw_subprocess}')
 
-    logging.basicConfig(format=timestamp_fmt + '%(levelname)s %(message)s',
-                        datefmt='%Y%m%d %H:%M:%S',
-                        level=logging.INFO)
+    # Set log level on root logger to debug, otherwise any higher levels
+    # elsewhere are ignored.
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    # Skip debug-level statements when printing to the terminal.
+    stderr_handler = logging.StreamHandler()
+    stderr_handler.setLevel(logging.INFO)
+    stderr_handler.setFormatter(
+        logging.Formatter(timestamp_fmt + '%(levelname)s %(message)s',
+                          '%Y%m%d %H:%M:%S'))
+    root.addHandler(stderr_handler)
 
     # Shorten all the log levels to 3 characters for column-aligned logs.
     # Color the logs using ANSI codes.
