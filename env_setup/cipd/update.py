@@ -44,6 +44,10 @@ def parse(argv=None):
     parser.add_argument('--suppress-shell-commands',
                         action='store_false',
                         dest='print_shell_commands')
+    parser.add_argument('--cache-dir',
+                        default=os.environ.get(
+                            'CIPD_CACHE_DIR',
+                            os.path.expanduser('~/.cipd-cache-dir')))
 
     return parser.parse_args(argv)
 
@@ -77,6 +81,7 @@ def update(argv=None):
     args = parse(argv)
 
     os.environ['CIPD_PY_INSTALL_DIR'] = args.install_dir
+    os.environ['CIPD_CACHE_DIR'] = args.cache_dir
 
     if not check_auth(args.cipd, args.print_shell_commands):
         return
@@ -117,6 +122,8 @@ def update(argv=None):
             print('export PATH', file=temp)
             print('CIPD_INSTALL_DIR="{}"'.format(args.install_dir), file=temp)
             print('export CIPD_INSTALL_DIR', file=temp)
+            print('CIPD_CACHE_DIR={}'.format(args.cache_dir), file=temp)
+            print('export CIPD_CACHE_DIR', file=temp)
 
             print('. {}'.format(temp.name))
 
