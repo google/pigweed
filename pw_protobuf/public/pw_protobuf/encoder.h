@@ -364,4 +364,7 @@ class NestedEncoder : public Encoder {
   std::array<size_t*, kMaxNestedDepth> stack_;
 };
 
+// Explicit template argument deduction to hide warnings.
+NestedEncoder()->NestedEncoder<>;
+
 }  // namespace pw::protobuf
