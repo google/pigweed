@@ -174,6 +174,7 @@ def main() -> int:
         except subprocess.CalledProcessError:
             print(f'{sys.argv[0]}: failed to run diff on {binary}',
                   file=sys.stderr)
+            return 1
 
     def write_file(filename: str, contents: str) -> None:
         path = os.path.join(args.out_dir, filename)
