@@ -35,7 +35,7 @@ infra/cmake/${platform} version:3.14.6
 fuchsia/third_party/bazel/${platform} version:0.25.1
 
 # Bloaty (Embedded Fork)
-pigweed/third_party/bloaty-embedded/${platform} git_revision:551e70f736e0dc40184c568095b25851f62ea0db-r2
+pigweed/third_party/bloaty-embedded/${platform} git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52
 
 # OpenOCD
 # pigweed/third_party/openocd/${platform} git_revision:646566e006acd58fb9ac405511d3ecca79f26d55
