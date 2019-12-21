@@ -59,7 +59,6 @@ from typing import Sequence, Tuple, Union
 from inspect import signature
 
 _LOG: logging.Logger = logging.getLogger(__name__)
-_LOG.setLevel(logging.DEBUG)
 
 PathOrStr = Union[Path, str]
 
@@ -610,17 +609,17 @@ def log_run(*args, **kwargs) -> subprocess.CompletedProcess:
 
 def call(*args, **kwargs) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
-    _LOG.debug('call: %s %s', args, kwargs)
+    attributes = ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items()))
+    command = ' '.join(shlex.quote(str(arg)) for arg in args)
+    _LOG.debug('[RUN] %s\n%s', attributes, command)
+
     process = subprocess.run(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              **kwargs)
     logfunc = _LOG.warning if process.returncode else _LOG.debug
 
-    logfunc('[COMMAND] %s\n%s',
-            ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-            ' '.join(shlex.quote(str(arg)) for arg in args))
-
+    logfunc('[FINISHED] %s\n%s', attributes, command)
     logfunc('[RESULT] %s with return code %d',
             'Failed' if process.returncode else 'Passed', process.returncode)
 

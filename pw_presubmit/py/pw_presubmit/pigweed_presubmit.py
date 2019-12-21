@@ -323,11 +323,10 @@ def _get_paths_from_command(*args, ctx: PresubmitContext, **kwargs):
     files = set()
 
     for line in process.stdout.splitlines():
-        _LOG.debug('processing line %r', line)
         path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
         path = ctx.repository_root.joinpath(path)
         if path.is_file():
-            _LOG.debug('  file %s', path)
+            _LOG.debug('Found file %s', path)
             files.add(path)
 
     return files

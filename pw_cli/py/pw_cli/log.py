@@ -25,6 +25,7 @@ import pw_cli.plugins
 LOGLEVEL_STDOUT = 21
 
 _LOG = logging.getLogger(__name__)
+_STDERR_HANDLER = logging.StreamHandler()
 
 
 def main():
@@ -40,7 +41,8 @@ def main():
     _LOG.debug('Adding 1 to i')
 
 
-def install(use_color: Optional[bool] = None) -> None:
+def install(level: int = logging.INFO,
+            use_color: Optional[bool] = None) -> None:
     """Configure the system logger for the default pw command log format."""
 
     colors = pw_cli.color.colors(
@@ -65,13 +67,11 @@ def install(use_color: Optional[bool] = None) -> None:
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
 
-    # Skip debug-level statements when printing to the terminal.
-    stderr_handler = logging.StreamHandler()
-    stderr_handler.setLevel(logging.INFO)
-    stderr_handler.setFormatter(
+    _STDERR_HANDLER.setLevel(level)
+    _STDERR_HANDLER.setFormatter(
         logging.Formatter(timestamp_fmt + '%(levelname)s %(message)s',
                           '%Y%m%d %H:%M:%S'))
-    root.addHandler(stderr_handler)
+    root.addHandler(_STDERR_HANDLER)
 
     # Shorten all the log levels to 3 characters for column-aligned logs.
     # Color the logs using ANSI codes.
@@ -85,6 +85,11 @@ def install(use_color: Optional[bool] = None) -> None:
     logging.addLevelName(logging.DEBUG,    colors.blue    ('DBG'))
     # yapf: enable
     # pylint: enable=bad-whitespace
+
+
+def set_level(log_level: int):
+    """Sets the log level for logs to stderr."""
+    _STDERR_HANDLER.setLevel(log_level)
 
 
 # Note: normally this shouldn't be done at the top level without a try/catch

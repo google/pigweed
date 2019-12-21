@@ -102,8 +102,8 @@ def main(raw_args=None):
 
     # Set root log level; but then remove the arg to avoid breaking the command.
     if 'loglevel' in args_as_dict:
-        logging.getLogger().setLevel(
-            getattr(logging, args_as_dict['loglevel'].upper()))
+        pw_cli.log.set_level(getattr(logging,
+                                     args_as_dict['loglevel'].upper()))
         del args_as_dict['loglevel']
 
     # Run the command and exit with the appropriate status.
