@@ -18,7 +18,7 @@
 import argparse
 import logging
 import os
-import pathlib
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -56,9 +56,9 @@ def init_cipd(ctx: PresubmitContext):
     paths = [ctx.output_directory, ctx.output_directory.joinpath('bin')]
     for base in ctx.output_directory.glob('*'):
         paths.append(base)
-        paths.append(os.path.join(base, 'bin'))
+        paths.append(base.joinpath('bin'))
 
-    paths.append(os.environ['PATH'])
+    paths.append(Path(os.environ['PATH']))
 
     os.environ['PATH'] = os.pathsep.join(str(x) for x in paths)
     _LOG.debug('PATH %s', os.environ['PATH'])
@@ -93,11 +93,11 @@ INIT = (
 #
 # GN presubmit checks
 #
-def gn_args(**kwargs):
+def gn_args(**kwargs) -> str:
     return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
 
 
-def gn_gen(*args, ctx, path=None, **kwargs):
+def gn_gen(*args, ctx: PresubmitContext, path=None, **kwargs) -> None:
     call('gn',
          'gen',
          path or ctx.output_directory,
@@ -108,7 +108,7 @@ def gn_gen(*args, ctx, path=None, **kwargs):
          **kwargs)
 
 
-def ninja(ctx, **kwargs):
+def ninja(ctx: PresubmitContext, **kwargs) -> None:
     call('ninja',
          '-C',
          ctx.output_directory,
@@ -301,7 +301,8 @@ def copyright_notice(ctx: PresubmitContext):
 
     if errors:
         _LOG.warning('%s with a missing or incorrect copyright notice:\n%s',
-                     pw_presubmit.plural(errors, 'file'), '\n'.join(errors))
+                     pw_presubmit.plural(errors, 'file'),
+                     '\n'.join(str(e) for e in errors))
         raise PresubmitFailure
 
 
@@ -405,7 +406,7 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     parser.add_argument(
         '-o',
         '--output-directory',
-        type=pathlib.Path,
+        type=Path,
         help='Output directory (default: <repo root>/.presubmit)',
     )
 
@@ -450,8 +451,8 @@ def main(
         clean: bool,
         clean_py: bool,
         install: bool,
-        repository: str,
-        output_directory: str,
+        repository: Path,
+        output_directory: Path,
         step: Sequence[str],
         **presubmit_args,
 ) -> int:

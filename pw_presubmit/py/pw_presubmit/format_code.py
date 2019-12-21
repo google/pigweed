@@ -265,13 +265,13 @@ PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self, files: Iterable[str]):
+    def __init__(self, files: Sequence[str]):
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
         for path in files:
             for code_format in CODE_FORMATS:
-                if any(path.endswith(ext) for ext in code_format.extensions):
+                if any(path.endswith(e) for e in code_format.extensions):
                     self._formats[code_format].append(path)
 
     def check(self) -> Dict[str, str]:
@@ -292,9 +292,9 @@ class CodeFormatter:
                       plural(files, code_format.language + ' file'))
 
 
-def main(paths, exclude, base, fix) -> int:
+def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
     """Checks or fixes formatting for files in a Git repo."""
-    files = [os.path.abspath(path) for path in paths if os.path.isfile(path)]
+    files = [str(path.resolve()) for path in paths if path.is_file()]
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if pw_presubmit.is_git_repo():
@@ -307,7 +307,8 @@ def main(paths, exclude, base, fix) -> int:
                 Path.cwd().relative_to(repo), repo)
 
         # Add files from Git and remove duplicates.
-        files = sorted({*files, *list_git_files(base, paths, exclude)})
+        file_set = set(str(p) for p in list_git_files(base, paths, exclude))
+        files = sorted(file_set | set(files))
     elif base:
         _LOG.critical(
             'A base commit may only be provided if running from a Git repo')
