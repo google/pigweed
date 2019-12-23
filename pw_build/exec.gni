@@ -22,14 +22,28 @@ import("python_script.gni")
 # Args:
 #  program: The program to run. Can be a full path or just a name (in which case
 #    $PATH is searched).
+#
 #  args: Optional list of arguments to the program.
+#
 #  deps: Dependencies for this target.
+#
 #  inputs: Optional list of build inputs to the program.
+#
 #  outputs: Optional list of artifacts produced by the program's execution.
+#
 #  env: Optional list of key-value pairs defining environment variables for
 #    the program.
+#
 #  env_file: Optional path to a file containing a list of newline-separated
 #    key-value pairs defining environment variables for the program.
+#
+#  args_file: Optional path to a file containing additional positional arguments
+#    to the program. Each line of the file is appended to the invocation. Useful
+#    for specifying arguments from GN metadata.
+#
+#  skip_empty_args: If args_file is provided, boolean indicating whether to skip
+#    running the program if the file is empty. Used to avoid running commands
+#    which error when called without arguments.
 #
 # Example:
 #
@@ -54,6 +68,17 @@ template("pw_exec") {
       "--env-file",
       get_path_info(invoker.env_file, "abspath"),
     ]
+  }
+
+  if (defined(invoker.args_file)) {
+    _script_args += [
+      "--args-file",
+      get_path_info(invoker.args_file, "abspath"),
+    ]
+
+    if (defined(invoker.skip_empty_args) && invoker.skip_empty_args) {
+      _script_args += [ "--skip-empty-args" ]
+    }
   }
 
   if (defined(invoker.env)) {
@@ -81,6 +106,7 @@ template("pw_exec") {
                            [
                              "deps",
                              "inputs",
+                             "pool",
                            ])
 
     if (!defined(inputs)) {

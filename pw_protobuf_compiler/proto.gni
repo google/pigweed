@@ -81,6 +81,10 @@ template("_pw_go_proto_library") {
   pw_python_script(target_name) {
     metadata = {
       gopath = [ "GOPATH+=$_rebased_gopath" ]
+      external_deps = [
+        "github.com/golang/protobuf/proto",
+        "google.golang.org/grpc",
+      ]
     }
     script = _gen_script_path
     args = [
