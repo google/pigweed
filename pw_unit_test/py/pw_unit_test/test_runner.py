@@ -134,7 +134,7 @@ class TestRunner:
             total = str(len(self._tests))
             test_counter = f'Test {idx:{len(total)}}/{total}'
 
-            _LOG.info('%s: [RUN] %s', test_counter, test.name)
+            _LOG.info('%s: [ RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
             try:
                 status = await pw_cli.process.run_async(command)
