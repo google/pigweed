@@ -136,7 +136,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         """Run all the builds in serial and capture pass/fail for each."""
 
         # Clear the screen and show a banner indicating the build is starting.
-        print("\033c", end="")   # TODO(pwbug/38): Not Windows compatible.
+        print("\033c", end="")  # TODO(pwbug/38): Not Windows compatible.
         print(_COLOR.magenta(_BUILD_MESSAGE))
         _LOG.info('Change detected: %s', matching_path)
 
