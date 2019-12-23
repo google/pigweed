@@ -34,6 +34,15 @@ import pw_cli.plugins
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 
+_BUILD_MESSAGE = """
+  ██████╗ ██╗   ██╗██╗██╗     ██████╗
+  ██╔══██╗██║   ██║██║██║     ██╔══██╗
+  ██████╔╝██║   ██║██║██║     ██║  ██║
+  ██╔══██╗██║   ██║██║██║     ██║  ██║
+  ██████╔╝╚██████╔╝██║███████╗██████╔╝
+  ╚═════╝  ╚═════╝ ╚═╝╚══════╝╚═════╝
+"""
+
 _PASS_MESSAGE = """
   ██████╗  █████╗ ███████╗███████╗██╗
   ██╔══██╗██╔══██╗██╔════╝██╔════╝██║
@@ -123,8 +132,14 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         if matching_path:
             self.handle_matched_event(matching_path)
 
-    def run_builds(self):
+    def run_builds(self, matching_path):
         """Run all the builds in serial and capture pass/fail for each."""
+
+        # Clear the screen and show a banner indicating the build is starting.
+        print("\033c", end="")   # TODO(pwbug/38): Not Windows compatible.
+        print(_COLOR.magenta(_BUILD_MESSAGE))
+        _LOG.info('Change detected: %s', matching_path)
+
         builds_succeeded = []
         num_builds = len(self.build_dirs)
         _LOG.info(f'Starting build with {num_builds} directories')
@@ -172,9 +187,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
 
     def handle_matched_event(self, matching_path):
         if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
-            if matching_path:
-                _LOG.info('Filesystem change: %s', matching_path)
-            self.run_builds()
+            self.run_builds(matching_path)
 
             # Don't set the cooldown end time until after the build.
             self.state = _State.COOLDOWN_IGNORING_EVENTS
