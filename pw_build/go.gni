@@ -1,0 +1,116 @@
+# Copyright 2019 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file provides GN build integration for Go. These templates are limited,
+# only supporting legacy GOPATH-based builds. Third-party dependencies required
+# to build Go code must be installed separately.
+
+import("exec.gni")
+import("input_group.gni")
+
+# Defines a Go package.
+#
+# A Go package consists of one or more Go files in a single directory. The
+# package can depend on other Go packages or generated Go code.
+#
+# Args:
+#   sources: List of Go source files.
+#   deps: Optional list of target dependencies.
+#   gopath: Root of the GOPATH in which the package is located.
+#
+# Example:
+#
+#   # In //my_module/go/src/example.com/foo/BUILD.gn
+#   pw_go_package("foo_package") {
+#     sources = [ "main.go" ]
+#     deps = "//my_module:foo_proto_go"
+#     gopath = "//my_module/go"
+#   }
+#
+template("pw_go_package") {
+  assert(defined(invoker.sources), "pw_go_source_set requires sources")
+  assert(defined(invoker.gopath), "pw_go_source_set requires a GOPATH root")
+
+  _gopath = rebase_path(invoker.gopath)
+
+  # List the sources in an input group with GOPATH environment metadata.
+  pw_input_group(target_name) {
+    inputs = invoker.sources
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "metadata",
+                           ])
+    if (!defined(metadata)) {
+      metadata = {
+      }
+    }
+    metadata.gopath = [ "GOPATH+=${_gopath}" ]
+  }
+}
+
+# Builds a Go executable from a Go package.
+#
+# The package must include only a main.go file labelled "package main". It may
+# depend on other Go packages defined in the build.
+#
+# Args:
+#   deps: List of size one specifying the GN path to the Go package target.
+#   package: Name of the Go package as resolved by the Go compiler.
+#
+# Example:
+#
+#   # In //my_module/go
+#   pw_go_executable("foo") {
+#     deps = [ "//my_module/go/src/example.com/foo:foo_package" ]
+#     package = "example.com/foo"
+#   }
+#
+template("pw_go_executable") {
+  assert(defined(invoker.deps),
+         "pw_go_executable requires at least one Go package as a dependency")
+  assert(defined(invoker.package),
+         "pw_go_executable requires the name of the package to build")
+
+  _metadata_target_name = "${target_name}_pw_go_metadata"
+  _metadata_file = "$target_gen_dir/${target_name}_pw_go_env.env"
+
+  # Collect all the GOPATH metadata from pw_go_package and _pw_go_proto_library
+  # targets into a plaintext file of environment variable definitions.
+  generated_file(_metadata_target_name) {
+    deps = invoker.deps
+    data_keys = [ "gopath" ]
+    outputs = [
+      _metadata_file,
+    ]
+  }
+
+  _default_gopath = rebase_path("$dir_pigweed/env_setup/go")
+
+  # Run a "go build" command with the environment configured from metadata.
+  pw_exec(target_name) {
+    program = "go"
+    args = [
+      "build",
+      "-o",
+      target_out_dir,
+      invoker.package,
+    ]
+    deps = [
+      ":$_metadata_target_name",
+    ]
+    env = [ "GOPATH+=$_default_gopath" ]
+    env_file = _metadata_file
+  }
+}

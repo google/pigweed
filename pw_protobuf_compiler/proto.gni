@@ -28,7 +28,7 @@ template("_pw_cc_proto_library") {
   _proto_gen_dir = "$root_gen_dir/protos"
   _outputs = process_file_template(
           invoker.protos,
-          "$root_gen_dir/protos/{{source_root_relative_dir}}/{{source_name_part}}.pb.h")
+          "$_proto_gen_dir/{{source_root_relative_dir}}/{{source_name_part}}.pb.h")
 
   _gen_target = "${target_name}_gen"
   pw_python_script(_gen_target) {
@@ -65,6 +65,35 @@ template("_pw_cc_proto_library") {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ] + invoker.deps
     sources = get_target_outputs(":$_gen_target")
+  }
+}
+
+# Generates Go code for proto files, listing the proto output directory in the
+# metadata variable GOPATH. Internal use only.
+#
+# Args:
+#  protos: List of input .proto files.
+template("_pw_go_proto_library") {
+  _proto_gopath = "$root_gen_dir/go"
+  _proto_gen_dir = "$_proto_gopath/src"
+  _rebased_gopath = rebase_path(_proto_gopath)
+
+  pw_python_script(target_name) {
+    metadata = {
+      gopath = [ "GOPATH+=$_rebased_gopath" ]
+    }
+    script = _gen_script_path
+    args = [
+             "--language",
+             "go",
+             "--module-path",
+             "//",
+             "--out-dir",
+             _proto_gen_dir,
+           ] + get_path_info(invoker.protos, "abspath")
+    inputs = invoker.protos
+    deps = invoker.deps
+    stamp = true
   }
 }
 
@@ -119,6 +148,11 @@ template("pw_proto_library") {
         if (true) {
           protoc_deps = [ "$dir_pw_protobuf:codegen_protoc_plugin" ]
         }
+      }
+    } else if (lang == "go") {
+      _pw_go_proto_library(_lang_target) {
+        protos = invoker.sources
+        deps = _lang_deps
       }
     } else {
       assert(false,

@@ -45,7 +45,7 @@ def argument_parser(
     return parser
 
 
-_ENV_REGEX = re.compile(r'(\w+)(\+)?=(\w+)')
+_ENV_REGEX = re.compile(r'(\w+)(\+)?=([\w/.]+)')
 
 
 def apply_env_var(string: str, env: Dict[str, str]) -> None:

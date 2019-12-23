@@ -77,8 +77,11 @@ pw_automatic_test_runner = ""
 # pw_proto_library template to determine which build targets to create.
 #
 # Supported languages:
-#   "cc"
-pw_protobuf_langs = [ "cc" ]
+#   "cc", "go"
+pw_protobuf_langs = [
+  "cc",
+  "go",
+]
 
 ################################# BACKENDS #####################################
 

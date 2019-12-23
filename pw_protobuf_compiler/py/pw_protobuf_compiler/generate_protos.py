@@ -15,21 +15,16 @@
 
 import argparse
 import logging
+import os
 import shutil
 import sys
 
-from typing import Optional
+from typing import Callable, Dict, List, Optional
 
 import pw_cli.log
 import pw_cli.process
 
 _LOG = logging.getLogger(__name__)
-
-# Default protoc codegen plugins for each supported language.
-# TODO(frolv): Make these overridable with a command-line argument.
-DEFAULT_PROTOC_PLUGINS = {
-    'cc': f'protoc-gen-custom={shutil.which("pw_protobuf_codegen")}',
-}
 
 
 def argument_parser(
@@ -45,6 +40,7 @@ def argument_parser(
                         required=True,
                         help='Path to the module containing the .proto files')
     parser.add_argument('--out-dir',
+                        required=True,
                         help='Output directory for generated code')
     parser.add_argument('protos',
                         metavar='PROTO',
@@ -54,25 +50,42 @@ def argument_parser(
     return parser
 
 
+def protoc_cc_args(args: argparse.Namespace) -> List[str]:
+    return [
+        '--plugin', f'protoc-gen-custom={shutil.which("pw_protobuf_codegen")}',
+        '--custom_out', args.out_dir
+    ]
+
+
+def protoc_go_args(args: argparse.Namespace) -> List[str]:
+    return ['--go_out', f'plugins=grpc:{args.out_dir}']
+
+
+# Default additional protoc arguments for each supported language.
+# TODO(frolv): Make these overridable with a command-line argument.
+DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
+    'cc': protoc_cc_args,
+    'go': protoc_go_args,
+}
+
+
 def main() -> int:
     """Runs protoc as configured by command-line arguments."""
 
     args = argument_parser().parse_args()
+    os.makedirs(args.out_dir, exist_ok=True)
 
     try:
-        protoc_plugin = DEFAULT_PROTOC_PLUGINS[args.language]
+        lang_args = DEFAULT_PROTOC_ARGS[args.language](args)
     except KeyError:
         _LOG.error('Unsupported language: %s', args.language)
         return 1
 
     return pw_cli.process.run(
         'protoc',
-        '--plugin',
-        protoc_plugin,
         '-I',
         args.module_path,
-        '--custom_out',
-        args.out_dir,
+        *lang_args,
         *args.protos,
     )
 
