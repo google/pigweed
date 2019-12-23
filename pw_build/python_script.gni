@@ -57,6 +57,14 @@
 #   $target_out_dir:foo      ../out/obj/my_module/foo.elf  (toolchain-dependent)
 #   $target_out_dir:foo      ../out/obj/my_module/foo.exe  (toolchain-dependent)
 #
+# Arguments beyond normal action() target arguments:
+#
+#   capture_output (=true)  If true, script output is hidden unless the script
+#                           fails with an error. Defaults to true.
+#
+#   stamp                   File to touch if the script is successful. If not
+#                           set, no file is touched.
+#
 template("pw_python_script") {
   assert(defined(invoker.script), "pw_python_script requires a script to run")
 
@@ -95,6 +103,17 @@ template("pw_python_script") {
       "--touch",
       _stamp_file,
     ]
+  }
+
+  # Capture output or not.
+  # Note: capture defaults to true.
+  if (!defined(invoker.capture_output)) {
+    capture_output = true
+  } else {
+    forward_variables_from(invoker, [ "capture_output" ])
+  }
+  if (capture_output) {
+    _script_args += [ "--capture-output" ]
   }
 
   # "--" indicates the end of arguments to the runner script.

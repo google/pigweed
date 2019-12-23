@@ -28,20 +28,33 @@ def parse_args() -> argparse.Namespace:
     """Parses arguments for this script, splitting out the command to run."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--gn-root',
-                        type=str,
-                        required=True,
-                        help='Path to the root of the GN tree')
-    parser.add_argument('--out-dir',
-                        type=str,
-                        required=True,
-                        help='Path to the GN build output directory')
-    parser.add_argument('--touch',
-                        type=str,
-                        help='File to touch after command is run')
-    parser.add_argument('command',
-                        nargs=argparse.REMAINDER,
-                        help='Python script with arguments to run')
+    parser.add_argument(
+        '--gn-root',
+        type=str,
+        required=True,
+        help='Path to the root of the GN tree',
+    )
+    parser.add_argument(
+        '--out-dir',
+        type=str,
+        required=True,
+        help='Path to the GN build output directory',
+    )
+    parser.add_argument(
+        '--touch',
+        type=str,
+        help='File to touch after command is run',
+    )
+    parser.add_argument(
+        '--capture-output',
+        action='store_true',
+        help='Capture subcommand output; display only on error',
+    )
+    parser.add_argument(
+        'command',
+        nargs=argparse.REMAINDER,
+        help='Python script with arguments to run',
+    )
     return parser.parse_args()
 
 
@@ -116,20 +129,32 @@ def main() -> int:
     command = [sys.executable] + resolved_command
     _LOG.debug('RUN %s', shlex.join(command))
 
-    try:
-        status = subprocess.call(command)
-    except subprocess.CalledProcessError as err:
-        _LOG.error('%s: %s', sys.argv[0], err)
-        return 1
+    if args.capture_output:
+        completed_process = subprocess.run(
+            command,
+            # Combine stdout and stderr so that error messages are
+            # correctly interleaved with the rest of the output.
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    else:
+        completed_process = subprocess.run(command)
 
-    if status == 0 and args.touch:
-        # If a touch file is provided, touch it to indicate a successful run of
-        # the command.
+    if completed_process.returncode != 0:
+        _LOG.debug('Command failed; exit code: %d',
+                   completed_process.returncode)
+        # TODO(pwbug/34): Print a cross-platform pastable-in-shell command, to
+        # help users track down what is happening when a command is broken.
+        if args.capture_output:
+            sys.stdout.buffer.write(completed_process.stdout)
+    elif args.touch:
+        # If a stamp file is provided and the command executed successfully,
+        # touch the stamp file to indicate a successful run of the command.
         touch_file = resolve_path(args.gn_root, args.out_dir, args.touch)
         _LOG.debug('TOUCH %s', touch_file)
         pathlib.Path(touch_file).touch()
 
-    return status
+    return completed_process.returncode
 
 
 if __name__ == '__main__':
