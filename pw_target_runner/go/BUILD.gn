@@ -12,8 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-runner {
-  command: "stm32f429i_disc1_unit_test_runner"
-  args: "--port"
-  args: "/dev/ttyACM0"
+import("$dir_pw_build/go.gni")
+import("$dir_pw_docgen/docs.gni")
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
+}
+
+pw_go_executable("simple_client") {
+  deps = [
+    "src/pigweed.dev/pw_target_runner_client",
+  ]
+  package = "pigweed.dev/pw_target_runner_client"
+}
+
+pw_go_executable("simple_server") {
+  deps = [
+    "src/pigweed.dev/pw_target_runner_server",
+  ]
+  package = "pigweed.dev/pw_target_runner_server"
 }

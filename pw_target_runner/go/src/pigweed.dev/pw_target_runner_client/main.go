@@ -11,30 +11,30 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-// Package client implements a gRPC client for a unit test server.
-package client
+package main
 
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"log"
 	"path/filepath"
 	"time"
 
 	"google.golang.org/grpc"
 
-	pb "pigweed.dev/module/pw_test_server/gen"
+	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
 )
 
-// Client is a gRPC client that communicates with a TestServer service.
+// Client is a gRPC client that communicates with a TargetRunner service.
 type Client struct {
 	conn *grpc.ClientConn
 }
 
-// New creates a gRPC client which connects to a gRPC server hosted at the
+// NewClient creates a gRPC client which connects to a gRPC server hosted at the
 // specified address.
-func New(host string, port int) (*Client, error) {
+func NewClient(host string, port int) (*Client, error) {
 	// The server currently only supports running locally over an insecure
 	// connection.
 	// TODO(frolv): Investigate adding TLS support to the server and client.
@@ -48,17 +48,17 @@ func New(host string, port int) (*Client, error) {
 	return &Client{conn}, nil
 }
 
-// RunTest sends a RunUnitTest RPC to the test server.
-func (c *Client) RunTest(path string) error {
+// RunBinary sends a RunBinary RPC to the target runner service.
+func (c *Client) RunBinary(path string) error {
 	abspath, err := filepath.Abs(path)
 	if err != nil {
 		return err
 	}
 
-	client := pb.NewTestServerClient(c.conn)
-	req := &pb.UnitTestDescriptor{FilePath: abspath}
+	client := pb.NewTargetRunnerClient(c.conn)
+	req := &pb.RunBinaryRequest{FilePath: abspath}
 
-	res, err := client.RunUnitTest(context.Background(), req)
+	res, err := client.RunBinary(context.Background(), req)
 	if err != nil {
 		return err
 	}
@@ -71,9 +71,30 @@ func (c *Client) RunTest(path string) error {
 	)
 	fmt.Println(string(res.Output))
 
-	if res.Result != pb.TestStatus_SUCCESS {
-		return errors.New("Unit test failed")
+	if res.Result != pb.RunStatus_SUCCESS {
+		return errors.New("Failed to run binary")
 	}
 
 	return nil
+}
+
+func main() {
+	hostPtr := flag.String("host", "localhost", "Server host")
+	portPtr := flag.Int("port", 8080, "Server port")
+	pathPtr := flag.String("binary", "", "Path to executable file")
+
+	flag.Parse()
+
+	if *pathPtr == "" {
+		log.Fatalf("Must provide -binary option")
+	}
+
+	cli, err := NewClient(*hostPtr, *portPtr)
+	if err != nil {
+		log.Fatalf("Failed to create gRPC client: %v", err)
+	}
+
+	if err := cli.RunBinary(*pathPtr); err != nil {
+		log.Fatal(err)
+	}
 }

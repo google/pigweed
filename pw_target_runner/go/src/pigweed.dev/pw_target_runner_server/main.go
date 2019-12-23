@@ -21,10 +21,9 @@ import (
 	"log"
 
 	"github.com/golang/protobuf/proto"
-	"pigweed.dev/module/pw_test_server/client"
-	"pigweed.dev/module/pw_test_server/server"
+	"pigweed.dev/pw_target_runner"
 
-	pb "pigweed.dev/module/pw_test_server/gen"
+	pb "pigweed.dev/proto/pw_target_runner/exec_server_config_pb"
 )
 
 // ServerOptions contains command-line options for the server.
@@ -36,22 +35,10 @@ type ServerOptions struct {
 	port int
 }
 
-// ClientOptions contains command-line options for the client.
-type ClientOptions struct {
-	// Hostname of the server to request.
-	host string
-
-	// Port on which the server is running.
-	port int
-
-	// Path to a unit test binary.
-	testPath string
-}
-
 // configureServerFromFile sets up the server with workers specifyed in a
-// config file. The file contains a pw.test_server.ServerConfig protobuf message
-// in canonical protobuf text format.
-func configureServerFromFile(s *server.Server, filepath string) error {
+// config file. The file contains a pw.target_runner.ServerConfig protobuf
+// message in canonical protobuf text format.
+func configureServerFromFile(s *pw_target_runner.Server, filepath string) error {
 	content, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return err
@@ -86,11 +73,11 @@ func configureServerFromFile(s *server.Server, filepath string) error {
 			cmd = append(cmd, args...)
 		}
 
-		worker := server.NewExecTestRunner(i, cmd)
+		worker := pw_target_runner.NewExecDeviceRunner(i, cmd)
 		s.RegisterWorker(worker)
 
 		log.Printf(
-			"Registered unit test worker %s with args %v\n",
+			"Registered ExecDeviceRunner %s with args %v\n",
 			cmd[0],
 			cmd[1:])
 	}
@@ -98,60 +85,25 @@ func configureServerFromFile(s *server.Server, filepath string) error {
 	return nil
 }
 
-func runServer(opts *ServerOptions) {
-	srv := server.New()
-
-	if opts.config != "" {
-		if err := configureServerFromFile(srv, opts.config); err != nil {
-			log.Fatalf("Failed to parse config file %s: %v", opts.config, err)
-		}
-	}
-
-	if err := srv.Bind(opts.port); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := srv.Serve(); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-}
-
-func runClient(opts *ClientOptions) {
-	if opts.testPath == "" {
-		log.Fatalf("Must provide -test option")
-	}
-
-	cli, err := client.New(opts.host, opts.port)
-	if err != nil {
-		log.Fatalf("Failed to create gRPC client: %v", err)
-	}
-
-	if err := cli.RunTest(opts.testPath); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
-	serverPtr := flag.Bool("server", false, "Run as test server instead of client")
 	configPtr := flag.String("config", "", "Path to server configuration file")
 	portPtr := flag.Int("port", 8080, "Server port")
-	hostPtr := flag.String("host", "localhost", "Server host")
-	testPtr := flag.String("test", "", "Path to unit test executable")
 
 	flag.Parse()
 
-	if *serverPtr {
-		opts := &ServerOptions{
-			config: *configPtr,
-			port:   *portPtr,
+	server := pw_target_runner.NewServer()
+
+	if *configPtr != "" {
+		if err := configureServerFromFile(server, *configPtr); err != nil {
+			log.Fatalf("Failed to parse config file %s: %v", *configPtr, err)
 		}
-		runServer(opts)
-	} else {
-		opts := &ClientOptions{
-			host:     *hostPtr,
-			port:     *portPtr,
-			testPath: *testPtr,
-		}
-		runClient(opts)
+	}
+
+	if err := server.Bind(*portPtr); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.Serve(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

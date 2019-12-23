@@ -13,11 +13,13 @@
 // the License.
 syntax = "proto3";
 
-package pw.test_server;
+package pw.target_runner;
 
-service TestServer {
-  // Queues a single unit test, blocking until it has run.
-  rpc RunUnitTest(UnitTestDescriptor) returns (UnitTestRunStatus) {}
+option go_package = "pigweed.dev/proto/pw_target_runner/target_runner_pb";
+
+service TargetRunner {
+  // Queues a single executable, blocking until it has run.
+  rpc RunBinary(RunBinaryRequest) returns (RunBinaryResponse) {}
 
   // Returns information about the server.
   rpc Status(Empty) returns (ServerStatus) {}
@@ -25,20 +27,20 @@ service TestServer {
 
 message Empty {}
 
-enum TestStatus {
+enum RunStatus {
   PENDING = 0;
   SUCCESS = 1;
   FAILURE = 2;
   SKIPPED = 3;
 }
 
-message UnitTestDescriptor {
-  // Local file path to the unit test binary.
+message RunBinaryRequest {
+  // Local file path to the binary.
   string file_path = 1;
 }
 
-message UnitTestRunStatus {
-  TestStatus result = 1;
+message RunBinaryResponse {
+  RunStatus result = 1;
   uint64 queue_time_ns = 2;
   uint64 run_time_ns = 3;
   bytes output = 4;
@@ -46,7 +48,7 @@ message UnitTestRunStatus {
 
 message ServerStatus {
   uint64 uptime_ns = 1;
-  uint32 tests_queued = 2;
-  uint32 tests_passed = 3;
-  uint32 tests_failed = 4;
+  uint32 tasks_queued = 2;
+  uint32 tasks_passed = 3;
+  uint32 tasks_failed = 4;
 }

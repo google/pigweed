@@ -13,10 +13,23 @@
 # the License.
 
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 
 pw_doc_group("docs") {
   sources = [
     "docs.rst",
   ]
   group_deps = [ "go:docs" ]
+}
+
+pw_proto_library("target_runner_proto") {
+  sources = [
+    "pw_target_runner_protos/target_runner.proto",
+  ]
+}
+
+pw_proto_library("exec_server_config_proto") {
+  sources = [
+    "pw_target_runner_protos/exec_server_config.proto",
+  ]
 }

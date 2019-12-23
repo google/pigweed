@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-package server
+package pw_target_runner
 
 import (
 	"fmt"
@@ -20,44 +20,44 @@ import (
 	"os"
 	"os/exec"
 
-	pb "pigweed.dev/module/pw_test_server/gen"
+	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
 )
 
-// ExecTestRunner is a struct that implements the UnitTestRunner interface,
-// running its tests by executing a command with the path of the unit test
-// executable as an argument.
-type ExecTestRunner struct {
+// ExecDeviceRunner is a struct that implements the DeviceRunner interface,
+// running its executables through a command with the path of the executable as
+// an argument.
+type ExecDeviceRunner struct {
 	command []string
 	logger  *log.Logger
 }
 
-// NewExecTestRunner creates a new ExecTestRunner with a custom logger.
-func NewExecTestRunner(id int, command []string) *ExecTestRunner {
-	logPrefix := fmt.Sprintf("[ExecTestRunner %d] ", id)
+// NewExecDeviceRunner creates a new ExecDeviceRunner with a custom logger.
+func NewExecDeviceRunner(id int, command []string) *ExecDeviceRunner {
+	logPrefix := fmt.Sprintf("[ExecDeviceRunner %d] ", id)
 	logger := log.New(os.Stdout, logPrefix, log.LstdFlags)
-	return &ExecTestRunner{command, logger}
+	return &ExecDeviceRunner{command, logger}
 }
 
-// WorkerStart starts the worker. Part of UnitTestRunner interface.
-func (r *ExecTestRunner) WorkerStart() error {
+// WorkerStart starts the worker. Part of DeviceRunner interface.
+func (r *ExecDeviceRunner) WorkerStart() error {
 	r.logger.Printf("Starting worker")
 	return nil
 }
 
-// WorkerExit exits the worker. Part of UnitTestRunner interface.
-func (r *ExecTestRunner) WorkerExit() {
+// WorkerExit exits the worker. Part of DeviceRunner interface.
+func (r *ExecDeviceRunner) WorkerExit() {
 	r.logger.Printf("Exiting worker")
 }
 
-// HandleRunRequest runs a requested unit test binary by executing the runner's
-// command with the unit test as an argument. The combined stdout and stderr of
-// the command is returned as the unit test output.
-func (r *ExecTestRunner) HandleRunRequest(req *UnitTestRunRequest) *UnitTestRunResponse {
-	res := &UnitTestRunResponse{Status: pb.TestStatus_SUCCESS}
+// HandleRunRequest runs a requested binary by executing the runner's command
+// with the binary path as an argument. The combined stdout and stderr of the
+// command is returned as the run output.
+func (r *ExecDeviceRunner) HandleRunRequest(req *RunRequest) *RunResponse {
+	res := &RunResponse{Status: pb.RunStatus_SUCCESS}
 
-	r.logger.Printf("Running unit test %s\n", req.Path)
+	r.logger.Printf("Running executable %s\n", req.Path)
 
-	// Copy runner command args, appending unit test binary path to the end.
+	// Copy runner command args, appending the binary path to the end.
 	args := append([]string(nil), r.command[1:]...)
 	args = append(args, req.Path)
 
@@ -66,10 +66,9 @@ func (r *ExecTestRunner) HandleRunRequest(req *UnitTestRunRequest) *UnitTestRunR
 
 	if err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
-			// A nonzero exit status is interpreted as a unit test
-			// failure.
+			// A nonzero exit status is interpreted as a failure.
 			r.logger.Printf("Command exited with status %d\n", e.ExitCode())
-			res.Status = pb.TestStatus_FAILURE
+			res.Status = pb.RunStatus_FAILURE
 		} else {
 			// Any other error with the command execution is
 			// reported as an internal error to the requester.

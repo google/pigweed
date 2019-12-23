@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// Package server implements a unit test gRPC server which queues and
-// distributes unit tests among a group of worker routines.
-package server
+// Package pw_target_runner implements a target runner gRPC server which queues
+// and distributes executables among a group of worker routines.
+package pw_target_runner
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	pb "pigweed.dev/module/pw_test_server/gen"
+	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
 )
 
 var (
@@ -37,26 +37,26 @@ var (
 	errServerNotRunning = errors.New("Server is not running")
 )
 
-// Server is a gRPC server that runs a TestServer service.
+// Server is a gRPC server that runs a TargetRunner service.
 type Server struct {
 	grpcServer  *grpc.Server
 	listener    net.Listener
-	testsPassed uint32
-	testsFailed uint32
+	tasksPassed uint32
+	tasksFailed uint32
 	startTime   time.Time
 	active      bool
-	workerPool  *TestWorkerPool
+	workerPool  *WorkerPool
 }
 
-// New creates a gRPC server with a registered TestServer service.
-func New() *Server {
+// NewServer creates a gRPC server with a registered TargetRunner service.
+func NewServer() *Server {
 	s := &Server{
 		grpcServer: grpc.NewServer(),
 		workerPool: newWorkerPool("ServerWorkerPool"),
 	}
 
 	reflection.Register(s.grpcServer)
-	pb.RegisterTestServerServer(s.grpcServer, &pwTestServer{s})
+	pb.RegisterTargetRunnerServer(s.grpcServer, &pwTargetRunnerService{s})
 
 	return s
 }
@@ -71,23 +71,23 @@ func (s *Server) Bind(port int) error {
 	return nil
 }
 
-// RegisterWorker adds a unit test worker to the server's worker pool.
-func (s *Server) RegisterWorker(worker UnitTestRunner) {
+// RegisterWorker adds a worker to the server's worker pool.
+func (s *Server) RegisterWorker(worker DeviceRunner) {
 	s.workerPool.RegisterWorker(worker)
 }
 
-// RunTest runs a unit test executable through a worker in the test server,
-// returning the worker's response. The function blocks until the test has
-// been processed.
-func (s *Server) RunTest(path string) (*UnitTestRunResponse, error) {
+// RunExecutable runs an executable through a worker in the server, returning
+// the worker's response. The function blocks until the executable has been
+// processed.
+func (s *Server) RunBinary(path string) (*RunResponse, error) {
 	if !s.active {
 		return nil, errServerNotRunning
 	}
 
-	resChan := make(chan *UnitTestRunResponse, 1)
+	resChan := make(chan *RunResponse, 1)
 	defer close(resChan)
 
-	s.workerPool.QueueTest(&UnitTestRunRequest{
+	s.workerPool.QueueExecutable(&RunRequest{
 		Path:            path,
 		ResponseChannel: resChan,
 	})
@@ -98,16 +98,16 @@ func (s *Server) RunTest(path string) (*UnitTestRunResponse, error) {
 		return nil, res.Err
 	}
 
-	if res.Status == pb.TestStatus_SUCCESS {
-		s.testsPassed++
+	if res.Status == pb.RunStatus_SUCCESS {
+		s.tasksPassed++
 	} else {
-		s.testsFailed++
+		s.tasksFailed++
 	}
 
 	return res, nil
 }
 
-// Serve starts the gRPC test server on its configured port. Bind must have been
+// Serve starts the gRPC server on its configured port. Bind must have been
 // called before this; an error is returned if it is not. This function blocks
 // until the server is terminated.
 func (s *Server) Serve() error {
@@ -124,39 +124,40 @@ func (s *Server) Serve() error {
 	return s.grpcServer.Serve(s.listener)
 }
 
-// pwTestServer implements the pw.test_server.TestServer gRPC service.
-type pwTestServer struct {
+// pwTargetRunnerService implements the pw.target_runner.TargetRunner gRPC
+// service.
+type pwTargetRunnerService struct {
 	server *Server
 }
 
-// RunUnitTest runs a single unit test binary and returns its result.
-func (s *pwTestServer) RunUnitTest(
+// RunBinary runs a single executable on-device and returns its result.
+func (s *pwTargetRunnerService) RunBinary(
 	ctx context.Context,
-	desc *pb.UnitTestDescriptor,
-) (*pb.UnitTestRunStatus, error) {
-	testRes, err := s.server.RunTest(desc.FilePath)
+	desc *pb.RunBinaryRequest,
+) (*pb.RunBinaryResponse, error) {
+	runRes, err := s.server.RunBinary(desc.FilePath)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
-	res := &pb.UnitTestRunStatus{
-		Result:      testRes.Status,
-		QueueTimeNs: uint64(testRes.QueueTime),
-		RunTimeNs:   uint64(testRes.RunTime),
-		Output:      testRes.Output,
+	res := &pb.RunBinaryResponse{
+		Result:      runRes.Status,
+		QueueTimeNs: uint64(runRes.QueueTime),
+		RunTimeNs:   uint64(runRes.RunTime),
+		Output:      runRes.Output,
 	}
 	return res, nil
 }
 
 // Status returns information about the server.
-func (s *pwTestServer) Status(
+func (s *pwTargetRunnerService) Status(
 	ctx context.Context,
 	_ *pb.Empty,
 ) (*pb.ServerStatus, error) {
 	resp := &pb.ServerStatus{
 		UptimeNs:    uint64(time.Since(s.server.startTime)),
-		TestsPassed: s.server.testsPassed,
-		TestsFailed: s.server.testsFailed,
+		TasksPassed: s.server.tasksPassed,
+		TasksFailed: s.server.tasksFailed,
 	}
 
 	return resp, nil

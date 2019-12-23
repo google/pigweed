@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-package server
+package pw_target_runner
 
 import (
 	"errors"
@@ -23,73 +23,68 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "pigweed.dev/module/pw_test_server/gen"
+	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
 )
 
-// UnitTestRunRequest represents a client request to run a single unit test
-// executable.
-type UnitTestRunRequest struct {
-	// Filesystem path to the unit test executable.
+// RunRequest represents a client request to run a single executable on-device.
+type RunRequest struct {
+	// Filesystem path to the executable.
 	Path string
 
-	// Channel to which the unit test response is sent back.
-	ResponseChannel chan<- *UnitTestRunResponse
+	// Channel to which the response is sent back.
+	ResponseChannel chan<- *RunResponse
 
 	// Time when the request was queued. Internal to the worker pool.
 	queueStart time.Time
 }
 
-// UnitTestRunResponse is the response sent after a unit test run request is
-// processed.
-type UnitTestRunResponse struct {
+// RunResponse is the response sent after a run request is processed.
+type RunResponse struct {
 	// Length of time that the run request was queued before being handled
-	// by a test worker. Set by the worker pool.
+	// by a worker. Set by the worker pool.
 	QueueTime time.Duration
 
-	// Length of time the unit test runner command took to run the test.
+	// Length of time the runner command took to run the executable.
 	// Set by the worker pool.
 	RunTime time.Duration
 
-	// Raw output of the unit test.
+	// Raw output of the execution.
 	Output []byte
 
-	// Result of the unit test run.
-	Status pb.TestStatus
+	// Result of the run.
+	Status pb.RunStatus
 
-	// Error that occurred during the test run, if any. This is not an error
-	// with the unit test (e.g. test failure); rather, an internal error
-	// occurring in the test worker pool as it attempted to run the test.
-	// If this is not nil, none of the other fields in this struct are
-	// guaranteed to be valid.
+	// Error that occurred during the run, if any. If this is not nil, none
+	// of the other fields in this struct are guaranteed to be valid.
 	Err error
 }
 
-// UnitTestRunner represents a worker which handles unit test run requests.
-type UnitTestRunner interface {
+// DeviceRunner represents a worker which handles run requests.
+type DeviceRunner interface {
 	// WorkerStart is the lifecycle hook called when the worker routine is
 	// started. Any resources required by the worker should be initialized
 	// here.
 	WorkerStart() error
 
-	// HandleRunRequest is the method called when a unit test is scheduled
+	// HandleRunRequest is the method called when an executable is scheduled
 	// to run on the worker by the worker pool. It processes the request,
-	// runs the unit test, and returns an appropriate response.
-	HandleRunRequest(*UnitTestRunRequest) *UnitTestRunResponse
+	// runs the executable, and returns an appropriate response.
+	HandleRunRequest(*RunRequest) *RunResponse
 
 	// WorkerExit is the lifecycle hook called before the worker exits.
 	// Should be used to clean up any resources used by the worker.
 	WorkerExit()
 }
 
-// TestWorkerPool represents a collection of unit test workers which run unit
-// test binaries. The worker pool can schedule unit test runs, distributing the
-// tests among its available workers.
-type TestWorkerPool struct {
+// WorkerPool represents a collection of device runners which run on-device
+// binaries. The worker pool distributes requests to run binaries among its
+// available workers.
+type WorkerPool struct {
 	activeWorkers uint32
 	logger        *log.Logger
-	workers       []UnitTestRunner
+	workers       []DeviceRunner
 	waitGroup     sync.WaitGroup
-	testChannel   chan *UnitTestRunRequest
+	reqChannel    chan *RunRequest
 	quitChannel   chan bool
 }
 
@@ -98,21 +93,20 @@ var (
 	errNoRegisteredWorkers = errors.New("No workers registered in pool")
 )
 
-// newWorkerPool creates an empty test worker pool.
-func newWorkerPool(name string) *TestWorkerPool {
+// newWorkerPool creates an empty worker pool.
+func newWorkerPool(name string) *WorkerPool {
 	logPrefix := fmt.Sprintf("[%s] ", name)
-	return &TestWorkerPool{
+	return &WorkerPool{
 		logger:      log.New(os.Stdout, logPrefix, log.LstdFlags),
-		workers:     make([]UnitTestRunner, 0),
-		testChannel: make(chan *UnitTestRunRequest, 1024),
+		workers:     make([]DeviceRunner, 0),
+		reqChannel:  make(chan *RunRequest, 1024),
 		quitChannel: make(chan bool, 64),
 	}
 }
 
-// RegisterWorker adds a new unit test worker to the pool which uses the given
-// command and arguments to run its unit tests. This cannot be done when the
+// RegisterWorker adds a new worker to the pool. This cannot be done when the
 // pool is processing requests; Stop() must be called first.
-func (p *TestWorkerPool) RegisterWorker(worker UnitTestRunner) error {
+func (p *WorkerPool) RegisterWorker(worker DeviceRunner) error {
 	if p.Active() {
 		return errWorkerPoolActive
 	}
@@ -121,7 +115,7 @@ func (p *TestWorkerPool) RegisterWorker(worker UnitTestRunner) error {
 }
 
 // Start launches all registered workers in the pool.
-func (p *TestWorkerPool) Start() error {
+func (p *WorkerPool) Start() error {
 	if p.Active() {
 		return errWorkerPoolActive
 	}
@@ -139,7 +133,7 @@ func (p *TestWorkerPool) Start() error {
 // Stop terminates all running workers in the pool. The work queue is not
 // cleared; queued requests persist and can be processed by calling Start()
 // again.
-func (p *TestWorkerPool) Stop() {
+func (p *WorkerPool) Stop() {
 	if !p.Active() {
 		return
 	}
@@ -154,34 +148,34 @@ func (p *TestWorkerPool) Stop() {
 }
 
 // Active returns true if any worker routines are currently running.
-func (p *TestWorkerPool) Active() bool {
+func (p *WorkerPool) Active() bool {
 	return p.activeWorkers > 0
 }
 
-// QueueTest adds a unit test to the worker pool's queue of tests. If no workers
+// QueueExecutable adds an executable to the worker pool's queue. If no workers
 // are registered in the pool, this operation fails and an immediate response is
 // sent back to the requester indicating the error.
-func (p *TestWorkerPool) QueueTest(req *UnitTestRunRequest) {
+func (p *WorkerPool) QueueExecutable(req *RunRequest) {
 	if len(p.workers) == 0 {
-		p.logger.Printf("Attempt to queue test %s with no active workers", req.Path)
-		req.ResponseChannel <- &UnitTestRunResponse{
+		p.logger.Printf("Attempt to queue executable %s with no active workers", req.Path)
+		req.ResponseChannel <- &RunResponse{
 			Err: errNoRegisteredWorkers,
 		}
 		return
 	}
 
-	p.logger.Printf("Queueing unit test %s\n", req.Path)
+	p.logger.Printf("Queueing executable %s\n", req.Path)
 
 	// Start tracking how long the request is queued.
 	req.queueStart = time.Now()
-	p.testChannel <- req
+	p.reqChannel <- req
 }
 
-// runWorker is a function run by the test worker pool in a separate goroutine
-// for each of its registered workers. The function is responsible for calling
-// the appropriate worker lifecycle hooks and processing requests as they come
-// in through the worker pool's queue.
-func (p *TestWorkerPool) runWorker(worker UnitTestRunner) {
+// runWorker is a function run by the worker pool in a separate goroutine for
+// each of its registered workers. The function is responsible for calling the
+// appropriate worker lifecycle hooks and processing requests as they come in
+// through the worker pool's queue.
+func (p *WorkerPool) runWorker(worker DeviceRunner) {
 	defer func() {
 		atomic.AddUint32(&p.activeWorkers, ^uint32(0))
 		p.waitGroup.Done()
@@ -210,7 +204,7 @@ processLoop:
 			if q || !ok {
 				break processLoop
 			}
-		case req, ok := <-p.testChannel:
+		case req, ok := <-p.reqChannel:
 			if !ok {
 				continue
 			}

@@ -54,6 +54,6 @@ pw_doc_gen("docs") {
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",
     "$dir_pw_string:docs",
-    "$dir_pw_test_server:docs",
+    "$dir_pw_target_runner:docs",
   ]
 }

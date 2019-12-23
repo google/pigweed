@@ -12,10 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_build/go.gni")
 
-pw_doc_group("docs") {
+pw_go_package("pw_target_runner_client") {
   sources = [
-    "docs.rst",
+    "main.go",
   ]
+  deps = [
+    "$dir_pw_target_runner:target_runner_proto_go",
+  ]
+  gopath = "$dir_pw_target_runner/go"
 }

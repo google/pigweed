@@ -229,6 +229,7 @@ _WATCH_PATTERNS = (
     '*.cc',
     '*.gn',
     '*.gni',
+    '*.go',
     '*.h',
     '*.ld',
     '*.proto',
