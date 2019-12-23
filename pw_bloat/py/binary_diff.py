@@ -53,16 +53,22 @@ class BinaryDiff:
             yield FormattedDiff('(all)', '(same)', '0', '(same)')
             return
 
+        has_diff_segment = False
+
         for segment in self._segments.values():
             if segment.delta == 0:
                 continue
 
+            has_diff_segment = True
             yield FormattedDiff(
                 segment.name,
                 format_integer(segment.before),
                 format_integer(segment.delta, force_sign=True),
                 format_integer(segment.after),
             )
+
+        if not has_diff_segment:
+            yield FormattedDiff('(all)', '(same)', '0', '(same)')
 
     @classmethod
     def from_csv(cls: Type['BinaryDiff'], label: str,
