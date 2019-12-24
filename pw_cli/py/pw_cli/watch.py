@@ -99,11 +99,28 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         self.build_dirs = build_dirs or []
         self.cooldown_finish_time = None
 
-    def path_matches(self, path):
+    def path_matches(self, raw_path):
         """Returns true if path matches according to the watcher patterns"""
-        pure_path = pathlib.PurePath(path)
-        return ((not any(pure_path.match(x) for x in self.ignore_patterns))
-                and any(pure_path.match(x) for x in self.patterns))
+        modified_path = pathlib.Path(raw_path).resolve()
+
+        # Check for modifications inside the build directory outputs, and skip
+        # them. Ideally these events would never hit the watcher, but
+        # selectively watching directories at the OS level is not trivial due
+        # to limitations of the watchdog module.
+        for build_dir in self.build_dirs:
+            resolved_build_dir = pathlib.Path(build_dir).resolve()
+            try:
+                modified_path.relative_to(resolved_build_dir)
+                # If no ValueError is raised by the .relative_to() call, then
+                # this file is inside the build directory; so skip it.
+                return False
+            except ValueError:
+                # Otherwise, the file isn't in the build directory, so run the
+                # normal pattern checks below.
+                pass
+
+        return ((not any(modified_path.match(x) for x in self.ignore_patterns))
+                and any(modified_path.match(x) for x in self.patterns))
 
     def dispatch(self, event):
         # There isn't any point in triggering builds on new directory creation.
