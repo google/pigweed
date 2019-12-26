@@ -170,10 +170,13 @@ class PigweedBuildWatcher(FileSystemEventHandler):
 
             build_ok = (result.returncode == 0)
             if build_ok:
+                level = logging.INFO
                 tag = '(OK)'
             else:
+                level = logging.ERROR
                 tag = '(FAIL)'
-            _LOG.info(f'[{i}/{num_builds}] Finished build: {build_dir} {tag}')
+            _LOG.log(level,
+                     f'[{i}/{num_builds}] Finished build: {build_dir} {tag}')
             builds_succeeded.append(build_ok)
 
         if all(builds_succeeded):
