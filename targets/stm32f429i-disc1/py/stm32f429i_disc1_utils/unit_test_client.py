@@ -17,8 +17,9 @@
 import argparse
 import subprocess
 import sys
+from typing import Optional
 
-_TEST_SERVER_COMMAND = 'pw_test_server'
+_TARGET_CLIENT_COMMAND = 'pw_target_runner_client'
 
 
 def parse_args():
@@ -33,9 +34,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def launch_client(binary: str, server_port: int) -> int:
+def launch_client(binary: str, server_port: Optional[int]) -> int:
     """Sends a test request to the specified server port."""
-    cmd = [_TEST_SERVER_COMMAND, '-test', binary]
+    cmd = [_TARGET_CLIENT_COMMAND, '-binary', binary]
 
     if server_port is not None:
         cmd.extend(['-port', str(server_port)])
@@ -43,12 +44,11 @@ def launch_client(binary: str, server_port: int) -> int:
     return subprocess.call(cmd)
 
 
-def main():
-    """Launch a test by sending a request to a pw_test_server."""
+def main() -> int:
+    """Launch a test by sending a request to a pw_target_runner_server."""
     args = parse_args()
-    exit_code = launch_client(args.binary, args.server_port)
-    sys.exit(exit_code)
+    return launch_client(args.binary, args.server_port)
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

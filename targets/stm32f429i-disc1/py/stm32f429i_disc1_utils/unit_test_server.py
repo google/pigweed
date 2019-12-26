@@ -18,6 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
+from typing import List, Optional, TextIO
 
 import pw_cli.process
 import pw_cli.log
@@ -27,7 +28,7 @@ _LOG = logging.getLogger('unit_test_server')
 
 _TEST_RUNNER_COMMAND = 'stm32f429i_disc1_unit_test_runner'
 
-_TEST_SERVER_COMMAND = 'pw_test_server'
+_TEST_SERVER_COMMAND = 'pw_target_runner_server'
 
 
 def parse_args():
@@ -37,7 +38,7 @@ def parse_args():
     parser.add_argument('--server-port',
                         type=int,
                         default=8080,
-                        help='Port to launch the pw_test_server on')
+                        help='Port to launch the pw_target_runner_server on')
     parser.add_argument('--server-config',
                         type=argparse.FileType('r'),
                         help='Path to server config file')
@@ -50,8 +51,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate_runner(command: str, arguments: list) -> str:
-    """Generates a text-proto style server configuration for pw_test_server."""
+def generate_runner(command: str, arguments: List[str]) -> str:
+    """Generates a text-proto style pw_target_runner_server configuration."""
     # TODO(amontanez): Use a real proto library to generate this when we have
     # one set up.
     for i, arg in enumerate(arguments):
@@ -62,7 +63,7 @@ def generate_runner(command: str, arguments: list) -> str:
     return '\n'.join(runner)
 
 
-def generate_server_config():
+def generate_server_config() -> str:
     """Returns a temporary generated file for use as the server config."""
     boards = stm32f429i_detector.detect_boards()
     if not boards:
@@ -82,13 +83,14 @@ def generate_server_config():
     return config_file
 
 
-def launch_server(server_config, server_port: int) -> int:
+def launch_server(server_config: Optional[TextIO],
+                  server_port: Optional[int]) -> int:
     """Launch a device test server with the provided arguments."""
     if server_config is None:
         # Auto-detect attached boards if no config is provided.
         server_config = generate_server_config()
 
-    cmd = [_TEST_SERVER_COMMAND, '-server', '-config', server_config.name]
+    cmd = [_TEST_SERVER_COMMAND, '-config', server_config.name]
 
     if server_port is not None:
         cmd.extend(['-port', str(server_port)])
