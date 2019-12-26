@@ -89,7 +89,8 @@ class PigweedBuildWatcher(FileSystemEventHandler):
                  patterns=None,
                  ignore_patterns=None,
                  case_sensitive=False,
-                 build_dirs=None):
+                 build_dirs=None,
+                 ignore_dirs=None):
         super().__init__()
 
         self.patterns = patterns
@@ -97,25 +98,26 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         self.case_sensitive = case_sensitive
         self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
         self.build_dirs = build_dirs or []
+        self.ignore_dirs = (ignore_dirs or []) + self.build_dirs
         self.cooldown_finish_time = None
 
     def path_matches(self, raw_path):
         """Returns true if path matches according to the watcher patterns"""
         modified_path = pathlib.Path(raw_path).resolve()
 
-        # Check for modifications inside the build directory outputs, and skip
-        # them. Ideally these events would never hit the watcher, but
-        # selectively watching directories at the OS level is not trivial due
-        # to limitations of the watchdog module.
-        for build_dir in self.build_dirs:
-            resolved_build_dir = pathlib.Path(build_dir).resolve()
+        # Check for modifications inside the ignore directories, and skip them.
+        # Ideally these events would never hit the watcher, but selectively
+        # watching directories at the OS level is not trivial due to limitations
+        # of the watchdog module.
+        for ignore_dir in self.ignore_dirs:
+            resolved_ignore_dir = pathlib.Path(ignore_dir).resolve()
             try:
-                modified_path.relative_to(resolved_build_dir)
+                modified_path.relative_to(resolved_ignore_dir)
                 # If no ValueError is raised by the .relative_to() call, then
-                # this file is inside the build directory; so skip it.
+                # this file is inside the ignore directory; so skip it.
                 return False
             except ValueError:
-                # Otherwise, the file isn't in the build directory, so run the
+                # Otherwise, the file isn't in the ignore directory, so run the
                 # normal pattern checks below.
                 pass
 
@@ -309,16 +311,17 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
         # The directory is somewhere other than inside the users home.
         path_to_log = path_of_directory_to_watch
 
-    # We need to ignore both the user-specified patterns and also all
-    # events for files in the build output directories.
+    # Ignore the user-specified patterns.
     ignore_patterns = (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
                        if ignore_patterns else [])
-    ignore_patterns.extend([f'{build_dir}/*' for build_dir in build_dirs])
+
+    ignore_dirs = ['.presubmit', '.python3-env']
 
     event_handler = PigweedBuildWatcher(
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
-        build_dirs=build_dirs)
+        build_dirs=build_dirs,
+        ignore_dirs=ignore_dirs)
 
     observer = Observer()
     observer.schedule(
