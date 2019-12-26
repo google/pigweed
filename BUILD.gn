@@ -26,6 +26,16 @@ group("default") {
     # With a test runner, depend on the run targets so they run with the build.
     deps += [ ":pw_module_tests_run" ]
   }
+  if (pw_build_host_tools) {
+    deps += [ ":host_tools" ]
+  }
+}
+
+group("host_tools") {
+  deps = [
+    "$dir_pw_target_runner/go:simple_client",
+    "$dir_pw_target_runner/go:simple_server",
+  ]
 }
 
 group("pw_facades") {

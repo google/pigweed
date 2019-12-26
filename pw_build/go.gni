@@ -125,9 +125,7 @@ template("pw_go_executable") {
   pw_exec(_download_target_name) {
     program = "go"
     args = [ "get" ]
-    deps = [
-      ":$_deps_metadata_target_name",
-    ]
+    deps = [ ":$_deps_metadata_target_name" ] + invoker.deps
     env = [ "GOPATH=$_default_gopath" ]
     args_file = _deps_metadata_file
 

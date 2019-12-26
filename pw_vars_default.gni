@@ -20,7 +20,7 @@
 # importing this file, then changing the variables as desired.
 
 # Whether to build host-side tooling.
-pw_build_host_tools = true
+pw_build_host_tools = false
 
 # Options which configure the executable targets created in Pigweed builds.
 pw_executable_config = {
