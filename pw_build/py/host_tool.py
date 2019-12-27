@@ -15,7 +15,7 @@
 
 import argparse
 import logging
-import os
+from pathlib import Path
 import shutil
 import sys
 from typing import Optional
@@ -34,10 +34,16 @@ def argument_parser(
         parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument('--dst',
+                        type=Path,
                         required=True,
                         help='Path to host tools directory')
     parser.add_argument('--name', help='Name for the installed tool')
+    parser.add_argument('--out-root',
+                        type=Path,
+                        required=True,
+                        help='Root of Ninja out directory')
     parser.add_argument('--src',
+                        type=Path,
                         required=True,
                         help='Path to host tool executable')
 
@@ -45,21 +51,46 @@ def argument_parser(
 
 
 def main() -> int:
+    """Copies a host tool into a destination directory."""
     args = argument_parser().parse_args()
 
-    if not os.path.isfile(args.src):
+    if not args.src.is_file():
         _LOG.error('%s is not a file', args.src)
         return 1
 
-    os.makedirs(args.dst, exist_ok=True)
+    args.dst.mkdir(parents=True, exist_ok=True)
 
     if args.name is not None:
         if '/' in args.name:
             _LOG.error('Host tool name cannot contain "/"')
             return 1
-        args.dst = os.path.join(args.dst, args.name)
+        name = args.name
+    else:
+        name = args.src.name
 
-    shutil.copy2(args.src, args.dst)
+    try:
+        shutil.copy2(args.src, args.dst.joinpath(name))
+    except OSError as err:
+        _LOG.error('%s', err)
+
+        # Errno 26 (text file busy) indicates that a host tool binary is
+        # currently running.
+        # TODO(frolv): Check if this works on Windows.
+        if err.errno == 26:
+            _LOG.error('')
+            _LOG.error('  %s has been rebuilt but cannot be', name)
+            _LOG.error('  copied into the host tools directory:')
+            _LOG.error('')
+            _LOG.error('    %s',
+                       args.dst.relative_to(args.out_root).joinpath(name))
+            _LOG.error('')
+            _LOG.error('  This can occur if the program is already running.')
+            _LOG.error(
+                '  If it is running, exit it and try re-running the build.')
+            _LOG.error('')
+
+        return 1
+
     return 0
 
 

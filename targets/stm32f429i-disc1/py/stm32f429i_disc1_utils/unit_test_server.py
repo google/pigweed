@@ -63,7 +63,7 @@ def generate_runner(command: str, arguments: List[str]) -> str:
     return '\n'.join(runner)
 
 
-def generate_server_config() -> str:
+def generate_server_config() -> TextIO:
     """Returns a temporary generated file for use as the server config."""
     boards = stm32f429i_detector.detect_boards()
     if not boards:

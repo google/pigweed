@@ -43,6 +43,8 @@ if (pw_build_host_tools) {
       _out_target,
       "--dst",
       _host_tools_dir,
+      "--out-root",
+      root_out_dir,
     ]
 
     if (defined(invoker.name) && invoker.name != "") {
