@@ -34,12 +34,12 @@ bool IsSecureConnectionsKey(hci::LinkKeyType lk_type) {
 
 PairingFeatures::PairingFeatures() { std::memset(this, 0, sizeof(*this)); }
 
-PairingFeatures::PairingFeatures(bool initiator, bool sc, bool bondable_mode, PairingMethod method,
+PairingFeatures::PairingFeatures(bool initiator, bool sc, bool will_bond, PairingMethod method,
                                  uint8_t enc_key_size, KeyDistGenField local_kd,
                                  KeyDistGenField remote_kd)
     : initiator(initiator),
       secure_connections(sc),
-      bondable_mode(bondable_mode),
+      will_bond(will_bond),
       method(method),
       encryption_key_size(enc_key_size),
       local_key_distribution(local_kd),

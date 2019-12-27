@@ -25,7 +25,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest, public Bearer::Li
 
   void NewBearer(hci::Connection::Role role = hci::Connection::Role::kMaster,
                  hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
-                 bool sc_supported = false, bool bondable_mode = true,
+                 BondableMode bondable_mode = BondableMode::Bondable, bool sc_supported = false,
                  IOCapability io_capability = IOCapability::kNoInputNoOutput) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
@@ -33,7 +33,7 @@ class SMP_BearerTest : public l2cap::testing::FakeChannelTest, public Bearer::Li
     options.link_type = ll_type;
 
     fake_chan_ = CreateFakeChannel(options);
-    bearer_ = std::make_unique<Bearer>(fake_chan_, role, sc_supported, bondable_mode, io_capability,
+    bearer_ = std::make_unique<Bearer>(fake_chan_, role, bondable_mode, sc_supported, io_capability,
                                        weak_ptr_factory_.GetWeakPtr());
   }
 
@@ -224,8 +224,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartDefaultParams) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
-            false /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
+            BondableMode::NonBondable, true /* sc_supported */, IOCapability::kDisplayYesNo);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
 
@@ -258,8 +258,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeStartCustomParams) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeInitiatorWithIdentityInfo) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, true /* sc_supported */,
-            true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, BondableMode::Bondable,
+            true /* sc_supported */, IOCapability::kDisplayYesNo);
   set_has_identity_info(true);
   bearer()->set_oob_available(true);
   bearer()->set_mitm_required(true);
@@ -514,8 +514,8 @@ TEST_F(SMP_BearerTest, FeatureExchangePairingResponseJustWorks) {
 // One of the devices requires MITM protection and the I/O capabilities can
 // provide it.
 TEST_F(SMP_BearerTest, FeatureExchangePairingResponseMITM) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
-            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -883,8 +883,8 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderSendsOnlyRequestedKeys) {
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderMITM) {
-  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
-            true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -927,7 +927,7 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderMITM) {
   EXPECT_TRUE(KeyDistGen::kIdKey & features().remote_key_distribution);
 
   // We should have set bondable mode as both sides enabled it
-  EXPECT_EQ(features().bondable_mode, true);
+  EXPECT_TRUE(features().will_bond);
 }
 
 TEST_F(SMP_BearerTest, UnsupportedCommandDuringPairing) {
@@ -975,8 +975,8 @@ TEST_F(SMP_BearerTest, SendConfirmValueNotPairing) {
 }
 
 TEST_F(SMP_BearerTest, SendConfirmValueNotLE) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1022,8 +1022,8 @@ TEST_F(SMP_BearerTest, OnPairingConfirmNotPairing) {
 }
 
 TEST_F(SMP_BearerTest, OnPairingConfirmNotLE) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1097,8 +1097,8 @@ TEST_F(SMP_BearerTest, SendRandomValueNotPairing) {
 }
 
 TEST_F(SMP_BearerTest, SendRandomValueNotLE) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1144,8 +1144,8 @@ TEST_F(SMP_BearerTest, OnPairingRandomNotPairing) {
 }
 
 TEST_F(SMP_BearerTest, OnPairingRandomNotLE) {
-  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL,
-            false /* sc_supported */, true /* bondable_mode */, IOCapability::kDisplayYesNo);
+  NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kDisplayYesNo);
   bearer()->InitiateFeatureExchange();
   ASSERT_TRUE(bearer()->pairing_started());
 
@@ -1453,14 +1453,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeInitiatorReqBondResNoBond) {
 
   // Should be in non-bondable mode even though the Initiator specifies bonding, as kResponse
   // indicated that the peer follower does not support bonding.
-  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_FALSE(features().will_bond);
   EXPECT_EQ(features().local_key_distribution, 0u);
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeInitiatorReqNoBondResBond) {
   NewBearer(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE,
-            false /* sc_supported */, false /* bondable_mode */, IOCapability::kNoInputNoOutput);
+            BondableMode::NonBondable, false /* sc_supported */, IOCapability::kNoInputNoOutput);
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -1492,14 +1492,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeInitiatorReqNoBondResBond) {
 
   // Should be in non-bondable mode even though kResponse specifies bonding as local Bearer
   // is in non-bondable mode.
-  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_FALSE(features().will_bond);
   EXPECT_EQ(features().local_key_distribution, 0u);
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderReqBondResNoBond) {
-  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
-            false /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE,
+            BondableMode::NonBondable, false /* sc_supported */, IOCapability::kNoInputNoOutput);
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -1529,14 +1529,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderReqBondResNoBond) {
 
   // Should be in non-bondable mode even though the peer requested bondable, as the Bearer was
   // created in non-bondable mode.
-  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_FALSE(features().will_bond);
   EXPECT_EQ(features().local_key_distribution, 0u);
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderReqNoBondResNoBond) {
-  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
-            true /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kNoInputNoOutput);
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -1566,14 +1566,14 @@ TEST_F(SMP_BearerTest, FeatureExchangeResponderReqNoBondResNoBond) {
 
   // Should be in non-bondable mode even though Bearer was created in bondable mode as
   // kRequest indicated that peer does not support bonding.
-  EXPECT_EQ(features().bondable_mode, false);
+  EXPECT_FALSE(features().will_bond);
   EXPECT_EQ(features().local_key_distribution, 0u);
   EXPECT_EQ(features().remote_key_distribution, 0u);
 }
 
 TEST_F(SMP_BearerTest, FeatureExchangeResponderReqNoBondWithKeys) {
-  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, false /* sc_supported */,
-            true /* bondable_mode */, IOCapability::kNoInputNoOutput);
+  NewBearer(hci::Connection::Role::kSlave, hci::Connection::LinkType::kLE, BondableMode::Bondable,
+            false /* sc_supported */, IOCapability::kNoInputNoOutput);
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request

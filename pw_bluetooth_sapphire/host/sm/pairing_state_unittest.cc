@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "util.h"
 
 namespace bt {
@@ -34,7 +35,7 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest,
     DestroyPairingState();
   }
 
-  void NewPairingState(hci::Connection::Role role, IOCapability ioc, bool bondable_mode) {
+  void NewPairingState(hci::Connection::Role role, IOCapability ioc, BondableMode bondable_mode) {
     // Setup fake SMP channel.
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
@@ -398,7 +399,8 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
 
   void SetUp() override { SetUpPairingState(); }
 
-  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly, bool bondable_mode = true) {
+  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly,
+                         BondableMode bondable_mode = BondableMode::Bondable) {
     NewPairingState(hci::Connection::Role::kMaster, ioc, bondable_mode);
   }
 
@@ -418,12 +420,13 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   // FastForwardToSTKEncrypted() to also emulate successful encryption.
   void FastForwardToSTK(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
                         KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
-                        uint8_t max_key_size = kMaxEncryptionKeySize, bool bondable_mode = true) {
+                        uint8_t max_key_size = kMaxEncryptionKeySize,
+                        BondableMode bondable_mode = BondableMode::Bondable) {
     UpgradeSecurity(level);
 
     PairingRequestParams pairing_params;
     pairing_params.io_capability = IOCapability::kNoInputNoOutput;
-    pairing_params.auth_req = bondable_mode ? kBondingFlag : 0;
+    pairing_params.auth_req = bondable_mode == BondableMode::Bondable ? kBondingFlag : 0;
     pairing_params.max_encryption_key_size = max_key_size;
     pairing_params.initiator_key_dist_gen = local_keys;
     pairing_params.responder_key_dist_gen = remote_keys;
@@ -454,7 +457,7 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   void FastForwardToSTKEncrypted(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
                                  KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
                                  uint8_t max_key_size = kMaxEncryptionKeySize,
-                                 bool bondable_mode = true) {
+                                 BondableMode bondable_mode = BondableMode::Bondable) {
     FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size, bondable_mode);
 
     ASSERT_TRUE(fake_link()->ltk());
@@ -478,7 +481,8 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
 
   void SetUp() override { SetUpPairingState(); }
 
-  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly, bool bondable_mode = true) {
+  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly,
+                         BondableMode bondable_mode = BondableMode::Bondable) {
     NewPairingState(hci::Connection::Role::kSlave, ioc, bondable_mode);
   }
 
@@ -498,10 +502,11 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
 
   void FastForwardToSTK(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
                         KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
-                        uint8_t max_key_size = kMaxEncryptionKeySize, bool bondable_mode = true) {
+                        uint8_t max_key_size = kMaxEncryptionKeySize,
+                        BondableMode bondable_mode = BondableMode::Bondable) {
     PairingRequestParams pairing_params;
     pairing_params.io_capability = IOCapability::kNoInputNoOutput;
-    pairing_params.auth_req = bondable_mode ? kBondingFlag : 0;
+    pairing_params.auth_req = (bondable_mode == BondableMode::Bondable) ? kBondingFlag : 0;
     pairing_params.max_encryption_key_size = max_key_size;
     pairing_params.initiator_key_dist_gen = remote_keys;
     pairing_params.responder_key_dist_gen = local_keys;
@@ -541,7 +546,7 @@ class SMP_ResponderPairingTest : public SMP_PairingStateTest {
   void FastForwardToSTKEncrypted(UInt128* out_stk, SecurityLevel level = SecurityLevel::kEncrypted,
                                  KeyDistGenField remote_keys = 0, KeyDistGenField local_keys = 0,
                                  uint8_t max_key_size = kMaxEncryptionKeySize,
-                                 bool bondable_mode = true) {
+                                 BondableMode bondable_mode = BondableMode::Bondable) {
     FastForwardToSTK(out_stk, level, remote_keys, local_keys, max_key_size, bondable_mode);
 
     ASSERT_TRUE(fake_link()->ltk());
@@ -2341,11 +2346,11 @@ TEST_F(SMP_ResponderPairingTest, ReceiveSecurityRequest) {
 // Test that LTK is generated and passed up to PairingState when both sides request bonding
 TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, true /* bondable_mode */);
+  SetUpPairingState(IOCapability::kDisplayOnly);
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             0u,                   // remote keys
                             KeyDistGen::kEncKey,  // local keys
-                            kMaxEncryptionKeySize, true /* bondable_mode */);
+                            kMaxEncryptionKeySize, BondableMode::Bondable);
 
   // The link should have been assigned the LTK.
   EXPECT_TRUE(pairing_data().ltk);
@@ -2355,11 +2360,11 @@ TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
 // peer requests bondable mode.
 TEST_F(SMP_ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, false /* bondable_mode */);
+  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::NonBondable);
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             0u,                   // remote keys
                             KeyDistGen::kEncKey,  // local keys
-                            kMaxEncryptionKeySize, true /* bondable_mode */);
+                            kMaxEncryptionKeySize, BondableMode::Bondable);
 
   // The link should not have been assigned the LTK.
   EXPECT_FALSE(pairing_data().ltk);
@@ -2369,11 +2374,11 @@ TEST_F(SMP_ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
 // requests non-bondable mode.
 TEST_F(SMP_ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, true /* bondable_mode */);
+  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::Bondable);
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             0u,  // remote keys
                             0u,  // local keys
-                            kMaxEncryptionKeySize, false /* bondable_mode */);
+                            kMaxEncryptionKeySize, BondableMode::NonBondable);
 
   // The link should not have been assigned the LTK.
   EXPECT_FALSE(pairing_data().ltk);
@@ -2383,11 +2388,11 @@ TEST_F(SMP_ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
 // non-bondable mode.
 TEST_F(SMP_ResponderPairingTest, BothSidesRequestNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, false /* bondable_mode */);
+  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::NonBondable);
   FastForwardToSTKEncrypted(&stk, SecurityLevel::kEncrypted,
                             0u,  // remote keys
                             0u,  // local keys
-                            kMaxEncryptionKeySize, false /* bondable_mode */);
+                            kMaxEncryptionKeySize, BondableMode::NonBondable);
 
   // The link should not have been assigned the LTK.
   EXPECT_FALSE(pairing_data().ltk);

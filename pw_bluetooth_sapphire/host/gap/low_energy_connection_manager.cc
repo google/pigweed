@@ -165,7 +165,8 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     }
 
     pairing_ = std::make_unique<sm::PairingState>(link_->WeakPtr(), std::move(smp), io_cap,
-                                                  weak_ptr_factory_.GetWeakPtr(), true);
+                                                  weak_ptr_factory_.GetWeakPtr(),
+                                                  sm::BondableMode::Bondable);
 
     // Encrypt the link with the current LTK if it exists.
     if (ltk) {

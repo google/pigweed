@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_
 
+#include <zircon/assert.h>
+
 #include <memory>
 #include <queue>
 
@@ -80,7 +82,8 @@ class PairingState final : public Bearer::Listener {
   // |delegate|: Delegate responsible for handling authentication challenges and
   //             storing pairing information.
   PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
-               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, bool bondable_mode);
+               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+               BondableMode bondable_mode);
   ~PairingState() override;
 
   // Returns the current security properties of the LE link.
@@ -128,6 +131,13 @@ class PairingState final : public Bearer::Listener {
   // Abort all ongoing pairing procedures and notify pairing callbacks with an
   // error.
   void Abort();
+
+  // Returns whether or not the pairing state is in bondable mode. Note that being in bondable
+  // mode does not guarantee that pairing will necessarily bond.
+  BondableMode bondable_mode() const {
+    ZX_DEBUG_ASSERT(le_smp_);
+    return le_smp_->bondable_mode();
+  }
 
  private:
   static constexpr size_t kPairingRequestSize = sizeof(Header) + sizeof(PairingRequestParams);

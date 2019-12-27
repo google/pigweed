@@ -92,7 +92,7 @@ PairingState::PendingRequest::PendingRequest(SecurityLevel level, PairingCallbac
 
 PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                            IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-                           bool bondable_mode)
+                           BondableMode bondable_mode)
     : next_pairing_id_(0), delegate_(delegate), le_link_(link), weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(delegate_);
   ZX_DEBUG_ASSERT(le_link_);
@@ -103,7 +103,7 @@ PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap
 
   // Set up SMP data bearer.
   // TODO(armansito): Enable SC when we support it.
-  le_smp_ = std::make_unique<Bearer>(std::move(smp), link->role(), false /* sc */, bondable_mode,
+  le_smp_ = std::make_unique<Bearer>(std::move(smp), link->role(), bondable_mode, false /* sc */,
                                      io_capability, weak_ptr_factory_.GetWeakPtr());
 
   // Set up HCI encryption event.
@@ -390,7 +390,7 @@ void PairingState::CompleteLegacyPairing() {
   // TODO(armansito): Report CSRK when we support it.
   ZX_DEBUG_ASSERT(delegate_);
   delegate_->OnPairingComplete(Status());
-  if (legacy_state_->features->bondable_mode) {
+  if (legacy_state_->features->will_bond) {
     delegate_->OnNewPairingData(pairing_data);
   } else if (ltk_ || legacy_state_->has_irk) {
     bt_log(INFO, "gap-le", "Received pairing data in non-bondable mode [%s%s%s%sid: %lu]",

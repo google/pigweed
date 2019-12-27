@@ -106,13 +106,13 @@ class Bearer final {
   // Initializes this Bearer with the following parameters:
   //   - |chan|: The L2CAP SMP fixed channel.
   //   - |role|: The local connection role.
+  //   - |bondable_mode|: Determines the bondable mode of the local device (either bondable or
+  //     non-bondable)
   //   - |secure_connections_supported|: True if the local device supports LE
   //     Secure Connections pairing.
-  //   - |bondable_preference|: True if the device wishes to pair with
-  //     bonding, false for non-bondable mode
   //   - |io_capability|: The local I/O capability.
-  Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role,
-         bool secure_connections_supported, bool bondable_preference, IOCapability io_capability,
+  Bearer(fbl::RefPtr<l2cap::Channel> chan, hci::Connection::Role role, BondableMode bondable_mode,
+         bool secure_connections_supported, IOCapability io_capability,
          fxl::WeakPtr<Listener> listener);
   ~Bearer() = default;
 
@@ -128,6 +128,9 @@ class Bearer final {
 
   // Returns true if pairing has been initiated.
   bool pairing_started() const { return timeout_task_.is_pending(); }
+
+  // Returns whether or not the bearer is in bondable mode
+  BondableMode bondable_mode() const { return bondable_mode_; }
 
   // Returns the connection role.
   hci::Connection::Role role() const { return role_; }
@@ -220,7 +223,7 @@ class Bearer final {
   bool oob_available_;
   bool mitm_required_;
   bool sc_supported_;
-  bool bondable_preference_;
+  BondableMode bondable_mode_;
   IOCapability io_capability_;
   fxl::WeakPtr<Listener> listener_;
 

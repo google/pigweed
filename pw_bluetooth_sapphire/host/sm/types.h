@@ -18,7 +18,7 @@ namespace sm {
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
   PairingFeatures();
-  PairingFeatures(bool initiator, bool sc, bool bondable_mode, PairingMethod method,
+  PairingFeatures(bool initiator, bool sc, bool will_bond, PairingMethod method,
                   uint8_t enc_key_size, KeyDistGenField local_kd, KeyDistGenField remote_kd);
 
   // True if the local device is in the "initiator" role.
@@ -28,9 +28,8 @@ struct PairingFeatures final {
   // Pairing should be used.
   bool secure_connections;
 
-  // True if pairing is to be performed without bonding, i.e. LTKs should not be
-  // exchanged across the link nor stored on either side
-  bool bondable_mode;
+  // True if pairing is to be performed with bonding, false if not
+  bool will_bond;
 
   // Indicates the key generation model used for Phase 2.
   PairingMethod method;
@@ -172,6 +171,15 @@ struct PairingData final {
 struct IdentityInfo {
   UInt128 irk;
   DeviceAddress address;
+};
+
+// Enum for the possible values of the SM Bondable Mode as defined in spec V5.1 Vol 3 Part C
+// Section 9.4
+enum class BondableMode {
+  // Allows pairing which results in bonding, as well as pairing which does not
+  Bondable,
+  // Does not allow pairing which results in bonding
+  NonBondable,
 };
 
 }  // namespace sm
