@@ -102,13 +102,13 @@ with ``--server-config``.
 
 Step 2: Configure GN
 ^^^^^^^^^^^^^^^^^^^^
-By default, this hardware target has incremental testing via pw_test_server
+By default, this hardware target has incremental testing via pw_target_runner
 disabled. Enabling this build arg tells GN to send requests to
 
 .. code:: sh
 
   $ gn args out/disco
-  # Modify and save the args file to use pw_test_server.
+  # Modify and save the args file to use pw_target_runner.
   pw_use_test_server = true
 
 Step 3: Build changes

@@ -25,7 +25,7 @@ declare_args() {
   # Specifies the toolchain to use for this build.
   pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m4f_og"
 
-  # Experimental! Enable the pw_test_server for distributed testing.
+  # Experimental! Enable the pw_target_runner for distributed testing.
   pw_use_test_server = false
 }
 

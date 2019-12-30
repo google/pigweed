@@ -29,8 +29,8 @@ print out the path of the tests they are scheduled to run.
   	"flag"
   	"log"
 
-  	pb "pigweed.dev/module/pw_test_server/gen"
-  	"pigweed.dev/module/pw_test_server/server"
+  	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
+  	"pigweed.dev/pw_target_runner"
   )
 
   // Custom test worker that implements the interface server.UnitTestRunner.
