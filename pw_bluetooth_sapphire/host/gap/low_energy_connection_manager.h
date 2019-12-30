@@ -61,6 +61,10 @@ class LowEnergyConnectionRef final {
   // Sets a callback to be called when the underlying connection is closed.
   void set_closed_callback(fit::closure callback) { closed_cb_ = std::move(callback); }
 
+  // Returns the operational bondable mode of the underlying connection. See spec V5.1 Vol 3 Part
+  // C Section 9.4 for more details.
+  sm::BondableMode bondable_mode();
+
   PeerId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
@@ -128,7 +132,8 @@ class LowEnergyConnectionManager final {
   //
   // |callback| is posted on the creation thread's dispatcher.
   using ConnectionResultCallback = fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
-  bool Connect(PeerId peer_id, ConnectionResultCallback callback);
+  bool Connect(PeerId peer_id, ConnectionResultCallback callback,
+               sm::BondableMode bondable_mode = sm::BondableMode::Bondable);
 
   PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
@@ -147,7 +152,8 @@ class LowEnergyConnectionManager final {
   // address that was connected to.
   //
   // A link with the given handle should not have been previously registered.
-  LowEnergyConnectionRefPtr RegisterRemoteInitiatedLink(hci::ConnectionPtr link);
+  LowEnergyConnectionRefPtr RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
+                                                        sm::BondableMode bondable_mode);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
   PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
@@ -197,7 +203,8 @@ class LowEnergyConnectionManager final {
 
   class PendingRequestData {
    public:
-    PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback);
+    PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback,
+                       sm::BondableMode bondable_mode);
     PendingRequestData() = default;
     ~PendingRequestData() = default;
 
@@ -212,10 +219,12 @@ class LowEnergyConnectionManager final {
     void NotifyCallbacks(hci::Status status, const RefFunc& func);
 
     const DeviceAddress& address() const { return address_; }
+    sm::BondableMode bondable_mode() const { return bondable_mode_; }
 
    private:
     DeviceAddress address_;
     std::list<ConnectionResultCallback> callbacks_;
+    sm::BondableMode bondable_mode_;
 
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
   };
@@ -228,12 +237,13 @@ class LowEnergyConnectionManager final {
   void TryCreateNextConnection();
 
   // Initiates a connection attempt to |peer|.
-  void RequestCreateConnection(Peer* peer);
+  void RequestCreateConnection(Peer* peer, sm::BondableMode bondable_mode);
 
   // Initializes the connection to the peer with the given identifier and
   // returns the initial reference to it. This method is responsible for setting
   // up all data bearers.
-  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id, hci::ConnectionPtr link);
+  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
+                                                 sm::BondableMode bondable_mode);
 
   // Adds a new connection reference to an existing connection to the peer
   // with the ID |peer_id| and returns it. Returns nullptr if
@@ -254,7 +264,7 @@ class LowEnergyConnectionManager final {
 
   // Called by |connector_| when a new locally initiated LE connection has been
   // created.
-  void RegisterLocalInitiatedLink(hci::ConnectionPtr link);
+  void RegisterLocalInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode);
 
   // Updates |peer_cache_| with the given |link| and returns the corresponding
   // Peer.
@@ -270,7 +280,8 @@ class LowEnergyConnectionManager final {
   Peer* UpdatePeerWithLink(const hci::Connection& link);
 
   // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link);
+  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link,
+                       sm::BondableMode bondable_mode);
 
   // Event handler for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventCallbackResult OnLEConnectionUpdateComplete(

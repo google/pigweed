@@ -14,13 +14,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
 #define LOG_TAG "le.Peripheral"
 
+using bt::sm::BondableMode;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
-
 namespace fble = fuchsia::bluetooth::le;
 
 namespace bthost {
@@ -130,7 +131,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   if (connectable) {
     connect_cb = [self](auto id, auto link) {
       if (self) {
-        self->OnConnected(id, std::move(link));
+        self->OnConnected(id, std::move(link), BondableMode::Bondable);
       }
     };
   }
@@ -178,7 +179,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
 }
 
 void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertisement_id,
-                                            bt::hci::ConnectionPtr link) {
+                                            bt::hci::ConnectionPtr link,
+                                            BondableMode bondable_mode) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
@@ -196,7 +198,8 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     return;
   }
 
-  auto conn = adapter()->le_connection_manager()->RegisterRemoteInitiatedLink(std::move(link));
+  auto conn = adapter()->le_connection_manager()->RegisterRemoteInitiatedLink(std::move(link),
+                                                                              bondable_mode);
   if (!conn) {
     bt_log(TRACE, LOG_TAG, "incoming connection rejected");
     return;

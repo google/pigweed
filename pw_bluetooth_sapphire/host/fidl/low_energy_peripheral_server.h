@@ -21,7 +21,7 @@
 
 namespace bthost {
 
-// Implements the low_energy::Central FIDL interface.
+// Implements the low_energy::Peripheral FIDL interface.
 class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::le::Peripheral> {
  public:
   LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
@@ -63,7 +63,8 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
   // Called when a central connects to us.  When this is called, the
   // advertisement in |advertisement_id| has been stopped.
-  void OnConnected(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link);
+  void OnConnected(bt::gap::AdvertisementId advertisement_id, bt::hci::ConnectionPtr link,
+                   bt::sm::BondableMode bondable_mode);
 
   // Represents the current advertising instance:
   // - Contains no value if advertising was never requested.

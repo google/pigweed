@@ -8,11 +8,13 @@
 
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Int8;
 using fuchsia::bluetooth::Status;
 
+using bt::sm::BondableMode;
 using fuchsia::bluetooth::gatt::Client;
 using fuchsia::bluetooth::le::ScanFilterPtr;
 
@@ -188,7 +190,8 @@ void LowEnergyCentralServer::ConnectPeripheral(::std::string identifier,
     callback(Status());
   };
 
-  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb))) {
+  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb),
+                                                   BondableMode::Bondable)) {
     bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;

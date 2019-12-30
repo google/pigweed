@@ -32,6 +32,7 @@ namespace bt {
 namespace gap {
 namespace {
 
+using bt::sm::BondableMode;
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
@@ -966,10 +967,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref = conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
+  LowEnergyConnectionRefPtr conn_ref =
+      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
-
   // A Peer should now exist in the cache.
   auto* peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
@@ -1001,7 +1002,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrP
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref = conn_mgr()->RegisterRemoteInitiatedLink(std::move(link));
+  LowEnergyConnectionRefPtr conn_ref =
+      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
   ASSERT_TRUE(conn_ref);
 
   EXPECT_EQ(peer->identifier(), conn_ref->peer_identifier());
@@ -1200,6 +1202,104 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Pair) {
   ASSERT_TRUE(cb_called);
 }
 
+// Listener receives remote initiated connection ref.
+TEST_F(GAP_LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLink) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref =
+      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(conn_ref->bondable_mode(), BondableMode::Bondable);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, PassNonBondableThroughRemoteInitiatedLink) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref =
+      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::NonBondable);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(conn_ref->bondable_mode(), BondableMode::NonBondable);
+}
+
+// Successful connection to single peer
+TEST_F(GAP_LowEnergyConnectionManagerTest, PassBondableThroughConnect) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback, BondableMode::Bondable));
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->bondable_mode(), BondableMode::Bondable);
+}
+
+// Successful connection to single peer
+TEST_F(GAP_LowEnergyConnectionManagerTest, PassNonBondableThroughConnect) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback, BondableMode::NonBondable));
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->bondable_mode(), BondableMode::NonBondable);
+}
 // Test fixture for tests that disconnect a connection in various ways and expect that
 // controller packet counts are not cleared on disconnecting, but are cleared on disconnection
 // complete. Tests should disconnect conn_ref0().
