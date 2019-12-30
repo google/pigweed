@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,14 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+package(default_visibility = ["//visibility:public"])
 
-declare_args() {
-  pw_build_host_tools = true
-}
+licenses(["notice"])  # Apache License 2.0
 
-# Configure backend for pw_dumb_io facade.
-dir_pw_dumb_io_backend = "$dir_pw_dumb_io_stdio"
-
-# Configure backend for logging facade.
-dir_pw_log_backend = "$dir_pw_log_basic"
+filegroup(
+    name = "pw_log_basic",
+    srcs = [
+        "public/pw_log_basic/log_basic.h",
+        "public_overrides/pw_log_backend/log_backend.h",
+        "log_basic.cc",
+    ],
+)

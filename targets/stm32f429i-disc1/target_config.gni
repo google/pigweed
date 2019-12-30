@@ -61,6 +61,7 @@ if (pw_use_test_server) {
 dir_pw_boot_backend = dir_pw_boot_armv7m
 dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
 dir_pw_dumb_io_backend = dir_pw_dumb_io_baremetal_stm32f429
+dir_pw_log_backend = dir_pw_log_basic
 
 pw_boot_armv7m_config.defines += [
   "PW_BOOT_FLASH_BEGIN=0x08000200",

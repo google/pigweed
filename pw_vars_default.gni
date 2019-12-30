@@ -103,6 +103,9 @@ dir_pw_cpu_exception_backend = ""
 # Backend for the pw_dumb_io module.
 dir_pw_dumb_io_backend = ""
 
+# Backend for the pw_log module.
+dir_pw_log_backend = ""
+
 ############################## MODULE CONFIGS ##################################
 
 # Module configuration options for pw_boot_armv7m.

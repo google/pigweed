@@ -68,6 +68,7 @@ group("pw_modules") {
 pw_test_group("pw_module_tests") {
   group_deps = [
     "$dir_pw_base64:tests",
+    "$dir_pw_log:tests",
     "$dir_pw_polyfill:tests",
     "$dir_pw_preprocessor:tests",
     "$dir_pw_protobuf:tests",
