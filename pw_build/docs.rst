@@ -8,9 +8,10 @@
 pw_build
 --------
 The build module contains the configuration necessary to build Pigweed using
-either `GN`_/`Ninja`_ or `Bazel`_.
+`GN`_/`Ninja`_, `CMake`_/`Ninja`_, or `Bazel`_.
 
 .. _GN: https://gn.googlesource.com/gn/
+.. _CMake: https://cmake.org/
 .. _Ninja: https://ninja-build.org/
 .. _Bazel: https://bazel.build/
 
@@ -125,6 +126,54 @@ target, as well as requiring one extra:
 
 Targets depending on ``foo_metadata`` will rebuild when any of the ``.foo``
 files are modified.
+
+CMake / Ninja
+=============
+The following command generates Ninja build files in the out/cmake directory.
+
+.. code:: sh
+
+  cmake -B out/cmake -S /path/to/pigweed -G Ninja
+
+Tests can be executed with the ``pw_run_tests_GROUP`` targets. To run the basic
+Pigweed tests, run ``ninja -C out/cmake pw_run_tests_modules``.
+
+CMake functions
+---------------
+CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
+
+* ``pw_auto_add_simple_module`` -- For modules with only one library,
+  automatically declare the library and its tests.
+* ``pw_add_facade`` -- Declare a module facade.
+* ``pw_add_module_library`` -- Add a library that is part of a module.
+* ``pw_add_test`` -- Declare a test target.
+
+See ``pw_build/pigweed.cmake`` for the complete documentation of these
+functions.
+
+Special libraries that do not fit well with these functions are created with the
+standard CMake functions, such as ``add_library`` and ``target_link_libraries``.
+
+Use Pigweed from an existing CMake project
+------------------------------------------
+To use Pigweed libraries form a CMake-based project, simply include the Pigweed
+repository from a ``CMakeLists.txt``.
+
+.. code:: cmake
+
+  add_subdirectory(path/to/pigweed pigweed)
+
+All module libraries will be available as ``module_name`` or
+``module_name.sublibrary``.
+
+If desired, modules can be included individually.
+
+.. code:: cmake
+
+  include(path/to/pigweed/pw_build/pigweed.cmake)
+
+  add_subdirectory(path/to/pigweed/pw_some_module pw_some_module)
+  add_subdirectory(path/to/pigweed/pw_another_module pw_another_module)
 
 Bazel
 =====

@@ -35,6 +35,13 @@ $ ninja -C out/host
 ```
 
 ```bash
+$ which cmake
+~/pigweed/.cipd/pigweed.ensure/cmake
+$ cmake -B out/cmake-host -S . -G Ninja
+$ ninja -C out/cmake-host
+```
+
+```bash
 $ which bazel
 ~/pigweed/.cipd/pigweed.ensure/bazel
 $ bazel test //...
