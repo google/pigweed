@@ -23,3 +23,4 @@ pip-tools
 # TODO(frolv): Create a setup.py for pw_docgen and remove these.
 sphinx
 sphinx-rtd-theme
+m2r

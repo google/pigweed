@@ -16,7 +16,7 @@
 import sphinx_rtd_theme
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -37,7 +37,7 @@ release = '0.1.0'
 # The name of the Pygments (syntax highlighting) style to use.
 pygm = 'sphinx'
 
-extensions = ['sphinx.ext.autodoc']
+extensions = ['sphinx.ext.autodoc', 'm2r']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
@@ -87,3 +87,7 @@ texinfo_documents = [
     ('index', 'Pigweed', 'Pigweed', 'Google', 'Pigweed', 'Firmware framework',
      'Miscellaneous'),
 ]
+
+# Markdown files imported using m2r aren't marked as "referenced," so exclude
+# them from the error reference checking.
+exclude_patterns = ['*.md']

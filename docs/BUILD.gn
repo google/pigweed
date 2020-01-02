@@ -31,6 +31,7 @@ group("target_docs") {
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
+    "../README.md",
     "index.rst",
     "modules.rst",
     "targets.rst",
