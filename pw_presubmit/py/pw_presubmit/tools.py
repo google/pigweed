@@ -99,8 +99,14 @@ def git_diff_names(commit: str = 'HEAD',
     """Returns absolute paths of files changed since the specified commit."""
     root = git_repo_path(repo=repo)
     return [
-        os.path.abspath(os.path.join(root, path)) for path in git_stdout(
-            'diff', '--name-only', commit, '--', *paths, repo=repo).split()
+        os.path.abspath(os.path.join(root, path))
+        for path in git_stdout('diff',
+                               '--name-only',
+                               '--diff-filter=d',
+                               commit,
+                               '--',
+                               *paths,
+                               repo=repo).split()
     ]
 
 
