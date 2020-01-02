@@ -13,8 +13,13 @@ Pigweed is in the early stages of development.
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
 $ env_setup/cipd/cipd.py auth-login  # Once per machine.
-$ . env_setup/setup.sh
+$ . env_setup/bootstrap.sh
 ```
+
+You can use `. env_setup/env_setup.sh` in place of `. env_setup/bootstrap.sh`.
+Both should work every time, but `bootstrap.sh` tends to remove and reinstall
+things at the expense of time whereas `env_setup.sh` tends to do basic checks
+to see if time can be saved by skipping expensive operations.
 
 If you're using Homebrew and you get an error saying
 `module 'http.client' has no attribute 'HTTPSConnection'` then your

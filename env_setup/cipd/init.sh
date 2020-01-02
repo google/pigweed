@@ -21,5 +21,7 @@
 # Sets up Python 3 virtualenv. Requires PW_ENVSETUP to be set, which setup.sh
 # (up one level from this file) does.
 
+# Ignore PW_ENVSETUP_FULL here--CIPD setup is extremely fast when doing nothing.
+
 echo "Initializing CIPD..."
 $(${PW_ENVSETUP}/cipd/update.py)
