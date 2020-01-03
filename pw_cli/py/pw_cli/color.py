@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,8 @@
 import sys
 from typing import Optional, Union
 
+import pw_cli.env
+
 
 def _make_color(*codes):
     # Apply all the requested ANSI color codes. Note that this is unbalanced
@@ -30,17 +32,18 @@ def _make_color(*codes):
 # 'colorful' module.
 class _Color:  # pylint: disable=too-few-public-methods
     """Helpers to surround text with ASCII color escapes"""
-    red = _make_color(31, 1)
-    bold_red = _make_color(30, 41)
-    yellow = _make_color(33, 1)
-    bold_yellow = _make_color(30, 43, 1)
-    green = _make_color(32)
-    bold_green = _make_color(30, 42)
-    blue = _make_color(34, 1)
-    cyan = _make_color(36, 1)
-    magenta = _make_color(35, 1)
-    bold_white = _make_color(37, 1)
-    black_on_white = _make_color(30, 47)  # black fg white bg
+    def __init__(self):
+        self.red = _make_color(31, 1)
+        self.bold_red = _make_color(30, 41)
+        self.yellow = _make_color(33, 1)
+        self.bold_yellow = _make_color(30, 43, 1)
+        self.green = _make_color(32)
+        self.bold_green = _make_color(30, 42)
+        self.blue = _make_color(34, 1)
+        self.cyan = _make_color(36, 1)
+        self.magenta = _make_color(35, 1)
+        self.bold_white = _make_color(37, 1)
+        self.black_on_white = _make_color(30, 47)  # black fg white bg
 
 
 class _NoColor:
@@ -55,6 +58,8 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
     By default, the object only colorizes if both stderr and stdout are TTYs.
     """
     if enabled is None:
-        enabled = sys.stdout.isatty() and sys.stderr.isatty()
+        env = pw_cli.env.pigweed_environment()
+        enabled = env.PW_USE_COLOR or (sys.stdout.isatty()
+                                       and sys.stderr.isatty())
 
-    return _Color if enabled else _NoColor()
+    return _Color() if enabled else _NoColor()

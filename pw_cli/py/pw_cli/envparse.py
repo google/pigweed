@@ -62,7 +62,7 @@ class EnvironmentParser:
         parser = envparse.EnvironmentParser(prefix='PW_')
         parser.add_var('PW_LOG_LEVEL')
         parser.add_var('PW_LOG_FILE', type=envparse.FileType('w'))
-        parser.add_var('PW_USE_COLOR', type=envparse.bool_type, default=False)
+        parser.add_var('PW_USE_COLOR', type=envparse.strict_bool, default=False)
         env = parser.parse_env()
 
         configure_logging(env.PW_LOG_LEVEL, env.PW_LOG_FILE)
@@ -135,7 +135,7 @@ class EnvironmentParser:
         return f'{type(self).__name__}(prefix={self._prefix})'
 
 
-def bool_type(value: str) -> bool:
+def strict_bool(value: str) -> bool:
     return value == '1' or value.lower() == 'true'
 
 

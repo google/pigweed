@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,11 +14,10 @@
 """Configure the system logger for the default pw command log format."""
 
 import logging
-import os
-import sys
 from typing import Optional
 
 import pw_cli.color
+import pw_cli.env
 import pw_cli.plugins
 
 # Log level used for captured output of a subprocess run through pw.
@@ -45,22 +44,18 @@ def install(level: int = logging.INFO,
             use_color: Optional[bool] = None) -> None:
     """Configure the system logger for the default pw command log format."""
 
-    colors = pw_cli.color.colors(
-        sys.stderr.isatty() if use_color is None else use_color)
+    colors = pw_cli.color.colors(use_color)
 
-    pw_subprocess = os.getenv('PW_SUBPROCESS')
-    if pw_subprocess is None:
-        # This applies a gray background to the time to make the log lines
-        # distinct from other input, in a way that's easier to see than plain
-        # colored text.
-        timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
-    elif pw_subprocess == '1':
+    env = pw_cli.env.pigweed_environment()
+    if env.PW_SUBPROCESS:
         # If the logger is being run in the context of a pw subprocess, the
         # time and date are omitted (since pw_cli.process will provide them).
         timestamp_fmt = ''
     else:
-        raise ValueError(
-            f'Invalid environment variable PW_SUBPROCESS={pw_subprocess}')
+        # This applies a gray background to the time to make the log lines
+        # distinct from other input, in a way that's easier to see than plain
+        # colored text.
+        timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
 
     # Set log level on root logger to debug, otherwise any higher levels
     # elsewhere are ignored.

@@ -122,8 +122,8 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
             parser.add_var('FOO')
 
 
-class TestBoolType(unittest.TestCase):
-    """Tests for envparse.bool_type."""
+class TestStrictBool(unittest.TestCase):
+    """Tests for envparse.strict_bool."""
     def setUp(self):
         self.good_bools = ['true', '1', 'TRUE', 'tRuE']
         self.bad_bools = [
@@ -131,12 +131,12 @@ class TestBoolType(unittest.TestCase):
         ]
 
     def test_good_bools(self):
-        self.assertTrue(all(
-            envparse.bool_type(val) for val in self.good_bools))
+        self.assertTrue(
+            all(envparse.strict_bool(val) for val in self.good_bools))
 
     def test_bad_bools(self):
-        self.assertFalse(any(
-            envparse.bool_type(val) for val in self.bad_bools))
+        self.assertFalse(
+            any(envparse.strict_bool(val) for val in self.bad_bools))
 
 
 if __name__ == '__main__':

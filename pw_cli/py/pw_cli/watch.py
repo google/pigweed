@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -155,7 +155,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         """Run all the builds in serial and capture pass/fail for each."""
 
         # Clear the screen and show a banner indicating the build is starting.
-        print("\033c", end="")  # TODO(pwbug/38): Not Windows compatible.
+        print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
         print(_COLOR.magenta(_BUILD_MESSAGE))
         _LOG.info('Change detected: %s', matching_path)
 
@@ -167,7 +167,10 @@ class PigweedBuildWatcher(FileSystemEventHandler):
 
             # Run the build. Put a blank before/after for visual separation.
             print()
-            result = subprocess.run(['ninja', '-C', build_dir])
+            env = os.environ.copy()
+            # Force colors in Pigweed subcommands run through the watcher.
+            env['PW_USE_COLOR'] = '1'
+            result = subprocess.run(['ninja', '-C', build_dir], env=env)
             print()
 
             build_ok = (result.returncode == 0)
