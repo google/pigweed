@@ -33,7 +33,7 @@
 // GTEST_DONT_DEFINE_TEST is also accepted for compatibility.
 #if !PW_TEST_DONT_DEFINE_TEST && !GTEST_DONT_DEFINE_TEST
 #define TEST PW_TEST
-#endif
+#endif  // !PW_TEST_DONT_DEFINE_TEST && !GTEST_DONT_DEFINE_TEST
 
 #define TEST_F(test_fixture, test_name) \
   _PW_TEST(test_fixture, test_name, test_fixture)
@@ -59,6 +59,28 @@
 #define ASSERT_FALSE(expr) _PW_TEST_FALSE(_PW_TEST_ASSERT, expr)
 #define ASSERT_STREQ(lhs, rhs) _PW_TEST_STREQ(_PW_TEST_ASSERT, lhs, rhs)
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_STRNE(_PW_TEST_ASSERT, lhs, rhs)
+
+// Generates a non-fatal failure with a generic message.
+#define ADD_FAILURE() \
+  _PW_TEST_MESSAGE("(line is not executed)", "(line was executed)", false)
+
+// Generates a fatal failure with a generic message.
+#define GTEST_FAIL() return ADD_FAILURE()
+
+// Define either macro to 1 to omit the definition of FAIL(), which is a
+// generic name and clashes with some other libraries.
+#if !PW_TEST_DONT_DEFINE_FAIL && !GTEST_DONT_DEFINE_FAIL
+#define FAIL() GTEST_FAIL()
+#endif  // !PW_TEST_DONT_DEFINE_FAIL && !GTEST_DONT_DEFINE_FAIL
+
+// Generates a success with a generic message.
+#define GTEST_SUCCEED() _PW_TEST_MESSAGE("(success)", "(success)", true)
+
+// Define either macro to 1 to omit the definition of SUCCEED(), which
+// is a generic name and clashes with some other libraries.
+#if !PW_TEST_DONT_DEFINE_SUCCEED && !GTEST_DONT_DEFINE_SUCCEED
+#define SUCCEED() GTEST_SUCCEED()
+#endif  // !PW_TEST_DONT_DEFINE_SUCCEED && !GTEST_DONT_DEFINE_SUCCEED
 
 // pw_unit_test framework entry point. Runs every registered test case and
 // dispatches the results through the event handler. Returns a status of zero
@@ -195,18 +217,18 @@ class Framework {
     return result;
   }
 
+  // Dispatches an event indicating the result of an expectation.
+  void ExpectationResult(const char* expression,
+                         const std::string_view& evaluated_expression,
+                         int line,
+                         bool success);
+
  private:
   // Dispatches an event indicating that a test started running.
   void StartTest(Test* test);
 
   // Dispatches an event indicating that a test finished running.
   void EndTest(Test* test);
-
-  // Dispatches an event indicating the result of an expectation.
-  void ExpectationResult(const char* expression,
-                         const std::string_view& evaluated_expression,
-                         int line,
-                         bool success);
 
   // Singleton instance of the framework class.
   static Framework framework_;
@@ -351,10 +373,16 @@ class Test {
       #lhs " " expectation_string " " #rhs,                        \
       __LINE__)
 
-#define _PW_TEST_ASSERT(lhs, rhs, expectation, expectation_string)   \
-  if (!_PW_TEST_EXPECT(lhs, rhs, expectation, expectation_string)) { \
-    return;                                                          \
-  }
+#define _PW_TEST_ASSERT(lhs, rhs, expectation, expectation_string)     \
+  do {                                                                 \
+    if (!_PW_TEST_EXPECT(lhs, rhs, expectation, expectation_string)) { \
+      return;                                                          \
+    }                                                                  \
+  } while (0)
+
+#define _PW_TEST_MESSAGE(expected, actual, success)              \
+  ::pw::unit_test::internal::Framework::Get().ExpectationResult( \
+      expected, actual, __LINE__, success)
 
 #define _PW_TEST_OP(expect_or_assert, lhs, rhs, op) \
   expect_or_assert(                                 \

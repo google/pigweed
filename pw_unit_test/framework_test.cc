@@ -67,6 +67,15 @@ TEST(PigweedTest, ExpectStringEquality) {
   ASSERT_STRNE("yes", no);
 }
 
+TEST(PigweedTest, ExpectSucceedFail) {
+  SUCCEED();
+
+  if (false) {
+    ADD_FAILURE();
+    FAIL();
+  }
+}
+
 class NonCopyable {
  public:
   NonCopyable(int value) : value_(value) {}

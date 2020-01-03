@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [
@@ -67,14 +68,12 @@ source_set("main") {
   ]
 }
 
-# TODO(frolv): These targets are temporarily here until unit test support is
-# integrated into the build system.
-pw_executable("framework_test") {
-  deps = [
-    ":main",
-    ":pw_unit_test",
-  ]
+pw_test("framework_test") {
   sources = [
     "framework_test.cc",
   ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":framework_test" ]
 }
