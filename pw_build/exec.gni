@@ -45,6 +45,9 @@ import("python_script.gni")
 #    running the program if the file is empty. Used to avoid running commands
 #    which error when called without arguments.
 #
+#  capture_output: If true, output from the program is hidden unless the program
+#    exits with an error. Defaults to true.
+#
 # Example:
 #
 #   pw_exec("hello_world") {
@@ -61,7 +64,10 @@ import("python_script.gni")
 template("pw_exec") {
   assert(defined(invoker.program), "pw_exec requires a program to run")
 
-  _script_args = []
+  _script_args = [
+    "--target",
+    target_name,
+  ]
 
   if (defined(invoker.env_file)) {
     _script_args += [
@@ -88,6 +94,10 @@ template("pw_exec") {
         _env,
       ]
     }
+  }
+
+  if (!defined(invoker.capture_output) || invoker.capture_output) {
+    _script_args += [ "--capture-output" ]
   }
 
   _script_args += [

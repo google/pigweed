@@ -14,11 +14,17 @@
 """Python wrapper that runs a program. For use in GN."""
 
 import argparse
+import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 from typing import Dict, Optional
+
+import pw_cli.log
+
+_LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
@@ -33,6 +39,11 @@ def argument_parser(
         '--args-file',
         type=argparse.FileType('r'),
         help='File containing extra positional arguments to the program',
+    )
+    parser.add_argument(
+        '--capture-output',
+        action='store_true',
+        help='Hide output from the program unless it fails',
     )
     parser.add_argument(
         '-e',
@@ -50,6 +61,10 @@ def argument_parser(
         '--skip-empty-args',
         action='store_true',
         help='Don\'t run the program if --args-file is empty',
+    )
+    parser.add_argument(
+        '--target',
+        help='GN build target that runs the program',
     )
     parser.add_argument(
         'command',
@@ -85,6 +100,7 @@ def apply_env_var(string: str, env: Dict[str, str]) -> None:
 
 
 def main() -> int:
+    """Runs a program specified by command-line arguments."""
     args = argument_parser().parse_args()
     if not args.command or args.command[0] != '--':
         return 1
@@ -111,8 +127,35 @@ def main() -> int:
     for string in args.env:
         apply_env_var(string, env)
 
-    return subprocess.call(command, env=env)
+    if args.capture_output:
+        output_args = {'stdout': subprocess.PIPE, 'stderr': subprocess.STDOUT}
+    else:
+        output_args = {}
+
+    process = subprocess.run(command, env=env, **output_args)
+
+    if process.returncode != 0 and args.capture_output:
+        _LOG.error('')
+        _LOG.error('Command failed with exit code %d in GN build.',
+                   process.returncode)
+        _LOG.error('')
+        _LOG.error('Build target:')
+        _LOG.error('')
+        _LOG.error('  %s', args.target)
+        _LOG.error('')
+        _LOG.error('Full command:')
+        _LOG.error('')
+        _LOG.error('  %s', shlex.join(command))
+        _LOG.error('')
+        _LOG.error('Process output:')
+        print(flush=True)
+        sys.stdout.buffer.write(process.stdout)
+        print(flush=True)
+        _LOG.error('')
+
+    return process.returncode
 
 
 if __name__ == '__main__':
+    pw_cli.log.install()
     sys.exit(main())
