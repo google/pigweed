@@ -221,9 +221,23 @@ PYTHON = (
 
 
 #
+# CMake presubmit checks
+#
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
+                        'CMakeLists.txt'))
+def cmake_tests(ctx: PresubmitContext):
+    output = ctx.output_directory.joinpath('cmake-host')
+    call('cmake', '-B', output, '-S', ctx.repository_root, '-G', 'Ninja')
+    call('ninja', '-C', output, 'pw_run_tests_modules')
+
+
+CMAKE = (cmake_tests, )
+
+
+#
 # Bazel presubmit checks
 #
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
 def bazel_test(ctx: PresubmitContext):
     call('bazel',
          'test',
@@ -391,7 +405,7 @@ QUICK_PRESUBMIT: Sequence = (
 )
 
 PROGRAMS: Dict[str, Sequence] = {
-    'full': INIT + GN + CC + PYTHON + BAZEL + CODE_FORMAT + GENERAL,
+    'full': INIT + GN + CC + PYTHON + CMAKE + BAZEL + CODE_FORMAT + GENERAL,
     'quick': QUICK_PRESUBMIT,
 }
 
