@@ -257,9 +257,10 @@ def main():
     # Try to use pw_cli logs, else default to something reasonable.
     try:
         import pw_cli.log  # pylint: disable=import-outside-toplevel
-        pw_cli.log.install()
+        log_level = logging.DEBUG if args.verbose else logging.INFO
+        pw_cli.log.install(level=log_level)
     except ImportError:
-        coloredlogs.install(level='INFO',
+        coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
                             level_styles={
                                 'debug': {
                                     'color': 244
@@ -269,9 +270,6 @@ def main():
                                 }
                             },
                             fmt='%(asctime)s %(levelname)s | %(message)s')
-
-    if args.verbose:
-        _LOG.setLevel(logging.DEBUG)
 
     if run_device_test(args.binary, args.test_timeout, args.openocd_config,
                        args.baud, args.stlink_serial, args.port):
