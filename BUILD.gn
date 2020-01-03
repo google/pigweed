@@ -55,6 +55,7 @@ group("pw_modules") {
     "$dir_pw_span",
     "$dir_pw_status",
     "$dir_pw_string",
+    "$dir_pw_tokenizer",
     "$dir_pw_unit_test",
     "$dir_pw_varint",
   ]
@@ -69,6 +70,7 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_span:tests",
     "$dir_pw_status:tests",
     "$dir_pw_string:tests",
+    "$dir_pw_tokenizer:tests",
     "$dir_pw_unit_test:tests",
     "$dir_pw_varint:tests",
   ]

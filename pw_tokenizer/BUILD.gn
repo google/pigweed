@@ -1,0 +1,213 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+source_set("pw_tokenizer") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public_deps = [
+    "$dir_pw_preprocessor",
+    "$dir_pw_span",
+  ]
+  deps = [
+    "$dir_pw_varint",
+  ]
+  public = [
+    "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
+    "public/pw_tokenizer/tokenize.h",
+  ]
+  sources = [
+    "public/pw_tokenizer/config.h",
+    "public/pw_tokenizer/internal/argument_types.h",
+    "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
+    "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
+    "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h",
+    "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
+    "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
+    "public/pw_tokenizer/internal/tokenize_string.h",
+    "tokenize.cc",
+  ]
+  sources += public
+  friend = [
+    ":argument_types_test",
+    ":hash_test",
+  ]
+}
+
+source_set("decoder") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public_deps = [
+    "$dir_pw_span",
+  ]
+  deps = [
+    "$dir_pw_varint",
+  ]
+  public = [
+    "public/pw_tokenizer/detokenize.h",
+    "public/pw_tokenizer/token_database.h",
+  ]
+  sources = [
+    "decode.cc",
+    "detokenize.cc",
+    "public/pw_tokenizer/internal/decode.h",
+    "token_database.cc",
+  ]
+  sources += public
+  friend = [
+    ":decode_test",
+    ":generate_decoding_test_data",
+  ]
+}
+
+# Executable for generating test data for the C++ and Python detokenizers. This
+# target should only be built for the host.
+executable("generate_decoding_test_data") {
+  deps = [
+    ":decoder",
+    ":pw_tokenizer",
+    "$dir_pw_varint",
+  ]
+  sources = [
+    "generate_decoding_test_data.cc",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":argument_types_test",
+    ":decode_test",
+    ":detokenize_test",
+    ":hash_test",
+    ":token_database_test",
+    ":tokenize_test",
+  ]
+  group_deps = [
+    "$dir_pw_preprocessor:tests",
+    "$dir_pw_span:tests",
+    "$dir_pw_status:tests",
+  ]
+}
+
+pw_test("argument_types_test") {
+  sources = [
+    "argument_types_test.c",
+    "argument_types_test.cc",
+    "pw_tokenizer_private/argument_types_test.h",
+  ]
+  deps = [
+    ":pw_tokenizer",
+  ]
+}
+
+pw_test("decode_test") {
+  sources = [
+    "decode_test.cc",
+    "pw_tokenizer_private/tokenized_string_decoding_test_data.h",
+    "pw_tokenizer_private/varint_decoding_test_data.h",
+  ]
+  deps = [
+    ":decoder",
+    "$dir_pw_varint",
+  ]
+}
+
+pw_test("detokenize_test") {
+  sources = [
+    "detokenize_test.cc",
+  ]
+  deps = [
+    ":decoder",
+  ]
+}
+
+pw_test("hash_test") {
+  sources = [
+    "hash_test.cc",
+    "pw_tokenizer_private/generated_hash_test_cases.h",
+  ]
+  deps = [
+    ":pw_tokenizer",
+  ]
+}
+
+pw_test("token_database_test") {
+  sources = [
+    "token_database_test.cc",
+  ]
+  deps = [
+    ":decoder",
+  ]
+}
+
+pw_test("tokenize_test") {
+  sources = [
+    "pw_tokenizer_private/tokenize_test.h",
+    "tokenize_test.c",
+    "tokenize_test.cc",
+  ]
+  deps = [
+    ":pw_tokenizer",
+    "$dir_pw_varint",
+  ]
+}
+
+declare_args() {
+  # pw_java_native_interface_include_dirs specifies the paths to use for
+  # building Java Native Interface libraries. If no paths are provided, targets
+  # that require JNI may not build correctly.
+  #
+  # Example JNI include paths for a Linux system:
+  #
+  #   pw_java_native_interface_include_dirs = [
+  #     "/usr/local/buildtools/java/jdk/include/",
+  #     "/usr/local/buildtools/java/jdk/include/linux",
+  #   ]
+  #
+  pw_java_native_interface_include_dirs = []
+}
+
+# Create a shared library for the tokenizer JNI wrapper. The include paths for
+# the JNI headers must be available in the system or provided with the
+# pw_java_native_interface_include_dirs variable.
+shared_library("detokenizer_jni") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  include_dirs = pw_java_native_interface_include_dirs
+  sources = [
+    "java/dev/pigweed/tokenizer/detokenizer.cc",
+  ]
+  public_deps = [
+    ":decoder",
+    "$dir_pw_preprocessor",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
+}

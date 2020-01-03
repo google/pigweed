@@ -57,5 +57,6 @@ pw_doc_gen("docs") {
     "$dir_pw_status:docs",
     "$dir_pw_string:docs",
     "$dir_pw_target_runner:docs",
+    "$dir_pw_tokenizer:docs",
   ]
 }
