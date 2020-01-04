@@ -30,7 +30,7 @@ Homebrew Python was not set up to support SSL. Ensure it's installed with
 The environment setup script will pull down the versions of tools necessary
 to build Pigweed and add them to your environment. You can then build with
 either GN or Bazel. You can also confirm you're getting the right versions
-of tools&mdash;they should be installed under `env_setup/`.
+of tools—they should be installed under `env_setup/`.
 
 ```bash
 $ which gn
@@ -58,7 +58,7 @@ does not yet support building for hardware.)
 ```bash
 $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
 $ ninja -C out/disco
-$ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner -- --port /dev/ttyACM0
+$ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
 ```
 
 If any of this doesn't work please

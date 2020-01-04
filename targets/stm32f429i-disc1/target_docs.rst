@@ -68,8 +68,8 @@ Run affected tests (EXPERIMENTAL)
 ---------------------------------
 When writing code that will impact multiple modules, it's helpful to only run
 all tests that are affected by a given code change. Thanks to the GN/ninja
-build, this is possible! This is done by using a pw_test_server that ninja
-can send the tests to as it rebuilds affected targets.
+build, this is possible! This is done by using a pw_target_runner_server that
+ninja can send the tests to as it rebuilds affected targets.
 
 Additionally, this method enables distributed testing. If you connect multiple
 devices, the tests will be run across the attached devices to further speed up
@@ -78,13 +78,9 @@ testing.
 
 .. warning::
 
-  This requires pw_test_server has been built and is in your PATH. See the
-  ``pw_test_server`` module for more information.
-
-.. warning::
-
-  At this time device auto-detection only works on Linux, and this takes
-  more work to set up on other operating systems.
+  This requires pw_target_runner_server and pw_target_runner_client have been
+  built and are in your PATH. By default, you can find these binaries in the
+  `host_tools` directory of a host build (e.g. out/host/host_tools).
 
 Step 1: Start test server
 ^^^^^^^^^^^^^^^^^^^^^^^^^
