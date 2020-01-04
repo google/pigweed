@@ -67,9 +67,11 @@ TEST(PigweedTest, ExpectStringEquality) {
   ASSERT_STRNE("yes", no);
 }
 
-TEST(PigweedTest, ExpectSucceedFail) {
+TEST(PigweedTest, SucceedAndFailMacros) {
   SUCCEED();
 
+  // The ADD_FAILURE() and FAIL() macros cause a test to fail if they are
+  // reached. Use them, but don't let them run so that this test still passes.
   if (false) {
     ADD_FAILURE();
     FAIL();
