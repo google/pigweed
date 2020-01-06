@@ -17,7 +17,7 @@
 namespace pw::protobuf {
 
 Status Encoder::WriteUint64(uint32_t field_number, uint64_t value) {
-  uint8_t* original_cursor = cursor_;
+  std::byte* original_cursor = cursor_;
   WriteFieldKey(field_number, WireType::kVarint);
   Status status = WriteVarint(value);
   IncreaseParentSize(cursor_ - original_cursor);
@@ -72,7 +72,7 @@ Status Encoder::Push(uint32_t field_number) {
   }
 
   // Write the key for the nested field.
-  uint8_t* original_cursor = cursor_;
+  std::byte* original_cursor = cursor_;
   if (Status status = WriteFieldKey(field_number, WireType::kDelimited);
       !status.ok()) {
     encode_status_ = status;
@@ -90,7 +90,7 @@ Status Encoder::Push(uint32_t field_number) {
   IncreaseParentSize(cursor_ - original_cursor);
 
   union {
-    uint8_t* cursor;
+    std::byte* cursor;
     SizeType* size_cursor;
   };
 
@@ -123,9 +123,9 @@ Status Encoder::Pop() {
   return Status::OK;
 }
 
-Status Encoder::Encode(span<const uint8_t>* out) {
+Status Encoder::Encode(span<const std::byte>* out) {
   if (!encode_status_.ok()) {
-    *out = span<const uint8_t>();
+    *out = span<const std::byte>();
     return encode_status_;
   }
 
@@ -136,7 +136,7 @@ Status Encoder::Encode(span<const uint8_t>* out) {
   }
 
   union {
-    uint8_t* read_cursor;
+    std::byte* read_cursor;
     SizeType* size_cursor;
   };
 
@@ -144,12 +144,12 @@ Status Encoder::Encode(span<const uint8_t>* out) {
   // shift all subsequent data downwards.
   unsigned int blob = 0;
   size_cursor = blob_locations_[blob];
-  uint8_t* write_cursor = read_cursor;
+  std::byte* write_cursor = read_cursor;
 
   while (read_cursor < cursor_) {
     SizeType nested_size = *size_cursor;
 
-    span<uint8_t> varint_buf(write_cursor, sizeof(*size_cursor));
+    span<std::byte> varint_buf(write_cursor, sizeof(*size_cursor));
     size_t varint_size =
         pw::varint::EncodeLittleEndianBase128(nested_size, varint_buf);
 
@@ -163,7 +163,7 @@ Status Encoder::Encode(span<const uint8_t>* out) {
     if (blob == blob_count_ - 1) {
       to_copy = cursor_ - read_cursor;
     } else {
-      uint8_t* end = reinterpret_cast<uint8_t*>(blob_locations_[blob + 1]);
+      std::byte* end = reinterpret_cast<std::byte*>(blob_locations_[blob + 1]);
       to_copy = end - read_cursor;
     }
 

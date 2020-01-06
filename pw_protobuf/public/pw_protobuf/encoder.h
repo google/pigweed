@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <cstring>
 
 #include "pw_span/span.h"
@@ -29,7 +30,7 @@ class Encoder {
   // message. This can be templated to minimize the overhead.
   using SizeType = size_t;
 
-  constexpr Encoder(span<uint8_t> buffer,
+  constexpr Encoder(span<std::byte> buffer,
                     span<SizeType*> locations,
                     span<SizeType*> stack)
       : buffer_(buffer),
@@ -128,7 +129,7 @@ class Encoder {
 
   // Writes a proto fixed32 key-value pair.
   Status WriteFixed32(uint32_t field_number, uint32_t value) {
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed32);
     Status status = WriteRawBytes(value);
     IncreaseParentSize(cursor_ - original_cursor);
@@ -143,7 +144,7 @@ class Encoder {
 
   // Writes a proto fixed64 key-value pair.
   Status WriteFixed64(uint32_t field_number, uint64_t value) {
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed64);
     Status status = WriteRawBytes(value);
     IncreaseParentSize(cursor_ - original_cursor);
@@ -182,7 +183,7 @@ class Encoder {
   Status WriteFloat(uint32_t field_number, float value) {
     static_assert(sizeof(float) == sizeof(uint32_t),
                   "Float and uint32_t are not the same size");
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed32);
     Status status = WriteRawBytes(value);
     IncreaseParentSize(cursor_ - original_cursor);
@@ -198,7 +199,7 @@ class Encoder {
   Status WriteDouble(uint32_t field_number, double value) {
     static_assert(sizeof(double) == sizeof(uint64_t),
                   "Double and uint64_t are not the same size");
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed64);
     Status status = WriteRawBytes(value);
     IncreaseParentSize(cursor_ - original_cursor);
@@ -212,7 +213,7 @@ class Encoder {
 
   // Writes a proto bytes key-value pair.
   Status WriteBytes(uint32_t field_number, span<const std::byte> value) {
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kDelimited);
     WriteVarint(value.size_bytes());
     Status status = WriteRawBytes(value.data(), value.size_bytes());
@@ -252,7 +253,7 @@ class Encoder {
 
   // Runs a final encoding pass over the intermediary data and returns the
   // encoded protobuf message.
-  Status Encode(span<const uint8_t>* out);
+  Status Encode(span<const std::byte>* out);
 
  private:
   enum class WireType : uint8_t {
@@ -303,7 +304,7 @@ class Encoder {
       return status;
     }
 
-    uint8_t* original_cursor = cursor_;
+    std::byte* original_cursor = cursor_;
     for (T value : values) {
       if (zigzag) {
         WriteZigzagVarint(static_cast<std::make_signed_t<T>>(value));
@@ -334,8 +335,8 @@ class Encoder {
   }
 
   // The buffer into which the proto is encoded.
-  span<uint8_t> buffer_;
-  uint8_t* cursor_;
+  span<std::byte> buffer_;
+  std::byte* cursor_;
 
   // List of pointers to sub-messages' delimiting size fields.
   span<SizeType*> blob_locations_;
@@ -353,7 +354,7 @@ class Encoder {
 template <size_t kMaxNestedDepth = 1, size_t kMaxBlobs = 1>
 class NestedEncoder : public Encoder {
  public:
-  NestedEncoder(span<uint8_t> buffer) : Encoder(buffer, blobs_, stack_) {}
+  NestedEncoder(span<std::byte> buffer) : Encoder(buffer, blobs_, stack_) {}
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   NestedEncoder(const NestedEncoder& other) = delete;

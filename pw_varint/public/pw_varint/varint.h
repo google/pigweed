@@ -43,7 +43,8 @@ constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
 }
 
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
-size_t EncodeLittleEndianBase128(uint64_t integer, const span<uint8_t>& output);
+size_t EncodeLittleEndianBase128(uint64_t integer,
+                                 const span<std::byte>& output);
 
 // Encodes the provided integer using a variable-length encoding and returns the
 // number of bytes written.
@@ -56,7 +57,7 @@ size_t EncodeLittleEndianBase128(uint64_t integer, const span<uint8_t>& output);
 // Returns the number of bytes written or 0 if the result didn't fit in the
 // encoding buffer.
 template <typename T>
-size_t EncodeVarint(T integer, const span<uint8_t>& output) {
+size_t EncodeVarint(T integer, const span<std::byte>& output) {
   if constexpr (std::is_signed<T>()) {
     return EncodeLittleEndianBase128(ZigZagEncode(integer), output);
   } else {
@@ -84,7 +85,7 @@ size_t EncodeVarint(T integer, const span<uint8_t>& output) {
 //     data = data.subspan(bytes)
 //   }
 //
-size_t DecodeVarint(const span<const uint8_t>& input, int64_t* value);
-size_t DecodeVarint(const span<const uint8_t>& input, uint64_t* value);
+size_t DecodeVarint(const span<const std::byte>& input, int64_t* value);
+size_t DecodeVarint(const span<const std::byte>& input, uint64_t* value);
 
 }  // namespace pw::varint

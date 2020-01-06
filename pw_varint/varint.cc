@@ -26,7 +26,7 @@ constexpr int64_t ZigZagDecode64(uint64_t n) {
 }  // namespace
 
 size_t EncodeLittleEndianBase128(uint64_t integer,
-                                 const span<uint8_t>& output) {
+                                 const span<std::byte>& output) {
   size_t written = 0;
   do {
     if (written >= output.size()) {
@@ -34,21 +34,21 @@ size_t EncodeLittleEndianBase128(uint64_t integer,
     }
 
     // Grab 7 bits; the eighth bit is set to 1 to indicate more data coming.
-    output[written++] = static_cast<uint8_t>(integer) | '\x80';
+    output[written++] = static_cast<std::byte>(integer) | std::byte{0x80};
     integer >>= 7;
   } while (integer != 0u);
 
-  output[written - 1] &= '\x7f';  // clear the top bit of the last byte
+  output[written - 1] &= std::byte{0x7f};  // clear the top bit of the last byte
   return written;
 }
 
-size_t DecodeVarint(const span<const uint8_t>& input, int64_t* value) {
+size_t DecodeVarint(const span<const std::byte>& input, int64_t* value) {
   const size_t bytes = DecodeVarint(input, reinterpret_cast<uint64_t*>(value));
   *value = ZigZagDecode64(*value);
   return bytes;
 }
 
-size_t DecodeVarint(const span<const uint8_t>& input, uint64_t* value) {
+size_t DecodeVarint(const span<const std::byte>& input, uint64_t* value) {
   uint64_t decoded_value = 0;
   uint_fast8_t count = 0;
 
@@ -61,11 +61,11 @@ size_t DecodeVarint(const span<const uint8_t>& input, uint64_t* value) {
     }
 
     // Add the bottom seven bits of the next byte to the result.
-    decoded_value |= static_cast<uint64_t>(input[count] & '\x7f')
+    decoded_value |= static_cast<uint64_t>(input[count] & std::byte{0x7f})
                      << (7 * count);
 
     // Stop decoding if the top bit is not set.
-    if ((input[count++] & '\x80') == 0) {
+    if ((input[count++] & std::byte{0x80}) == std::byte{0}) {
       break;
     }
   }

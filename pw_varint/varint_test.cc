@@ -26,28 +26,38 @@ namespace {
 
 class Varint : public ::testing::Test {
  protected:
-  Varint() : buffer_{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'} {}
-  uint8_t buffer_[10];
+  Varint()
+      : buffer_{std::byte{'a'},
+                std::byte{'b'},
+                std::byte{'c'},
+                std::byte{'d'},
+                std::byte{'e'},
+                std::byte{'f'},
+                std::byte{'g'},
+                std::byte{'h'},
+                std::byte{'i'},
+                std::byte{'j'}} {}
+  std::byte buffer_[10];
 };
 
 TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(0), buffer_));
-  EXPECT_EQ(0u, buffer_[0]);
+  EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(1), buffer_));
-  EXPECT_EQ(1u, buffer_[0]);
+  EXPECT_EQ(std::byte{1}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(2), buffer_));
-  EXPECT_EQ(2u, buffer_[0]);
+  EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(63), buffer_));
-  EXPECT_EQ(63u, buffer_[0]);
+  EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(64), buffer_));
-  EXPECT_EQ(64u, buffer_[0]);
+  EXPECT_EQ(std::byte{64}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(126), buffer_));
-  EXPECT_EQ(126u, buffer_[0]);
+  EXPECT_EQ(std::byte{126}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT32_C(127), buffer_));
-  EXPECT_EQ(127u, buffer_[0]);
+  EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned32_MultiByte) {
@@ -66,24 +76,24 @@ TEST_F(Varint, EncodeSizeUnsigned32_MultiByte) {
 
 TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(INT32_C(0), buffer_));
-  EXPECT_EQ(0u, buffer_[0]);
+  EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(-1), buffer_));
-  EXPECT_EQ(1u, buffer_[0]);
+  EXPECT_EQ(std::byte{1}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(1), buffer_));
-  EXPECT_EQ(2u, buffer_[0]);
+  EXPECT_EQ(std::byte{2}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(-2), buffer_));
-  EXPECT_EQ(3u, buffer_[0]);
+  EXPECT_EQ(std::byte{3}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(2), buffer_));
-  EXPECT_EQ(4u, buffer_[0]);
+  EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(INT32_C(-63), buffer_));
-  EXPECT_EQ(125u, buffer_[0]);
+  EXPECT_EQ(std::byte{125}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(63), buffer_));
-  EXPECT_EQ(126u, buffer_[0]);
+  EXPECT_EQ(std::byte{126}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT32_C(-64), buffer_));
-  EXPECT_EQ(127u, buffer_[0]);
+  EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned32_MultiByte) {
@@ -103,22 +113,22 @@ TEST_F(Varint, EncodeSizeSigned32_MultiByte) {
 
 TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(0), buffer_));
-  EXPECT_EQ(0u, buffer_[0]);
+  EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(1), buffer_));
-  EXPECT_EQ(1u, buffer_[0]);
+  EXPECT_EQ(std::byte{1}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(2), buffer_));
-  EXPECT_EQ(2u, buffer_[0]);
+  EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(63), buffer_));
-  EXPECT_EQ(63u, buffer_[0]);
+  EXPECT_EQ(std::byte{63}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(64), buffer_));
-  EXPECT_EQ(64u, buffer_[0]);
+  EXPECT_EQ(std::byte{64}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(126), buffer_));
-  EXPECT_EQ(126u, buffer_[0]);
+  EXPECT_EQ(std::byte{126}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(UINT64_C(127), buffer_));
-  EXPECT_EQ(127u, buffer_[0]);
+  EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned64_MultiByte) {
@@ -146,24 +156,24 @@ TEST_F(Varint, EncodeSizeUnsigned64_MultiByte) {
 
 TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(INT64_C(0), buffer_));
-  EXPECT_EQ(0u, buffer_[0]);
+  EXPECT_EQ(std::byte{0}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(-1), buffer_));
-  EXPECT_EQ(1u, buffer_[0]);
+  EXPECT_EQ(std::byte{1}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(1), buffer_));
-  EXPECT_EQ(2u, buffer_[0]);
+  EXPECT_EQ(std::byte{2}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(-2), buffer_));
-  EXPECT_EQ(3u, buffer_[0]);
+  EXPECT_EQ(std::byte{3}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(2), buffer_));
-  EXPECT_EQ(4u, buffer_[0]);
+  EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte) {
   ASSERT_EQ(1u, EncodeVarint(INT64_C(-63), buffer_));
-  EXPECT_EQ(125u, buffer_[0]);
+  EXPECT_EQ(std::byte{125}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(63), buffer_));
-  EXPECT_EQ(126u, buffer_[0]);
+  EXPECT_EQ(std::byte{126}, buffer_[0]);
   ASSERT_EQ(1u, EncodeVarint(INT64_C(-64), buffer_));
-  EXPECT_EQ(127u, buffer_[0]);
+  EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned64_MultiByte) {
@@ -244,7 +254,7 @@ auto MakeBuffer(const char (&data)[kStringSize]) {
   constexpr size_t kSizeBytes = kStringSize - 1;
   static_assert(kSizeBytes <= 10, "Varint arrays never need be larger than 10");
 
-  std::array<uint8_t, kSizeBytes> array;
+  std::array<std::byte, kSizeBytes> array;
   std::memcpy(array.data(), data, kSizeBytes);
   return array;
 }

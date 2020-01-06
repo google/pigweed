@@ -82,7 +82,7 @@ TEST(Encoder, EncodePrimitives) {
   };
   // clang-format on
 
-  uint8_t encode_buffer[32];
+  std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
   EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::OK);
@@ -93,14 +93,14 @@ TEST(Encoder, EncodePrimitives) {
   EXPECT_EQ(encoder.WriteString(kTestProtoErrorMessageField, "broken 💩"),
             Status::OK);
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
 }
 
 TEST(Encoder, EncodeInsufficientSpace) {
-  uint8_t encode_buffer[12];
+  std::byte encode_buffer[12];
   NestedEncoder encoder(encode_buffer);
 
   // 2 bytes.
@@ -115,13 +115,13 @@ TEST(Encoder, EncodeInsufficientSpace) {
   EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034),
             Status::RESOURCE_EXHAUSTED);
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::RESOURCE_EXHAUSTED);
   EXPECT_EQ(encoded.size(), 0u);
 }
 
 TEST(Encoder, EncodeInvalidArguments) {
-  uint8_t encode_buffer[12];
+  std::byte encode_buffer[12];
   NestedEncoder encoder(encode_buffer);
 
   EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::OK);
@@ -133,13 +133,13 @@ TEST(Encoder, EncodeInvalidArguments) {
   encoder.Clear();
 
   EXPECT_EQ(encoder.WriteBool(19091, false), Status::INVALID_ARGUMENT);
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::INVALID_ARGUMENT);
   EXPECT_EQ(encoded.size(), 0u);
 }
 
 TEST(Encoder, Nested) {
-  uint8_t encode_buffer[128];
+  std::byte encode_buffer[128];
   NestedEncoder<5, 10> encoder(encode_buffer);
 
   // TestProto test_proto;
@@ -213,14 +213,14 @@ TEST(Encoder, Nested) {
   };
   // clang-format on
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
 }
 
 TEST(Encoder, NestedDepthLimit) {
-  uint8_t encode_buffer[128];
+  std::byte encode_buffer[128];
   NestedEncoder<2, 10> encoder(encode_buffer);
 
   // One level of nesting.
@@ -237,7 +237,7 @@ TEST(Encoder, NestedDepthLimit) {
 }
 
 TEST(Encoder, NestedBlobLimit) {
-  uint8_t encode_buffer[128];
+  std::byte encode_buffer[128];
   NestedEncoder<5, 3> encoder(encode_buffer);
 
   // Write first blob.
@@ -261,7 +261,7 @@ TEST(Encoder, NestedBlobLimit) {
 }
 
 TEST(Encoder, RepeatedField) {
-  uint8_t encode_buffer[32];
+  std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
   // repeated uint32 values = 1;
@@ -273,14 +273,14 @@ TEST(Encoder, RepeatedField) {
   constexpr uint8_t encoded_proto[] = {
       0x08, 0x00, 0x08, 0x32, 0x08, 0x64, 0x08, 0x96, 0x01, 0x08, 0xc8, 0x01};
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
 }
 
 TEST(Encoder, PackedVarint) {
-  uint8_t encode_buffer[32];
+  std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
   // repeated uint32 values = 1;
@@ -291,26 +291,26 @@ TEST(Encoder, PackedVarint) {
       0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
   //  key   size  v[0]  v[1]  v[2]  v[3]        v[4]
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
 }
 
 TEST(Encoder, PackedVarintInsufficientSpace) {
-  uint8_t encode_buffer[8];
+  std::byte encode_buffer[8];
   NestedEncoder encoder(encode_buffer);
 
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
   encoder.WritePackedUint32(1, values);
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::RESOURCE_EXHAUSTED);
   EXPECT_EQ(encoded.size(), 0u);
 }
 
 TEST(Encoder, PackedFixed) {
-  uint8_t encode_buffer[32];
+  std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
   // repeated fixed32 values = 1;
@@ -321,14 +321,14 @@ TEST(Encoder, PackedFixed) {
       0x0a, 0x14, 0x00, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00, 0x64,
       0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0xc8, 0x00, 0x00, 0x00};
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
 }
 
 TEST(Encoder, PackedZigzag) {
-  uint8_t encode_buffer[32];
+  std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
   // repeated sint32 values = 1;
@@ -338,7 +338,7 @@ TEST(Encoder, PackedZigzag) {
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
 
-  span<const uint8_t> encoded;
+  span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
