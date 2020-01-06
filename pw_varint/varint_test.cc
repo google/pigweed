@@ -41,166 +41,161 @@ class Varint : public ::testing::Test {
 };
 
 TEST_F(Varint, EncodeSizeUnsigned32_SmallSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(0), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(1), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(1), buffer_));
   EXPECT_EQ(std::byte{1}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(2), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(2), buffer_));
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned32_LargeSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(63), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(63), buffer_));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(64), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(64), buffer_));
   EXPECT_EQ(std::byte{64}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(126), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(126), buffer_));
   EXPECT_EQ(std::byte{126}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT32_C(127), buffer_));
+  ASSERT_EQ(1u, Encode(UINT32_C(127), buffer_));
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned32_MultiByte) {
-  ASSERT_EQ(2u, EncodeVarint(UINT32_C(128), buffer_));
+  ASSERT_EQ(2u, Encode(UINT32_C(128), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(UINT32_C(129), buffer_));
+  ASSERT_EQ(2u, Encode(UINT32_C(129), buffer_));
   EXPECT_EQ(std::memcmp("\x81\x01", buffer_, 2), 0);
 
-  ASSERT_EQ(5u,
-            EncodeVarint(std::numeric_limits<uint32_t>::max() - 1, buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<uint32_t>::max() - 1, buffer_));
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(5u, EncodeVarint(std::numeric_limits<uint32_t>::max(), buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<uint32_t>::max(), buffer_));
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
 TEST_F(Varint, EncodeSizeSigned32_SmallSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(0), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(-1), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(-1), buffer_));
   EXPECT_EQ(std::byte{1}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(1), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(1), buffer_));
   EXPECT_EQ(std::byte{2}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(-2), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(-2), buffer_));
   EXPECT_EQ(std::byte{3}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(2), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(2), buffer_));
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned32_LargeSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(-63), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(-63), buffer_));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(63), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(63), buffer_));
   EXPECT_EQ(std::byte{126}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT32_C(-64), buffer_));
+  ASSERT_EQ(1u, Encode(INT32_C(-64), buffer_));
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned32_MultiByte) {
-  ASSERT_EQ(2u, EncodeVarint(INT32_C(64), buffer_));
+  ASSERT_EQ(2u, Encode(INT32_C(64), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(INT32_C(-65), buffer_));
+  ASSERT_EQ(2u, Encode(INT32_C(-65), buffer_));
   EXPECT_EQ(std::memcmp("\x81\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(INT32_C(65), buffer_));
+  ASSERT_EQ(2u, Encode(INT32_C(65), buffer_));
   EXPECT_EQ(std::memcmp("\x82\x01", buffer_, 2), 0);
 
-  ASSERT_EQ(5u, EncodeVarint(std::numeric_limits<int32_t>::min(), buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<int32_t>::min(), buffer_));
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(5u, EncodeVarint(std::numeric_limits<int32_t>::max(), buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<int32_t>::max(), buffer_));
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned64_SmallSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(0), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(1), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(1), buffer_));
   EXPECT_EQ(std::byte{1}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(2), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(2), buffer_));
   EXPECT_EQ(std::byte{2}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned64_LargeSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(63), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(63), buffer_));
   EXPECT_EQ(std::byte{63}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(64), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(64), buffer_));
   EXPECT_EQ(std::byte{64}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(126), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(126), buffer_));
   EXPECT_EQ(std::byte{126}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(UINT64_C(127), buffer_));
+  ASSERT_EQ(1u, Encode(UINT64_C(127), buffer_));
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeUnsigned64_MultiByte) {
-  ASSERT_EQ(2u, EncodeVarint(UINT64_C(128), buffer_));
+  ASSERT_EQ(2u, Encode(UINT64_C(128), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(UINT64_C(129), buffer_));
+  ASSERT_EQ(2u, Encode(UINT64_C(129), buffer_));
   EXPECT_EQ(std::memcmp("\x81\x01", buffer_, 2), 0);
 
-  ASSERT_EQ(5u,
-            EncodeVarint(std::numeric_limits<uint32_t>::max() - 1, buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<uint32_t>::max() - 1, buffer_));
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(5u, EncodeVarint(std::numeric_limits<uint32_t>::max(), buffer_));
+  ASSERT_EQ(5u, Encode(std::numeric_limits<uint32_t>::max(), buffer_));
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(10u,
-            EncodeVarint(std::numeric_limits<uint64_t>::max() - 1, buffer_));
+  ASSERT_EQ(10u, Encode(std::numeric_limits<uint64_t>::max() - 1, buffer_));
   EXPECT_EQ(
       std::memcmp("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 
-  ASSERT_EQ(10u, EncodeVarint(std::numeric_limits<uint64_t>::max(), buffer_));
+  ASSERT_EQ(10u, Encode(std::numeric_limits<uint64_t>::max(), buffer_));
   EXPECT_EQ(
       std::memcmp("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
 
 TEST_F(Varint, EncodeSizeSigned64_SmallSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(0), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(0), buffer_));
   EXPECT_EQ(std::byte{0}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(-1), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(-1), buffer_));
   EXPECT_EQ(std::byte{1}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(1), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(1), buffer_));
   EXPECT_EQ(std::byte{2}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(-2), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(-2), buffer_));
   EXPECT_EQ(std::byte{3}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(2), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(2), buffer_));
   EXPECT_EQ(std::byte{4}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned64_LargeSingleByte) {
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(-63), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(-63), buffer_));
   EXPECT_EQ(std::byte{125}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(63), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(63), buffer_));
   EXPECT_EQ(std::byte{126}, buffer_[0]);
-  ASSERT_EQ(1u, EncodeVarint(INT64_C(-64), buffer_));
+  ASSERT_EQ(1u, Encode(INT64_C(-64), buffer_));
   EXPECT_EQ(std::byte{127}, buffer_[0]);
 }
 
 TEST_F(Varint, EncodeSizeSigned64_MultiByte) {
-  ASSERT_EQ(2u, EncodeVarint(INT64_C(64), buffer_));
+  ASSERT_EQ(2u, Encode(INT64_C(64), buffer_));
   EXPECT_EQ(std::memcmp("\x80\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(INT64_C(-65), buffer_));
+  ASSERT_EQ(2u, Encode(INT64_C(-65), buffer_));
   EXPECT_EQ(std::memcmp("\x81\x01", buffer_, 2), 0);
-  ASSERT_EQ(2u, EncodeVarint(INT64_C(65), buffer_));
+  ASSERT_EQ(2u, Encode(INT64_C(65), buffer_));
   EXPECT_EQ(std::memcmp("\x82\x01", buffer_, 2), 0);
 
-  ASSERT_EQ(
-      5u,
-      EncodeVarint(static_cast<int64_t>(std::numeric_limits<int32_t>::min()),
+  ASSERT_EQ(5u,
+            Encode(static_cast<int64_t>(std::numeric_limits<int32_t>::min()),
                    buffer_));
   EXPECT_EQ(std::memcmp("\xff\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(
-      5u,
-      EncodeVarint(static_cast<int64_t>(std::numeric_limits<int32_t>::max()),
+  ASSERT_EQ(5u,
+            Encode(static_cast<int64_t>(std::numeric_limits<int32_t>::max()),
                    buffer_));
   EXPECT_EQ(std::memcmp("\xfe\xff\xff\xff\x0f", buffer_, 5), 0);
 
-  ASSERT_EQ(10u, EncodeVarint(std::numeric_limits<int64_t>::min(), buffer_));
+  ASSERT_EQ(10u, Encode(std::numeric_limits<int64_t>::min(), buffer_));
   EXPECT_EQ(
       std::memcmp("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 
-  ASSERT_EQ(10u, EncodeVarint(std::numeric_limits<int64_t>::max(), buffer_));
+  ASSERT_EQ(10u, Encode(std::numeric_limits<int64_t>::max(), buffer_));
   EXPECT_EQ(
       std::memcmp("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
@@ -211,10 +206,10 @@ TEST_F(Varint, EncodeDecodeSigned32) {
 
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
-    size_t encoded = EncodeVarint(i, buffer_);
+    size_t encoded = Encode(i, buffer_);
 
     int64_t result;
-    size_t decoded = DecodeVarint(buffer_, &result);
+    size_t decoded = Decode(buffer_, &result);
 
     EXPECT_EQ(encoded, decoded);
     ASSERT_EQ(i, result);
@@ -233,10 +228,10 @@ TEST_F(Varint, EncodeDecodeUnsigned32) {
 
   uint32_t i = 0;
   while (true) {
-    size_t encoded = EncodeVarint(i, buffer_);
+    size_t encoded = Encode(i, buffer_);
 
     uint64_t result;
-    size_t decoded = DecodeVarint(buffer_, &result);
+    size_t decoded = Decode(buffer_, &result);
 
     EXPECT_EQ(encoded, decoded);
     ASSERT_EQ(i, result);
@@ -262,51 +257,51 @@ auto MakeBuffer(const char (&data)[kStringSize]) {
 TEST(VarintDecode, DecodeSigned64_SingleByte) {
   int64_t value = -1234;
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x00"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x00"), &value), 1u);
   EXPECT_EQ(value, 0);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x01"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x01"), &value), 1u);
   EXPECT_EQ(value, -1);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x02"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x02"), &value), 1u);
   EXPECT_EQ(value, 1);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x03"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x03"), &value), 1u);
   EXPECT_EQ(value, -2);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x04"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x04"), &value), 1u);
   EXPECT_EQ(value, 2);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x04"), &value), 1u);
+  EXPECT_EQ(Decode(MakeBuffer("\x04"), &value), 1u);
   EXPECT_EQ(value, 2);
 }
 
 TEST(VarintDecode, DecodeSigned64_MultiByte) {
   int64_t value = -1234;
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x80\x01"), &value), 2u);
+  EXPECT_EQ(Decode(MakeBuffer("\x80\x01"), &value), 2u);
   EXPECT_EQ(value, 64);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x81\x01"), &value), 2u);
+  EXPECT_EQ(Decode(MakeBuffer("\x81\x01"), &value), 2u);
   EXPECT_EQ(value, -65);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\x82\x01"), &value), 2u);
+  EXPECT_EQ(Decode(MakeBuffer("\x82\x01"), &value), 2u);
   EXPECT_EQ(value, 65);
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\xff\xff\xff\xff\x0f"), &value), 5u);
+  EXPECT_EQ(Decode(MakeBuffer("\xff\xff\xff\xff\x0f"), &value), 5u);
   EXPECT_EQ(value, std::numeric_limits<int32_t>::min());
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\xfe\xff\xff\xff\x0f"), &value), 5u);
+  EXPECT_EQ(Decode(MakeBuffer("\xfe\xff\xff\xff\x0f"), &value), 5u);
   EXPECT_EQ(value, std::numeric_limits<int32_t>::max());
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01"),
-                         &value),
-            10u);
+  EXPECT_EQ(
+      Decode(MakeBuffer("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01"), &value),
+      10u);
   EXPECT_EQ(value, std::numeric_limits<int64_t>::min());
 
-  EXPECT_EQ(DecodeVarint(MakeBuffer("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01"),
-                         &value),
-            10u);
+  EXPECT_EQ(
+      Decode(MakeBuffer("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01"), &value),
+      10u);
   EXPECT_EQ(value, std::numeric_limits<int64_t>::max());
 }
 

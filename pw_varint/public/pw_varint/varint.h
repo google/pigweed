@@ -57,7 +57,7 @@ size_t EncodeLittleEndianBase128(uint64_t integer,
 // Returns the number of bytes written or 0 if the result didn't fit in the
 // encoding buffer.
 template <typename T>
-size_t EncodeVarint(T integer, const span<std::byte>& output) {
+size_t Encode(T integer, const span<std::byte>& output) {
   if constexpr (std::is_signed<T>()) {
     return EncodeLittleEndianBase128(ZigZagEncode(integer), output);
   } else {
@@ -76,7 +76,7 @@ size_t EncodeVarint(T integer, const span<std::byte>& output) {
 //
 //   while (!data.empty()) {
 //     int64_t value;
-//     size_t bytes = DecodeVarint(data, &value);
+//     size_t bytes = Decode(data, &value);
 //
 //     if (bytes == 0u) {
 //       return Status::DATA_LOSS;
@@ -85,7 +85,7 @@ size_t EncodeVarint(T integer, const span<std::byte>& output) {
 //     data = data.subspan(bytes)
 //   }
 //
-size_t DecodeVarint(const span<const std::byte>& input, int64_t* value);
-size_t DecodeVarint(const span<const std::byte>& input, uint64_t* value);
+size_t Decode(const span<const std::byte>& input, int64_t* value);
+size_t Decode(const span<const std::byte>& input, uint64_t* value);
 
 }  // namespace pw::varint

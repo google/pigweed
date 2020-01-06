@@ -42,13 +42,13 @@ size_t EncodeLittleEndianBase128(uint64_t integer,
   return written;
 }
 
-size_t DecodeVarint(const span<const std::byte>& input, int64_t* value) {
-  const size_t bytes = DecodeVarint(input, reinterpret_cast<uint64_t*>(value));
+size_t Decode(const span<const std::byte>& input, int64_t* value) {
+  const size_t bytes = Decode(input, reinterpret_cast<uint64_t*>(value));
   *value = ZigZagDecode64(*value);
   return bytes;
 }
 
-size_t DecodeVarint(const span<const std::byte>& input, uint64_t* value) {
+size_t Decode(const span<const std::byte>& input, uint64_t* value) {
   uint64_t decoded_value = 0;
   uint_fast8_t count = 0;
 
