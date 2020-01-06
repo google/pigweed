@@ -23,39 +23,49 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "simple_printing_event_handler",
-    srcs = [
-        "simple_printing_event_handler.cc",
-    ],
-    hdrs = [
-        "public/pw_unit_test/event_handler.h",
-        "public/pw_unit_test/simple_printing_event_handler.h",
-    ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
-    deps = ["//pw_preprocessor"],
-)
-
-pw_cc_library(
-    name = "main",
+    name = "pw_unit_test",
     srcs = [
         "framework.cc",
-        "main.cc",
     ],
     hdrs = [
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/framework.h",
         "public_overrides/gtest/gtest.h",
     ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
     deps = [
+        "//pw_preprocessor",
+        "//pw_string",
+    ],
+)
+
+pw_cc_library(
+    name = "simple_printing_event_handler",
+    srcs = ["simple_printing_event_handler.cc"],
+    hdrs = [
+        "public/pw_unit_test/simple_printing_event_handler.h",
+    ],
+    includes = [
+        "public",
+    ],
+    deps = [
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "main",
+    srcs = [
+        "main.cc",
+    ],
+    deps = [
+        ":pw_unit_test",
         ":simple_printing_event_handler",
         "//pw_dumb_io",
-        "//pw_preprocessor",
-        "//pw_span",
-        "//pw_status",
-        "//pw_string",
     ],
 )
 
