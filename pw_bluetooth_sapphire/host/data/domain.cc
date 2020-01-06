@@ -114,7 +114,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     ZX_DEBUG_ASSERT(dispatcher);
     PostMessage([this, handle, psm, cb = std::move(cb), dispatcher]() mutable {
       if (l2cap_) {
-        l2cap_->OpenChannel(handle, psm, std::move(cb), dispatcher);
+        l2cap_->OpenChannel(handle, psm, l2cap::ChannelParameters(), std::move(cb), dispatcher);
       }
     });
   }
@@ -140,7 +140,8 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
                        async_dispatcher_t* dispatcher) override {
     PostMessage([this, psm, callback = std::move(callback), dispatcher]() mutable {
       if (l2cap_) {
-        const bool result = l2cap_->RegisterService(psm, std::move(callback), dispatcher);
+        const bool result = l2cap_->RegisterService(psm, l2cap::ChannelParameters(),
+                                                    std::move(callback), dispatcher);
         ZX_DEBUG_ASSERT(result);
       } else {
         // RegisterService could be called early in host initialization, so log

@@ -33,8 +33,7 @@ constexpr ChannelId kRemoteCId = 0x60a3;
 constexpr ChannelId kBadCId = 0x003f;  // Not a dynamic channel.
 
 constexpr ChannelParameters kChannelParams;
-constexpr ChannelParameters kERTMChannelParams = {ChannelMode::kEnhancedRetransmission,
-                                                  std::nullopt};
+constexpr ChannelParameters kERTMChannelParams{ChannelMode::kEnhancedRetransmission, std::nullopt};
 
 // Commands Reject
 
@@ -456,11 +455,11 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
   }
 
   // Default to rejecting all service requests if no test callback is set.
-  DynamicChannelCallback OnServiceRequest(PSM psm) {
+  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(PSM psm) {
     if (service_request_cb_) {
       return service_request_cb_(psm);
     }
-    return nullptr;
+    return std::nullopt;
   }
 
   DynamicChannelCallback channel_close_cb_;
@@ -500,7 +499,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -541,7 +540,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -606,7 +605,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -628,7 +627,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   int close_cb_count2 = 0;
   set_channel_close_cb([&close_cb_count2](auto) { close_cb_count2++; });
 
-  registry()->OpenOutbound(kPsm, [&open_cb_count2](auto) { open_cb_count2++; });
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count2](auto) { open_cb_count2++; });
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -664,7 +663,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   int close_cb_count = 0;
   set_channel_close_cb([&close_cb_count](auto) { close_cb_count++; });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -824,7 +823,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -869,7 +868,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -898,7 +897,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-  registry()->OpenOutbound(kPsm, [&open_cb_count](auto chan) {
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
     open_cb_count++;
     ASSERT_TRUE(chan);
     EXPECT_EQ(kLocalCId, chan->local_cid());
@@ -925,7 +924,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-  registry()->OpenOutbound(kPsm, [&open_cb_count](auto chan) {
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
     open_cb_count++;
     ASSERT_TRUE(chan);
     EXPECT_EQ(kLocalCId, chan->local_cid());
@@ -950,7 +949,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigPending) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-  registry()->OpenOutbound(kPsm, [&open_cb_count](auto chan) {
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
     open_cb_count++;
     ASSERT_TRUE(chan);
     EXPECT_EQ(kLocalCId, chan->local_cid());
@@ -971,7 +970,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfigurin
   auto config_id = EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view());
 
   int open_cb_count = 0;
-  registry()->OpenOutbound(kPsm, [&open_cb_count](auto chan) {
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
     open_cb_count++;
     EXPECT_FALSE(chan);
   });
@@ -1010,7 +1009,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
     close_cb_count++;
   });
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1034,7 +1033,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
       LowerBits(kLocalCId + 1), UpperBits(kLocalCId + 1));
 
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kSecondChannelConnReq.view());
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   // Complete the disconnection on the first channel.
   RETURN_IF_FATAL(sig()->ReceiveResponses(
@@ -1042,7 +1041,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
 
   // Now the first channel ID gets reused.
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view());
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 }
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
@@ -1054,7 +1053,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-  registry()->OpenOutbound(kPsm, [&open_cb_count](auto chan) {
+  registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
     open_cb_count++;
     EXPECT_FALSE(chan);
   });
@@ -1083,15 +1082,15 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionOk) {
   };
 
   int service_request_cb_count = 0;
-  ServiceRequestCallback service_request_cb =
-      [&service_request_cb_count,
-       open_cb = std::move(open_cb)](PSM psm) mutable -> DynamicChannelCallback {
+  auto service_request_cb =
+      [&service_request_cb_count, open_cb = std::move(open_cb)](
+          PSM psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
-      return open_cb.share();
+      return DynamicChannelRegistry::ServiceInfo(kChannelParams, open_cb.share());
     }
-    return nullptr;
+    return std::nullopt;
   };
 
   set_service_request_cb(std::move(service_request_cb));
@@ -1125,15 +1124,15 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConf
   };
 
   int service_request_cb_count = 0;
-  ServiceRequestCallback service_request_cb =
-      [&service_request_cb_count,
-       open_cb = std::move(open_cb)](PSM psm) mutable -> DynamicChannelCallback {
+  auto service_request_cb =
+      [&service_request_cb_count, open_cb = std::move(open_cb)](
+          PSM psm) mutable -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
-      return open_cb.share();
+      return DynamicChannelRegistry::ServiceInfo(kChannelParams, open_cb.share());
     }
-    return nullptr;
+    return std::nullopt;
   };
 
   set_service_request_cb(std::move(service_request_cb));
@@ -1160,14 +1159,15 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionRemoteDisconnectWhileConf
 }
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
-  ServiceRequestCallback service_request_cb = [](PSM psm) -> DynamicChannelCallback {
+  auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Write user code that accepts the invalid PSM, but control flow may not
     // reach here.
     EXPECT_EQ(kInvalidPsm, psm);
     if (psm == kInvalidPsm) {
-      return [](auto) { FAIL() << "Channel should fail to open for PSM"; };
+      return DynamicChannelRegistry::ServiceInfo(
+          kChannelParams, [](auto /*unused*/) { FAIL() << "Channel should fail to open for PSM"; });
     }
-    return nullptr;
+    return std::nullopt;
   };
 
   set_service_request_cb(std::move(service_request_cb));
@@ -1179,13 +1179,13 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidPsm) {
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
   int service_request_cb_count = 0;
-  ServiceRequestCallback service_request_cb =
-      [&service_request_cb_count](PSM psm) -> DynamicChannelCallback {
+  auto service_request_cb =
+      [&service_request_cb_count](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     service_request_cb_count++;
     EXPECT_EQ(kPsm, psm);
 
     // Reject the service request.
-    return nullptr;
+    return std::nullopt;
   };
 
   set_service_request_cb(std::move(service_request_cb));
@@ -1197,13 +1197,15 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionUnsupportedPsm) {
 }
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionInvalidSrcCId) {
-  ServiceRequestCallback service_request_cb = [](PSM psm) -> DynamicChannelCallback {
+  auto service_request_cb = [](PSM psm) -> std::optional<DynamicChannelRegistry::ServiceInfo> {
     // Control flow may not reach here.
     EXPECT_EQ(kPsm, psm);
     if (psm == kPsm) {
-      return [](auto) { FAIL() << "Channel from src_cid should fail to open"; };
+      return DynamicChannelRegistry::ServiceInfo(kChannelParams, [](auto /*unused*/) {
+        FAIL() << "Channel from src_cid should fail to open";
+      });
     }
-    return nullptr;
+    return std::nullopt;
   };
 
   set_service_request_cb(std::move(service_request_cb));
@@ -1222,7 +1224,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
   size_t open_cb_count = 0;
   auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1282,7 +1284,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
     EXPECT_EQ(chan->mtu_configuration().tx_mtu, GetParam().response_mtu);
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1339,7 +1341,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
     EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->mtu_configuration().rx_mtu);
     open_cb_count++;
   };
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1377,7 +1379,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
     EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->mtu_configuration().rx_mtu);
     open_cb_count++;
   };
-  registry()->OpenOutbound(kPsm, std::move(open_cb));
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1414,7 +1416,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeS
   size_t open_cb_count = 0;
   auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   // Config request should not be sent.
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -1440,7 +1442,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeS
 TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspReceived) {
   auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(), {});
 
-  registry()->OpenOutbound(kPsm, {}, kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1479,7 +1481,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1518,7 +1520,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, PeerRejectsERTM) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1552,7 +1554,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RunLoopUntilIdle();
 
@@ -1591,8 +1593,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatu
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
-  registry()->OpenOutbound(
-      kPsm, [](auto chan) {}, kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1609,8 +1610,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic)
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
-  registry()->OpenOutbound(
-      kPsm, [](auto chan) {}, kChannelParams);
+  registry()->OpenOutbound(kPsm, kChannelParams, {});
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1648,7 +1648,7 @@ TEST_F(
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1688,7 +1688,7 @@ TEST_F(
 
   ChannelParameters params;
   params.mode = ChannelMode::kEnhancedRetransmission;
-  registry()->OpenOutbound(kPsm, std::move(open_cb), params);
+  registry()->OpenOutbound(kPsm, params, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1724,7 +1724,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsW
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kChannelParams);
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1754,7 +1754,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectWhenPeerRejectsConfigReqWithBasi
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kChannelParams);
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1769,8 +1769,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
-  registry()->OpenOutbound(
-      kPsm, [](auto chan) {}, kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1803,7 +1802,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1840,7 +1839,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, std::move(open_cb), kERTMChannelParams);
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1876,7 +1875,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, open_cb, {ChannelMode::kBasic, kPreferredMtu});
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu}, open_cb);
   RunLoopUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
@@ -1904,7 +1903,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, open_cb, {ChannelMode::kBasic, kMtu});
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kMtu}, open_cb);
   RunLoopUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);

@@ -132,7 +132,8 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   return chan;
 }
 
-void LogicalLink::OpenChannel(PSM psm, ChannelCallback callback, async_dispatcher_t* dispatcher) {
+void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback,
+                              async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
@@ -147,7 +148,7 @@ void LogicalLink::OpenChannel(PSM psm, ChannelCallback callback, async_dispatche
                          dispatcher](const DynamicChannel* dyn_chan) mutable {
     CompleteDynamicOpen(dyn_chan, std::move(cb), dispatcher);
   };
-  dynamic_registry_->OpenOutbound(psm, std::move(create_channel));
+  dynamic_registry_->OpenOutbound(psm, params, std::move(create_channel));
 }
 
 void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
@@ -365,19 +366,21 @@ void LogicalLink::Close() {
   }
 }
 
-DynamicChannelRegistry::DynamicChannelCallback LogicalLink::OnServiceRequest(PSM psm) {
+std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest(PSM psm) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
   // Query upper layer for a service handler attached to this PSM.
-  ChannelCallback chan_cb = query_service_cb_(handle_, psm);
-  if (!chan_cb) {
-    return nullptr;
+  auto result = query_service_cb_(handle_, psm);
+  if (!result) {
+    return std::nullopt;
   }
 
-  return [this, chan_cb = std::move(chan_cb)](const DynamicChannel* dyn_chan) mutable {
-    CompleteDynamicOpen(dyn_chan, std::move(chan_cb), nullptr);
-  };
+  auto channel_cb =
+      [this, chan_cb = std::move(result->channel_cb)](const DynamicChannel* dyn_chan) mutable {
+        CompleteDynamicOpen(dyn_chan, std::move(chan_cb), nullptr);
+      };
+  return DynamicChannelRegistry::ServiceInfo(result->channel_params, std::move(channel_cb));
 }
 
 void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {

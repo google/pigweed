@@ -62,6 +62,7 @@ static_library("l2cap") {
     "signaling_channel.cc",
     "signaling_channel.h",
     "tx_engine.h",
+    "types.h",
   ]
 
   public_deps = [

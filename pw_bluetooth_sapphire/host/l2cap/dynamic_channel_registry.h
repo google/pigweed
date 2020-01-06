@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -33,11 +34,12 @@ class DynamicChannelRegistry {
   // be nullptr upon failure to open. Otherwise, it points to an instance owned
   // by the registry and should not be retained by the callee.
   using DynamicChannelCallback = fit::function<void(const DynamicChannel* channel)>;
+  using ServiceInfo = ServiceInfo<DynamicChannelCallback>;
 
   // Used to query the upper layers for the presence of a service that is
   // accepting channels. If the service exists, it should return a callback
   // that accepts the inbound dynamic channel opened.
-  using ServiceRequestCallback = fit::function<DynamicChannelCallback(PSM psm)>;
+  using ServiceRequestCallback = fit::function<std::optional<ServiceInfo>(PSM psm)>;
 
   virtual ~DynamicChannelRegistry();
 
@@ -47,8 +49,7 @@ class DynamicChannelRegistry {
   // contain the local and remote channel IDs to be used for user data transfer
   // over the new channel. Preferred channel parameters can be set in |params|.
   // TODO(872): Return negotiated channel parameters in |open_cb|.
-  void OpenOutbound(PSM psm, DynamicChannelCallback open_cb,
-                    ChannelParameters params = {ChannelMode::kBasic, std::nullopt});
+  void OpenOutbound(PSM psm, ChannelParameters params, DynamicChannelCallback open_cb);
 
   // Disconnect and remove the channel identified by |local_cid|. After this
   // call completes, incoming PDUs with |local_cid| should be discarded as in

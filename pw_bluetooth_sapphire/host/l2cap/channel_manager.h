@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
@@ -150,14 +151,21 @@ class ChannelManager final {
   fbl::RefPtr<Channel> OpenFixedChannel(hci::ConnectionHandle connection_handle,
                                         ChannelId channel_id);
 
-  // Open an out-bound connection-oriented L2CAP channel.
-  void OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelCallback cb,
-                   async_dispatcher_t* dispatcher);
+  // Opens an out-bound connection-oriented L2CAP channel on the link specified by |handle| to the
+  // requested |psm| with the preferred parameters |params|.
+  // Returns a channel asynchronously via |callback| (posted on the given |dispatcher|).
+  void OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
+                   ChannelCallback cb, async_dispatcher_t* dispatcher);
 
   // Register/Unregister a callback for incoming service connections.
-  // TODO(872): add parameter for preferred channel parameters for psm
-  bool RegisterService(PSM psm, ChannelCallback cb, async_dispatcher_t* dispatcher);
+  // Incoming channels will be configured using using the preferred parameters |params|.
+  bool RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb,
+                       async_dispatcher_t* dispatcher);
   void UnregisterService(PSM psm);
+
+  // Information stored and returned for registered services that is needed to configure and forward
+  // new channels for this service.
+  using ServiceInfo = ServiceInfo<ChannelCallback>;
 
   // Returns mapping of ChannelId -> PacketPriority for use with ACLDataChannel::SendPacket.
   static hci::ACLDataChannel::PacketPriority ChannelPriority(ChannelId id);
@@ -173,12 +181,12 @@ class ChannelManager final {
                                           hci::Connection::LinkType ll_type,
                                           hci::Connection::Role role, size_t max_payload_size);
 
-  // If a service (identified by |psm|) requested has been registered, return a
-  // callback that passes an inbound channel to the registrant. The callback may
-  // be called repeatedly to pass multiple channels for |psm|, but should not be
-  // stored because the service may be unregistered at a later time. Calls for
-  // unregistered services return an empty callback.
-  ChannelCallback QueryService(hci::ConnectionHandle handle, PSM psm);
+  // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object
+  // containing preferred channel parameters and a callback that passes an inbound channel to the
+  // registrant. The callback may be called repeatedly to pass multiple channels for |psm|, but
+  // should not be stored because the service may be unregistered at a later time. Calls for
+  // unregistered services return null.
+  std::optional<ServiceInfo> QueryService(hci::ConnectionHandle handle, PSM psm);
 
   // Maximum sizes for data packet payloads from host to controller.
   const size_t max_acl_payload_size_;
@@ -203,9 +211,7 @@ class ChannelManager final {
 
   // Store information required to create and forward channels for locally-
   // hosted services.
-  //
-  // TODO(NET-1240): Add desired configuration options
-  using ServiceMap = std::unordered_map<PSM, ChannelCallback>;
+  using ServiceMap = std::unordered_map<PSM, ServiceInfo>;
   ServiceMap services_;
 
   fxl::ThreadChecker thread_checker_;

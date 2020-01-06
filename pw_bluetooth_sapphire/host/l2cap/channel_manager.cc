@@ -116,8 +116,8 @@ fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci::ConnectionHandle hand
   return iter->second->OpenFixedChannel(channel_id);
 }
 
-void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelCallback cb,
-                                 async_dispatcher_t* dispatcher) {
+void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
+                                 ChannelCallback cb, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto iter = ll_map_.find(handle);
@@ -127,10 +127,11 @@ void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelC
     return;
   }
 
-  iter->second->OpenChannel(psm, std::move(cb), dispatcher);
+  iter->second->OpenChannel(psm, params, std::move(cb), dispatcher);
 }
 
-bool ChannelManager::RegisterService(PSM psm, ChannelCallback cb, async_dispatcher_t* dispatcher) {
+bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb,
+                                     async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
@@ -155,7 +156,7 @@ bool ChannelManager::RegisterService(PSM psm, ChannelCallback cb, async_dispatch
     async::PostTask(dispatcher, [cb = cb.share(), chan = std::move(chan)] { cb(std::move(chan)); });
   };
 
-  services_[psm] = std::move(pass_channel);
+  services_.emplace(psm, ServiceInfo(params, std::move(pass_channel)));
   return true;
 }
 
@@ -230,15 +231,16 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   return ll_raw;
 }
 
-ChannelCallback ChannelManager::QueryService(hci::ConnectionHandle handle, PSM psm) {
+std::optional<ChannelManager::ServiceInfo> ChannelManager::QueryService(
+    hci::ConnectionHandle handle, PSM psm) {
   auto iter = services_.find(psm);
   if (iter == services_.end()) {
-    return nullptr;
+    return std::nullopt;
   }
 
-  // This will be called in LogicalLink. Each callback in |services_| already trampolines to the
-  // appropriate dispatcher (passed to RegisterService).
-  return iter->second.share();
+  // |channel_cb| will be called in LogicalLink. Each callback in |services_| already trampolines to
+  // the appropriate dispatcher (passed to RegisterService).
+  return ChannelManager::ServiceInfo(iter->second.channel_params, iter->second.channel_cb.share());
 }
 
 hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id) {

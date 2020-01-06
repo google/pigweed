@@ -26,8 +26,8 @@ DynamicChannelRegistry::~DynamicChannelRegistry() {
 
 // Run return callbacks on the L2CAP thread. LogicalLink takes care of out-of-
 // thread dispatch for delivering the pointer to the channel.
-void DynamicChannelRegistry::OpenOutbound(PSM psm, DynamicChannelCallback open_cb,
-                                          ChannelParameters params) {
+void DynamicChannelRegistry::OpenOutbound(PSM psm, ChannelParameters params,
+                                          DynamicChannelCallback open_cb) {
   const ChannelId id = FindAvailableChannelId();
   if (id == kInvalidChannelId) {
     bt_log(ERROR, "l2cap", "No dynamic channel IDs available");
@@ -71,18 +71,17 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
                                                        ChannelId remote_cid) {
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
-  DynamicChannelCallback return_chan_cb = service_request_cb_(psm);
-  if (!return_chan_cb) {
+  auto service_info = service_request_cb_(psm);
+  if (!service_info) {
     bt_log(WARN, "l2cap", "No service found for PSM %#.4x from %#.4x", psm, remote_cid);
     return nullptr;
   }
 
-  // TODO(872): use channel params provided when psm was registered
-  auto iter = channels_
-                  .emplace(local_cid, MakeInbound(psm, local_cid, remote_cid,
-                                                  {ChannelMode::kBasic, std::nullopt}))
-                  .first;
-  ActivateChannel(iter->second.get(), std::move(return_chan_cb), false);
+  auto iter =
+      channels_
+          .emplace(local_cid, MakeInbound(psm, local_cid, remote_cid, service_info->channel_params))
+          .first;
+  ActivateChannel(iter->second.get(), std::move(service_info->channel_cb), false);
   return iter->second.get();
 }
 

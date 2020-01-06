@@ -54,8 +54,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
   // registered for that PSM.
-  using QueryServiceCallback =
-      fit::function<ChannelCallback(hci::ConnectionHandle handle, PSM psm)>;
+  using QueryServiceCallback = fit::function<std::optional<ChannelManager::ServiceInfo>(
+      hci::ConnectionHandle handle, PSM psm)>;
 
   // Constructs a new LogicalLink and initializes the signaling fixed channel.
   // |dispatcher| will be used for all Channels created on this link.
@@ -83,11 +83,12 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // The link MUST not be closed when this is called.
   fbl::RefPtr<Channel> OpenFixedChannel(ChannelId channel_id);
 
-  // Opens a dynamic channel to the requested |psm| and returns a channel
-  // asynchronously via |callback| (posted on the given |dispatcher|).
+  // Opens a dynamic channel to the requested |psm| with the preferred parameters |params| and
+  // returns a channel asynchronously via |callback| (posted on the given |dispatcher|).
   //
   // The link MUST not be closed when this is called.
-  void OpenChannel(PSM psm, ChannelCallback callback, async_dispatcher_t* dispatcher);
+  void OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback,
+                   async_dispatcher_t* dispatcher);
 
   // Takes ownership of |packet| for PDU processing and routes it to its target
   // channel. This must be called on this object's creation thread.
@@ -178,7 +179,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // return nullptr.
   //
   // This MUST not be called on a closed link.
-  DynamicChannelRegistry::DynamicChannelCallback OnServiceRequest(PSM psm);
+  std::optional<DynamicChannelRegistry::ServiceInfo> OnServiceRequest(PSM psm);
 
   // Called by |dynamic_registry_| when the peer requests the closure of a
   // dynamic channel using a signaling PDU.

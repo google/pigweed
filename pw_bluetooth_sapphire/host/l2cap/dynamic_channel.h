@@ -14,6 +14,9 @@
 
 namespace bt {
 namespace l2cap {
+
+struct ChannelParameters;
+
 namespace internal {
 
 class DynamicChannelRegistry;
