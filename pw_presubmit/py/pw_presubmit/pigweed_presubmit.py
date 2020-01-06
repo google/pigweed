@@ -296,6 +296,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'(?:.+/)?\..+',
     r'AUTHORS',
     r'LICENSE',
+    r'.*\.elf',
     r'.*\.md',
     r'.*\.rst',
     r'(?:.+/)?requirements.txt',
@@ -506,8 +507,8 @@ def main(
 
     if clean and environment.exists():
         shutil.rmtree(environment)
-    elif clean_py and environment.joinpath('venv').exists():
-        shutil.rmtree(environment.joinpath('venv'))
+    elif clean_py and environment.joinpath('init_virtualenv').exists():
+        shutil.rmtree(environment.joinpath('init_virtualenv'))
 
     if install:
         install_hook(__file__, 'pre-push', ['--base', 'origin/master..HEAD'],
