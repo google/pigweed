@@ -29,6 +29,7 @@ pw_cc_library(
         "public/pw_status/status.h",
         "public/pw_status/status_with_size.h",
     ],
+    includes = ["public"],
 )
 
 pw_cc_test(

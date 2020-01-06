@@ -31,6 +31,10 @@ pw_cc_library(
         "public/pw_unit_test/event_handler.h",
         "public/pw_unit_test/simple_printing_event_handler.h",
     ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
     deps = ["//pw_preprocessor"],
 )
 

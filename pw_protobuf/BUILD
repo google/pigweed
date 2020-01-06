@@ -31,6 +31,7 @@ pw_cc_library(
         "public/pw_protobuf/codegen.h",
         "public/pw_protobuf/encoder.h",
     ],
+    includes = ["public"],
     deps = [
         "//pw_span",
         "//pw_status",

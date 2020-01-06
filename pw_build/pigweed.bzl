@@ -39,24 +39,10 @@ CPP17_COPTS = [
     "-Wno-register",
 ]
 
-INCLUDES_COPTS = [
-    "-Ipw_bloat/public",
-    "-Ipw_dumb_io/public",
-    "-Ipw_preprocessor/public",
-    "-Ipw_protobuf/public",
-    "-Ipw_span/public",
-    "-Ipw_status/public",
-    "-Ipw_string/public",
-    "-Ipw_unit_test/public",
-    "-Ipw_unit_test/public_overrides",
-    "-Ipw_varint/public",
-]
-
 PW_DEFAULT_COPTS = (
     REDUCED_SIZE_COPTS +
     STRICT_WARNINGS_COPTS +
-    CPP17_COPTS +
-    INCLUDES_COPTS
+    CPP17_COPTS
 )
 
 PW_DEFAULT_LINKOPTS = []

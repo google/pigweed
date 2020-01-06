@@ -28,6 +28,7 @@ pw_cc_library(
     name = "bloat_this_binary",
     srcs = ["bloat_this_binary.cc"],
     hdrs = ["public/pw_bloat/bloat_this_binary.h"],
+    includes = ["public"],
 )
 
 # Standard minimal base binary for bloat reports.

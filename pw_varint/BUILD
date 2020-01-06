@@ -30,6 +30,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_varint/varint.h",
     ],
+    includes = ["public"],
     deps = [
         "//pw_span",
     ],

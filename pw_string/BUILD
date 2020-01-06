@@ -36,6 +36,7 @@ pw_cc_library(
         "public/pw_string/type_to_string.h",
         "public/pw_string/util.h",
     ],
+    includes = ["public"],
     deps = [
         "//pw_preprocessor",
         "//pw_span",

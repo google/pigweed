@@ -25,6 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_preprocessor",
     hdrs = glob(["public/pw_preprocessor/*.h"]),
+    includes = ["public"],
 )
 
 TESTS = [

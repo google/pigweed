@@ -24,6 +24,7 @@ licenses(["notice"])
 pw_cc_library(
     name = "facade",
     hdrs = ["public/pw_dumb_io/dumb_io.h"],
+    includes = ["public"],
     deps = [
         "//pw_span",
         "//pw_status",

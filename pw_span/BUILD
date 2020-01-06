@@ -26,6 +26,7 @@ pw_cc_library(
     name = "pw_span",
     srcs = [],
     hdrs = ["public/pw_span/span.h"],
+    includes = ["public"],
 )
 
 pw_cc_test(
