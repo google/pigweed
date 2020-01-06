@@ -76,7 +76,7 @@ func (s *Server) RegisterWorker(worker DeviceRunner) {
 	s.workerPool.RegisterWorker(worker)
 }
 
-// RunExecutable runs an executable through a worker in the server, returning
+// RunBinary runs an executable through a worker in the server, returning
 // the worker's response. The function blocks until the executable has been
 // processed.
 func (s *Server) RunBinary(path string) (*RunResponse, error) {
