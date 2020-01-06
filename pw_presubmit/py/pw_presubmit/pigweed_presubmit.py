@@ -16,6 +16,7 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
+import itertools
 import logging
 import os
 from pathlib import Path
@@ -108,10 +109,11 @@ def gn_gen(*args, ctx: PresubmitContext, path=None, **kwargs) -> None:
          **kwargs)
 
 
-def ninja(ctx: PresubmitContext, **kwargs) -> None:
+def ninja(*args, ctx: PresubmitContext, **kwargs):
     call('ninja',
          '-C',
          ctx.output_directory,
+         *args,
          cwd=ctx.repository_root,
          **kwargs)
 
@@ -121,7 +123,7 @@ _CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
 
 
 def gn_clang_build(ctx: PresubmitContext):
-    gn_gen('--export-compile-commands', _CLANG_GEN_ARGS, ctx=ctx)
+    gn_gen(_CLANG_GEN_ARGS, ctx=ctx)
     ninja(ctx=ctx)
 
 
@@ -149,24 +151,41 @@ GN = (
     gn_arm_build,
 )
 
-
 #
 # C++ presubmit checks
 #
+# TODO(pwbug/45) Probably want additional checks.
+CLANG_TIDY_CHECKS = ('modernize-use-override', )
+
+
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(ctx: PresubmitContext):
-    # TODO(mohrr) should this check just do a new clang build?
-    out = ctx.output_directory.joinpath('..', 'gn_clang_build')
-    if not out.joinpath('compile_commands.json').exists():
-        raise PresubmitFailure('clang_tidy MUST be run after generating '
-                               'compile_commands.json in a clang build!')
+    gn_gen('--export-compile-commands', _CLANG_GEN_ARGS, ctx=ctx)
+    ninja(ctx=ctx)
+    ninja('-t', 'compdb', 'objcxx', 'cxx', ctx=ctx)
 
-    call('clang-tidy', f'-p={out}', *ctx.paths)
+    run_clang_tidy = None
+    for var in ('PIGWEED_CIPD_INSTALL_DIR', 'CIPD_INSTALL_DIR'):
+        if var in os.environ:
+            possibility = os.path.join(os.environ[var],
+                                       'share/clang/run-clang-tidy.py')
+            if os.path.isfile(possibility):
+                run_clang_tidy = possibility
+                break
+
+    checks = ','.join(CLANG_TIDY_CHECKS)
+    call(
+        run_clang_tidy,
+        f'-p={ctx.output_directory}',
+        f'-checks={checks}',
+        # TODO(pwbug/45) not sure if this is needed.
+        # f'-extra-arg-before=-warnings-as-errors={checks}',
+        *ctx.paths)
 
 
 CC = (
     pw_presubmit.pragma_once,
-    # TODO(hepler): Enable clang-tidy when it passes.
+    # TODO(pwbug/45): Enable clang-tidy when it passes.
     # clang_tidy,
 )
 
@@ -392,6 +411,11 @@ def source_is_in_build_files(ctx: PresubmitContext):
 
 GENERAL = (source_is_in_build_files, )
 
+BROKEN: Sequence = (
+    # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
+    clang_tidy,
+)  # yapf: disable
+
 #
 # Presubmit check programs
 #
@@ -405,9 +429,12 @@ QUICK_PRESUBMIT: Sequence = (
 )
 
 PROGRAMS: Dict[str, Sequence] = {
+    'broken': BROKEN,
     'full': INIT + GN + CC + PYTHON + CMAKE + BAZEL + CODE_FORMAT + GENERAL,
     'quick': QUICK_PRESUBMIT,
 }
+
+ALL_STEPS = frozenset(itertools.chain(*PROGRAMS.values()))
 
 
 def argument_parser(parser=None) -> argparse.ArgumentParser:
@@ -443,13 +470,13 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     exclusive.add_argument('-p',
                            '--program',
                            dest='program_name',
-                           choices=PROGRAMS,
+                           choices=[x for x in PROGRAMS if x != 'broken'],
                            default='full',
                            help='Which presubmit program to run')
 
     exclusive.add_argument(
         '--step',
-        choices=[x.__name__ for x in PROGRAMS['full']],
+        choices=sorted(x.__name__ for x in itertools.chain(ALL_STEPS)),
         action='append',
         help='Provide explicit steps instead of running a predefined program.',
     )
@@ -489,7 +516,7 @@ def main(
 
     program = PROGRAMS[program_name]
     if step:
-        program = [x for x in PROGRAMS['full'] if x.__name__ in step]
+        program = [x for x in ALL_STEPS if x.__name__ in step]
 
     if pw_presubmit.run_presubmit(program,
                                   repository=repository,

@@ -90,11 +90,16 @@ def update(argv=None):
         os.makedirs(args.install_dir)
 
     paths = []
+    env = {
+        'CIPD_INSTALL_DIR': args.install_dir,
+        'CIPD_CACHE_DIR': args.cache_dir,
+    }
 
     default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
     for ensure_file in args.ensure_file or glob.glob(default_ensures):
         install_dir = os.path.join(args.install_dir,
                                    os.path.basename(ensure_file))
+
         cmd = [
             args.cipd,
             'ensure',
@@ -110,6 +115,12 @@ def update(argv=None):
         paths.append(install_dir)
         paths.append(os.path.join(install_dir, 'bin'))
 
+        name = ensure_file
+        if os.path.splitext(name)[1] == '.ensure':
+            name = os.path.splitext(name)[0]
+        name = os.path.basename(name)
+        env['{}_CIPD_INSTALL_DIR'.format(name.upper())] = install_dir
+
     for path in paths:
         print('adding {} to path'.format(path), file=sys.stderr)
 
@@ -121,10 +132,9 @@ def update(argv=None):
                                          prefix='cipdsetup') as temp:
             print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
             print('export PATH', file=temp)
-            print('CIPD_INSTALL_DIR="{}"'.format(args.install_dir), file=temp)
-            print('export CIPD_INSTALL_DIR', file=temp)
-            print('CIPD_CACHE_DIR={}'.format(args.cache_dir), file=temp)
-            print('export CIPD_CACHE_DIR', file=temp)
+            for name, value in env.items():
+                print('{}={}'.format(name, value), file=temp)
+                print('export {}'.format(name), file=temp)
 
             print('. {}'.format(temp.name))
 
