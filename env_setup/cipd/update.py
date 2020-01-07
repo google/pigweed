@@ -89,7 +89,7 @@ def update(argv=None):
     if not os.path.isdir(args.install_dir):
         os.makedirs(args.install_dir)
 
-    paths = []
+    paths = [args.install_dir]
     env = {
         'CIPD_INSTALL_DIR': args.install_dir,
         'CIPD_CACHE_DIR': args.cache_dir,

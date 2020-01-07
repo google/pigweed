@@ -109,6 +109,10 @@ def cipd(ctx: DoctorContext):
     """Check cipd is set up correctly and in use."""
     cipd_path = 'pigweed'
 
+    cipd_exe = shutil.which('cipd')
+    if not cipd_exe:
+        ctx.fatal('cipd not in PATH')
+
     temp = tempfile.NamedTemporaryFile(prefix='cipd', delete=False)
     subprocess.run(['cipd', 'acl-check', '-json-output', temp.name, cipd_path],
                    stdout=subprocess.PIPE)
