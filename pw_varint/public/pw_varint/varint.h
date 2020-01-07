@@ -42,6 +42,14 @@ constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
   return (static_cast<U>(n) << 1) ^ static_cast<U>(n >> (sizeof(T) * 8 - 1));
 }
 
+// ZigZag decodes a signed integer.
+template <typename T>
+constexpr std::make_signed_t<T> ZigZagDecode(T n) {
+  static_assert(std::is_unsigned<T>(),
+                "Zig-zag decoding is for unsigned integers");
+  return static_cast<std::make_signed_t<T>>((n >> 1) ^ (~(n & 1) + 1));
+}
+
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
 size_t EncodeLittleEndianBase128(uint64_t integer,
                                  const span<std::byte>& output);

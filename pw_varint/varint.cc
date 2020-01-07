@@ -17,13 +17,6 @@
 #include <algorithm>
 
 namespace pw::varint {
-namespace {
-
-constexpr int64_t ZigZagDecode64(uint64_t n) {
-  return static_cast<int64_t>((n >> 1) ^ (~(n & 1) + 1));
-}
-
-}  // namespace
 
 size_t EncodeLittleEndianBase128(uint64_t integer,
                                  const span<std::byte>& output) {
@@ -44,7 +37,7 @@ size_t EncodeLittleEndianBase128(uint64_t integer,
 
 size_t Decode(const span<const std::byte>& input, int64_t* value) {
   const size_t bytes = Decode(input, reinterpret_cast<uint64_t*>(value));
-  *value = ZigZagDecode64(*value);
+  *value = ZigZagDecode(static_cast<uint64_t>(*value));
   return bytes;
 }
 

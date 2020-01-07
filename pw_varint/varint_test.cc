@@ -305,5 +305,144 @@ TEST(VarintDecode, DecodeSigned64_MultiByte) {
   EXPECT_EQ(value, std::numeric_limits<int64_t>::max());
 }
 
+TEST(Varint, ZigZagEncode_Int8) {
+  EXPECT_EQ(ZigZagEncode(int8_t(0)), uint8_t(0));
+  EXPECT_EQ(ZigZagEncode(int8_t(-1)), uint8_t(1));
+  EXPECT_EQ(ZigZagEncode(int8_t(1)), uint8_t(2));
+  EXPECT_EQ(ZigZagEncode(int8_t(-2)), uint8_t(3));
+  EXPECT_EQ(ZigZagEncode(int8_t(2)), uint8_t(4));
+  EXPECT_EQ(ZigZagEncode(int8_t(-33)), uint8_t(65));
+  EXPECT_EQ(ZigZagEncode(int8_t(33)), uint8_t(66));
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int8_t>::min()),
+            std::numeric_limits<uint8_t>::max());
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int8_t>::max()),
+            std::numeric_limits<uint8_t>::max() - 1u);
+}
+
+TEST(Varint, ZigZagEncode_Int16) {
+  EXPECT_EQ(ZigZagEncode(int16_t(0)), uint16_t(0));
+  EXPECT_EQ(ZigZagEncode(int16_t(-1)), uint16_t(1));
+  EXPECT_EQ(ZigZagEncode(int16_t(1)), uint16_t(2));
+  EXPECT_EQ(ZigZagEncode(int16_t(-2)), uint16_t(3));
+  EXPECT_EQ(ZigZagEncode(int16_t(2)), uint16_t(4));
+  EXPECT_EQ(ZigZagEncode(int16_t(-3333)), uint16_t(6665));
+  EXPECT_EQ(ZigZagEncode(int16_t(3333)), uint16_t(6666));
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int16_t>::min()),
+            std::numeric_limits<uint16_t>::max());
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int16_t>::max()),
+            std::numeric_limits<uint16_t>::max() - 1u);
+}
+
+TEST(Varint, ZigZagEncode_Int32) {
+  EXPECT_EQ(ZigZagEncode(int32_t(0)), uint32_t(0));
+  EXPECT_EQ(ZigZagEncode(int32_t(-1)), uint32_t(1));
+  EXPECT_EQ(ZigZagEncode(int32_t(1)), uint32_t(2));
+  EXPECT_EQ(ZigZagEncode(int32_t(-2)), uint32_t(3));
+  EXPECT_EQ(ZigZagEncode(int32_t(2)), uint32_t(4));
+  EXPECT_EQ(ZigZagEncode(int32_t(-128)), uint32_t(255));
+  EXPECT_EQ(ZigZagEncode(int32_t(128)), uint32_t(256));
+  EXPECT_EQ(ZigZagEncode(int32_t(-333333)), uint32_t(666665));
+  EXPECT_EQ(ZigZagEncode(int32_t(333333)), uint32_t(666666));
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int32_t>::min()),
+            std::numeric_limits<uint32_t>::max());
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int32_t>::max()),
+            std::numeric_limits<uint32_t>::max() - 1u);
+}
+
+TEST(Varint, ZigZagEncode_Int64) {
+  EXPECT_EQ(ZigZagEncode(int64_t(0)), uint64_t(0));
+  EXPECT_EQ(ZigZagEncode(int64_t(-1)), uint64_t(1));
+  EXPECT_EQ(ZigZagEncode(int64_t(1)), uint64_t(2));
+  EXPECT_EQ(ZigZagEncode(int64_t(-2)), uint64_t(3));
+  EXPECT_EQ(ZigZagEncode(int64_t(2)), uint64_t(4));
+  EXPECT_EQ(ZigZagEncode(int64_t(-3333333333)), uint64_t(6666666665));
+  EXPECT_EQ(ZigZagEncode(int64_t(3333333333)), uint64_t(6666666666));
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int64_t>::min()),
+            std::numeric_limits<uint64_t>::max());
+  EXPECT_EQ(ZigZagEncode(std::numeric_limits<int64_t>::max()),
+            std::numeric_limits<uint64_t>::max() - 1u);
+}
+
+TEST(Varint, ZigZagDecode_Int8) {
+  EXPECT_EQ(ZigZagDecode(uint8_t(0)), int8_t(0));
+  EXPECT_EQ(ZigZagDecode(uint8_t(1)), int8_t(-1));
+  EXPECT_EQ(ZigZagDecode(uint8_t(2)), int8_t(1));
+  EXPECT_EQ(ZigZagDecode(uint8_t(3)), int8_t(-2));
+  EXPECT_EQ(ZigZagDecode(uint8_t(4)), int8_t(2));
+  EXPECT_EQ(ZigZagDecode(uint8_t(65)), int8_t(-33));
+  EXPECT_EQ(ZigZagDecode(uint8_t(66)), int8_t(33));
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint8_t>::max()),
+            std::numeric_limits<int8_t>::min());
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint8_t>::max() - 1u),
+            std::numeric_limits<int8_t>::max());
+}
+
+TEST(Varint, ZigZagDecode_Int16) {
+  EXPECT_EQ(ZigZagDecode(uint16_t(0)), int16_t(0));
+  EXPECT_EQ(ZigZagDecode(uint16_t(1)), int16_t(-1));
+  EXPECT_EQ(ZigZagDecode(uint16_t(2)), int16_t(1));
+  EXPECT_EQ(ZigZagDecode(uint16_t(3)), int16_t(-2));
+  EXPECT_EQ(ZigZagDecode(uint16_t(4)), int16_t(2));
+  EXPECT_EQ(ZigZagDecode(uint16_t(6665)), int16_t(-3333));
+  EXPECT_EQ(ZigZagDecode(uint16_t(6666)), int16_t(3333));
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint16_t>::max()),
+            std::numeric_limits<int16_t>::min());
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint16_t>::max() - 1u),
+            std::numeric_limits<int16_t>::max());
+}
+
+TEST(Varint, ZigZagDecode_Int32) {
+  EXPECT_EQ(ZigZagDecode(uint32_t(0)), int32_t(0));
+  EXPECT_EQ(ZigZagDecode(uint32_t(1)), int32_t(-1));
+  EXPECT_EQ(ZigZagDecode(uint32_t(2)), int32_t(1));
+  EXPECT_EQ(ZigZagDecode(uint32_t(3)), int32_t(-2));
+  EXPECT_EQ(ZigZagDecode(uint32_t(4)), int32_t(2));
+  EXPECT_EQ(ZigZagDecode(uint32_t(255)), int32_t(-128));
+  EXPECT_EQ(ZigZagDecode(uint32_t(256)), int32_t(128));
+  EXPECT_EQ(ZigZagDecode(uint32_t(666665)), int32_t(-333333));
+  EXPECT_EQ(ZigZagDecode(uint32_t(666666)), int32_t(333333));
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint32_t>::max()),
+            std::numeric_limits<int32_t>::min());
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint32_t>::max() - 1u),
+            std::numeric_limits<int32_t>::max());
+}
+
+TEST(Varint, ZigZagDecode_Int64) {
+  EXPECT_EQ(ZigZagDecode(uint64_t(0)), int64_t(0));
+  EXPECT_EQ(ZigZagDecode(uint64_t(1)), int64_t(-1));
+  EXPECT_EQ(ZigZagDecode(uint64_t(2)), int64_t(1));
+  EXPECT_EQ(ZigZagDecode(uint64_t(3)), int64_t(-2));
+  EXPECT_EQ(ZigZagDecode(uint64_t(4)), int64_t(2));
+  EXPECT_EQ(ZigZagDecode(uint64_t(6666666665)), int64_t(-3333333333));
+  EXPECT_EQ(ZigZagDecode(uint64_t(6666666666)), int64_t(3333333333));
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint64_t>::max()),
+            std::numeric_limits<int64_t>::min());
+  EXPECT_EQ(ZigZagDecode(std::numeric_limits<uint64_t>::max() - 1llu),
+            std::numeric_limits<int64_t>::max());
+}
+
+TEST(Varint, ZigZagEncodeDecode) {
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(0)), 0);
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(1)), 1);
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(-1)), -1);
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(8675309)), 8675309);
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int8_t>::min())),
+            std::numeric_limits<int8_t>::min());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int8_t>::max())),
+            std::numeric_limits<int8_t>::max());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int16_t>::min())),
+            std::numeric_limits<int16_t>::min());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int16_t>::max())),
+            std::numeric_limits<int16_t>::max());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int32_t>::min())),
+            std::numeric_limits<int32_t>::min());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int32_t>::max())),
+            std::numeric_limits<int32_t>::max());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int64_t>::min())),
+            std::numeric_limits<int64_t>::min());
+  EXPECT_EQ(ZigZagDecode(ZigZagEncode(std::numeric_limits<int64_t>::max())),
+            std::numeric_limits<int64_t>::max());
+}
+
 }  // namespace
 }  // namespace pw::varint
