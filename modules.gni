@@ -16,12 +16,6 @@
 # allows modules to be moved or swapped out without breaking existing builds.
 # All module variables are prefixed with dir_.
 
-declare_args() {
-  # Location of the Pigweed modules directory (defaults to the directory of
-  # this file).
-  dir_pigweed = get_path_info(get_path_info("BUILD.gn", "abspath"), "dir")
-}
-
 dir_pw_bloat = "$dir_pigweed/pw_bloat"
 dir_pw_build = "$dir_pigweed/pw_build"
 dir_pw_cpu_exception = "$dir_pigweed/pw_cpu_exception"

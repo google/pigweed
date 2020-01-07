@@ -12,31 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("modules.gni")
-
-# Default configs to use for all binary build targets.
-_default_common_binary_configs = [
-  "$dir_pw_build:reduced_size",
-  "$dir_pw_build:strict_warnings",
-]
-
-set_defaults("executable") {
-  configs = _default_common_binary_configs
-}
-
-set_defaults("static_library") {
-  configs = _default_common_binary_configs
-}
-
-set_defaults("shared_library") {
-  configs = _default_common_binary_configs
-}
-
-set_defaults("source_set") {
-  configs = _default_common_binary_configs
-}
+# This BUILDCONFIG file tells GN how to build upstream Pigweed. When starting a
+# new project, you'll need to copy this file to your project and then modify it
+# to fit your needs. Due to the way Pigweed handles file imports, you won't be
+# able to simply import this file in your own BUILDCONFIG.gn.
+#
+# Keep in mind when importing .gni files that `gn format` will try to
+# alphabetically sort imports unless they're separated by comments. For this
+# file, import order matters (modules.gni MUST be imported first).
 
 declare_args() {
+  # Location of the Pigweed modules directory (defaults to the directory of
+  # this file). When copying this buildconfig into a new project, this should
+  # be modified to point to the location of the Pigweed repository.
+  dir_pigweed = get_path_info(get_path_info("BUILDCONFIG.gn", "abspath"), "dir")
+
   # Path to the Pigweed variables config file for the build target.
   #
   # When this is changed, you must run `ninja -t clean` to remove any files from
@@ -44,8 +34,23 @@ declare_args() {
   pw_target_config = "$dir_pigweed/targets/host/host.gni"
 }
 
+# Import variables that provide paths to modules. Pigweed's GN build requires
+# that this file is imported, and it MUST be imported before any other Pigweed
+# .gni files (as they depend on the dir_[module] variables).
+import("$dir_pigweed/modules.gni")
+
+# Import default GN configurations. This file provides default configurations
+# for upstream Pigweed development, and projects are free to provide their own
+# variation of this file. (depends on modules.gni)
+import("$dir_pigweed/gn_defaults.gni")
+
+# Import target configuration. This is what "completes" a Pigweed configuration.
+# This file should set a default toolchain, configure pw_executable, select
+# backends to build against, and provide target-specific build arguments.
 import(pw_target_config)
 
+# Ensure some sort of default toolchain was provided by the target, and then
+# set the default toolchain.
 assert(pw_target_toolchain != "",
        "Build target must provide its own toolchain.")
 set_default_toolchain(pw_target_toolchain)
