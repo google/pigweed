@@ -37,9 +37,9 @@ def parse(argv=None):
     """Parse arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--install-dir',
+    parser.add_argument('--install-dir', dest='root_install_dir',
                         default=os.path.join(GIT_ROOT, '.cipd'))
-    parser.add_argument('--ensure-file', action='append')
+    parser.add_argument('--ensure-file', dest='ensure_files', action='append')
     parser.add_argument('--cipd', default=os.path.join(SCRIPT_ROOT, 'cipd.py'))
     parser.add_argument('--suppress-shell-commands',
                         action='store_false',
@@ -75,33 +75,32 @@ def check_auth(cipd, print_shell_commands):
         return False
 
 
-def update(argv=None):
+def update(cipd, ensure_files, root_install_dir, cache_dir,
+           print_shell_commands):
     """Grab the tools listed in ensure_file."""
 
-    args = parse(argv)
+    os.environ['CIPD_PY_INSTALL_DIR'] = root_install_dir
+    os.environ['CIPD_CACHE_DIR'] = cache_dir
 
-    os.environ['CIPD_PY_INSTALL_DIR'] = args.install_dir
-    os.environ['CIPD_CACHE_DIR'] = args.cache_dir
-
-    if not check_auth(args.cipd, args.print_shell_commands):
+    if not check_auth(cipd, print_shell_commands):
         return
 
-    if not os.path.isdir(args.install_dir):
-        os.makedirs(args.install_dir)
+    if not os.path.isdir(root_install_dir):
+        os.makedirs(root_install_dir)
 
-    paths = [args.install_dir]
+    paths = [root_install_dir]
     env = {
-        'CIPD_INSTALL_DIR': args.install_dir,
-        'CIPD_CACHE_DIR': args.cache_dir,
+        'CIPD_INSTALL_DIR': root_install_dir,
+        'CIPD_CACHE_DIR': cache_dir,
     }
 
     default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
-    for ensure_file in args.ensure_file or glob.glob(default_ensures):
-        install_dir = os.path.join(args.install_dir,
+    for ensure_file in ensure_files or glob.glob(default_ensures):
+        install_dir = os.path.join(root_install_dir,
                                    os.path.basename(ensure_file))
 
         cmd = [
-            args.cipd,
+            cipd,
             'ensure',
             '-ensure-file', ensure_file,
             '-root', install_dir,
@@ -126,7 +125,7 @@ def update(argv=None):
 
     paths.append('$PATH')
 
-    if args.print_shell_commands:
+    if print_shell_commands:
         with tempfile.NamedTemporaryFile(mode='w',
                                          delete=False,
                                          prefix='cipdsetup') as temp:
@@ -140,5 +139,5 @@ def update(argv=None):
 
 
 if __name__ == '__main__':
-    update()
+    update(**vars(parse()))
     sys.exit(0)
