@@ -24,6 +24,9 @@ setup_virtualenv () {
 
   python3 "$PW_ENVSETUP/virtualenv/init.py" \
     --venv_path "$venv" --r $requirements_path && . "$venv/bin/activate"
+  if [[ "$?" -ne 0 ]]; then
+    ABORT_PW_ENVSETUP=1
+  fi
 }
 
 setup_virtualenv

@@ -47,8 +47,28 @@ if [[ $(basename $PW_SETUP_SCRIPT_PATH) == "bootstrap.sh" ]]; then
   export PW_ENVSETUP_FULL
 fi
 
+_pw_run_step () {
+  NAME=$1
+  CMD=$2
+  echo -n "Setting up $NAME..."
+
+  TMP=$(mktemp "/tmp/pigweed-envsetup-$NAME.XXXXXX")
+  eval $CMD &> $TMP
+  if [[ "$?" -ne 0 ]]; then
+    ABORT_PW_ENVSETUP=1
+  fi
+
+  if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
+    echo "done."
+  else
+    echo "FAILED."
+    echo "$NAME setup output:"
+    cat $TMP
+  fi
+}
+
 # Initialize CIPD.
-. "$PW_ENVSETUP/cipd/init.sh"
+_pw_run_step "cipd" ". $PW_ENVSETUP/cipd/init.sh"
 
 # Check that Python 3 comes from CIPD.
 if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
@@ -60,12 +80,12 @@ fi
 
 # Initialize Python 3 virtual environment.
 if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-  . "$PW_ENVSETUP/virtualenv/init.sh"
+  _pw_run_step "python" ". $PW_ENVSETUP/virtualenv/init.sh"
 fi
 
 # Do an initial host build.
 if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-  . "$PW_ENVSETUP/host_build/init.sh"
+  _pw_run_step "host_tools" ". $PW_ENVSETUP/host_build/init.sh"
 fi
 
 if [[ -n "$ABORT_PW_ENVSETUP" ]]; then
@@ -75,3 +95,5 @@ fi
 # Unset this at the end so users running setup scripts directly get consistent
 # behavior.
 unset PW_ENVSETUP_FULL
+
+unset -f _pw_run_step
