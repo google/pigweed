@@ -31,15 +31,17 @@ source_set("pw_protobuf") {
     "$dir_pw_status",
     "$dir_pw_varint",
   ]
-  sources = [
-    "encoder.cc",
-    "public/pw_protobuf/codegen.h",
-    "public/pw_protobuf/encoder.h",
-  ]
   public = [
     "public/pw_protobuf/codegen.h",
+    "public/pw_protobuf/decoder.h",
     "public/pw_protobuf/encoder.h",
+    "public/pw_protobuf/wire_format.h",
   ]
+  sources = [
+    "decoder.cc",
+    "encoder.cc",
+  ]
+  sources += public
 }
 
 # Source files for pw_protobuf's protoc plugin.
@@ -54,7 +56,17 @@ pw_input_group("codegen_protoc_plugin") {
 pw_test_group("tests") {
   tests = [
     ":codegen_test",
+    ":decoder_test",
     ":encoder_test",
+  ]
+}
+
+pw_test("decoder_test") {
+  deps = [
+    ":pw_protobuf",
+  ]
+  sources = [
+    "decoder_test.cc",
   ]
 }
 

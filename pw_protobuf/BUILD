@@ -25,11 +25,14 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_protobuf",
     srcs = [
+        "decoder.cc",
         "encoder.cc",
     ],
     hdrs = [
         "public/pw_protobuf/codegen.h",
+        "public/pw_protobuf/decoder.h",
         "public/pw_protobuf/encoder.h",
+        "public/pw_protobuf/wire_format.h",
     ],
     includes = ["public"],
     deps = [
@@ -37,6 +40,12 @@ pw_cc_library(
         "//pw_status",
         "//pw_varint",
     ],
+)
+
+pw_cc_test(
+    name = "decoder_test",
+    srcs = ["decoder_test.cc"],
+    deps = ["//pw_protobuf"],
 )
 
 pw_cc_test(

@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstring>
 
+#include "pw_protobuf/wire_format.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_varint/varint.h"
@@ -256,14 +257,6 @@ class Encoder {
   Status Encode(span<const std::byte>* out);
 
  private:
-  enum class WireType : uint8_t {
-    kVarint = 0,
-    kFixed64 = 1,
-    kDelimited = 2,
-    // Wire types 3 and 4 are deprecated per the protobuf specification.
-    kFixed32 = 5
-  };
-
   constexpr bool ValidFieldNumber(uint32_t field_number) const {
     return field_number != 0 && field_number <= kMaxFieldNumber &&
            !(field_number >= kFirstReservedNumber &&
@@ -277,7 +270,7 @@ class Encoder {
       return encode_status_;
     }
 
-    return WriteVarint((field_number << 3) | static_cast<uint8_t>(wire_type));
+    return WriteVarint(MakeKey(field_number, wire_type));
   }
 
   Status WriteVarint(uint64_t value);
