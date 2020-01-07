@@ -6,7 +6,9 @@ import("//third_party/cobalt/metrics_registry.gni")
 import("//third_party/protobuf/proto_library.gni")
 
 metrics_registry("registry") {
-  project_name = "bluetooth"
+  # This must match the ID of our Cobalt project as specified in:
+  # third_party/cobalt_config/projects.yaml
+  project_id = 2322225253
   generate_cc = true
   generate_binarypb = false
 }
