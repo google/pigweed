@@ -109,22 +109,23 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     });
   }
 
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelCallback cb,
+  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override {
     ZX_DEBUG_ASSERT(dispatcher);
-    PostMessage([this, handle, psm, cb = std::move(cb), dispatcher]() mutable {
+    PostMessage([this, handle, psm, params, cb = std::move(cb), dispatcher]() mutable {
       if (l2cap_) {
-        l2cap_->OpenChannel(handle, psm, l2cap::ChannelParameters(), std::move(cb), dispatcher);
+        l2cap_->OpenChannel(handle, psm, params, std::move(cb), dispatcher);
       }
     });
   }
 
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        SocketCallback socket_callback,
+                        l2cap::ChannelParameters params, SocketCallback socket_callback,
                         async_dispatcher_t* cb_dispatcher) override {
     ZX_DEBUG_ASSERT(cb_dispatcher);
     OpenL2capChannel(
-        handle, psm,
+        handle, psm, params,
         [this, handle, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
           // MakeSocketForChannel makes invalid sockets for null channels (i.e.
           // that have failed to open).
@@ -136,12 +137,11 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
         dispatcher());
   }
 
-  void RegisterService(l2cap::PSM psm, l2cap::ChannelCallback callback,
-                       async_dispatcher_t* dispatcher) override {
-    PostMessage([this, psm, callback = std::move(callback), dispatcher]() mutable {
+  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                       l2cap::ChannelCallback callback, async_dispatcher_t* dispatcher) override {
+    PostMessage([this, psm, params, callback = std::move(callback), dispatcher]() mutable {
       if (l2cap_) {
-        const bool result = l2cap_->RegisterService(psm, l2cap::ChannelParameters(),
-                                                    std::move(callback), dispatcher);
+        const bool result = l2cap_->RegisterService(psm, params, std::move(callback), dispatcher);
         ZX_DEBUG_ASSERT(result);
       } else {
         // RegisterService could be called early in host initialization, so log
@@ -151,10 +151,10 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     });
   }
 
-  void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
-                       async_dispatcher_t* cb_dispatcher) override {
+  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                       SocketCallback socket_callback, async_dispatcher_t* cb_dispatcher) override {
     RegisterService(
-        psm,
+        psm, params,
         [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
           // Called every time the service is connected, cb must be shared.

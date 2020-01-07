@@ -7,6 +7,7 @@
 #include <lib/async/default.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
@@ -106,7 +107,7 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
 
   // Register SDP
   data_domain_->RegisterService(
-      l2cap::kSDP,
+      l2cap::kSDP, l2cap::ChannelParameters(),
       [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
         if (self)
           self->AddConnection(channel);
@@ -241,7 +242,7 @@ ServiceHandle Server::RegisterService(ServiceRecord record, ConnectCallback conn
         bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
         psm_to_service_.emplace(psm, next);
         data_domain_->RegisterService(
-            psm,
+            psm, l2cap::ChannelParameters(),
             [psm, protocol = primary_list.Clone(), conn_cb = std::move(conn_cb)](
                 auto socket, auto handle) mutable {
               bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);

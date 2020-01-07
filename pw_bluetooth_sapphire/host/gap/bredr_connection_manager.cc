@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt {
 namespace gap {
@@ -103,7 +104,8 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallb
   }
 
   bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
-  domain_->get().OpenL2capChannel(link().handle(), psm, std::move(cb), dispatcher);
+  domain_->get().OpenL2capChannel(link().handle(), psm, l2cap::ChannelParameters(), std::move(cb),
+                                  dispatcher);
 }
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
@@ -496,7 +498,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
 
   if (discoverer_.search_count()) {
     data_domain_->OpenL2capChannel(
-        handle, l2cap::kSDP,
+        handle, l2cap::kSDP, l2cap::ChannelParameters(),
         [self, peer_id = peer->identifier()](auto channel) {
           if (!self)
             return;

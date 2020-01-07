@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -35,6 +36,7 @@ using TestingBase = bt::testing::FakeControllerTest<TestController>;
 constexpr size_t kMaxDataPacketLength = 64;
 constexpr size_t kMaxPacketCount = 10;
 
+constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic, l2cap::kMaxMTU};
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
@@ -184,7 +186,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
     sock = std::move(cb_sock);
   };
 
-  domain()->RegisterService(kPSM, std::move(sock_cb), dispatcher());
+  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
   RunLoopUntilIdle();
 
   set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM));
@@ -349,7 +351,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
     sock = std::move(cb_sock);
   };
 
-  domain()->RegisterService(kPSM, std::move(sock_cb), dispatcher());
+  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
   RunLoopUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
@@ -405,7 +407,8 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
     sock = std::move(cb_sock);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb), dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb),
+                             dispatcher());
 
   // Expect the CHANNEL opening stuff here
   set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM));
@@ -448,7 +451,8 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
     EXPECT_EQ(kLinkHandle, handle);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, std::move(sock_cb), dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb),
+                             dispatcher());
 
   RunLoopUntilIdle();
 
@@ -483,7 +487,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     EXPECT_EQ(kLinkHandle, handle);
     sock0 = std::move(cb_sock);
   };
-  domain()->RegisterService(kPSM0, sock_cb0, dispatcher());
+  domain()->RegisterService(kPSM0, kChannelParameters, sock_cb0, dispatcher());
 
   set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId0, kLocalId0, kPSM0));
   test_device()->SendACLDataChannelPacket(
@@ -532,7 +536,8 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     sock1 = std::move(cb_sock);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM1, std::move(sock_cb1), dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM1, kChannelParameters, std::move(sock_cb1),
+                             dispatcher());
   set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId1, kLocalId1, kPSM1));
 
   for (size_t i = 0; i < kChannelCreationPacketCount; i++) {
@@ -565,6 +570,79 @@ TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
   data_domain->ShutDown();
   data_domain = nullptr;
   SUCCEED();
+}
+
+TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  constexpr uint16_t kMtu = l2cap::kMinACLMTU;
+
+  l2cap::ChannelParameters chan_params;
+  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.max_sdu_size = kMtu;
+
+  set_data_cb(
+      ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
+
+  // Register a fake link.
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  RunLoopUntilIdle();
+  // Info request should have been sent
+  EXPECT_EQ(1u, data_cb_count());
+
+  fbl::RefPtr<l2cap::Channel> chan;
+  auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
+
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, chan_params, chan_cb, dispatcher());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(chan);
+  EXPECT_EQ(kLinkHandle, chan->link_handle());
+  EXPECT_EQ(*chan_params.max_sdu_size, chan->rx_mtu());
+  EXPECT_EQ(*chan_params.mode, chan->mode());
+}
+
+TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  l2cap::ChannelParameters chan_params;
+  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.max_sdu_size = l2cap::kMinACLMTU;
+
+  set_data_cb(
+      ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
+
+  // Register a fake link.
+  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
+  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
+                             NopSecurityCallback, dispatcher());
+
+  RunLoopUntilIdle();
+  // Info request should have been sent.
+  EXPECT_EQ(1u, data_cb_count());
+
+  fbl::RefPtr<l2cap::Channel> chan;
+  auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
+
+  domain()->RegisterService(kPSM, chan_params, chan_cb, dispatcher());
+
+  constexpr l2cap::CommandId kConnReqId = 1;
+  test_device()->SendACLDataChannelPacket(
+      l2cap::testing::AclConnectionReq(kConnReqId, kLinkHandle, kRemoteId, kPSM));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(chan);
+  EXPECT_EQ(kLinkHandle, chan->link_handle());
+  EXPECT_EQ(*chan_params.max_sdu_size, chan->rx_mtu());
+  EXPECT_EQ(*chan_params.mode, chan->mode());
 }
 
 }  // namespace

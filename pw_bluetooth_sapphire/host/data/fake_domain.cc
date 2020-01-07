@@ -8,6 +8,7 @@
 #include <lib/async/default.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
 
@@ -42,18 +43,21 @@ void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 
 void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                             l2cap::ChannelId id, l2cap::ChannelId remote_id,
-                                            uint16_t tx_mtu, uint16_t rx_mtu) {
+                                            uint16_t tx_mtu) {
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
-  auto cb_iter = inbound_conn_cbs_.find(psm);
-  ZX_DEBUG_ASSERT_MSG(cb_iter != inbound_conn_cbs_.end(), "no service registered for PSM %#.4x",
+  auto cb_iter = registered_services_.find(psm);
+  ZX_DEBUG_ASSERT_MSG(cb_iter != registered_services_.end(), "no service registered for PSM %#.4x",
                       psm);
 
-  l2cap::ChannelCallback& cb = cb_iter->second.first;
-  async_dispatcher_t* const dispatcher = cb_iter->second.second;
-  auto chan = OpenFakeChannel(&link_data, id, remote_id, tx_mtu, rx_mtu);
-  async::PostTask(dispatcher, [cb = cb.share(), chan = std::move(chan)] { cb(std::move(chan)); });
+  l2cap::ChannelCallback& cb = cb_iter->second.channel_cb;
+  auto chan_params = cb_iter->second.channel_params;
+  auto mode = chan_params.mode.value_or(l2cap::ChannelMode::kBasic);
+  auto rx_mtu = chan_params.max_sdu_size.value_or(l2cap::kDefaultMTU);
+
+  auto chan = OpenFakeChannel(&link_data, id, remote_id, mode, tx_mtu, rx_mtu);
+  cb(std::move(chan));
 }
 
 void FakeDomain::TriggerLinkError(hci::ConnectionHandle handle) {
@@ -107,7 +111,8 @@ void FakeDomain::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelCallback cb, async_dispatcher_t* dispatcher) {
+                                  l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
+                                  async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
@@ -119,18 +124,20 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
   auto [id, remote_id] = psm_it->second.front();
   psm_it->second.pop();
 
-  auto chan = OpenFakeChannel(&link_data, id, remote_id);
+  auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  auto rx_mtu = params.max_sdu_size.value_or(l2cap::kMaxMTU);
+  auto chan = OpenFakeChannel(&link_data, id, remote_id, mode, l2cap::kDefaultMTU, rx_mtu);
 
   async::PostTask(dispatcher,
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  SocketCallback socket_callback,
+                                  l2cap::ChannelParameters params, SocketCallback socket_callback,
                                   async_dispatcher_t* cb_dispatcher) {
   ZX_DEBUG_ASSERT(cb_dispatcher);
   OpenL2capChannel(
-      handle, psm,
+      handle, psm, params,
       [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
         zx::socket s = socket_factory_.MakeSocketForChannel(channel);
         // Called every time the service is connected, cb must be shared.
@@ -141,18 +148,25 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
       async_get_default_dispatcher());
 }
 
-void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelCallback channel_callback,
+void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                                 l2cap::ChannelCallback channel_callback,
                                  async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(initialized_);
-  ZX_DEBUG_ASSERT(inbound_conn_cbs_.count(psm) == 0);
+  ZX_DEBUG_ASSERT(registered_services_.count(psm) == 0);
 
-  inbound_conn_cbs_.emplace(psm, std::make_pair(std::move(channel_callback), dispatcher));
+  // capture |dispatcher| here so it doesn't need to be stored with ServiceInfo
+  auto service_cb = [dispatcher, chan_cb = std::move(channel_callback)](auto chan) mutable {
+    async::PostTask(dispatcher,
+                    [cb = chan_cb.share(), chan = std::move(chan)]() { cb(std::move(chan)); });
+  };
+  registered_services_.emplace(psm, ServiceInfo(params, std::move(service_cb)));
 }
 
-void FakeDomain::RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
+void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                                 SocketCallback socket_callback,
                                  async_dispatcher_t* cb_dispatcher) {
   RegisterService(
-      psm,
+      psm, params,
       [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
         zx::socket s = socket_factory_.MakeSocketForChannel(channel);
         // Called every time the service is connected, cb must be shared.
@@ -166,7 +180,7 @@ void FakeDomain::RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
 void FakeDomain::UnregisterService(l2cap::PSM psm) {
   ZX_DEBUG_ASSERT(initialized_);
 
-  inbound_conn_cbs_.erase(psm);
+  registered_services_.erase(psm);
 }
 
 FakeDomain::~FakeDomain() {
@@ -196,12 +210,13 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
 }
 
 fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                     l2cap::ChannelId remote_id, uint16_t tx_mtu,
+                                                     l2cap::ChannelId remote_id,
+                                                     l2cap::ChannelMode mode, uint16_t tx_mtu,
                                                      uint16_t rx_mtu) {
   fbl::RefPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
-    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type,
-                                         l2cap::ChannelMode::kBasic, tx_mtu, rx_mtu));
+    chan = fbl::AdoptRef(
+        new FakeChannel(id, remote_id, link->handle, link->type, mode, tx_mtu, rx_mtu));
     chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
   }
 

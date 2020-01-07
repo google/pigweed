@@ -8,6 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt {
 
@@ -44,8 +45,7 @@ class FakeDomain final : public Domain {
   // Triggers the creation of an inbound dynamic channel on the given link. The
   // channels created will be provided to handlers passed to RegisterService.
   void TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelId id,
-                                  l2cap::ChannelId remote_id, uint16_t tx_mtu = l2cap::kDefaultMTU,
-                                  uint16_t rx_mtu = l2cap::kDefaultMTU);
+                                  l2cap::ChannelId remote_id, uint16_t tx_mtu = l2cap::kDefaultMTU);
 
   // Triggers a link error callback on the given link.
   void TriggerLinkError(hci::ConnectionHandle handle);
@@ -66,14 +66,17 @@ class FakeDomain final : public Domain {
   void RemoveConnection(hci::ConnectionHandle handle) override;
   void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelCallback cb,
+  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        SocketCallback socket_callback, async_dispatcher_t* dispatcher) override;
-  void RegisterService(l2cap::PSM psm, l2cap::ChannelCallback channel_callback,
+                        l2cap::ChannelParameters params, SocketCallback socket_callback,
+                        async_dispatcher_t* dispatcher) override;
+  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                       l2cap::ChannelCallback channel_callback,
                        async_dispatcher_t* dispatcher) override;
-  void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
-                       async_dispatcher_t* dispatcher) override;
+  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                       SocketCallback socket_callback, async_dispatcher_t* dispatcher) override;
   void UnregisterService(l2cap::PSM psm) override;
 
   // Called when a new channel gets opened. Tests can use this to obtain a
@@ -116,10 +119,10 @@ class FakeDomain final : public Domain {
                              hci::Connection::LinkType link_type,
                              l2cap::LinkErrorCallback link_error_callback,
                              async_dispatcher_t* dispatcher);
-  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                           l2cap::ChannelId remote_id,
-                                                           uint16_t tx_mtu = l2cap::kDefaultMTU,
-                                                           uint16_t rx_mtu = l2cap::kDefaultMTU);
+  fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(
+      LinkData* link, l2cap::ChannelId id, l2cap::ChannelId remote_id,
+      l2cap::ChannelMode mode = l2cap::ChannelMode::kBasic, uint16_t tx_mtu = l2cap::kDefaultMTU,
+      uint16_t rx_mtu = l2cap::kDefaultMTU);
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeFixedChannel(LinkData* link,
                                                                 l2cap::ChannelId id);
 
@@ -134,8 +137,8 @@ class FakeDomain final : public Domain {
   FakeChannelCallback chan_cb_;
   bool simulate_open_channel_failure_ = false;
 
-  using ChannelDelivery = std::pair<l2cap::ChannelCallback, async_dispatcher_t*>;
-  std::unordered_map<l2cap::PSM, ChannelDelivery> inbound_conn_cbs_;
+  using ServiceInfo = l2cap::ServiceInfo<l2cap::ChannelCallback>;
+  std::unordered_map<l2cap::PSM, ServiceInfo> registered_services_;
 
   // Makes sockets for RegisterService
   internal::SocketFactory<l2cap::Channel> socket_factory_;

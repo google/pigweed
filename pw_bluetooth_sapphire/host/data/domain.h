@@ -5,15 +5,21 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 
+#include <lib/zx/socket.h>
+
 #include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
-#include <lib/zx/socket.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
+
+namespace l2cap {
+struct ChannelParameters;
+}
+
 namespace data {
 
 // Represents the task domain that implements the host subsystem's data plane.
@@ -103,17 +109,21 @@ class Domain : public fbl::RefCounted<Domain> {
                                             sm::SecurityProperties security) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
-  // Multiplexing (PSM) code |psm| on a link identified by |handle|.
+  // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
+  // parameters |params|. If the peer requires different higher priority parameters, the local
+  // device will accept those instead.
   //
   // |cb| will be called on |dispatcher| with the channel created to the remote,
   // or nullptr if the channel creation resulted in an error.
   //
   // Has no effect if this Domain is uninitialized or shut down.
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                l2cap::ChannelCallback cb, async_dispatcher_t* dispatcher) = 0;
+                                l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
+                                async_dispatcher_t* dispatcher) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
-  // Multiplexing (PSM) code |psm| on a link identified by |handle|.
+  // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
+  // parameters |params|.
   //
   // |cb| will be called on |dispatcher| with a zx::socket corresponding to the
   // channel created to the remote or ZX_INVALID_HANDLE if the channel creation
@@ -125,10 +135,13 @@ class Domain : public fbl::RefCounted<Domain> {
   // Has no effect if this Domain is uninitialized or shut down.
   using SocketCallback = fit::function<void(zx::socket, hci::ConnectionHandle link_handle)>;
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                SocketCallback socket_callback, async_dispatcher_t* dispatcher) = 0;
+                                l2cap::ChannelParameters params, SocketCallback socket_callback,
+                                async_dispatcher_t* dispatcher) = 0;
 
   // Registers a handler for peer-initiated dynamic channel requests that have
-  // the Protocol/Service Multiplexing (PSM) code |psm|.
+  // the Protocol/Service Multiplexing (PSM) code |psm|. The local device will attempt to configure
+  // these channels using the preferred parameters |params|, but will accept different channel
+  // parameters required by the peer if they are higher priority.
   //
   // |cb| will be called on |dispatcher| with the channel created by each
   // inbound connection request received. Handlers must be unregistered before
@@ -141,11 +154,9 @@ class Domain : public fbl::RefCounted<Domain> {
   //
   // Has no effect if this Domain is uninitialized or shut down.
   //
-  // TODO(xow): NET-1084 Pass in required channel configurations. Call signature
-  //            will likely change.
   // TODO(xow): Dynamic PSMs may need their routing space (ACL or LE) identified
-  virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelCallback callback,
-                               async_dispatcher_t* dispatcher) = 0;
+  virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                               l2cap::ChannelCallback callback, async_dispatcher_t* dispatcher) = 0;
 
   // Similar to RegisterService, but instead of providing a l2cap::Channel,
   // provides a zx::socket which can be used to communicate on the channel.
@@ -158,8 +169,8 @@ class Domain : public fbl::RefCounted<Domain> {
   // additional meta-data about the connection, such as its link type and
   // channel configuration parameters (see NET-1084 and TODOs for
   // RegisterService above.
-  virtual void RegisterService(l2cap::PSM psm, SocketCallback socket_callback,
-                               async_dispatcher_t* dispatcher) = 0;
+  virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
+                               SocketCallback socket_callback, async_dispatcher_t* dispatcher) = 0;
 
   // Removes the handler for inbound channel requests for the previously-
   // registered service identified by |psm|. This only prevents new inbound
