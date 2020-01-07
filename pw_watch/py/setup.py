@@ -11,9 +11,26 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Auto-load default plugins for pw_cli."""
+"""pw_watch"""
 
-# Note that these imports will trigger plugin registrations.
-import pw_cli.log
+import unittest
+import setuptools
 
-import pw_cli.process
+
+def test_suite():
+    """Test suite for pw_watch module."""
+    return unittest.TestLoader().discover('./', pattern='*_test.py')
+
+
+setuptools.setup(
+    name='pw_watch',
+    version='0.0.1',
+    author='Pigweed Authors',
+    author_email='pigweed-developers@googlegroups.com',
+    description='Pigweed automatic builder',
+    packages=setuptools.find_packages(),
+    test_suite='setup.test_suite',
+    install_requires=[
+        'watchdog',
+    ],
+)

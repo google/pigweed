@@ -31,7 +31,4 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
     entry_points={'console_scripts': ['pw = pw_cli.__main__:main']},
-    install_requires=[
-        'watchdog',
-    ],
 )
