@@ -94,6 +94,19 @@ executable("generate_decoding_test_data") {
   ]
 }
 
+# Executable for generating a test ELF file for elf_reader_test.py. A host
+# version of this binary is checked in for use in elf_reader_test.py.
+executable("elf_reader_test_binary") {
+  deps = [
+    ":pw_tokenizer",
+    "$dir_pw_varint",
+  ]
+  sources = [
+    "py/elf_reader_test_binary.c",
+  ]
+  ldflags = [ "-Wl,--unresolved-symbols=ignore-all" ]  # main is not defined
+}
+
 pw_test_group("tests") {
   tests = [
     ":argument_types_test",

@@ -82,6 +82,20 @@ pw_cc_binary(
     ],
 )
 
+# Executable for generating a test ELF file for elf_reader_test.py. A host
+# version of this binary is checked in for use in elf_reader_test.py.
+cc_binary(
+    name = "elf_reader_test_binary",
+    srcs = [
+        "py/elf_reader_test_binary.c",
+    ],
+    linkopts = ["-Wl,--unresolved-symbols=ignore-all"],  # main is not defined
+    deps = [
+        ":pw_tokenizer",
+        "//pw_varint",
+    ],
+)
+
 pw_cc_test(
     name = "argument_types_test",
     srcs = [
