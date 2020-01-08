@@ -77,7 +77,10 @@ function(pw_auto_add_simple_module MODULE)
   list(FILTER tests INCLUDE REGEX "_test.cc$")
 
   foreach(test IN LISTS tests)
-    pw_add_test("${test}" ${exclude_tests_from_default}
+    get_filename_component(test_name "${test}" NAME_WE)
+    pw_add_test("${MODULE}.${test_name}"
+      SOURCES
+        "${test}"
       DEPS
         "${MODULE}"
       GROUPS
@@ -153,26 +156,16 @@ endfunction(pw_add_facade)
 #  - <TEST_NAME>_run: builds and runs the test
 #
 # Args:
-#   SOURCE (positional arg): the main source file for the test
-#   NAME: optional name to use for the target; by default,
-#       dirname.test_file_name is used
+#   NAME: name to use for the target
+#   SOURCES: source files for this test
 #   DEPS: libraries on which this test depends
 #   GROUPS: groups to which to add this test; if none are specified, the test is
 #       added to the default and all groups
-function(pw_add_test SOURCE)
-  set(list_args DEPS GROUPS)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "NAME" "${list_args}")
+function(pw_add_test NAME)
+  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;GROUPS")
 
-  if(arg_NAME)
-    set(test_name "${arg_NAME}")
-  else()
-    get_filename_component(module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
-    get_filename_component(base "${SOURCE}" NAME_WE)
-    set(test_name "${module}.${base}")
-  endif()
-
-  add_executable("${test_name}" EXCLUDE_FROM_ALL "${SOURCE}")
-  target_link_libraries("${test_name}"
+  add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
+  target_link_libraries("${NAME}"
     PRIVATE
       pw_unit_test
       pw_unit_test.main
@@ -186,15 +179,15 @@ function(pw_add_test SOURCE)
     COMMAND
       # TODO(hepler): This only runs local test binaries. Execute a test runner
       #     instead to support device test runs.
-      "$<TARGET_FILE:${test_name}>"
+      "$<TARGET_FILE:${NAME}>"
     COMMAND
-      "${CMAKE_COMMAND}" -E touch "${test_name}.stamp"
+      "${CMAKE_COMMAND}" -E touch "${NAME}.stamp"
     DEPENDS
-      "${test_name}"
+      "${NAME}"
     OUTPUT
-      "${test_name}.stamp"
+      "${NAME}.stamp"
   )
-  add_custom_target("${test_name}_run" DEPENDS "${test_name}.stamp")
+  add_custom_target("${NAME}_run" DEPENDS "${NAME}.stamp")
 
   # Always add tests to the "all" group. If no groups are provided, add the
   # test to the "default" group.
@@ -205,7 +198,7 @@ function(pw_add_test SOURCE)
   endif()
 
   list(REMOVE_DUPLICATES groups)
-  pw_add_test_to_groups("${test_name}" ${groups})
+  pw_add_test_to_groups("${NAME}" ${groups})
 endfunction(pw_add_test)
 
 # Adds a test target to the specified test groups. Test groups can be built with
@@ -238,7 +231,7 @@ target_compile_options(_pw_reduced_size_copts
     "-fno-exceptions"
     "-ffunction-sections"
     "-fdata-sections"
-    "-fno-rtti"
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 )
 
 add_library(_pw_strict_warnings_copts INTERFACE)
@@ -246,19 +239,19 @@ target_compile_options(_pw_strict_warnings_copts
   INTERFACE
     "-Wall"
     "-Wextra"
-    "-Wnon-virtual-dtor"
     # Make all warnings errors, except for the exemptions below.
     "-Werror"
     "-Wno-error=cpp"  # preprocessor #warning statement
     "-Wno-error=deprecated-declarations"  # [[deprecated]] attribute
+    $<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>
 )
 
 add_library(_pw_cpp17_copts INTERFACE)
 target_compile_options(_pw_cpp17_copts
   INTERFACE
-    "-std=c++17"
+    $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>
     # Allow uses of the register keyword, which may appear in C headers.
-    "-Wno-register"
+    $<$<COMPILE_LANGUAGE:CXX>:-Wno-register>
 )
 
 # Target that specifies the standard Pigweed build options.
