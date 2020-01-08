@@ -37,8 +37,11 @@ def parse(argv=None):
     """Parse arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--install-dir', dest='root_install_dir',
-                        default=os.path.join(GIT_ROOT, '.cipd'))
+    parser.add_argument(
+        '--install-dir',
+        dest='root_install_dir',
+        default=os.path.join(GIT_ROOT, '.cipd'),
+    )
     parser.add_argument('--ensure-file', dest='ensure_files', action='append')
     parser.add_argument('--cipd', default=os.path.join(SCRIPT_ROOT, 'cipd.py'))
     parser.add_argument('--suppress-shell-commands',
