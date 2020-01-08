@@ -206,22 +206,22 @@ endfunction(pw_add_test)
 # target.
 function(pw_add_test_to_groups TEST_NAME)
   foreach(group IN LISTS ARGN)
-    if(NOT TARGET "pw_tests_${group}")
-      add_custom_target("pw_tests_${group}")
-      add_custom_target("pw_run_tests_${group}")
+    if(NOT TARGET "pw_tests.${group}")
+      add_custom_target("pw_tests.${group}")
+      add_custom_target("pw_run_tests.${group}")
     endif()
 
-    add_dependencies("pw_tests_${group}" "${TEST_NAME}")
-    add_dependencies("pw_run_tests_${group}" "${TEST_NAME}_run")
+    add_dependencies("pw_tests.${group}" "${TEST_NAME}")
+    add_dependencies("pw_run_tests.${group}" "${TEST_NAME}_run")
   endforeach()
 endfunction(pw_add_test_to_groups)
 
 # Declare top-level targets for tests.
-add_custom_target(pw_tests_default)
-add_custom_target(pw_run_tests_default)
+add_custom_target(pw_tests.default)
+add_custom_target(pw_run_tests.default)
 
-add_custom_target(pw_tests DEPENDS pw_tests_default)
-add_custom_target(pw_run_tests DEPENDS pw_run_tests_default)
+add_custom_target(pw_tests DEPENDS pw_tests.default)
+add_custom_target(pw_run_tests DEPENDS pw_run_tests.default)
 
 # Define the standard Pigweed compile options.
 add_library(_pw_reduced_size_copts INTERFACE)
@@ -261,4 +261,10 @@ target_link_libraries(pw_build
     _pw_reduced_size_copts
     _pw_strict_warnings_copts
     _pw_cpp17_copts
+)
+target_compile_options(pw_build
+  INTERFACE
+    # Force the compiler use colorized output. This is required for Ninja.
+    $<$<CXX_COMPILER_ID:Clang>:-fcolor-diagnostics>
+    $<$<CXX_COMPILER_ID:GNU>:-fdiagnostics-color=always>
 )

@@ -247,7 +247,7 @@ PYTHON = (
 def cmake_tests(ctx: PresubmitContext):
     output = ctx.output_directory.joinpath('cmake-host')
     call('cmake', '-B', output, '-S', ctx.repository_root, '-G', 'Ninja')
-    call('ninja', '-C', output, 'pw_run_tests_modules')
+    call('ninja', '-C', output, 'pw_run_tests.modules')
 
 
 CMAKE = (cmake_tests, )
