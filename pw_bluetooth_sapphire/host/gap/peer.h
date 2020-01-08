@@ -71,7 +71,9 @@ class Peer final {
     ConnectionState connection_state() const { return conn_state_; }
     bool connected() const { return connection_state() == ConnectionState::kConnected; }
     bool bonded() const { return bond_data_.has_value(); }
-    bool should_auto_connect() const { return auto_conn_behavior_ == AutoConnectBehavior::kAlways; }
+    bool should_auto_connect() const {
+      return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
+    }
 
     // Advertising (and optionally scan response) data obtained during
     // discovery.
