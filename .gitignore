@@ -43,3 +43,6 @@ __pycache__/
 
 # CIPD
 .cipd
+
+# Setup
+env_setup/.setup.sh

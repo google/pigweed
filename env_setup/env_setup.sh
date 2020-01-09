@@ -33,67 +33,18 @@ else
   PW_SETUP_SCRIPT_PATH=$(_abspath $0)
 fi
 
-PW_ENVSETUP=$(dirname $PW_SETUP_SCRIPT_PATH)
-export PW_ENVSETUP
-
-PW_ROOT=$(dirname "$PW_ENVSETUP")
+PW_ROOT=$(dirname $(dirname $PW_SETUP_SCRIPT_PATH))
 export PW_ROOT
 
-unset ABORT_PW_ENVSETUP
-unset PW_ENVSETUP_FULL
+SETUP_SH="$PW_ROOT/env_setup/.setup.sh"
 
-if [[ $(basename $PW_SETUP_SCRIPT_PATH) == "bootstrap.sh" ]]; then
-  PW_ENVSETUP_FULL=1
-  export PW_ENVSETUP_FULL
+# Expanded logic here to make this both easy to read and not bash-specific.
+# If user sourced 'bootstrap.sh' or if there is no '.setup.sh' then run
+# env_setup.py.
+if [ $(basename $PW_SETUP_SCRIPT_PATH) == "bootstrap.sh" ]; then
+  $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
+elif [ ! -f $SETUP_SH ]; then
+  $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 fi
 
-_pw_run_step () {
-  NAME=$1
-  CMD=$2
-  echo -n "Setting up $NAME..."
-
-  TMP=$(mktemp "/tmp/pigweed-envsetup-$NAME.XXXXXX")
-  eval $CMD &> $TMP
-  if [[ "$?" -ne 0 ]]; then
-    ABORT_PW_ENVSETUP=1
-  fi
-
-  if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-    echo "done."
-  else
-    echo "FAILED."
-    echo "$NAME setup output:"
-    cat $TMP
-  fi
-}
-
-# Initialize CIPD.
-_pw_run_step "cipd" ". $PW_ENVSETUP/cipd/init.sh"
-
-# Check that Python 3 comes from CIPD.
-if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-  if [[ $(which python3) != *"cipd"* ]]; then
-    echo "Python not from CIPD--found $(which python3) instead" 1>&2
-    ABORT_PW_ENVSETUP=1
-  fi
-fi
-
-# Initialize Python 3 virtual environment.
-if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-  _pw_run_step "python" ". $PW_ENVSETUP/virtualenv/init.sh"
-fi
-
-# Do an initial host build.
-if [[ -z "$ABORT_PW_ENVSETUP" ]]; then
-  _pw_run_step "host_tools" ". $PW_ENVSETUP/host_build/init.sh"
-fi
-
-if [[ -n "$ABORT_PW_ENVSETUP" ]]; then
-  echo "Environment setup failed! Please see messages above." 1>&2
-fi
-
-# Unset this at the end so users running setup scripts directly get consistent
-# behavior.
-unset PW_ENVSETUP_FULL
-
-unset -f _pw_run_step
+source $SETUP_SH
