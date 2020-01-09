@@ -283,3 +283,15 @@ template("pw_toolchain_size_report") {
     }
   }
 }
+
+# A base_executable for the pw_toolchain_size_report template which contains a
+# main() function that loads the bloat_this_binary library and does nothing
+# else.
+pw_bloat_empty_base = {
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+  sources = [
+    "$dir_pw_bloat/base_main.cc",
+  ]
+}
