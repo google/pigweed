@@ -24,8 +24,10 @@ file(WRITE "${_pw_empty_source_file}" "")
 #
 #  - The module exposes exactly one library.
 #  - All source files in the module directory are included in the library.
-#  - Each test in the module has exactly one source file and only depends on the
-#    module library.
+#  - Each test in the module has
+#    - exactly one source .cc file,
+#    - optionally, one .c source with the same base name as the .cc file,
+#    - only a dependency on the main module library.
 #  - The module is not a facade.
 #
 # Modules that do not meet these requirements may not use
@@ -78,9 +80,14 @@ function(pw_auto_add_simple_module MODULE)
 
   foreach(test IN LISTS tests)
     get_filename_component(test_name "${test}" NAME_WE)
+
+    # Find a .c test corresponding with the test .cc file, if any.
+    list(FILTER c_test INCLUDE REGEX "^${test_name}.c$")
+
     pw_add_test("${MODULE}.${test_name}"
       SOURCES
         "${test}"
+        ${c_test}
       DEPS
         "${MODULE}"
       GROUPS

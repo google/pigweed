@@ -62,7 +62,10 @@ template("host_gcc") {
       depsformat = "gcc"
       description = "as {{output}}"
       outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o",
+        # Use {{source_file_part}}, which includes the extension, instead of
+        # {{source_name_part}} so that object files created from <file_name>.c
+        # and <file_name>.cc sources are unique.
+        "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
       ]
     }
 
@@ -72,7 +75,7 @@ template("host_gcc") {
       depsformat = "gcc"
       description = "cc {{output}}"
       outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o",
+        "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
       ]
     }
 
@@ -82,7 +85,7 @@ template("host_gcc") {
       depsformat = "gcc"
       description = "c++ {{output}}"
       outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o",
+        "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
       ]
     }
 
