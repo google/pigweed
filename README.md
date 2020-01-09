@@ -55,6 +55,13 @@ $ bazel test //...
 And do the following to test on the STM32F429 Discovery board. (The bazel build
 does not yet support building for hardware.)
 
+To flash firmware (and run `pw test`) to a STMicroelectronics Discovery development
+board command you need to install OpenOCD.
+
+On macOS
+install Homebrew using the latest instructions at https://brew.sh/
+Install OpenOCD with `brew install openocd`
+
 ```bash
 $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
 $ ninja -C out/disco
