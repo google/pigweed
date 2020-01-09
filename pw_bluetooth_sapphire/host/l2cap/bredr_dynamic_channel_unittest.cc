@@ -253,9 +253,9 @@ const ByteBuffer& kDisconRsp = kDisconReq;
 
 // Configuration Requests
 
-auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
-                          ChannelMode mode = ChannelMode::kBasic) {
-  return CreateStaticByteBuffer(
+auto MakeConfigReqWithMtuAndMode(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
+                                 ChannelMode mode = ChannelMode::kBasic) {
+  return StaticByteBuffer(
       // Destination CID
       LowerBits(dest_cid), UpperBits(dest_cid),
 
@@ -269,10 +269,22 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
       0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 }
 
+auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU) {
+  return StaticByteBuffer(
+      // Destination CID
+      LowerBits(dest_cid), UpperBits(dest_cid),
+
+      // Flags
+      0x00, 0x00,
+
+      // MTU option (Type, Length, MTU value)
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
+}
+
 const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
 
 const ByteBuffer& kOutboundConfigReqWithErtm =
-    MakeConfigReqWithMtu(kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission);
+    MakeConfigReqWithMtuAndMode(kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission);
 
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
@@ -1775,7 +1787,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
   // Retransmission mode is not supported.
   const auto kInboundConfigReqWithRetransmissionMode =
-      MakeConfigReqWithMtu(kLocalCId, kMaxMTU, ChannelMode::kRetransmission);
+      MakeConfigReqWithMtuAndMode(kLocalCId, kMaxMTU, ChannelMode::kRetransmission);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRFCERTMConfigRsp));

@@ -908,22 +908,36 @@ TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
 
 // clang-format off
 
-auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU, ChannelMode mode = ChannelMode::kBasic) {
-  return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 27 bytes)
-      0x01, 0x00, 0x1b, 0x00,
+auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU, std::optional<ChannelMode> mode = std::nullopt) {
+  if (mode.has_value()) {
+    return DynamicByteBuffer(StaticByteBuffer(
+        // ACL data header (handle: 0x0001, length: 27 bytes)
+        0x01, 0x00, 0x1b, 0x00,
 
-      // L2CAP B-frame header (length: 23 bytes, channel-id: 0x0001 (ACL sig))
-      0x17, 0x00, 0x01, 0x00,
+        // L2CAP B-frame header (length: 23 bytes, channel-id: 0x0001 (ACL sig))
+        0x17, 0x00, 0x01, 0x00,
 
-      // Configuration Request (ID, length: 19, dst cid, flags: 0)
-      0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
+        // Configuration Request (ID, length: 19, dst cid, flags: 0)
+        0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
+
+        // Mtu option (ID, Length, MTU)
+        0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+
+        // Retransmission & Flow Control option (type, length: 9, mode, unused parameters)
+        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+  }
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: 0x0001, length: 16 bytes)
+      0x01, 0x00, 0x10, 0x00,
+
+      // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
+      0x0c, 0x00, 0x01, 0x00,
+
+      // Configuration Request (ID, length: 8, dst cid, flags: 0)
+      0x04, id, 0x08, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
 
       // Mtu option (ID, Length, MTU)
-      0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
-
-      // Retransmission & Flow Control option (type, length: 9, mode, unused parameters)
-      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
 }
 
 auto OutboundConnectionResponse(CommandId id) {
@@ -979,7 +993,7 @@ auto OutboundConnectionRequest(CommandId id) {
       UpperBits(kLocalId));
 }
 
-auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU, ChannelMode mode = ChannelMode::kBasic) {
+auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU, std::optional<ChannelMode> mode = std::nullopt) {
   return ConfigurationRequest(id, kRemoteId, mtu, mode);
 }
 

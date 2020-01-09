@@ -566,8 +566,16 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
 
 void BrEdrDynamicChannel::SendLocalConfig() {
   BrEdrCommandHandler cmd_handler(signaling_channel_);
+
+  auto request_config = local_config_;
+
+  // Don't send Retransmission & Flow Control option for basic mode
+  if (request_config.retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
+    request_config.set_retransmission_flow_control_option(std::nullopt);
+  }
+
   if (!cmd_handler.SendConfigurationRequest(
-          remote_cid(), 0, local_config_.Options(),
+          remote_cid(), 0, request_config.Options(),
           [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
             if (self) {
               return self->OnRxConfigRsp(rsp);
@@ -581,7 +589,7 @@ void BrEdrDynamicChannel::SendLocalConfig() {
   }
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Request (options: %s)",
-         local_cid(), bt_str(local_config_));
+         local_cid(), bt_str(request_config));
 
   state_ |= kLocalConfigSent;
 }
