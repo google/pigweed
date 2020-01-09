@@ -56,9 +56,9 @@ const struct TestData {
 };
 
 TEST_F(PrefixedBase64, Encode) {
-  for (auto& data : kTestData) {
-    EXPECT_EQ(data.base64.size(), PrefixedBase64Encode(data.binary, base64_));
-    ASSERT_EQ(data.base64, base64_);
+  for (auto& [binary, base64] : kTestData) {
+    EXPECT_EQ(base64.size(), PrefixedBase64Encode(binary, base64_));
+    ASSERT_EQ(base64, base64_);
   }
 }
 
@@ -73,9 +73,9 @@ TEST_F(PrefixedBase64, Encode_EmptyOutput_WritesNothing) {
 }
 
 TEST_F(PrefixedBase64, Decode) {
-  for (auto& data : kTestData) {
-    EXPECT_EQ(data.binary.size(), PrefixedBase64Decode(data.base64, binary_));
-    ASSERT_EQ(0, std::memcmp(data.binary.data(), binary_, data.binary.size()));
+  for (auto& [binary, base64] : kTestData) {
+    EXPECT_EQ(binary.size(), PrefixedBase64Decode(base64, binary_));
+    ASSERT_EQ(0, std::memcmp(binary.data(), binary_, binary.size()));
   }
 }
 
@@ -105,12 +105,12 @@ TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
 TEST(PrefixedBase64, DecodeInPlace) {
   std::byte buffer[32];
 
-  for (auto& data : kTestData) {
-    std::memcpy(buffer, data.base64.data(), data.base64.size());
+  for (auto& [binary, base64] : kTestData) {
+    std::memcpy(buffer, base64.data(), base64.size());
 
-    EXPECT_EQ(data.binary.size(),
-              PrefixedBase64DecodeInPlace(span(buffer, data.base64.size())));
-    ASSERT_EQ(0, std::memcmp(data.binary.data(), buffer, data.binary.size()));
+    EXPECT_EQ(binary.size(),
+              PrefixedBase64DecodeInPlace(span(buffer, base64.size())));
+    ASSERT_EQ(0, std::memcmp(binary.data(), buffer, binary.size()));
   }
 }
 
