@@ -92,10 +92,21 @@ pw_protobuf_langs = [
 # empty (but defined) variable.
 #
 # All of these should default to empty strings. For target-specific defaults,
-# modify these variables in a target confiruation file.
+# modify these variables in a target configuration file.
+
+# Backend for the pw_boot module.
+dir_pw_boot_backend = ""
+
+# Backend for the pw_cpu_exception module.
+dir_pw_cpu_exception_backend = ""
 
 # Backend for the pw_dumb_io module.
 dir_pw_dumb_io_backend = ""
 
-# Backend for the pw_cpu_exception module.
-dir_pw_cpu_exception_backend = ""
+############################## MODULE CONFIGS ##################################
+
+# Module configuration options for pw_boot_armv7m.
+pw_boot_armv7m_config = {
+  # C Preprocessor defines used for linker script configuration.
+  defines = []
+}

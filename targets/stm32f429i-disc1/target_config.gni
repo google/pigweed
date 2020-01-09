@@ -29,6 +29,11 @@ declare_args() {
   pw_use_test_server = false
 }
 
+# Expose the tool to use for preprocessing linker scripts.
+# TODO(pwbug/53): Temporary, will be removed when proper linker script support
+# is added to GN.
+pw_cc_command = "arm-none-eabi-gcc"
+
 # Executable wrapper that includes some baremetal startup code.
 template("stm32f429i_executable") {
   target("executable", target_name) {
@@ -45,12 +50,7 @@ pw_executable_config.target_type = "stm32f429i_executable"
 
 # Path to the bloaty config file for the output binaries.
 pw_executable_config.bloaty_config_file =
-    "$dir_pw_dumb_io_baremetal_stm32f429/bloaty_config.bloaty"
-
-# Path to a linker script target. This must be a target (e.g. source_set)
-# that provides a linker script (through a public config, for example).
-linker_script_target =
-    "$dir_pw_dumb_io_baremetal_stm32f429:linker_script_target"
+    "$dir_pw_boot_armv7m/bloaty_config.bloaty"
 
 if (pw_use_test_server) {
   pw_automatic_test_runner =
@@ -58,5 +58,17 @@ if (pw_use_test_server) {
 }
 
 # Facade backends
-dir_pw_cpu_exception_backend = "$dir_pw_cpu_exception_armv7m"
-dir_pw_dumb_io_backend = "$dir_pw_dumb_io_baremetal_stm32f429"
+dir_pw_boot_backend = dir_pw_boot_armv7m
+dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
+dir_pw_dumb_io_backend = dir_pw_dumb_io_baremetal_stm32f429
+
+pw_boot_armv7m_config.defines += [
+  "PW_BOOT_FLASH_BEGIN=0x08000200",
+  "PW_BOOT_FLASH_SIZE=512K",
+  "PW_BOOT_HEAP_SIZE=0",
+  "PW_BOOT_MIN_STACK_SIZE=1K",
+  "PW_BOOT_RAM_BEGIN=0x20000000",
+  "PW_BOOT_RAM_SIZE=192K",
+  "PW_BOOT_INTERRUPT_VECTOR_TABLE_BEGIN=0x08000000",
+  "PW_BOOT_INTERRUPT_VECTOR_TABLE_SIZE=512",
+]

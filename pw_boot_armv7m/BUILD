@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,18 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-source_filter: "^SEG .+$"
+package(default_visibility = ["//visibility:public"])
 
-custom_data_source: {
-  name: "segment_names"
-  base_data_source: "segments"
+licenses(["notice"])  # Apache License 2.0
 
-  rewrite: {
-    pattern: "LOAD #0"
-    replacement: "SEG FLASH"
-  }
-  rewrite: {
-    pattern: "LOAD #1"
-    replacement: "SEG RAM"
-  }
-}
+filegroup(
+    name = "pw_dumb_io_baremetal_stm32f429",
+    srcs = [
+        "core_init.c",
+        "public/pw_boot_armv7m/boot.h",
+    ],
+)
