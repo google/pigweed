@@ -59,3 +59,6 @@ infra/go/${platform} version:1.13.5
 
 # Go protobuf plugin
 pigweed/third_party/protoc-gen-go/${platform} version:1.3.2
+
+# OpenOCD
+pigweed/third_party/openocd/${os=linux}-${arch} git_revision:646566e006acd58fb9ac405511d3ecca79f26d55
