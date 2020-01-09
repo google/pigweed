@@ -166,7 +166,6 @@ class EnvSetup(object):
             root_install_dir=install_dir,
             ensure_files=ensure_files,
             cache_dir=self._cipd_cache_dir,
-            print_shell_commands=False,
             env_vars=self._env,
         )
 

@@ -26,7 +26,6 @@ import glob
 import os
 import subprocess
 import sys
-import tempfile
 
 SCRIPT_ROOT = os.path.abspath(os.path.dirname(__file__))
 GIT_ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
@@ -45,9 +44,6 @@ def parse(argv=None):
     parser.add_argument('--ensure-file', dest='ensure_files', action='append')
     parser.add_argument('--cipd',
                         default=os.path.join(SCRIPT_ROOT, 'wrapper.py'))
-    parser.add_argument('--suppress-shell-commands',
-                        action='store_false',
-                        dest='print_shell_commands')
     parser.add_argument('--cache-dir',
                         default=os.environ.get(
                             'CIPD_CACHE_DIR',
@@ -56,7 +52,7 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
-def check_auth(cipd, print_shell_commands):
+def check_auth(cipd):
     """Check logged into CIPD."""
     try:
         subprocess.check_output([cipd, 'auth-info'], stderr=subprocess.STDOUT)
@@ -69,13 +65,6 @@ def check_auth(cipd, print_shell_commands):
         print(cipd, 'auth-login', file=sys.stderr)
         print('=' * 60, file=sys.stderr)
 
-        if print_shell_commands:
-            with tempfile.NamedTemporaryFile(mode='w',
-                                             delete=False,
-                                             prefix='cipdsetup') as temp:
-                print('ABORT_PW_ENVSETUP=1', file=temp)
-
-            print('. {}'.format(temp.name))
         return False
 
 
@@ -84,30 +73,16 @@ def update(
     ensure_files,
     root_install_dir,
     cache_dir,
-    print_shell_commands,
     env_vars=None,
 ):
     """Grab the tools listed in ensure_files."""
 
-    # Set variables used by the wrapper.
-    # TODO(mohrr) remove once transitioned--already configured in new process.
-    os.environ['CIPD_PY_INSTALL_DIR'] = root_install_dir
-    os.environ['CIPD_CACHE_DIR'] = cache_dir
-
-    if not check_auth(cipd, print_shell_commands):
+    if not check_auth(cipd):
         return
 
     # TODO(mohrr) use os.makedirs(..., exist_ok=True).
     if not os.path.isdir(root_install_dir):
         os.makedirs(root_install_dir)
-
-    # Save paths for adding to environment (old process).
-    # TODO(mohrr) remove.
-    paths = [root_install_dir]
-    env = {
-        'CIPD_INSTALL_DIR': root_install_dir,
-        'CIPD_CACHE_DIR': cache_dir,
-    }
 
     if env_vars:
         env_vars.prepend('PATH', root_install_dir)
@@ -132,17 +107,12 @@ def update(
         print(*cmd, file=sys.stderr)
         subprocess.check_call(cmd, stdout=sys.stderr)
 
-        # TODO(mohrr) remove use of paths.
-        paths.append(install_dir)
-        paths.append(os.path.join(install_dir, 'bin'))
-
         # Set environment variables so tools can later find things under, for
         # example, 'share'.
         name = ensure_file
         if os.path.splitext(name)[1] == '.ensure':
             name = os.path.splitext(name)[0]
         name = os.path.basename(name)
-        env['{}_CIPD_INSTALL_DIR'.format(name.upper())] = install_dir
 
         if env_vars:
             # Some executables get installed at top-level and some get
@@ -151,27 +121,6 @@ def update(
             env_vars.prepend('PATH', os.path.join(install_dir, 'bin'))
             env_vars.set('{}_CIPD_INSTALL_DIR'.format(name.upper()),
                          install_dir)
-
-    # TODO(mohrr) remove code from here to end of function.
-    for path in paths:
-        print('adding {} to path'.format(path), file=sys.stderr)
-
-    paths.append('$PATH')
-
-    # This block writes environment variables so Pigweed can use tools in
-    # CIPD. It's being replaced with the env_vars object being passed into
-    # this function.
-    if print_shell_commands:
-        with tempfile.NamedTemporaryFile(mode='w',
-                                         delete=False,
-                                         prefix='cipdsetup') as temp:
-            print('PATH="{}"'.format(os.pathsep.join(paths)), file=temp)
-            print('export PATH', file=temp)
-            for name, value in env.items():
-                print('{}={}'.format(name, value), file=temp)
-                print('export {}'.format(name), file=temp)
-
-            print('. {}'.format(temp.name))
 
 
 if __name__ == '__main__':
