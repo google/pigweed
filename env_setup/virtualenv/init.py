@@ -13,28 +13,27 @@
 # the License.
 """Sets up a Python 3 virtualenv for Pigweed."""
 
+from __future__ import print_function
+
 import argparse
 import glob
 import os
-import shlex
 import subprocess
 import sys
-import venv
-from typing import Sequence
 
 
-def git_stdout(*args, **kwargs) -> str:
-    return subprocess.run(('git', *args),
-                          stdout=subprocess.PIPE,
-                          check=True,
-                          **kwargs).stdout.decode().strip()
+def git_stdout(*args, **kwargs):
+    """Run git, passing args as git params and kwargs to subprocess."""
+    return subprocess.check_output(['git'] + list(args), **kwargs).strip()
 
 
-def git_list_files(*args, **kwargs) -> Sequence[str]:
+def git_list_files(*args, **kwargs):
+    """Run git ls-files, passing args as git params and kwargs to subprocess."""
     return git_stdout('ls-files', *args, **kwargs).split()
 
 
-def git_repo_root(path: str = './') -> str:
+def git_repo_root(path='./'):
+    """Find git repository root."""
     try:
         return git_stdout('-C', path, 'rev-parse', '--show-toplevel')
     except subprocess.CalledProcessError:
@@ -42,18 +41,17 @@ def git_repo_root(path: str = './') -> str:
 
 
 class GitRepoNotFound(Exception):
-    pass
+    """Git repository not found."""
 
 
 def _installed_packages(venv_python):
     cmd = (venv_python, '-m', 'pip', 'list', '--disable-pip-version-check')
-    output = subprocess.run(cmd, stdout=subprocess.PIPE,
-                            check=True).stdout.decode().splitlines()
+    output = subprocess.check_output(cmd).splitlines()
     return set(x.split()[0].lower() for x in output[2:])
 
 
 def _required_packages(requirements):
-    packages = []
+    packages = set()
 
     for req in requirements:
         with open(req, 'r') as ins:
@@ -61,9 +59,9 @@ def _required_packages(requirements):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                packages.append(line.split('=')[0])
+                packages.add(line.split('=')[0])
 
-    return set(packages)
+    return packages
 
 
 def _pw_package_names(setup_py_files):
@@ -79,13 +77,19 @@ def _pw_package_names(setup_py_files):
     ))
 
 
-def init(venv_path, full_envsetup: bool = True, requirements=()) -> None:
+def init(
+    venv_path,
+    full_envsetup=True,
+    requirements=(),
+    python=sys.executable,
+):
     """Creates a venv and installs all packages in this Git repo."""
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
         print('Creating venv at', venv_path)
-        venv.create(venv_path, clear=True, with_pip=True)
+        cmd = (python, '-m', 'venv', '--clear', venv_path)
+        subprocess.check_call(cmd)
 
     venv_python = os.path.join(venv_path, 'bin', 'python')
 
@@ -116,32 +120,28 @@ def init(venv_path, full_envsetup: bool = True, requirements=()) -> None:
             os.unlink(egg_link)
 
     def pip_install(*args):
-        cmd = venv_python, '-m', 'pip', 'install', *args
-        print(shlex.join(cmd))
-        return subprocess.run(cmd, check=True)
+        cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
+        print(' '.join(cmd))
+        return subprocess.check_call(cmd)
 
     pip_install('--upgrade', 'pip')
 
-    package_args = tuple(
-        f'--editable={os.path.join(pw_root, os.path.dirname(path))}'
-        for path in setup_py_files)
+    def package(pkg_path):
+        return os.path.join(pw_root, os.path.dirname(pkg_path.decode()))
 
-    requirement_args = tuple(f'--requirement={req}' for req in requirements)
+    package_args = tuple('--editable={}'.format(package(path))
+                         for path in setup_py_files)
 
-    pip_install('--log', os.path.join(venv_path, 'pip.log'), *requirement_args,
+    requirement_args = tuple('--requirement={}'.format(req)
+                             for req in requirements)
+
+    pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
+                *requirement_args)
+    pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
                 *package_args)
 
 
-def _main() -> None:
-    expected_version = (3, 8)
-    if sys.version_info[0:2] != expected_version:
-        print('Bad Python version detected: {}'.format(sys.version),
-              file=sys.stderr)
-        print('Expected: {}'.format('.'.join(str(x)
-                                             for x in expected_version)),
-              file=sys.stderr)
-        return -1
-
+def _main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--venv_path',
                         required=True,
@@ -157,6 +157,9 @@ def _main() -> None:
                         default='PW_ENVSETUP_FULL' in os.environ,
                         help=('Do full setup or only minimal checks to see if '
                               'full setup is required.'))
+    parser.add_argument('--python',
+                        default=sys.executable,
+                        help='Python to use when creating virtualenv.')
 
     try:
         init(**vars(parser.parse_args()))
