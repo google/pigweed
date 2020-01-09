@@ -16,15 +16,17 @@ import("$dir_pw_unit_test/test.gni")
 
 # By default, Pigweed will build this target when invoking ninja.
 group("default") {
-  deps = [
-    "$dir_pigweed/docs",
-  ]
-  if (pw_automatic_test_runner == "") {
-    # Without a test runner defined, build the tests but don't run them.
-    deps += [ ":pw_module_tests" ]
+  deps = []
+  if (defined(pw_is_docs_target) && pw_is_docs_target) {
+    deps += [ "$dir_pigweed/docs" ]
   } else {
-    # With a test runner, depend on the run targets so they run with the build.
-    deps += [ ":pw_module_tests_run" ]
+    if (pw_automatic_test_runner == "") {
+      # Without a test runner defined, build the tests but don't run them.
+      deps += [ ":pw_module_tests" ]
+    } else {
+      # With a test runner, depend on the run targets so they run with the build.
+      deps += [ ":pw_module_tests_run" ]
+    }
   }
   if (pw_build_host_tools) {
     deps += [ ":host_tools" ]

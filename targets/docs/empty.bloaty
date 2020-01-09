@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,14 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("host_common.gni")
+# Empty Bloaty configuration used as the default for the docs target.
 
-declare_args() {
-  # Specifies the toolchain to use for this build.
-  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+# segment_names must be defined for pw_bloat. Map it directly to segments.
+custom_data_source: {
+  name: "segment_names"
+  base_data_source: "segments"
 }
-
-pw_executable_config.bloaty_config_file =
-    get_path_info("linux.bloaty", "abspath")
-
-pw_automatic_test_runner = get_path_info("run_test", "abspath")

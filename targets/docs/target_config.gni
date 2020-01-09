@@ -1,0 +1,65 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pigweed/pw_vars_default.gni")
+
+pw_executable_config.bloaty_config_file =
+    get_path_info("empty.bloaty", "abspath")
+
+# Targets are required to set a default toolchain. Choose something random.
+pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+
+# Special upstream build variable to indicate that this is a docs-only target.
+pw_is_docs_target = true
+
+# Toolchains to compare in documentation size reports.
+# TODO(frolv): Add bloaty configs and linker scripts to all of these.
+pw_size_report_toolchains = [
+  {
+    name = "x86_64-gcc -Og"
+    target = "$dir_pw_toolchain:host_gcc_og"
+  },
+  {
+    name = "x86_64-gcc -Os"
+    target = "$dir_pw_toolchain:host_gcc_os"
+  },
+  {
+    name = "x86_64-gcc -O2"
+    target = "$dir_pw_toolchain:host_gcc_o2"
+  },
+  {
+    name = "x86_64-clang -Og"
+    target = "$dir_pw_toolchain:host_clang_og"
+  },
+  {
+    name = "x86_64-clang -Os"
+    target = "$dir_pw_toolchain:host_clang_os"
+  },
+  {
+    name = "x86_64-clang -O2"
+    target = "$dir_pw_toolchain:host_clang_o2"
+  },
+  {
+    name = "arm-none-eabi-gcc -Og"
+    target = "$dir_pw_toolchain:arm_gcc_cortex_m4_og"
+  },
+  {
+    name = "arm-none-eabi-gcc -Os"
+    target = "$dir_pw_toolchain:arm_gcc_cortex_m4_os"
+  },
+  {
+    name = "arm-none-eabi-gcc -O2"
+    target = "$dir_pw_toolchain:arm_gcc_cortex_m4_o2"
+  },
+]

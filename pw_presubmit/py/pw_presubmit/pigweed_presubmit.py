@@ -121,6 +121,8 @@ def ninja(*args, ctx: PresubmitContext, **kwargs):
 _CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
                           pw_target_toolchain='"//pw_toolchain:host_clang_os"')
 
+_DOCS_GEN_ARGS = gn_args(pw_target_config='"//targets/docs/target_config.gni"')
+
 
 def gn_clang_build(ctx: PresubmitContext):
     gn_gen(_CLANG_GEN_ARGS, ctx=ctx)
@@ -145,10 +147,16 @@ def gn_arm_build(ctx: PresubmitContext):
     ninja(ctx=ctx)
 
 
+def gn_docs_build(ctx: PresubmitContext):
+    gn_gen(_DOCS_GEN_ARGS, ctx=ctx)
+    ninja('docs:docs', ctx=ctx)
+
+
 GN = (
     gn_clang_build,
     gn_gcc_build,
     gn_arm_build,
+    gn_docs_build,
 )
 
 #
@@ -388,6 +396,11 @@ def source_is_in_build_files(ctx: PresubmitContext):
     gn_gen(_CLANG_GEN_ARGS, ctx=ctx, path=clang_dir)
     build_gn.update(
         _get_paths_from_command('gn', 'desc', clang_dir, '*', ctx=ctx))
+
+    docs_dir = ctx.output_directory.joinpath('docs')
+    gn_gen(_DOCS_GEN_ARGS, ctx=ctx, path=docs_dir)
+    build_gn.update(
+        _get_paths_from_command('gn', 'desc', docs_dir, '*', ctx=ctx))
 
     missing_bazel = []
     missing_gn = []
