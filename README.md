@@ -41,7 +41,7 @@ $ ninja -C out/host
 
 ```bash
 $ which cmake
-~/pigweed/.cipd/pigweed.ensure/cmake
+~/pigweed/.cipd/pigweed.ensure/bin/cmake
 $ cmake -B out/cmake-host -S . -G Ninja
 $ ninja -C out/cmake-host
 ```
