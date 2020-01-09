@@ -315,7 +315,7 @@ def copyright_notice(ctx: PresubmitContext):
         with open(path) as file:
             # Skip shebang and blank lines
             line = file.readline()
-            while line.startswith(('#!', '/*')) or not line.strip():
+            while line and (line.startswith(('#!', '/*')) or not line.strip()):
                 line = file.readline()
 
             first_line = COPYRIGHT_FIRST_LINE.match(line)
