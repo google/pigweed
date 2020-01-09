@@ -28,7 +28,7 @@ namespace internal {
 // For Retransmission and Flow Control Modes. (Vol 3, Part A, Sec 3.3.2)
 using StandardControlField = uint16_t;
 
-// See Vol 3, Part A, Table 3.4.
+// See Vol 3, Part A, Sec 3.3.2, Table 3.4.
 enum class SegmentationStatus {
   Unsegmented = 0b00,
   FirstSegment = 0b01,  // AKA "Start of L2CAP SDU"
@@ -65,10 +65,22 @@ struct EnhancedControlField {
     return (le16toh(raw_value) >> 8) & 0b11'1111;
   }
 
+  bool is_poll_response() const {
+    // See Vol 3, Part A, Sec 3.3.2, Table 3.2. The spec calls this the 'final' bit. But poll
+    // response seems more intuitive.
+    return le16toh(raw_value) & 0b1000'0000;
+  }
+
   void set_receive_seq_num(uint8_t seq_num) {
     ZX_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
     // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (seq_num << 8));
+  }
+
+  void set_is_poll_response() {
+    // See Vol 3, Part A, Sec 3.3.2, Table 3.2. The spec calls this the 'final' bit. But poll
+    // response seems more intuitive.
+    raw_value = htole16(le16toh(raw_value) | 0b1000'0000);
   }
 
   void set_segmentation_status(SegmentationStatus status) {
@@ -119,7 +131,7 @@ struct SimpleStartOfSduFrameHeader : public SimpleInformationFrameHeader {
   uint16_t sdu_len;
 } __PACKED;
 
-// See Vol 3, Part A, Table 3.5.
+// See Vol 3, Part A, Sec 3.3.2, Table 3.5.
 enum class SupervisoryFunction {
   ReceiverReady = 0,
   Reject = 1,
@@ -137,34 +149,22 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
   explicit SimpleSupervisoryFrame(SupervisoryFunction sfunc) {
     ZX_DEBUG_ASSERT(sfunc <= SupervisoryFunction::SelectiveReject);
     set_supervisory_frame();
-    // See Vol 3, Part A, Table 3.2.
+    // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (static_cast<uint8_t>(sfunc) << 2));
   }
 
   bool is_poll_request() const {
-    return le16toh(raw_value) & 0b1'0000;  // See Vol 3, Part A, Table 3.2.
-  }
-
-  bool is_poll_response() const {
-    // See Vol 3, Part A, Table 3.2. The spec calls this the 'final' bit. But
-    // poll response seems more intuitive.
-    return le16toh(raw_value) & 0b1000'0000;
+    return le16toh(raw_value) & 0b1'0000;  // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
   }
 
   SupervisoryFunction function() const {
-    // See Vol 3, Part A, Table 3.2.
+    // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     return static_cast<SupervisoryFunction>((le16toh(raw_value) >> 2) & 0b11);
   }
 
   void set_is_poll_request() {
-    // See Vol 3, Part A, Table 3.2.
+    // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | 0b1'0000);
-  }
-
-  void set_is_poll_response() {
-    // See Vol 3, Part A, Table 3.2. The spec calls this the 'final' bit. But
-    // poll response seems more intuitive.
-    raw_value = htole16(le16toh(raw_value) | 0b1000'0000);
   }
 } __PACKED;
 
