@@ -29,9 +29,10 @@ Homebrew Python was not set up to support SSL. Ensure it's installed with
 
 The environment setup script will pull down the versions of tools necessary
 to build Pigweed and add them to your environment. You can then build with
-either GN or Bazel. You can also confirm you're getting the right versions
+GN, CMake, or Bazel. You can also confirm you're getting the right versions
 of tools—they should be installed under `env_setup/`.
 
+**Build for the host with GN**
 ```bash
 $ which gn
 ~/pigweed/.cipd/pigweed.ensure/gn
@@ -39,6 +40,7 @@ $ gn gen out/host
 $ ninja -C out/host
 ```
 
+**Build for the host with CMake**
 ```bash
 $ which cmake
 ~/pigweed/.cipd/pigweed.ensure/bin/cmake
@@ -46,27 +48,26 @@ $ cmake -B out/cmake-host -S . -G Ninja
 $ ninja -C out/cmake-host
 ```
 
+**Build for the host with Bazel**
 ```bash
 $ which bazel
 ~/pigweed/.cipd/pigweed.ensure/bazel
 $ bazel test //...
 ```
 
-And do the following to test on the STM32F429 Discovery board. (The bazel build
-does not yet support building for hardware.)
-
-To flash firmware (and run `pw test`) to a STMicroelectronics Discovery development
-board command you need to install OpenOCD.
-
-On macOS
-install Homebrew using the latest instructions at https://brew.sh/
-Install OpenOCD with `brew install openocd`
-
+**Build for the STM32F429 Discovery board**
 ```bash
 $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
 $ ninja -C out/disco
 $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
 ```
+
+The CMake and Bazel builds do not yet support building for hardware.
+
+To flash firmware to an STM32 Discovery development board (and run `pw test`)
+from macOS, you need to install OpenOCD. Install Homebrew using the latest
+instructions at https://brew.sh/, then install OpenOCD with
+`brew install openocd`.
 
 If any of this doesn't work please
 [file a bug](https://bugs.chromium.org/p/pigweed/issues/entry).

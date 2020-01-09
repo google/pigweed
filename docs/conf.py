@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -23,7 +23,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Pigweed'
-copyright = '2019 Google LLC'  # pylint: disable=redefined-builtin
+copyright = '2020 The Pigweed Authors'  # pylint: disable=redefined-builtin
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

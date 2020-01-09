@@ -515,10 +515,7 @@ Pigweed uses the standard Python style: PEP8, which is available on the web at
 https://www.python.org/dev/peps/pep-0008/. All Pigweed Python code should pass
 ``yapf`` when configured for PEP8 style.
 
-Python 2 and 3
-==============
-All Pigweed module Python code must be compatible with both Python 2.7 and
-Python 3. Pigweed tools, for example the ``pw`` shell command, are Python 3
-only.
-
-Python 2 support may be dropped in the future.
+Python 3
+========
+Pigweed uses Python 3. Some modules may offer limited support for Python 2, but
+Python 3.6 or newer is required for most Pigweed code.
