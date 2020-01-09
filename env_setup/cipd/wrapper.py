@@ -46,9 +46,8 @@ CIPD_HOST = 'chrome-infra-packages.appspot.com'
 
 # Get install dir from environment since args cannot be passed through this
 # script (args are passed as-is to cipd).
-INSTALL_DIR = os.environ.get('CIPD_PY_INSTALL_DIR',
-                             os.path.join(SCRIPT_DIR, 'tools'))
-CLIENT = os.path.join(INSTALL_DIR, 'cipd')
+DEFAULT_INSTALL_DIR = os.environ.get('CIPD_PY_INSTALL_DIR',
+                                     os.path.join(SCRIPT_DIR, 'tools'))
 
 
 def platform_normalized():
@@ -173,16 +172,16 @@ brew uninstall python && brew install python
     raise Exception('failed to download client')
 
 
-def bootstrap():
+def bootstrap(client):
     """Bootstrap cipd client installation."""
 
-    client_dir = os.path.dirname(CLIENT)
+    client_dir = os.path.dirname(client)
     if not os.path.isdir(client_dir):
         os.makedirs(client_dir)
 
     print('Bootstrapping cipd client for {}-{}'.format(platform_normalized(),
                                                        arch_normalized()))
-    tmp_path = os.path.join(INSTALL_DIR, '.cipd.tmp')
+    tmp_path = client + '.tmp'
     with open(tmp_path, 'wb') as tmp:
         tmp.write(client_bytes())
 
@@ -194,14 +193,14 @@ def bootstrap():
                         'check that digests file is current')
 
     os.chmod(tmp_path, 0o755)
-    os.rename(tmp_path, CLIENT)
+    os.rename(tmp_path, client)
 
 
-def selfupdate():
+def selfupdate(client):
     """Update cipd client."""
 
     cmd = [
-        CLIENT,
+        client,
         'selfupdate',
         '-version-file', VERSION_FILE,
         '-service-url', 'https://{}'.format(CIPD_HOST),
@@ -209,22 +208,24 @@ def selfupdate():
     subprocess.check_call(cmd)
 
 
-def init():
+def init(install_dir=DEFAULT_INSTALL_DIR):
     """Install/update cipd client."""
 
     os.environ['CIPD_HTTP_USER_AGENT_PREFIX'] = user_agent()
 
+    client = os.path.join(install_dir, 'cipd')
+
     try:
-        if not os.path.isfile(CLIENT):
-            bootstrap()
+        if not os.path.isfile(client):
+            bootstrap(client)
 
         try:
-            selfupdate()
+            selfupdate(client)
         except subprocess.CalledProcessError:
             print('CIPD selfupdate failed. Bootstrapping then retrying...',
                   file=sys.stderr)
-            bootstrap()
-            selfupdate()
+            bootstrap(client)
+            selfupdate(client)
 
     except Exception:
         print('Failed to initialize CIPD. Run '
@@ -232,13 +233,15 @@ def init():
               "selfupdate -version-file '{version_file}'` "
               'to diagnose if this is persistent.'.format(
                   user_agent=user_agent(),
-                  client=CLIENT,
+                  client=client,
                   version_file=VERSION_FILE,
               ),
               file=sys.stderr)
         raise
 
+    return client
+
 
 if __name__ == '__main__':
-    init()
-    subprocess.check_call([CLIENT] + sys.argv[1:])
+    client_exe = init()
+    subprocess.check_call([client_exe] + sys.argv[1:])

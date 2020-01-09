@@ -43,7 +43,8 @@ def parse(argv=None):
         default=os.path.join(GIT_ROOT, '.cipd'),
     )
     parser.add_argument('--ensure-file', dest='ensure_files', action='append')
-    parser.add_argument('--cipd', default=os.path.join(SCRIPT_ROOT, 'cipd.py'))
+    parser.add_argument('--cipd',
+                        default=os.path.join(SCRIPT_ROOT, 'wrapper.py'))
     parser.add_argument('--suppress-shell-commands',
                         action='store_false',
                         dest='print_shell_commands')
@@ -78,25 +79,42 @@ def check_auth(cipd, print_shell_commands):
         return False
 
 
-def update(cipd, ensure_files, root_install_dir, cache_dir,
-           print_shell_commands):
-    """Grab the tools listed in ensure_file."""
+def update(
+    cipd,
+    ensure_files,
+    root_install_dir,
+    cache_dir,
+    print_shell_commands,
+    env_vars=None,
+):
+    """Grab the tools listed in ensure_files."""
 
+    # Set variables used by the wrapper.
+    # TODO(mohrr) remove once transitioned--already configured in new process.
     os.environ['CIPD_PY_INSTALL_DIR'] = root_install_dir
     os.environ['CIPD_CACHE_DIR'] = cache_dir
 
     if not check_auth(cipd, print_shell_commands):
         return
 
+    # TODO(mohrr) use os.makedirs(..., exist_ok=True).
     if not os.path.isdir(root_install_dir):
         os.makedirs(root_install_dir)
 
+    # Save paths for adding to environment (old process).
+    # TODO(mohrr) remove.
     paths = [root_install_dir]
     env = {
         'CIPD_INSTALL_DIR': root_install_dir,
         'CIPD_CACHE_DIR': cache_dir,
     }
 
+    if env_vars:
+        env_vars.prepend('PATH', root_install_dir)
+        env_vars.set('CIPD_INSTALL_DIR', root_install_dir)
+        env_vars.set('CIPD_CACHE_DIR', cache_dir)
+
+    # Run cipd for each ensure file.
     default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
     for ensure_file in ensure_files or glob.glob(default_ensures):
         install_dir = os.path.join(root_install_dir,
@@ -114,20 +132,35 @@ def update(cipd, ensure_files, root_install_dir, cache_dir,
         print(*cmd, file=sys.stderr)
         subprocess.check_call(cmd, stdout=sys.stderr)
 
+        # TODO(mohrr) remove use of paths.
         paths.append(install_dir)
         paths.append(os.path.join(install_dir, 'bin'))
 
+        # Set environment variables so tools can later find things under, for
+        # example, 'share'.
         name = ensure_file
         if os.path.splitext(name)[1] == '.ensure':
             name = os.path.splitext(name)[0]
         name = os.path.basename(name)
         env['{}_CIPD_INSTALL_DIR'.format(name.upper())] = install_dir
 
+        if env_vars:
+            # Some executables get installed at top-level and some get
+            # installed under 'bin'.
+            env_vars.prepend('PATH', install_dir)
+            env_vars.prepend('PATH', os.path.join(install_dir, 'bin'))
+            env_vars.set('{}_CIPD_INSTALL_DIR'.format(name.upper()),
+                         install_dir)
+
+    # TODO(mohrr) remove code from here to end of function.
     for path in paths:
         print('adding {} to path'.format(path), file=sys.stderr)
 
     paths.append('$PATH')
 
+    # This block writes environment variables so Pigweed can use tools in
+    # CIPD. It's being replaced with the env_vars object being passed into
+    # this function.
     if print_shell_commands:
         with tempfile.NamedTemporaryFile(mode='w',
                                          delete=False,

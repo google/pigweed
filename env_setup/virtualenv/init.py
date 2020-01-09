@@ -82,6 +82,7 @@ def init(
     full_envsetup=True,
     requirements=(),
     python=sys.executable,
+    env=None,
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
@@ -139,6 +140,10 @@ def init(
                 *requirement_args)
     pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
                 *package_args)
+
+    if env:
+        env.set('VIRTUAL_ENV', venv_path)
+        env.prepend('PATH', os.path.join(venv_path, 'bin'))
 
 
 def _main():
