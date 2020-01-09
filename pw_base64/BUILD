@@ -12,20 +12,37 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-project(Pigweed)
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
 
-cmake_minimum_required(VERSION 3.14)
+package(default_visibility = ["//visibility:public"])
 
-include(pw_build/pigweed.cmake)
+licenses(["notice"])  # Apache License 2.0
 
-add_subdirectory(pw_base64)
-add_subdirectory(pw_cpu_exception)
-add_subdirectory(pw_cpu_exception_armv7m)
-add_subdirectory(pw_dumb_io)
-add_subdirectory(pw_dumb_io_stdio)
-add_subdirectory(pw_preprocessor)
-add_subdirectory(pw_span)
-add_subdirectory(pw_status)
-add_subdirectory(pw_string)
-add_subdirectory(pw_unit_test)
-add_subdirectory(pw_varint)
+pw_cc_library(
+    name = "pw_base64",
+    srcs = [
+        "base64.cc",
+    ],
+    hdrs = [
+        "public/pw_base64/base64.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_span",
+    ],
+)
+
+pw_cc_test(
+    name = "base64_test",
+    srcs = [
+        "base64_test.c",
+        "base64_test.cc",
+    ],
+    deps = [
+        ":pw_base64",
+    ],
+)

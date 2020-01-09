@@ -12,20 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-project(Pigweed)
-
-cmake_minimum_required(VERSION 3.14)
-
-include(pw_build/pigweed.cmake)
-
-add_subdirectory(pw_base64)
-add_subdirectory(pw_cpu_exception)
-add_subdirectory(pw_cpu_exception_armv7m)
-add_subdirectory(pw_dumb_io)
-add_subdirectory(pw_dumb_io_stdio)
-add_subdirectory(pw_preprocessor)
-add_subdirectory(pw_span)
-add_subdirectory(pw_status)
-add_subdirectory(pw_string)
-add_subdirectory(pw_unit_test)
-add_subdirectory(pw_varint)
+pw_auto_add_simple_module(pw_base64
+  PUBLIC_DEPS
+    pw_span
+)

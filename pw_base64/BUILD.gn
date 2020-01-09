@@ -12,20 +12,40 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-project(Pigweed)
+import("$dir_pw_unit_test/test.gni")
 
-cmake_minimum_required(VERSION 3.14)
+config("default_config") {
+  include_dirs = [ "public" ]
+}
 
-include(pw_build/pigweed.cmake)
+source_set("pw_base64") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public = [
+    "public/pw_base64/base64.h",
+  ]
+  sources = [
+    "base64.cc",
+  ]
+  sources += public
+  public_deps = [
+    "$dir_pw_span",
+  ]
+}
 
-add_subdirectory(pw_base64)
-add_subdirectory(pw_cpu_exception)
-add_subdirectory(pw_cpu_exception_armv7m)
-add_subdirectory(pw_dumb_io)
-add_subdirectory(pw_dumb_io_stdio)
-add_subdirectory(pw_preprocessor)
-add_subdirectory(pw_span)
-add_subdirectory(pw_status)
-add_subdirectory(pw_string)
-add_subdirectory(pw_unit_test)
-add_subdirectory(pw_varint)
+pw_test_group("tests") {
+  tests = [ ":base64_test" ]
+  group_deps = [ "$dir_pw_span:tests" ]
+}
+
+pw_test("base64_test") {
+  deps = [
+    ":pw_base64",
+  ]
+  sources = [
+    "base64_test.c",
+    "base64_test.cc",
+  ]
+}
