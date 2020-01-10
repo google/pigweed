@@ -14,7 +14,7 @@
 """Configure the system logger for the default pw command log format."""
 
 import logging
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import pw_cli.color
 import pw_cli.env
@@ -22,6 +22,29 @@ import pw_cli.plugins
 
 # Log level used for captured output of a subprocess run through pw.
 LOGLEVEL_STDOUT = 21
+
+
+class LogLevel(NamedTuple):
+    level: int
+    color: str
+    ascii: str
+    emoji: str
+
+
+# Shorten all the log levels to 3 characters for column-aligned logs.
+# Color the logs using ANSI codes.
+# pylint: disable=bad-whitespace
+# yapf: disable
+_LOG_LEVELS = (
+    LogLevel(logging.CRITICAL, 'bold_red', 'CRT', '☠️ '),
+    LogLevel(logging.ERROR,    'red',      'ERR', '❌'),
+    LogLevel(logging.WARNING,  'yellow',   'WRN', '⚠️ '),
+    LogLevel(logging.INFO,     'magenta',  'INF', 'ℹ️ '),
+    LogLevel(LOGLEVEL_STDOUT,  'cyan',     'OUT', '💬'),
+    LogLevel(logging.DEBUG,    'blue',     'DBG', '👾'),
+)
+# yapf: enable
+# pylint: enable=bad-whitespace
 
 _LOG = logging.getLogger(__name__)
 _STDERR_HANDLER = logging.StreamHandler()
@@ -68,18 +91,16 @@ def install(level: int = logging.INFO,
                           '%Y%m%d %H:%M:%S'))
     root.addHandler(_STDERR_HANDLER)
 
-    # Shorten all the log levels to 3 characters for column-aligned logs.
-    # Color the logs using ANSI codes.
-    # pylint: disable=bad-whitespace
-    # yapf: disable
-    logging.addLevelName(logging.CRITICAL, colors.bold_red('CRT'))
-    logging.addLevelName(logging.ERROR,    colors.red     ('ERR'))
-    logging.addLevelName(logging.WARNING,  colors.yellow  ('WRN'))
-    logging.addLevelName(logging.INFO,     colors.magenta ('INF'))
-    logging.addLevelName(LOGLEVEL_STDOUT,  colors.cyan    ('OUT'))
-    logging.addLevelName(logging.DEBUG,    colors.blue    ('DBG'))
-    # yapf: enable
-    # pylint: enable=bad-whitespace
+    if env.PW_EMOJI:
+        name_attr = 'emoji'
+        colorize = lambda ll: str
+    else:
+        name_attr = 'ascii'
+        colorize = lambda ll: getattr(colors, ll.color)
+
+    for log_level in _LOG_LEVELS:
+        name = getattr(log_level, name_attr)
+        logging.addLevelName(log_level.level, colorize(log_level)(name))
 
 
 def set_level(log_level: int):
