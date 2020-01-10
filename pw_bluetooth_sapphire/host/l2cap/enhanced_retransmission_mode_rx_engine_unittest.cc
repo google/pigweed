@@ -156,7 +156,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnse
 
   auto ack_frame = *reinterpret_cast<const SimpleReceiverReadyFrame *>(outbound_ack->data());
   EXPECT_EQ(SupervisoryFunction::ReceiverReady, ack_frame.function());
-  EXPECT_EQ(1u, ack_frame.request_seq_num());
+  EXPECT_EQ(1u, ack_frame.receive_seq_num());
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqOnRollover) {
@@ -182,7 +182,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqO
 
   auto ack_frame = *reinterpret_cast<const SimpleReceiverReadyFrame *>(last_ack->data());
   EXPECT_EQ(SupervisoryFunction::ReceiverReady, ack_frame.function());
-  EXPECT_EQ(0u, ack_frame.request_seq_num());
+  EXPECT_EQ(0u, ack_frame.receive_seq_num());
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequenceFrame) {
@@ -238,7 +238,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
 
   auto sframe = *reinterpret_cast<const SimpleSupervisoryFrame *>(last_outbound_frame->data());
   EXPECT_EQ(SupervisoryFunction::ReceiverReady, sframe.function());
-  EXPECT_EQ(1u, sframe.request_seq_num());
+  EXPECT_EQ(1u, sframe.receive_seq_num());
   EXPECT_TRUE(sframe.is_poll_response());
   EXPECT_FALSE(sframe.is_poll_request());
 }

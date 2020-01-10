@@ -288,7 +288,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   SCOPED_TRACE("");
   EXPECT_TRUE(RunLoopFor(zx::sec(2)));
   ASSERT_NO_FATAL_FAILURE(VerifyIsReceiverReadyPollFrame(last_pdu.get()));
-  EXPECT_EQ(1u, last_pdu->As<SimpleSupervisoryFrame>().request_seq_num());
+  EXPECT_EQ(1u, last_pdu->As<SimpleSupervisoryFrame>().receive_seq_num());
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
@@ -1331,7 +1331,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, TransmissionOfPduIncludesRe
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->As<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
@@ -1352,7 +1352,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->As<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kTxWindow, tx_callback,
@@ -1379,7 +1379,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludes
         pdu->As<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
       ++n_info_frames;
-      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().request_seq_num();
+      outbound_req_seq = pdu->As<SimpleInformationFrameHeader>().receive_seq_num();
     }
   };
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kMaxTransmissions, kDefaultTxWindow, tx_callback,

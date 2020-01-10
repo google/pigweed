@@ -115,7 +115,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PD
   AdvanceSeqNum();
 
   SimpleReceiverReadyFrame ack_frame;
-  ack_frame.set_request_seq_num(next_seqnum_);
+  ack_frame.set_receive_seq_num(next_seqnum_);
   send_frame_callback_(
       std::make_unique<DynamicByteBuffer>(BufferView(&ack_frame, sizeof(ack_frame))));
 
@@ -141,7 +141,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
     // RR(P=1)".
     SimpleReceiverReadyFrame poll_response;
     poll_response.set_is_poll_response();
-    poll_response.set_request_seq_num(next_seqnum_);
+    poll_response.set_receive_seq_num(next_seqnum_);
     send_frame_callback_(
         std::make_unique<DynamicByteBuffer>(BufferView(&poll_response, sizeof(poll_response))));
     return nullptr;

@@ -185,7 +185,7 @@ void Engine::StartMonitorTimer() {
 
 void Engine::SendReceiverReadyPoll() {
   SimpleReceiverReadyFrame frame;
-  frame.set_request_seq_num(req_seqnum_);
+  frame.set_receive_seq_num(req_seqnum_);
   frame.set_is_poll_request();
   ++n_receiver_ready_polls_sent_;
   ZX_ASSERT_MSG(max_transmissions_ == 0 || n_receiver_ready_polls_sent_ <= max_transmissions_,
@@ -224,7 +224,7 @@ uint8_t Engine::NumUnackedFrames() {
 
 void Engine::SendPdu(PendingPdu* pdu) {
   ZX_DEBUG_ASSERT(pdu);
-  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_request_seq_num(req_seqnum_);
+  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_receive_seq_num(req_seqnum_);
   pdu->tx_count++;
   StartReceiverReadyPollTimer();
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));

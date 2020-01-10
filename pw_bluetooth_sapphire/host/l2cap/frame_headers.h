@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_INTERNAL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_INTERNAL_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
 
 #include <endian.h>
 #include <zircon/assert.h>
@@ -56,23 +56,23 @@ struct EnhancedControlField {
   }
 
   void set_supervisory_frame() {
-    // See Vol 3, Part A, Table 3.2.
+    // See Vol 3, Part A, Section 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | 0x1);
   }
 
-  uint8_t request_seq_num() const {
-    // See Vol 3, Part A, Table 3.2.
+  uint8_t receive_seq_num() const {
+    // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2, Table 3.2.
     return (le16toh(raw_value) >> 8) & 0b11'1111;
   }
 
-  void set_request_seq_num(uint8_t seq_num) {
+  void set_receive_seq_num(uint8_t seq_num) {
     ZX_DEBUG_ASSERT(seq_num <= kMaxSeqNum);
-    // See Vol 3, Part A, Table 3.2.
+    // "Receive Sequence Number - ReqSeq" Vol 3, Part A, Section 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | (seq_num << 8));
   }
 
   void set_segmentation_status(SegmentationStatus status) {
-    // See Vol 3, Part A, Table 3.2.
+    // "Segmentation and Reassembly - SAR" Vol 3, Part A, Section 3.3.2, Table 3.4.
     raw_value = htole16((le16toh(raw_value) & 0b0011'1111'1111'1111) |
                         (static_cast<uint8_t>(status) << 14));
   }
@@ -176,4 +176,4 @@ struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
 }  // namespace l2cap
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_INTERNAL_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_

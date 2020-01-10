@@ -99,7 +99,7 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, ReadsRequestSequenceNumber) {
   // A, Sec 8.3.
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
     EXPECT_EQ(seq_num,
-              CreateStaticByteBuffer(0, seq_num).As<EnhancedControlField>().request_seq_num());
+              CreateStaticByteBuffer(0, seq_num).As<EnhancedControlField>().receive_seq_num());
   }
 }
 
@@ -118,7 +118,7 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetSupervisoryFrameSetsBitCorr
 TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetRequestSeqNumSetsBitsCorrectly) {
   for (uint8_t seq_num = 0; seq_num < 64; ++seq_num) {
     EnhancedControlField ecf;
-    ecf.set_request_seq_num(seq_num);
+    ecf.set_receive_seq_num(seq_num);
     // See Core Spec, v5, Vol 3, Part A, Table 3.2.
     EXPECT_EQ(CreateStaticByteBuffer(0, seq_num), BufferView(&ecf, sizeof(ecf)));
   }
@@ -187,9 +187,9 @@ TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest,
 
 TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, SetSegmentationStatusPreservesRequestSeqNum) {
   EnhancedControlField ecf;
-  ecf.set_request_seq_num(EnhancedControlField::kMaxSeqNum);
+  ecf.set_receive_seq_num(EnhancedControlField::kMaxSeqNum);
   ecf.set_segmentation_status(SegmentationStatus::Unsegmented);
-  EXPECT_EQ(EnhancedControlField::kMaxSeqNum, ecf.request_seq_num());
+  EXPECT_EQ(EnhancedControlField::kMaxSeqNum, ecf.receive_seq_num());
 }
 
 TEST(L2CAP_FrameHeaders_SimpleInformationFrameHeaderTest, ReadsTxSequenceNumber) {
