@@ -14,9 +14,7 @@ metrics_registry("registry") {
 }
 
 source_set("base") {
-  sources = [
-    "logger.h",
-  ]
+  sources = [ "logger.h" ]
 
   public_deps = [
     ":registry_cc",
@@ -31,9 +29,7 @@ source_set("real") {
     "cobalt_logger.h",
   ]
 
-  deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-  ]
+  deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
 
   public_deps = [
     ":base",
@@ -47,9 +43,7 @@ source_set("real") {
 source_set("tests") {
   testonly = true
 
-  sources = [
-    "cobalt_logger_unittest.cc",
-  ]
+  sources = [ "cobalt_logger_unittest.cc" ]
 
   deps = [
     ":real",

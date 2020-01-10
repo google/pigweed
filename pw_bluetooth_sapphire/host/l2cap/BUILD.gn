@@ -7,9 +7,7 @@ import("//build/fuzzing/fuzzer.gni")
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 source_set("definitions") {
-  sources = [
-    "l2cap.h",
-  ]
+  sources = [ "l2cap.h" ]
 
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/hci:definitions",
@@ -136,9 +134,7 @@ source_set("tests") {
 }
 
 fuzzer("basic_mode_rx_engine_fuzzer") {
-  sources = [
-    "basic_mode_rx_engine_fuzztest.cc",
-  ]
+  sources = [ "basic_mode_rx_engine_fuzztest.cc" ]
   deps = [
     ":l2cap",
     ":testing",
@@ -146,9 +142,7 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
 }
 
 fuzzer("enhanced_retransmission_mode_rx_engine_fuzzer") {
-  sources = [
-    "enhanced_retransmission_mode_rx_engine_fuzztest.cc",
-  ]
+  sources = [ "enhanced_retransmission_mode_rx_engine_fuzztest.cc" ]
   deps = [
     ":l2cap",
     ":testing",

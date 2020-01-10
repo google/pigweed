@@ -18,9 +18,7 @@ source_set("definitions") {
     "util.h",
   ]
 
-  public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-  ]
+  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
 }
 
 static_library("hci") {
@@ -88,13 +86,9 @@ source_set("testing") {
     "fake_local_address_delegate.h",
   ]
 
-  public_deps = [
-    ":hci",
-  ]
+  public_deps = [ ":hci" ]
 
-  deps = [
-    "//src/lib/fxl",
-  ]
+  deps = [ "//src/lib/fxl" ]
 }
 
 source_set("tests") {

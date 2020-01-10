@@ -10,9 +10,7 @@ source_set("definitions") {
     "gatt_defs.h",
   ]
 
-  public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/att:definitions",
-  ]
+  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/att:definitions" ]
 }
 
 static_library("gatt") {

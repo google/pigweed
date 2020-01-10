@@ -9,13 +9,9 @@ import("//build/package.gni")
 driver_module("driver") {
   output_name = "bt-host"
 
-  sources = [
-    "driver.cc",
-  ]
+  sources = [ "driver.cc" ]
 
-  deps = [
-    ":sources",
-  ]
+  deps = [ ":sources" ]
 
   configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
   configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
@@ -97,9 +93,7 @@ group("stack") {
 package("bt-host") {
   deprecated_system_image = true
 
-  deps = [
-    ":driver",
-  ]
+  deps = [ ":driver" ]
 
   drivers = [
     {

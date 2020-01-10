@@ -13,9 +13,7 @@ source_set("testing") {
     "test_packets.h",
   ]
 
-  deps = [
-    "//third_party/googletest:gtest",
-  ]
+  deps = [ "//third_party/googletest:gtest" ]
 
   public_deps = [
     ":fake_controller",
@@ -59,9 +57,7 @@ source_set("fake_controller") {
 source_set("gtest_main") {
   testonly = true
 
-  sources = [
-    "run_all_unittests.cc",
-  ]
+  sources = [ "run_all_unittests.cc" ]
 
   deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
@@ -70,7 +66,5 @@ source_set("gtest_main") {
     "//src/lib/fxl/test:test_settings",
   ]
 
-  public_deps = [
-    "//third_party/googletest:gtest",
-  ]
+  public_deps = [ "//third_party/googletest:gtest" ]
 }
