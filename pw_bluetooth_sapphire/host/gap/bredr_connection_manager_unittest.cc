@@ -37,6 +37,11 @@ const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 const DeviceAddress kTestDevAddrLe(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kTestDevAddr2(DeviceAddress::Type::kBREDR, {3});
 constexpr uint32_t kPasskey = 123456;
+const hci::LinkKey kRawKey({0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e,
+                            0xca, 0x1e, 0xca, 0xfe},
+                           0, 0);
+const sm::LTK kLinkKey(sm::SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination192),
+                       kRawKey);
 
 // A default size for PDUs when generating responses for testing.
 const uint16_t PDU_MAX = 0xFFF;
@@ -293,6 +298,13 @@ const auto kAuthenticationComplete = CreateStaticByteBuffer(hci::kAuthentication
                                                             0xAA, 0x0B  // connection_handle
 );
 
+const auto kAuthenticationCompleteFailed =
+    CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
+                           0x03,                                 // parameter_total_size (3 bytes)
+                           hci::StatusCode::kPairingNotAllowed,  // status
+                           0xAA, 0x0B                            // connection_handle
+    );
+
 const auto kLinkKeyRequest = CreateStaticByteBuffer(hci::kLinkKeyRequestEventCode,
                                                     0x06,  // parameter_total_size (6 bytes)
                                                     TEST_DEV_ADDR_BYTES_LE  // peer address
@@ -342,6 +354,19 @@ const auto kIoCapabilityRequestReplyRsp = CreateStaticByteBuffer(
     TEST_DEV_ADDR_BYTES_LE  // peer address
 );
 
+const auto kIoCapabilityRequestNegativeReply =
+    CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestNegativeReply),
+                           UpperBits(hci::kIOCapabilityRequestNegativeReply),
+                           0x07,                    // parameter_total_size (7 bytes)
+                           TEST_DEV_ADDR_BYTES_LE,  // peer address
+                           hci::StatusCode::kPairingNotAllowed);
+
+const auto kIoCapabilityRequestNegativeReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestNegativeReply),
+    UpperBits(hci::kIOCapabilityRequestNegativeReply),
+    hci::kSuccess,            // status
+    TEST_DEV_ADDR_BYTES_LE);  // peer address
+
 auto MakeUserConfirmationRequest(uint32_t passkey) {
   const auto passkey_bytes = ToBytes(kPasskey);
   return CreateStaticByteBuffer(hci::kUserConfirmationRequestEventCode,
@@ -361,10 +386,27 @@ const auto kUserConfirmationRequestReply = CreateStaticByteBuffer(
 const auto kUserConfirmationRequestReplyRsp =
     COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestReply);
 
+const auto kUserConfirmationRequestNegativeReply =
+    CreateStaticByteBuffer(LowerBits(hci::kUserConfirmationRequestNegativeReply),
+                           UpperBits(hci::kUserConfirmationRequestNegativeReply),
+                           0x06,                   // parameter_total_size (6 bytes)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kUserConfirmationRequestNegativeReplyRsp =
+    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestNegativeReply);
+
 const auto kSimplePairingCompleteSuccess =
     CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
                            0x07,                   // parameter_total_size (7 byte payload)
                            0x00,                   // status (success)
+                           TEST_DEV_ADDR_BYTES_LE  // peer address
+    );
+
+const auto kSimplePairingCompleteError =
+    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
+                           0x07,                   // parameter_total_size (7 byte payload)
+                           0x05,                   // status (authentication failure)
                            TEST_DEV_ADDR_BYTES_LE  // peer address
     );
 
@@ -376,6 +418,38 @@ const auto kLinkKeyNotification =
                            0xca, 0x1e, 0xca, 0xfe,  // link key
                            0x05  // key type (Authenticated Combination Key generated from P-192)
     );
+
+const auto kLinkKeyRequestReply = CreateStaticByteBuffer(
+    LowerBits(hci::kLinkKeyRequestReply), UpperBits(hci::kLinkKeyRequestReply),
+    0x16,                    // parameter_total_size (22 bytes)
+    TEST_DEV_ADDR_BYTES_LE,  // peer address
+    0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca,
+    0xfe  // link key
+);
+
+const auto kLinkKeyRequestReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kLinkKeyRequestReply),
+    UpperBits(hci::kLinkKeyRequestReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+const auto kLinkKeyNotificationChanged =
+    CreateStaticByteBuffer(hci::kLinkKeyNotificationEventCode,
+                           0x17,                    // parameter_total_size (17 bytes)
+                           TEST_DEV_ADDR_BYTES_LE,  // peer address
+                           0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb,
+                           0x1d, 0x0d, 0x0a, 0xd5,  // link key
+                           0x06                     // key type (Changed Combination Key)
+    );
+
+const auto kLinkKeyRequestReplyChanged = CreateStaticByteBuffer(
+    LowerBits(hci::kLinkKeyRequestReply), UpperBits(hci::kLinkKeyRequestReply),
+    0x16,                    // parameter_total_size (22 bytes)
+    TEST_DEV_ADDR_BYTES_LE,  // peer address
+    0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
+    0xd5  // link key
+);
 
 const auto kSetConnectionEncryption = CreateStaticByteBuffer(
     LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
@@ -410,8 +484,38 @@ const auto kReadEncryptionKeySizeRsp = CreateStaticByteBuffer(
     0x10            // encryption key size: 16
 );
 
+auto MakeUserPasskeyRequestReply(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(LowerBits(hci::kUserPasskeyRequestReply),
+                                UpperBits(hci::kUserPasskeyRequestReply),
+                                0x0A,                    // parameter_total_size (10 bytes)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
+const auto kUserPasskeyRequestReplyRsp = CreateStaticByteBuffer(
+    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kUserPasskeyRequestReply),
+    UpperBits(hci::kUserPasskeyRequestReply),
+    hci::kSuccess,          // status
+    TEST_DEV_ADDR_BYTES_LE  // peer address
+);
+
+auto MakeUserPasskeyNotification(uint32_t passkey) {
+  const auto passkey_bytes = ToBytes(kPasskey);
+  return CreateStaticByteBuffer(hci::kUserPasskeyNotificationEventCode,
+                                0x0A,                    // parameter_total_size (10 byte payload)
+                                TEST_DEV_ADDR_BYTES_LE,  // peer address
+                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
+                                0x00  // numeric value
+  );
+}
+
 const hci::DataBufferInfo kBrEdrBufferInfo(1024, 1);
 const hci::DataBufferInfo kLeBufferInfo(1024, 1);
+
+constexpr l2cap::ChannelParameters kChannelParams;
 
 class BrEdrConnectionManagerTest : public TestingBase {
  public:
@@ -790,20 +894,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
   EXPECT_EQ(5, transaction_count());
 }
 
-const auto kIoCapabilityRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci::kIOCapabilityRequestNegativeReply),
-                           UpperBits(hci::kIOCapabilityRequestNegativeReply),
-                           0x07,                    // parameter_total_size (7 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           hci::StatusCode::kPairingNotAllowed);
-
-const auto kIoCapabilityRequestNegativeReplyRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kIOCapabilityRequestNegativeReply),
-    UpperBits(hci::kIOCapabilityRequestNegativeReply),
-    hci::kSuccess,          // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
 // Test: replies negative to IO Capability Requests before PairingDelegate is set
 TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPairingDelegate) {
   test_device()->QueueCommandTransaction(kIoCapabilityRequestNegativeReply,
@@ -859,23 +949,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
 
   QueueDisconnection(kConnectionHandle);
 }
-
-const auto kUserConfirmationRequestNegativeReply =
-    CreateStaticByteBuffer(LowerBits(hci::kUserConfirmationRequestNegativeReply),
-                           UpperBits(hci::kUserConfirmationRequestNegativeReply),
-                           0x06,                   // parameter_total_size (6 bytes)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
-
-const auto kUserConfirmationRequestNegativeReplyRsp =
-    COMMAND_COMPLETE_RSP(hci::kUserConfirmationRequestNegativeReply);
-
-const auto kSimplePairingCompleteError =
-    CreateStaticByteBuffer(hci::kSimplePairingCompleteEventCode,
-                           0x07,                   // parameter_total_size (7 byte payload)
-                           0x05,                   // status (authentication failure)
-                           TEST_DEV_ADDR_BYTES_LE  // peer address
-    );
 
 // Test: Responds to Secure Simple Pairing with user rejection of Numeric Comparison association
 TEST_F(GAP_BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRejects) {
@@ -1022,27 +1095,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   QueueDisconnection(kConnectionHandle);
 }
 
-const hci::LinkKey kRawKey({0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e,
-                            0xca, 0x1e, 0xca, 0xfe},
-                           0, 0);
-const sm::LTK kLinkKey(sm::SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination192),
-                       kRawKey);
-
-const auto kLinkKeyRequestReply = CreateStaticByteBuffer(
-    LowerBits(hci::kLinkKeyRequestReply), UpperBits(hci::kLinkKeyRequestReply),
-    0x16,                    // parameter_total_size (22 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d, 0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca,
-    0xfe  // link key
-);
-
-const auto kLinkKeyRequestReplyRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kLinkKeyRequestReply),
-    UpperBits(hci::kLinkKeyRequestReply),
-    hci::kSuccess,          // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   ASSERT_TRUE(
@@ -1070,51 +1122,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
   QueueDisconnection(kConnectionHandle);
-}
-
-const auto kLinkKeyNotificationChanged =
-    CreateStaticByteBuffer(hci::kLinkKeyNotificationEventCode,
-                           0x17,                    // parameter_total_size (17 bytes)
-                           TEST_DEV_ADDR_BYTES_LE,  // peer address
-                           0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb,
-                           0x1d, 0x0d, 0x0a, 0xd5,  // link key
-                           0x06                     // key type (Changed Combination Key)
-    );
-
-const auto kLinkKeyRequestReplyChanged = CreateStaticByteBuffer(
-    LowerBits(hci::kLinkKeyRequestReply), UpperBits(hci::kLinkKeyRequestReply),
-    0x16,                    // parameter_total_size (22 bytes)
-    TEST_DEV_ADDR_BYTES_LE,  // peer address
-    0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15, 0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
-    0xd5  // link key
-);
-
-auto MakeUserPasskeyRequestReply(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(LowerBits(hci::kUserPasskeyRequestReply),
-                                UpperBits(hci::kUserPasskeyRequestReply),
-                                0x0A,                    // parameter_total_size (10 bytes)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
-  );
-}
-
-const auto kUserPasskeyRequestReplyRsp = CreateStaticByteBuffer(
-    hci::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci::kUserPasskeyRequestReply),
-    UpperBits(hci::kUserPasskeyRequestReply),
-    hci::kSuccess,          // status
-    TEST_DEV_ADDR_BYTES_LE  // peer address
-);
-
-auto MakeUserPasskeyNotification(uint32_t passkey) {
-  const auto passkey_bytes = ToBytes(kPasskey);
-  return CreateStaticByteBuffer(hci::kUserPasskeyNotificationEventCode,
-                                0x0A,                    // parameter_total_size (10 byte payload)
-                                TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                passkey_bytes[0], passkey_bytes[1], passkey_bytes[2],
-                                0x00  // numeric value
-  );
 }
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
@@ -1458,7 +1465,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   });
 
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1567,7 +1575,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
       CommandTransaction(testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle),
                          {&kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet}));
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1602,7 +1611,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
       kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
   // We don't send any interrogation packets, because there is none to be done.
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -1622,13 +1632,6 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   QueueDisconnection(kConnectionHandle);
 }
-
-const auto kAuthenticationCompleteFailed =
-    CreateStaticByteBuffer(hci::kAuthenticationCompleteEventCode,
-                           0x03,                                 // parameter_total_size (3 bytes)
-                           hci::StatusCode::kPairingNotAllowed,  // status
-                           0xAA, 0x0B                            // connection_handle
-    );
 
 // Test: when opening an L2CAP channel on an unbonded peer, indicate that we have no link key then
 // pair, authenticate, bond, and encrypt the link, then try to open the channel.
@@ -1684,7 +1687,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
       kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
   test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
                               async_get_default_dispatcher());
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -1695,7 +1698,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
+                                            kChannelParams);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1704,10 +1708,11 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   connected_socket.reset();
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
+                                            kChannelParams);
 
   // A second connection request should not require another authentication.
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
                               async_get_default_dispatcher());
 
   RunLoopUntilIdle();
@@ -1751,7 +1756,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   test_device()->QueueCommandTransaction(
       CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
                               async_get_default_dispatcher());
 
   RunLoopUntilIdle();
@@ -1778,7 +1783,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
+                                            kChannelParams);
 
   RunLoopUntilIdle();
 
@@ -1816,7 +1822,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   test_device()->QueueCommandTransaction(
       CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
                               async_get_default_dispatcher());
 
   RunLoopUntilIdle();
@@ -1895,7 +1901,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
       kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
   test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_cb,
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
                               async_get_default_dispatcher());
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -1906,7 +1912,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
+                                            kChannelParams);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1981,7 +1988,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
     EXPECT_FALSE(s);
     socket_cb_called = true;
   };
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, socket_fails_cb, dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_fails_cb,
+                              dispatcher());
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(socket_cb_called);
@@ -2135,7 +2143,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   });
 
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -2547,7 +2556,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
 
   QueueSuccessfulIncomingConn();
   data_domain()->set_simulate_open_channel_failure(true);
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, kLocalCId, kRemoteCId);
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, kLocalCId, kRemoteCId,
+                                            kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -2749,6 +2759,43 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PairTwice) {
 
   QueueDisconnection(kConnectionHandle);
 }
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannelParameters) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
+  l2cap::ChannelParameters params;
+  params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  params.max_sdu_size = l2cap::kMinACLMTU;
+
+  QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->identifier(), connmgr()->GetPeerId(kConnectionHandle));
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) { confirm_cb(true); });
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  QueueSuccessfulPairing();
+  RunLoopUntilIdle();
+
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM, kLocalId, 0x41, params);
+
+  auto sock_cb = [](auto sock) { EXPECT_TRUE(sock); };
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM, params, sock_cb, dispatcher());
+
+  RunLoopUntilIdle();
+  QueueDisconnection(kConnectionHandle);
+}
+
 // TODO(BT-819) Connecting a peer that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP

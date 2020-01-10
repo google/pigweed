@@ -6,6 +6,7 @@
 
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
 using fuchsia::bluetooth::ErrorCode;
@@ -420,8 +421,11 @@ void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
     cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(channel));
   };
   ZX_DEBUG_ASSERT(adapter());
+
+  // TODO(872): translate FIDL channel parameters to bt::l2cap::ChannelParameters and use here
+  const bt::l2cap::ChannelParameters params;
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      *dev_id, channel, std::move(connected_cb), async_get_default_dispatcher());
+      *dev_id, channel, params, std::move(connected_cb), async_get_default_dispatcher());
   if (!connecting) {
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND,
                                         "Remote device not found - is it connected?"),

@@ -6,6 +6,7 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
+#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -35,10 +36,15 @@ void FakeDomain::TriggerLEConnectionParameterUpdate(
 }
 
 void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                            l2cap::ChannelId id, l2cap::ChannelId remote_id) {
+                                            l2cap::ChannelId id, l2cap::ChannelId remote_id,
+                                            l2cap::ChannelParameters params) {
   ZX_DEBUG_ASSERT(initialized_);
   LinkData& link_data = GetLinkData(handle);
-  link_data.expected_outbound_conns[psm].emplace(id, remote_id);
+  ChannelData chan_data;
+  chan_data.local_id = id;
+  chan_data.remote_id = remote_id;
+  chan_data.params = params;
+  link_data.expected_outbound_conns[psm].push(chan_data);
 }
 
 void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
@@ -121,12 +127,18 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
   ZX_DEBUG_ASSERT_MSG(psm_it != link_data.expected_outbound_conns.end() && !psm_it->second.empty(),
                       "Unexpected outgoing L2CAP connection (PSM %#.4x)", psm);
 
-  auto [id, remote_id] = psm_it->second.front();
+  auto chan_data = psm_it->second.front();
   psm_it->second.pop();
 
   auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
   auto rx_mtu = params.max_sdu_size.value_or(l2cap::kMaxMTU);
-  auto chan = OpenFakeChannel(&link_data, id, remote_id, mode, l2cap::kDefaultMTU, rx_mtu);
+
+  ZX_ASSERT_MSG(chan_data.params == params,
+                "Didn't receive expected L2CAP channel parameters (expected: %s, found: %s)",
+                bt_str(chan_data.params), bt_str(params));
+
+  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, mode,
+                              l2cap::kDefaultMTU, rx_mtu);
 
   async::PostTask(dispatcher,
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });

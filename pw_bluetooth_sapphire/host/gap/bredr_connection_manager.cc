@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt {
@@ -92,7 +93,8 @@ void BrEdrConnection::Start(data::Domain& domain) {
   }
 }
 
-void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallback cb,
+void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
+                                       data::Domain::SocketCallback cb,
                                        async_dispatcher_t* dispatcher) {
   if (!domain_.has_value()) {
     // Connection is not yet ready for L2CAP; return a ZX_HANDLE_INVALID socket.
@@ -104,8 +106,7 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallb
   }
 
   bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
-  domain_->get().OpenL2capChannel(link().handle(), psm, l2cap::ChannelParameters(), std::move(cb),
-                                  dispatcher);
+  domain_->get().OpenL2capChannel(link().handle(), psm, params, std::move(cb), dispatcher);
 }
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
@@ -259,7 +260,8 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, hci::StatusCallback callback) 
   }
 }
 
-bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, SocketCallback cb,
+bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+                                              l2cap::ChannelParameters params, SocketCallback cb,
                                               async_dispatcher_t* dispatcher) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
@@ -271,7 +273,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, So
   if (!connection->link().ltk()) {
     // Connection doesn't have a key, initiate pairing.
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto retry_cb = [peer_id, psm, cb = std::move(cb), dispatcher, self](
+    auto retry_cb = [peer_id, psm, params, cb = std::move(cb), dispatcher, self](
                         auto, hci::Status status) mutable {
       bt_log(SPEW, "gap-bredr", "got pairing status %s, %sretrying socket to %s", bt_str(status),
              status ? "" : "not ", bt_str(peer_id));
@@ -282,7 +284,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, So
       }
       if (self) {
         // We should now have an LTK so try again.
-        self->OpenL2capChannel(peer_id, psm, std::move(cb), dispatcher);
+        self->OpenL2capChannel(peer_id, psm, params, std::move(cb), dispatcher);
       }
     };
 
@@ -293,7 +295,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, So
   }
 
   connection->OpenL2capChannel(
-      psm, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
+      psm, params, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
   return true;
 }
 

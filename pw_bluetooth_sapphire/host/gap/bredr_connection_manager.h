@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -54,10 +55,10 @@ class BrEdrConnection final {
   // will be signaled with |HostError::kNotSupported| (to indicate interrogation error).
   void Start(data::Domain& domain);
 
-  // If |Start| has been called, opens an L2CAP channel on the Domain provided. Otherwise, calls
-  // |cb| with a |ZX_HANDLE_INVALID| socket on |dispatcher|.
-  void OpenL2capChannel(l2cap::PSM psm, data::Domain::SocketCallback cb,
-                        async_dispatcher_t* dispatcher);
+  // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
+  // the Domain provided. Otherwise, calls |cb| with a |ZX_HANDLE_INVALID| socket on |dispatcher|.
+  void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
+                        data::Domain::SocketCallback cb, async_dispatcher_t* dispatcher);
 
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
@@ -108,11 +109,11 @@ class BrEdrConnectionManager final {
   // Returns kInvalidPeerId if no such peer exists.
   PeerId GetPeerId(hci::ConnectionHandle handle) const;
 
-  // Opens a new L2CAP channel to service |psm| on |peer_id|. Returns false if
-  // the peer is not already connected.
+  // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
+  // |params|. Returns false if the peer is not already connected.
   using SocketCallback = fit::function<void(zx::socket)>;
-  bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, SocketCallback cb,
-                        async_dispatcher_t* dispatcher);
+  bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, l2cap::ChannelParameters params,
+                        SocketCallback cb, async_dispatcher_t* dispatcher);
 
   // Add a service search to be performed on new connected remote peers.
   // This search will happen on every peer connection.

@@ -40,7 +40,7 @@ class FakeDomain final : public Domain {
   // will assert.
   // Multiple expectations for the same PSM should be queued in FIFO order.
   void ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm, l2cap::ChannelId id,
-                                  l2cap::ChannelId remote_id);
+                                  l2cap::ChannelId remote_id, l2cap::ChannelParameters params);
 
   // Triggers the creation of an inbound dynamic channel on the given link. The
   // channels created will be provided to handlers passed to RegisterService.
@@ -92,9 +92,11 @@ class FakeDomain final : public Domain {
 
   // TODO(armansito): Consider moving the following logic into an internal fake
   // that is L2CAP-specific.
-  // Each one of these pairs is a local id and remote id of the channel that
-  // will be returned.
-  using ChannelIdPair = std::pair<l2cap::ChannelId, l2cap::ChannelId>;
+  struct ChannelData {
+    l2cap::ChannelId local_id;
+    l2cap::ChannelId remote_id;
+    l2cap::ChannelParameters params;
+  };
   struct LinkData {
     // Expectations on links can be created before they are connected.
     bool connected;
@@ -106,7 +108,7 @@ class FakeDomain final : public Domain {
 
     // Dual-mode callbacks
     l2cap::LinkErrorCallback link_error_cb;
-    std::unordered_map<l2cap::PSM, std::queue<ChannelIdPair>> expected_outbound_conns;
+    std::unordered_map<l2cap::PSM, std::queue<ChannelData>> expected_outbound_conns;
 
     // LE-only callbacks
     l2cap::LEConnectionParameterUpdateCallback le_conn_param_cb;
