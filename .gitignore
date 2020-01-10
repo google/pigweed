@@ -41,8 +41,7 @@ __pycache__/
 *_LOCAL_*.txt
 *_REMOTE_*.txt
 
-# CIPD
-.cipd
-
-# Setup
+# Env Setup
 env_setup/.setup.sh
+.cipd
+.cargo

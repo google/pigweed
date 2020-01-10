@@ -34,6 +34,7 @@ import sys
 import cipd.update
 import cipd.wrapper
 import host_build.init
+import cargo.init
 import virtualenv.init
 
 
@@ -145,6 +146,7 @@ class EnvSetup(object):
             ('cipd', self.cipd),
             ('python', self.virtualenv),
             ('host_tools', self.host_build),
+            ('cargo', self.cargo),
         ]
 
         for name, step in steps:
@@ -189,6 +191,9 @@ class EnvSetup(object):
 
     def host_build(self):
         host_build.init.init(pw_root=self._pw_root, env=self._env)
+
+    def cargo(self):
+        cargo.init.init(pw_root=self._pw_root, env=self._env)
 
 
 def parse(argv=None):
