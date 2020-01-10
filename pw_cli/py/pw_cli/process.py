@@ -53,7 +53,7 @@ async def run_async(*args: str, silent: bool = False) -> int:
 
             _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[%s] %s',
                      _COLOR.bold_white(process.pid),
-                     line.decode().rstrip())
+                     line.decode(errors='replace').rstrip())
 
     status = await process.wait()
     if status == 0:
