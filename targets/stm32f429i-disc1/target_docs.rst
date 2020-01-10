@@ -32,12 +32,12 @@ or
 
 Testing
 =======
-The default Pigweed build target will build all of the pigweed module unit
-tests. These tests can be run on-device in a few different ways.
+The default Pigweed build target will build all Pigweed modules' unit tests.
+These tests can be run on-device in a few different ways.
 
 Run a unit test
 ---------------
-Test if using ``out/disco`` as your build directory, tests will be located in
+If using ``out/disco`` as a build directory, tests will be located in
 ``out/disco/obj/[module name]/[test_name].elf``. To run these on device, the
 stm32f429i-disc1 target provides a helper script that flashes the test to a
 device and then runs it.
@@ -52,40 +52,41 @@ device and then runs it.
 Run multiple tests
 ------------------
 Running all tests one-by-one is rather tedious. To make running multiple
-tests easier, use Pigweed's ``pw test`` command and pass it your build directory
-and the name of the test runner. By default, ``pw test`` will run all tests,
-but you can restrict it to specific groups using the ``--group`` flag.
-Individual test binaries can be specified with the ``--test`` flag as well.
+tests easier, use Pigweed's ``pw test`` command and pass it a path to the build
+directory and the name of the test runner. By default, ``pw test`` will run all
+tests, but it can be restricted it to specific ``pw_test_group`` targets using
+the ``--group`` argument. Alternatively, individual test binaries can be
+specified with the ``--test`` option.
 
 .. code:: sh
 
-  # Setup pigweed environment.
+  # Setup Pigweed environment.
   $ . env_setup/setup.sh
   # Run test.
   $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
 
-Run affected tests (EXPERIMENTAL)
----------------------------------
+Run tests affected by code changes
+----------------------------------
 When writing code that will impact multiple modules, it's helpful to only run
-all tests that are affected by a given code change. Thanks to the GN/ninja
-build, this is possible! This is done by using a pw_target_runner_server that
-ninja can send the tests to as it rebuilds affected targets.
+all tests that are affected by a given code change. Thanks to the GN/Ninja
+build, this is possible! This is done by using a ``pw_target_runner_server``
+that Ninja can send the tests to as it rebuilds affected targets.
 
-Additionally, this method enables distributed testing. If you connect multiple
-devices, the tests will be run across the attached devices to further speed up
+Additionally, this method enables distributed testing. If multiple devices are
+connected, the tests will be run across all attached devices to further speed up
 testing.
 
 
 .. warning::
 
-  This requires pw_target_runner_server and pw_target_runner_client have been
-  built and are in your PATH. By default, you can find these binaries in the
-  `host_tools` directory of a host build (e.g. out/host/host_tools).
+  This requires that ``pw_target_runner_server`` and ``pw_target_runner_client``
+  have been built and are in your PATH. By default, you can find these binaries
+  in the `host_tools` directory of a host build (e.g. ``out/host/host_tools``).
 
 Step 1: Start test server
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-To allow ninja to properly serialize tests to run on an arbitrary number of
-devices, ninja will send test requests to a server running in the background.
+To allow Ninja to properly serialize tests to run on an arbitrary number of
+devices, Ninja will send test requests to a server running in the background.
 The first step is to launch this server. By default, the script will attempt
 to automatically detect all attached STM32f429I-DISC1 boards and use them for
 testing. To override this behavior, provide a custom server configuration file
@@ -102,8 +103,9 @@ with ``--server-config``.
 
 Step 2: Configure GN
 ^^^^^^^^^^^^^^^^^^^^
-By default, this hardware target has incremental testing via pw_target_runner
-disabled. Enabling this build arg tells GN to send requests to
+By default, this hardware target has incremental testing via
+``pw_target_runner`` disabled. Enabling the ``pw_use_test_server`` build arg
+tells GN to send requests to a running ``stm32f429i_disc1_test_server``.
 
 .. code:: sh
 

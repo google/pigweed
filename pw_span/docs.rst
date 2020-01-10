@@ -14,7 +14,7 @@ interface to exactly match ``std::span``.
 
 ``pw::span`` is a convenient abstraction that wraps a pointer and a size.
 ``pw::span`` is especially useful in APIs. Spans support implicit conversions
-from C arrays, ``std::array``, or any STL-style constainer, such as
+from C arrays, ``std::array``, or any STL-style container, such as
 ``std::string_view``.
 
 Functions operating on an array of bytes typically accept pointer and size

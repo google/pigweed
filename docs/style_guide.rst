@@ -18,7 +18,7 @@ https://google.github.io/styleguide/cppguide.html. The Google C++ Style Guide
 applies to Pigweed except as described in this document.
 
 The Pigweed style guide only applies to Pigweed itself. It does not apply to
-projects that use Pigweed or to the third party code included with Pigweed.
+projects that use Pigweed or to the third-party code included with Pigweed.
 Non-Pigweed code is free to use features restricted by Pigweed, such as dynamic
 memory allocation and the entirety of the C++ Standard Library.
 
@@ -44,7 +44,7 @@ disabled for the affected lines by adding ``// clang-format off``.
 .. code-block:: cpp
 
   // clang-format off
-  constexpr int kMyMatrix = {
+  constexpr int kMyMatrix[] = {
       100,  23,   0,
         0, 542,  38,
         1,   2, 201,
@@ -74,7 +74,7 @@ Much of the C++ Standard Library is not a good fit for embedded software. Many
 of the classes and functions were not designed with the RAM, flash, and
 performance constraints of a microcontroller in mind. For example, simply
 adding the line ``#include <iostream>`` can increase the binary size by 150 KB!
-This is larger than many microcontroller's entire internal storage.
+This is larger than many microcontrollers' entire internal storage.
 
 However, with appropriate caution, a limited set of standard C++ libraries can
 be used to great effect. Developers can leverage familiar, well-tested
@@ -174,7 +174,7 @@ comments should only be used for inline comments.
 
 Indent code in comments with two additional spaces, making a total of three
 spaces after the ``//``. All code blocks must begin and end with an empty
-commment line, even if the blank comment line is the last line in the block.
+comment line, even if the blank comment line is the last line in the block.
 
 .. code-block:: cpp
 
@@ -400,7 +400,7 @@ to ensure the macros are hard to use wrong.
 Stand-alone statement macros
 ----------------------------
 Macros that are standalone statements must require the caller to terminate the
-macro invacation with a semicolon. For example, the following does *not* conform
+macro invocation with a semicolon. For example, the following does *not* conform
 to Pigweed's macro style:
 
 .. code-block:: cpp
@@ -410,7 +410,7 @@ to Pigweed's macro style:
     CallSomeFunction(mj);
 
   // BAD! Compiles without error; semicolon is missing.
-  PW_LOG_IF_MAD("foo")
+  PW_LOG_IF_BAD("foo")
 
 Here's how to do this instead:
 
@@ -421,7 +421,7 @@ Here's how to do this instead:
     CallSomeFunction(mj)
 
   // GOOD; fails to compile due to lacking semicolon.
-  PW_LOG_IF_MAD("foo")
+  PW_LOG_IF_BAD("foo")
 
 For macros in function scope that do not already require a semicolon, the
 contents can be placed in a ``do { ... } while (0)`` loop.

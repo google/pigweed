@@ -24,6 +24,9 @@ Protobuf code generation is currently supported for the following languages:
 |          |        | Support for other libraries such as ``nanopb`` is        |
 |          |        | planned.                                                 |
 +----------+--------+----------------------------------------------------------+
+| Go       | ``go`` | Compiles using the standard Go protobuf plugin with gRPC |
+|          |        | service support.                                         |
++----------+--------+----------------------------------------------------------+
 
 The build variable ``pw_protobuf_langs`` tells the module the languages for
 which it should compile code. It is defined as a list of language codes.

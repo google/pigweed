@@ -4,9 +4,9 @@
 
 .. highlight:: sh
 
----------
-Tokenizer
----------
+------------
+pw_tokenizer
+------------
 The tokenizer module provides facilities for converting strings to binary
 tokens. String literals are replaced with integer tokens in the firmware image,
 which can be decoded off-device to restore the original string. Strings may be

@@ -19,9 +19,9 @@ The Pigweed module structure is designed to keep as much code as possible for a
 particular slice of functionality in one place. That means including the code
 from multiple languages, as well as all the related documentation and tests.
 
-Additionally, the structure is desigend to limit the number of places a file
+Additionally, the structure is designed to limit the number of places a file
 could go, so that when reading callsites it is obvious where a header is from.
-That is where the duplicated ``<module>`` occurences in file paths comes from.
+That is where the duplicated ``<module>`` occurrences in file paths comes from.
 
 tl;dr example module structure
 ------------------------------
@@ -105,17 +105,17 @@ Module name
 -----------
 Pigweed upstream modules are always named with a prefix ``pw_`` to enforce
 namespacing. Projects using Pigweed that wish to make their own modules can use
-whatever name they like, but we suggest picking a short prefix to namespase
+whatever name they like, but we suggest picking a short prefix to namespace
 your product (e.g. for an Internet of Toast project, perhaps the prefix could
-be ``it_``.
+be ``it_``).
 
 C++ file and directory locations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Public headers - ``public/<module>``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Thes are headers that must be exposed due to C++ limitations (i.e. are
-included from the public interface, but are not intended for public use)
+These are headers that must be exposed due to C++ limitations (i.e. are
+included from the public interface, but are not intended for public use).
 
 **Public headers** should take the form:
 
