@@ -22,6 +22,7 @@ import pathlib
 import subprocess
 import sys
 import time
+from typing import NamedTuple
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -29,6 +30,7 @@ from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
 import pw_cli.color
+import pw_cli.env
 import pw_cli.plugins
 
 _COLOR = pw_cli.color.colors()
@@ -83,14 +85,26 @@ def _die(*args):
 # pylint: disable=logging-format-interpolation
 
 
+class WatchCharset(NamedTuple):
+    slug_ok: str
+    slug_fail: str
+
+
+_ASCII_CHARSET = WatchCharset(_COLOR.green('OK  '), _COLOR.red('FAIL'))
+_EMOJI_CHARSET = WatchCharset('✔️ ', '💥')
+
+
 class PigweedBuildWatcher(FileSystemEventHandler):
     """Process filesystem events and launch builds if necessary."""
-    def __init__(self,
-                 patterns=None,
-                 ignore_patterns=None,
-                 case_sensitive=False,
-                 build_dirs=None,
-                 ignore_dirs=None):
+    def __init__(
+        self,
+        patterns=None,
+        ignore_patterns=None,
+        case_sensitive=False,
+        build_dirs=None,
+        ignore_dirs=None,
+        charset: WatchCharset = _ASCII_CHARSET,
+    ):
         super().__init__()
 
         self.patterns = patterns
@@ -100,6 +114,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         self.build_dirs = build_dirs or []
         self.ignore_dirs = (ignore_dirs or []) + self.build_dirs
         self.cooldown_finish_time = None
+        self.charset: WatchCharset = charset
 
     def path_matches(self, raw_path):
         """Returns true if path matches according to the watcher patterns"""
@@ -195,11 +210,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         print(' .------------------------------------')
         print(' |')
         for (succeeded, build_dir) in zip(builds_succeeded, self.build_dirs):
-            if succeeded:
-                slug = _COLOR.green('OK  ')
-            else:
-                slug = _COLOR.red('FAIL')
-
+            slug = self.charset.slug_ok if succeeded else self.charset.slug_fail
             print(f' |   {slug}  {build_dir}')
         print(' |')
         print(" '------------------------------------")
@@ -320,11 +331,19 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
 
     ignore_dirs = ['.presubmit', '.python3-env']
 
+    env = pw_cli.env.pigweed_environment()
+    if env.PW_EMOJI:
+        charset = _EMOJI_CHARSET
+    else:
+        charset = _ASCII_CHARSET
+
     event_handler = PigweedBuildWatcher(
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
         build_dirs=build_dirs,
-        ignore_dirs=ignore_dirs)
+        ignore_dirs=ignore_dirs,
+        charset=charset,
+    )
 
     observer = Observer()
     observer.schedule(
