@@ -106,8 +106,10 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
   records_.emplace(kSDPHandle, MakeServiceDiscoveryService());
 
   // Register SDP
+  l2cap::ChannelParameters sdp_chan_params;
+  sdp_chan_params.mode = l2cap::ChannelMode::kBasic;
   data_domain_->RegisterService(
-      l2cap::kSDP, l2cap::ChannelParameters(),
+      l2cap::kSDP, sdp_chan_params,
       [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
         if (self)
           self->AddConnection(channel);
@@ -152,7 +154,8 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   return true;
 }
 
-ServiceHandle Server::RegisterService(ServiceRecord record, ConnectCallback conn_cb) {
+ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
+                                      ConnectCallback conn_cb) {
   ServiceHandle next = GetNextHandle();
   if (!next) {
     return 0;
@@ -242,7 +245,7 @@ ServiceHandle Server::RegisterService(ServiceRecord record, ConnectCallback conn
         bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
         psm_to_service_.emplace(psm, next);
         data_domain_->RegisterService(
-            psm, l2cap::ChannelParameters(),
+            psm, chan_params,
             [psm, protocol = primary_list.Clone(), conn_cb = std::move(conn_cb)](
                 auto socket, auto handle) mutable {
               bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);

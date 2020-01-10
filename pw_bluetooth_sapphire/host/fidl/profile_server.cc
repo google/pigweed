@@ -357,8 +357,10 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   auto sdp = adapter()->sdp_server();
   ZX_DEBUG_ASSERT(sdp);
 
+  // TODO(872): convert FIDL channel parameters to bt::l2cap::ChannelParameters and use here
+  bt::l2cap::ChannelParameters chan_params;
   auto handle = sdp->RegisterService(
-      std::move(rec), [this, next](auto sock, auto handle, const auto& protocol_list) {
+      std::move(rec), chan_params, [this, next](auto sock, auto handle, const auto& protocol_list) {
         OnChannelConnected(next, std::move(sock), handle, std::move(protocol_list));
       });
 

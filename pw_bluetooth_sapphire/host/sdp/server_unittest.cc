@@ -27,6 +27,8 @@ constexpr hci::ConnectionHandle kTestHandle2 = 2;
 
 void NopConnectCallback(zx::socket, hci::ConnectionHandle, const DataElement&) {}
 
+constexpr l2cap::ChannelParameters kChannelParams;
+
 class SDP_ServerTest : public TestingBase {
  public:
   SDP_ServerTest() = default;
@@ -94,7 +96,8 @@ class SDP_ServerTest : public TestingBase {
                                  DataElement(uint8_t(0)));
     record.AddProfile(profile::kSerialPort, 1, 2);
     record.AddInfo("en", "FAKE", "", "");
-    ServiceHandle handle = server()->RegisterService(std::move(record), std::move(cb));
+    ServiceHandle handle =
+        server()->RegisterService(std::move(record), kChannelParams, std::move(cb));
     EXPECT_TRUE(handle);
     return handle;
   }
@@ -109,12 +112,14 @@ class SDP_ServerTest : public TestingBase {
     record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
     record.SetAttribute(kA2DP_SupportedFeatures,
                         DataElement(uint16_t(0x0001)));  // Headphones
-    ServiceHandle handle = server()->RegisterService(std::move(record), std::move(cb));
+    ServiceHandle handle =
+        server()->RegisterService(std::move(record), kChannelParams, std::move(cb));
     EXPECT_TRUE(handle);
     return handle;
   }
 
-  ServiceHandle AddL2capService(l2cap::PSM channel) {
+  ServiceHandle AddL2capService(l2cap::PSM channel,
+                                l2cap::ChannelParameters chan_params = kChannelParams) {
     ServiceRecord record;
     record.SetServiceClassUUIDs({profile::kAudioSink});
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -124,7 +129,8 @@ class SDP_ServerTest : public TestingBase {
     record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
     record.SetAttribute(kA2DP_SupportedFeatures,
                         DataElement(uint16_t(0x0001)));  // Headphones
-    ServiceHandle handle = server()->RegisterService(std::move(record), NopConnectCallback);
+    ServiceHandle handle =
+        server()->RegisterService(std::move(record), chan_params, NopConnectCallback);
     EXPECT_TRUE(handle);
     return handle;
   }
@@ -183,19 +189,19 @@ TEST_F(SDP_ServerTest, BasicError) {
 //  - Adds a service that is valid.
 //  - Services can be Unregistered.
 TEST_F(SDP_ServerTest, RegisterService) {
-  EXPECT_FALSE(server()->RegisterService(ServiceRecord(), {}));
+  EXPECT_FALSE(server()->RegisterService(ServiceRecord(), kChannelParams, {}));
 
   ServiceRecord record;
   record.SetAttribute(kServiceClassIdList, DataElement(uint16_t(42)));
-  EXPECT_FALSE(server()->RegisterService(std::move(record), {}));
+  EXPECT_FALSE(server()->RegisterService(std::move(record), kChannelParams, {}));
 
   ServiceRecord has_handle;
   has_handle.SetHandle(42);
-  EXPECT_FALSE(server()->RegisterService(std::move(has_handle), {}));
+  EXPECT_FALSE(server()->RegisterService(std::move(has_handle), kChannelParams, {}));
 
   ServiceRecord valid;
   valid.SetServiceClassUUIDs({profile::kAVRemoteControl});
-  ServiceHandle handle = server()->RegisterService(std::move(valid), {});
+  ServiceHandle handle = server()->RegisterService(std::move(valid), kChannelParams, {});
 
   EXPECT_TRUE(handle);
 
@@ -209,14 +215,14 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   no_psm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                DataElement());
 
-  EXPECT_FALSE(server()->RegisterService(std::move(no_psm), {}));
+  EXPECT_FALSE(server()->RegisterService(std::move(no_psm), kChannelParams, {}));
 
   ServiceRecord psm_wrong_argtype;
   psm_wrong_argtype.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_wrong_argtype.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                           DataElement(bool(true)));
 
-  EXPECT_FALSE(server()->RegisterService(std::move(psm_wrong_argtype), {}));
+  EXPECT_FALSE(server()->RegisterService(std::move(psm_wrong_argtype), kChannelParams, {}));
 
   ServiceRecord psm_rfcomm;
   psm_rfcomm.SetServiceClassUUIDs({profile::kAVRemoteControl});
@@ -226,7 +232,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
                                    DataElement());
 
-  EXPECT_TRUE(server()->RegisterService(std::move(psm_rfcomm), NopConnectCallback));
+  EXPECT_TRUE(server()->RegisterService(std::move(psm_rfcomm), kChannelParams, NopConnectCallback));
 
   // Another RFCOMM is also fine.
   ServiceRecord psm_rfcomm2;
@@ -237,14 +243,15 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
                                     DataElement());
 
-  EXPECT_TRUE(server()->RegisterService(std::move(psm_rfcomm2), NopConnectCallback));
+  EXPECT_TRUE(
+      server()->RegisterService(std::move(psm_rfcomm2), kChannelParams, NopConnectCallback));
 
   ServiceRecord psm_ok;
   psm_ok.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_ok.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                DataElement(uint16_t(500)));
 
-  auto handle = server()->RegisterService(std::move(psm_ok), NopConnectCallback);
+  auto handle = server()->RegisterService(std::move(psm_ok), kChannelParams, NopConnectCallback);
   EXPECT_TRUE(handle);
 
   ServiceRecord psm_duplicate;
@@ -252,7 +259,8 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_duplicate.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                       DataElement(uint16_t(500)));
 
-  EXPECT_FALSE(server()->RegisterService(std::move(psm_duplicate), NopConnectCallback));
+  EXPECT_FALSE(
+      server()->RegisterService(std::move(psm_duplicate), kChannelParams, NopConnectCallback));
 
   // Unregistering allows us to re-register with PSM.
   server()->UnregisterService(handle);
@@ -261,7 +269,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_readd.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                   DataElement(uint16_t(500)));
 
-  EXPECT_TRUE(server()->RegisterService(std::move(psm_readd), NopConnectCallback));
+  EXPECT_TRUE(server()->RegisterService(std::move(psm_readd), kChannelParams, NopConnectCallback));
 
   // TODO(NET-1417): test that new connections to the PSM get delivered once
   // they are deliverable
@@ -526,7 +534,7 @@ TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
   record.SetAttribute(0xf00d, DataElement(uint32_t(0xfeedbeef)));
   record.SetAttribute(0xf000, DataElement(uint32_t(0x01234567)));
 
-  ServiceHandle handle = server()->RegisterService(std::move(record), {});
+  ServiceHandle handle = server()->RegisterService(std::move(record), kChannelParams, {});
 
   EXPECT_TRUE(handle);
 
@@ -665,7 +673,8 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
   record1.SetAttribute(0xf00d, DataElement(uint32_t(0xfeedbeef)));
   record1.SetAttribute(0xf000, DataElement(uint32_t(0x01234567)));
 
-  ServiceHandle handle1 = server()->RegisterService(std::move(record1), NopConnectCallback);
+  ServiceHandle handle1 =
+      server()->RegisterService(std::move(record1), kChannelParams, NopConnectCallback);
 
   EXPECT_TRUE(handle1);
 
@@ -673,7 +682,8 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
   record2.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                 DataElement(uint16_t(501)));
-  ServiceHandle handle2 = server()->RegisterService(std::move(record2), NopConnectCallback);
+  ServiceHandle handle2 =
+      server()->RegisterService(std::move(record2), kChannelParams, NopConnectCallback);
 
   EXPECT_TRUE(handle2);
 
@@ -889,6 +899,29 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
   ASSERT_EQ(DataElement::Type::kUuid, group_attr_it->second.At(0)->type());
   EXPECT_NE(attributes.end(), group_attr_it);
   EXPECT_EQ(kPublicBrowseRootUuid, *group_attr_it->second.At(0)->Get<UUID>());
+}
+
+// Channels created for a service registered with channel parameters should be configured with that
+// service's channel parameters.
+TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
+  l2cap::PSM kPSM = l2cap::kAVDTP;
+
+  l2cap::ChannelParameters params;
+  params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  params.max_sdu_size = l2cap::kMinACLMTU;
+
+  size_t chan_cb_count = 0;
+  l2cap()->set_channel_callback([&](auto chan) {
+    chan_cb_count++;
+    EXPECT_EQ(*params.mode, chan->mode());
+    EXPECT_EQ(*params.max_sdu_size, chan->rx_mtu());
+  });
+
+  ASSERT_TRUE(AddL2capService(kPSM, params));
+
+  l2cap()->TriggerInboundL2capChannel(kTestHandle1, kPSM, 0x40, 0x41);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, chan_cb_count);
 }
 
 #undef SDP_ERROR_RSP

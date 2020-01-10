@@ -39,18 +39,21 @@ class Server final {
   // Returns false if the channel cannot be activated.
   bool AddConnection(fbl::RefPtr<l2cap::Channel> channel);
 
-  // Given an incomplete ServiceRecord, register a service that will be made
-  // available over SDP.  Takes ownership of |record|.
-  // A non-zero ServiceHandle will be returned if the service was successfully
-  // registered. Any service handle previously set in |record| is ignored and
-  // overwritten.
-  // |conn_cb| will be called for any connections made to the registered
-  // service with a connected socket, the connection handle the channel was
-  // opened on, and the descriptor list for the endpoint which was connected.
+  // Given an incomplete ServiceRecord, register a service that will be made available over SDP.
+  // Takes ownership of |record|. Channels created for this service will be configured using the
+  // preferred parameters in |chan_params|.
+  //
+  // A non-zero ServiceHandle will be returned if the service was successfully registered. Any
+  // service handle previously set in |record| is ignored and overwritten.
+  //
+  // |conn_cb| will be called for any connections made to the registered service with a connected
+  // socket, the connection handle the channel was opened on, and the descriptor list for the
+  // endpoint which was connected.
   // TODO: possibly combine these into a struct later
   using ConnectCallback =
       fit::function<void(zx::socket, hci::ConnectionHandle, const DataElement&)>;
-  ServiceHandle RegisterService(ServiceRecord record, ConnectCallback conn_cb);
+  ServiceHandle RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
+                                ConnectCallback conn_cb);
 
   // Unregister a service from the database. Idempotent.
   // Returns |true| if a record was removed.
