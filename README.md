@@ -30,7 +30,7 @@ Homebrew Python was not set up to support SSL. Ensure it's installed with
 The environment setup script will pull down the versions of tools necessary
 to build Pigweed and add them to your environment. You can then build with
 GN, CMake, or Bazel. You can also confirm you're getting the right versions
-of tools—they should be installed under `env_setup/`.
+of tools—they should be installed under `.cipd/`.
 
 **Build for the host with GN**
 ```bash
