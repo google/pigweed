@@ -48,8 +48,10 @@ source_set("pw_string") {
 pw_test_group("tests") {
   tests = [
     ":format_test",
+    ":string_builder_test",
     ":to_string_test",
     ":type_to_string_test",
+    ":util_test",
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
