@@ -49,6 +49,22 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "base64",
+    srcs = [
+        "base64.cc",
+    ],
+    hdrs = [
+        "public/pw_tokenizer/base64.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_base64",
+        "//pw_preprocessor",
+        "//pw_span",
+    ],
+)
+
+pw_cc_library(
     name = "decoder",
     srcs = [
         "decode.cc",
@@ -105,6 +121,16 @@ pw_cc_test(
     ],
     deps = [
         ":pw_tokenizer",
+    ],
+)
+
+pw_cc_test(
+    name = "base64_test",
+    srcs = [
+        "base64_test.cc",
+    ],
+    deps = [
+        ":base64",
     ],
 )
 

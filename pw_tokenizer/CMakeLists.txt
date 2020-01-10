@@ -22,6 +22,16 @@ pw_add_module_library(pw_tokenizer
     pw_varint
 )
 
+pw_add_module_library(pw_tokenizer.base64
+  SOURCES
+    base64.cc
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_span
+  PRIVATE_DEPS
+    pw_base64
+)
+
 pw_add_module_library(pw_tokenizer.decoder
   SOURCES
     decode.cc
@@ -58,6 +68,16 @@ pw_add_test(pw_tokenizer.argument_types_test
     argument_types_test.cc
   DEPS
     pw_tokenizer
+  GROUPS
+    modules
+    pw_tokenizer
+)
+
+pw_add_test(pw_tokenizer.base64_test
+  SOURCES
+    base64_test.cc
+  DEPS
+    pw_tokenizer.base64
   GROUPS
     modules
     pw_tokenizer

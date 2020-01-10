@@ -1,0 +1,118 @@
+// Copyright 2020 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include "pw_tokenizer/base64.h"
+
+#include <cstring>
+#include <string_view>
+
+#include "gtest/gtest.h"
+#include "pw_span/span.h"
+
+namespace pw::tokenizer {
+namespace {
+
+class PrefixedBase64 : public ::testing::Test {
+ protected:
+  PrefixedBase64() : binary_{}, base64_{} {}
+
+  std::byte binary_[32];
+  char base64_[32];
+};
+
+const struct TestData {
+  template <size_t kSize>
+  TestData(const char (&binary)[kSize], const char* base64)
+      : binary{as_bytes(span(binary, kSize - 1))}, base64(base64) {}
+
+  span<const std::byte> binary;
+  std::string_view base64;
+} kTestData[] = {
+    {"", "$"},
+    {"\x00", "$AA=="},
+    {"\x71", "$cQ=="},
+    {"\xff", "$/w=="},
+    {"\x63\xa9", "$Y6k="},
+    {"\x69\x89\x03", "$aYkD"},
+    {"\x80\xf5\xc8\xd4", "$gPXI1A=="},
+    {"\x6e\xb8\x91\x3f\xac", "$briRP6w="},
+    {"\x1f\x88\x91\xbb\xd7\x10", "$H4iRu9cQ"},
+    {"\xac\xcf\xb2\xd5\xee\xa2\x8e", "$rM+y1e6ijg=="},
+    {"\xff\x15\x25\x7e\x7b\xc9\x7b\x60", "$/xUlfnvJe2A="},
+    {"\xd5\xab\xd9\xa6\xae\xaa\x33\x9f\x66", "$1avZpq6qM59m"},
+    {"\x6b\xfd\x95\xc5\x4a\xc7\xc2\x39\x45\xdc", "$a/2VxUrHwjlF3A=="},
+    {"\x4c\xde\xee\xb8\x68\x0d\x9c\x66\x3e\xea\x46", "$TN7uuGgNnGY+6kY="},
+};
+
+TEST_F(PrefixedBase64, Encode) {
+  for (auto& data : kTestData) {
+    EXPECT_EQ(data.base64.size(), PrefixedBase64Encode(data.binary, base64_));
+    ASSERT_EQ(data.base64, base64_);
+  }
+}
+
+TEST_F(PrefixedBase64, Encode_EmptyInput_WritesPrefix) {
+  EXPECT_EQ(1u, PrefixedBase64Encode({}, base64_));
+  EXPECT_EQ('$', base64_[0]);
+}
+
+TEST_F(PrefixedBase64, Encode_EmptyOutput_WritesNothing) {
+  EXPECT_EQ(0u, PrefixedBase64Encode(kTestData[5].binary, span(base64_, 0)));
+  EXPECT_EQ('\0', base64_[0]);
+}
+
+TEST_F(PrefixedBase64, Decode) {
+  for (auto& data : kTestData) {
+    EXPECT_EQ(data.binary.size(), PrefixedBase64Decode(data.base64, binary_));
+    ASSERT_EQ(0, std::memcmp(data.binary.data(), binary_, data.binary.size()));
+  }
+}
+
+TEST_F(PrefixedBase64, Decode_EmptyInput_WritesNothing) {
+  EXPECT_EQ(0u, PrefixedBase64Decode({}, binary_));
+  EXPECT_EQ(std::byte{0}, binary_[0]);
+}
+
+TEST_F(PrefixedBase64, Decode_OnlyPrefix_WritesNothing) {
+  EXPECT_EQ(0u, PrefixedBase64Decode("$", binary_));
+  EXPECT_EQ(std::byte{0}, binary_[0]);
+}
+
+TEST_F(PrefixedBase64, Decode_EmptyOutput_WritesNothing) {
+  EXPECT_EQ(0u, PrefixedBase64Decode(kTestData[5].base64, span(binary_, 0)));
+  EXPECT_EQ(std::byte{0}, binary_[0]);
+}
+
+TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
+  auto& item = kTestData[5];
+  EXPECT_EQ(
+      0u,
+      PrefixedBase64Decode(item.base64, span(binary_, item.binary.size() - 1)));
+  EXPECT_EQ(std::byte{0}, binary_[0]);
+}
+
+TEST(PrefixedBase64, DecodeInPlace) {
+  std::byte buffer[32];
+
+  for (auto& data : kTestData) {
+    std::memcpy(buffer, data.base64.data(), data.base64.size());
+
+    EXPECT_EQ(data.binary.size(),
+              PrefixedBase64DecodeInPlace(span(buffer, data.base64.size())));
+    ASSERT_EQ(0, std::memcmp(data.binary.data(), buffer, data.binary.size()));
+  }
+}
+
+}  // namespace
+}  // namespace pw::tokenizer

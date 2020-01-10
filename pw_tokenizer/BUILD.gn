@@ -53,6 +53,24 @@ source_set("pw_tokenizer") {
   ]
 }
 
+source_set("base64") {
+  public_configs = [
+    "$dir_pw_build:pw_default_cpp",
+    ":default_config",
+  ]
+  public = [
+    "public/pw_tokenizer/base64.h",
+  ]
+  sources = [ "base64.cc" ] + public
+  public_deps = [
+    "$dir_pw_preprocessor",
+    "$dir_pw_span",
+  ]
+  deps = [
+    "$dir_pw_base64",
+  ]
+}
+
 source_set("decoder") {
   public_configs = [
     "$dir_pw_build:pw_default_cpp",
@@ -110,6 +128,7 @@ executable("elf_reader_test_binary") {
 pw_test_group("tests") {
   tests = [
     ":argument_types_test",
+    ":base64_test",
     ":decode_test",
     ":detokenize_test",
     ":hash_test",
@@ -131,6 +150,15 @@ pw_test("argument_types_test") {
   ]
   deps = [
     ":pw_tokenizer",
+  ]
+}
+
+pw_test("base64_test") {
+  sources = [
+    "base64_test.cc",
+  ]
+  deps = [
+    ":base64",
   ]
 }
 
