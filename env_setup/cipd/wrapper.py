@@ -93,6 +93,10 @@ def user_agent():
             ['git', '-C', SCRIPT_DIR, 'rev-parse', 'HEAD']).strip()
     except subprocess.CalledProcessError:
         rev = '???'
+
+    if isinstance(rev, bytes):
+        rev = rev.decode()
+
     return 'pigweed-infra/tools/{}'.format(rev)
 
 
