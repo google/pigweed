@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -34,7 +34,10 @@ pw_cc_library(
 
 pw_cc_test(
     name = "status_test",
-    srcs = ["status_test.cc"],
+    srcs = [
+        "status_test.c",
+        "status_test.cc",
+    ],
     deps = ["//pw_status"],
 )
 

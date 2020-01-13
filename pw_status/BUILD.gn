@@ -43,6 +43,7 @@ pw_test("status_test") {
     ":pw_status",
   ]
   sources = [
+    "status_test.c",
     "status_test.cc",
   ]
 }

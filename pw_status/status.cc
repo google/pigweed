@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,15 +14,13 @@
 
 #include "pw_status/status.h"
 
-namespace pw {
-
 #define PW_CASE_RETURN_ENUM_STRING(value) \
-  case (value):                           \
+  case PW_STATUS_##value:                 \
     return #value
 
-const char* Status::str() const {
+extern "C" const char* pw_StatusString(pw_Status status) {
   // Status codes are ordered by assigned number (UNAUTHENTICATED is last).
-  switch (code_) {
+  switch (status) {
     PW_CASE_RETURN_ENUM_STRING(OK);
     PW_CASE_RETURN_ENUM_STRING(CANCELLED);
     PW_CASE_RETURN_ENUM_STRING(UNKNOWN);
@@ -46,5 +44,3 @@ const char* Status::str() const {
 }
 
 #undef PW_CASE_RETURN_ENUM_STRING
-
-}  // namespace pw

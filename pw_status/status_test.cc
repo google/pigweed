@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -29,13 +29,13 @@ TEST(Status, Default) {
 
 TEST(Status, ConstructWithStatusCode) {
   Status status(Status::ABORTED);
-  EXPECT_EQ(Status::ABORTED, status.code());
+  EXPECT_EQ(Status::ABORTED, status);
 }
 
 TEST(Status, AssignFromStatusCode) {
   Status status;
   status = Status::INTERNAL;
-  EXPECT_EQ(Status::INTERNAL, status.code());
+  EXPECT_EQ(Status::INTERNAL, status);
 }
 
 TEST(Status, CompareToStatusCode) {
@@ -75,6 +75,33 @@ TEST(Status, KnownString) {
 
 TEST(Status, UnknownString) {
   EXPECT_STREQ("INVALID STATUS", Status(static_cast<Status::Code>(30)).str());
+}
+
+// Functions for executing the C pw_Status tests.
+extern "C" {
+
+Status::Code PassStatusFromC(Status status);
+
+Status::Code PassStatusFromCpp(Status status) { return status; }
+
+int TestStatusFromC(void);
+
+int TestStatusStringsFromC(void);
+
+}  // extern "C"
+
+TEST(StatusCLinkage, CallCFunctionWithStatus) {
+  EXPECT_EQ(Status::ABORTED, PassStatusFromC(Status::ABORTED));
+  EXPECT_EQ(Status::UNKNOWN, PassStatusFromC(Status(Status::UNKNOWN)));
+
+  EXPECT_EQ(Status(Status::NOT_FOUND), PassStatusFromC(Status::NOT_FOUND));
+  EXPECT_EQ(Status(Status::OK), PassStatusFromC(Status(Status::OK)));
+}
+
+TEST(StatusCLinkage, TestStatusFromC) { EXPECT_EQ(0, TestStatusFromC()); }
+
+TEST(StatusCLinkage, TestStatusStringsFromC) {
+  EXPECT_EQ(0, TestStatusStringsFromC());
 }
 
 }  // namespace

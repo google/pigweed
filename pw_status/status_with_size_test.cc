@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -55,7 +55,7 @@ TEST(StatusWithSize, AllStatusValues_ZeroSize) {
   for (int i = 0; i < 32; ++i) {
     StatusWithSize result(static_cast<Status::Code>(i), 0);
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status().code()));
+    EXPECT_EQ(i, static_cast<int>(result.status()));
     EXPECT_EQ(0u, result.size());
   }
 }
@@ -64,7 +64,7 @@ TEST(StatusWithSize, AllStatusValues_SameSize) {
   for (int i = 0; i < 32; ++i) {
     StatusWithSize result(static_cast<Status::Code>(i), i);
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status().code()));
+    EXPECT_EQ(i, static_cast<int>(result.status()));
     EXPECT_EQ(static_cast<size_t>(i), result.size());
   }
 }
@@ -74,7 +74,7 @@ TEST(StatusWithSize, AllStatusValues_MaxSize) {
     StatusWithSize result(static_cast<Status::Code>(i),
                           StatusWithSize::max_size());
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status().code()));
+    EXPECT_EQ(i, static_cast<int>(result.status()));
     EXPECT_EQ(result.max_size(), result.size());
   }
 }

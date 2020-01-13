@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -52,8 +52,7 @@ class StatusWithSize {
 
   // Creates a StatusWithSize with the provided status and size.
   explicit constexpr StatusWithSize(Status status, size_t size)
-      : StatusWithSize(size |
-                       (static_cast<size_t>(status.code()) << kStatusShift)) {}
+      : StatusWithSize(size | (static_cast<size_t>(status) << kStatusShift)) {}
 
   constexpr StatusWithSize(const StatusWithSize&) = default;
   constexpr StatusWithSize& operator=(const StatusWithSize&) = default;
