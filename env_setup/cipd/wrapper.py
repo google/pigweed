@@ -44,12 +44,17 @@ DIGESTS_FILE = VERSION_FILE + '.digests'
 # Put CIPD client in tools so that users can easily get it in their PATH.
 CIPD_HOST = 'chrome-infra-packages.appspot.com'
 
+try:
+    PW_ROOT = os.environ['PW_ROOT']
+except KeyError:
+    PW_ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'])
+
 # Get default install dir from environment since args cannot always be passed
 # through this script (args are passed as-is to cipd).
 if 'CIPD_PY_INSTALL_DIR' in os.environ:
     DEFAULT_INSTALL_DIR = os.environ['CIPD_PY_INSTALL_DIR']
 else:
-    DEFAULT_INSTALL_DIR = os.path.join(os.environ['PW_ROOT'], '.cipd')
+    DEFAULT_INSTALL_DIR = os.path.join(PW_ROOT, '.cipd')
 
 
 def platform_normalized():
