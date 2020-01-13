@@ -173,7 +173,7 @@ def clang_tidy(ctx: PresubmitContext):
     ninja('-t', 'compdb', 'objcxx', 'cxx', ctx=ctx)
 
     run_clang_tidy = None
-    for var in ('PIGWEED_CIPD_INSTALL_DIR', 'CIPD_INSTALL_DIR'):
+    for var in ('PW_PIGWEED_CIPD_INSTALL_DIR', 'PW_CIPD_INSTALL_DIR'):
         if var in os.environ:
             possibility = os.path.join(os.environ[var],
                                        'share/clang/run-clang-tidy.py')

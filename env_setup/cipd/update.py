@@ -86,7 +86,7 @@ def update(
 
     if env_vars:
         env_vars.prepend('PATH', root_install_dir)
-        env_vars.set('CIPD_INSTALL_DIR', root_install_dir)
+        env_vars.set('PW_CIPD_INSTALL_DIR', root_install_dir)
         env_vars.set('CIPD_CACHE_DIR', cache_dir)
 
     # Run cipd for each ensure file.
@@ -119,7 +119,7 @@ def update(
             # installed under 'bin'.
             env_vars.prepend('PATH', install_dir)
             env_vars.prepend('PATH', os.path.join(install_dir, 'bin'))
-            env_vars.set('{}_CIPD_INSTALL_DIR'.format(name.upper()),
+            env_vars.set('PW_{}_CIPD_INSTALL_DIR'.format(name.upper()),
                          install_dir)
 
 

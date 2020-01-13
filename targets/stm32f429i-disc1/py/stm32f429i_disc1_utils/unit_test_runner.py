@@ -31,7 +31,7 @@ _DIR = os.path.dirname(__file__)
 _OPENOCD_CONFIG = os.path.join(_DIR, 'openocd_stm32f4xx.cfg')
 
 # Path to scripts provided by openocd.
-_OPENOCD_SCRIPTS_DIR = os.path.join(os.getenv('PIGWEED_CIPD_INSTALL_DIR'),
+_OPENOCD_SCRIPTS_DIR = os.path.join(os.getenv('PW_PIGWEED_CIPD_INSTALL_DIR'),
                                     'share', 'openocd', 'scripts')
 
 _LOG = logging.getLogger('unit_test_runner')
