@@ -135,8 +135,22 @@ class EnvironmentParser:
         return f'{type(self).__name__}(prefix={self._prefix})'
 
 
+# List of emoji which are considered to represent "True".
+_BOOLEAN_TRUE_EMOJI = set([
+    '✔️',
+    '👍',
+    '👍🏻',
+    '👍🏼',
+    '👍🏽',
+    '👍🏾',
+    '👍🏿',
+    '💯',
+])
+
+
 def strict_bool(value: str) -> bool:
-    return value == '1' or value.lower() == 'true'
+    return (value == '1' or value.lower() == 'true'
+            or value in _BOOLEAN_TRUE_EMOJI)
 
 
 OpenMode = Literal['r', 'rb', 'w', 'wb']
