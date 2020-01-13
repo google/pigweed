@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,8 +16,10 @@
 // Modifications are noted with "Pigweed:" comments.
 //
 // Original file:
-//   https://chromium.googlesource.com/chromium/src/+/409610fca8c94015bd216768c6c15cd5a3564826/base/containers/span_unittest.cc
+//   https://chromium.googlesource.com/chromium/src/+/ef71f9c29f0dc6eddae474879c4ca5232ca93a6c/base/containers/span_unittest.cc
 //
+// In order to minimize changes from the original, this file does NOT fully
+// adhere to Pigweed's style guide.
 #include "pw_span/span.h"
 
 #include <algorithm>
@@ -1018,44 +1020,6 @@ TEST(SpanTest, Back) {
                 "span.back() does not refer to the same element as kArray[4]");
 }
 
-TEST(SpanTest, Swap) {
-  {
-    static int kArray1[] = {1, 1};
-    static int kArray2[] = {1, 2};
-    span<const int, 2> static_span1(kArray1);
-    span<const int, 2> static_span2(kArray2);
-
-    EXPECT_EQ(kArray1, static_span1.data());
-    EXPECT_EQ(kArray2, static_span2.data());
-
-    swap(static_span1, static_span2);
-
-    EXPECT_EQ(kArray2, static_span1.data());
-    EXPECT_EQ(kArray1, static_span2.data());
-  }
-
-  {
-    static int kArray1[] = {1};
-    static int kArray2[] = {1, 2};
-    span<const int> dynamic_span1(kArray1);
-    span<const int> dynamic_span2(kArray2);
-
-    EXPECT_EQ(kArray1, dynamic_span1.data());
-    EXPECT_EQ(1u, dynamic_span1.size());
-
-    EXPECT_EQ(kArray2, dynamic_span2.data());
-    EXPECT_EQ(2u, dynamic_span2.size());
-
-    swap(dynamic_span1, dynamic_span2);
-
-    EXPECT_EQ(kArray2, dynamic_span1.data());
-    EXPECT_EQ(2u, dynamic_span1.size());
-
-    EXPECT_EQ(kArray1, dynamic_span2.data());
-    EXPECT_EQ(1u, dynamic_span2.size());
-  }
-}
-
 // Pigweed: This test uses gMock features not yet supported in Pigweed.
 #if 0
 TEST(SpanTest, Iterator) {
@@ -1402,16 +1366,12 @@ TEST(SpanTest, EnsureConstexprGoodness) {
 TEST(SpanTest, OutOfBoundsDeath) {
   constexpr span<int, 0> kEmptySpan;
   ASSERT_DEATH_IF_SUPPORTED(kEmptySpan[0], "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptySpan.begin()[0], "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptySpan.end()[0], "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptySpan.first(1), "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptySpan.last(1), "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptySpan.subspan(1), "");
 
   constexpr span<int> kEmptyDynamicSpan;
   ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan[0], "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.begin()[0], "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.end()[0], "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.front(), "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.first(1), "");
   ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.last(1), "");
@@ -1422,10 +1382,8 @@ TEST(SpanTest, OutOfBoundsDeath) {
   constexpr span<const int> kNonEmptyDynamicSpan(kArray);
   EXPECT_EQ(3U, kNonEmptyDynamicSpan.size());
   ASSERT_DEATH_IF_SUPPORTED(kNonEmptyDynamicSpan[4], "");
-  ASSERT_DEATH_IF_SUPPORTED(kNonEmptyDynamicSpan.begin()[-1], "");
-  ASSERT_DEATH_IF_SUPPORTED(kNonEmptyDynamicSpan.begin()[3], "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.subspan(10), "");
-  ASSERT_DEATH_IF_SUPPORTED(kEmptyDynamicSpan.subspan(1, 7), "");
+  ASSERT_DEATH_IF_SUPPORTED(kNonEmptyDynamicSpan.subspan(10), "");
+  ASSERT_DEATH_IF_SUPPORTED(kNonEmptyDynamicSpan.subspan(1, 7), "");
 }
 
 // Pigweed: These tests use CheckedContiguousConstIterator, which isn't used in
