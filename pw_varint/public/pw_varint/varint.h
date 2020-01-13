@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,8 +13,27 @@
 // the License.
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Expose a subset of the varint API for use in C code.
+
+size_t pw_VarintEncode(uint64_t integer, void* output, size_t output_size);
+size_t pw_VarintZigZagEncode(int64_t integer, void* output, size_t output_size);
+
+size_t pw_VarintDecode(const void* input, size_t input_size, uint64_t* output);
+size_t pw_VarintZigZagDecode(const void* input,
+                             size_t input_size,
+                             int64_t* output);
+
+#ifdef __cplusplus
+
+}  // extern "C"
+
 #include <type_traits>
 
 #include "pw_span/span.h"
@@ -51,8 +70,10 @@ constexpr std::make_signed_t<T> ZigZagDecode(T n) {
 }
 
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
-size_t EncodeLittleEndianBase128(uint64_t integer,
-                                 const span<std::byte>& output);
+inline size_t EncodeLittleEndianBase128(uint64_t integer,
+                                        const span<std::byte>& output) {
+  return pw_VarintEncode(integer, output.data(), output.size());
+}
 
 // Encodes the provided integer using a variable-length encoding and returns the
 // number of bytes written.
@@ -67,9 +88,9 @@ size_t EncodeLittleEndianBase128(uint64_t integer,
 template <typename T>
 size_t Encode(T integer, const span<std::byte>& output) {
   if constexpr (std::is_signed<T>()) {
-    return EncodeLittleEndianBase128(ZigZagEncode(integer), output);
+    return pw_VarintZigZagEncode(integer, output.data(), output.size());
   } else {
-    return EncodeLittleEndianBase128(integer, output);
+    return pw_VarintEncode(integer, output.data(), output.size());
   }
 }
 
@@ -93,7 +114,14 @@ size_t Encode(T integer, const span<std::byte>& output) {
 //     data = data.subspan(bytes)
 //   }
 //
-size_t Decode(const span<const std::byte>& input, int64_t* value);
-size_t Decode(const span<const std::byte>& input, uint64_t* value);
+inline size_t Decode(const span<const std::byte>& input, int64_t* value) {
+  return pw_VarintZigZagDecode(input.data(), input.size(), value);
+}
+
+inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
+  return pw_VarintDecode(input.data(), input.size(), value);
+}
 
 }  // namespace pw::varint
+
+#endif  // __cplusplus

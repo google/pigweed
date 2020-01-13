@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -18,35 +18,41 @@
 
 namespace pw::varint {
 
-size_t EncodeLittleEndianBase128(uint64_t integer,
-                                 const span<std::byte>& output) {
+extern "C" size_t pw_VarintEncode(uint64_t integer,
+                                  void* output,
+                                  size_t output_size) {
   size_t written = 0;
+  std::byte* buffer = static_cast<std::byte*>(output);
+
   do {
-    if (written >= output.size()) {
+    if (written >= output_size) {
       return 0;
     }
 
     // Grab 7 bits; the eighth bit is set to 1 to indicate more data coming.
-    output[written++] = static_cast<std::byte>(integer) | std::byte{0x80};
+    buffer[written++] = static_cast<std::byte>(integer) | std::byte{0x80};
     integer >>= 7;
   } while (integer != 0u);
 
-  output[written - 1] &= std::byte{0x7f};  // clear the top bit of the last byte
+  buffer[written - 1] &= std::byte{0x7f};  // clear the top bit of the last byte
   return written;
 }
 
-size_t Decode(const span<const std::byte>& input, int64_t* value) {
-  const size_t bytes = Decode(input, reinterpret_cast<uint64_t*>(value));
-  *value = ZigZagDecode(static_cast<uint64_t>(*value));
-  return bytes;
+extern "C" size_t pw_VarintZigZagEncode(int64_t integer,
+                                        void* output,
+                                        size_t output_size) {
+  return pw_VarintEncode(ZigZagEncode(integer), output, output_size);
 }
 
-size_t Decode(const span<const std::byte>& input, uint64_t* value) {
+extern "C" size_t pw_VarintDecode(const void* input,
+                                  size_t input_size,
+                                  uint64_t* output) {
   uint64_t decoded_value = 0;
   uint_fast8_t count = 0;
+  const std::byte* buffer = static_cast<const std::byte*>(input);
 
   // The largest 64-bit ints require 10 B.
-  const size_t max_count = std::min(kMaxVarintSizeBytes, input.size());
+  const size_t max_count = std::min(kMaxVarintSizeBytes, input_size);
 
   while (true) {
     if (count >= max_count) {
@@ -54,17 +60,26 @@ size_t Decode(const span<const std::byte>& input, uint64_t* value) {
     }
 
     // Add the bottom seven bits of the next byte to the result.
-    decoded_value |= static_cast<uint64_t>(input[count] & std::byte{0x7f})
+    decoded_value |= static_cast<uint64_t>(buffer[count] & std::byte{0x7f})
                      << (7 * count);
 
     // Stop decoding if the top bit is not set.
-    if ((input[count++] & std::byte{0x80}) == std::byte{0}) {
+    if ((buffer[count++] & std::byte{0x80}) == std::byte{0}) {
       break;
     }
   }
 
-  *value = decoded_value;
+  *output = decoded_value;
   return count;
+}
+
+extern "C" size_t pw_VarintZigZagDecode(const void* input,
+                                        size_t input_size,
+                                        int64_t* output) {
+  uint64_t value = 0;
+  size_t bytes = pw_VarintDecode(input, input_size, &value);
+  *output = ZigZagDecode(value);
+  return bytes;
 }
 
 }  // namespace pw::varint
