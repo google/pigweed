@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -42,6 +42,17 @@ source_set("pw_protobuf") {
     "encoder.cc",
   ]
   sources += public
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "decoder.rst",
+    "docs.rst",
+  ]
+  report_deps = [
+    "size_report:decoder_full",
+    "size_report:decoder_incremental",
+  ]
 }
 
 # Source files for pw_protobuf's protoc plugin.

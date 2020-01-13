@@ -61,3 +61,11 @@ filegroup(
         "codegen_test.cc",
     ],
 )
+
+# TODO(frolv): Figure out what to do about size reports in Bazel.
+filegroup(
+    name = "size_reports",
+    srcs = glob([
+        "size_report/*.cc",
+    ]),
+)

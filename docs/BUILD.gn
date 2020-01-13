@@ -52,6 +52,7 @@ pw_doc_gen("docs") {
     "$dir_pw_module:docs",
     "$dir_pw_preprocessor:docs",
     "$dir_pw_presubmit:docs",
+    "$dir_pw_protobuf:docs",
     "$dir_pw_protobuf_compiler:docs",
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",

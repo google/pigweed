@@ -16,6 +16,7 @@ bloat is a script which generates a size report card for binary files.
 """
 
 import argparse
+import logging
 import os
 import subprocess
 import sys
@@ -24,6 +25,10 @@ from typing import List, Iterable, Optional
 
 from binary_diff import BinaryDiff
 import bloat_output
+
+import pw_cli.log
+
+_LOG = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -135,7 +140,7 @@ def main() -> int:
             diff_binaries.append(binary)
             base_binaries.append(base)
     except RuntimeError as err:
-        print(f'{sys.argv[0]}: {err}', file=sys.stderr)
+        _LOG.error('%s: %s', sys.argv[0], err)
         return 1
 
     data_sources = ['segment_names']
@@ -172,15 +177,14 @@ def main() -> int:
             bloaty_csv = output.decode().splitlines()[1:]
             diffs.append(BinaryDiff.from_csv(binary_name, bloaty_csv))
         except subprocess.CalledProcessError:
-            print(f'{sys.argv[0]}: failed to run diff on {binary}',
-                  file=sys.stderr)
+            _LOG.error('%s: failed to run diff on %s', sys.argv[0], binary)
             return 1
 
     def write_file(filename: str, contents: str) -> None:
         path = os.path.join(args.out_dir, filename)
         with open(path, 'w') as output_file:
             output_file.write(contents)
-        print(f'Output written to {path}')
+        _LOG.debug('Output written to %s', path)
 
     # TODO(frolv): Remove when custom output for full mode is added.
     if not args.full:
@@ -200,4 +204,5 @@ def main() -> int:
 
 
 if __name__ == '__main__':
+    pw_cli.log.install()
     sys.exit(main())

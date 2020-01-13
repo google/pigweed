@@ -149,6 +149,9 @@ template("pw_size_report") {
     ]
     deps = _all_target_dependencies
     args = _bloat_script_args + _binary_paths
+
+    # Print size reports to stdout when they are generated.
+    capture_output = false
   }
 }
 
