@@ -38,12 +38,26 @@ This module requires relatively minimal setup:
 
 Module usage
 ============
-After building a an executable that utilizes this backend, flash the
+After building an executable that utilizes this backend, flash the
 produced .elf binary to the development board. Then, using a serial
-communication terminal (like minicom or screen), connect to the device at a
-baud rate of 115200 (8N1). If you're not using a STM32F429I-DISC1 development
-board, manually connect a USB TLL adapter to pins `A9` (TX) and
-`A10` (RX).
+communication terminal like minicom/screen (Linux/Mac) or TeraTerm (Windows),
+connect to the device at a baud rate of 115200 (8N1). If you're not using a
+STM32F429I-DISC1 development board, manually connect a USB-to-serial TTL adapter
+to pins ``PA9`` (MCU TX) and ``PA10`` (MCU RX), making sure to match logic
+levels (e.g. 3.3V versus 1.8V).
+
+Sample connection diagram
+-------------------------
+
+.. code-block:: text
+
+  --USB Serial--+    +-----STM32F429 MCU-----
+                |    |
+             TX o--->o PA10/USART1_RX
+                |    |
+             RX o<---o PA9/USART1_TX
+                |    |
+  --------------+    +-----------------------
 
 Dependencies
 ============
