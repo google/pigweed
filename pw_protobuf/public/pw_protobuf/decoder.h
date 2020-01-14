@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <string_view>
+
 #include "pw_protobuf/wire_format.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -140,6 +142,72 @@ class Decoder {
     return Status::OK;
   }
 
+  // Reads a proto bool value from the current cursor.
+  Status ReadBool(uint32_t field_number, bool* out) {
+    uint64_t value = 0;
+    Status status = ReadUint64(field_number, &value);
+    if (!status.ok()) {
+      return status;
+    }
+    *out = value;
+    return Status::OK;
+  }
+
+  // Reads a proto fixed32 value from the current cursor.
+  Status ReadFixed32(uint32_t field_number, uint32_t* out) {
+    return ReadFixed(field_number, out);
+  }
+
+  // Reads a proto fixed64 value from the current cursor.
+  Status ReadFixed64(uint32_t field_number, uint64_t* out) {
+    return ReadFixed(field_number, out);
+  }
+
+  // Reads a proto sfixed32 value from the current cursor.
+  Status ReadSfixed32(uint32_t field_number, int32_t* out) {
+    return ReadFixed32(field_number, reinterpret_cast<uint32_t*>(out));
+  }
+
+  // Reads a proto sfixed64 value from the current cursor.
+  Status ReadSfixed64(uint32_t field_number, int64_t* out) {
+    return ReadFixed64(field_number, reinterpret_cast<uint64_t*>(out));
+  }
+
+  // Reads a proto float value from the current cursor.
+  Status ReadFloat(uint32_t field_number, float* out) {
+    static_assert(sizeof(float) == sizeof(uint32_t),
+                  "Float and uint32_t must be the same size for protobufs");
+    return ReadFixed(field_number, out);
+  }
+
+  // Reads a proto double value from the current cursor.
+  Status ReadDouble(uint32_t field_number, double* out) {
+    static_assert(sizeof(double) == sizeof(uint64_t),
+                  "Double and uint64_t must be the same size for protobufs");
+    return ReadFixed(field_number, out);
+  }
+
+  // Reads a proto string value from the current cursor and returns a view of it
+  // in `out`. The raw protobuf data must outlive `out`. If the string field is
+  // invalid, `out` is not modified.
+  Status ReadString(uint32_t field_number, std::string_view* out) {
+    span<const std::byte> bytes;
+    Status status = ReadDelimited(field_number, &bytes);
+    if (!status.ok()) {
+      return status;
+    }
+    *out = std::string_view(reinterpret_cast<const char*>(bytes.data()),
+                            bytes.size());
+    return Status::OK;
+  }
+
+  // Reads a proto bytes value from the current cursor and returns a view of it
+  // in `out`. The raw protobuf data must outlive the `out` span. If the bytes
+  // field is invalid, `out` is not modified.
+  Status ReadBytes(uint32_t field_number, span<const std::byte>* out) {
+    return ReadDelimited(field_number, out);
+  }
+
  private:
   enum State {
     kReady,
@@ -149,6 +217,30 @@ class Decoder {
 
   // Reads a varint key-value pair from the current cursor position.
   Status ReadVarint(uint32_t field_number, uint64_t* out);
+
+  // Reads a fixed-size key-value pair from the current cursor position.
+  Status ReadFixed(uint32_t field_number, std::byte* out, size_t size);
+
+  template <typename T>
+  Status ReadFixed(uint32_t field_number, T* out) {
+    static_assert(
+        sizeof(T) == sizeof(uint32_t) || sizeof(T) == sizeof(uint64_t),
+        "Protobuf fixed-size fields must be 32- or 64-bit");
+    union {
+      T value;
+      std::byte bytes[sizeof(T)];
+    };
+    Status status = ReadFixed(field_number, bytes, sizeof(bytes));
+    if (!status.ok()) {
+      return status;
+    }
+    *out = value;
+    return Status::OK;
+  }
+
+  Status ReadDelimited(uint32_t field_number, span<const std::byte>* out);
+
+  Status ConsumeKey(uint32_t field_number, WireType expected_type);
 
   // Advances the cursor to the next field in the proto.
   void SkipField();

@@ -14,6 +14,8 @@
 
 #include "pw_protobuf/decoder.h"
 
+#include <cstring>
+
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -66,6 +68,67 @@ Status Decoder::Decode(span<const std::byte> proto) {
 }
 
 Status Decoder::ReadVarint(uint32_t field_number, uint64_t* out) {
+  Status status = ConsumeKey(field_number, WireType::kVarint);
+  if (!status.ok()) {
+    return status;
+  }
+
+  size_t bytes_read = varint::Decode(proto_, out);
+  if (bytes_read == 0) {
+    state_ = kDecodeFailed;
+    return Status::DATA_LOSS;
+  }
+
+  // Advance to the next field.
+  proto_ = proto_.subspan(bytes_read);
+  return Status::OK;
+}
+
+Status Decoder::ReadFixed(uint32_t field_number, std::byte* out, size_t size) {
+  WireType expected_wire_type =
+      size == sizeof(uint32_t) ? WireType::kFixed32 : WireType::kFixed64;
+  Status status = ConsumeKey(field_number, expected_wire_type);
+  if (!status.ok()) {
+    return status;
+  }
+
+  if (proto_.size() < size) {
+    return Status::DATA_LOSS;
+  }
+
+  std::memcpy(out, proto_.data(), size);
+  proto_ = proto_.subspan(size);
+
+  return Status::OK;
+}
+
+Status Decoder::ReadDelimited(uint32_t field_number,
+                              span<const std::byte>* out) {
+  Status status = ConsumeKey(field_number, WireType::kDelimited);
+  if (!status.ok()) {
+    return status;
+  }
+
+  uint64_t length;
+  size_t bytes_read = varint::Decode(proto_, &length);
+  if (bytes_read == 0) {
+    state_ = kDecodeFailed;
+    return Status::DATA_LOSS;
+  }
+
+  proto_ = proto_.subspan(bytes_read);
+  if (proto_.size() < length) {
+    state_ = kDecodeFailed;
+    return Status::DATA_LOSS;
+  }
+
+  *out = proto_.first(length);
+  proto_ = proto_.subspan(length);
+
+  return Status::OK;
+}
+
+Status Decoder::ConsumeKey(uint32_t field_number, WireType expected_type) {
   if (state_ != kDecodeInProgress) {
     return Status::FAILED_PRECONDITION;
   }
@@ -80,21 +143,12 @@ Status Decoder::ReadVarint(uint32_t field_number, uint64_t* out) {
   uint32_t field = key >> kFieldNumberShift;
   WireType wire_type = static_cast<WireType>(key & kWireTypeMask);
 
-  if (field != field_number || wire_type != WireType::kVarint) {
+  if (field != field_number || wire_type != expected_type) {
     state_ = kDecodeFailed;
     return Status::FAILED_PRECONDITION;
   }
 
-  // Advance to the varint value.
-  proto_ = proto_.subspan(bytes_read);
-
-  bytes_read = varint::Decode(proto_, out);
-  if (bytes_read == 0) {
-    state_ = kDecodeFailed;
-    return Status::DATA_LOSS;
-  }
-
-  // Advance to the next field.
+  // Advance past the key.
   proto_ = proto_.subspan(bytes_read);
   return Status::OK;
 }

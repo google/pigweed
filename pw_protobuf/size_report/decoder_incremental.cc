@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <cstring>
+
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_protobuf/decoder.h"
 
@@ -30,6 +32,8 @@ class TestDecodeHandler : public pw::protobuf::DecodeHandler {
  public:
   pw::Status ProcessField(pw::protobuf::Decoder* decoder,
                           uint32_t field_number) override {
+    std::string_view str;
+
     switch (field_number) {
       case 1:
         if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
@@ -42,26 +46,51 @@ class TestDecodeHandler : public pw::protobuf::DecodeHandler {
         }
         break;
       case 3:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
+        if (!decoder->ReadBool(field_number, &test_bool).ok()) {
+          test_bool = false;
         }
         break;
       case 4:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
+        if (!decoder->ReadDouble(field_number, &test_double).ok()) {
+          test_double = 0;
         }
         break;
       case 5:
+        if (!decoder->ReadFixed32(field_number, &test_fixed32).ok()) {
+          test_fixed32 = 0;
+        }
+        break;
+      case 6:
+        if (decoder->ReadString(field_number, &str).ok()) {
+          // In real code:
+          // assert(str.size() < sizeof(test_string));
+          std::memcpy(test_string, str.data(), str.size());
+          test_string[str.size()] = '\0';
+        }
+        break;
+
+      // Extra fields.
+      case 21:
         if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
           test_int32 = 0;
         }
         break;
-      case 6:
+      case 22:
+        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
+          test_int32 = 0;
+        }
+        break;
+      case 23:
+        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
+          test_int32 = 0;
+        }
+        break;
+      case 24:
         if (!decoder->ReadSint32(field_number, &test_sint32).ok()) {
           test_sint32 = 0;
         }
         break;
-      case 7:
+      case 25:
         if (!decoder->ReadSint32(field_number, &test_sint32).ok()) {
           test_sint32 = 0;
         }
@@ -73,6 +102,10 @@ class TestDecodeHandler : public pw::protobuf::DecodeHandler {
 
   int32_t test_int32 = 0;
   int32_t test_sint32 = 0;
+  bool test_bool = false;
+  double test_double = 0;
+  uint32_t test_fixed32 = 0;
+  char test_string[16];
 };
 
 int* volatile non_optimizable_pointer;

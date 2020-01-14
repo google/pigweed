@@ -23,12 +23,28 @@ namespace {
 class TestDecodeHandler : public DecodeHandler {
  public:
   Status ProcessField(Decoder* decoder, uint32_t field_number) override {
+    std::string_view str;
+
     switch (field_number) {
       case 1:
         decoder->ReadInt32(field_number, &test_int32);
         break;
       case 2:
         decoder->ReadSint32(field_number, &test_sint32);
+        break;
+      case 3:
+        decoder->ReadBool(field_number, &test_bool);
+        break;
+      case 4:
+        decoder->ReadDouble(field_number, &test_double);
+        break;
+      case 5:
+        decoder->ReadFixed32(field_number, &test_fixed32);
+        break;
+      case 6:
+        decoder->ReadString(field_number, &str);
+        std::memcpy(test_string, str.data(), str.size());
+        test_string[str.size()] = '\0';
         break;
     }
 
@@ -39,6 +55,10 @@ class TestDecodeHandler : public DecodeHandler {
   bool called = false;
   int32_t test_int32 = 0;
   int32_t test_sint32 = 0;
+  bool test_bool = true;
+  double test_double = 0;
+  uint32_t test_fixed32 = 0;
+  char test_string[16];
 };
 
 TEST(Decoder, Decode) {
@@ -57,6 +77,8 @@ TEST(Decoder, Decode) {
     0x21, 0x6e, 0x86, 0x1b, 0xf0, 0xf9, 0x21, 0x09, 0x40,
     // type=fixed32, k=5, v=0xdeadbeef
     0x2d, 0xef, 0xbe, 0xad, 0xde,
+    // type=string, k=6, v="Hello world"
+    0x32, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
   };
   // clang-format on
 
@@ -65,6 +87,10 @@ TEST(Decoder, Decode) {
   EXPECT_TRUE(handler.called);
   EXPECT_EQ(handler.test_int32, 42);
   EXPECT_EQ(handler.test_sint32, -13);
+  EXPECT_FALSE(handler.test_bool);
+  EXPECT_EQ(handler.test_double, 3.14159);
+  EXPECT_EQ(handler.test_fixed32, 0xdeadbeef);
+  EXPECT_STREQ(handler.test_string, "Hello world");
 }
 
 TEST(Decoder, Decode_OverridesDuplicateFields) {
