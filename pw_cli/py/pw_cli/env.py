@@ -29,6 +29,10 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_SUBPROCESS', type=envparse.strict_bool, default=False)
     parser.add_var('PW_USE_COLOR', type=envparse.strict_bool, default=False)
 
+    parser.add_var('PW_PIGWEED_CIPD_INSTALL_DIR')
+    parser.add_var('PW_LUCI_CIPD_INSTALL_DIR')
+    parser.add_var('PW_CIPD_INSTALL_DIR')
+
     return parser
 
 
