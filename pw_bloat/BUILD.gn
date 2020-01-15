@@ -23,10 +23,7 @@ config("default_config") {
 # Library which uses standard C/C++ functions such as memcpy to prevent them
 # from showing up within bloat diff reports.
 source_set("bloat_this_binary") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   public = [
     "public/pw_bloat/bloat_this_binary.h",
   ]

@@ -30,7 +30,6 @@ if (dir_pw_dumb_io_backend == dir_pw_dumb_io_baremetal_stm32f429) {
   }
 
   source_set("pw_dumb_io_baremetal_stm32f429") {
-    public_configs = [ "$dir_pw_build:pw_default_cpp" ]
     public_deps = [
       ":linker_script",
     ]

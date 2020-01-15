@@ -18,7 +18,6 @@ import("$dir_pw_docgen/docs.gni")
 # compatible with this backend.
 if (dir_pw_dumb_io_backend == dir_pw_dumb_io_stdio) {
   source_set("pw_dumb_io_stdio") {
-    public_configs = [ "$dir_pw_build:pw_default_cpp" ]
     deps = [
       "$dir_pw_dumb_io:default_putget_bytes",
       "$dir_pw_dumb_io:facade",

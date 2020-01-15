@@ -24,10 +24,7 @@ if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
   }
 
   source_set("pw_cpu_exception_armv7m") {
-    public_configs = [
-      "$dir_pw_build:pw_default_cpp",
-      ":default_config",
-    ]
+    public_configs = [ ":default_config" ]
     deps = [
       "$dir_pw_cpu_exception:facade",
       "$dir_pw_dumb_io:default_putget_bytes",

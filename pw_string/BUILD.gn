@@ -21,10 +21,7 @@ config("default_config") {
 }
 
 source_set("pw_string") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   public = [
     "public/pw_string/format.h",
     "public/pw_string/string_builder.h",

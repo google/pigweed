@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -39,11 +39,6 @@ declare_args() {
 # .gni files (as they depend on the dir_[module] variables).
 import("$dir_pigweed/modules.gni")
 
-# Import default GN configurations. This file provides default configurations
-# for upstream Pigweed development, and projects are free to provide their own
-# variation of this file. (depends on modules.gni)
-import("$dir_pigweed/gn_defaults.gni")
-
 # Import target configuration. This is what "completes" a Pigweed configuration.
 # This file should set a default toolchain, configure pw_executable, select
 # backends to build against, and provide target-specific build arguments.
@@ -54,3 +49,35 @@ import(pw_target_config)
 assert(pw_target_toolchain != "",
        "Build target must provide its own toolchain.")
 set_default_toolchain(pw_target_toolchain)
+
+# Override the built-in build targets to add default compilation options.
+# TODO(pwbug/72): Move this code to a .gni file for easier reuse.
+template("_pw_override_target_with_defaults") {
+  target(invoker._target_type, target_name) {
+    forward_variables_from(invoker, "*", [ "_target_type" ])
+
+    if (!defined(configs)) {
+      configs = []
+    }
+
+    # Add default configs to use for all binary build targets.
+    configs += [
+      "$dir_pw_build:reduced_size",
+      "$dir_pw_build:strict_warnings",
+    ]
+  }
+}
+
+foreach(_target_type,
+        [
+          "source_set",
+          "executable",
+          "shared_library",
+          "static_library",
+        ]) {
+  template(_target_type) {
+    _pw_override_target_with_defaults(target_name) {
+      forward_variables_from(invoker, "*")
+    }
+  }
+}

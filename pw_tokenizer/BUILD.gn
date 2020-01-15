@@ -20,10 +20,7 @@ config("default_config") {
 }
 
 source_set("pw_tokenizer") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_span",
@@ -54,10 +51,7 @@ source_set("pw_tokenizer") {
 }
 
 source_set("base64") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   public = [
     "public/pw_tokenizer/base64.h",
   ]
@@ -72,10 +66,7 @@ source_set("base64") {
 }
 
 source_set("decoder") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_span",
   ]
@@ -233,10 +224,7 @@ declare_args() {
 # the JNI headers must be available in the system or provided with the
 # pw_java_native_interface_include_dirs variable.
 shared_library("detokenizer_jni") {
-  public_configs = [
-    "$dir_pw_build:pw_default_cpp",
-    ":default_config",
-  ]
+  public_configs = [ ":default_config" ]
   include_dirs = pw_java_native_interface_include_dirs
   sources = [
     "java/dev/pigweed/tokenizer/detokenizer.cc",
