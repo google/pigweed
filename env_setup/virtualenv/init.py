@@ -144,6 +144,7 @@ def init(
     if env:
         env.set('VIRTUAL_ENV', venv_path)
         env.prepend('PATH', os.path.join(venv_path, 'bin'))
+        env.clear('PYTHONHOME')
 
 
 def _main():

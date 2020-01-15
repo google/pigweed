@@ -72,6 +72,9 @@ class Environment(object):
     def set(self, name, value):
         self._actions.append(_Action('set', name, value))
 
+    def clear(self, name):
+        self._actions.append(_Action('set', name, None))
+
     def append(self, name, value):
         self._actions.append(_Action('append', name, value))
 
@@ -80,15 +83,16 @@ class Environment(object):
 
     def _action_str(self, action):
         if action.type == 'set':
-            fmt = '{name}="{value}"'
+            if action.value is None:
+                fmt = 'unset {name}\n'
+            else:
+                fmt = '{name}="{value}"\nexport {name}\n'
         elif action.type == 'append':
-            fmt = '{name}="${name}{sep}{value}"'
+            fmt = '{name}="${name}{sep}{value}"\nexport {name}\n'
         elif action.type == 'prepend':
-            fmt = '{name}="{value}{sep}${name}"'
+            fmt = '{name}="{value}{sep}${name}"\nexport {name}\n'
         else:
             raise UnexpectedAction(action.name)
-
-        fmt += '\nexport {name}\n'
 
         return fmt.format(
             name=action.name,
@@ -99,6 +103,13 @@ class Environment(object):
     def write(self, outs):
         for action in self._actions:
             outs.write(self._action_str(action))
+        outs.write('# This should detect bash and zsh, which have a hash \n'
+                   '# command that must be called to get it to forget past \n'
+                   '# commands. Without forgetting past commands the $PATH \n'
+                   '# changes we made may not be respected.\n')
+        outs.write('if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n')
+        outs.write('    hash -r\n')
+        outs.write('fi\n')
 
     @contextlib.contextmanager
     def __call__(self):
@@ -108,7 +119,11 @@ class Environment(object):
         try:
             for action in self._actions:
                 if action.type == 'set':
-                    os.environ[action.name] = action.value
+                    if action.value is None:
+                        if action.name in os.environ:
+                            del os.environ[action.name]
+                    else:
+                        os.environ[action.name] = action.value
                 elif action.type == 'append':
                     os.environ[action.name] = self._pathsep.join(
                         os.environ.get(action.name, ''), action.value)
