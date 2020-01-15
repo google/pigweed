@@ -12,22 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-project(Pigweed)
+add_library(pw_polyfill INTERFACE)
+target_include_directories(pw_polyfill INTERFACE public standard_library_public)
 
-cmake_minimum_required(VERSION 3.14)
-
-include(pw_build/pigweed.cmake)
-
-add_subdirectory(pw_base64)
-add_subdirectory(pw_cpu_exception)
-add_subdirectory(pw_cpu_exception_armv7m)
-add_subdirectory(pw_dumb_io)
-add_subdirectory(pw_dumb_io_stdio)
-add_subdirectory(pw_polyfill)
-add_subdirectory(pw_preprocessor)
-add_subdirectory(pw_span)
-add_subdirectory(pw_status)
-add_subdirectory(pw_string)
-add_subdirectory(pw_tokenizer)
-add_subdirectory(pw_unit_test)
-add_subdirectory(pw_varint)
+add_library(pw_polyfill.overrides INTERFACE)
+target_link_libraries(pw_polyfill.overrides INTERFACE pw_polyfill)
+target_include_directories(pw_polyfill.overrides
+  INTERFACE
+    public_overrides
+    standard_library_public
+)

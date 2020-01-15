@@ -1,0 +1,85 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public") {
+  include_dirs = [ "public" ]
+}
+
+source_set("pw_polyfill") {
+  public_configs = [ ":public" ]
+  public_deps = [
+    ":standard_library",
+  ]
+  public = [
+    "public/pw_polyfill/language_features.h",
+    "public/pw_polyfill/standard.h",
+  ]
+  sources = public
+}
+
+config("overrides_config") {
+  include_dirs = [ "public_overrides" ]
+}
+
+source_set("overrides") {
+  public_configs = [ ":overrides_config" ]
+  public_deps = [
+    ":standard_library",
+  ]
+  inputs = [
+    "public_overrides/cstddef",
+    "public_overrides/iterator",
+    "public_overrides/type_traits",
+  ]
+}
+
+config("standard_library_public") {
+  include_dirs = [ "standard_library_public" ]
+}
+
+source_set("standard_library") {
+  public_configs = [ ":standard_library_public" ]
+  public = [
+    "standard_library_public/pw_polyfill/standard_library/cstddef.h",
+    "standard_library_public/pw_polyfill/standard_library/iterator.h",
+    "standard_library_public/pw_polyfill/standard_library/type_traits.h",
+  ]
+  sources = public
+  visibility = [
+    ":overrides",
+    ":pw_polyfill",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":default_cpp_test" ]
+}
+
+pw_test("default_cpp_test") {
+  deps = [
+    ":pw_polyfill",
+  ]
+  sources = [
+    "test.cc",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [
+    "docs.rst",
+  ]
+}

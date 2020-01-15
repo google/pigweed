@@ -1,0 +1,65 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "pw_polyfill",
+    hdrs = [
+        "public/pw_polyfill/language_features.h",
+        "public/pw_polyfill/standard.h",
+    ],
+    includes = ["public"],
+    deps = [":standard_library"],
+)
+
+pw_cc_library(
+    name = "overrides",
+    hdrs = [
+        "public_overrides/cstddef",
+        "public_overrides/iterator",
+        "public_overrides/type_traits",
+    ],
+    includes = ["public_overrides"],
+    deps = [":standard_library"],
+)
+
+pw_cc_library(
+    name = "standard_library",
+    hdrs = [
+        "standard_library_public/pw_polyfill/standard_library/cstddef.h",
+        "standard_library_public/pw_polyfill/standard_library/iterator.h",
+        "standard_library_public/pw_polyfill/standard_library/type_traits.h",
+    ],
+    includes = ["standard_library_public"],
+    visibility = ["//visibility:private"],
+)
+
+pw_cc_test(
+    name = "default_cpp_test",
+    srcs = [
+        "test.cc",
+    ],
+    deps = [
+        ":pw_polyfill",
+    ],
+)

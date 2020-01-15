@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -29,6 +29,7 @@ dir_pw_dumb_io_baremetal_stm32f429 =
     "$dir_pigweed/pw_dumb_io_baremetal_stm32f429"
 dir_pw_dumb_io_stdio = "$dir_pigweed/pw_dumb_io_stdio"
 dir_pw_module = "$dir_pigweed/pw_module"
+dir_pw_polyfill = "$dir_pigweed/pw_polyfill"
 dir_pw_preprocessor = "$dir_pigweed/pw_preprocessor"
 dir_pw_presubmit = "$dir_pigweed/pw_presubmit"
 dir_pw_protobuf = "$dir_pigweed/pw_protobuf"

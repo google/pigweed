@@ -56,6 +56,14 @@ template("_pw_override_target_with_defaults") {
   target(invoker._target_type, target_name) {
     forward_variables_from(invoker, "*", [ "_target_type" ])
 
+    # Add a dependency on pw_polyfill, unless this is pw_polyfill.
+    if (rebase_path(".") != rebase_path("$dir_pw_polyfill")) {
+      if (!defined(public_deps)) {
+        public_deps = []
+      }
+      public_deps += [ "$dir_pw_polyfill:overrides" ]
+    }
+
     if (!defined(configs)) {
       configs = []
     }
