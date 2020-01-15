@@ -31,11 +31,13 @@ import os
 import subprocess
 import sys
 
-import cipd.update
-import cipd.wrapper
-import host_build.init
-import cargo.init
-import virtualenv.init
+# TODO(mohrr) remove import-error disabling, not sure why pylint has issues
+# with it.
+import cipd.update  # pylint: disable=import-error
+import cipd.wrapper  # pylint: disable=import-error
+import host_build.init  # pylint: disable=import-error
+import cargo.init  # pylint: disable=import-error
+import virtualenv.init  # pylint: disable=import-error
 
 
 class UnexpectedAction(ValueError):
@@ -240,5 +242,9 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
+def main():
+    return EnvSetup(**vars(parse())).setup()
+
+
 if __name__ == '__main__':
-    sys.exit(EnvSetup(**vars(parse())).setup())
+    sys.exit(main())
