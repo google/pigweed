@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "pigweed.dev/proto/pw_target_runner/target_runner_pb"
 )
@@ -95,6 +97,17 @@ func main() {
 	}
 
 	if err := cli.RunBinary(*pathPtr); err != nil {
-		log.Fatal(err)
+		log.Println("Failed to run executable on target:")
+		log.Println("")
+
+		s, _ := status.FromError(err)
+		if s.Code() == codes.Unavailable {
+			log.Println("  No pw_target_runner_server is running.")
+			log.Println("  Check that a server has been started for your target.")
+		} else {
+			log.Printf("  %v\n", err)
+		}
+
+		log.Fatal("")
 	}
 }
