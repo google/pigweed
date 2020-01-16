@@ -38,7 +38,8 @@ export PW_ROOT
 
 SETUP_SH="$PW_ROOT/env_setup/.setup.sh"
 
-if [ $(which python3 &> /dev/null) ]; then
+# Try to use Python 3 if possible by default, before Python 2.
+if which python3 &> /dev/null; then
   PYTHON=python3
 else
   PYTHON=python
