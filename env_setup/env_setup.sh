@@ -38,13 +38,19 @@ export PW_ROOT
 
 SETUP_SH="$PW_ROOT/env_setup/.setup.sh"
 
+if [ $(which python3 &> /dev/null) ]; then
+  PYTHON=python3
+else
+  PYTHON=python
+fi
+
 # Expanded logic here to make this both easy to read and not bash-specific.
 # If user sourced 'bootstrap.sh' or if there is no '.setup.sh' then run
 # env_setup.py.
 if [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ]; then
-  $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
+  $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 elif [ ! -f $SETUP_SH ]; then
-  $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
+  $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 fi
 
 source $SETUP_SH
