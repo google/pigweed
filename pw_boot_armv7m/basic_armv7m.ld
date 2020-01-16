@@ -22,13 +22,13 @@
  */
 
 /* Provide useful error messages when required configurations are not set. */
-#ifndef PW_BOOT_INTERRUPT_VECTOR_TABLE_BEGIN
-#error "PW_BOOT_INTERRUPT_VECTOR_TABLE_BEGIN is not defined, and is required to use pw_boot_armv7m"
-#endif  // PW_BOOT_INTERRUPT_VECTOR_TABLE_BEGIN
+#ifndef PW_BOOT_VECTOR_TABLE_BEGIN
+#error "PW_BOOT_VECTOR_TABLE_BEGIN is not defined, and is required to use pw_boot_armv7m"
+#endif  // PW_BOOT_VECTOR_TABLE_BEGIN
 
-#ifndef PW_BOOT_INTERRUPT_VECTOR_TABLE_SIZE
-#error "PW_BOOT_INTERRUPT_VECTOR_TABLE_SIZE is not defined, and is required to use pw_boot_armv7m"
-#endif  // PW_BOOT_INTERRUPT_VECTOR_TABLE_SIZE
+#ifndef PW_BOOT_VECTOR_TABLE_SIZE
+#error "PW_BOOT_VECTOR_TABLE_SIZE is not defined, and is required to use pw_boot_armv7m"
+#endif  // PW_BOOT_VECTOR_TABLE_SIZE
 
 #ifndef PW_BOOT_FLASH_BEGIN
 #error "PW_BOOT_FLASH_BEGIN is not defined, and is required to use pw_boot_armv7m"
@@ -69,9 +69,9 @@ MEMORY
    */
 
   /* Vector Table (typically in flash) */
-  INTERRUPT_VECTOR_TABLE(rx) : \
-    ORIGIN = PW_BOOT_INTERRUPT_VECTOR_TABLE_BEGIN, \
-    LENGTH = PW_BOOT_INTERRUPT_VECTOR_TABLE_SIZE
+  VECTOR_TABLE(rx) : \
+    ORIGIN = PW_BOOT_VECTOR_TABLE_BEGIN, \
+    LENGTH = PW_BOOT_VECTOR_TABLE_SIZE
   /* Internal Flash */
   FLASH(rx) : \
     ORIGIN = PW_BOOT_FLASH_BEGIN, \
@@ -94,7 +94,7 @@ SECTIONS
   {
     pw_vector_table_addr = .;
     KEEP(*(.vector_table))
-  } >INTERRUPT_VECTOR_TABLE
+  } >VECTOR_TABLE
 
   /* Main executable code. */
   .code : ALIGN(8)
