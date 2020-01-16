@@ -37,6 +37,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_string",
     ],

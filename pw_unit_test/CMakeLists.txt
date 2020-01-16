@@ -16,6 +16,7 @@ pw_add_module_library(pw_unit_test
   SOURCES
     framework.cc
   PUBLIC_DEPS
+    pw_polyfill
     pw_preprocessor
     pw_string
 )

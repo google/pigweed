@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,18 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// The Pigweed unit test framework requires C++17 to use its full functionality.
+// In C++11, only the TEST, TEST_F, EXPECT_TRUE, EXPECT_FALSE, ASSERT_TRUE,
+// ASSERT_FALSE, FAIL, and ADD_FAILURE macros may be used.
 #pragma once
 
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <new>
-#include <string_view>
 
+#include "pw_polyfill/standard.h"
 #include "pw_preprocessor/concat.h"
 #include "pw_preprocessor/util.h"
-#include "pw_string/string_builder.h"
 #include "pw_unit_test/event_handler.h"
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+#include "pw_string/string_builder.h"
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 #define PW_TEST(test_suite_name, test_name) \
   _PW_TEST(test_suite_name, test_name, ::pw::unit_test::Test)
@@ -38,25 +44,25 @@
 #define TEST_F(test_fixture, test_name) \
   _PW_TEST(test_fixture, test_name, test_fixture)
 
+#define EXPECT_TRUE(expr) _PW_EXPECT_BOOL(expr, true)
+#define EXPECT_FALSE(expr) _PW_EXPECT_BOOL(expr, false)
 #define EXPECT_EQ(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, ==)
 #define EXPECT_NE(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, !=)
 #define EXPECT_GT(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, >)
 #define EXPECT_GE(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, >=)
 #define EXPECT_LT(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, <)
 #define EXPECT_LE(lhs, rhs) _PW_TEST_OP(_PW_TEST_EXPECT, lhs, rhs, <=)
-#define EXPECT_TRUE(expr) _PW_TEST_TRUE(_PW_TEST_EXPECT, expr)
-#define EXPECT_FALSE(expr) _PW_TEST_FALSE(_PW_TEST_EXPECT, expr)
 #define EXPECT_STREQ(lhs, rhs) _PW_TEST_STREQ(_PW_TEST_EXPECT, lhs, rhs)
 #define EXPECT_STRNE(lhs, rhs) _PW_TEST_STRNE(_PW_TEST_EXPECT, lhs, rhs)
 
+#define ASSERT_TRUE(expr) _PW_ASSERT_BOOL(expr, true)
+#define ASSERT_FALSE(expr) _PW_ASSERT_BOOL(expr, false)
 #define ASSERT_EQ(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, ==)
 #define ASSERT_NE(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, !=)
 #define ASSERT_GT(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, >)
 #define ASSERT_GE(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, >=)
 #define ASSERT_LT(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, <)
 #define ASSERT_LE(lhs, rhs) _PW_TEST_OP(_PW_TEST_ASSERT, lhs, rhs, <=)
-#define ASSERT_TRUE(expr) _PW_TEST_TRUE(_PW_TEST_ASSERT, expr)
-#define ASSERT_FALSE(expr) _PW_TEST_FALSE(_PW_TEST_ASSERT, expr)
 #define ASSERT_STREQ(lhs, rhs) _PW_TEST_STREQ(_PW_TEST_ASSERT, lhs, rhs)
 #define ASSERT_STRNE(lhs, rhs) _PW_TEST_STRNE(_PW_TEST_ASSERT, lhs, rhs)
 
@@ -99,7 +105,11 @@
 #define RUN_ALL_TESTS() \
   ::pw::unit_test::internal::Framework::Get().RunAllTests()
 
-namespace pw::string {
+namespace pw {
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+namespace string {
 
 // This function is used to print unknown types that are used in EXPECT or
 // ASSERT statements in tests.
@@ -123,9 +133,11 @@ StatusWithSize UnknownTypeToString(const T& value, const span<char>& buffer) {
   return sb.status_with_size();
 }
 
-}  // namespace pw::string
+}  // namespace string
 
-namespace pw::unit_test {
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+namespace unit_test {
 
 class Test;
 
@@ -210,16 +222,25 @@ class Framework {
 
     bool result = expectation(lhs, rhs);
     ExpectationResult(expression,
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
                       MakeString<kExpectationBufferSizeBytes>(
-                          lhs, ' ', expectation_string, ' ', rhs),
+                          lhs, ' ', expectation_string, ' ', rhs)
+                          .c_str(),
+#else
+                      "(evaluation requires C++17)",
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
                       line,
                       result);
+
+    static_cast<void>(expectation_string);
+    static_cast<void>(kExpectationBufferSizeBytes);
+
     return result;
   }
 
   // Dispatches an event indicating the result of an expectation.
   void ExpectationResult(const char* expression,
-                         const std::string_view& evaluated_expression,
+                         const char* evaluated_expression,
                          int line,
                          bool success);
 
@@ -331,7 +352,8 @@ class Test {
   virtual void PigweedTestBody() = 0;
 };
 
-}  // namespace pw::unit_test
+}  // namespace unit_test
+}  // namespace pw
 
 #define _PW_TEST_CLASS_NAME(test_suite_name, test_name) \
   PW_CONCAT(test_suite_name, _, test_name, _Test)
@@ -388,19 +410,22 @@ class Test {
   expect_or_assert(                                 \
       lhs, rhs, [](const auto& l, const auto& r) { return l op r; }, #op)
 
-#define _PW_TEST_TRUE(expect_or_assert, expr)                              \
-  expect_or_assert(                                                        \
-      expr,                                                                \
-      true,                                                                \
-      [](const auto& arg, const auto&) { return static_cast<bool>(arg); }, \
-      "is")
+// Implement boolean expectations in a C++11-compatible way.
+#define _PW_EXPECT_BOOL(expr, value)                             \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestExpect( \
+      [](bool lhs, bool rhs) { return lhs == rhs; },             \
+      static_cast<bool>(expr),                                   \
+      value,                                                     \
+      " is ",                                                    \
+      #expr " is " #value,                                       \
+      __LINE__)
 
-#define _PW_TEST_FALSE(expect_or_assert, expr)                              \
-  expect_or_assert(                                                         \
-      expr,                                                                 \
-      false,                                                                \
-      [](const auto& arg, const auto&) { return !static_cast<bool>(arg); }, \
-      "is")
+#define _PW_ASSERT_BOOL(expr, value)     \
+  do {                                   \
+    if (!_PW_EXPECT_BOOL(expr, value)) { \
+      return;                            \
+    }                                    \
+  } while (0)
 
 #define _PW_TEST_STREQ(expect_or_assert, lhs, rhs)                         \
   expect_or_assert(                                                        \

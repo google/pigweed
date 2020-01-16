@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,12 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
 #pragma once
 
-#include <string_view>
-
-namespace pw::unit_test {
+namespace pw {
+namespace unit_test {
 
 // This file defines the interface through which the pw_unit_test framework
 // sends its test data as it runs unit tests. A program wanting to process test
@@ -71,7 +69,7 @@ struct TestExpectation {
   const char* expression;
 
   // The expression with arguments evaluated.
-  std::string_view evaluated_expression;
+  const char* evaluated_expression;
 
   // Line number at which the expectation is located.
   int line_number;
@@ -118,4 +116,5 @@ class EventHandler {
 // to receive test output.
 void RegisterEventHandler(EventHandler* event_handler);
 
-}  // namespace pw::unit_test
+}  // namespace unit_test
+}  // namespace pw

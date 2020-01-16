@@ -97,7 +97,7 @@ void Framework::EndTest(Test* test) {
 }
 
 void Framework::ExpectationResult(const char* expression,
-                                  const std::string_view& evaluated_expression,
+                                  const char* evaluated_expression,
                                   int line,
                                   bool success) {
   if (!success) {
