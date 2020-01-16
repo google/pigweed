@@ -41,7 +41,7 @@ SETUP_SH="$PW_ROOT/env_setup/.setup.sh"
 # Expanded logic here to make this both easy to read and not bash-specific.
 # If user sourced 'bootstrap.sh' or if there is no '.setup.sh' then run
 # env_setup.py.
-if [ $(basename $PW_SETUP_SCRIPT_PATH) == "bootstrap.sh" ]; then
+if [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ]; then
   $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 elif [ ! -f $SETUP_SH ]; then
   $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
