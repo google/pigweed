@@ -38,6 +38,14 @@ config("strict_warnings") {
   cflags_cc = [ "-Wnon-virtual-dtor" ]
 }
 
+config("cpp11") {
+  cflags_cc = [ "-std=c++11" ]
+}
+
+config("cpp14") {
+  cflags_cc = [ "-std=c++14" ]
+}
+
 config("cpp17") {
   cflags_cc = [
     "-std=c++17",
