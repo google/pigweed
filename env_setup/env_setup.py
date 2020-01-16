@@ -153,6 +153,9 @@ class EnvSetup(object):
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
 
+        if os.path.isfile(shell_file):
+            os.unlink(shell_file)
+
         if isinstance(self._pw_root, bytes):
             self._pw_root = self._pw_root.decode()
 
@@ -171,7 +174,8 @@ class EnvSetup(object):
             step()
             print('\nSetting up {}...done.'.format(name), file=sys.stdout)
 
-        self._env.write(self._shell_file)
+        with open(self._shell_file, 'w') as outs:
+            self._env.write(outs)
 
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
@@ -235,7 +239,6 @@ def parse(argv=None):
 
     parser.add_argument(
         '--shell-file',
-        type=argparse.FileType('w'),
         help='Where to write the file for shells to source.',
     )
 
