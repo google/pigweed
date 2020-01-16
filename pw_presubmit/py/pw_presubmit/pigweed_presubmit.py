@@ -283,7 +283,7 @@ BAZEL = (bazel_test, )
 # Code format presubmit checks
 #
 COPYRIGHT_FIRST_LINE = re.compile(
-    r'^(#|//| \*) Copyright 20\d\d The Pigweed Authors$')
+    r'^(#|//| \*|REM|::) Copyright 20\d\d The Pigweed Authors$')
 
 COPYRIGHT_LINES = tuple("""\
 
@@ -323,7 +323,8 @@ def copyright_notice(ctx: PresubmitContext):
         with open(path) as file:
             # Skip shebang and blank lines
             line = file.readline()
-            while line and (line.startswith(('#!', '/*')) or not line.strip()):
+            while line and (line.startswith(
+                ('#!', '/*', '@echo off')) or not line.strip()):
                 line = file.readline()
 
             first_line = COPYRIGHT_FIRST_LINE.match(line)
