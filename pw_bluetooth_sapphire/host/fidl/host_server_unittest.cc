@@ -12,6 +12,7 @@
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -49,8 +50,8 @@ using FidlRemoteDevice = fuchsia::bluetooth::control::RemoteDevice;
 namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 
-const bt::DeviceAddress kLETestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
-const bt::DeviceAddress kBrEdrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
+const bt::DeviceAddress kLeTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
+const bt::DeviceAddress kBredrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
 
 class MockPairingDelegate : public fuchsia::bluetooth::control::testing::PairingDelegate_TestBase {
  public:
@@ -87,9 +88,12 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   void SetUp() override {
     AdapterTestFixture::SetUp();
 
-    // Create a HostServer and bind it to a local client.
-    fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     gatt_host_ = GattHost::CreateForTesting(dispatcher(), gatt());
+    ResetHostServer();
+  }
+
+  void ResetHostServer() {
+    fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                                 adapter()->AsWeakPtr(), gatt_host_);
     host_.Bind(std::move(host_handle));
@@ -129,7 +133,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   }
 
   std::tuple<bt::gap::Peer*, FakeChannel*> ConnectFakePeer(bool connect_le = true) {
-    auto device_addr = connect_le ? kLETestAddr : kBrEdrTestAddr;
+    auto device_addr = connect_le ? kLeTestAddr : kBredrTestAddr;
     auto* peer = adapter()->peer_cache()->NewPeer(device_addr, true);
     EXPECT_TRUE(peer->temporary());
     // This is to capture the channel created during the Connection process
@@ -203,7 +207,7 @@ TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   EXPECT_CALL(*fidl_pairing_delegate,
@@ -233,7 +237,7 @@ TEST_F(FIDL_HostServerTest,
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   // This call should use PASSKEY_DISPLAY to request that the user perform peer passkey entry.
@@ -285,7 +289,7 @@ TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFid
   auto fidl_pairing_delegate =
       SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
 
-  auto* const peer = adapter()->peer_cache()->NewPeer(kLETestAddr, /*connectable=*/true);
+  auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   using OnPairingRequestCallback = FidlPairingDelegate::OnPairingRequestCallback;
@@ -512,6 +516,91 @@ TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
                       std::move(opts), pair_cb);
   RunLoopUntilIdle();
   ASSERT_EQ(pair_status.error->error_code, FidlErrorCode::NOT_FOUND);
+}
+
+TEST_F(FIDL_HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
+  // By default the peer cache contains no entries when HostServer is first constructed. The first
+  // call to WatchPeers should hang.
+  bool replied = false;
+  host_server()->WatchPeers([&](auto, auto) { replied = true; });
+  EXPECT_FALSE(replied);
+}
+
+TEST_F(FIDL_HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
+  __UNUSED auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+  ResetHostServer();
+
+  // By default the peer cache contains no entries when HostServer is first constructed. The first
+  // call to WatchPeers should hang.
+  bool replied = false;
+  host_server()->WatchPeers([&](auto updated, auto removed) {
+    EXPECT_EQ(1u, updated.size());
+    EXPECT_TRUE(removed.empty());
+    replied = true;
+  });
+  EXPECT_TRUE(replied);
+}
+
+TEST_F(FIDL_HostServerTest, WatchPeersStateMachine) {
+  std::optional<std::vector<fsys::Peer>> updated;
+  std::optional<std::vector<fbt::PeerId>> removed;
+
+  // Initial watch call hangs as the cache is empty.
+  host_server()->WatchPeers([&](auto updated_arg, auto removed_arg) {
+    updated = std::move(updated_arg);
+    removed = std::move(removed_arg);
+  });
+  ASSERT_FALSE(updated.has_value());
+  ASSERT_FALSE(removed.has_value());
+
+  // Adding a new peer should resolve the hanging get.
+  auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(updated.has_value());
+  ASSERT_TRUE(removed.has_value());
+  EXPECT_EQ(1u, updated->size());
+  EXPECT_TRUE(fidl::Equals(fidl_helpers::PeerToFidl(*peer), (*updated)[0]));
+  EXPECT_TRUE(removed->empty());
+  updated.reset();
+  removed.reset();
+
+  // The next call should hang.
+  host_server()->WatchPeers([&](auto updated_arg, auto removed_arg) {
+    updated = std::move(updated_arg);
+    removed = std::move(removed_arg);
+  });
+  ASSERT_FALSE(updated.has_value());
+  ASSERT_FALSE(removed.has_value());
+
+  // Removing the peer should resolve the hanging get.
+  auto peer_id = peer->identifier();
+  __UNUSED auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(peer_id);
+  ASSERT_TRUE(updated.has_value());
+  ASSERT_TRUE(removed.has_value());
+  EXPECT_TRUE(updated->empty());
+  EXPECT_EQ(1u, removed->size());
+  EXPECT_TRUE(fidl::Equals(fbt::PeerId{peer_id.value()}, (*removed)[0]));
+}
+
+TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
+  // Add then remove a peer. The watcher should only report the removal.
+  bt::PeerId id;
+  {
+    auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+    id = peer->identifier();
+
+    // |peer| becomes a dangling pointer after the call to RemoveDisconnectedPeer. We scoped the
+    // binding of |peer| so that it doesn't exist beyond this point.
+    __UNUSED auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
+  }
+
+  bool replied = false;
+  host_server()->WatchPeers([&replied, id](auto updated, auto removed) {
+    EXPECT_TRUE(updated.empty());
+    EXPECT_EQ(1u, removed.size());
+    EXPECT_TRUE(fidl::Equals(fbt::PeerId{id.value()}, removed[0]));
+    replied = true;
+  });
+  EXPECT_TRUE(replied);
 }
 
 }  // namespace

@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <fbl/macros.h>
 
@@ -32,6 +33,42 @@ namespace bthost {
 
 class GattHost;
 
+// Custom hanging getter for the `WatchPeers()` method. Here we keep track of each `updated` and
+// `removed` notification per PeerId so that the hanging get contains no duplicates and removed
+// entries aren't reflected in `updated`.
+class PeerTracker {
+ public:
+  using Updated = std::vector<fuchsia::bluetooth::sys::Peer>;
+  using Removed = std::vector<fuchsia::bluetooth::PeerId>;
+
+  PeerTracker() = default;
+  PeerTracker(PeerTracker&&) = default;
+  PeerTracker& operator=(PeerTracker&&) = default;
+
+  // Returns parameters that can be used in a WatchPeers() response.
+  std::pair<Updated, Removed> ToFidl(const bt::gap::PeerCache* peer_cache);
+
+  void Update(bt::PeerId id);
+  void Remove(bt::PeerId id);
+
+ private:
+  std::unordered_set<bt::PeerId> updated_;
+  std::unordered_set<bt::PeerId> removed_;
+};
+
+class WatchPeersGetter
+    : public bt_lib_fidl::HangingGetterBase<PeerTracker,
+                                            void(PeerTracker::Updated, PeerTracker::Removed)> {
+ public:
+  explicit WatchPeersGetter(bt::gap::PeerCache* peer_cache);
+
+ protected:
+  void Notify(std::queue<Callback> callbacks, PeerTracker peers) override;
+
+ private:
+  bt::gap::PeerCache* peer_cache_;  // weak
+};
+
 // Implements the Host FIDL interface. Owns all FIDL connections that have been
 // opened through it.
 class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
@@ -44,7 +81,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // ::fuchsia::bluetooth::host::Host overrides:
   void WatchState(WatchStateCallback callback) override;
   void SetLocalData(::fuchsia::bluetooth::control::HostData host_data) override;
-  void ListDevices(ListDevicesCallback callback) override;
+  void WatchPeers(WatchPeersCallback callback) override;
   void AddBondedDevices(::std::vector<fuchsia::bluetooth::control::BondingData> bonds,
                         AddBondedDevicesCallback callback) override;
   void SetLocalName(::std::string local_name, SetLocalNameCallback callback) override;
@@ -161,6 +198,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // Used to drive the WatchState() method.
   bt_lib_fidl::HangingGetter<fuchsia::bluetooth::sys::HostInfo> info_getter_;
+
+  // Used to drive the WatchPeers() method.
+  WatchPeersGetter watch_peers_getter_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

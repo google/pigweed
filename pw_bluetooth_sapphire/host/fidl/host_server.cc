@@ -30,6 +30,8 @@
 
 namespace bthost {
 
+namespace fbt = fuchsia::bluetooth;
+
 using bt::PeerId;
 using bt::sm::IOCapability;
 using fidl_helpers::AddressBytesFromString;
@@ -46,6 +48,49 @@ using fuchsia::bluetooth::control::PairingOptions;
 using fuchsia::bluetooth::control::RemoteDevice;
 using fuchsia::bluetooth::control::TechnologyType;
 
+std::pair<PeerTracker::Updated, PeerTracker::Removed> PeerTracker::ToFidl(
+    const bt::gap::PeerCache* peer_cache) {
+  PeerTracker::Updated updated_fidl;
+  for (auto& id : updated_) {
+    auto* peer = peer_cache->FindById(id);
+
+    // All ids in |updated_| are assumed to be valid as they would otherwise be in |removed_|.
+    ZX_ASSERT(peer);
+
+    updated_fidl.push_back(fidl_helpers::PeerToFidl(*peer));
+  }
+
+  PeerTracker::Removed removed_fidl;
+  for (auto& id : removed_) {
+    removed_fidl.push_back(fbt::PeerId{id.value()});
+  }
+
+  return std::make_pair(std::move(updated_fidl), std::move(removed_fidl));
+}
+
+void PeerTracker::Update(bt::PeerId id) {
+  updated_.insert(id);
+  removed_.erase(id);
+}
+
+void PeerTracker::Remove(bt::PeerId id) {
+  updated_.erase(id);
+  removed_.insert(id);
+}
+
+WatchPeersGetter::WatchPeersGetter(bt::gap::PeerCache* peer_cache) : peer_cache_(peer_cache) {
+  ZX_DEBUG_ASSERT(peer_cache_);
+}
+
+void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers) {
+  auto [updated, removed] = peers.ToFidl(peer_cache_);
+  while (!callbacks.empty()) {
+    auto f = std::move(callbacks.front());
+    callbacks.pop();
+    f(fidl::Clone(updated), fidl::Clone(removed));
+  }
+}
+
 HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
                        fbl::RefPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(channel)),
@@ -54,6 +99,7 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
       requesting_discovery_(false),
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
+      watch_peers_getter_(adapter->peer_cache()),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(gatt_host_);
 
@@ -81,6 +127,9 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
 
   // Initialize the HostInfo getter with the initial state.
   NotifyInfoChange();
+
+  // Initialize the peer watcher with all known connectable peers that are in the cache.
+  adapter->peer_cache()->ForEach([this](const bt::gap::Peer& peer) { OnPeerUpdated(peer); });
 }
 
 HostServer::~HostServer() { Close(); }
@@ -99,14 +148,8 @@ void HostServer::SetLocalData(::fuchsia::bluetooth::control::HostData host_data)
   }
 }
 
-void HostServer::ListDevices(ListDevicesCallback callback) {
-  std::vector<RemoteDevice> fidl_devices;
-  adapter()->peer_cache()->ForEach([&fidl_devices](const bt::gap::Peer& p) {
-    if (p.connectable()) {
-      fidl_devices.push_back(fidl_helpers::NewRemoteDevice(p));
-    }
-  });
-  callback(std::vector<RemoteDevice>(std::move(fidl_devices)));
+void HostServer::WatchPeers(WatchPeersCallback callback) {
+  watch_peers_getter_.Watch(std::move(callback));
 }
 
 // TODO(35008): Add a unit test for this method.
@@ -127,8 +170,7 @@ void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback cal
 }
 
 // TODO(35008): Add a unit test for this method.
-void HostServer::SetDeviceClass(fuchsia::bluetooth::DeviceClass device_class,
-                                SetDeviceClassCallback callback) {
+void HostServer::SetDeviceClass(fbt::DeviceClass device_class, SetDeviceClassCallback callback) {
   // Device Class values must only contain data in the lower 3 bytes.
   if (device_class.value >= 1 << 24) {
     callback(NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Can't Set Device Class"));
@@ -169,9 +211,8 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
         }
 
         // Set up a general-discovery filter for connectable devices.
-        // NOTE(armansito): This currently has no effect since OnDeviceUpdated
-        // events are generated based on PeerCache events. |session|'s
-        // "result callback" is unused.
+        // NOTE(armansito): This currently has no effect since peer updates
+        // are driven by PeerCache events. |session|'s "result callback" is unused.
         session->filter()->set_connectable(true);
         session->filter()->SetGeneralDiscoveryFlags();
 
@@ -787,19 +828,19 @@ void HostServer::OnPeerUpdated(const bt::gap::Peer& peer) {
     return;
   }
 
-  auto fidl_device = fidl_helpers::NewRemoteDevicePtr(peer);
-  if (!fidl_device) {
-    bt_log(TRACE, "bt-host", "ignoring malformed peer update");
-    return;
-  }
-
-  this->binding()->events().OnDeviceUpdated(std::move(*fidl_device));
+  watch_peers_getter_.Transform([id = peer.identifier()](auto tracker) {
+    tracker.Update(id);
+    return tracker;
+  });
 }
 
-void HostServer::OnPeerRemoved(bt::PeerId identifier) {
+void HostServer::OnPeerRemoved(bt::PeerId id) {
   // TODO(armansito): Notify only if the peer is connectable for symmetry with
   // OnPeerUpdated?
-  this->binding()->events().OnDeviceRemoved(identifier.ToString());
+  watch_peers_getter_.Transform([id](auto tracker) {
+    tracker.Remove(id);
+    return tracker;
+  });
 }
 
 void HostServer::ResetPairingDelegate() {

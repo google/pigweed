@@ -190,6 +190,71 @@ TEST(FIDL_HelpersTest, SecurityLevelFromBadFidlFails) {
   EXPECT_EQ(std::nullopt, SecurityLevelFromFidl(level));
 }
 
+TEST(FidlHelpersTest, PeerToFidlMandatoryFields) {
+  // Required by PeerCache expiry functions.
+  async::TestLoop dispatcher;
+
+  bt::gap::PeerCache cache;
+  bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
+  auto* peer = cache.NewPeer(addr, /*connectable=*/true);
+  auto fidl = PeerToFidl(*peer);
+  ASSERT_TRUE(fidl.has_id());
+  EXPECT_EQ(peer->identifier().value(), fidl.id().value);
+  ASSERT_TRUE(fidl.has_address());
+  EXPECT_TRUE(
+      fidl::Equals(fbt::Address{fbt::AddressType::PUBLIC, {{0, 1, 2, 3, 4, 5}}}, fidl.address()));
+  ASSERT_TRUE(fidl.has_technology());
+  EXPECT_EQ(fsys::TechnologyType::LOW_ENERGY, fidl.technology());
+  ASSERT_TRUE(fidl.has_connected());
+  EXPECT_FALSE(fidl.connected());
+  ASSERT_TRUE(fidl.has_bonded());
+  EXPECT_FALSE(fidl.bonded());
+
+  EXPECT_FALSE(fidl.has_name());
+  EXPECT_FALSE(fidl.has_appearance());
+  EXPECT_FALSE(fidl.has_rssi());
+  EXPECT_FALSE(fidl.has_tx_power());
+  EXPECT_FALSE(fidl.has_device_class());
+  EXPECT_FALSE(fidl.has_services());
+}
+
+TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
+  // Required by PeerCache expiry functions.
+  async::TestLoop dispatcher;
+
+  const int8_t kRssi = 5;
+  const int8_t kTxPower = 6;
+  const auto kAdv =
+      bt::CreateStaticByteBuffer(0x02, 0x01, 0x01,               // Flags: General Discoverable
+                                 0x03, 0x19, 192, 0,             // Appearance: Watch
+                                 0x02, 0x0A, 0x06,               // Tx-Power: 5
+                                 0x05, 0x09, 't', 'e', 's', 't'  // Complete Local Name: "test"
+      );
+
+  bt::gap::PeerCache cache;
+  bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
+  auto* peer = cache.NewPeer(addr, /*connectable=*/true);
+  peer->MutLe().SetAdvertisingData(kRssi, kAdv);
+  peer->MutBrEdr().SetInquiryData(bt::hci::InquiryResult{
+      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci::PageScanRepetitionMode::kR0, 0, 0,
+      bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
+
+  auto fidl = PeerToFidl(*peer);
+  ASSERT_TRUE(fidl.has_name());
+  EXPECT_EQ("test", fidl.name());
+  ASSERT_TRUE(fidl.has_appearance());
+  EXPECT_EQ(fbt::Appearance::WATCH, fidl.appearance());
+  ASSERT_TRUE(fidl.has_rssi());
+  EXPECT_EQ(kRssi, fidl.rssi());
+  ASSERT_TRUE(fidl.has_tx_power());
+  EXPECT_EQ(kTxPower, fidl.tx_power());
+  ASSERT_TRUE(fidl.has_device_class());
+  EXPECT_EQ(fbt::MAJOR_DEVICE_CLASS_PERIPHERAL, fidl.device_class().value);
+
+  // TODO(fxb/37485) Add a test when this field gets populated.
+  EXPECT_FALSE(fidl.has_services());
+}
+
 }  // namespace
 }  // namespace fidl_helpers
 }  // namespace bthost

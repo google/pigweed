@@ -85,6 +85,7 @@ fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::P
 // fuchsia.bluetooth.sys library helpers.
 fuchsia::bluetooth::sys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type);
 fuchsia::bluetooth::sys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter);
+fuchsia::bluetooth::sys::Peer PeerToFidl(const bt::gap::Peer& peer);
 
 // Functions to convert Control FIDL library objects.
 bt::sm::PairingData PairingDataFromFidl(const fuchsia::bluetooth::control::LEData& data);

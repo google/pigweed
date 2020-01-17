@@ -31,14 +31,30 @@ namespace bthost {
 namespace fidl_helpers {
 namespace {
 
-// TODO(36378): Add an AddressToFidl helper with a backend that can be used for both HostInfo and
-// Peer types.
-fbt::Address ControllerAddressToFidl(const bt::DeviceAddressBytes& input) {
+fbt::AddressType AddressTypeToFidl(bt::DeviceAddress::Type type) {
+  switch (type) {
+    case bt::DeviceAddress::Type::kBREDR:
+      [[fallthrough]];
+    case bt::DeviceAddress::Type::kLEPublic:
+      return fbt::AddressType::PUBLIC;
+    case bt::DeviceAddress::Type::kLERandom:
+      [[fallthrough]];
+    case bt::DeviceAddress::Type::kLEAnonymous:
+      return fbt::AddressType::RANDOM;
+  }
+  return fbt::AddressType::PUBLIC;
+}
+
+fbt::Address AddressToFidl(fbt::AddressType type, const bt::DeviceAddressBytes& value) {
   fbt::Address output;
-  output.type = fbt::AddressType::PUBLIC;
+  output.type = type;
   bt::MutableBufferView value_dst(output.bytes.data(), output.bytes.size());
-  value_dst.Write(input.bytes());
+  value_dst.Write(value.bytes());
   return output;
+}
+
+fbt::Address AddressToFidl(const bt::DeviceAddress& input) {
+  return AddressToFidl(AddressTypeToFidl(input.type()), input.value());
 }
 
 fctrl::TechnologyType TechnologyTypeToFidlDeprecated(bt::gap::TechnologyType type) {
@@ -134,6 +150,12 @@ fctrl::RemoteKey KeyToFidl(const bt::sm::Key& key) {
   result.security_properties = SecurityPropsToFidl(key.security());
   result.value = key.value();
   return result;
+}
+
+fbt::DeviceClass DeviceClassToFidl(bt::DeviceClass input) {
+  auto bytes = input.bytes();
+  fbt::DeviceClass output{static_cast<uint32_t>(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16))};
+  return output;
 }
 
 }  // namespace
@@ -332,11 +354,45 @@ fsys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter) {
   fsys::HostInfo info;
   info.set_id(fbt::Id{adapter.identifier().value()});
   info.set_technology(TechnologyTypeToFidl(adapter.state().type()));
-  info.set_address(ControllerAddressToFidl(adapter.state().controller_address()));
+  info.set_address(AddressToFidl(fbt::AddressType::PUBLIC, adapter.state().controller_address()));
   info.set_local_name(adapter.state().local_name());
   info.set_discoverable(adapter.IsDiscoverable());
   info.set_discovering(adapter.IsDiscovering());
   return info;
+}
+
+fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
+  fsys::Peer output;
+  output.set_id(fbt::PeerId{peer.identifier().value()});
+  output.set_address(AddressToFidl(peer.address()));
+  output.set_technology(TechnologyTypeToFidl(peer.technology()));
+  output.set_connected(peer.connected());
+  output.set_bonded(peer.bonded());
+
+  if (peer.name()) {
+    output.set_name(*peer.name());
+  }
+
+  bt::gap::AdvertisingData adv;
+  if (peer.le() && bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv)) {
+    if (adv.appearance()) {
+      output.set_appearance(static_cast<fbt::Appearance>(le16toh(*adv.appearance())));
+    }
+    if (adv.tx_power()) {
+      output.set_tx_power(*adv.tx_power());
+    }
+  }
+  if (peer.bredr() && peer.bredr()->device_class()) {
+    output.set_device_class(DeviceClassToFidl(*peer.bredr()->device_class()));
+  }
+  if (peer.rssi() != bt::hci::kRSSIInvalid) {
+    output.set_rssi(peer.rssi());
+  }
+
+  // TODO(fxb/37485): Populate service UUIDs based on GATT and SDP results as well as advertising
+  // and inquiry data.
+
+  return output;
 }
 
 fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap::Peer& peer) {
