@@ -44,8 +44,10 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_polyfill/language_features.h"
+
 // Pigweed: Disable the asserts from Chromium for now.
-#define _PW_SPAN_ASSERT(arg) static_cast<void>(arg)
+#define _PW_SPAN_ASSERT(arg)
 
 namespace pw {
 
@@ -318,7 +320,7 @@ class span : public span_internal::ExtentStorage<Extent> {
   constexpr span(const span<U, OtherExtent>& other)
       : span(other.data(), other.size()) {}
 
-  constexpr span& operator=(const span& other) noexcept = default;
+  PW_CONSTEXPR_FUNCTION span& operator=(const span& other) noexcept = default;
   ~span() noexcept = default;
 
   // [span.sub], span subviews
@@ -452,6 +454,8 @@ as_writable_bytes(span<T, X> s) noexcept {
 // Type-deducing helpers for constructing a span.
 // Pigweed: Instead of a make_span function, provide the deduction guides
 //     specified in the C++20 standard.
+#ifdef __cpp_deduction_guides
+
 template <class T, std::size_t N>
 span(T (&)[N]) -> span<T, N>;
 
@@ -466,6 +470,8 @@ span(Container&) -> span<typename Container::value_type>;
 
 template <class Container>
 span(const Container&) -> span<const typename Container::value_type>;
+
+#endif  // __cpp_deduction_guides
 
 }  // namespace pw
 

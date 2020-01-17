@@ -36,13 +36,15 @@ size_t pw_VarintZigZagDecode(const void* input,
 
 #include <type_traits>
 
+#include "pw_polyfill/language_features.h"
 #include "pw_span/span.h"
 
-namespace pw::varint {
+namespace pw {
+namespace varint {
 
 // The maximum number of bytes occupied by an encoded varint. The maximum
 // uint64_t occupies 10 bytes when encoded.
-inline constexpr size_t kMaxVarintSizeBytes = 10;
+PW_INLINE_VARIABLE constexpr size_t kMaxVarintSizeBytes = 10;
 
 // ZigZag encodes a signed integer. This maps small negative numbers to small,
 // unsigned positive numbers, which improves their density for LEB128 encoding.
@@ -87,7 +89,7 @@ inline size_t EncodeLittleEndianBase128(uint64_t integer,
 // encoding buffer.
 template <typename T>
 size_t Encode(T integer, const span<std::byte>& output) {
-  if constexpr (std::is_signed<T>()) {
+  if (std::is_signed<T>()) {
     return pw_VarintZigZagEncode(integer, output.data(), output.size());
   } else {
     return pw_VarintEncode(integer, output.data(), output.size());
@@ -122,6 +124,7 @@ inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
   return pw_VarintDecode(input.data(), input.size(), value);
 }
 
-}  // namespace pw::varint
+}  // namespace varint
+}  // namespace pw
 
 #endif  // __cplusplus

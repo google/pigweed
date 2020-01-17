@@ -16,7 +16,8 @@
 
 #include <algorithm>
 
-namespace pw::varint {
+namespace pw {
+namespace varint {
 
 extern "C" size_t pw_VarintEncode(uint64_t integer,
                                   void* output,
@@ -30,11 +31,11 @@ extern "C" size_t pw_VarintEncode(uint64_t integer,
     }
 
     // Grab 7 bits; the eighth bit is set to 1 to indicate more data coming.
-    buffer[written++] = static_cast<std::byte>(integer) | std::byte{0x80};
+    buffer[written++] = static_cast<std::byte>(integer) | std::byte(0x80);
     integer >>= 7;
   } while (integer != 0u);
 
-  buffer[written - 1] &= std::byte{0x7f};  // clear the top bit of the last byte
+  buffer[written - 1] &= std::byte(0x7f);  // clear the top bit of the last byte
   return written;
 }
 
@@ -60,11 +61,11 @@ extern "C" size_t pw_VarintDecode(const void* input,
     }
 
     // Add the bottom seven bits of the next byte to the result.
-    decoded_value |= static_cast<uint64_t>(buffer[count] & std::byte{0x7f})
+    decoded_value |= static_cast<uint64_t>(buffer[count] & std::byte(0x7f))
                      << (7 * count);
 
     // Stop decoding if the top bit is not set.
-    if ((buffer[count++] & std::byte{0x80}) == std::byte{0}) {
+    if ((buffer[count++] & std::byte(0x80)) == std::byte(0)) {
       break;
     }
   }
@@ -82,4 +83,5 @@ extern "C" size_t pw_VarintZigZagDecode(const void* input,
   return bytes;
 }
 
-}  // namespace pw::varint
+}  // namespace varint
+}  // namespace pw
