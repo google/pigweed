@@ -24,9 +24,11 @@
 #include <cstddef>
 #include <cstring>
 
+#include "pw_polyfill/language_features.h"  // static_assert
 #include "pw_varint/varint.h"
 
-namespace pw::tokenizer {
+namespace pw {
+namespace tokenizer {
 namespace {
 
 // Store metadata about this compilation's string tokenization in the ELF.
@@ -191,8 +193,8 @@ void pw_TokenizeToBuffer(void* buffer,
   const size_t encoded_bytes =
       EncodeArgs(types,
                  args,
-                 span(static_cast<uint8_t*>(buffer) + sizeof(token),
-                      *buffer_size_bytes - sizeof(token)));
+                 span<uint8_t>(static_cast<uint8_t*>(buffer) + sizeof(token),
+                               *buffer_size_bytes - sizeof(token)));
   va_end(args);
 
   *buffer_size_bytes = sizeof(token) + encoded_bytes;
@@ -258,4 +260,5 @@ void pw_TokenizeToGlobalHandlerWithPayload(const pw_TokenizerPayload payload,
 
 }  // extern "C"
 
-}  // namespace pw::tokenizer
+}  // namespace tokenizer
+}  // namespace pw

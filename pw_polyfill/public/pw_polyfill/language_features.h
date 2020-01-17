@@ -25,3 +25,29 @@
 #else
 #define PW_CONSTEXPR_FUNCTION
 #endif  // __cpp_constexpr >= 201304L
+
+// This is an adapter for supporting static_assert with a single argument in
+// C++11 or C++14. Macros don't correctly parse commas in template expressions,
+// so the static_assert arguments are passed to an overloaded C++ function. The
+// full stringified static_assert arguments are used as the message.
+#if __cpp_static_assert < 201411L
+
+#define static_assert(...)                                                     \
+  static_assert(::pw::polyfill::internal::StaticAssertExpression(__VA_ARGS__), \
+                #__VA_ARGS__)
+
+namespace pw {
+namespace polyfill {
+namespace internal {
+
+constexpr bool StaticAssertExpression(bool expression) { return expression; }
+
+constexpr bool StaticAssertExpression(bool expression, const char*) {
+  return expression;
+}
+
+}  // namespace internal
+}  // namespace polyfill
+}  // namespace pw
+
+#endif  // __cpp_static_assert < 201411L

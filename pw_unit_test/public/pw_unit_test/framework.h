@@ -416,7 +416,7 @@ class Test {
       [](bool lhs, bool rhs) { return lhs == rhs; },             \
       static_cast<bool>(expr),                                   \
       value,                                                     \
-      " is ",                                                    \
+      "is",                                                      \
       #expr " is " #value,                                       \
       __LINE__)
 

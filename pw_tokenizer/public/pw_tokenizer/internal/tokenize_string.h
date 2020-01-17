@@ -27,7 +27,8 @@
 
 #include <stdint.h>
 
-#if __cplusplus  // In C++, use a constexpr function to calculate the hash.
+// In C++17, use a constexpr function to calculate the hash.
+#if __cpp_constexpr >= 201304L && defined(__cpp_inline_variables)
 
 #include "pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h"
 
@@ -36,7 +37,7 @@
       std::string_view((format), sizeof(format "") - 1), \
       PW_TOKENIZER_CFG_HASH_LENGTH)
 
-#else  // In C code, use the hashing macro
+#else  // In C or older C++ code, use the hashing macro.
 
 #if PW_TOKENIZER_CFG_HASH_LENGTH == 80
 
@@ -63,7 +64,7 @@
 
 #endif  // PW_TOKENIZER_CFG_HASH_LENGTH
 
-#endif  // __cplusplus
+#endif  // __cpp_constexpr >= 201304L && defined(__cpp_inline_variables)
 
 // The type of the token used in place of a format string.
 typedef uint32_t pw_TokenizerStringToken;

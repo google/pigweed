@@ -489,7 +489,7 @@ number of arguments.
 Compatibility
 =============
   * C11
-  * C++17
+  * C++11
   * Python 3
 
 Dependencies

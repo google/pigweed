@@ -15,11 +15,11 @@
 
 #include <type_traits>
 
+namespace std {
+
 // Defines std:foo_t aliases for typename foo::type. This is a small subset of
 // <type_traits> which may be expanded as needed.
 #ifndef __cpp_lib_transformation_trait_aliases
-
-namespace std {
 
 template <decltype(sizeof(int)) Len, decltype(sizeof(int)) Align>
 using aligned_storage_t = typename aligned_storage<Len, Align>::type;
@@ -51,6 +51,14 @@ using remove_pointer_t = typename remove_pointer<T>::type;
 template <typename T>
 using remove_reference_t = typename remove_reference<T>::type;
 
-}  // namespace std
-
 #endif  // __cpp_lib_transformation_trait_aliases
+
+#ifndef __cpp_lib_is_null_pointer
+
+template <typename T>
+struct is_null_pointer : std::is_same<decltype(nullptr), std::remove_cv_t<T>> {
+};
+
+#endif  // __cpp_lib_is_null_pointer
+
+}  // namespace std

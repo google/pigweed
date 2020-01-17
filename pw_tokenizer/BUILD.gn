@@ -123,6 +123,9 @@ pw_test_group("tests") {
     ":decode_test",
     ":detokenize_test",
     ":hash_test",
+    ":simple_tokenize_test_cpp11",
+    ":simple_tokenize_test_cpp14",
+    ":simple_tokenize_test_cpp17",
     ":token_database_test",
     ":tokenize_test",
   ]
@@ -181,6 +184,53 @@ pw_test("hash_test") {
   ]
   deps = [
     ":pw_tokenizer",
+  ]
+}
+
+# Fully test C++11 and C++14 compatibility by compiling all sources as C++11 or
+# C++14.
+_simple_tokenize_test_sources = [
+  "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
+  "public/pw_tokenizer/tokenize.h",
+  "public/pw_tokenizer/config.h",
+  "public/pw_tokenizer/internal/argument_types.h",
+  "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
+  "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
+  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h",
+  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
+  "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
+  "public/pw_tokenizer/internal/tokenize_string.h",
+  "tokenize.cc",
+  "simple_tokenize_test.cc",
+  "$dir_pw_varint/public/pw_varint/varint.h",
+  "$dir_pw_varint/varint.cc",
+]
+_simple_tokenize_test_configs = [
+  ":default_config",
+  "$dir_pw_varint:default_config",
+]
+
+pw_test("simple_tokenize_test_cpp11") {
+  configs = [ "$dir_pw_build:cpp11" ] + _simple_tokenize_test_configs
+  sources = _simple_tokenize_test_sources
+  deps = [
+    dir_pw_preprocessor,
+  ]
+}
+
+pw_test("simple_tokenize_test_cpp14") {
+  configs = [ "$dir_pw_build:cpp14" ] + _simple_tokenize_test_configs
+  sources = _simple_tokenize_test_sources
+  deps = [
+    dir_pw_preprocessor,
+  ]
+}
+
+pw_test("simple_tokenize_test_cpp17") {
+  configs = [ "$dir_pw_build:cpp17" ] + _simple_tokenize_test_configs
+  sources = _simple_tokenize_test_sources
+  deps = [
+    dir_pw_preprocessor,
   ]
 }
 

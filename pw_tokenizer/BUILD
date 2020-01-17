@@ -169,6 +169,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "simple_tokenize_test",
+    srcs = [
+        "simple_tokenize_test.cc",
+    ],
+    deps = [
+        ":pw_tokenizer",
+    ],
+)
+
+pw_cc_test(
     name = "token_database_test",
     srcs = [
         "token_database_test.cc",
