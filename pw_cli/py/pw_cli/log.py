@@ -64,13 +64,14 @@ def main():
 
 
 def install(level: int = logging.INFO,
-            use_color: Optional[bool] = None) -> None:
+            use_color: Optional[bool] = None,
+            hide_timestamp: bool = False) -> None:
     """Configure the system logger for the default pw command log format."""
 
     colors = pw_cli.color.colors(use_color)
 
     env = pw_cli.env.pigweed_environment()
-    if env.PW_SUBPROCESS:
+    if env.PW_SUBPROCESS or hide_timestamp:
         # If the logger is being run in the context of a pw subprocess, the
         # time and date are omitted (since pw_cli.process will provide them).
         timestamp_fmt = ''

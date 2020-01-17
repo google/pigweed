@@ -25,6 +25,7 @@ import sys
 
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+import pw_cli.log
 import pw_cli.process
 
 # Global logger for the script.
@@ -365,8 +366,7 @@ except ImportError:
 def main() -> int:
     """Standalone script entry point."""
 
-    # Don't assume coloredlogs is available unless this was invoked as a script.
-    import coloredlogs  # pylint: disable=import-outside-toplevel
+    pw_cli.log.install(hide_timestamp=True)
 
     parser = argparse.ArgumentParser(description=__doc__)
     register_arguments(parser)
@@ -375,18 +375,6 @@ def main() -> int:
                         action='store_true',
                         help='Output additional logs as the script runs')
     args = parser.parse_args()
-
-    log_level = 'DEBUG' if args.verbose else 'INFO'
-    coloredlogs.install(level=log_level,
-                        level_styles={
-                            'debug': {
-                                'color': 244
-                            },
-                            'error': {
-                                'color': 'red'
-                            }
-                        },
-                        fmt='%(asctime)s | %(message)s')
 
     args_as_dict = dict(vars(args))
     del args_as_dict['verbose']

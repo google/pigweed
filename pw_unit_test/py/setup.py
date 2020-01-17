@@ -31,6 +31,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
     install_requires=[
-        'coloredlogs',
+        'pw_cli',
     ],
 )
