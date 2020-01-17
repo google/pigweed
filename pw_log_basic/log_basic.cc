@@ -41,6 +41,7 @@
 #define PW_USE_EMOJIS 1
 #define PW_LOG_SHOW_FILENAME 0
 #define PW_LOG_SHOW_FLAG 0
+#define PW_LOG_SHOW_MODULE 0
 
 namespace {
 
@@ -104,16 +105,20 @@ extern "C" void pw_Log(int level,
   pw::StringBuffer<150> buffer;
 
   // Column: Filename
-#if PW_SHOW_FILENAME
+#if PW_LOG_SHOW_FILENAME
   buffer.Format(" %-30s |", GetFileBasename(file_name));
 #else
   PW_UNUSED(file_name);
 #endif
 
   // Column: Module
+#if PW_LOG_SHOW_MODULE
   buffer << " " BOLD;
   buffer.Format("%3s", module_name);
   buffer << RESET " ";
+#else
+  PW_UNUSED(module_name);
+#endif  // PW_LOG_SHOW_MODULE
 
   // Column: Flag
 #if PW_LOG_SHOW_FLAG
@@ -128,7 +133,7 @@ extern "C" void pw_Log(int level,
 #endif  // PW_LOG_SHOW_FLAG
 
   // Column: Level
-  buffer << LogLevelToLogLevelName(level) << "   ";
+  buffer << LogLevelToLogLevelName(level) << "  ";
 
   // Column: Message
   va_list args;

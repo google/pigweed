@@ -18,6 +18,9 @@ declare_args() {
   pw_build_host_tools = true
 }
 
+# Use logging-based test output on host.
+pw_unit_test_main = "$dir_pw_unit_test:logging_main"
+
 # Configure backend for pw_dumb_io facade.
 dir_pw_dumb_io_backend = "$dir_pw_dumb_io_stdio"
 

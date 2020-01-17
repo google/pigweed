@@ -58,10 +58,25 @@ pw_cc_library(
     ],
 )
 
+filegroup(
+    name = "logging_event_handler",
+    srcs = [
+        "logging_event_handler.cc",
+        "public/pw_unit_test/logging_event_handler.h",
+        ],
+)
+
+filegroup(
+    name = "logging_main",
+    srcs = [
+        "logging_main.cc",
+        ],
+)
+
 pw_cc_library(
     name = "main",
     srcs = [
-        "main.cc",
+        "simple_printing_main.cc",
     ],
     deps = [
         ":pw_unit_test",

@@ -26,7 +26,7 @@ target_include_directories(pw_unit_test PUBLIC public_overrides)
 
 pw_add_module_library(pw_unit_test.main
   SOURCES
-    main.cc
+    simple_printing_main.cc
     simple_printing_event_handler.cc
   PUBLIC_DEPS
     pw_unit_test

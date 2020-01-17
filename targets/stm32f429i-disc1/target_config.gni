@@ -29,6 +29,9 @@ declare_args() {
   pw_use_test_server = false
 }
 
+# Use the logging main.
+pw_unit_test_main = "$dir_pw_unit_test:logging_main"
+
 # Expose the tool to use for preprocessing linker scripts.
 # TODO(pwbug/53): Temporary, will be removed when proper linker script support
 # is added to GN.

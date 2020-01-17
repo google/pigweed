@@ -61,7 +61,7 @@ pw_target_toolchain = ""
 pw_size_report_toolchains = []
 
 # Implementation of a main function for "pw_test" unit test binaries.
-pw_unit_test_main = "$dir_pw_unit_test:main"
+pw_unit_test_main = "$dir_pw_unit_test:simple_printing_main"
 
 # Path to a test runner to automatically run unit tests after they are built.
 #
