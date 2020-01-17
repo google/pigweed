@@ -72,9 +72,6 @@ if (dir_pw_log_backend != "") {
     public_deps = [
       ":pw_unit_test",
       "$dir_pw_log",
-
-      # TODO: When the pw_facade() template is fixed, removed this.
-      "$dir_pw_log_backend",
       "$dir_pw_preprocessor",
     ]
     public = [

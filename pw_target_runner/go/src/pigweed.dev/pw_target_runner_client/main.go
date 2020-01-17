@@ -74,7 +74,7 @@ func (c *Client) RunBinary(path string) error {
 	fmt.Println(string(res.Output))
 
 	if res.Result != pb.RunStatus_SUCCESS {
-		return errors.New("Failed to run binary")
+		return errors.New("Binary run was unsuccessful")
 	}
 
 	return nil

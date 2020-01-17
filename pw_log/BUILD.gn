@@ -20,19 +20,12 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("facade") {
+pw_facade("pw_log") {
+  backend = dir_pw_log_backend
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_log/levels.h",
     "public/pw_log/log.h",
-  ]
-  sources = public
-}
-
-pw_facade("pw_log") {
-  backend = dir_pw_log_backend
-  public_deps = [
-    ":facade",
   ]
 }
 

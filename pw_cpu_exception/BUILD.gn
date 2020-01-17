@@ -19,7 +19,8 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("facade") {
+pw_facade("pw_cpu_exception") {
+  backend = dir_pw_cpu_exception_backend
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_preprocessor",
@@ -28,14 +29,6 @@ source_set("facade") {
   ]
   public = [
     "public/pw_cpu_exception/cpu_exception.h",
-  ]
-  sources = public
-}
-
-pw_facade("pw_cpu_exception") {
-  backend = dir_pw_cpu_exception_backend
-  public_deps = [
-    ":facade",
   ]
 }
 

@@ -32,8 +32,47 @@ import("$dir_pw_build/python_script.gni")
 #  - backend: the dependency that implements this facade
 #
 template("pw_facade") {
+  assert(defined(invoker.backend),
+         "pw_facade requires a reference to a backend variable for the facade")
+
+  # A facade's headers are split into a separate target to avoid a circular
+  # dependency between the facade and the backend.
+  #
+  # For example, the following targets:
+  #
+  #   foo_backend = "//foo:foo_backend_bar"
+  #
+  #   pw_facade("foo") {
+  #     backend = foo_backend
+  #     public = [ "foo.h" ]
+  #     sources = [ "foo.cc" ]
+  #   }
+  #
+  #   source_set("foo_backend_bar") {
+  #     deps = [ ":facade" ]
+  #     sources = [ "bar.cc" ]
+  #   }
+  #
+  # Create the following dependency graph:
+  #
+  #   facade  <-.
+  #    ^         \
+  #    |          \
+  #    |           \
+  #   foo  ------>  foo_backend_bar
+  #
+  _facade_vars = [
+    "public_configs",
+    "public_deps",
+    "public",
+  ]
+  source_set("facade") {
+    forward_variables_from(invoker, _facade_vars)
+    sources = public
+  }
+
   if (invoker.backend == "") {
-    # If backend is not set to anything, emit an error.
+    # If backend is not set to anything, create a script that emits an error.
     pw_python_script(target_name) {
       stamp = true
       script = "$dir_pw_build/py/null_backend.py"
@@ -41,19 +80,27 @@ template("pw_facade") {
       not_needed(invoker, "*")
     }
   } else {
+    # When a backend is set, create a target defining the facade library.
     source_set(target_name) {
-      # If the backend is set, create a new source_set.
-      _ignore_vars = [
-        "backend",
-        "deps",
-      ]
-      if (defined(invoker.deps)) {
-        deps = invoker.deps
-      } else {
-        deps = []
-      }
-      deps += [ invoker.backend ]
+      # The main library contains everything else specified in the template.
+      _ignore_vars = [ "backend" ] + _facade_vars
       forward_variables_from(invoker, "*", _ignore_vars)
+
+      public_deps = [
+        ":facade",
+
+        # Inject the backend as a dependency.
+        invoker.backend,
+      ]
+
+      if (defined(sources)) {
+        # Protect against the pattern
+        #
+        #   sources = [ "foo.cc" ] + public
+        #
+        # as the public headers are already listed in the :facade target.
+        sources -= invoker.public
+      }
     }
   }
 }
