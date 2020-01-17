@@ -23,8 +23,59 @@ Additionally, the structure is designed to limit the number of places a file
 could go, so that when reading callsites it is obvious where a header is from.
 That is where the duplicated ``<module>`` occurrences in file paths comes from.
 
-tl;dr example module structure
-------------------------------
+Steps to create a new module Pigweed project
+--------------------------------------------
+
+These instructions are for creating a new module for contribution to the
+Pigweed project. See below for an `example`__ of what the new module folder
+might look like.
+
+__ `Example module structure`_
+
+1. Create module folder following `Module name`_ guidelines
+2. Add `C++ public headers`_ files in
+   ``{pw_module_dir}/public/{pw_module_name}/``
+3. Add `C++ implementation files`_ files in ``{pw_module_dir}/``
+4. Add module documentation
+
+    - Add ``{pw_module_dir}/README.md`` that has a module summary
+    - Add ``{pw_module_dir}/docs.rst`` that contains the main module
+      documentation
+
+5. Add build support inside of new module
+
+    - Add GN with ``{pw_module_dir}/BUILD.gn``
+    - Add Bazel with ``{pw_module_dir}/BUILD``
+    - Add CMake with ``{pw_module_dir}/CMakeLists.txt``
+
+6. Add folder alias for new module variable in ``/modules.gni``
+
+    - dir_pw_new = "$dir_pigweed/pw_new"
+
+7. Add new module to main GN build
+
+    - in ``/BUILD.gn`` to ``group("pw_modules")`` using folder alias variable
+    - General modules and backends of facades go in ``pw_modules``, facades go
+      in ``pw_facades``
+
+8. Add test target for new module in ``/BUILD.gn`` to
+   ``pw_test_group("pw_module_tests")``
+9. Add new module to CMake build
+
+    - In ``/CMakeLists.txt`` add ``add_subdirectory(pw_new)``
+
+10. Add the new module to docs module
+
+    - Add in ``docs/BUILD.gn`` to ``pw_doc_gen("docs")``
+
+11. Run `module check`__
+
+    - ``$ pw module-check {pw_module_dir}``
+
+__ `Command: pw module-check`_
+
+Example module structure
+------------------------
 
 .. code-block:: python
 
@@ -36,7 +87,7 @@ tl;dr example module structure
     BUILD.gn   # GN build required
     BUILD      # Bazel build required
 
-    # Public headers; the repeated module name is required
+    # C++ public headers; the repeated module name is required
     public/pw_foo/foo.h
     public/pw_foo/baz.h
 
@@ -112,18 +163,19 @@ be ``it_``).
 C++ file and directory locations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Public headers - ``public/<module>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-These are headers that must be exposed due to C++ limitations (i.e. are
-included from the public interface, but are not intended for public use).
+C++ public headers
+^^^^^^^^^^^^^^^^^^
+Located ``{pw_module_dir}/public/<module>``. These are headers that must be
+exposed due to C++ limitations (i.e. are included from the public interface,
+but are not intended for public use).
 
 **Public headers** should take the form:
 
-``<module>/public/<module>/*.h``
+``{pw_module_dir}/public/<module>/*.h``
 
 **Exposed private headers** should take the form:
 
-``<module>/public/<module>/internal/*.h``
+``{pw_module_dir}/public/<module>/internal/*.h``
 
 Examples:
 
@@ -137,7 +189,7 @@ Examples:
 For headers that must be exposed due to C++ limitations (i.e. are included from
 the public interface, but are not intended for use), place the headers in a
 ``internal`` subfolder under the public headers directory; as
-``public/<module>/internal/*.h``. For example:
+``{pw_module_dir}/public/<module>/internal/*.h``. For example:
 
 .. code-block::
 
@@ -150,19 +202,20 @@ the public interface, but are not intended for use), place the headers in a
   These headers must not override headers from other modules. For
   that, there is the ``public_overrides/`` directory.
 
-Public override headers - ``public_overrides/<module>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In general, the Pigweed philosophy is to avoid having "things hiding under
-rocks", and having header files with the same name that can override each other
-is considered a rock where surprising things can hide. Additionally, a design
-goal of the Pigweed module structure is to make it so there is ideally exactly
-one obvious place to find a header based on an ``#include``.
+Public override headers
+^^^^^^^^^^^^^^^^^^^^^^^
+Located ``{pw_module_dir}/public_overrides/<module>``. In general, the Pigweed
+philosophy is to avoid having "things hiding under rocks", and having header
+files with the same name that can override each other is considered a rock
+where surprising things can hide. Additionally, a design goal of the Pigweed
+module structure is to make it so there is ideally exactly one obvious place
+to find a header based on an ``#include``.
 
 However, in some cases header overrides are necessary to enable flexibly
 combining modules. To make this as explicit as possible, headers which override
 other headers must go in
 
-``<module>/public_overrides/...```
+``{pw_module_dir}/public_overrides/...```
 
 For example, the ``pw_unit_test`` module provides a header override for
 ``gtest/gtest.h``. The structure of the module is (omitting some files):
@@ -181,10 +234,10 @@ For example, the ``pw_unit_test`` module provides a header override for
 
 Note that the overrides are in a separate directory ``public_overrides``.
 
-Public override headers - ``public_overrides/<module>``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-C++ implementation files go at the top level of the module. Implementation files
-must always use "" style includes.
+C++ implementation files
+^^^^^^^^^^^^^^^^^^^^^^^^
+Located ``{pw_module_dir}/``. C++ implementation files go at the top level of
+the module. Implementation files must always use "" style includes.
 
 Example:
 
