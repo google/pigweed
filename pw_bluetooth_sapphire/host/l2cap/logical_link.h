@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
@@ -143,6 +144,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // LE-U link.
   LESignalingChannel* le_signaling_channel() const;
 
+  fxl::WeakPtr<LogicalLink> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
   friend class ChannelImpl;
   friend fbl::RefPtr<LogicalLink>;
@@ -162,6 +165,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // channels.
   ~LogicalLink();
 
+  // Returns true if |id| is valid and supported by the peer.
   bool AllowsFixedChannel(ChannelId id);
 
   // Called by ChannelImpl::Deactivate(). Removes the channel from the given
@@ -195,6 +199,16 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // This MUST not be called on a closed link.
   void CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb,
                            async_dispatcher_t* dispatcher);
+
+  // Send an Information Request signaling packet of type Fixed Channels Supported.
+  void SendFixedChannelsSupportedInformationRequest();
+
+  // Handler for Information Response signaling packet. This is used to handle the Fixed Channels
+  // Supported information response, which indicates which fixed channels the peer supports (Core
+  // Spec v5.1, Vol 3, Part A, Sec 4.13). Except for the signaling channels, fixed channels may not
+  // be created until this response has been received.
+  // TODO(43668): save fixed channels mask and use to verify opened fixed channel ids are supported
+  void OnRxFixedChannelsSupportedInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Members that can be accessed from any thread.
   std::mutex mtx_;
@@ -251,6 +265,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   QueryServiceCallback query_service_cb_;
 
   fxl::ThreadChecker thread_checker_;
+
+  fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
 };

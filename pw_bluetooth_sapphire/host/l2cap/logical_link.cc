@@ -75,7 +75,8 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       fragmenter_(handle, max_acl_payload_size),
       send_packets_cb_(std::move(send_packets_cb)),
       drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
-      query_service_cb_(std::move(query_service_cb)) {
+      query_service_cb_(std::move(query_service_cb)),
+      weak_ptr_factory_(this) {
   ZX_ASSERT(dispatcher_);
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
   ZX_ASSERT(send_packets_cb_);
@@ -98,6 +99,8 @@ void LogicalLink::Initialize() {
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         signaling_channel_.get(), fit::bind_member(this, &LogicalLink::OnChannelDisconnectRequest),
         fit::bind_member(this, &LogicalLink::OnServiceRequest));
+
+    SendFixedChannelsSupportedInformationRequest();
   }
 }
 
@@ -433,6 +436,30 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   channels_[local_cid] = chan;
 
   RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
+}
+
+void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
+  ZX_ASSERT(signaling_channel_);
+
+  BrEdrCommandHandler cmd_handler(signaling_channel_.get());
+  if (!cmd_handler.SendInformationRequest(InformationType::kFixedChannelsSupported,
+                                          [self = GetWeakPtr()](auto& rsp) {
+                                            if (self) {
+                                              self->OnRxFixedChannelsSupportedInfoRsp(rsp);
+                                            }
+                                          })) {
+    bt_log(ERROR, "l2cap", "Failed to send Fixed Channels Supported Information Request");
+    return;
+  }
+
+  bt_log(SPEW, "l2cap", "Sent Fixed Channels Supported Information Request");
+}
+
+void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
+    const BrEdrCommandHandler::InformationResponse& rsp) {
+  ZX_ASSERT(rsp.type() == InformationType::kFixedChannelsSupported);
+  bt_log(SPEW, "l2cap", "Received Fixed Channels Supported Information Request (mask: %#016lx)",
+         rsp.fixed_channels());
 }
 
 }  // namespace internal

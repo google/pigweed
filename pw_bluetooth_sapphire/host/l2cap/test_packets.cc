@@ -22,6 +22,42 @@ DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHand
       features_bytes[0], features_bytes[1], features_bytes[2], features_bytes[3]));
 }
 
+DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
+                                                   hci::ConnectionHandle handle) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle, length: 10)
+      LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
+
+      // L2CAP B-frame header (length: 6, chanel-id: 0x0001 (ACL sig))
+      0x06, 0x00, 0x01, 0x00,
+
+      // Fixed Channels Supported Information Request
+      // (ID, length: 2, info type)
+      l2cap::kInformationRequest, id, 0x02, 0x00,
+      LowerBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))));
+}
+
+DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
+                                                   hci::ConnectionHandle handle,
+                                                   l2cap::FixedChannelsSupported chan_mask) {
+  const auto chan_bytes = ToBytes(chan_mask);
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link_handle|, length: 20 bytes)
+      LowerBits(handle), UpperBits(handle), 0x14, 0x00,
+      // L2CAP B-frame header (length: 16 bytes, channel-id: 0x0001 (ACL sig))
+      0x10, 0x00, 0x01, 0x00,
+      // Information Response (type, ID, length: 12)
+      l2cap::kInformationResponse, id, 0x0c, 0x00,
+      // Type = Fixed Channels Supported
+      0x03, 0x00,
+      // Result = Success
+      0x00, 0x00,
+      // Data (Mask)
+      chan_bytes[0], chan_bytes[1], chan_bytes[2], chan_bytes[3], chan_bytes[4], chan_bytes[5],
+      chan_bytes[6], chan_bytes[7]));
+}
+
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,
                                l2cap::ChannelId dst_id, uint16_t mtu, l2cap::ChannelMode mode) {
   return DynamicByteBuffer(StaticByteBuffer(

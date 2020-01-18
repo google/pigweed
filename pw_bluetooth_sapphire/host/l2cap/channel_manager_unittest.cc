@@ -95,6 +95,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
 
     drop_queued_packets_cb_ = [](hci::ACLPacketPredicate) {};
+
+    next_command_id_ = 1;
   }
 
   void TearDown() override {
@@ -118,11 +120,26 @@ class L2CAP_ChannelManagerTest : public TestingBase {
                           dispatcher());
   }
 
-  void QueueRegisterACL(CommandId id, hci::ConnectionHandle handle, hci::Connection::Role role,
-                        LinkErrorCallback lec = DoNothing,
-                        SecurityUpgradeCallback suc = NopSecurityCallback) {
-    EXPECT_ACL_PACKET_OUT(MakeExtendedFeaturesInformationRequest(id, handle), kHighPriority);
+  struct QueueRegisterACLRetVal {
+    CommandId extended_features_id;
+    CommandId fixed_channels_supported_id;
+  };
+
+  QueueRegisterACLRetVal QueueRegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
+                                          LinkErrorCallback lec = DoNothing,
+                                          SecurityUpgradeCallback suc = NopSecurityCallback) {
+    QueueRegisterACLRetVal cmd_ids;
+    cmd_ids.extended_features_id = NextCommandId();
+    cmd_ids.fixed_channels_supported_id = NextCommandId();
+
+    EXPECT_ACL_PACKET_OUT(
+        MakeExtendedFeaturesInformationRequest(cmd_ids.extended_features_id, handle),
+        kHighPriority);
+    EXPECT_ACL_PACKET_OUT(
+        testing::AclFixedChannelsSupportedInfoReq(cmd_ids.fixed_channels_supported_id, handle),
+        kHighPriority);
     RegisterACL(handle, role, std::move(lec), std::move(suc));
+    return cmd_ids;
   }
 
   void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -191,6 +208,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     drop_queued_packets_cb_ = std::move(cb);
   }
 
+  CommandId NextCommandId() { return next_command_id_++; }
+
  private:
   bool SendPackets(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
                    hci::ACLDataChannel::PacketPriority priority) {
@@ -238,6 +257,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
   std::queue<const PacketExpectation> expected_packets_;
 
+  CommandId next_command_id_;
+
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(L2CAP_ChannelManagerTest);
 };
 
@@ -256,7 +277,7 @@ TEST_F(L2CAP_ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
   // ACL-U link
-  QueueRegisterACL(1, kTestHandle2, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle2, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
   // This should fail as kSMPChannelId is ACL-U only.
@@ -410,7 +431,7 @@ TEST_F(L2CAP_ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
@@ -749,16 +770,17 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
 
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 
+  // Send fragmented Extended Features Information Request
   EXPECT_ACL_PACKET_OUT(CreateStaticByteBuffer(
                             // ACL data header (handle: 2, length: 6)
                             0x02, 0x00, 0x06, 0x00,
 
-                            // L2CAP B-frame ()
+                            // L2CAP B-frame (length: 6, channel-id: 1)
                             0x06, 0x00, 0x01, 0x00,
 
                             // Extended Features Information Request
-                            // (code = 0x0A, ID = 1)
-                            0x0A, 0x01),
+                            // (code = 0x0A, ID)
+                            0x0A, NextCommandId()),
                         kHighPriority);
   EXPECT_ACL_PACKET_OUT(
       CreateStaticByteBuffer(
@@ -771,6 +793,28 @@ TEST_F(L2CAP_ChannelManagerTest, SendFragmentedSdus) {
           UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported))),
       kHighPriority);
 
+  // Send fragmented Fixed Channels Supported Information Request
+  EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
+                            // ACL data header (handle: 2, length: 6)
+                            0x02, 0x00, 0x06, 0x00,
+
+                            // L2CAP B-frame (length: 6, channel-id: 1)
+                            0x06, 0x00, 0x01, 0x00,
+
+                            // Fixed Channels Supported Information Request
+                            // (command code, command ID)
+                            l2cap::kInformationRequest, NextCommandId()),
+                        kHighPriority);
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 2, pbf: continuing fr., length: 4)
+          0x02, 0x10, 0x04, 0x00,
+
+          // Fixed Channels Supported Information Request cont.
+          // (length: 2, type)
+          0x02, 0x00, LowerBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
+          UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))),
+      kHighPriority);
   RegisterACL(kTestHandle2, hci::Connection::Role::kMaster);
 
   // We use the ATT fixed-channel for LE and the SM fixed-channel for ACL.
@@ -841,7 +885,7 @@ TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
 TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
 
   // Activate a new Security Manager channel to signal the error.
   auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
@@ -1047,7 +1091,7 @@ auto OutboundDisconnectionResponse(CommandId id) {
 // clang-format on
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
   fbl::RefPtr<Channel> channel;
@@ -1058,17 +1102,19 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
 
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(3), kHighPriority);
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
                           std::move(closed_cb));
   RunLoopUntilIdle();
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(3));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1096,8 +1142,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  constexpr CommandId kDisconnectionId = 4;
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(kDisconnectionId), kHighPriority);
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
   // Packets for testing filter against
   constexpr hci::ConnectionHandle kTestHandle2 = 0x02;
@@ -1137,7 +1183,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 
       // Disconnection Response
       // (ID, length: 4, dst cid, src cid)
-      0x07, kDisconnectionId, 0x04, 0x00,
+      0x07, disconn_req_id, 0x04, 0x00,
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
@@ -1147,7 +1193,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
@@ -1164,16 +1210,19 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
     EXPECT_EQ("Test", sdu->AsString());
   };
 
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(3), kHighPriority);
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
                           std::move(closed_cb), std::move(data_rx_cb));
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(3));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1247,7 +1296,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
@@ -1267,15 +1316,17 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
       // L2CAP B-frame: (length: 4, channel-id)
       0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 'T', 'e', 's', 't'));
 
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(3), kHighPriority);
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
                           std::move(closed_cb), std::move(data_rx_cb));
   RunLoopUntilIdle();
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
 
   // The channel is connected but not configured, so no data should flow on the
   // channel. Test that this received data is also ignored.
@@ -1289,7 +1340,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   // clang-format on
 
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(3));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1317,7 +1368,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   bool channel_cb_called = false;
   auto channel_cb = [&channel_cb_called](fbl::RefPtr<l2cap::Channel> channel) {
@@ -1325,8 +1376,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
     EXPECT_FALSE(channel);
   };
 
-  constexpr CommandId kConnectionRequestId = 2;
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(kConnectionRequestId), kHighPriority);
+  const CommandId conn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb));
 
@@ -1341,7 +1392,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
       // Connection Response (ID, length: 8, dst cid: 0x0000 (invalid),
       // src cid, result: 0x0004 (Refused; no resources available),
       // status: none)
-      0x03, kConnectionRequestId, 0x08, 0x00,
+      0x03, conn_req_id, 0x08, 0x00,
       0x00, 0x00, LowerBits(kLocalId), UpperBits(kLocalId),
       0x04, 0x00, 0x00, 0x00));
   // clang-format on
@@ -1352,7 +1403,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   bool channel_cb_called = false;
   auto channel_cb = [&channel_cb_called](fbl::RefPtr<l2cap::Channel> channel) {
@@ -1360,17 +1411,17 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
     EXPECT_FALSE(channel);
   };
 
-  constexpr CommandId kOutboundConfigReqId = 3;
-  constexpr CommandId kDisconnectionReqId = kOutboundConfigReqId + 1;
-
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(kOutboundConfigReqId), kHighPriority);
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(kDisconnectionReqId), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb));
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
 
   // clang-format off
@@ -1383,7 +1434,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
 
       // Configuration Response (ID, length: 6, src cid, flags: 0,
       // result: 0x0002 (Rejected; no reason provided))
-      0x05, kOutboundConfigReqId, 0x06, 0x00,
+      0x05, config_req_id, 0x06, 0x00,
       LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00,
       0x02, 0x00));
 
@@ -1396,7 +1447,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
 
       // Disconnection Response
       // (ID, length: 4, dst cid, src cid)
-      0x07, kDisconnectionReqId, 0x04, 0x00,
+      0x07, disconn_req_id, 0x04, 0x00,
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
@@ -1409,7 +1460,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   constexpr PSM kBadPsm0 = 0x0004;
   constexpr PSM kBadPsm1 = 0x0103;
 
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
@@ -1426,13 +1477,14 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, ChannelParameters(), std::move(channel_cb),
                                          dispatcher()));
 
+  const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(1), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(2), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ReceiveAclDataPacket(InboundConnectionRequest(1));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(2));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1458,8 +1510,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  constexpr CommandId kDisconnectionReqId = 3;
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(kDisconnectionReqId), kHighPriority);
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
@@ -1477,7 +1529,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
 
       // Disconnection Response
       // (ID, length: 4, dst cid, src cid)
-      0x07, kDisconnectionReqId, 0x04, 0x00,
+      0x07, disconn_req_id, 0x04, 0x00,
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
@@ -1584,23 +1636,26 @@ TEST_F(L2CAP_ChannelManagerTest, UpgradeSecurity) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+
   // Signaling channel packets should be sent with high priority.
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(3), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1);
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(3));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1645,24 +1700,27 @@ TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
     channel = std::move(activated_chan);
   };
 
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+
   // Signaling channel packets should be sent with high priority.
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(2), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(3), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId, kRemoteMtu),
                         kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1);
 
-  ReceiveAclDataPacket(InboundConnectionResponse(2));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kRemoteMtu));
-  ReceiveAclDataPacket(InboundConfigurationResponse(3));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1676,7 +1734,7 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
-  QueueRegisterACL(1, kTestHandle1, hci::Connection::Role::kMaster);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [this, &channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
@@ -1688,16 +1746,16 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
       chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb), dispatcher()));
 
   CommandId kPeerConnectionRequestId = 3;
-  CommandId kLocalConfigRequestId = 2;
+  const auto config_req_id = NextCommandId();
 
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnectionRequestId), kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(kLocalConfigRequestId), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId, kRemoteMtu),
                         kHighPriority);
 
   ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnectionRequestId));
   ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kRemoteMtu));
-  ReceiveAclDataPacket(InboundConfigurationResponse(kLocalConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
@@ -1707,16 +1765,12 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
-  constexpr CommandId kInfoReqId = 1;
-  constexpr CommandId kConnReqId = kInfoReqId + 1;
-  constexpr CommandId kConfigReqId = kConnReqId + 1;
-
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_sdu_size = l2cap::kMinACLMTU;
 
-  QueueRegisterACL(kInfoReqId, kTestHandle1, hci::Connection::Role::kMaster);
-  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(kInfoReqId, kTestHandle1,
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
 
   fbl::RefPtr<Channel> channel;
@@ -1724,18 +1778,20 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
     channel = std::move(activated_chan);
   };
 
-  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(kConnReqId), kHighPriority);
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(
-      OutboundConfigurationRequest(kConfigReqId, *chan_params.max_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
       kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, chan_params, std::move(channel_cb), kTestHandle1);
 
-  ReceiveAclDataPacket(InboundConnectionResponse(kConnReqId));
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(
       InboundConfigurationRequest(kPeerConfigRequestId, kDefaultMTU, *chan_params.mode));
-  ReceiveAclDataPacket(InboundConfigurationResponse(kConfigReqId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
 
@@ -1746,16 +1802,14 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
 }
 
 TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
-  constexpr CommandId kInfoReqId = 1;
-  constexpr CommandId kLocalConfigReqId = kInfoReqId + 1;
   CommandId kPeerConnReqId = 3;
 
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_sdu_size = l2cap::kMinACLMTU;
 
-  QueueRegisterACL(kInfoReqId, kTestHandle1, hci::Connection::Role::kMaster);
-  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(kInfoReqId, kTestHandle1,
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [this, &channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
@@ -1766,16 +1820,17 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_TRUE(
       chanmgr()->RegisterService(kTestPsm, chan_params, std::move(channel_cb), dispatcher()));
 
+  const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnReqId), kHighPriority);
   EXPECT_ACL_PACKET_OUT(
-      OutboundConfigurationRequest(kLocalConfigReqId, *chan_params.max_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
       kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
   ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnReqId));
   ReceiveAclDataPacket(
       InboundConfigurationRequest(kPeerConfigRequestId, kDefaultMTU, *chan_params.mode));
-  ReceiveAclDataPacket(InboundConfigurationResponse(kLocalConfigReqId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());

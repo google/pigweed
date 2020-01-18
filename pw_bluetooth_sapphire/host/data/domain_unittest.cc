@@ -36,6 +36,9 @@ using TestingBase = bt::testing::FakeControllerTest<TestController>;
 constexpr size_t kMaxDataPacketLength = 64;
 constexpr size_t kMaxPacketCount = 10;
 
+// 2x Information Requests: Extended Features, Fixed Channels Supported
+constexpr size_t kConnectionCreationPacketCount = 2;
+
 constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic, l2cap::kMaxMTU};
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
@@ -96,6 +99,12 @@ class DATA_DomainTest : public TestingBase {
             case l2cap::InformationType::kExtendedFeaturesSupported: {
               test_device()->SendACLDataChannelPacket(
                   l2cap::testing::AclExtFeaturesInfoRsp(id, link_handle, kExtendedFeatures));
+              return;
+            }
+            case l2cap::InformationType::kFixedChannelsSupported: {
+              test_device()->SendACLDataChannelPacket(
+                  l2cap::testing::AclFixedChannelsSupportedInfoRsp(
+                      id, link_handle, l2cap::kFixedChannelsSupportedBitSignaling));
               return;
             }
             default:
@@ -356,7 +365,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
   constexpr l2cap::CommandId kConfigReqId = 6;
-  constexpr l2cap::CommandId kConfigRspId = 2;
+  constexpr l2cap::CommandId kConfigRspId = 3;
   test_device()->SendACLDataChannelPacket(
       l2cap::testing::AclConnectionReq(kConnectionReqId, kLinkHandle, kRemoteId, kPSM));
   RunLoopUntilIdle();
@@ -472,8 +481,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   constexpr l2cap::ChannelId kLocalId1 = 0x0041;
   constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
 
-  // info req, connection request/response, config request, config response
-  constexpr size_t kConnectionCreationPacketCount = 1;
+  // info req x2, connection request/response, config request, config response
   constexpr size_t kChannelCreationPacketCount = 3;
 
   // Register a fake link.
@@ -592,8 +600,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
                              NopSecurityCallback, dispatcher());
 
   RunLoopUntilIdle();
-  // Info request should have been sent
-  EXPECT_EQ(1u, data_cb_count());
+  EXPECT_EQ(kConnectionCreationPacketCount, data_cb_count());
 
   fbl::RefPtr<l2cap::Channel> chan;
   auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
@@ -626,8 +633,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
                              NopSecurityCallback, dispatcher());
 
   RunLoopUntilIdle();
-  // Info request should have been sent.
-  EXPECT_EQ(1u, data_cb_count());
+  EXPECT_EQ(kConnectionCreationPacketCount, data_cb_count());
 
   fbl::RefPtr<l2cap::Channel> chan;
   auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
