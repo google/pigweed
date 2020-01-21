@@ -27,6 +27,9 @@ pw_facade("pw_log") {
     "public/pw_log/levels.h",
     "public/pw_log/log.h",
   ]
+  public_deps = [
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_test_group("tests") {
