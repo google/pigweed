@@ -32,7 +32,8 @@ infra/ninja/${platform} version:1.9.0
 infra/cmake/${platform} version:3.14.6
 
 # Bazel
-fuchsia/third_party/bazel/${platform} version:0.25.1
+# TODO(pwbug/93): Package Bazel for Windows.
+fuchsia/third_party/bazel/${os=linux,mac}-${arch} version:0.25.1
 
 # Bloaty (Embedded Fork)
 pigweed/third_party/bloaty-embedded/${os=linux,mac}-${arch} git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52

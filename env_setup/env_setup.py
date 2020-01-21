@@ -28,6 +28,7 @@ import argparse
 import contextlib
 import glob
 import os
+import shutil
 import subprocess
 import sys
 
@@ -202,10 +203,26 @@ class EnvSetup(object):
         requirements = os.path.join(self._pw_root, 'env_setup', 'virtualenv',
                                     'requirements.txt')
 
-        with self._env():
-            # TODO(mohrr) use shutil.which('python3') (Python 3.3+ only).
-            cmd = ['python3', '-c', 'import sys; print(sys.executable)']
-            python = subprocess.check_output(cmd).strip()
+        cipd_bin = os.path.join(
+            self._pw_root,
+            '.cipd',
+            'pigweed.ensure',
+            'bin',
+        )
+        if os.name == 'nt':
+            # There is an issue with the virtualenv module on Windows where it
+            # expects sys.executable to be called "python.exe" or it fails to
+            # properly execute. Create a copy of python3.exe called python.exe
+            # so that virtualenv works.
+            old_python = os.path.join(cipd_bin, 'python3.exe')
+            new_python = os.path.join(cipd_bin, 'python.exe')
+            if not os.path.exists(new_python):
+                shutil.copyfile(old_python, new_python)
+            py_executable = 'python.exe'
+        else:
+            py_executable = 'python3'
+
+        python = os.path.join(cipd_bin, py_executable)
 
         virtualenv.init.init(
             venv_path=venv_path,

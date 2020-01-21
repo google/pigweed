@@ -92,7 +92,9 @@ def init(
         cmd = (python, '-m', 'venv', '--clear', venv_path)
         subprocess.check_call(cmd)
 
-    venv_python = os.path.join(venv_path, 'bin', 'python')
+    # The bin/ directory is called Scripts/ on Windows. Don't ask.
+    venv_bin = 'Scripts' if os.name == 'nt' else 'bin'
+    venv_python = os.path.join(venv_path, venv_bin, 'python')
 
     pw_root = os.environ.get('PW_ROOT', git_repo_root())
     if not pw_root:
