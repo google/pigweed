@@ -46,19 +46,16 @@
 
 #include <cstring>
 
-#include "pw_kvs/os/mutex.h"
-#include "pw_kvs/util/ccitt_crc16.h"
-#include "pw_kvs/util/constexpr.h"
-#include "pw_kvs/util/flash.h"
+#include "pw_checksum/ccitt_crc16.h"
+#include "pw_kvs/flash.h"
+#include "pw_log/log.h"
+#include "pw_string/string_builder.h"
+#include "pw_string/util.h"
 
-namespace pw {
-
-// Declare static constexpr variables so it can be used for pass-by-reference
-// functions.
-constexpr uint16_t KeyValueStore::kSectorReadyValue;
+namespace pw::kvs {
 
 Status KeyValueStore::Enable() {
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   if (enabled_) {
     return Status::OK;
   }
@@ -71,9 +68,11 @@ Status KeyValueStore::Enable() {
   alignment_bytes_ = partition_.GetAlignmentBytes();
   DCHECK(alignment_bytes_ <= kMaxAlignmentBytes);
 
-  LOG_WARN_IF(partition_.GetSectorCount() > kSectorCountMax,
-              "Partition is larger then KVS max sector count, not all space "
-              "will be used.");
+  if (partition_.GetSectorCount() > kSectorCountMax) {
+    PW_LOG_WARN(
+        "Partition is larger then KVS max sector count, "
+        "not all space will be used.");
+  }
   // Load map and setup sectors if needed (first word isn't kSectorReadyValue).
   next_sector_clean_order_ = 0;
   for (SectorIndex i = 0; i < SectorCount(); i++) {
@@ -82,45 +81,60 @@ Status KeyValueStore::Enable() {
     // may give random values. It's important to make sure that data is not
     // erased before trying to see if there is a token match.
     bool is_sector_meta_erased;
-    RETURN_IF_ERROR(partition_.IsChunkErased(
-        SectorIndexToAddress(i),
-        RoundUpForAlignment(sizeof(sector_header_meta)),
-        &is_sector_meta_erased));
-    RETURN_IF_ERROR(
-        UnalignedRead(&partition_,
-                      reinterpret_cast<uint8_t*>(&sector_header_meta),
-                      SectorIndexToAddress(i),
-                      sizeof(sector_header_meta)));
+    if (Status status = partition_.IsChunkErased(
+            SectorIndexToAddress(i),
+            RoundUpForAlignment(sizeof(sector_header_meta)),
+            &is_sector_meta_erased);
+        !status.ok()) {
+      return status;
+    };
+    if (Status status =
+            UnalignedRead(&partition_,
+                          reinterpret_cast<uint8_t*>(&sector_header_meta),
+                          SectorIndexToAddress(i),
+                          sizeof(sector_header_meta));
+        !status.ok()) {
+      return status;
+    }
 
     constexpr int kVersion3 = 3;  // Version 3 only cleans 1 sector at a time.
     constexpr int kVersion2 = 2;  // Version 2 is always 1 byte aligned.
     if (is_sector_meta_erased ||
         sector_header_meta.synchronize_token != kSectorReadyValue) {
       // Sector needs to be setup
-      RETURN_IF_ERROR(ResetSector(i));
+      if (Status status = ResetSector(i); !status.ok()) {
+        return status;
+      }
       continue;
     } else if (sector_header_meta.version != kVersion &&
                sector_header_meta.version != kVersion3 &&  // Allow version 3
                sector_header_meta.version != kVersion2) {  // Allow version 2
-      LOG(ERROR) << "Unsupported KVS version in sector: " << i;
+      PW_LOG_ERROR("Unsupported KVS version in sector: %u",
+                   static_cast<unsigned>(i));
       return Status::FAILED_PRECONDITION;
     }
     uint32_t sector_header_cleaning_offset =
         RoundUpForAlignment(sizeof(KvsSectorHeaderMeta));
 
     bool clean_not_pending;
-    RETURN_IF_ERROR(partition_.IsChunkErased(
-        SectorIndexToAddress(i) + sector_header_cleaning_offset,
-        RoundUpForAlignment(sizeof(KvsSectorHeaderCleaning)),
-        &clean_not_pending));
+    if (Status status = partition_.IsChunkErased(
+            SectorIndexToAddress(i) + sector_header_cleaning_offset,
+            RoundUpForAlignment(sizeof(KvsSectorHeaderCleaning)),
+            &clean_not_pending);
+        !status.ok()) {
+      return status;
+    }
 
     if (!clean_not_pending) {
       // Sector is marked for cleaning, read the sector_clean_order
-      RETURN_IF_ERROR(
-          UnalignedRead(&partition_,
-                        reinterpret_cast<uint8_t*>(&sector_clean_order_[i]),
-                        SectorIndexToAddress(i) + sector_header_cleaning_offset,
-                        sizeof(KvsSectorHeaderCleaning::sector_clean_order)));
+      if (Status status = UnalignedRead(
+              &partition_,
+              reinterpret_cast<uint8_t*>(&sector_clean_order_[i]),
+              SectorIndexToAddress(i) + sector_header_cleaning_offset,
+              sizeof(KvsSectorHeaderCleaning::sector_clean_order));
+          !status.ok()) {
+        return status;
+      }
       next_sector_clean_order_ =
           std::max(sector_clean_order_[i] + 1, next_sector_clean_order_);
     } else {
@@ -133,9 +147,10 @@ Status KeyValueStore::Enable() {
     }
     if (sector_header_meta.alignment_bytes != alignment_bytes_) {
       // NOTE: For now all sectors must have same alignment.
-      LOG(ERROR) << "Sector " << i << " has unexpected alignment "
-                 << alignment_bytes_
-                 << " != " << sector_header_meta.alignment_bytes;
+      PW_LOG_ERROR("Sector %u has unexpected alignment %u != %u",
+                   unsigned(i),
+                   unsigned(alignment_bytes_),
+                   unsigned(sector_header_meta.alignment_bytes));
       return Status::FAILED_PRECONDITION;
     }
 
@@ -154,15 +169,23 @@ Status KeyValueStore::Enable() {
       // Because underlying flash can be encrypted + erased, trying to readback
       // may give random values. It's important to make sure that data is not
       // erased before trying to see if there is a token match.
-      RETURN_IF_ERROR(partition_.IsChunkErased(
-          address, RoundUpForAlignment(sizeof(header)), &is_kvs_header_erased));
-      RETURN_IF_ERROR(UnalignedRead(&partition_,
-                                    reinterpret_cast<uint8_t*>(&header),
-                                    address,
-                                    sizeof(header)));
+      if (Status status =
+              partition_.IsChunkErased(address,
+                                       RoundUpForAlignment(sizeof(header)),
+                                       &is_kvs_header_erased);
+          !status.ok()) {
+        return status;
+      }
+      if (Status status = UnalignedRead(&partition_,
+                                        reinterpret_cast<uint8_t*>(&header),
+                                        address,
+                                        sizeof(header));
+          !status.ok()) {
+        return status;
+      }
       if (is_kvs_header_erased || header.synchronize_token != kChunkSyncValue) {
         if (!is_kvs_header_erased) {
-          LOG_ERROR("Next sync_token is not clear!");
+          PW_LOG_ERROR("Next sync_token is not clear!");
           // TODO: handle this?
         }
         break;  // End of elements in sector
@@ -174,18 +197,24 @@ Status KeyValueStore::Enable() {
                     "nul-terminator.");
 
       // Read key and add to map
-      RETURN_IF_ERROR(
-          UnalignedRead(&partition_,
-                        reinterpret_cast<uint8_t*>(&temp_key_buffer_),
-                        address + RoundUpForAlignment(sizeof(header)),
-                        header.key_len));
+      if (Status status =
+              UnalignedRead(&partition_,
+                            reinterpret_cast<uint8_t*>(&temp_key_buffer_),
+                            address + RoundUpForAlignment(sizeof(header)),
+                            header.key_len);
+          !status.ok()) {
+        return status;
+      }
       temp_key_buffer_[header.key_len] = '\0';
       bool is_erased = header.flags & kFlagsIsErasedMask;
 
       KeyIndex index = FindKeyInMap(temp_key_buffer_);
       if (index == kListCapacityMax) {
-        RETURN_IF_ERROR(AppendToMap(
-            temp_key_buffer_, address, header.chunk_len, is_erased));
+        if (Status status = AppendToMap(
+                temp_key_buffer_, address, header.chunk_len, is_erased);
+            !status.ok()) {
+          return status;
+        }
       } else if (sector_clean_order_[i] >=
                  sector_clean_order_[AddressToSectorIndex(
                      key_map_[index].address)]) {
@@ -202,8 +231,11 @@ Status KeyValueStore::Enable() {
         clean_not_pending ? partition_.GetSectorSizeBytes() - offset : 0;
   }
 
-  LOG_IF_ERROR(EnforceFreeSector())
-      << "Failed to force clean at boot, no free sectors available!";
+  if (Status status = EnforceFreeSector(); !status.ok()) {
+    PW_LOG_ERROR(
+        "%s: Failed to force clean at boot, no free sectors available!",
+        status.str());
+  }
   enabled_ = true;
   return Status::OK;
 }
@@ -218,17 +250,17 @@ Status KeyValueStore::Get(const char* key,
     return Status::INVALID_ARGUMENT;
   }
 
-  size_t key_len = util::StringLength(key, kChunkKeyLengthMax + 1u);
+  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
   if (key_len == 0 || key_len > kChunkKeyLengthMax) {
     return Status::INVALID_ARGUMENT;
   }
 
   // TODO: Support unaligned offset reads.
   if (offset % alignment_bytes_ != 0) {
-    LOG_ERROR("Currently unaligned offsets are not supported");
+    PW_LOG_ERROR("Currently unaligned offsets are not supported");
     return Status::INVALID_ARGUMENT;
   }
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   if (!enabled_) {
     return Status::FAILED_PRECONDITION;
   }
@@ -239,35 +271,41 @@ Status KeyValueStore::Get(const char* key,
   }
   KvsHeader header;
   // TODO: Could cache the CRC and avoid reading the header.
-  RETURN_IF_ERROR(UnalignedRead(&partition_,
-                                reinterpret_cast<uint8_t*>(&header),
-                                key_map_[key_index].address,
-                                sizeof(header)));
+  if (Status status = UnalignedRead(&partition_,
+                                    reinterpret_cast<uint8_t*>(&header),
+                                    key_map_[key_index].address,
+                                    sizeof(header));
+      !status.ok()) {
+    return status;
+  }
   if (kChunkSyncValue != header.synchronize_token) {
     return Status::DATA_LOSS;
   }
   if (size + offset > header.chunk_len) {
-    LOG_ERROR("Out of bounds read: offset(%u) + size(%u) > data_size(%u)",
-              offset,
-              size,
-              header.chunk_len);
+    PW_LOG_ERROR("Out of bounds read: offset(%u) + size(%u) > data_size(%u)",
+                 offset,
+                 size,
+                 header.chunk_len);
     return Status::INVALID_ARGUMENT;
   }
-  RETURN_IF_ERROR(UnalignedRead(
-      &partition_,
-      value,
-      key_map_[key_index].address + RoundUpForAlignment(sizeof(KvsHeader)) +
-          RoundUpForAlignment(header.key_len) + offset,
-      size));
+  if (Status status = UnalignedRead(
+          &partition_,
+          value,
+          key_map_[key_index].address + RoundUpForAlignment(sizeof(KvsHeader)) +
+              RoundUpForAlignment(header.key_len) + offset,
+          size);
+      !status.ok()) {
+    return status;
+  }
 
   // Verify CRC only when full packet was read.
   if (offset == 0 && size == header.chunk_len) {
     uint16_t crc = CalculateCrc(key, key_len, value, size);
     if (crc != header.crc) {
-      LOG_ERROR("KVS CRC does not match for key=%s [expected %u, found %u]",
-                key,
-                header.crc,
-                crc);
+      PW_LOG_ERROR("KVS CRC does not match for key=%s [expected %u, found %u]",
+                   key,
+                   header.crc,
+                   crc);
       return Status::DATA_LOSS;
     }
   }
@@ -278,9 +316,8 @@ uint16_t KeyValueStore::CalculateCrc(const char* key,
                                      uint16_t key_size,
                                      const uint8_t* value,
                                      uint16_t value_size) const {
-  CcittCrc16 crc;
-  crc.AppendBytes(ConstBuffer(reinterpret_cast<const uint8_t*>(key), key_size));
-  return crc.AppendBytes(ConstBuffer(value, value_size));
+  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, key_size)));
+  return checksum::CcittCrc16(as_bytes(span(value, value_size)), crc);
 }
 
 Status KeyValueStore::CalculateCrcFromValueAddress(
@@ -289,15 +326,17 @@ Status KeyValueStore::CalculateCrcFromValueAddress(
     FlashPartition::Address value_address,
     uint16_t value_size,
     uint16_t* crc_ret) {
-  CcittCrc16 crc;
-  crc.AppendBytes(ConstBuffer(reinterpret_cast<const uint8_t*>(key), key_size));
+  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, key_size)));
   for (size_t i = 0; i < value_size; i += TempBufferAlignedSize()) {
     auto read_size = std::min(value_size - i, TempBufferAlignedSize());
-    RETURN_IF_ERROR(
-        UnalignedRead(&partition_, temp_buffer_, value_address + i, read_size));
-    crc.AppendBytes(ConstBuffer(temp_buffer_, read_size));
+    if (Status status = UnalignedRead(
+            &partition_, temp_buffer_, value_address + i, read_size);
+        !status.ok()) {
+      return status;
+    }
+    crc = checksum::CcittCrc16(as_bytes(span(temp_buffer_, read_size)));
   }
-  *crc_ret = crc.CurrentValue();
+  *crc_ret = crc;
   return Status::OK;
 }
 
@@ -309,13 +348,13 @@ Status KeyValueStore::Put(const char* key,
     return Status::INVALID_ARGUMENT;
   }
 
-  size_t key_len = util::StringLength(key, (kChunkKeyLengthMax + 1u));
+  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
   if (key_len == 0 || key_len > kChunkKeyLengthMax ||
       size > kChunkValueLengthMax) {
     return Status::INVALID_ARGUMENT;
   }
 
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   if (!enabled_) {
     return Status::FAILED_PRECONDITION;
   }
@@ -333,7 +372,9 @@ Status KeyValueStore::Put(const char* key,
   // Check if this would use the last empty sector on KVS with multiple sectors
   if (SectorCount() > 1 && IsInLastFreeSector(address)) {
     // Forcing a full garbage collect to free more sectors.
-    RETURN_IF_ERROR(FullGarbageCollect());
+    if (Status status = FullGarbageCollect(); !status.ok()) {
+      return status;
+    }
     address = FindSpace(ChunkSize(key_len, size));
     if (address == kSectorInvalid || IsInLastFreeSector(address)) {
       // Couldn't find space, KVS is full.
@@ -341,8 +382,12 @@ Status KeyValueStore::Put(const char* key,
     }
   }
 
-  RETURN_IF_ERROR(WriteKeyValue(address, key, value, size));
-  RETURN_IF_ERROR(AppendToMap(key, address, size));
+  if (Status status = WriteKeyValue(address, key, value, size); !status.ok()) {
+    return status;
+  }
+  if (Status status = AppendToMap(key, address, size); !status.ok()) {
+    return status;
+  }
 
   return Status::OK;
 }
@@ -362,7 +407,9 @@ Status KeyValueStore::GarbageCollectImpl(bool clean_pending_sectors,
     if (clean_pending_sectors ==
         (sector_clean_order_[sector] != kSectorCleanNotPending)) {
       if (!clean_pending_sectors) {
-        RETURN_IF_ERROR(MarkSectorForClean(sector));
+        if (Status status = MarkSectorForClean(sector); !status.ok()) {
+          return status;
+        }
       }
       Status status = CleanSector(sector);
       if (!status.ok() && status != Status::RESOURCE_EXHAUSTED) {
@@ -380,22 +427,31 @@ Status KeyValueStore::EnforceFreeSector() {
   if (SectorCount() == 1 || HasEmptySector()) {
     return Status::OK;
   }
-  LOG_INFO("KVS garbage collecting to get a free sector");
-  RETURN_IF_ERROR(GarbageCollectImpl(true /*clean_pending_sectors*/,
-                                     true /*exit_when_have_free_sector*/));
+  PW_LOG_INFO("KVS garbage collecting to get a free sector");
+  if (Status status = GarbageCollectImpl(true /*clean_pending_sectors*/,
+                                         true /*exit_when_have_free_sector*/);
+      !status.ok()) {
+    return status;
+  }
   if (HasEmptySector()) {
     return Status::OK;
   }
-  LOG_INFO("KVS: trying to clean non-pending sectors for more space");
-  RETURN_IF_ERROR(GarbageCollectImpl(false /*clean_pending_sectors*/,
-                                     true /*exit_when_have_free_sector*/));
+  PW_LOG_INFO("KVS: trying to clean non-pending sectors for more space");
+  if (Status status = GarbageCollectImpl(false /*clean_pending_sectors*/,
+                                         true /*exit_when_have_free_sector*/);
+      !status.ok()) {
+    return status;
+  }
   return HaveEmptySectorImpl() ? Status::OK : Status::RESOURCE_EXHAUSTED;
 }
 
 Status KeyValueStore::FullGarbageCollect() {
-  LOG_INFO("KVS: Full garbage collecting to try to free space");
-  RETURN_IF_ERROR(GarbageCollectImpl(true /*clean_pending_sectors*/,
-                                     false /*exit_when_have_free_sector*/));
+  PW_LOG_INFO("KVS: Full garbage collecting to try to free space");
+  if (Status status = GarbageCollectImpl(true /*clean_pending_sectors*/,
+                                         false /*exit_when_have_free_sector*/);
+      !status.ok()) {
+    return status;
+  }
   return GarbageCollectImpl(false /*clean_pending_sectors*/,
                             false /*exit_when_have_free_sector*/);
 }
@@ -410,8 +466,10 @@ Status KeyValueStore::RewriteValue(KeyIndex key_index,
   }
 
   size_t key_length =
-      util::StringLength(key_map_[key_index].key, (kChunkKeyLengthMax + 1u));
-  RETURN_STATUS_IF(key_length > kChunkKeyLengthMax, Status::INTERNAL);
+      string::Length(key_map_[key_index].key, kChunkKeyLengthMax + 1u);
+  if (key_length > kChunkKeyLengthMax) {
+    return Status::INTERNAL;
+  }
 
   uint32_t space_required = ChunkSize(key_length, size);
   SectorIndex sector = AddressToSectorIndex(key_map_[key_index].address);
@@ -424,14 +482,19 @@ Status KeyValueStore::RewriteValue(KeyIndex key_index,
               sector_space_remaining;
   } else {
     // No space in current sector, mark sector for clean and use another sector.
-    RETURN_IF_ERROR(MarkSectorForClean(sector));
+    if (Status status = MarkSectorForClean(sector); !status.ok()) {
+      return status;
+    }
     address = FindSpace(ChunkSize(key_length, size));
   }
   if (address == kSectorInvalid) {
     return Status::RESOURCE_EXHAUSTED;
   }
-  RETURN_IF_ERROR(
-      WriteKeyValue(address, key_map_[key_index].key, value, size, is_erased));
+  if (Status status = WriteKeyValue(
+          address, key_map_[key_index].key, value, size, is_erased);
+      !status.ok()) {
+    return status;
+  }
   UpdateMap(key_index, address, size, is_erased);
 
   return EnforceFreeSector();
@@ -451,7 +514,7 @@ bool KeyValueStore::ValueMatches(KeyIndex index,
                 key_map_[index].address,
                 sizeof(header));
   uint8_t key_len =
-      util::StringLength(key_map_[index].key, (kChunkKeyLengthMax + 1u));
+      string::Length(key_map_[index].key, kChunkKeyLengthMax + 1u);
   if (key_len > kChunkKeyLengthMax) {
     return false;
   }
@@ -477,7 +540,7 @@ bool KeyValueStore::ValueMatches(KeyIndex index,
     auto status =
         UnalignedRead(&partition_, temp_buffer_, address + i, read_size);
     if (!status.ok()) {
-      LOG(ERROR) << "Failed to read chunk: " << status;
+      PW_LOG_ERROR("Failed to read chunk: %s", status.str());
       return false;
     }
     if (memcmp(value + i, temp_buffer_, read_size) != 0) {
@@ -492,11 +555,11 @@ Status KeyValueStore::Erase(const char* key) {
     return Status::INVALID_ARGUMENT;
   }
 
-  size_t key_len = util::StringLength(key, (kChunkKeyLengthMax + 1u));
+  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
   if (key_len == 0 || key_len > kChunkKeyLengthMax) {
     return Status::INVALID_ARGUMENT;
   }
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   if (!enabled_) {
     return Status::FAILED_PRECONDITION;
   }
@@ -525,10 +588,14 @@ Status KeyValueStore::ResetSector(SectorIndex sector_index) {
     return status;
   }
 
-  RETURN_IF_ERROR(PaddedWrite(&partition_,
-                              SectorIndexToAddress(sector_index),
-                              reinterpret_cast<const uint8_t*>(&sector_header),
-                              sizeof(sector_header)));
+  if (Status status =
+          PaddedWrite(&partition_,
+                      SectorIndexToAddress(sector_index),
+                      reinterpret_cast<const uint8_t*>(&sector_header),
+                      sizeof(sector_header));
+      !status.ok()) {
+    return status;
+  }
 
   // Update space remaining
   sector_clean_order_[sector_index] = kSectorCleanNotPending;
@@ -541,8 +608,10 @@ Status KeyValueStore::WriteKeyValue(FlashPartition::Address address,
                                     const uint8_t* value,
                                     uint16_t size,
                                     bool is_erased) {
-  uint16_t key_length = util::StringLength(key, (kChunkKeyLengthMax + 1u));
-  RETURN_STATUS_IF(key_length > kChunkKeyLengthMax, Status::INTERNAL);
+  uint16_t key_length = string::Length(key, kChunkKeyLengthMax + 1u);
+  if (key_length > kChunkKeyLengthMax) {
+    return Status::INTERNAL;
+  }
 
   constexpr uint16_t kFlagDefaultValue = 0;
   KvsHeader header = {
@@ -553,16 +622,26 @@ Status KeyValueStore::WriteKeyValue(FlashPartition::Address address,
       .chunk_len = size};
 
   SectorIndex sector = AddressToSectorIndex(address);
-  RETURN_IF_ERROR(PaddedWrite(&partition_,
-                              address,
-                              reinterpret_cast<uint8_t*>(&header),
-                              sizeof(header)));
+  if (Status status = PaddedWrite(&partition_,
+                                  address,
+                                  reinterpret_cast<uint8_t*>(&header),
+                                  sizeof(header));
+      !status.ok()) {
+    return status;
+  }
   address += RoundUpForAlignment(sizeof(header));
-  RETURN_IF_ERROR(PaddedWrite(
-      &partition_, address, reinterpret_cast<const uint8_t*>(key), key_length));
+  if (Status status = PaddedWrite(&partition_,
+                                  address,
+                                  reinterpret_cast<const uint8_t*>(key),
+                                  key_length);
+      !status.ok()) {
+  }
   address += RoundUpForAlignment(key_length);
   if (size > 0) {
-    RETURN_IF_ERROR(PaddedWrite(&partition_, address, value, size));
+    if (Status status = PaddedWrite(&partition_, address, value, size);
+        !status.ok()) {
+      return status;
+    }
   }
   sector_space_remaining_[sector] -= ChunkSize(key_length, size);
   return Status::OK;
@@ -579,9 +658,16 @@ Status KeyValueStore::MoveChunk(FlashPartition::Address dest_address,
   for (size_t i = 0; i < size; i += TempBufferAlignedSize()) {
     size_t move_size = std::min(size - i, TempBufferAlignedSize());
     DCHECK_EQ(move_size % alignment_bytes_, 0);
-    RETURN_IF_ERROR(partition_.Read(temp_buffer_, src_address + i, move_size));
-    RETURN_IF_ERROR(
-        partition_.Write(dest_address + i, temp_buffer_, move_size));
+    if (Status status =
+            partition_.Read(temp_buffer_, src_address + i, move_size);
+        !status.ok()) {
+      return status;
+    }
+    if (Status status =
+            partition_.Write(dest_address + i, temp_buffer_, move_size);
+        !status.ok()) {
+      return status;
+    }
   }
   return Status::OK;
 }
@@ -594,12 +680,15 @@ Status KeyValueStore::MarkSectorForClean(SectorIndex sector) {
   // Flag the sector as clean being active. This ensures we can handle losing
   // power while a clean is active.
   const KvsSectorHeaderCleaning kValue = {next_sector_clean_order_};
-  RETURN_IF_ERROR(
-      PaddedWrite(&partition_,
-                  SectorIndexToAddress(sector) +
-                      RoundUpForAlignment(sizeof(KvsSectorHeaderMeta)),
-                  reinterpret_cast<const uint8_t*>(&kValue),
-                  sizeof(kValue)));
+  if (Status status =
+          PaddedWrite(&partition_,
+                      SectorIndexToAddress(sector) +
+                          RoundUpForAlignment(sizeof(KvsSectorHeaderMeta)),
+                      reinterpret_cast<const uint8_t*>(&kValue),
+                      sizeof(kValue));
+      !status.ok()) {
+    return status;
+  }
   sector_space_remaining_[sector] = 0;
   sector_clean_order_[sector] = next_sector_clean_order_;
   next_sector_clean_order_++;
@@ -621,14 +710,17 @@ Status KeyValueStore::CleanSector(SectorIndex sector) {
 
     if (i < map_size_ && sector == AddressToSectorIndex(key_map_[i].address)) {
       uint8_t key_len =
-          util::StringLength(key_map_[i].key, (kChunkKeyLengthMax + 1u));
+          string::Length(key_map_[i].key, kChunkKeyLengthMax + 1u);
       FlashPartition::Address address = key_map_[i].address;
       auto size = ChunkSize(key_len, key_map_[i].chunk_len);
       FlashPartition::Address move_address = FindSpace(size);
       if (move_address == kSectorInvalid) {
         return Status::RESOURCE_EXHAUSTED;
       }
-      RETURN_IF_ERROR(MoveChunk(move_address, address, size));
+      if (Status status = MoveChunk(move_address, address, size);
+          !status.ok()) {
+        return status;
+      }
       sector_space_remaining_[AddressToSectorIndex(move_address)] -= size;
       key_map_[i].address = move_address;  // Update map
     }
@@ -641,7 +733,7 @@ Status KeyValueStore::CleanOneSector(bool* all_sectors_have_been_cleaned) {
   if (all_sectors_have_been_cleaned == nullptr) {
     return Status::INVALID_ARGUMENT;
   }
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   bool have_cleaned_sector = false;
   for (SectorIndex sector = 0; sector < SectorCount(); sector++) {
     if (sector_clean_order_[sector] != kSectorCleanNotPending) {
@@ -649,7 +741,9 @@ Status KeyValueStore::CleanOneSector(bool* all_sectors_have_been_cleaned) {
         *all_sectors_have_been_cleaned = false;
         return Status::OK;
       }
-      RETURN_IF_ERROR(CleanSector(sector));
+      if (Status status = CleanSector(sector); !status.ok()) {
+        return status;
+      }
       have_cleaned_sector = true;
     }
   }
@@ -660,7 +754,9 @@ Status KeyValueStore::CleanOneSector(bool* all_sectors_have_been_cleaned) {
 Status KeyValueStore::CleanAllInternal() {
   for (SectorIndex sector = 0; sector < SectorCount(); sector++) {
     if (sector_clean_order_[sector] != kSectorCleanNotPending) {
-      RETURN_IF_ERROR(CleanSector(sector));
+      if (Status status = CleanSector(sector); !status.ok()) {
+        return status;
+      }
     }
   }
   return Status::OK;
@@ -703,11 +799,11 @@ Status KeyValueStore::GetValueSize(const char* key, uint16_t* value_size) {
     return Status::INVALID_ARGUMENT;
   }
 
-  size_t key_len = util::StringLength(key, (kChunkKeyLengthMax + 1u));
+  size_t key_len = string::Length(key, kChunkKeyLengthMax + 2u);
   if (key_len == 0 || key_len > kChunkKeyLengthMax) {
     return Status::INVALID_ARGUMENT;
   }
-  os::MutexLock lock(&lock_);
+  // TODO: LOCK MUTEX
   if (!enabled_) {
     return Status::FAILED_PRECONDITION;
   }
@@ -725,17 +821,17 @@ Status KeyValueStore::AppendToMap(const char* key,
                                   uint16_t chunk_len,
                                   bool is_erased) {
   if (map_size_ >= kListCapacityMax) {
-    LOG_ERROR("Can't add: reached max supported keys %d", kListCapacityMax);
+    PW_LOG_ERROR("Can't add: reached max supported keys %d", kListCapacityMax);
     return Status::INTERNAL;
   }
 
   // Copy incoming key into map entry, ensuring size checks and nul-termination.
-  StringBuilder key_builder(key_map_[map_size_].key,
-                            sizeof(key_map_[map_size_].key));
+  StringBuilder key_builder(
+      span(key_map_[map_size_].key, sizeof(key_map_[map_size_].key)));
   key_builder.append(key);
 
   if (!key_builder.status().ok()) {
-    LOG_ERROR("Can't add: got invalid key: %s!", key_builder.status().str());
+    PW_LOG_ERROR("Can't add: got invalid key: %s!", key_builder.status().str());
     return Status::INTERNAL;
   }
 
@@ -802,4 +898,4 @@ uint16_t KeyValueStore::GetValueSize(uint8_t idx) const {
   return 0;
 }
 
-}  // namespace pw
+}  // namespace pw::kvs

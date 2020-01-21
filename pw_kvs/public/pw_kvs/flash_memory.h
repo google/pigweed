@@ -14,14 +14,16 @@
 #pragma once
 
 #include <algorithm>
+#include <cinttypes>
+#include <cstring>
 
 #include "pw_kvs/assert.h"
-#include "pw_kvs/logging.h"
-#include "pw_kvs/peripherals/partition_table_entry.h"
-#include "pw_kvs/status.h"
-#include "pw_kvs/status_macros.h"
+#include "pw_kvs/partition_table_entry.h"
+#include "pw_log/log.h"
+#include "pw_status/status.h"
 
-namespace pw {
+namespace pw::kvs {
+
 class FlashMemory {
  public:
   // The flash address is in the range of: 0 to FlashSize.
@@ -38,6 +40,8 @@ class FlashMemory {
         start_address_(start_address),
         sector_start_(sector_start),
         erased_memory_content_(erased_memory_content) {}
+
+  virtual ~FlashMemory() = default;
 
   virtual Status Enable() = 0;
   virtual Status Disable() = 0;
@@ -72,9 +76,7 @@ class FlashMemory {
 
   // Convert an Address to an MCU pointer, this can be used for memory
   // mapped reads. Return NULL if the memory is not memory mapped.
-  virtual uint8_t* FlashAddressToMcuAddress(Address address) const {
-    return nullptr;
-  }
+  virtual uint8_t* FlashAddressToMcuAddress(Address) const { return nullptr; }
 
   // GetStartSector() is useful for FlashMemory instances where the
   // sector start is not 0. (ex.: cases where there are portions of flash
@@ -137,9 +139,7 @@ class FlashMemorySubSector : public FlashMemory {
   bool IsEnabled() const override { return flash_.IsEnabled(); }
   Status SelfTest() override { return flash_.SelfTest(); }
 
-  Status Erase(Address flash_address, uint32_t num_sectors) override {
-    return Status::UNIMPLEMENTED;
-  }
+  Status Erase(Address, uint32_t) override { return Status::UNIMPLEMENTED; }
 
   Status Read(uint8_t* destination_ram_address,
               Address source_flash_address,
@@ -185,6 +185,8 @@ class FlashPartition {
                       entry.partition_start_sector_index + 1),
         permission_(entry.partition_permission) {}
 
+  virtual ~FlashPartition() = default;
+
   // Erase num_sectors starting at a given address. Blocking call.
   // Address should be on a sector boundary.
   // Returns: OK, on success.
@@ -193,9 +195,14 @@ class FlashPartition {
   //          PERMISSION_DENIED, if partition is read only.
   //          UNKNOWN, on HAL error
   virtual Status Erase(Address address, uint32_t num_sectors) {
-    RETURN_STATUS_IF(permission_ == PartitionPermission::kReadOnly,
-                     Status::PERMISSION_DENIED);
-    RETURN_IF_ERROR(CheckBounds(address, num_sectors * GetSectorSizeBytes()));
+    if (permission_ == PartitionPermission::kReadOnly) {
+      return Status::PERMISSION_DENIED;
+    }
+    if (Status status =
+            CheckBounds(address, num_sectors * GetSectorSizeBytes());
+        !status.ok()) {
+      return status;
+    }
     return flash_.Erase(PartitionToFlashAddress(address), num_sectors);
   }
 
@@ -207,7 +214,9 @@ class FlashPartition {
   virtual Status Read(uint8_t* destination_ram_address,
                       Address source_flash_address,
                       uint32_t len) {
-    RETURN_IF_ERROR(CheckBounds(source_flash_address, len));
+    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
+      return status;
+    }
     return flash_.Read(destination_ram_address,
                        PartitionToFlashAddress(source_flash_address),
                        len);
@@ -222,9 +231,13 @@ class FlashPartition {
   virtual Status Write(Address destination_flash_address,
                        const uint8_t* source_ram_address,
                        uint32_t len) {
-    RETURN_STATUS_IF(permission_ == PartitionPermission::kReadOnly,
-                     Status::PERMISSION_DENIED);
-    RETURN_IF_ERROR(CheckBounds(destination_flash_address, len));
+    if (permission_ == PartitionPermission::kReadOnly) {
+      return Status::PERMISSION_DENIED;
+    }
+    if (Status status = CheckBounds(destination_flash_address, len);
+        !status.ok()) {
+      return status;
+    }
     return flash_.Write(PartitionToFlashAddress(destination_flash_address),
                         source_ram_address,
                         len);
@@ -243,24 +256,31 @@ class FlashPartition {
     // function. Using 16 because it's the alignment of encrypted flash.
     const uint8_t kMaxAlignment = 16;
     // Relying on Read() to check address and len arguments.
-    RETURN_STATUS_IF(!is_erased, Status::INVALID_ARGUMENT);
+    if (!is_erased) {
+      return Status::INVALID_ARGUMENT;
+    }
     uint8_t alignment = GetAlignmentBytes();
-    RETURN_STATUS_IF(alignment > kMaxAlignment, Status::INVALID_ARGUMENT);
-    RETURN_STATUS_IF(kMaxAlignment % alignment, Status::INVALID_ARGUMENT);
-    RETURN_STATUS_IF(len % alignment, Status::INVALID_ARGUMENT);
+    if (alignment > kMaxAlignment || kMaxAlignment % alignment ||
+        len % alignment) {
+      return Status::INVALID_ARGUMENT;
+    }
 
     uint8_t buffer[kMaxAlignment];
     uint8_t erased_pattern_buffer[kMaxAlignment];
     size_t offset = 0;
-    memset(erased_pattern_buffer,
-           flash_.GetErasedMemoryContent(),
-           sizeof(erased_pattern_buffer));
+    std::memset(erased_pattern_buffer,
+                flash_.GetErasedMemoryContent(),
+                sizeof(erased_pattern_buffer));
     *is_erased = false;
     while (len > 0) {
       // Check earlier that len is aligned, no need to round up
       uint16_t read_size = std::min(static_cast<uint32_t>(sizeof(buffer)), len);
-      RETURN_IF_ERROR(Read(buffer, source_flash_address + offset, read_size));
-      if (memcmp(buffer, erased_pattern_buffer, read_size)) {
+      if (Status status =
+              Read(buffer, source_flash_address + offset, read_size);
+          !status.ok()) {
+        return status;
+      }
+      if (std::memcmp(buffer, erased_pattern_buffer, read_size)) {
         // Detected memory chunk is not entirely erased
         return Status::OK;
       }
@@ -301,8 +321,11 @@ class FlashPartition {
  protected:
   Status CheckBounds(Address address, uint32_t len) const {
     if (address + len > GetSizeBytes()) {
-      LOG(ERROR) << "Attempted out-of-bound flash memory access (address:"
-                 << address << " length:" << len << ")";
+      PW_LOG_ERROR(
+          "Attempted out-of-bound flash memory access (address: %" PRIu32
+          " length: %zu)",
+          address,
+          len);
       return Status::INVALID_ARGUMENT;
     }
     return Status::OK;
@@ -331,14 +354,20 @@ class FlashSubPartition : public FlashPartition {
         sector_count_(sector_count) {}
 
   Status Erase(Address address, uint32_t num_sectors) override {
-    RETURN_IF_ERROR(CheckBounds(address, num_sectors * GetSectorSizeBytes()));
+    if (Status status =
+            CheckBounds(address, num_sectors * GetSectorSizeBytes());
+        !status.ok()) {
+      return status;
+    }
     return partition_->Erase(ParentAddress(address), num_sectors);
   }
 
   Status Read(uint8_t* destination_ram_address,
               Address source_flash_address,
               uint32_t len) override {
-    RETURN_IF_ERROR(CheckBounds(source_flash_address, len));
+    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
+      return status;
+    }
     return partition_->Read(
         destination_ram_address, ParentAddress(source_flash_address), len);
   }
@@ -346,7 +375,10 @@ class FlashSubPartition : public FlashPartition {
   Status Write(Address destination_flash_address,
                const uint8_t* source_ram_address,
                uint32_t len) override {
-    RETURN_IF_ERROR(CheckBounds(destination_flash_address, len));
+    if (Status status = CheckBounds(destination_flash_address, len);
+        !status.ok()) {
+      return status;
+    }
     return partition_->Write(
         ParentAddress(destination_flash_address), source_ram_address, len);
   }
@@ -354,7 +386,9 @@ class FlashSubPartition : public FlashPartition {
   Status IsChunkErased(Address source_flash_address,
                        uint32_t len,
                        bool* is_erased) override {
-    RETURN_IF_ERROR(CheckBounds(source_flash_address, len));
+    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
+      return status;
+    }
     return partition_->IsChunkErased(
         ParentAddress(source_flash_address), len, is_erased);
   }
@@ -374,4 +408,4 @@ class FlashSubPartition : public FlashPartition {
   const uint32_t sector_count_;
 };
 
-}  // namespace pw
+}  // namespace pw::kvs

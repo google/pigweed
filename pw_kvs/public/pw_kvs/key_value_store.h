@@ -16,17 +16,37 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "pw_kvs/devices/flash_memory.h"
-#include "pw_kvs/logging.h"
-#include "pw_kvs/os/mutex.h"
-#include "pw_kvs/status.h"
+#include "pw_kvs/flash_memory.h"
+#include "pw_status/status.h"
 
-namespace pw {
+namespace cfg {
+
+// KVS requires a temporary buffer for some operations, this config allows
+// tuning the buffer size. This is a trade-off between a value which is large
+// and therefore requires more RAM, or having a value which is small which will
+// result in some operations taking longer, as the operations are broken into
+// smaller chunks.
+// NOTE: This value can not be smaller then the flash alignment, and it will
+//       round the size down to be a multiple of the flash alignment for all
+//       operations.
+inline constexpr size_t kKvsBufferSize = 64;
+
+// This represents the maximum amount of keys which can be in the KVS at any
+// given time.
+inline constexpr uint8_t kKvsMaxKeyCount = 50;
+
+// This is the maximum amount of sectors the KVS can operate on, an invalid
+// value will cause an error during enable.
+inline constexpr uint32_t kKvsMaxSectorCount = 20;
+
+}  // namespace cfg
+
+namespace pw::kvs {
 
 // This object is very large and should not be placed on the stack.
 class KeyValueStore {
  public:
-  KeyValueStore(FlashPartition* partition) : partition_(*partition) {}
+  constexpr KeyValueStore(FlashPartition* partition) : partition_(*partition) {}
 
   // Enable the KVS, scans the sectors of the partition for any current KVS
   // data. Erases and initializes any sectors which are not initialized.
@@ -39,7 +59,7 @@ class KeyValueStore {
     if (enabled_ == false) {
       return;
     }
-    os::MutexLock lock(&lock_);
+    // TODO: LOCK MUTEX
     enabled_ = false;
   }
 
@@ -67,9 +87,14 @@ class KeyValueStore {
   Status Get(const char* key, T* value) {
     static_assert(std::is_trivially_copyable<T>(), "KVS values must copyable");
     static_assert(!std::is_pointer<T>(), "KVS values cannot be pointers");
+
     uint16_t value_size = 0;
-    RETURN_IF_ERROR(GetValueSize(key, &value_size));
-    RETURN_STATUS_IF(value_size != sizeof(T), Status::INVALID_ARGUMENT);
+    if (Status status = GetValueSize(key, &value_size)) {
+      return status;
+    }
+    if (value_size != sizeof(T)) {
+      return Status::INVALID_ARGUMENT;
+    }
     return Get(key, value, sizeof(T));
   }
 
@@ -107,11 +132,11 @@ class KeyValueStore {
   // CleanAll cleans each sector which is currently marked for cleaning.
   // Note: if any data is invalid/corrupt it could be lost.
   Status CleanAll() {
-    os::MutexLock lock(&lock_);
+    // TODO: LOCK MUTEX
     return CleanAllInternal();
   }
   size_t PendingCleanCount() {
-    os::MutexLock lock(&lock_);
+    // TODO: LOCK MUTEX
     size_t ret = 0;
     for (size_t i = 0; i < SectorCount(); i++) {
       ret += sector_space_remaining_[i] == 0 ? 1 : 0;
@@ -345,7 +370,7 @@ class KeyValueStore {
   }
 
   FlashPartition& partition_;
-  os::Mutex lock_;
+  // TODO: MUTEX
   bool enabled_ = false;
   uint8_t alignment_bytes_ = 0;
   uint64_t next_sector_clean_order_ = 0;
@@ -353,7 +378,7 @@ class KeyValueStore {
   // Free space available in each sector, set to 0 when clean is pending/active
   uint32_t sector_space_remaining_[kSectorCountMax] = {0};
   uint64_t sector_clean_order_[kSectorCountMax] = {kSectorCleanNotPending};
-  KeyMap key_map_[kListCapacityMax] = {{{0}}};
+  KeyMap key_map_[kListCapacityMax] = {};
   KeyIndex map_size_ = 0;
 
   // +1 for nul-terminator since keys are stored as Length + Value and no nul
@@ -363,4 +388,4 @@ class KeyValueStore {
   uint8_t temp_buffer_[cfg::kKvsBufferSize] = {0};
 };
 
-}  // namespace pw
+}  // namespace pw::kvs

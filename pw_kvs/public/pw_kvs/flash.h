@@ -13,9 +13,9 @@
 // the License.
 #pragma once
 
-#include "pw_kvs/devices/flash_memory.h"
+#include "pw_kvs/flash_memory.h"
 
-namespace pw {
+namespace pw::kvs {
 
 // Writes a buffer which is not guaranteed to be aligned, pads remaining
 // bytes with 0.
@@ -30,4 +30,4 @@ Status UnalignedRead(FlashPartition* partition,
                      FlashPartition::Address address,
                      uint16_t size);
 
-}  // namespace pw
+}  // namespace pw::kvs

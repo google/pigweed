@@ -12,34 +12,29 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_kvs/key_value_store.h"
-
+#include "gtest/gtest.h"
 #include "pw_kvs/assert.h"
-#include "pw_kvs/devices/flash_memory.h"
-#include "pw_kvs/platform/board.h"
-#include "pw_kvs/status.h"
-#include "pw_kvs/test/fixture.h"
-#include "pw_kvs/test/framework.h"
-#include "pw_kvs/test/status_macros.h"
+#include "pw_kvs/flash_memory.h"
+#include "pw_kvs/key_value_store.h"
+#include "pw_status/status.h"
+
+#define USE_MEMORY_BUFFER 1
 
 #if USE_MEMORY_BUFFER
-#include "pw_kvs/test/fakes/in_memory_fake_flash.h"
+#include "pw_kvs/in_memory_fake_flash.h"
 #endif  // USE_MEMORY_BUFFER
 
-namespace pw {
+namespace pw::kvs {
 namespace {
 
 #if USE_MEMORY_BUFFER
 InMemoryFakeFlash<1024, 4> test_flash(8);  // 4 x 1k sectors, 8 byte alignment
 FlashPartition test_partition(&test_flash, 0, test_flash.GetSectorCount());
-// Test KVS against FlashSubSector
-FlashMemorySubSector test_subsector_flash(&test_flash,
-                                          0,
-                                          128);  // Expose less than a sector.
-#else   // Device test
-FlashPartition& test_partition = Board::Instance().FlashExternalTestPartition();
-FlashMemorySubSector& test_subsector_flash =
-    Board::Instance().FlashMemorySubSectorTestChunk();
+// Test KVS against FlashSubSector.  Expose less than a sector.
+FlashMemorySubSector test_subsector_flash(&test_flash, 0, 128);
+#else   // TODO: Test with real flash
+FlashPartition& test_partition = FlashExternalTestPartition();
+FlashMemorySubSector& test_subsector_flash = FlashMemorySubSectorTestChunk();
 #endif  // USE_MEMORY_BUFFER
 
 FlashPartition test_subsector_partition(&test_subsector_flash, 0, 1);
@@ -53,41 +48,45 @@ TEST(KeyValueStoreTest, WorksWithFlashSubSector) {
   // The subsector region is assumed to be a part of the test partition.
   // In order to clear state before the test, we must erase the entire test
   // partition because erase operations are disallowed on FlashMemorySubSectors.
-  ASSERT_OK(test_partition.Erase(0, test_partition.GetSectorCount()));
+  ASSERT_EQ(Status::OK,
+            test_partition.Erase(0, test_partition.GetSectorCount()));
 
   // Reset KVS
   subsector_kvs.Disable();
-  ASSERT_OK(subsector_kvs.Enable());
+  ASSERT_EQ(Status::OK, subsector_kvs.Enable());
 
   // Add some data
   uint8_t value1 = 0xDA;
-  ASSERT_OK(subsector_kvs.Put(keys[0], &value1, sizeof(value1)));
+  ASSERT_EQ(Status::OK, subsector_kvs.Put(keys[0], &value1, sizeof(value1)));
 
   uint32_t value2 = 0xBAD0301f;
-  ASSERT_OK(subsector_kvs.Put(
-      keys[1], reinterpret_cast<uint8_t*>(&value2), sizeof(value2)));
+  ASSERT_EQ(Status::OK,
+            subsector_kvs.Put(
+                keys[1], reinterpret_cast<uint8_t*>(&value2), sizeof(value2)));
 
   // Verify data
   uint32_t test2;
-  EXPECT_OK(subsector_kvs.Get(
-      keys[1], reinterpret_cast<uint8_t*>(&test2), sizeof(test2)));
+  EXPECT_EQ(Status::OK,
+            subsector_kvs.Get(
+                keys[1], reinterpret_cast<uint8_t*>(&test2), sizeof(test2)));
   uint8_t test1;
-  ASSERT_OK(subsector_kvs.Get(
-      keys[0], reinterpret_cast<uint8_t*>(&test1), sizeof(test1)));
+  ASSERT_EQ(Status::OK,
+            subsector_kvs.Get(
+                keys[0], reinterpret_cast<uint8_t*>(&test1), sizeof(test1)));
 
   EXPECT_EQ(test1, value1);
 
   // Erase a key
-  ASSERT_OK(subsector_kvs.Erase(keys[0]));
+  ASSERT_EQ(Status::OK, subsector_kvs.Erase(keys[0]));
 
   // Verify it was erased
-  EXPECT_EQ(subsector_kvs
-                .Get(keys[0], reinterpret_cast<uint8_t*>(&test1), sizeof(test1))
-                .code(),
+  EXPECT_EQ(subsector_kvs.Get(
+                keys[0], reinterpret_cast<uint8_t*>(&test1), sizeof(test1)),
             Status::NOT_FOUND);
   test2 = 0;
-  ASSERT_OK(subsector_kvs.Get(
-      keys[1], reinterpret_cast<uint8_t*>(&test2), sizeof(test2)));
+  ASSERT_EQ(Status::OK,
+            subsector_kvs.Get(
+                keys[1], reinterpret_cast<uint8_t*>(&test2), sizeof(test2)));
   EXPECT_EQ(test2, value2);
 
   // Erase other key
@@ -101,11 +100,12 @@ TEST(KeyValueStoreTest, WorksWithFlashSubSector_MemoryExhausted) {
   // The subsector region is assumed to be a part of the test partition.
   // In order to clear state before the test, we must erase the entire test
   // partition because erase operations are disallowed on FlashMemorySubSectors.
-  ASSERT_OK(test_partition.Erase(0, test_partition.GetSectorCount()));
+  ASSERT_EQ(Status::OK,
+            test_partition.Erase(0, test_partition.GetSectorCount()));
 
   // Reset KVS
   subsector_kvs.Disable();
-  ASSERT_OK(subsector_kvs.Enable());
+  ASSERT_EQ(Status::OK, subsector_kvs.Enable());
 
   // Store as much data as possible in the KVS until it fills up.
   uint64_t test = 0;
@@ -123,8 +123,8 @@ TEST(KeyValueStoreTest, WorksWithFlashSubSector_MemoryExhausted) {
   // Even though we failed to fill the KVS, it still works, and we
   // should have the previous test value as the most recent value in the KVS.
   uint64_t value = 0;
-  ASSERT_OK(subsector_kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, subsector_kvs.Get(keys[0], &value));
   EXPECT_EQ(test - 1, value);
 }
 
-}  // namespace pw
+}  // namespace pw::kvs

@@ -12,29 +12,41 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_kvs/util/flash.h"
+#include "pw_kvs/flash.h"
 
-#include "pw_kvs/config.h"
+#include <cstring>
 
-namespace pw {
+namespace pw::kvs {
+namespace cfg {
+
+// Configure the maximum supported alignment for the flash utility functions.
+constexpr size_t kFlashUtilMaxAlignmentBytes = 16;
+
+}  // namespace cfg
 
 Status PaddedWrite(FlashPartition* partition,
                    FlashPartition::Address address,
                    const uint8_t* buffer,
                    uint16_t size) {
-  RETURN_STATUS_IF(
-      address % partition->GetAlignmentBytes() ||
-          partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes,
-      Status::INVALID_ARGUMENT);
+  if (address % partition->GetAlignmentBytes() ||
+      partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes) {
+    return Status::INVALID_ARGUMENT;
+  }
   uint8_t alignment_buffer[cfg::kFlashUtilMaxAlignmentBytes] = {0};
   uint16_t aligned_bytes = size - size % partition->GetAlignmentBytes();
-  RETURN_IF_ERROR(partition->Write(address, buffer, aligned_bytes));
+  if (Status status = partition->Write(address, buffer, aligned_bytes);
+      !status.ok()) {
+    return status;
+  }
   uint16_t remaining_bytes = size - aligned_bytes;
   if (remaining_bytes > 0) {
-    memcpy(alignment_buffer, &buffer[aligned_bytes], remaining_bytes);
-    RETURN_IF_ERROR(partition->Write(address + aligned_bytes,
-                                     alignment_buffer,
-                                     partition->GetAlignmentBytes()));
+    std::memcpy(alignment_buffer, &buffer[aligned_bytes], remaining_bytes);
+    if (Status status = partition->Write(address + aligned_bytes,
+                                         alignment_buffer,
+                                         partition->GetAlignmentBytes());
+        !status.ok()) {
+      return status;
+    }
   }
   return Status::OK;
 }
@@ -43,21 +55,27 @@ Status UnalignedRead(FlashPartition* partition,
                      uint8_t* buffer,
                      FlashPartition::Address address,
                      uint16_t size) {
-  RETURN_STATUS_IF(
-      address % partition->GetAlignmentBytes() ||
-          partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes,
-      Status::INVALID_ARGUMENT);
+  if (address % partition->GetAlignmentBytes() ||
+      partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes) {
+    return Status::INVALID_ARGUMENT;
+  }
   uint16_t aligned_bytes = size - size % partition->GetAlignmentBytes();
-  RETURN_IF_ERROR(partition->Read(buffer, address, aligned_bytes));
+  if (Status status = partition->Read(buffer, address, aligned_bytes);
+      !status.ok()) {
+    return status;
+  }
   uint16_t remaining_bytes = size - aligned_bytes;
   if (remaining_bytes > 0) {
     uint8_t alignment_buffer[cfg::kFlashUtilMaxAlignmentBytes];
-    RETURN_IF_ERROR(partition->Read(alignment_buffer,
-                                    address + aligned_bytes,
-                                    partition->GetAlignmentBytes()));
+    if (Status status = partition->Read(alignment_buffer,
+                                        address + aligned_bytes,
+                                        partition->GetAlignmentBytes());
+        !status.ok()) {
+      return status;
+    }
     memcpy(&buffer[aligned_bytes], alignment_buffer, remaining_bytes);
   }
   return Status::OK;
 }
 
-}  // namespace pw
+}  // namespace pw::kvs

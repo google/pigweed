@@ -15,11 +15,10 @@
 
 #include <array>
 
-#include "pw_kvs/devices/flash_memory.h"
-#include "pw_kvs/status.h"
-#include "pw_kvs/status_macros.h"
+#include "pw_kvs/flash_memory.h"
+#include "pw_status/status.h"
 
-namespace pw {
+namespace pw::kvs {
 
 // This creates a buffer which mimics the behaviour of flash (requires erase,
 // before write, checks alignments, and is addressed in sectors).
@@ -40,12 +39,15 @@ class InMemoryFakeFlash : public FlashMemory {
   //          INVALID_ARGUMENT, if address or sector count is invalid.
   //          UNKNOWN, on HAL error
   Status Erase(Address addr, uint32_t num_sectors) override {
-    RETURN_STATUS_IF(addr % GetSectorSizeBytes() != 0,
-                     Status::INVALID_ARGUMENT);
-    RETURN_STATUS_IF(
-        addr / GetSectorSizeBytes() + num_sectors > GetSectorCount(),
-        Status::UNKNOWN);
-    RETURN_STATUS_IF(addr % GetAlignmentBytes() != 0, Status::INVALID_ARGUMENT);
+    if (addr % GetSectorSizeBytes() != 0) {
+      return Status::INVALID_ARGUMENT;
+    }
+    if (addr / GetSectorSizeBytes() + num_sectors > GetSectorCount()) {
+      return Status::UNKNOWN;
+    }
+    if (addr % GetAlignmentBytes() != 0) {
+      return Status::INVALID_ARGUMENT;
+    }
     memset(&buffer_[addr], 0xFF, GetSectorSizeBytes() * num_sectors);
     return Status::OK;
   }
@@ -57,9 +59,9 @@ class InMemoryFakeFlash : public FlashMemory {
   Status Read(uint8_t* dest_ram_addr,
               Address source_flash_addr,
               uint32_t len) override {
-    RETURN_STATUS_IF(
-        (source_flash_addr + len) >= GetSectorCount() * GetSizeBytes(),
-        Status::INVALID_ARGUMENT);
+    if ((source_flash_addr + len) >= GetSectorCount() * GetSizeBytes()) {
+      return Status::INVALID_ARGUMENT;
+    }
     memcpy(dest_ram_addr, &buffer_[source_flash_addr], len);
     return Status::OK;
   }
@@ -71,15 +73,16 @@ class InMemoryFakeFlash : public FlashMemory {
   Status Write(Address dest_flash_addr,
                const uint8_t* source_ram_addr,
                uint32_t len) override {
-    RETURN_STATUS_IF(
-        (dest_flash_addr + len) >= GetSectorCount() * GetSizeBytes(),
-        Status::INVALID_ARGUMENT);
-    RETURN_STATUS_IF(dest_flash_addr % GetAlignmentBytes() != 0,
-                     Status::INVALID_ARGUMENT);
-    RETURN_STATUS_IF(len % GetAlignmentBytes() != 0, Status::INVALID_ARGUMENT);
+    if ((dest_flash_addr + len) >= GetSectorCount() * GetSizeBytes() ||
+        dest_flash_addr % GetAlignmentBytes() != 0 ||
+        len % GetAlignmentBytes() != 0) {
+      return Status::INVALID_ARGUMENT;
+    }
     // Check in erased state
     for (unsigned i = 0; i < len; i++) {
-      RETURN_STATUS_IF(buffer_[dest_flash_addr + i] != 0xFF, Status::UNKNOWN);
+      if (buffer_[dest_flash_addr + i] != 0xFF) {
+        return Status::UNKNOWN;
+      }
     }
     memcpy(&buffer_[dest_flash_addr], source_ram_addr, len);
     return Status::OK;
@@ -89,4 +92,4 @@ class InMemoryFakeFlash : public FlashMemory {
   std::array<uint8_t, kSectorCount * kSectorSize> buffer_;
 };
 
-}  // namespace pw
+}  // namespace pw::kvs
