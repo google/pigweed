@@ -47,14 +47,21 @@ CIPD_HOST = 'chrome-infra-packages.appspot.com'
 try:
     PW_ROOT = os.environ['PW_ROOT']
 except KeyError:
-    PW_ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'])
+    try:
+        with open(os.devnull, 'w') as outs:
+            PW_ROOT = subprocess.check_output(
+                ['git', 'rev-parse', '--show-toplevel'], stderr=outs).strip()
+    except subprocess.CalledProcessError:
+        PW_ROOT = None
 
 # Get default install dir from environment since args cannot always be passed
 # through this script (args are passed as-is to cipd).
 if 'CIPD_PY_INSTALL_DIR' in os.environ:
     DEFAULT_INSTALL_DIR = os.environ['CIPD_PY_INSTALL_DIR']
-else:
+elif PW_ROOT:
     DEFAULT_INSTALL_DIR = os.path.join(PW_ROOT, '.cipd')
+else:
+    DEFAULT_INSTALL_DIR = None
 
 
 def platform_normalized():

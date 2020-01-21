@@ -218,13 +218,18 @@ class EnvSetup(object):
 
 
 def parse(argv=None):
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
 
-    try:
-        pw_root = subprocess.check_output(
-            ['git', 'rev-parse', '--show-toplevel']).strip()
-    except subprocess.CalledProcessError:
-        pw_root = None
+    pw_root = os.environ.get('PW_ROOT', None)
+    if not pw_root:
+        try:
+            with open(os.devnull, 'w') as outs:
+                pw_root = subprocess.check_output(
+                    ['git', 'rev-parse', '--show-toplevel'],
+                    stderr=outs).strip()
+        except subprocess.CalledProcessError:
+            pw_root = None
     parser.add_argument(
         '--pw-root',
         default=pw_root,
@@ -240,6 +245,7 @@ def parse(argv=None):
     parser.add_argument(
         '--shell-file',
         help='Where to write the file for shells to source.',
+        required=True,
     )
 
     return parser.parse_args(argv)
