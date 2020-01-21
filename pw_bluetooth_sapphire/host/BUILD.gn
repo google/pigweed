@@ -52,7 +52,7 @@ source_set("sources") {
 
   deps = [
     "//src/devices:driver",
-    "//src/devices/host",
+    "//src/devices/driver_host",
   ]
   public_deps = [
     ":stack",
