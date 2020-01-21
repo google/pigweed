@@ -143,6 +143,10 @@ class Environment(object):
                 else:
                     os.environ.pop(action.name, None)
 
+    def __getitem__(self, key):
+        with self():
+            return os.environ[key]
+
 
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
