@@ -45,12 +45,11 @@ else
   PYTHON=python
 fi
 
-# Expanded logic here to make this both easy to read and not bash-specific.
-# If user sourced 'bootstrap.sh' or if there is no '.setup.sh' then run
-# env_setup.py.
-if [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ]; then
-  $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
-elif [ ! -f $SETUP_SH ]; then
+# Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
+if \
+  [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
+  [ ! -f $SETUP_SH ] || \
+  [ ! -s $SETUP_SH ]; then
   $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 fi
 
