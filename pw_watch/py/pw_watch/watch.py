@@ -14,15 +14,17 @@
 """Rebuild every time a file is changed."""
 
 import argparse
+from dataclasses import dataclass
 import enum
 import glob
 import logging
 import os
 import pathlib
+import shlex
 import subprocess
 import sys
 import time
-from typing import NamedTuple
+from typing import List, NamedTuple, Optional, Sequence, Tuple
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -94,15 +96,27 @@ _ASCII_CHARSET = WatchCharset(_COLOR.green('OK  '), _COLOR.red('FAIL'))
 _EMOJI_CHARSET = WatchCharset('✔️ ', '💥')
 
 
+@dataclass(frozen=True)
+class BuildCommand:
+    build_dir: pathlib.Path
+    targets: Tuple[str, ...] = ()
+
+    def args(self) -> Tuple[str, ...]:
+        return (str(self.build_dir), *self.targets)
+
+    def __str__(self) -> str:
+        return shlex.join(self.args())
+
+
 class PigweedBuildWatcher(FileSystemEventHandler):
     """Process filesystem events and launch builds if necessary."""
     def __init__(
         self,
-        patterns=None,
-        ignore_patterns=None,
-        case_sensitive=False,
-        build_dirs=None,
-        ignore_dirs=None,
+        patterns: Sequence[str] = (),
+        ignore_patterns: Sequence[str] = (),
+        case_sensitive: bool = False,
+        build_commands: Sequence[BuildCommand] = (),
+        ignore_dirs=Optional[List[str]],
         charset: WatchCharset = _ASCII_CHARSET,
     ):
         super().__init__()
@@ -111,8 +125,9 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         self.ignore_patterns = ignore_patterns
         self.case_sensitive = case_sensitive
         self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
-        self.build_dirs = build_dirs or []
-        self.ignore_dirs = (ignore_dirs or []) + self.build_dirs
+        self.build_commands = build_commands
+        self.ignore_dirs = ignore_dirs or []
+        self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
         self.cooldown_finish_time = None
         self.charset: WatchCharset = charset
 
@@ -175,17 +190,17 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         _LOG.info('Change detected: %s', matching_path)
 
         builds_succeeded = []
-        num_builds = len(self.build_dirs)
+        num_builds = len(self.build_commands)
         _LOG.info(f'Starting build with {num_builds} directories')
-        for i, build_dir in enumerate(self.build_dirs, 1):
-            _LOG.info(f'[{i}/{num_builds}] Starting build: {build_dir}')
+        for i, cmd in enumerate(self.build_commands, 1):
+            _LOG.info(f'[{i}/{num_builds}] Starting build: {cmd}')
 
             # Run the build. Put a blank before/after for visual separation.
             print()
             env = os.environ.copy()
             # Force colors in Pigweed subcommands run through the watcher.
             env['PW_USE_COLOR'] = '1'
-            result = subprocess.run(['ninja', '-C', build_dir], env=env)
+            result = subprocess.run(['ninja', '-C', *cmd.args()], env=env)
             print()
 
             build_ok = (result.returncode == 0)
@@ -195,8 +210,7 @@ class PigweedBuildWatcher(FileSystemEventHandler):
             else:
                 level = logging.ERROR
                 tag = '(FAIL)'
-            _LOG.log(level,
-                     f'[{i}/{num_builds}] Finished build: {build_dir} {tag}')
+            _LOG.log(level, f'[{i}/{num_builds}] Finished build: {cmd} {tag}')
             builds_succeeded.append(build_ok)
 
         if all(builds_succeeded):
@@ -209,9 +223,9 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         print()
         print(' .------------------------------------')
         print(' |')
-        for (succeeded, build_dir) in zip(builds_succeeded, self.build_dirs):
+        for (succeeded, cmd) in zip(builds_succeeded, self.build_commands):
             slug = self.charset.slug_ok if succeeded else self.charset.slug_fail
-            print(f' |   {slug}  {build_dir}')
+            print(f' |   {slug}  {cmd}')
         print(' |')
         print(" '------------------------------------")
 
@@ -267,14 +281,23 @@ def add_parser_arguments(parser):
                         help=(_WATCH_PATTERN_DELIMITER +
                               '-delimited list of globs to '
                               'ignore events from'))
+
+    def build_dir_and_target(arg: str) -> BuildCommand:
+        args = arg.split('#')
+        return BuildCommand(pathlib.Path(args[0]), tuple(args[1:]))
+
     parser.add_argument(
-        '--build_dir',
-        help=('Ninja directory to build. Can be specified '
-              'multiple times to build multiple configurations'),
-        action='append')
+        'build_commands',
+        nargs='*',
+        type=build_dir_and_target,
+        help=('Ninja directory to build. Can be specified multiple times to '
+              'build multiple configurations. Build targets may optionally be '
+              'specified by appending #TARGET to the directory. For example, '
+              'out/build_dir#pw_module#tests builds the pw_module and tests '
+              'targets in out/build_dir.'))
 
 
-def watch(build_dir='', patterns=None, ignore_patterns=None):
+def watch(build_commands=None, patterns=None, ignore_patterns=None):
     """TODO(keir) docstring"""
 
     _LOG.info('Starting Pigweed build watcher')
@@ -282,28 +305,26 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
     # If no build directory was specified, search the tree for GN build
     # directories and try to build them all. In the future this may cause
     # slow startup, but for now this is fast enough.
-    build_dirs = build_dir
-    if not build_dirs:
-        build_dirs = []
+    if not build_commands:
+        build_commands = []
         _LOG.info('Searching for GN build dirs...')
         gn_args_files = glob.glob('**/args.gn', recursive=True)
         for gn_args_file in gn_args_files:
             gn_build_dir = pathlib.Path(gn_args_file).parent
             if gn_build_dir.is_dir():
-                build_dirs.append(str(gn_build_dir))
+                build_commands.append(BuildCommand(gn_build_dir))
 
     # Make sure we found something; if not, bail.
-    if not build_dirs:
+    if not build_commands:
         _die("No build dirs found. Did you forget to 'gn gen out'?")
 
     # Verify that the build output directories exist.
-    # pylint: disable=redefined-argument-from-local
-    for i, build_dir in enumerate(build_dirs, 1):
-        if not os.path.isdir(build_dir):
-            _die("Build directory doesn't exist: %s", build_dir)
+    for i, build_target in enumerate(build_commands, 1):
+        if not build_target.build_dir.is_dir():
+            _die("Build directory doesn't exist: %s", build_target)
         else:
-            _LOG.info(f'Will build [{i}/{len(build_dirs)}]: {build_dir}')
-    # pylint: enable=redefined-argument-from-local
+            _LOG.info(
+                f'Will build [{i}/{len(build_commands)}]: {build_target}')
 
     _LOG.debug('Patterns: %s', patterns)
 
@@ -340,7 +361,7 @@ def watch(build_dir='', patterns=None, ignore_patterns=None):
     event_handler = PigweedBuildWatcher(
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
-        build_dirs=build_dirs,
+        build_commands=build_commands,
         ignore_dirs=ignore_dirs,
         charset=charset,
     )
