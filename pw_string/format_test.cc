@@ -76,7 +76,7 @@ TEST(Format, FormatLargerThanBuffer_ReturnsResourceExhausted) {
 
 TEST(Format, ArgumentLargerThanBuffer_ReturnsResourceExhausted) {
   char buffer[5];
-  auto result = Format(buffer, "%s", "2big!");
+  auto result = Format(buffer, "%s%c", "2big", '!');
 
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
   EXPECT_EQ(4u, result.size());

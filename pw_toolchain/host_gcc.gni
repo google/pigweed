@@ -154,21 +154,21 @@ template("host_gcc") {
 
     _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
 
-    if (host_os == "linux") {
-      _link_flags += [
-        # Output a map file that shows symbols and their location.
-        "-Wl,-Map,$_link_mapfile",
-
-        # Delete unreferenced sections. Helpful with -ffunction-sections.
-        "-Wl,--gc-sections",
-      ]
-    } else if (host_os == "mac") {
+    if (host_os == "mac") {
       _link_flags += [
         # Output a map file that shows symbols and their location.
         "-Wl,-map,$_link_mapfile",
 
         # Delete unreferenced sections. Helpful with -ffunction-sections.
         "-Wl,-dead_strip",
+      ]
+    } else {
+      _link_flags += [
+        # Output a map file that shows symbols and their location.
+        "-Wl,-Map,$_link_mapfile",
+
+        # Delete unreferenced sections. Helpful with -ffunction-sections.
+        "-Wl,--gc-sections",
       ]
     }
 
