@@ -58,7 +58,7 @@ infra/3pp/tools/cpython3/${platform} version:3.8.0.chromium.7
 infra/go/${platform} version:1.13.5
 
 # Go protobuf plugin
-pigweed/third_party/protoc-gen-go/${os=linux,mac}-${arch} version:1.3.2
+pigweed/third_party/protoc-gen-go/${platform} version:1.3.2
 
 # OpenOCD
 # TODO(pwbug/66) Put openocd in cipd for Windows.
