@@ -70,19 +70,23 @@ Key to Flags:
   l (large), p (processor specific)
 """)
 
+TEST_ELF_PATH = os.path.join(os.path.dirname(__file__),
+                             'elf_reader_test_binary.elf')
+
 
 class ElfReaderTest(unittest.TestCase):
     """Tests the elf_reader.Elf class."""
     def setUp(self):
         super().setUp()
-        elf_path = os.path.join(os.path.dirname(__file__),
-                                'elf_reader_test_binary.elf')
-        self._elf_file = open(elf_path, 'rb')
+        self._elf_file = open(TEST_ELF_PATH, 'rb')
         self._elf = elf_reader.Elf(self._elf_file)
 
     def tearDown(self):
         super().tearDown()
         self._elf_file.close()
+
+    def _section(self, name):
+        return next(self._elf.sections_with_name(name))
 
     def test_readelf_comparison_using_the_readelf_binary(self):
         """Compares elf_reader to readelf's output."""
@@ -120,15 +124,15 @@ class ElfReaderTest(unittest.TestCase):
             self.assertEqual(section.offset, offset)
             self.assertEqual(section.size, size)
 
-    def test_dump_section(self):
-        self.assertEqual(self._elf.dump_section('.test_section_1'),
+    def test_dump_single_section(self):
+        self.assertEqual(self._elf.dump_sections(r'\.test_section_1'),
                          b'You cannot pass\0')
-        self.assertEqual(self._elf.dump_section('.test_section_2'),
+        self.assertEqual(self._elf.dump_sections(r'\.test_section_2'),
                          b'\xef\xbe\xed\xfe')
 
-    def test_dump_sections(self):
-        if (self._elf.sections_by_name['.test_section_1'].address <
-                self._elf.sections_by_name['.test_section_2'].address):
+    def test_dump_multiple_sections(self):
+        if (self._section('.test_section_1').address <
+                self._section('.test_section_2').address):
             contents = b'You cannot pass\0\xef\xbe\xed\xfe'
         else:
             contents = b'\xef\xbe\xed\xfeYou cannot pass\0'
@@ -136,11 +140,10 @@ class ElfReaderTest(unittest.TestCase):
         self.assertIn(self._elf.dump_sections(r'.test_section_\d'), contents)
 
     def test_read_values(self):
-        string_address = self._elf.sections_by_name['.test_section_1'].address
-        self.assertEqual(self._elf.read_value(string_address),
-                         b'You cannot pass')
+        address = self._section('.test_section_1').address
+        self.assertEqual(self._elf.read_value(address), b'You cannot pass')
 
-        int32_address = self._elf.sections_by_name['.test_section_2'].address
+        int32_address = self._section('.test_section_2').address
         self.assertEqual(self._elf.read_value(int32_address, 4),
                          b'\xef\xbe\xed\xfe')
 
@@ -151,6 +154,94 @@ class ElfReaderTest(unittest.TestCase):
                          b'This is a null-terminated string')
         self.assertEqual(elf_reader.read_c_string(bytes_io), b'No terminator!')
         self.assertEqual(elf_reader.read_c_string(bytes_io), b'')
+
+    def test_compatible_file_for_elf(self):
+        self.assertTrue(elf_reader.compatible_file(self._elf_file))
+        self.assertTrue(elf_reader.compatible_file(io.BytesIO(b'\x7fELF')))
+
+    def test_compatible_file_for_elf_start_at_offset(self):
+        self._elf_file.seek(13)  # Seek ahead to get out of sync
+        self.assertTrue(elf_reader.compatible_file(self._elf_file))
+        self.assertEqual(13, self._elf_file.tell())
+
+    def test_compatible_file_for_invalid_elf(self):
+        self.assertFalse(elf_reader.compatible_file(io.BytesIO(b'\x7fELVESF')))
+
+
+def _archive_file(data: bytes) -> bytes:
+    return ('FILE ID 90123456'
+            'MODIFIED 012'
+            'OWNER '
+            'GROUP '
+            'MODE 678'
+            f'{len(data):10}'  # File size -- the only part that's needed.
+            '`\n'.encode() + data)
+
+
+class ArchiveTest(unittest.TestCase):
+    """Tests reading from archive files."""
+    def setUp(self):
+        super().setUp()
+
+        with open(TEST_ELF_PATH, 'rb') as fd:
+            self._elf_data = fd.read()
+
+        self._archive_entries = b'blah', b'hello', self._elf_data
+
+        self._archive_data = elf_reader.ARCHIVE_MAGIC + b''.join(
+            _archive_file(f) for f in self._archive_entries)
+        self._archive = io.BytesIO(self._archive_data)
+
+    def test_compatible_file_for_archive(self):
+        self.assertTrue(elf_reader.compatible_file(io.BytesIO(b'!<arch>\n')))
+        self.assertTrue(elf_reader.compatible_file(self._archive))
+
+    def test_compatible_file_for_invalid_archive(self):
+        self.assertFalse(elf_reader.compatible_file(io.BytesIO(b'!<arch>')))
+
+    def test_iterate_over_files(self):
+        for expected, size in zip(self._archive_entries,
+                                  elf_reader.files_in_archive(self._archive)):
+            self.assertEqual(expected, self._archive.read(size))
+
+    def test_iterate_over_empty_archive(self):
+        with self.assertRaises(StopIteration):
+            next(iter(elf_reader.files_in_archive(io.BytesIO(b'!<arch>\n'))))
+
+    def test_iterate_over_invalid_archive(self):
+        with self.assertRaises(elf_reader.FileDecodeError):
+            for _ in elf_reader.files_in_archive(
+                    io.BytesIO(b'!<arch>blah blahblah')):
+                pass
+
+    def test_iterate_over_archive_with_invalid_size(self):
+        data = elf_reader.ARCHIVE_MAGIC + _archive_file(b'$' * 3210)
+        file = io.BytesIO(data)
+
+        # Iterate over the file normally.
+        for size in elf_reader.files_in_archive(file):
+            self.assertEqual(b'$' * 3210, file.read(size))
+
+        # Replace the size with a hex number, which is not valid.
+        with self.assertRaises(elf_reader.FileDecodeError):
+            for _ in elf_reader.files_in_archive(
+                    io.BytesIO(data.replace(b'3210', b'0x99'))):
+                pass
+
+    def test_elf_reader_dump_single_section(self):
+        elf = elf_reader.Elf(self._archive)
+        self.assertEqual(elf.dump_sections(r'\.test_section_1'),
+                         b'You cannot pass\0')
+        self.assertEqual(elf.dump_sections(r'\.test_section_2'),
+                         b'\xef\xbe\xed\xfe')
+
+    def test_elf_reader_read_values(self):
+        elf = elf_reader.Elf(self._archive)
+        address = next(elf.sections_with_name('.test_section_1')).address
+        self.assertEqual(elf.read_value(address), b'You cannot pass')
+
+        int32_address = next(elf.sections_with_name('.test_section_2')).address
+        self.assertEqual(elf.read_value(int32_address, 4), b'\xef\xbe\xed\xfe')
 
 
 if __name__ == '__main__':

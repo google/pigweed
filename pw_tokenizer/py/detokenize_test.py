@@ -275,6 +275,7 @@ class DetokenizeTest(unittest.TestCase):
                              frozenset(detok.database.token_to_entries.keys()))
 
             # Open ELF by elf_reader.Elf
+            elf.seek(0)
             detok = detokenize.Detokenizer(elf_reader.Elf(elf))
             self.assertEqual(expected_tokens,
                              frozenset(detok.database.token_to_entries.keys()))

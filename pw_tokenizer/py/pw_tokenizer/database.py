@@ -54,7 +54,7 @@ def _read_strings_from_elf(elf) -> Iterable[str]:
 
 def read_tokenizer_metadata(elf) -> Dict[str, int]:
     """Reads the metadata entries from an ELF."""
-    sections = _elf_reader(elf).dump_section('.tokenized.meta')
+    sections = _elf_reader(elf).dump_sections(r'\.tokenized\.meta')
 
     metadata: Dict[str, int] = {}
     if sections is not None:
@@ -87,14 +87,14 @@ def _load_token_database(db) -> tokens.Database:
 
         # Read the path as an ELF file.
         with open(db, 'rb') as fd:
-            if elf_reader.file_is_elf(fd):
+            if elf_reader.compatible_file(fd):
                 return tokens.Database.from_strings(_read_strings_from_elf(fd))
 
         # Read the path as a packed binary or CSV file.
         return tokens.DatabaseFile(db)
 
     # Assume that it's a file object and check if it's an ELF.
-    if elf_reader.file_is_elf(db):
+    if elf_reader.compatible_file(db):
         return tokens.Database.from_strings(_read_strings_from_elf(db))
 
     # Read the database as CSV or packed binary from a file object's path.
