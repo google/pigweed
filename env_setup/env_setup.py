@@ -68,9 +68,11 @@ class Environment(object):
     """
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', os.pathsep)
+        windows = kwargs.pop('windows', os.name == 'nt')
         super(Environment, self).__init__(*args, **kwargs)
         self._actions = []
         self._pathsep = pathsep
+        self._windows = windows
 
     def set(self, name, value):
         self._actions.append(_Action('set', name, value))
@@ -85,15 +87,31 @@ class Environment(object):
         self._actions.append(_Action('prepend', name, value))
 
     def _action_str(self, action):
+        # TODO(mohrr) find a cleaner way to do this.
         if action.type == 'set':
             if action.value is None:
-                fmt = 'unset {name}\n'
+                if self._windows:
+                    fmt = 'set {name}=\n'
+                else:
+                    fmt = 'unset {name}\n'
             else:
-                fmt = '{name}="{value}"\nexport {name}\n'
+                if self._windows:
+                    fmt = 'set {name}={value}\n'
+                else:
+                    fmt = '{name}="{value}"\nexport {name}\n'
+
         elif action.type == 'append':
-            fmt = '{name}="${name}{sep}{value}"\nexport {name}\n'
+            if self._windows:
+                fmt = 'set {name}=%{name}%{sep}{value}\n'
+            else:
+                fmt = '{name}=${name}{sep}{value}\nexport {name}\n'
+
         elif action.type == 'prepend':
-            fmt = '{name}="{value}{sep}${name}"\nexport {name}\n'
+            if self._windows:
+                fmt = 'set {name}={value}{sep}%{name}%\n'
+            else:
+                fmt = '{name}="{value}{sep}${name}"\nexport {name}\n'
+
         else:
             raise UnexpectedAction(action.name)
 
@@ -104,15 +122,21 @@ class Environment(object):
         )
 
     def write(self, outs):
+        if self._windows:
+            outs.write('@echo off\n')
+
         for action in self._actions:
             outs.write(self._action_str(action))
-        outs.write('# This should detect bash and zsh, which have a hash \n'
-                   '# command that must be called to get it to forget past \n'
-                   '# commands. Without forgetting past commands the $PATH \n'
-                   '# changes we made may not be respected.\n')
-        outs.write('if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n')
-        outs.write('    hash -r\n')
-        outs.write('fi\n')
+
+        if not self._windows:
+            outs.write(
+                '# This should detect bash and zsh, which have a hash \n'
+                '# command that must be called to get it to forget past \n'
+                '# commands. Without forgetting past commands the $PATH \n'
+                '# changes we made may not be respected.\n'
+                'if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n'
+                '    hash -r\n'
+                'fi\n')
 
     @contextlib.contextmanager
     def __call__(self):
