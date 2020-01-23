@@ -43,5 +43,6 @@ __pycache__/
 
 # Env Setup
 env_setup/.setup.sh
+env_setup/.env_setup.bat
 .cipd
 .cargo

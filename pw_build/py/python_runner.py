@@ -129,6 +129,9 @@ def main() -> int:
     command = [sys.executable] + resolved_command
     _LOG.debug('RUN %s', shlex.join(command))
 
+    if os.name == 'nt':
+        command = ['call', '/c'] + command
+
     if args.capture_output:
         completed_process = subprocess.run(
             command,

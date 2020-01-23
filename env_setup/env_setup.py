@@ -194,9 +194,13 @@ class EnvSetup(object):
         steps = [
             ('cipd', self.cipd),
             ('python', self.virtualenv),
-            ('host_tools', self.host_build),
-            ('cargo', self.cargo),
         ]
+
+        if os.name != 'nt':
+            # TODO(pwbug/97): Fix the boostrap host build in Windows.
+            steps.append(('host_tools', self.host_build))
+            # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
+            steps.append(('cargo', self.cargo))
 
         for name, step in steps:
             print('Setting up {}...\n'.format(name), file=sys.stdout)

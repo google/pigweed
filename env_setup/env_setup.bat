@@ -19,4 +19,10 @@
 :: exports it as an environment variable.
 for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\env_setup\env_setup.ps1`) do set PW_ROOT=%%i
 
-call python %PW_ROOT%\env_setup\env_setup.py --pw-root %PW_ROOT% --shell-file "%PW_ROOT%\env_setup\.env_setup.bat"
+set shell_file="%PW_ROOT%\env_setup\.env_setup.bat"
+
+if not exist %shell_file% (
+  call python %PW_ROOT%\env_setup\env_setup.py --pw-root %PW_ROOT% --shell-file %shell_file%
+)
+
+call %shell_file%
