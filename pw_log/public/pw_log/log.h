@@ -108,28 +108,32 @@
 #ifndef PW_LOG_USE_SHORT_NAMES
 #define PW_LOG_USE_SHORT_NAMES 0
 #endif
+
+// Define ultra short, usable names if requested.
 #ifndef PW_LOG_USE_ULTRA_SHORT_NAMES
 #define PW_LOG_USE_ULTRA_SHORT_NAMES 0
 #endif  // PW_LOG_USE_SHORT_NAMES
 
 // clang-format off
 #if PW_LOG_USE_SHORT_NAMES
-#define PW_LOG          LOG
-#define PW_LOG_DEBUG    LOG_DEBUG
-#define PW_LOG_INFO     LOG_INFO
-#define PW_LOG_WARN     LOG_WARN
-#define PW_LOG_ERROR    LOG_ERROR
-#define PW_LOG_CRITICAL LOG_CRITICAL
+#define LOG          PW_LOG
+#define LOG_DEBUG    PW_LOG_DEBUG
+#define LOG_INFO     PW_LOG_INFO
+#define LOG_WARN     PW_LOG_WARN
+#define LOG_ERROR    PW_LOG_ERROR
+#define LOG_CRITICAL PW_LOG_CRITICAL
 #endif  // PW_LOG_USE_SHORT_NAMES
 // clang-format on
 
 // clang-format off
 #if PW_LOG_USE_ULTRA_SHORT_NAMES
-#define PW_LOG          LOG
-#define PW_LOG_DEBUG    DBG
-#define PW_LOG_INFO     INF
-#define PW_LOG_WARN     WRN
-#define PW_LOG_ERROR    ERR
-#define PW_LOG_CRITICAL CRT
+#if !PW_LOG_USE_SHORT_NAMES
+#define LOG PW_LOG
+#endif  // LOG
+#define DBG PW_LOG_DEBUG
+#define INF PW_LOG_INFO
+#define WRN PW_LOG_WARN
+#define ERR PW_LOG_ERROR
+#define CRT PW_LOG_CRITICAL
 #endif  // PW_LOG_USE_ULTRA_SHORT_NAMES
 // clang-format on

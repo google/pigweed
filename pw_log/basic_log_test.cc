@@ -18,10 +18,14 @@
 //
 // TODO(pwbug/88): Add verification of the actually logged statements.
 
+// clang-format off
 #define PW_LOG_MODULE_NAME "TST"
+#define PW_LOG_USE_SHORT_NAMES 1
+#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+#include "pw_log/log.h"
+// clang-format on
 
 #include "gtest/gtest.h"
-#include "pw_log/log.h"
 
 // TODO(pwbug/86): Test unsigned integer logging (32 and 64 bit); test pointer
 // logging.
@@ -133,6 +137,24 @@ TEST(BasicLog, ChangingTheModuleName) {
 #define PW_LOG_MODULE_NAME "PQR"
   PW_LOG_INFO("This has a custom module name");
   PW_LOG_INFO("So does this");
+}
+
+TEST(BasicLog, ShortNames) {
+  LOG(PW_LOG_LEVEL_INFO, 0, "Shrt lg");
+  LOG_DEBUG("A debug log: %d", 1);
+  LOG_INFO("An info log: %d", 2);
+  LOG_WARN("A warning log: %d", 3);
+  LOG_ERROR("An error log: %d", 4);
+  LOG_CRITICAL("A critical log: %d", 4);
+}
+
+TEST(BasicLog, UltraShortNames) {
+  LOG(PW_LOG_LEVEL_INFO, 0, "Shrt lg");
+  DBG("A debug log: %d", 1);
+  INF("An info log: %d", 2);
+  WRN("A warning log: %d", 3);
+  ERR("An error log: %d", 4);
+  CRT("A critical log: %d", 4);
 }
 
 extern "C" {
