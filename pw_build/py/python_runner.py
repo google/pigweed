@@ -75,7 +75,8 @@ def find_binary(target: str) -> str:
     target_path, target_name = target.split(':')
 
     for extension in ['', '.elf', '.exe']:
-        potential_filename = f'{target_path}/{target_name}{extension}'
+        potential_filename = os.path.join(target_path,
+                                          f'{target_name}{extension}')
         if os.path.isfile(potential_filename):
             return potential_filename
 
@@ -85,10 +86,18 @@ def find_binary(target: str) -> str:
 
 def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
     """Resolves a string to a filesystem path if it is a GN path."""
-    resolved_path = gn_root + string[2:] if string.startswith('//') else string
+
+    is_gn_path = string.startswith('//')
+    is_out_path = string.startswith(out_dir)
+    if not (is_gn_path or is_out_path):
+        # If the string is not a path, do nothing.
+        return string
+
+    full_path = gn_root + string[2:] if is_gn_path else string
+    resolved_path = str(pathlib.Path(full_path).resolve())
 
     # GN targets have the format '/path/to/directory:target_name'.
-    if string.startswith(out_dir) and ':' in string:
+    if is_out_path and ':' in string:
         return find_binary(resolved_path)
 
     return resolved_path
@@ -128,9 +137,6 @@ def main() -> int:
 
     command = [sys.executable] + resolved_command
     _LOG.debug('RUN %s', shlex.join(command))
-
-    if os.name == 'nt':
-        command = ['call', '/c'] + command
 
     if args.capture_output:
         completed_process = subprocess.run(

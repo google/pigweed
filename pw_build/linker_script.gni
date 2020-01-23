@@ -80,7 +80,7 @@ template("pw_linker_script") {
       # Treat the following file as a C file.
       "-x",
       "c",
-      rebase_path(invoker.linker_script),
+      get_path_info(invoker.linker_script, "abspath"),
     ]
 
     # Include any explicitly listed c flags.
