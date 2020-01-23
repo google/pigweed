@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,20 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+package(default_visibility = ["//visibility:public"])
 
-declare_args() {
-  pw_build_host_tools = true
-}
+licenses(["notice"])  # Apache License 2.0
 
-# Use logging-based test output on host.
-pw_unit_test_main = "$dir_pw_unit_test:logging_main"
+filegroup(
+    name = "pw_assert",
+    srcs = [
+        "public/pw_assert/assert.h",
+    ],
+)
 
-# Configure backend for assert facade.
-dir_pw_assert_backend = "$dir_pw_assert_basic"
-
-# Configure backend for pw_dumb_io facade.
-dir_pw_dumb_io_backend = "$dir_pw_dumb_io_stdio"
-
-# Configure backend for logging facade.
-dir_pw_log_backend = "$dir_pw_log_basic"
+# TODO: This isn't a real Bazel build yet.
+filegroup(
+    name = "test",
+    srcs = [
+        "assert_test.cc",
+        "assert_test.c",
+    ],
+)

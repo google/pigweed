@@ -18,6 +18,7 @@ cmake_minimum_required(VERSION 3.14)
 
 include(pw_build/pigweed.cmake)
 
+add_subdirectory(pw_assert)
 add_subdirectory(pw_base64)
 add_subdirectory(pw_checksum)
 add_subdirectory(pw_cpu_exception)

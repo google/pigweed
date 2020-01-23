@@ -58,3 +58,20 @@
 #else
 #define PW_KEEP_IN_SECTION(name) __attribute__((section(name), used))
 #endif  // __APPLE__
+
+// Indicate to the compiler that the annotated function won't return. Example:
+//
+//   void HandleAssertFailure(ErrorCode error_code) PW_NO_RETURN;
+//
+#define PW_NO_RETURN __attribute__((noreturn))
+
+// Indicate to the compiler that the given section of code will not be reached.
+// Example:
+//
+//   int main() {
+//     InitializeBoard();
+//     vendor_StartScheduler();  // Note: vendor forgot noreturn attribute.
+//     PW_UNREACHABLE;
+//   }
+//
+#define PW_UNREACHABLE __builtin_unreachable()
