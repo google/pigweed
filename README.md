@@ -1,11 +1,19 @@
-# Pigweed Embedded Oriented Software Libraries
+# Pigweed
 
-Pigweed is a collection of embedded-focused libraries, which we call "modules".
+Pigweed is a collection of embedded-focused libraries, called “modules”.
 These modules are designed for small-footprint MMU-less microcontrollers like
 the ST Micro STM32L452 or the Nordic NRF82832. The modules are designed to
 facilitate easy integration into existing codebases.
 
-Pigweed is in the early stages of development.
+Some Pigweed modules have been used in the development of Google’s first-party
+devices, including the Stadia Controller and Pixel Buds.
+
+Pigweed is in the early stages of development, and should be considered
+experimental. We’re continuing to evolve the platform and add new modules. We
+value developer feedback along the way.
+
+Pigweed is an open source project with a [code of conduct](CODE_OF_CONDUCT.md)
+that we expect everyone who interacts with the project to respect.
 
 # Getting Started
 
