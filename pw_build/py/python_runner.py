@@ -72,7 +72,7 @@ def find_binary(target: str) -> str:
         RuntimeError: No binary found for target.
     """
 
-    target_path, target_name = target.split(':')
+    target_path, target_name = target.rsplit(':', 1)
 
     for extension in ['', '.elf', '.exe']:
         potential_filename = os.path.join(target_path,
