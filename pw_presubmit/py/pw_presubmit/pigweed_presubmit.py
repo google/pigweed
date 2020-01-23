@@ -247,15 +247,27 @@ PYTHON = (
 )
 
 
+def _env_with_clang_cc_vars():
+    env = os.environ.copy()
+    env['CC'] = env['LD'] = env['AS'] = 'clang'
+    env['CXX'] = 'clang++'
+    return env
+
+
 #
 # CMake presubmit checks
 #
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
+    env = _env_with_clang_cc_vars()
     output = ctx.output_directory.joinpath('cmake-host')
-    call('cmake', '-B', output, '-S', ctx.repository_root, '-G', 'Ninja')
-    call('ninja', '-C', output, 'pw_run_tests.modules')
+    call('cmake',
+         '-B', output,
+         '-S', ctx.repository_root,
+         '-G', 'Ninja',
+         env=env)  # yapf: disable
+    call('ninja', '-C', output, 'pw_run_tests.modules', env=env)
 
 
 CMAKE = (cmake_tests, )
