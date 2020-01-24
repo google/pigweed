@@ -28,6 +28,15 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
 
   ByteBufferPtr ProcessPdu(PDU) override;
 
+  // Set a callback to be invoked when any frame is received that indicates the peer's
+  // acknowledgment for the sequence of packets that it received from the local host. The values are
+  // not checked against the local sender's TxWindow. |is_poll_response| reflects the 'F' bit in the
+  // header of the received frame.
+  using ReceiveSeqNumCallback = fit::function<void(uint8_t receive_seq_num, bool is_poll_response)>;
+  void set_receive_seq_num_callback(ReceiveSeqNumCallback receive_seq_num_callback) {
+    receive_seq_num_callback_ = std::move(receive_seq_num_callback);
+  }
+
  private:
   ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
   ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
@@ -41,6 +50,8 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   uint8_t next_seqnum_;  // (AKA Expected-TxSeq)
 
   SendFrameCallback send_frame_callback_;
+
+  ReceiveSeqNumCallback receive_seq_num_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };

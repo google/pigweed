@@ -87,7 +87,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
   return true;
 }
 
-void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
+void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   // TODO(quiche): Reconsider this assertion if we allow reconfiguration of
   // the TX window.
   ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
@@ -114,12 +114,12 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_final) {
     receiver_ready_poll_task_.Cancel();
   }
 
-  if (is_final) {
+  if (is_poll_response) {
     monitor_task_.Cancel();
   }
 
   auto self = this;
-  if (is_final && !remote_is_busy_) {
+  if (is_poll_response && !remote_is_busy_) {
     self = RetransmitUnackedData();
   }
 

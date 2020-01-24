@@ -48,12 +48,12 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   bool QueueSdu(ByteBufferPtr sdu) override;
 
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
-  // The value of |is_final| should reflect the 'F' bit in header of the frame
-  // which led to this call.
+  // The value of |is_poll_response| should reflect the 'F' bit in header of the
+  // frame which led to this call.
   //
   // * This _may_ trigger retransmission of previously transmitted data.
   // * This _may_ cause the (initial) transmission of queued data.
-  void UpdateAckSeq(uint8_t new_seq, bool is_final);
+  void UpdateAckSeq(uint8_t new_seq, bool is_poll_response);
 
   // Updates the Engine's knowledge of the next frame we expect to receive from
   // our peer.

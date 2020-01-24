@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_rx_engine.h"
 
+#include <type_traits>
+
 namespace bt {
 namespace l2cap {
 namespace internal {
@@ -56,6 +58,9 @@ GetFrameHeaderFromPdu(const PDU& pdu) {
   return frame_opt.value();
 }
 
+template <typename T>
+constexpr bool kContainsEnhancedControlField = std::is_base_of_v<EnhancedControlField, T>;
+
 bool IsMpsValid(const PDU& pdu) {
   // TODO(quiche): Check PDU's length against the MPS.
   return true;
@@ -91,9 +96,15 @@ ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   }
 
   auto header = GetFrameHeaderFromPdu(pdu);
-  return std::visit([this, pdu = std::move(pdu)](
-                        auto&& header) mutable { return ProcessFrame(header, std::move(pdu)); },
-                    header);
+  auto frame_processor = [this, pdu = std::move(pdu)](auto header) mutable {
+    if constexpr (kContainsEnhancedControlField<decltype(header)>) {
+      if (receive_seq_num_callback_) {
+        receive_seq_num_callback_(header.receive_seq_num(), header.is_poll_response());
+      }
+    }
+    return ProcessFrame(header, std::move(pdu));
+  };
+  return std::visit(std::move(frame_processor), header);
 }
 
 ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PDU pdu) {

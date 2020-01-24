@@ -15,6 +15,8 @@ namespace {
 
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
+constexpr uint8_t kExtendedControlPBitMask = 0b1001'0000;
+constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
@@ -227,7 +229,8 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
 
   // Now send a ReceiverReady poll request. See Core Spec, v5, Vol 3, Part A,
   // Table 3.2 and Table 3.5 for frame format.
-  const auto receiver_ready_poll_request = CreateStaticByteBuffer(0b1'0001, 0);
+  const auto receiver_ready_poll_request =
+      CreateStaticByteBuffer(0b1 | kExtendedControlPBitMask, 0);
   auto local_sdu = rx_engine.ProcessPdu(Fragmenter(kTestHandle)
                                             .BuildFrame(kTestChannelId, receiver_ready_poll_request,
                                                         FrameCheckSequenceOption::kNoFcs));
@@ -241,6 +244,64 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
   EXPECT_EQ(1u, sframe.receive_seq_num());
   EXPECT_TRUE(sframe.is_poll_response());
   EXPECT_FALSE(sframe.is_poll_request());
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallback) {
+  Engine rx_engine(NopTxCallback);
+
+  std::optional<uint8_t> receive_seq_num;
+  std::optional<bool> receive_is_poll_response;
+  auto receive_seq_num_callback = [&receive_seq_num, &receive_is_poll_response](
+                                      uint8_t seq_num, bool is_poll_response) {
+    receive_seq_num = seq_num;
+    receive_is_poll_response = is_poll_response;
+  };
+  rx_engine.set_receive_seq_num_callback(receive_seq_num_callback);
+
+  // Send an I-frame containing an acknowledgment up to the 3rd frame that we transmitted.
+  // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
+  auto info_frame = StaticByteBuffer(0, 3, 'h', 'e', 'l', 'l', 'o');
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kNoFcs));
+  ASSERT_TRUE(receive_seq_num.has_value());
+  EXPECT_EQ(3, receive_seq_num.value());
+  ASSERT_TRUE(receive_is_poll_response.has_value());
+  EXPECT_FALSE(receive_is_poll_response.value());
+
+  receive_is_poll_response.reset();
+
+  // Same as above but the 'F' bit is set.
+  info_frame[0] |= kExtendedControlFBitMask;
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kNoFcs));
+  ASSERT_TRUE(receive_is_poll_response.has_value());
+  EXPECT_TRUE(receive_is_poll_response.value());
+
+  receive_seq_num.reset();
+  receive_is_poll_response.reset();
+
+  // Send an S-frame containing an acknowledgment up to the 4th frame that we transmitted. F is set.
+  // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the frame format.
+  auto receiver_ready = StaticByteBuffer(0b1 | kExtendedControlFBitMask, 4);
+  auto local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kNoFcs));
+  ASSERT_TRUE(receive_seq_num.has_value());
+  EXPECT_EQ(4, receive_seq_num.value());
+  ASSERT_TRUE(receive_is_poll_response.has_value());
+  EXPECT_TRUE(receive_is_poll_response.value());
+
+  receive_is_poll_response.reset();
+
+  // Same as above but the 'F' bit is clear.
+  receiver_ready[0] &= ~kExtendedControlFBitMask;
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kNoFcs));
+  ASSERT_TRUE(receive_is_poll_response.has_value());
+  EXPECT_FALSE(receive_is_poll_response.value());
 }
 
 }  // namespace
