@@ -41,7 +41,6 @@ pw_cc_library(
         "//pw_checksum",
         "//pw_log",
         "//pw_status",
-        "//pw_string",
     ],
 )
 

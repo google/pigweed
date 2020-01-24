@@ -26,8 +26,10 @@ constexpr size_t kFlashUtilMaxAlignmentBytes = 16;
 
 Status PaddedWrite(FlashPartition* partition,
                    FlashPartition::Address address,
-                   const uint8_t* buffer,
+                   const void* raw_buffer,
                    uint16_t size) {
+  const uint8_t* const buffer = static_cast<const uint8_t*>(raw_buffer);
+
   if (address % partition->GetAlignmentBytes() ||
       partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes) {
     return Status::INVALID_ARGUMENT;
@@ -52,9 +54,11 @@ Status PaddedWrite(FlashPartition* partition,
 }
 
 Status UnalignedRead(FlashPartition* partition,
-                     uint8_t* buffer,
+                     void* raw_buffer,
                      FlashPartition::Address address,
                      uint16_t size) {
+  uint8_t* const buffer = static_cast<uint8_t*>(raw_buffer);
+
   if (address % partition->GetAlignmentBytes() ||
       partition->GetAlignmentBytes() > cfg::kFlashUtilMaxAlignmentBytes) {
     return Status::INVALID_ARGUMENT;
@@ -73,7 +77,7 @@ Status UnalignedRead(FlashPartition* partition,
         !status.ok()) {
       return status;
     }
-    memcpy(&buffer[aligned_bytes], alignment_buffer, remaining_bytes);
+    std::memcpy(&buffer[aligned_bytes], alignment_buffer, remaining_bytes);
   }
   return Status::OK;
 }

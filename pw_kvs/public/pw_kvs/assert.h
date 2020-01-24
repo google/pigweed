@@ -39,7 +39,7 @@ constexpr T CheckNotNull(const char* /* file */,
   static_assert(!std::is_null_pointer<T>(),
                 "CHECK_NOTNULL statements cannot be passed nullptr");
   if (value == nullptr) {
-    std::exit(1);
+    // std::exit(1);
   }
   return std::forward<T>(value);
 }

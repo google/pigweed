@@ -21,12 +21,12 @@ namespace pw::kvs {
 // bytes with 0.
 Status PaddedWrite(FlashPartition* partition,
                    FlashPartition::Address address,
-                   const uint8_t* buffer,
+                   const void* buffer,
                    uint16_t size);
 
 // Read into a buffer when size is not guaranteed to be aligned.
 Status UnalignedRead(FlashPartition* partition,
-                     uint8_t* buffer,
+                     void* buffer,
                      FlashPartition::Address address,
                      uint16_t size);
 

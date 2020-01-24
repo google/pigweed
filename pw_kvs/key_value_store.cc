@@ -44,15 +44,16 @@
 
 #include "pw_kvs/key_value_store.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "pw_checksum/ccitt_crc16.h"
 #include "pw_kvs/flash.h"
 #include "pw_log/log.h"
-#include "pw_string/string_builder.h"
-#include "pw_string/util.h"
 
 namespace pw::kvs {
+
+using std::byte;
 
 Status KeyValueStore::Enable() {
   // TODO: LOCK MUTEX
@@ -61,7 +62,7 @@ Status KeyValueStore::Enable() {
   }
 
   // Reset parameters.
-  memset(sector_space_remaining_, 0, sizeof(sector_space_remaining_));
+  std::memset(sector_space_remaining_, 0, sizeof(sector_space_remaining_));
   map_size_ = 0;
 
   // For now alignment is set to use partitions alignment.
@@ -191,10 +192,15 @@ Status KeyValueStore::Enable() {
         break;  // End of elements in sector
       }
 
-      CHECK(header.key_len <= kChunkKeyLengthMax);
-      static_assert(sizeof(temp_key_buffer_) >= (kChunkKeyLengthMax + 1u),
-                    "Key buffer must be at least big enough for a key and a "
-                    "nul-terminator.");
+      if (header.key_len > kChunkKeyLengthMax) {
+        PW_LOG_CRITICAL("Found key with invalid length %u; maximum is %u",
+                        header.key_len,
+                        static_cast<unsigned>(kChunkKeyLengthMax));
+        return Status::DATA_LOSS;
+      }
+      static_assert(sizeof(temp_key_buffer_) >= kChunkKeyLengthMax + 1,
+                    "Key buffer must be at least large enough for a key and "
+                    "null terminator");
 
       // Read key and add to map
       if (Status status =
@@ -206,12 +212,13 @@ Status KeyValueStore::Enable() {
         return status;
       }
       temp_key_buffer_[header.key_len] = '\0';
+      std::string_view key(temp_key_buffer_, header.key_len);
       bool is_erased = header.flags & kFlagsIsErasedMask;
 
-      KeyIndex index = FindKeyInMap(temp_key_buffer_);
+      KeyIndex index = FindKeyInMap(key);
       if (index == kListCapacityMax) {
-        if (Status status = AppendToMap(
-                temp_key_buffer_, address, header.chunk_len, is_erased);
+        if (Status status =
+                AppendToMap(key, address, header.chunk_len, is_erased);
             !status.ok()) {
           return status;
         }
@@ -240,18 +247,10 @@ Status KeyValueStore::Enable() {
   return Status::OK;
 }
 
-Status KeyValueStore::Get(const char* key,
-                          void* raw_value,
-                          uint16_t size,
+Status KeyValueStore::Get(const std::string_view& key,
+                          const span<byte>& value,
                           uint16_t offset) {
-  uint8_t* const value = reinterpret_cast<uint8_t*>(raw_value);
-
-  if (key == nullptr || value == nullptr) {
-    return Status::INVALID_ARGUMENT;
-  }
-
-  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
-  if (key_len == 0 || key_len > kChunkKeyLengthMax) {
+  if (InvalidKey(key)) {
     return Status::INVALID_ARGUMENT;
   }
 
@@ -281,52 +280,53 @@ Status KeyValueStore::Get(const char* key,
   if (kChunkSyncValue != header.synchronize_token) {
     return Status::DATA_LOSS;
   }
-  if (size + offset > header.chunk_len) {
+  if (value.size() + offset > header.chunk_len) {
     PW_LOG_ERROR("Out of bounds read: offset(%u) + size(%u) > data_size(%u)",
                  offset,
-                 size,
+                 unsigned(value.size()),
                  header.chunk_len);
     return Status::INVALID_ARGUMENT;
   }
   if (Status status = UnalignedRead(
           &partition_,
-          value,
+          value.data(),
           key_map_[key_index].address + RoundUpForAlignment(sizeof(KvsHeader)) +
               RoundUpForAlignment(header.key_len) + offset,
-          size);
+          value.size());
       !status.ok()) {
     return status;
   }
 
   // Verify CRC only when full packet was read.
-  if (offset == 0 && size == header.chunk_len) {
-    uint16_t crc = CalculateCrc(key, key_len, value, size);
+  if (offset == 0 && value.size() == header.chunk_len) {
+    uint16_t crc = CalculateCrc(key, value);
     if (crc != header.crc) {
-      PW_LOG_ERROR("KVS CRC does not match for key=%s [expected %u, found %u]",
-                   key,
-                   header.crc,
-                   crc);
+      // TODO: Figure out how to print the key's string_view. For now, using %s
+      // with a maximum length (8 characters). This still could trigger a small
+      // out-of-bounds read.
+      PW_LOG_ERROR(
+          "KVS CRC does not match for key=%.8s [expected %u, found %u]",
+          key.data(),
+          header.crc,
+          crc);
       return Status::DATA_LOSS;
     }
   }
   return Status::OK;
 }
 
-uint16_t KeyValueStore::CalculateCrc(const char* key,
-                                     uint16_t key_size,
-                                     const uint8_t* value,
-                                     uint16_t value_size) const {
-  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, key_size)));
-  return checksum::CcittCrc16(as_bytes(span(value, value_size)), crc);
+uint16_t KeyValueStore::CalculateCrc(const std::string_view& key,
+                                     const span<const byte>& value) const {
+  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key)));
+  return checksum::CcittCrc16(value, crc);
 }
 
 Status KeyValueStore::CalculateCrcFromValueAddress(
-    const char* key,
-    uint16_t key_size,
+    const std::string_view& key,
     FlashPartition::Address value_address,
     uint16_t value_size,
     uint16_t* crc_ret) {
-  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, key_size)));
+  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key)));
   for (size_t i = 0; i < value_size; i += TempBufferAlignedSize()) {
     auto read_size = std::min(value_size - i, TempBufferAlignedSize());
     if (Status status = UnalignedRead(
@@ -340,17 +340,9 @@ Status KeyValueStore::CalculateCrcFromValueAddress(
   return Status::OK;
 }
 
-Status KeyValueStore::Put(const char* key,
-                          const void* raw_value,
-                          uint16_t size) {
-  const uint8_t* const value = reinterpret_cast<const uint8_t*>(raw_value);
-  if (key == nullptr || value == nullptr) {
-    return Status::INVALID_ARGUMENT;
-  }
-
-  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
-  if (key_len == 0 || key_len > kChunkKeyLengthMax ||
-      size > kChunkValueLengthMax) {
+Status KeyValueStore::Put(const std::string_view& key,
+                          const span<const byte>& value) {
+  if (InvalidKey(key)) {
     return Status::INVALID_ARGUMENT;
   }
 
@@ -361,10 +353,11 @@ Status KeyValueStore::Put(const char* key,
 
   KeyIndex index = FindKeyInMap(key);
   if (index != kListCapacityMax) {  // Key already in map, rewrite value
-    return RewriteValue(index, value, size);
+    return RewriteValue(index, value);
   }
 
-  FlashPartition::Address address = FindSpace(ChunkSize(key_len, size));
+  FlashPartition::Address address =
+      FindSpace(ChunkSize(key.size(), value.size()));
   if (address == kSectorInvalid) {
     return Status::RESOURCE_EXHAUSTED;
   }
@@ -375,17 +368,17 @@ Status KeyValueStore::Put(const char* key,
     if (Status status = FullGarbageCollect(); !status.ok()) {
       return status;
     }
-    address = FindSpace(ChunkSize(key_len, size));
+    address = FindSpace(ChunkSize(key.size(), value.size()));
     if (address == kSectorInvalid || IsInLastFreeSector(address)) {
       // Couldn't find space, KVS is full.
       return Status::RESOURCE_EXHAUSTED;
     }
   }
 
-  if (Status status = WriteKeyValue(address, key, value, size); !status.ok()) {
+  if (Status status = WriteKeyValue(address, key, value); !status.ok()) {
     return status;
   }
-  if (Status status = AppendToMap(key, address, size); !status.ok()) {
+  if (Status status = AppendToMap(key, address, value.size()); !status.ok()) {
     return status;
   }
 
@@ -415,7 +408,7 @@ Status KeyValueStore::GarbageCollectImpl(bool clean_pending_sectors,
       if (!status.ok() && status != Status::RESOURCE_EXHAUSTED) {
         return status;
       }
-      if (exit_when_have_free_sector && HaveEmptySectorImpl()) {
+      if (exit_when_have_free_sector && HasEmptySector()) {
         return Status::OK;  // Now have a free sector
       }
     }
@@ -442,7 +435,7 @@ Status KeyValueStore::EnforceFreeSector() {
       !status.ok()) {
     return status;
   }
-  return HaveEmptySectorImpl() ? Status::OK : Status::RESOURCE_EXHAUSTED;
+  return HasEmptySector() ? Status::OK : Status::RESOURCE_EXHAUSTED;
 }
 
 Status KeyValueStore::FullGarbageCollect() {
@@ -456,23 +449,20 @@ Status KeyValueStore::FullGarbageCollect() {
                             false /*exit_when_have_free_sector*/);
 }
 
-Status KeyValueStore::RewriteValue(KeyIndex key_index,
-                                   const uint8_t* value,
-                                   uint16_t size,
+Status KeyValueStore::RewriteValue(KeyIndex index,
+                                   const span<const byte>& value,
                                    bool is_erased) {
   // Compare values, return if values are the same.
-  if (ValueMatches(key_index, value, size, is_erased)) {
+  if (ValueMatches(index, value, is_erased)) {
     return Status::OK;
   }
 
-  size_t key_length =
-      string::Length(key_map_[key_index].key, kChunkKeyLengthMax + 1u);
-  if (key_length > kChunkKeyLengthMax) {
+  if (key_map_[index].key_length > kChunkKeyLengthMax) {
     return Status::INTERNAL;
   }
 
-  uint32_t space_required = ChunkSize(key_length, size);
-  SectorIndex sector = AddressToSectorIndex(key_map_[key_index].address);
+  uint32_t space_required = ChunkSize(key_map_[index].key_length, value.size());
+  SectorIndex sector = AddressToSectorIndex(key_map_[index].address);
   uint32_t sector_space_remaining = SectorSpaceRemaining(sector);
 
   FlashPartition::Address address = kSectorInvalid;
@@ -485,27 +475,26 @@ Status KeyValueStore::RewriteValue(KeyIndex key_index,
     if (Status status = MarkSectorForClean(sector); !status.ok()) {
       return status;
     }
-    address = FindSpace(ChunkSize(key_length, size));
+    address = FindSpace(ChunkSize(key_map_[index].key_length, value.size()));
   }
   if (address == kSectorInvalid) {
     return Status::RESOURCE_EXHAUSTED;
   }
-  if (Status status = WriteKeyValue(
-          address, key_map_[key_index].key, value, size, is_erased);
+  if (Status status =
+          WriteKeyValue(address, key_map_[index].key(), value, is_erased);
       !status.ok()) {
     return status;
   }
-  UpdateMap(key_index, address, size, is_erased);
+  UpdateMap(index, address, value.size(), is_erased);
 
   return EnforceFreeSector();
 }
 
 bool KeyValueStore::ValueMatches(KeyIndex index,
-                                 const uint8_t* value,
-                                 uint16_t size,
+                                 const span<const byte>& value,
                                  bool is_erased) {
   // Compare sizes of CRC.
-  if (size != key_map_[index].chunk_len) {
+  if (value.size() != key_map_[index].chunk_len) {
     return false;
   }
   KvsHeader header;
@@ -513,25 +502,25 @@ bool KeyValueStore::ValueMatches(KeyIndex index,
                 reinterpret_cast<uint8_t*>(&header),
                 key_map_[index].address,
                 sizeof(header));
-  uint8_t key_len =
-      string::Length(key_map_[index].key, kChunkKeyLengthMax + 1u);
-  if (key_len > kChunkKeyLengthMax) {
+  std::string_view key = key_map_[index].key();
+  if (InvalidKey(key)) {
     return false;
   }
 
   if ((header.flags & kFlagsIsErasedMask) != is_erased) {
     return false;
-  } else if ((header.flags & kFlagsIsErasedMask) && is_erased) {
+  }
+  if ((header.flags & kFlagsIsErasedMask) && is_erased) {
     return true;
   }
 
   // Compare checksums.
-  if (header.crc != CalculateCrc(key_map_[index].key, key_len, value, size)) {
+  if (header.crc != CalculateCrc(key_map_[index].key(), value)) {
     return false;
   }
   FlashPartition::Address address = key_map_[index].address +
                                     RoundUpForAlignment(sizeof(KvsHeader)) +
-                                    RoundUpForAlignment(key_len);
+                                    RoundUpForAlignment(key.size());
   // Compare full values.
   for (size_t i = 0; i < key_map_[index].chunk_len;
        i += TempBufferAlignedSize()) {
@@ -540,23 +529,18 @@ bool KeyValueStore::ValueMatches(KeyIndex index,
     auto status =
         UnalignedRead(&partition_, temp_buffer_, address + i, read_size);
     if (!status.ok()) {
-      PW_LOG_ERROR("Failed to read chunk: %s", status.str());
+      PW_LOG_ERROR("%s: Failed to read chunk", status.str());
       return false;
     }
-    if (memcmp(value + i, temp_buffer_, read_size) != 0) {
+    if (std::memcmp(&value[i], temp_buffer_, read_size) != 0) {
       return false;
     }
   }
   return true;
 }
 
-Status KeyValueStore::Erase(const char* key) {
-  if (key == nullptr) {
-    return Status::INVALID_ARGUMENT;
-  }
-
-  size_t key_len = string::Length(key, kChunkKeyLengthMax + 1u);
-  if (key_len == 0 || key_len > kChunkKeyLengthMax) {
+Status KeyValueStore::Erase(const std::string_view& key) {
+  if (InvalidKey(key)) {
     return Status::INVALID_ARGUMENT;
   }
   // TODO: LOCK MUTEX
@@ -568,7 +552,7 @@ Status KeyValueStore::Erase(const char* key) {
   if (key_index == kListCapacityMax || key_map_[key_index].is_erased) {
     return Status::NOT_FOUND;
   }
-  return RewriteValue(key_index, nullptr, 0, true);
+  return RewriteValue(key_index, span<byte>(), true);
 }
 
 Status KeyValueStore::ResetSector(SectorIndex sector_index) {
@@ -604,22 +588,22 @@ Status KeyValueStore::ResetSector(SectorIndex sector_index) {
 }
 
 Status KeyValueStore::WriteKeyValue(FlashPartition::Address address,
-                                    const char* key,
-                                    const uint8_t* value,
-                                    uint16_t size,
+                                    const std::string_view& key,
+                                    const span<const byte>& value,
                                     bool is_erased) {
-  uint16_t key_length = string::Length(key, kChunkKeyLengthMax + 1u);
-  if (key_length > kChunkKeyLengthMax) {
+  if (InvalidKey(key) ||
+      value.size() >
+          std::numeric_limits<decltype(KvsHeader::chunk_len)>::max()) {
     return Status::INTERNAL;
   }
 
   constexpr uint16_t kFlagDefaultValue = 0;
   KvsHeader header = {
       .synchronize_token = kChunkSyncValue,
-      .crc = CalculateCrc(key, key_length, value, size),
+      .crc = CalculateCrc(key, value),
       .flags = is_erased ? kFlagsIsErasedMask : kFlagDefaultValue,
-      .key_len = key_length,
-      .chunk_len = size};
+      .key_len = static_cast<uint8_t>(key.size()),
+      .chunk_len = static_cast<uint16_t>(value.size())};
 
   SectorIndex sector = AddressToSectorIndex(address);
   if (Status status = PaddedWrite(&partition_,
@@ -632,18 +616,19 @@ Status KeyValueStore::WriteKeyValue(FlashPartition::Address address,
   address += RoundUpForAlignment(sizeof(header));
   if (Status status = PaddedWrite(&partition_,
                                   address,
-                                  reinterpret_cast<const uint8_t*>(key),
-                                  key_length);
+                                  reinterpret_cast<const uint8_t*>(key.data()),
+                                  key.size());
       !status.ok()) {
   }
-  address += RoundUpForAlignment(key_length);
-  if (size > 0) {
-    if (Status status = PaddedWrite(&partition_, address, value, size);
-        !status.ok()) {
+  address += RoundUpForAlignment(key.size());
+  if (!value.empty()) {
+    Status status =
+        PaddedWrite(&partition_, address, value.data(), value.size());
+    if (!status.ok()) {
       return status;
     }
   }
-  sector_space_remaining_[sector] -= ChunkSize(key_length, size);
+  sector_space_remaining_[sector] -= ChunkSize(key.size(), value.size());
   return Status::OK;
 }
 
@@ -709,10 +694,8 @@ Status KeyValueStore::CleanSector(SectorIndex sector) {
     }
 
     if (i < map_size_ && sector == AddressToSectorIndex(key_map_[i].address)) {
-      uint8_t key_len =
-          string::Length(key_map_[i].key, kChunkKeyLengthMax + 1u);
       FlashPartition::Address address = key_map_[i].address;
-      auto size = ChunkSize(key_len, key_map_[i].chunk_len);
+      auto size = ChunkSize(key_map_[i].key_length, key_map_[i].chunk_len);
       FlashPartition::Address move_address = FindSpace(size);
       if (move_address == kSectorInvalid) {
         return Status::RESOURCE_EXHAUSTED;
@@ -762,8 +745,7 @@ Status KeyValueStore::CleanAllInternal() {
   return Status::OK;
 }
 
-FlashPartition::Address KeyValueStore::FindSpace(
-    uint16_t requested_size) const {
+FlashPartition::Address KeyValueStore::FindSpace(size_t requested_size) const {
   if (requested_size > SectorSpaceAvailableWhenEmpty()) {
     return kSectorInvalid;  // This would never fit
   }
@@ -794,58 +776,49 @@ uint32_t KeyValueStore::SectorSpaceRemaining(SectorIndex sector_index) const {
   return sector_space_remaining_[sector_index];
 }
 
-Status KeyValueStore::GetValueSize(const char* key, uint16_t* value_size) {
-  if (key == nullptr || value_size == nullptr) {
-    return Status::INVALID_ARGUMENT;
+StatusWithSize KeyValueStore::GetValueSize(const std::string_view& key) {
+  if (InvalidKey(key)) {
+    return StatusWithSize(Status::INVALID_ARGUMENT, 0);
   }
 
-  size_t key_len = string::Length(key, kChunkKeyLengthMax + 2u);
-  if (key_len == 0 || key_len > kChunkKeyLengthMax) {
-    return Status::INVALID_ARGUMENT;
-  }
   // TODO: LOCK MUTEX
   if (!enabled_) {
-    return Status::FAILED_PRECONDITION;
+    return StatusWithSize(Status::FAILED_PRECONDITION, 0);
   }
 
   uint8_t idx = FindKeyInMap(key);
   if (idx == kListCapacityMax || key_map_[idx].is_erased) {
-    return Status::NOT_FOUND;
+    return StatusWithSize(Status::NOT_FOUND, 0);
   }
-  *value_size = key_map_[idx].chunk_len;
-  return Status::OK;
+  return StatusWithSize(key_map_[idx].chunk_len);
 }
 
-Status KeyValueStore::AppendToMap(const char* key,
+Status KeyValueStore::AppendToMap(const std::string_view& key,
                                   FlashPartition::Address address,
-                                  uint16_t chunk_len,
+                                  size_t chunk_len,
                                   bool is_erased) {
   if (map_size_ >= kListCapacityMax) {
     PW_LOG_ERROR("Can't add: reached max supported keys %d", kListCapacityMax);
     return Status::INTERNAL;
   }
 
-  // Copy incoming key into map entry, ensuring size checks and nul-termination.
-  StringBuilder key_builder(
-      span(key_map_[map_size_].key, sizeof(key_map_[map_size_].key)));
-  key_builder.append(key);
+  auto& entry = key_map_[map_size_];
+  entry.key_buffer[key.copy(entry.key_buffer, sizeof(KeyMap::key_buffer) - 1)] =
+      '\0';
 
-  if (!key_builder.status().ok()) {
-    PW_LOG_ERROR("Can't add: got invalid key: %s!", key_builder.status().str());
-    return Status::INTERNAL;
-  }
-
-  key_map_[map_size_].address = address;
-  key_map_[map_size_].chunk_len = chunk_len;
-  key_map_[map_size_].is_erased = is_erased;
+  entry.key_length = key.size();
+  entry.address = address;
+  entry.chunk_len = static_cast<uint16_t>(chunk_len);
+  entry.is_erased = is_erased;
   map_size_++;
 
   return Status::OK;
 }
 
-KeyValueStore::KeyIndex KeyValueStore::FindKeyInMap(const char* key) const {
+KeyValueStore::KeyIndex KeyValueStore::FindKeyInMap(
+    const std::string_view& key) const {
   for (KeyIndex i = 0; i < map_size_; i++) {
-    if (strncmp(key, key_map_[i].key, sizeof(key_map_[i].key)) == 0) {
+    if (key == std::string_view(key_map_[i].key())) {
       return i;
     }
   }
@@ -865,29 +838,29 @@ void KeyValueStore::RemoveFromMap(KeyIndex key_index) {
   key_map_[key_index] = key_map_[--map_size_];
 }
 
-uint8_t KeyValueStore::KeyCount() const {
-  uint8_t count = 0;
+size_t KeyValueStore::KeyCount() const {
+  size_t count = 0;
   for (unsigned i = 0; i < map_size_; i++) {
     count += key_map_[i].is_erased ? 0 : 1;
   }
   return count;
 }
 
-const char* KeyValueStore::GetKey(uint8_t idx) const {
-  uint8_t count = 0;
+std::string_view KeyValueStore::GetKey(size_t idx) const {
+  unsigned count = 0;
   for (unsigned i = 0; i < map_size_; i++) {
     if (!key_map_[i].is_erased) {
       if (idx == count) {
-        return key_map_[i].key;
+        return key_map_[i].key();
       }
       count++;
     }
   }
-  return nullptr;
+  return {};
 }
 
-uint16_t KeyValueStore::GetValueSize(uint8_t idx) const {
-  uint8_t count = 0;
+size_t KeyValueStore::GetValueSize(size_t idx) const {
+  size_t count = 0;
   for (unsigned i = 0; i < map_size_; i++) {
     if (!key_map_[i].is_erased) {
       if (idx == count++) {
