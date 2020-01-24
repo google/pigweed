@@ -122,6 +122,11 @@ def update(
             env_vars.set('PW_{}_CIPD_INSTALL_DIR'.format(name.upper()),
                          install_dir)
 
+            # Windows has its own special toolchain.
+            if os.name == 'nt':
+                env_vars.prepend('PATH',
+                                 os.path.join(install_dir, 'mingw64', 'bin'))
+
 
 if __name__ == '__main__':
     update(**vars(parse()))
