@@ -13,6 +13,8 @@
 # the License.
 """Color codes for use by rest of pw_cli."""
 
+import ctypes
+import os
 import sys
 from typing import Optional, Union
 
@@ -61,5 +63,10 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
         env = pw_cli.env.pigweed_environment()
         enabled = env.PW_USE_COLOR or (sys.stdout.isatty()
                                        and sys.stderr.isatty())
+
+    if enabled and os.name == 'nt':
+        # Enable ANSI color codes in Windows cmd.exe.
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
     return _Color() if enabled else _NoColor()
