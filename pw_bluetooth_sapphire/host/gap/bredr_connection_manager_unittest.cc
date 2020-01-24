@@ -1649,7 +1649,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   std::optional<zx::socket> connected_socket;
 
-  auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
+  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1746,7 +1746,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
 
   std::optional<zx::socket> connected_socket;
 
-  auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
+  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
 
   // Initial connection request
 
@@ -1812,7 +1812,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   std::optional<zx::socket> connected_socket;
 
-  auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
+  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
 
   // Initial connection request
 
@@ -1863,7 +1863,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
 
   std::optional<zx::socket> connected_socket;
 
-  auto socket_cb = [&](zx::socket socket) { connected_socket = std::move(socket); };
+  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1984,8 +1984,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
   EXPECT_FALSE(data_domain()->IsLinkConnected(kConnectionHandle));
 
   bool socket_cb_called = false;
-  auto socket_fails_cb = [&socket_cb_called](zx::socket s) {
-    EXPECT_FALSE(s);
+  auto socket_fails_cb = [&socket_cb_called](auto chan_sock) {
+    EXPECT_FALSE(chan_sock);
     socket_cb_called = true;
   };
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_fails_cb,
@@ -2789,10 +2789,21 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM, kLocalId, 0x41, params);
 
-  auto sock_cb = [](auto sock) { EXPECT_TRUE(sock); };
+  std::optional<l2cap::ChannelInfo> chan_info;
+  size_t sock_cb_count = 0;
+  auto sock_cb = [&](auto chan_sock) {
+    sock_cb_count++;
+    EXPECT_TRUE(chan_sock);
+    chan_info = chan_sock.params;
+  };
   connmgr()->OpenL2capChannel(peer->identifier(), kPSM, params, sock_cb, dispatcher());
 
   RunLoopUntilIdle();
+  EXPECT_EQ(1u, sock_cb_count);
+  ASSERT_TRUE(chan_info);
+  EXPECT_EQ(*params.mode, chan_info->mode);
+  EXPECT_EQ(*params.max_sdu_size, chan_info->max_rx_sdu_size);
+
   QueueDisconnection(kConnectionHandle);
 }
 

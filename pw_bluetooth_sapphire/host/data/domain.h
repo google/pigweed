@@ -18,7 +18,8 @@ namespace bt {
 
 namespace l2cap {
 struct ChannelParameters;
-}
+struct ChannelSocket;
+}  // namespace l2cap
 
 namespace data {
 
@@ -125,15 +126,18 @@ class Domain : public fbl::RefCounted<Domain> {
   // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
   // parameters |params|.
   //
-  // |cb| will be called on |dispatcher| with a zx::socket corresponding to the
-  // channel created to the remote or ZX_INVALID_HANDLE if the channel creation
-  // resulted in an error.
+  // |socket_callback| will be called on |dispatcher| with a zx::socket corresponding to the
+  // channel created to the remote or ZX_INVALID_HANDLE if the channel creation resulted in an
+  // error.
   //
   // Regardless of success, |link_handle| will be the same as the initial
   // |handle| argument.
   //
+  // On successful channel creation, |chan_info| contains the configured channel parameters.
+  //
   // Has no effect if this Domain is uninitialized or shut down.
-  using SocketCallback = fit::function<void(zx::socket, hci::ConnectionHandle link_handle)>;
+  using SocketCallback =
+      fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle link_handle)>;
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                 l2cap::ChannelParameters params, SocketCallback socket_callback,
                                 async_dispatcher_t* dispatcher) = 0;

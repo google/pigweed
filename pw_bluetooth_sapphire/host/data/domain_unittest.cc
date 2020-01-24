@@ -190,9 +190,9 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
 
   zx::socket sock;
   ASSERT_FALSE(sock);
-  auto sock_cb = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb = [&](auto chan_sock, hci::ConnectionHandle handle) {
     EXPECT_EQ(kLinkHandle, handle);
-    sock = std::move(cb_sock);
+    sock = std::move(chan_sock.socket);
   };
 
   domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
@@ -355,9 +355,9 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   zx::socket sock;
   ASSERT_FALSE(sock);
-  auto sock_cb = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb = [&](auto chan_sock, hci::ConnectionHandle handle) {
     EXPECT_EQ(kLinkHandle, handle);
-    sock = std::move(cb_sock);
+    sock = std::move(chan_sock.socket);
   };
 
   domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
@@ -411,9 +411,9 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
 
   zx::socket sock;
   ASSERT_FALSE(sock);
-  auto sock_cb = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb = [&](auto chan_sock, hci::ConnectionHandle handle) {
     EXPECT_EQ(kLinkHandle, handle);
-    sock = std::move(cb_sock);
+    sock = std::move(chan_sock.socket);
   };
 
   domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb),
@@ -454,9 +454,9 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
 
   // Don't register any links. This should cause outbound channels to fail.
   bool sock_cb_called = false;
-  auto sock_cb = [&sock_cb_called, kLinkHandle](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb = [&sock_cb_called, kLinkHandle](auto chan_sock, hci::ConnectionHandle handle) {
     sock_cb_called = true;
-    EXPECT_FALSE(cb_sock);
+    EXPECT_FALSE(chan_sock);
     EXPECT_EQ(kLinkHandle, handle);
   };
 
@@ -491,9 +491,9 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
 
   zx::socket sock0;
   ASSERT_FALSE(sock0);
-  auto sock_cb0 = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb0 = [&](auto chan_sock, hci::ConnectionHandle handle) {
     EXPECT_EQ(kLinkHandle, handle);
-    sock0 = std::move(cb_sock);
+    sock0 = std::move(chan_sock.socket);
   };
   domain()->RegisterService(kPSM0, kChannelParameters, sock_cb0, dispatcher());
 
@@ -539,9 +539,9 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
 
   zx::socket sock1;
   ASSERT_FALSE(sock1);
-  auto sock_cb1 = [&](zx::socket cb_sock, hci::ConnectionHandle handle) {
+  auto sock_cb1 = [&](auto chan_sock, hci::ConnectionHandle handle) {
     EXPECT_EQ(kLinkHandle, handle);
-    sock1 = std::move(cb_sock);
+    sock1 = std::move(chan_sock.socket);
   };
 
   domain()->OpenL2capChannel(kLinkHandle, kPSM1, kChannelParameters, std::move(sock_cb1),
@@ -635,20 +635,21 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_EQ(kConnectionCreationPacketCount, data_cb_count());
 
-  fbl::RefPtr<l2cap::Channel> chan;
-  auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
-
-  domain()->RegisterService(kPSM, chan_params, chan_cb, dispatcher());
+  std::optional<l2cap::ChannelInfo> chan_info;
+  auto sock_cb = [&](auto chan_sock, auto /*handle*/) {
+    EXPECT_TRUE(chan_sock);
+    chan_info = chan_sock.params;
+  };
+  domain()->RegisterService(kPSM, chan_params, sock_cb, dispatcher());
 
   constexpr l2cap::CommandId kConnReqId = 1;
   test_device()->SendACLDataChannelPacket(
       l2cap::testing::AclConnectionReq(kConnReqId, kLinkHandle, kRemoteId, kPSM));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(chan);
-  EXPECT_EQ(kLinkHandle, chan->link_handle());
-  EXPECT_EQ(*chan_params.max_sdu_size, chan->rx_mtu());
-  EXPECT_EQ(*chan_params.mode, chan->mode());
+  ASSERT_TRUE(chan_info);
+  EXPECT_EQ(*chan_params.max_sdu_size, chan_info->max_rx_sdu_size);
+  EXPECT_EQ(*chan_params.mode, chan_info->mode);
 }
 
 }  // namespace

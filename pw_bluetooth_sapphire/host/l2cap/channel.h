@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/zx/socket.h>
 #include <zircon/compiler.h>
 
 #include <atomic>
@@ -184,6 +185,35 @@ class Channel : public fbl::RefCounted<Channel> {
   const uint16_t rx_mtu_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
+};
+
+// Properties of an opened L2CAP channel. Used when describing the l2cap channel underlying a
+// zx::socket.
+struct ChannelInfo {
+  ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size)
+      : mode(mode), max_rx_sdu_size(max_rx_sdu_size), max_tx_sdu_size(max_tx_sdu_size) {}
+  ChannelInfo(const Channel& channel)
+      : mode(channel.mode()),
+        max_rx_sdu_size(channel.rx_mtu()),
+        max_tx_sdu_size(channel.tx_mtu()) {}
+  ChannelMode mode;
+  uint16_t max_rx_sdu_size;
+  uint16_t max_tx_sdu_size;
+};
+
+// A socket connected to an L2cap channel and its parameters
+// params will be non-empty iff socket != ZX_INVALID_HANDLE
+struct ChannelSocket {
+  ChannelSocket() : socket(zx::socket()), params(std::nullopt) {}
+  ChannelSocket(zx::socket socket, std::optional<ChannelInfo> params)
+      : socket(std::move(socket)), params(params) {
+    ZX_ASSERT(this->socket.is_valid() && this->params.has_value() ||
+              !this->socket.is_valid() && !this->params.has_value());
+  }
+  bool is_valid() const { return socket.is_valid(); }
+  explicit operator bool() const { return is_valid(); }
+  zx::socket socket;
+  std::optional<const ChannelInfo> params;
 };
 
 namespace internal {

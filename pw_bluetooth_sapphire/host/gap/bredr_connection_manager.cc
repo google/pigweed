@@ -100,8 +100,9 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
     // Connection is not yet ready for L2CAP; return a ZX_HANDLE_INVALID socket.
     bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling socket to PSM %.4x",
            bt_str(peer_id()), psm);
-    async::PostTask(dispatcher,
-                    [cb = std::move(cb), handle = link().handle()]() { cb(zx::socket(), handle); });
+    async::PostTask(dispatcher, [cb = std::move(cb), handle = link().handle()]() {
+      cb(l2cap::ChannelSocket(), handle);
+    });
     return;
   }
 
@@ -279,7 +280,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
              status ? "" : "not ", bt_str(peer_id));
       if (!status) {
         // Report the failure to the user with a ZX_HANDLE_INVALID socket.
-        async::PostTask(dispatcher, [cb = std::move(cb)]() { cb(zx::socket()); });
+        async::PostTask(dispatcher, [cb = std::move(cb)]() { cb(l2cap::ChannelSocket()); });
         return;
       }
       if (self) {
@@ -295,7 +296,9 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   }
 
   connection->OpenL2capChannel(
-      psm, params, [cb = std::move(cb)](zx::socket s, auto) { cb(std::move(s)); }, dispatcher);
+      psm, params,
+      [cb = std::move(cb)](auto chan_sock, auto /*handle*/) { cb(std::move(chan_sock)); },
+      dispatcher);
   return true;
 }
 

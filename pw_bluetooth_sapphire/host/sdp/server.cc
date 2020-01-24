@@ -247,9 +247,9 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
         data_domain_->RegisterService(
             psm, chan_params,
             [psm, protocol = primary_list.Clone(), conn_cb = std::move(conn_cb)](
-                auto socket, auto handle) mutable {
+                auto chan_sock, auto handle) mutable {
               bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
-              conn_cb(std::move(socket), handle, std::move(protocol));
+              conn_cb(std::move(chan_sock), handle, std::move(protocol));
             },
             async_get_default_dispatcher());
         auto psm_place = service_to_psms_.emplace(next, std::unordered_set<l2cap::PSM>{psm});

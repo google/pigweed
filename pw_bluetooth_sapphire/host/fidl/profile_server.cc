@@ -360,8 +360,10 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   // TODO(872): convert FIDL channel parameters to bt::l2cap::ChannelParameters and use here
   bt::l2cap::ChannelParameters chan_params;
   auto handle = sdp->RegisterService(
-      std::move(rec), chan_params, [this, next](auto sock, auto handle, const auto& protocol_list) {
-        OnChannelConnected(next, std::move(sock), handle, std::move(protocol_list));
+      std::move(rec), chan_params,
+      [this, next](auto chan_sock, auto handle, const auto& protocol_list) {
+        // TODO(872): pass chan_sock.params to callback
+        OnChannelConnected(next, std::move(chan_sock.socket), handle, std::move(protocol_list));
       });
 
   if (!handle) {
@@ -419,8 +421,9 @@ void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
     return;
   }
 
-  auto connected_cb = [cb = callback.share()](zx::socket channel) {
-    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(channel));
+  auto connected_cb = [cb = callback.share()](auto chan_sock) {
+    // TODO(872): pass chan_info to callback
+    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(chan_sock.socket));
   };
   ZX_DEBUG_ASSERT(adapter());
 

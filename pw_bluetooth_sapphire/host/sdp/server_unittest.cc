@@ -25,7 +25,7 @@ using TestingBase = bt::testing::FakeControllerTest<FakeController>;
 constexpr hci::ConnectionHandle kTestHandle1 = 1;
 constexpr hci::ConnectionHandle kTestHandle2 = 2;
 
-void NopConnectCallback(zx::socket, hci::ConnectionHandle, const DataElement&) {}
+void NopConnectCallback(l2cap::ChannelSocket, hci::ConnectionHandle, const DataElement&) {}
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
@@ -119,7 +119,8 @@ class SDP_ServerTest : public TestingBase {
   }
 
   ServiceHandle AddL2capService(l2cap::PSM channel,
-                                l2cap::ChannelParameters chan_params = kChannelParams) {
+                                l2cap::ChannelParameters chan_params = kChannelParams,
+                                sdp::Server::ConnectCallback cb = NopConnectCallback) {
     ServiceRecord record;
     record.SetServiceClassUUIDs({profile::kAudioSink});
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
@@ -129,8 +130,7 @@ class SDP_ServerTest : public TestingBase {
     record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
     record.SetAttribute(kA2DP_SupportedFeatures,
                         DataElement(uint16_t(0x0001)));  // Headphones
-    ServiceHandle handle =
-        server()->RegisterService(std::move(record), chan_params, NopConnectCallback);
+    ServiceHandle handle = server()->RegisterService(std::move(record), chan_params, std::move(cb));
     EXPECT_TRUE(handle);
     return handle;
   }
@@ -830,12 +830,11 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
   hci::ConnectionHandle latest_handle;
 
   // Register a service
-  AddA2DPSink(
-      [&socks, &latest_handle](zx::socket incoming_sock, auto handle, const auto& protocol) {
-        bt_log(SPEW, "test", "Got socket for the a2dp sink");
-        socks.emplace_back(std::move(incoming_sock));
-        latest_handle = handle;
-      });
+  AddA2DPSink([&socks, &latest_handle](auto chan_sock, auto handle, const auto& protocol) {
+    bt_log(SPEW, "test", "Got socket for the a2dp sink");
+    socks.emplace_back(std::move(chan_sock.socket));
+    latest_handle = handle;
+  });
 
   // Connect to the service
   l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVDTP, kSdpChannel + 1, 0x0b00);
@@ -906,22 +905,24 @@ TEST_F(SDP_ServerTest, BrowseGroup) {
 TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
   l2cap::PSM kPSM = l2cap::kAVDTP;
 
-  l2cap::ChannelParameters params;
-  params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  params.max_sdu_size = l2cap::kMinACLMTU;
+  l2cap::ChannelParameters preferred_params;
+  preferred_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  preferred_params.max_sdu_size = l2cap::kMinACLMTU;
 
+  std::optional<l2cap::ChannelInfo> params;
   size_t chan_cb_count = 0;
-  l2cap()->set_channel_callback([&](auto chan) {
-    chan_cb_count++;
-    EXPECT_EQ(*params.mode, chan->mode());
-    EXPECT_EQ(*params.max_sdu_size, chan->rx_mtu());
-  });
-
-  ASSERT_TRUE(AddL2capService(kPSM, params));
+  ASSERT_TRUE(AddL2capService(kPSM, preferred_params,
+                              [&](auto chan_sock, auto /*handle*/, auto& /*protocol*/) {
+                                chan_cb_count++;
+                                params = chan_sock.params;
+                              }));
 
   l2cap()->TriggerInboundL2capChannel(kTestHandle1, kPSM, 0x40, 0x41);
   RunLoopUntilIdle();
   EXPECT_EQ(1u, chan_cb_count);
+  ASSERT_TRUE(params);
+  EXPECT_EQ(*preferred_params.mode, params->mode);
+  EXPECT_EQ(*preferred_params.max_sdu_size, params->max_rx_sdu_size);
 }
 
 #undef SDP_ERROR_RSP

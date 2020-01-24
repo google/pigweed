@@ -23,6 +23,8 @@ namespace bt {
 namespace l2cap {
 
 class Channel;
+// Callback invoked when a channel has been created or when an error occurs during channel creation
+// (in which case the channel will be nullptr).
 using ChannelCallback = fit::function<void(fbl::RefPtr<Channel>)>;
 
 // Callback invoked when a logical link should be closed due to an error.

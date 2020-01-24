@@ -47,11 +47,11 @@ class Server final {
   // service handle previously set in |record| is ignored and overwritten.
   //
   // |conn_cb| will be called for any connections made to the registered service with a connected
-  // socket, the connection handle the channel was opened on, and the descriptor list for the
-  // endpoint which was connected.
+  // socket, the accepted channel parameters, the connection handle the channel was opened on, and
+  // the descriptor list for the endpoint which was connected.
   // TODO: possibly combine these into a struct later
   using ConnectCallback =
-      fit::function<void(zx::socket, hci::ConnectionHandle, const DataElement&)>;
+      fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle, const DataElement&)>;
   ServiceHandle RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
                                 ConnectCallback conn_cb);
 

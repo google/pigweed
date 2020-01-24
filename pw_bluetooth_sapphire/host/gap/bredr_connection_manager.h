@@ -111,7 +111,13 @@ class BrEdrConnectionManager final {
 
   // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
   // |params|. Returns false if the peer is not already connected.
-  using SocketCallback = fit::function<void(zx::socket)>;
+  //
+  // |cb| will be called on |dispatcher| with a zx::socket corresponding to the
+  // channel created to the remote or ZX_INVALID_HANDLE if the channel creation
+  // resulted in an error.
+  //
+  // On successful channel creation, |chan_info| will contain the configured channel parameters.
+  using SocketCallback = fit::function<void(l2cap::ChannelSocket)>;
   bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, l2cap::ChannelParameters params,
                         SocketCallback cb, async_dispatcher_t* dispatcher);
 
