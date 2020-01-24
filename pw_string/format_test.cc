@@ -76,7 +76,7 @@ TEST(Format, FormatLargerThanBuffer_ReturnsResourceExhausted) {
 
 TEST(Format, ArgumentLargerThanBuffer_ReturnsResourceExhausted) {
   char buffer[5];
-  auto result = Format(buffer, "%s%c", "2big", '!');
+  auto result = Format(buffer, "%s", "2big!");
 
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
   EXPECT_EQ(4u, result.size());
@@ -87,7 +87,7 @@ StatusWithSize CallFormatWithVaList(span<char> buffer, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
-  StatusWithSize result = Format(buffer, fmt, args);
+  StatusWithSize result = FormatVaList(buffer, fmt, args);
 
   va_end(args);
   return result;

@@ -21,15 +21,15 @@ namespace pw::string {
 StatusWithSize Format(const span<char>& buffer, const char* format, ...) {
   va_list args;
   va_start(args, format);
-  const StatusWithSize result = Format(buffer, format, args);
+  const StatusWithSize result = FormatVaList(buffer, format, args);
   va_end(args);
 
   return result;
 }
 
-StatusWithSize Format(const span<char>& buffer,
-                      const char* format,
-                      va_list args) {
+StatusWithSize FormatVaList(const span<char>& buffer,
+                            const char* format,
+                            va_list args) {
   if (buffer.empty()) {
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
   }

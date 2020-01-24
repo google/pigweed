@@ -88,14 +88,15 @@ void StringBuilder::resize(size_t new_size) {
 StringBuilder& StringBuilder::Format(const char* format, ...) {
   va_list args;
   va_start(args, format);
-  Format(format, args);
+  FormatVaList(format, args);
   va_end(args);
 
   return *this;
 }
 
-StringBuilder& StringBuilder::Format(const char* format, va_list args) {
-  HandleStatusWithSize(string::Format(buffer_.subspan(size_), format, args));
+StringBuilder& StringBuilder::FormatVaList(const char* format, va_list args) {
+  HandleStatusWithSize(
+      string::FormatVaList(buffer_.subspan(size_), format, args));
   return *this;
 }
 

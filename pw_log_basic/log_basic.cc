@@ -138,7 +138,7 @@ extern "C" void pw_Log(int level,
   // Column: Message
   va_list args;
   va_start(args, message);
-  buffer.Format(message, args);
+  buffer.FormatVaList(message, args);
   va_end(args);
 
   // All done; flush the log.

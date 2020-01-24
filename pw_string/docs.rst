@@ -26,9 +26,10 @@ Features
 
 pw::string::Format
 ------------------
-The ``pw::string::Format`` functions provides are safer alternatives to
-``std::snprintf`` and ``std::vsnprintf``. The snprintf return value is awkward
-to interpret, and misinterpreting it can lead to serious bugs.
+The ``pw::string::Format`` and ``pw::string::FormatVaList`` functions provide
+safer alternatives to ``std::snprintf`` and ``std::vsnprintf``. The snprintf
+return value is awkward to interpret, and misinterpreting it can lead to serious
+bugs.
 
 Size report: replacing snprintf with pw::string::Format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
