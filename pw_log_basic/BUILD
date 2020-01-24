@@ -12,15 +12,31 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-filegroup(
+pw_cc_library(
     name = "pw_log_basic",
     srcs = [
+        "log_basic.cc",
+    ],
+    hdrs = [
         "public/pw_log_basic/log_basic.h",
         "public_overrides/pw_log_backend/log_backend.h",
-        "log_basic.cc",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_dumb_io",
+        "//pw_log:facade",
+        "//pw_string",
     ],
 )

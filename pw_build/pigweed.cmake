@@ -44,10 +44,12 @@ file(WRITE "${_pw_empty_source_file}" "")
 #
 # Args:
 #   IMPLEMENTS_FACADE: this module implements the specified facade
+#   PUBLIC_DEPS: public target_link_libraries arguments
+#   PRIVATE_DEPS: private target_link_libraries arguments
 #
-# All other arguments are forwarded to pw_add_module_library.
 function(pw_auto_add_simple_module MODULE)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "IMPLEMENTS_FACADE" "")
+  set(multi PUBLIC_DEPS PRIVATE_DEPS)
+  cmake_parse_arguments(PARSE_ARGV 1 arg "" "IMPLEMENTS_FACADE" "${multi}")
 
   file(GLOB all_sources *.cc *.c)
 
@@ -65,7 +67,10 @@ function(pw_auto_add_simple_module MODULE)
   endif()
 
   pw_add_module_library("${MODULE}"
-    ${arg_UNPARSED_ARGUMENTS}
+    PUBLIC_DEPS
+      ${arg_PUBLIC_DEPS}
+    PRIVATE_DEPS
+      ${arg_PRIVATE_DEPS}
     SOURCES
       ${sources}
     HEADERS
@@ -90,6 +95,8 @@ function(pw_auto_add_simple_module MODULE)
         ${c_test}
       DEPS
         "${MODULE}"
+        ${arg_PUBLIC_DEPS}
+        ${arg_PRIVATE_DEPS}
       GROUPS
         "${groups}"
     )
@@ -152,7 +159,6 @@ function(pw_add_facade MODULE)
   target_link_libraries("${MODULE}"
     PUBLIC
       "${MODULE}.facade"
-    PRIVATE
       "${MODULE}.backend"
   )
 endfunction(pw_add_facade)

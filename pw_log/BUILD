@@ -12,23 +12,44 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-filegroup(
-    name = "pw_log",
-    srcs = [
-        "public/pw_log/log.h",
+# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+PW_LOG_BACKEND = "//pw_log_basic"
+
+pw_cc_library(
+    name = "facade",
+    hdrs = [
         "public/pw_log/levels.h",
+        "public/pw_log/log.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
     ],
 )
 
-# TODO: This isn't a real Bazel build yet.
-filegroup(
+pw_cc_library(
+    name = "pw_log",
+    deps = [
+        ":facade",
+        PW_LOG_BACKEND,
+    ],
+)
+
+pw_cc_test(
     name = "test",
     srcs = [
         "basic_log_test.cc",
         "basic_log_test_plain_c.c",
     ],
+    deps = [":pw_log"],
 )
