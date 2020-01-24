@@ -1,9 +1,9 @@
 =======
 Targets
 =======
-Pigweed is designed to support many 32-bit (and even some 64-bit) targets. This
-section contains documentation for the targets used for upstream Pigweed
-development, though more may exist outside the main Pigweed repository.
+Pigweed is designed to support many 32-bit targets. This section contains
+documentation for the targets used for upstream Pigweed development,
+though more may exist outside the main Pigweed repository.
 
 .. toctree::
   :maxdepth: 1
