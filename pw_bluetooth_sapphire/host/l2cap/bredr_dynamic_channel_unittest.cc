@@ -253,8 +253,10 @@ const ByteBuffer& kDisconRsp = kDisconReq;
 
 // Configuration Requests
 
-auto MakeConfigReqWithMtuAndMode(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
-                                 ChannelMode mode = ChannelMode::kBasic) {
+auto MakeConfigReqWithMtuAndRfc(ChannelId dest_cid, uint16_t mtu, ChannelMode mode,
+                                uint8_t tx_window, uint8_t max_transmit,
+                                uint16_t retransmission_timeout, uint16_t monitor_timeout,
+                                uint16_t mps) {
   return StaticByteBuffer(
       // Destination CID
       LowerBits(dest_cid), UpperBits(dest_cid),
@@ -266,7 +268,9 @@ auto MakeConfigReqWithMtuAndMode(ChannelId dest_cid, uint16_t mtu = kMaxMTU,
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
 
       // Retransmission & Flow Control option (Type, Length = 9, mode, unused fields)
-      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+      0x04, 0x09, static_cast<uint8_t>(mode), tx_window, max_transmit,
+      LowerBits(retransmission_timeout), UpperBits(retransmission_timeout),
+      LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
 }
 
 auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU) {
@@ -283,8 +287,8 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU) {
 
 const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
 
-const ByteBuffer& kOutboundConfigReqWithErtm =
-    MakeConfigReqWithMtuAndMode(kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission);
+const ByteBuffer& kOutboundConfigReqWithErtm = MakeConfigReqWithMtuAndRfc(
+    kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
 
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
@@ -353,7 +357,9 @@ auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
 
 const ByteBuffer& kOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kDefaultMTU);
 
-auto MakeUnacceptableParamsWithRfcConfigRsp(ChannelId source_cid, ChannelMode mode) {
+auto MakeConfigRspWithRfc(ChannelId source_cid, ConfigurationResult result, ChannelMode mode,
+                          uint8_t tx_window, uint8_t max_transmit, uint16_t retransmission_timeout,
+                          uint16_t monitor_timeout, uint16_t mps) {
   return CreateStaticByteBuffer(
       // Source CID
       LowerBits(source_cid), UpperBits(source_cid),
@@ -361,21 +367,24 @@ auto MakeUnacceptableParamsWithRfcConfigRsp(ChannelId source_cid, ChannelMode mo
       // Flags
       0x00, 0x00,
 
-      // Result (Unacceptable Parameters)
-      0x01, 0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)),
 
       // Retransmission & Flow Control option (Type, Length: 9, mode, unused parameters)
-      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+      0x04, 0x09, static_cast<uint8_t>(mode), tx_window, max_transmit,
+      LowerBits(retransmission_timeout), UpperBits(retransmission_timeout),
+      LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
 }
 
-const ByteBuffer& kInboundUnacceptableParamsWithRFCBasicConfigRsp =
-    MakeUnacceptableParamsWithRfcConfigRsp(kLocalCId, ChannelMode::kBasic);
+const ByteBuffer& kInboundUnacceptableParamsWithRfcBasicConfigRsp = MakeConfigRspWithRfc(
+    kLocalCId, ConfigurationResult::kUnacceptableParameters, ChannelMode::kBasic, 0, 0, 0, 0, 0);
 
-const ByteBuffer& kOutboundUnacceptableParamsWithRFCBasicConfigRsp =
-    MakeUnacceptableParamsWithRfcConfigRsp(kRemoteCId, ChannelMode::kBasic);
+const ByteBuffer& kOutboundUnacceptableParamsWithRfcBasicConfigRsp = MakeConfigRspWithRfc(
+    kRemoteCId, ConfigurationResult::kUnacceptableParameters, ChannelMode::kBasic, 0, 0, 0, 0, 0);
 
-const ByteBuffer& kOutboundUnacceptableParamsWithRFCERTMConfigRsp =
-    MakeUnacceptableParamsWithRfcConfigRsp(kRemoteCId, ChannelMode::kEnhancedRetransmission);
+const ByteBuffer& kOutboundUnacceptableParamsWithRfcERTMConfigRsp =
+    MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+                         ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
 
 // Information Requests
 
@@ -1516,7 +1525,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, PeerRejectsERTM) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(
       *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
-      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
@@ -1585,7 +1594,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
   sig()->ReceiveResponses(config_req_id,
                           {{SignalingChannel::Status::kSuccess,
-                            kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()}});
+                            kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()}});
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
@@ -1628,7 +1637,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic)
 
   // Peer requests ERTM. Local device should reject with unacceptable params.
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
-                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+                                       kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
 }
 
 // Core Spec v5.1, Vol 3, Part A, Sec 5.4:
@@ -1648,7 +1657,7 @@ TEST_F(
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(
       *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
-      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
@@ -1715,7 +1724,7 @@ TEST_F(
 
   sig()->ReceiveResponses(outbound_config_req_id,
                           {{SignalingChannel::Status::kSuccess,
-                            kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()}});
+                            kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()}});
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }
@@ -1741,9 +1750,9 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectAfterReceivingTwoConfigRequestsW
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
-                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+                                       kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
-                                       kOutboundUnacceptableParamsWithRFCBasicConfigRsp));
+                                       kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
@@ -1754,7 +1763,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectWhenPeerRejectsConfigReqWithBasi
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(
       *sig(), kConfigurationRequest, kOutboundConfigReq.view(),
-      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRFCBasicConfigRsp.view()});
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
@@ -1787,10 +1796,10 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
   // Retransmission mode is not supported.
   const auto kInboundConfigReqWithRetransmissionMode =
-      MakeConfigReqWithMtuAndMode(kLocalCId, kMaxMTU, ChannelMode::kRetransmission);
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kMaxMTU, ChannelMode::kRetransmission, 0, 0, 0, 0, 0);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
-                                       kOutboundUnacceptableParamsWithRFCERTMConfigRsp));
+                                       kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
 }
 
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
