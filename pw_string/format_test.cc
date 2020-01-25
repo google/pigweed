@@ -40,24 +40,6 @@ TEST(Format, ValidFormatStringAndArguments_Succeeds) {
   EXPECT_STREQ("12345", buffer);
 }
 
-TEST(Format, InvalidConversionSpecifier_ReturnsInvalidArgumentAndTerminates) {
-  char buffer[32] = {'?', '?', '?', '?', '\0'};
-
-  // Make the format string volatile to prevent the compiler from potentially
-  // checking this as a format string.
-  const char* volatile fmt = "abc %9999999999999999999999999999999999d4%s";
-
-  if (std::snprintf(buffer, sizeof(buffer), fmt, 123, "5") >= 0) {
-    // This snprintf implementation does not detect invalid format strings.
-    return;
-  }
-
-  auto result = Format(buffer, fmt, 123, "5");
-
-  EXPECT_EQ(Status::INVALID_ARGUMENT, result.status());
-  EXPECT_STREQ("", buffer);
-}
-
 TEST(Format, EmptyBuffer_ReturnsResourceExhausted) {
   auto result = Format(span<char>(), "?");
 
