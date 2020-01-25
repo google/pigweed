@@ -33,6 +33,17 @@ struct ChannelParameters {
   };
 };
 
+// Convenience struct for passsing around information about an opened channel.
+// For example, this is useful when describing the L2CAP channel underlying a zx::socket.
+struct ChannelInfo {
+  ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size)
+      : mode(mode), max_rx_sdu_size(max_rx_sdu_size), max_tx_sdu_size(max_tx_sdu_size) {}
+
+  ChannelMode mode;
+  uint16_t max_rx_sdu_size;
+  uint16_t max_tx_sdu_size;
+};
+
 // Data stored for services registered by higher layers.
 template <typename ChannelCallbackT>
 struct ServiceInfo {

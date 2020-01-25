@@ -130,7 +130,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
           // MakeSocketForChannel makes invalid sockets for null channels (i.e.
           // that have failed to open).
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          auto chan_info = channel ? std::optional(l2cap::ChannelInfo(*channel)) : std::nullopt;
+          auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
           l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
           async::PostTask(cb_dispatcher, [chan_sock = std::move(chan_sock), cb = std::move(cb),
                                           handle]() mutable { cb(std::move(chan_sock), handle); });
@@ -158,7 +158,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
         psm, params,
         [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
           zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          auto chan_info = channel ? std::optional(l2cap::ChannelInfo(*channel)) : std::nullopt;
+          auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
           l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
           // Called every time the service is connected, cb must be shared.
           async::PostTask(cb_dispatcher, [sock = std::move(chan_sock), cb = cb.share(),

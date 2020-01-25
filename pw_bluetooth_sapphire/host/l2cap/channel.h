@@ -27,6 +27,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -93,6 +94,8 @@ class Channel : public fbl::RefCounted<Channel> {
 
   uint16_t tx_mtu() const { return tx_mtu_; }
   uint16_t rx_mtu() const { return rx_mtu_; }
+
+  ChannelInfo info() const { return ChannelInfo(mode(), rx_mtu(), tx_mtu()); }
 
   // Returns the current link security properties of the underlying link.
   // Returns the lowest security level if the link is closed.
@@ -185,20 +188,6 @@ class Channel : public fbl::RefCounted<Channel> {
   const uint16_t rx_mtu_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
-};
-
-// Properties of an opened L2CAP channel. Used when describing the l2cap channel underlying a
-// zx::socket.
-struct ChannelInfo {
-  ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size)
-      : mode(mode), max_rx_sdu_size(max_rx_sdu_size), max_tx_sdu_size(max_tx_sdu_size) {}
-  ChannelInfo(const Channel& channel)
-      : mode(channel.mode()),
-        max_rx_sdu_size(channel.rx_mtu()),
-        max_tx_sdu_size(channel.tx_mtu()) {}
-  ChannelMode mode;
-  uint16_t max_rx_sdu_size;
-  uint16_t max_tx_sdu_size;
 };
 
 // A socket connected to an L2cap channel and its parameters
