@@ -114,16 +114,31 @@ class ChannelConfiguration final {
 
     ChannelMode mode() const { return mode_; }
 
+    // TxWindow: receiver capability in request and transmit capability in response (ERTM)
     uint8_t tx_window_size() const { return tx_window_size_; }
 
+    void set_tx_window_size(uint8_t tx_window_size) { tx_window_size_ = tx_window_size; }
+
+    // MaxTransmit: retransmissions allowed before disconnecting (ERTM: 0 means infinite) in request
+    // and ignored in response
     uint8_t max_transmit() const { return max_transmit_; }
 
+    void set_max_transmit(uint8_t max_transmit) { max_transmit_ = max_transmit; }
+
+    // Retransmission time-out: 0 in request and error detection timeout in response (ERTM)
     uint16_t rtx_timeout() const { return rtx_timeout_; }
 
+    void set_rtx_timeout(uint16_t rtx_timeout) { rtx_timeout_ = rtx_timeout; }
+
+    // Monitor time-out: 0 in request and link loss detection timeout in response (ERTM)
     uint16_t monitor_timeout() const { return monitor_timeout_; }
+
+    void set_monitor_timeout(uint16_t monitor_timeout) { monitor_timeout_ = monitor_timeout; }
 
     // Maximum PDU size
     uint16_t mps() const { return mps_; }
+
+    void set_mps(uint16_t mps) { mps_ = mps; }
 
     // ConfigurationOptionInterface overrides
 

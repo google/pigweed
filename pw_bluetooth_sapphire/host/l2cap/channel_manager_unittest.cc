@@ -1061,8 +1061,9 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
         // MTU option (ID, Length, MTU)
         0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
 
-        // Retransmission & Flow Control option (type, length: 9, mode, unused parameters)
-        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+        // Retransmission & Flow Control option (type, length: 9, mode, TxWindow, MaxTransmit, rtx
+        // timeout: 2 secs, monitor timeout: 12 secs, mps)
+        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0xd0, 0x07, 0xe0, 0x2e, 0x00, 0x00));
   } else {
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 14 bytes)

@@ -412,7 +412,7 @@ auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result
 // Corresponds to kInboundConfigReqWithERTM
 const ByteBuffer& kOutboundOkConfigRspWithErtm = MakeConfigRspWithMtuAndRfc(
     kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kDefaultMTU, 1,
-    2, 0, 0, 0x0807);
+    2, 2000, 12000, 0x0807);
 
 // Information Requests
 
