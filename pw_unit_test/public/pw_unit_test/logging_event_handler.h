@@ -30,6 +30,7 @@ class LoggingEventHandler : public EventHandler {
   void TestCaseEnd(const TestCase& test_case, TestResult result) override;
   void TestCaseExpect(const TestCase& test_case,
                       const TestExpectation& expectation) override;
+  void TestCaseDisabled(const TestCase& test_case) override;
 
  private:
   bool verbose_;

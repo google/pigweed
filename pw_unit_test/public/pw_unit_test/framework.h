@@ -288,21 +288,17 @@ struct TestInfo {
            const char* const test_name,
            const char* const file_name,
            void (*run)())
-      : test_suite_name(test_suite_name),
-        test_name(test_name),
-        file_name(file_name),
-        run(run) {
+      : test_case{
+        .suite_name = test_suite_name,
+        .test_name = test_name,
+        .file_name = file_name,
+       }, run(run) {
     Framework::Get().RegisterTest(this);
   }
 
-  // Name of the suite to which the test case belongs.
-  const char* const test_suite_name;
-
-  // Name of the test case itself.
-  const char* const test_name;
-
-  // Path to the file in which the test case is located.
-  const char* const file_name;
+  // The name of the suite to which the test case belongs, the name of the test
+  // case itself, and the path to the file in which the test case is located.
+  TestCase test_case;
 
   // Function which runs the test case. Refers to Framework::CreateAndRunTest
   // instantiated for the test case's class.

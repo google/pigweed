@@ -76,4 +76,8 @@ void LoggingEventHandler::TestCaseExpect(const TestCase& test_case,
          expectation.evaluated_expression);
 }
 
+void LoggingEventHandler::TestCaseDisabled(const TestCase& test) {
+  PW_LOG_DEBUG("Skipping disabled test %s.%s", test.suite_name, test.test_name);
+}
+
 }  // namespace pw::unit_test

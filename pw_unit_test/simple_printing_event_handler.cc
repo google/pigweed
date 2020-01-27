@@ -76,4 +76,10 @@ void SimplePrintingEventHandler::WriteLine(const char* format, ...) {
   write_(buffer_, true);
 }
 
+void SimplePrintingEventHandler::TestCaseDisabled(const TestCase& test) {
+  if (verbose_) {
+    WriteLine("Skipping disabled test %s.%s", test.suite_name, test.test_name);
+  }
+}
+
 }  // namespace pw::unit_test

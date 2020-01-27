@@ -106,6 +106,9 @@ class EventHandler {
   // provided.
   virtual void TestCaseEnd(const TestCase& test_case, TestResult result) = 0;
 
+  // Called when a disabled test case is encountered.
+  virtual void TestCaseDisabled(const TestCase&) {}
+
   // Called after each expect/assert statement within a test case with the
   // result of the expectation.
   virtual void TestCaseExpect(const TestCase& test_case,

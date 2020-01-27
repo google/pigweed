@@ -14,6 +14,8 @@
 
 #include "pw_unit_test/framework.h"
 
+#include <cstring>
+
 namespace pw::unit_test {
 
 void RegisterEventHandler(EventHandler* event_handler) {
@@ -21,6 +23,16 @@ void RegisterEventHandler(EventHandler* event_handler) {
 }
 
 namespace internal {
+namespace {
+
+bool TestIsEnabled(const TestInfo& test) {
+  constexpr size_t kStringSize = sizeof("DISABLED_") - 1;
+  return std::strncmp("DISABLED_", test.test_case.test_name, kStringSize) !=
+             0 &&
+         std::strncmp("DISABLED_", test.test_case.suite_name, kStringSize) != 0;
+}
+
+}  // namespace
 
 // Singleton instance of the unit test framework class.
 Framework Framework::framework_;
@@ -45,7 +57,11 @@ int Framework::RunAllTests() {
     event_handler_->RunAllTestsStart();
   }
   for (TestInfo* test = tests_; test != nullptr; test = test->next) {
-    test->run();
+    if (TestIsEnabled(*test)) {
+      test->run();
+    } else {
+      event_handler_->TestCaseDisabled(test->test_case);
+    }
   }
   if (event_handler_ != nullptr) {
     event_handler_->RunAllTestsEnd(run_tests_summary_);
@@ -60,15 +76,7 @@ void Framework::StartTest(Test* test) {
   if (event_handler_ == nullptr) {
     return;
   }
-
-  const TestInfo* info = test->pigweed_test_info_;
-  TestCase test_case = {
-      .suite_name = info->test_suite_name,
-      .test_name = info->test_name,
-      .file_name = info->file_name,
-  };
-
-  event_handler_->TestCaseStart(test_case);
+  event_handler_->TestCaseStart(test->pigweed_test_info_->test_case);
 }
 
 void Framework::EndTest(Test* test) {
@@ -86,14 +94,8 @@ void Framework::EndTest(Test* test) {
     return;
   }
 
-  const TestInfo* info = test->pigweed_test_info_;
-  TestCase test_case = {
-      .suite_name = info->test_suite_name,
-      .test_name = info->test_name,
-      .file_name = info->file_name,
-  };
-
-  event_handler_->TestCaseEnd(test_case, current_result_);
+  event_handler_->TestCaseEnd(test->pigweed_test_info_->test_case,
+                              current_result_);
 }
 
 void Framework::ExpectationResult(const char* expression,
@@ -109,13 +111,6 @@ void Framework::ExpectationResult(const char* expression,
     return;
   }
 
-  const TestInfo* info = current_test_->pigweed_test_info_;
-  TestCase test_case = {
-      .suite_name = info->test_suite_name,
-      .test_name = info->test_name,
-      .file_name = info->file_name,
-  };
-
   TestExpectation expectation = {
       .expression = expression,
       .evaluated_expression = evaluated_expression,
@@ -123,7 +118,8 @@ void Framework::ExpectationResult(const char* expression,
       .success = success,
   };
 
-  event_handler_->TestCaseExpect(test_case, expectation);
+  event_handler_->TestCaseExpect(current_test_->pigweed_test_info_->test_case,
+                                 expectation);
 }
 
 }  // namespace internal
