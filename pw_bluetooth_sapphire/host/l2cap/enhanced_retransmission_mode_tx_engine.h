@@ -78,24 +78,6 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
     uint8_t tx_count;
   };
 
-  // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume
-  // there is no flush timeout on the underlying logical link.
-  //
-  // TODO(quiche): This value should be dynamic, and based on the parameters
-  // from the L2CAP configuration process. See Core Spec v5.0, Volume 3, Part A,
-  // Sec 5.4.
-  static constexpr auto kReceiverReadyPollTimerDuration = zx::sec(2);
-
-  // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume
-  // there is no flush timeout on the underlying logical link. If the link
-  // _does_ have a flush timeout, then our implementation will be slower to
-  // trigger the monitor timeout than the specification recommends.
-  //
-  // TODO(quiche): This value should be dynamic, and based on the parameters
-  // from the L2CAP configuration process. See Core Spec v5.0, Volume 3, Part A,
-  // Sec 5.4.
-  static constexpr auto kMonitorTimerDuration = zx::sec(12);
-
   // Starts the receiver ready poll timer. If already running, the existing
   // timer is cancelled, and a new timer is started.
   // Notes:

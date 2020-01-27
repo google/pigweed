@@ -174,13 +174,13 @@ void Engine::StartReceiverReadyPollTimer() {
   n_receiver_ready_polls_sent_ = 0;
   receiver_ready_poll_task_.Cancel();
   receiver_ready_poll_task_.PostDelayed(async_get_default_dispatcher(),
-                                        kReceiverReadyPollTimerDuration);
+                                        kErtmReceiverReadyPollTimerDuration);
 }
 
 void Engine::StartMonitorTimer() {
   ZX_DEBUG_ASSERT(!receiver_ready_poll_task_.is_pending());
   monitor_task_.Cancel();
-  monitor_task_.PostDelayed(async_get_default_dispatcher(), kMonitorTimerDuration);
+  monitor_task_.PostDelayed(async_get_default_dispatcher(), kErtmMonitorTimerDuration);
 }
 
 void Engine::SendReceiverReadyPoll() {

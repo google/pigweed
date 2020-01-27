@@ -8,12 +8,14 @@
 // clang-format off
 
 #include <cstdint>
+#include <limits>
 
 #include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
 #include <lib/fit/function.h>
 #include <zircon/compiler.h>
 
+#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
@@ -44,6 +46,17 @@ using LEFixedChannelsCallback =
 // Invokes its |callback| argument with the result of the operation.
 using SecurityUpgradeCallback = fit::function<void(
     hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
+
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
+// on the underlying logical link.
+static constexpr auto kErtmReceiverReadyPollTimerDuration = zx::sec(2);
+static_assert(kErtmReceiverReadyPollTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
+
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
+// on the underlying logical link. If the link _does_ have a flush timeout, then our implementation
+// will be slower to trigger the monitor timeout than the specification recommends.
+static constexpr auto kErtmMonitorTimerDuration = zx::sec(12);
+static_assert(kErtmMonitorTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
 
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented
 // channels over a logical link.
