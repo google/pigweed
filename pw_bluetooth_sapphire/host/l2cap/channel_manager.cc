@@ -79,8 +79,10 @@ void ChannelManager::Unregister(hci::ConnectionHandle handle) {
 
   pending_packets_.erase(handle);
   auto iter = ll_map_.find(handle);
-  ZX_DEBUG_ASSERT_MSG(iter != ll_map_.end(), "attempted to remove unknown connection handle: %#.4x",
-                      handle);
+  if (iter == ll_map_.end()) {
+    bt_log(TRACE, "l2cap", "attempt to unregister unknown link (handle: %#.4x)", handle);
+    return;
+  }
 
   // Explicitly shut down the link to force associated L2CAP channels to release
   // their strong references.

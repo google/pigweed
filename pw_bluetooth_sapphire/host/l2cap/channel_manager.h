@@ -132,8 +132,8 @@ class ChannelManager final {
                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,
                   async_dispatcher_t* dispatcher);
 
-  // Removes a previously registered connection. All corresponding Channels will
-  // be closed and all incoming data packets on this link will be dropped.
+  // Removes a connection. All incoming data packets on this link will be dropped. If the
+  // connection was previously registered, all corresponding Channels will be closed.
   //
   // NOTE: It is recommended that a link entry be removed AFTER the controller
   // sends a HCI Disconnection Complete Event for the corresponding logical

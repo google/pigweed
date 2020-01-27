@@ -1839,6 +1839,16 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_EQ(*chan_params.mode, channel->mode());
 }
 
+TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {
+  // Packet for unregistered handle should be queued.
+  ReceiveAclDataPacket(testing::AclConnectionReq(1, kTestHandle1, kRemoteId, kTestPsm));
+  chanmgr()->Unregister(kTestHandle1);
+
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  // Since pending connection request packet was cleared, no response should be sent.
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt
