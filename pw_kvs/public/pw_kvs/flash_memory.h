@@ -103,66 +103,6 @@ class FlashMemory {
   const uint8_t erased_memory_content_;
 };
 
-// Exposes a sub-sector sized region of flash memory that cannot be erased.
-// It can be thought of as one pseudo-sector that is sized exactly as provided.
-//
-// TODO(b/117553777): This makes a little more sense as a SubSectorPartition,
-// but PartitionTableEntry currently assumes all partitions fill entire sectors.
-// Revisit when PartitionTable is refactored.
-class FlashMemorySubSector : public FlashMemory {
- public:
-  constexpr FlashMemorySubSector(FlashMemory* flash,
-                                 uint32_t start_address,
-                                 uint32_t size)
-      : FlashMemory(size,
-                    1,  // Round up to "1" sector.
-                    flash->GetAlignmentBytes(),
-                    start_address,
-                    // Calculate the sector for this start address.
-                    flash->GetStartSector() +
-                        ((start_address - flash->GetStartAddress()) /
-                         flash->GetSectorSizeBytes())),
-        flash_(*CHECK_NOTNULL(flash)),
-        base_offset_(start_address - flash->GetStartAddress()) {
-    // Make sure we're not specifying a region of flash larger than
-    // that which the underlying FlashMemory supports.
-    CHECK(start_address >= flash->GetStartAddress());
-    CHECK(size <= flash->GetSectorSizeBytes());
-    CHECK(start_address + size <=
-          flash->GetStartAddress() + flash->GetSizeBytes());
-    CHECK_EQ(0, start_address % flash->GetAlignmentBytes());
-    CHECK_EQ(0, size % flash->GetAlignmentBytes());
-  }
-
-  Status Enable() override { return flash_.Enable(); }
-  Status Disable() override { return flash_.Disable(); }
-  bool IsEnabled() const override { return flash_.IsEnabled(); }
-  Status SelfTest() override { return flash_.SelfTest(); }
-
-  Status Erase(Address, uint32_t) override { return Status::UNIMPLEMENTED; }
-
-  Status Read(uint8_t* destination_ram_address,
-              Address source_flash_address,
-              uint32_t len) override {
-    return flash_.Read(destination_ram_address, source_flash_address, len);
-  }
-
-  Status Write(Address destination_flash_address,
-               const uint8_t* source_ram_address,
-               uint32_t len) override {
-    return flash_.Write(destination_flash_address, source_ram_address, len);
-  }
-
-  uint8_t* FlashAddressToMcuAddress(Address address) const override {
-    return flash_.FlashAddressToMcuAddress(base_offset_ + address);
-  }
-
- private:
-  FlashMemory& flash_;
-  // Value to add to addresses to get to the underlying flash_ address.
-  const Address base_offset_;
-};
-
 class FlashPartition {
  public:
   // The flash address is in the range of: 0 to PartitionSize.

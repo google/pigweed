@@ -45,10 +45,7 @@ source_set("pw_kvs") {
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":key_value_store_test",
-    ":key_value_store_sub_sector_test",
-  ]
+  tests = [ ":key_value_store_test" ]
 }
 
 pw_test("key_value_store_test") {
@@ -59,17 +56,6 @@ pw_test("key_value_store_test") {
   ]
   sources = [
     "key_value_store_test.cc",
-  ]
-}
-
-pw_test("key_value_store_sub_sector_test") {
-  deps = [
-    ":pw_kvs",
-    dir_pw_checksum,
-    dir_pw_log,
-  ]
-  sources = [
-    "key_value_store_sub_sector_test.cc",
   ]
 }
 

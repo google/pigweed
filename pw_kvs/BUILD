@@ -54,13 +54,3 @@ pw_cc_test(
         "//pw_log",
     ],
 )
-
-pw_cc_test(
-    name = "key_value_store_sub_sector_test",
-    srcs = ["key_value_store_sub_sector_test.cc"],
-    deps = [
-        ":pw_kvs",
-        "//pw_checksum",
-        "//pw_log",
-    ],
-)
