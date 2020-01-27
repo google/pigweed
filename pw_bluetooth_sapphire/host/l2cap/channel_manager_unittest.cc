@@ -950,9 +950,8 @@ TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   EXPECT_TRUE(conn_param_cb_called);
 }
 
-// clang-format off
-
-auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU, std::optional<ChannelMode> mode = std::nullopt) {
+auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU,
+                          std::optional<ChannelMode> mode = std::nullopt) {
   if (mode.has_value()) {
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 27 bytes)
@@ -992,7 +991,8 @@ auto InboundConnectionResponse(CommandId id) {
   return testing::AclConnectionRsp(id, kTestHandle1, kLocalId, kRemoteId);
 }
 
-auto InboundConfigurationRequest (CommandId id, uint16_t mtu = kDefaultMTU, ChannelMode mode = ChannelMode::kBasic) {
+auto InboundConfigurationRequest(CommandId id, uint16_t mtu = kDefaultMTU,
+                                 std::optional<ChannelMode> mode = std::nullopt) {
   return ConfigurationRequest(id, kLocalId, mtu, mode);
 }
 
@@ -1006,9 +1006,7 @@ auto InboundConfigurationResponse(CommandId id) {
 
       // Configuration Response (ID: 2, length: 6, src cid, flags: 0,
       // result: success)
-      0x05, id, 0x06, 0x00,
-      LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00,
-      0x00, 0x00);
+      0x05, id, 0x06, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00, 0x00, 0x00);
 }
 
 auto InboundConnectionRequest(CommandId id) {
@@ -1037,28 +1035,49 @@ auto OutboundConnectionRequest(CommandId id) {
       UpperBits(kLocalId));
 }
 
-auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU, std::optional<ChannelMode> mode = std::nullopt) {
+auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU,
+                                  std::optional<ChannelMode> mode = std::nullopt) {
   return ConfigurationRequest(id, kRemoteId, mtu, mode);
 }
 
-auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU) {
-  constexpr uint8_t kConfigLength = 10;
-  constexpr uint16_t kL2CAPLength = kConfigLength + 4;
-  constexpr uint16_t kACLLength = kL2CAPLength + 4;
-  return CreateStaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 14 bytes)
-      0x01, 0x00, LowerBits(kACLLength), UpperBits(kACLLength),
+auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
+                                   std::optional<ChannelMode> mode = std::nullopt) {
+  const uint8_t kConfigLength = 10 + (mode.has_value() ? 11 : 0);
+  const uint16_t kL2capLength = kConfigLength + 4;
+  const uint16_t kAclLength = kL2capLength + 4;
 
-      // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
-      LowerBits(kL2CAPLength), UpperBits(kL2CAPLength), 0x01, 0x00,
+  if (mode.has_value()) {
+    return DynamicByteBuffer(StaticByteBuffer(
+        // ACL data header (handle: 0x0001, length: 14 bytes)
+        0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
 
-      // Configuration Response (ID, length: 6, src cid, flags: 0,
-      // result: success)
-      0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
-      0x00,
+        // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
+        LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
 
-      // MTU option (ID, Length, MTU)
-      0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
+        // Configuration Response (ID, length, src cid, flags: 0, result: success)
+        0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
+        0x00,
+
+        // MTU option (ID, Length, MTU)
+        0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+
+        // Retransmission & Flow Control option (type, length: 9, mode, unused parameters)
+        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+  } else {
+    return DynamicByteBuffer(StaticByteBuffer(
+        // ACL data header (handle: 0x0001, length: 14 bytes)
+        0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
+
+        // L2CAP B-frame header (length, channel-id: 0x0001 (ACL sig))
+        LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
+
+        // Configuration Response (ID, length, src cid, flags: 0, result: success)
+        0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
+        0x00,
+
+        // MTU option (ID, Length, MTU)
+        0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
+  }
 }
 
 auto OutboundDisconnectionRequest(CommandId id) {
@@ -1088,7 +1107,6 @@ auto OutboundDisconnectionResponse(CommandId id) {
       0x07, id, 0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId),
       UpperBits(kRemoteId));
 }
-// clang-format on
 
 TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
@@ -1784,13 +1802,16 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
   EXPECT_ACL_PACKET_OUT(
       OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
       kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+  const auto kInboundMtu = kDefaultMTU;
+  EXPECT_ACL_PACKET_OUT(
+      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, chan_params.mode),
+      kHighPriority);
 
   ActivateOutboundChannel(kTestPsm, chan_params, std::move(channel_cb), kTestHandle1);
 
   ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
   ReceiveAclDataPacket(
-      InboundConfigurationRequest(kPeerConfigRequestId, kDefaultMTU, *chan_params.mode));
+      InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();
@@ -1825,11 +1846,14 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_ACL_PACKET_OUT(
       OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
       kHighPriority);
-  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+  const auto kInboundMtu = kDefaultMTU;
+  EXPECT_ACL_PACKET_OUT(
+      OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu, chan_params.mode),
+      kHighPriority);
 
   ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnReqId));
   ReceiveAclDataPacket(
-      InboundConfigurationRequest(kPeerConfigRequestId, kDefaultMTU, *chan_params.mode));
+      InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu, chan_params.mode));
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
 
   RunLoopUntilIdle();

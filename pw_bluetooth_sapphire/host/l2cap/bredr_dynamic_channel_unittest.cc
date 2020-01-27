@@ -312,7 +312,7 @@ const ByteBuffer& kInboundConfigReqWithERTM = CreateStaticByteBuffer(
     0x00, 0x00,
 
     // Retransmission & Flow Control option (Type, Length = 9, mode = ERTM, dummy parameters)
-    0x04, 0x09, 0x03, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+    0x04, 0x09, 0x03, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x07, 0x08);
 
 // Configuration Responses
 
@@ -385,6 +385,34 @@ const ByteBuffer& kOutboundUnacceptableParamsWithRfcBasicConfigRsp = MakeConfigR
 const ByteBuffer& kOutboundUnacceptableParamsWithRfcERTMConfigRsp =
     MakeConfigRspWithRfc(kRemoteCId, ConfigurationResult::kUnacceptableParameters,
                          ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
+
+auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result, ChannelMode mode,
+                                uint16_t mtu, uint8_t tx_window, uint8_t max_transmit,
+                                uint16_t retransmission_timeout, uint16_t monitor_timeout,
+                                uint16_t mps) {
+  return StaticByteBuffer(
+      // Source CID
+      LowerBits(source_cid), UpperBits(source_cid),
+
+      // Flags
+      0x00, 0x00,
+
+      // Result
+      LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)),
+
+      // MTU option (Type, Length, MTU value)
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+
+      // Retransmission & Flow Control option (Type, Length = 9, mode, unused fields)
+      0x04, 0x09, static_cast<uint8_t>(mode), tx_window, max_transmit,
+      LowerBits(retransmission_timeout), UpperBits(retransmission_timeout),
+      LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
+}
+
+// Corresponds to kInboundConfigReqWithERTM
+const ByteBuffer& kOutboundOkConfigRspWithErtm = MakeConfigRspWithMtuAndRfc(
+    kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kDefaultMTU, 1,
+    2, 0, 0, 0x0807);
 
 // Information Requests
 
@@ -1509,8 +1537,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
 
-  RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundOkConfigRspWithErtm));
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
@@ -1674,8 +1702,8 @@ TEST_F(
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   // Receive inbound config request.
-  RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundOkConfigRspWithErtm));
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
@@ -1719,8 +1747,8 @@ TEST_F(
   RunLoopUntilIdle();
 
   // Receive inbound config request.
-  RETURN_IF_FATAL(
-      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundOkConfigRsp));
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundOkConfigRspWithErtm));
 
   sig()->ReceiveResponses(outbound_config_req_id,
                           {{SignalingChannel::Status::kSuccess,

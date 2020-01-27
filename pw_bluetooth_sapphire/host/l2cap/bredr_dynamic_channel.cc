@@ -342,18 +342,16 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
     return;
   }
 
-  // Set default config options if not already in request.
+  // Set default config MTU option if not already in request.
   if (!config.mtu_option()) {
     config.set_mtu_option(ChannelConfiguration::MtuOption(kDefaultMTU));
-  }
-  if (!config.retransmission_flow_control_option()) {
-    config.set_retransmission_flow_control_option(
-        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
   }
 
   if (state_ & kRemoteConfigReceived) {
     // Disconnect if second configuraton request does not contain desired mode.
-    const auto req_mode = config.retransmission_flow_control_option()->mode();
+    const auto req_mode = config.retransmission_flow_control_option()
+                              ? config.retransmission_flow_control_option()->mode()
+                              : ChannelMode::kBasic;
     const auto local_mode = local_config_.retransmission_flow_control_option()->mode();
     if (req_mode != local_mode) {
       bt_log(SPEW, "l2cap-bredr",
@@ -417,6 +415,9 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   response_config.set_mtu_option(ChannelConfiguration::MtuOption(actual_mtu));
   config.set_mtu_option(response_config.mtu_option());
 
+  response_config.set_retransmission_flow_control_option(
+      config.retransmission_flow_control_option());
+
   responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, response_config.Options());
 
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response (options: %s)",
@@ -424,6 +425,11 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
 
   // Save accepted options.
   remote_config_.Merge(config);
+
+  if (!remote_config_.retransmission_flow_control_option()) {
+    remote_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+  }
 
   if (BothConfigsAccepted() && !AcceptedChannelModesAreConsistent()) {
     bt_log(WARN, "l2cap-bredr",
@@ -621,7 +627,9 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
     unacceptable.set_mtu_option(ChannelConfiguration::MtuOption(kMinACLMTU));
   }
 
-  const auto req_mode = config.retransmission_flow_control_option()->mode();
+  const auto req_mode = config.retransmission_flow_control_option()
+                            ? config.retransmission_flow_control_option()->mode()
+                            : ChannelMode::kBasic;
   const auto local_mode = local_config_.retransmission_flow_control_option()->mode();
   switch (req_mode) {
     case ChannelMode::kBasic:
