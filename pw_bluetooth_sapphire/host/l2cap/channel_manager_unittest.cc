@@ -1873,6 +1873,48 @@ TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsA
   RunLoopUntilIdle();
 }
 
+TEST_F(L2CAP_ChannelManagerTest,
+       PacketsRecievedAfterChannelDeactivatedAndBeforeRemoveChannelCalledAreDropped) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [this, &channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+    channel = std::move(opened_chan);
+    EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
+  };
+
+  EXPECT_TRUE(
+      chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb), dispatcher()));
+
+  CommandId kPeerConnectionRequestId = 3;
+  CommandId kLocalConfigRequestId = NextCommandId();
+
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnectionRequestId), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(kLocalConfigRequestId), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+
+  ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnectionRequestId));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(kLocalConfigRequestId));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_TRUE(channel);
+
+  auto kPacket = StaticByteBuffer(
+      // ACL data header (handle: 0x0001, length: 4 bytes)
+      0x01, 0x00, 0x04, 0x00,
+
+      // L2CAP B-frame header (length: 0 bytes, channel-id)
+      0x00, 0x00, LowerBits(kLocalId), UpperBits(kLocalId));
+
+  // channel marked inactive & LogicalLink::RemoveChannel added to dispatch loop.
+  channel->Deactivate();
+  // LogicalLink::RemoveChannel not dispatched yet, so ChannelImpl::HandleRxPdu will be called.
+  // Inactive channel should drop packet.
+  ReceiveAclDataPacket(kPacket);
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt

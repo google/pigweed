@@ -227,8 +227,13 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
   {
     std::lock_guard<std::mutex> lock(mtx_);
 
-    // This will only be called on a live link.
-    ZX_DEBUG_ASSERT(link_);
+    // link_ may be nullptr if a pdu is received after the channel has been deactivated but
+    // before LogicalLink::RemoveChannel has been dispatched
+    if (!link_) {
+      bt_log(SPEW, "l2cap", "ignoring pdu on deactivated channel");
+      return;
+    }
+
     ZX_DEBUG_ASSERT(rx_engine_);
 
     ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
