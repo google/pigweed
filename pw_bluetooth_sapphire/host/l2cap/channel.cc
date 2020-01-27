@@ -17,15 +17,12 @@ namespace bt {
 namespace l2cap {
 
 Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-                 hci::ConnectionHandle link_handle, ChannelMode mode, uint16_t tx_mtu,
-                 uint16_t rx_mtu)
+                 hci::ConnectionHandle link_handle, ChannelInfo info)
     : id_(id),
       remote_id_(remote_id),
       link_type_(link_type),
       link_handle_(link_handle),
-      mode_(mode),
-      tx_mtu_(tx_mtu),
-      rx_mtu_(rx_mtu) {
+      info_(info) {
   ZX_DEBUG_ASSERT(id_);
   ZX_DEBUG_ASSERT(link_type_ == hci::Connection::LinkType::kLE ||
                   link_type_ == hci::Connection::LinkType::kACL);
@@ -38,27 +35,25 @@ fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
                                                          std::list<PDU> buffered_pdus) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
-  return fbl::AdoptRef(new ChannelImpl(id, id, link, ChannelMode::kBasic, std::move(buffered_pdus),
-                                       kDefaultMTU, kDefaultMTU));
+  return fbl::AdoptRef(new ChannelImpl(id, id, link, std::move(buffered_pdus),
+                                       ChannelInfo(ChannelMode::kBasic, kDefaultMTU, kDefaultMTU)));
 }
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
                                                            fbl::RefPtr<internal::LogicalLink> link,
-                                                           ChannelMode mode, uint16_t tx_mtu,
-                                                           uint16_t rx_mtu) {
-  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, mode, {}, tx_mtu, rx_mtu));
+                                                           ChannelInfo info) {
+  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, {}, info));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-                         ChannelMode mode, std::list<PDU> buffered_pdus, uint16_t tx_mtu,
-                         uint16_t rx_mtu)
-    : Channel(id, remote_id, link->type(), link->handle(), mode, tx_mtu, rx_mtu),
+                         std::list<PDU> buffered_pdus, ChannelInfo info)
+    : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       dispatcher_(nullptr),
       link_(link),
       rx_engine_(std::make_unique<BasicModeRxEngine>()),
       tx_engine_(std::make_unique<BasicModeTxEngine>(
-          id, tx_mtu_, [rid = remote_id, link = link_](auto pdu) {
+          id, tx_mtu(), [rid = remote_id, link = link_](auto pdu) {
             async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
               // |link| is expected to ignore this call and drop the packet if it has been closed.
               // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A,

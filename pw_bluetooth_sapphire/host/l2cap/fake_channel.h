@@ -26,8 +26,8 @@ namespace testing {
 class FakeChannel : public Channel {
  public:
   FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
-              hci::Connection::LinkType link_type, ChannelMode mode = l2cap::ChannelMode::kBasic,
-              uint16_t tx_mtu = kDefaultMTU, uint16_t rx_mtu = kDefaultMTU);
+              hci::Connection::LinkType link_type,
+              ChannelInfo info = {l2cap::ChannelMode::kBasic, kDefaultMTU, kDefaultMTU});
   ~FakeChannel() override = default;
 
   // Routes the given data over to the rx handler as if it were received from
@@ -61,8 +61,6 @@ class FakeChannel : public Channel {
 
   // Assigns a link security level.
   void set_security(const sm::SecurityProperties& sec_props) { security_ = sec_props; }
-
-  ChannelMode mode() const { return mode_; };
 
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }

@@ -90,12 +90,12 @@ class Channel : public fbl::RefCounted<Channel> {
     return (link_handle() << (sizeof(ChannelId) * CHAR_BIT)) | id();
   }
 
-  ChannelMode mode() const { return mode_; }
+  ChannelMode mode() const { return info().mode; }
 
-  uint16_t tx_mtu() const { return tx_mtu_; }
-  uint16_t rx_mtu() const { return rx_mtu_; }
+  uint16_t rx_mtu() const { return info().max_rx_sdu_size; }
+  uint16_t tx_mtu() const { return info().max_tx_sdu_size; }
 
-  ChannelInfo info() const { return ChannelInfo(mode(), rx_mtu(), tx_mtu()); }
+  ChannelInfo info() const { return info_; }
 
   // Returns the current link security properties of the underlying link.
   // Returns the lowest security level if the link is closed.
@@ -174,18 +174,14 @@ class Channel : public fbl::RefCounted<Channel> {
   friend class fbl::RefPtr<Channel>;
   // TODO(1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
-          hci::ConnectionHandle link_handle, ChannelMode mode, uint16_t tx_mtu, uint16_t rx_mtu);
+          hci::ConnectionHandle link_handle, ChannelInfo info);
   virtual ~Channel() = default;
 
   const ChannelId id_;
   const ChannelId remote_id_;
   const hci::Connection::LinkType link_type_;
   const hci::ConnectionHandle link_handle_;
-  const ChannelMode mode_;
-
-  // The maximum SDU sizes for this channel.
-  const uint16_t tx_mtu_;
-  const uint16_t rx_mtu_;
+  const ChannelInfo info_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
@@ -218,8 +214,7 @@ class ChannelImpl : public Channel {
 
   static fbl::RefPtr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
                                                        fbl::RefPtr<internal::LogicalLink> link,
-                                                       ChannelMode mode, uint16_t tx_mtu,
-                                                       uint16_t rx_mtu);
+                                                       ChannelInfo info);
 
   // Called by |link_| to notify us when the channel can no longer process data.
   // This MUST NOT call any locking methods of |link_| as that WILL cause a
@@ -245,8 +240,7 @@ class ChannelImpl : public Channel {
   friend class fbl::RefPtr<ChannelImpl>;
 
   ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-              ChannelMode mode, std::list<PDU> buffered_pdus, uint16_t tx_mtu = kDefaultMTU,
-              uint16_t rx_mtu = kDefaultMTU);
+              std::list<PDU> buffered_pdus, ChannelInfo info);
   ~ChannelImpl() override = default;
 
   // TODO(armansito): Add MPS fields when we support segmentation/flow-control.

@@ -62,7 +62,7 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
   auto mode = chan_params.mode.value_or(l2cap::ChannelMode::kBasic);
   auto rx_mtu = chan_params.max_sdu_size.value_or(l2cap::kDefaultMTU);
 
-  auto chan = OpenFakeChannel(&link_data, id, remote_id, mode, tx_mtu, rx_mtu);
+  auto chan = OpenFakeChannel(&link_data, id, remote_id, l2cap::ChannelInfo(mode, rx_mtu, tx_mtu));
   cb(std::move(chan));
 }
 
@@ -137,8 +137,8 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                 "Didn't receive expected L2CAP channel parameters (expected: %s, found: %s)",
                 bt_str(chan_data.params), bt_str(params));
 
-  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, mode,
-                              l2cap::kDefaultMTU, rx_mtu);
+  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id,
+                              l2cap::ChannelInfo(mode, rx_mtu, l2cap::kDefaultMTU));
 
   async::PostTask(dispatcher,
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
@@ -231,12 +231,10 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
 
 fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
                                                      l2cap::ChannelId remote_id,
-                                                     l2cap::ChannelMode mode, uint16_t tx_mtu,
-                                                     uint16_t rx_mtu) {
+                                                     l2cap::ChannelInfo info) {
   fbl::RefPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
-    chan = fbl::AdoptRef(
-        new FakeChannel(id, remote_id, link->handle, link->type, mode, tx_mtu, rx_mtu));
+    chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type, info));
     chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
   }
 

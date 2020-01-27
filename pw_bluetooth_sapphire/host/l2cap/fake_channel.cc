@@ -14,9 +14,8 @@ namespace l2cap {
 namespace testing {
 
 FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
-                         hci::Connection::LinkType link_type, ChannelMode mode, uint16_t tx_mtu,
-                         uint16_t rx_mtu)
-    : Channel(id, remote_id, link_type, handle, mode, tx_mtu, rx_mtu),
+                         hci::Connection::LinkType link_type, ChannelInfo info)
+    : Channel(id, remote_id, link_type, handle, info),
       handle_(handle),
       fragmenter_(handle),
       dispatcher_(nullptr),

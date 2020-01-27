@@ -123,8 +123,8 @@ class FakeDomain final : public Domain {
                              async_dispatcher_t* dispatcher);
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(
       LinkData* link, l2cap::ChannelId id, l2cap::ChannelId remote_id,
-      l2cap::ChannelMode mode = l2cap::ChannelMode::kBasic, uint16_t tx_mtu = l2cap::kDefaultMTU,
-      uint16_t rx_mtu = l2cap::kDefaultMTU);
+      l2cap::ChannelInfo info = {l2cap::ChannelMode::kBasic, l2cap::kDefaultMTU,
+                                 l2cap::kDefaultMTU});
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeFixedChannel(LinkData* link,
                                                                 l2cap::ChannelId id);
 
