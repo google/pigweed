@@ -319,7 +319,7 @@ class FlashPartition {
   }
 
  protected:
-  Status CheckBounds(Address address, uint32_t len) const {
+  Status CheckBounds(Address address, size_t len) const {
     if (address + len > GetSizeBytes()) {
       PW_LOG_ERROR(
           "Attempted out-of-bound flash memory access (address: %" PRIu32
