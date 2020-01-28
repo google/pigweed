@@ -14,6 +14,10 @@
 
 """Pigweed build environment for bazel."""
 
+DEBUGGING = [
+    "-g",
+]
+
 # Standard compiler flags to reduce output binary size.
 REDUCED_SIZE_COPTS = [
     "-fno-common",
@@ -40,6 +44,7 @@ CPP17_COPTS = [
 ]
 
 PW_DEFAULT_COPTS = (
+    DEBUGGING +
     REDUCED_SIZE_COPTS +
     STRICT_WARNINGS_COPTS
 )

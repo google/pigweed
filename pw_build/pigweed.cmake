@@ -269,6 +269,7 @@ target_compile_options(_pw_cpp17_copts
 
 # Target that specifies the standard Pigweed build options.
 add_library(pw_build INTERFACE)
+target_compile_options(pw_build INTERFACE "-g")
 target_link_libraries(pw_build
   INTERFACE
     _pw_reduced_size_copts
