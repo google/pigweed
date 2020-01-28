@@ -23,7 +23,9 @@ from __future__ import print_function
 
 import argparse
 import glob
+import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -41,7 +43,9 @@ def parse(argv=None):
         dest='root_install_dir',
         default=os.path.join(GIT_ROOT, '.cipd'),
     )
-    parser.add_argument('--ensure-file', dest='ensure_files', action='append')
+    parser.add_argument('--package-file',
+                        dest='package_files',
+                        action='append')
     parser.add_argument('--cipd',
                         default=os.path.join(SCRIPT_ROOT, 'wrapper.py'))
     parser.add_argument('--cache-dir',
@@ -68,9 +72,27 @@ def check_auth(cipd):
         return False
 
 
+def write_ensure_file(package_file, ensure_file):
+    with open(package_file, 'r') as ins:
+        data = json.load(ins)
+
+    # TODO(pwbug/103) Remove 30 days after bug fixed.
+    if os.path.isdir(ensure_file):
+        shutil.rmtree(ensure_file)
+
+    with open(ensure_file, 'w') as outs:
+        outs.write('$VerifiedPlatform linux-amd64\n'
+                   '$VerifiedPlatform mac-amd64\n'
+                   '$ParanoidMode CheckPresence\n')
+
+        for entry in data:
+            outs.write('{} {}\n'.format(entry['path'],
+                                        ' '.join(entry['tags'])))
+
+
 def update(
     cipd,
-    ensure_files,
+    package_files,
     root_install_dir,
     cache_dir,
     env_vars=None,
@@ -89,11 +111,16 @@ def update(
         env_vars.set('PW_CIPD_INSTALL_DIR', root_install_dir)
         env_vars.set('CIPD_CACHE_DIR', cache_dir)
 
-    # Run cipd for each ensure file.
-    default_ensures = os.path.join(SCRIPT_ROOT, '*.ensure')
-    for ensure_file in ensure_files or glob.glob(default_ensures):
-        install_dir = os.path.join(root_install_dir,
-                                   os.path.basename(ensure_file))
+    # Run cipd for each json file.
+    default_packages = os.path.join(SCRIPT_ROOT, '*.json')
+    for package_file in package_files or glob.glob(default_packages):
+        ensure_file = os.path.join(
+            root_install_dir,
+            os.path.basename(os.path.splitext(package_file)[0] + '.ensure'))
+        write_ensure_file(package_file, ensure_file)
+        install_dir = os.path.join(
+            root_install_dir,
+            os.path.basename(os.path.splitext(package_file)[0]))
 
         cmd = [
             cipd,
@@ -109,10 +136,7 @@ def update(
 
         # Set environment variables so tools can later find things under, for
         # example, 'share'.
-        name = ensure_file
-        if os.path.splitext(name)[1] == '.ensure':
-            name = os.path.splitext(name)[0]
-        name = os.path.basename(name)
+        name = os.path.basename(install_dir)
 
         if env_vars:
             # Some executables get installed at top-level and some get

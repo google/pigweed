@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# TODO(pwbug/103) remove this file once switch to JSON is complete.
+
 # This file lists LUCI tools that will be present on LUCI bots but not on
 # workstations. For further details and syntax see
 # https://godoc.org/go.chromium.org/luci/cipd/client/cipd/ensure.

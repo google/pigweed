@@ -317,6 +317,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'AUTHORS',
     r'LICENSE',
     r'.*\.elf',
+    r'.*\.json',
     r'.*\.md',
     r'.*\.rst',
     r'(?:.+/)?requirements.txt',

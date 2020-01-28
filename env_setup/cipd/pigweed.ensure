@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# TODO(pwbug/103) remove this file once switch to JSON is complete.
+
 # This file identifies the versions of tools required by the Pigweed build
 # system or by other parts of Pigweed infrastructure. For details see
 # http://go/pigweed-cipd and

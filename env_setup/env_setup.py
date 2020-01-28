@@ -84,12 +84,12 @@ class EnvSetup(object):
 
         cipd_client = cipd.wrapper.init(install_dir)
 
-        ensure_files = glob.glob(
-            os.path.join(self._pw_root, 'env_setup', 'cipd', '*.ensure'))
+        package_files = glob.glob(
+            os.path.join(self._pw_root, 'env_setup', 'cipd', '*.json'))
         cipd.update.update(
             cipd=cipd_client,
             root_install_dir=install_dir,
-            ensure_files=ensure_files,
+            package_files=package_files,
             cache_dir=self._cipd_cache_dir,
             env_vars=self._env,
         )
@@ -107,7 +107,7 @@ class EnvSetup(object):
         cipd_bin = os.path.join(
             self._pw_root,
             '.cipd',
-            'pigweed.ensure',
+            'pigweed',
             'bin',
         )
         if os.name == 'nt':

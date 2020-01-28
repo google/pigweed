@@ -1,0 +1,57 @@
+[
+    {
+        "path": "infra/tools/luci/gerrit/${platform}",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/isolated/${platform}",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/led/${platform}",
+        "tags": [
+            "git_revision:4799a3f4989e43e0dae5c35dfe5ce76cbdbb6125"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/logdog/logdog/${platform}",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ]
+    },
+    {
+        "path": "infra/tools/luci-auth/${platform}",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/lucicfg/${platform}",
+        "tags": [
+            "git_revision:5fca57db0c99c351bfe4e283f16d1ca7403b6e46"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/vpython/${platform}",
+        "tags": [
+            "git_revision:e317c7d2c17d4c3460ee37524dfce4e1dee4306a"
+        ]
+    },
+    {
+        "path": "infra/tools/preview_email/${platform}",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ]
+    },
+    {
+        "path": "infra/tools/yapf",
+        "tags": [
+            "git_revision:2155d0d436bf346333810cc352791063e1dda952"
+        ],
+        "_comment": "Keep in sync with tricium-recipes builder properties."
+    }
+]
