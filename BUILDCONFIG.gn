@@ -69,10 +69,7 @@ template("_pw_override_target_with_defaults") {
     }
 
     # Add default configs to use for all binary build targets.
-    configs += [
-      "$dir_pw_build:reduced_size",
-      "$dir_pw_build:strict_warnings",
-    ]
+    configs += [ "$dir_pw_build:default" ]
   }
 }
 
