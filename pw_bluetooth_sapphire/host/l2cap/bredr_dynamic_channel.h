@@ -147,6 +147,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Must not be called until channel is open.
   MtuConfiguration mtu_configuration() const override;
 
+  ChannelInfo info() const override;
+
   // Inbound request handlers. Request must have a destination channel ID that
   // matches this instance's |local_cid|.
   void OnRxConfigReq(uint16_t flags, ChannelConfiguration config,

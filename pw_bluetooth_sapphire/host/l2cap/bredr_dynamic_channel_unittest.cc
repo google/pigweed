@@ -1960,6 +1960,80 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   EXPECT_EQ(1, open_cb_count);
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       BasicModeChannelReportsChannelInfoWithBasicModeAndSduCapacities) {
+  constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
+  const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId, kPreferredMtu);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  constexpr uint16_t kPeerMtu = kDefaultMTU + 2;
+  const auto kInboundConfigReq = MakeConfigReqWithMtu(kLocalCId, kPeerMtu);
+
+  int open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    ASSERT_TRUE(chan);
+    EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
+    EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
+    EXPECT_EQ(kPeerMtu, chan->info().max_tx_sdu_size);
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu}, open_cb);
+  RunLoopUntilIdle();
+
+  const ByteBuffer& kExpectedOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kPeerMtu);
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kExpectedOutboundOkConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ErtmChannelReportsChannelInfoWithErtmAndSduCapacities) {
+  constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
+  const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtuAndRfc(
+      kRemoteCId, kPreferredMtu, ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&](const DynamicChannel* chan) {
+    ASSERT_TRUE(chan);
+    EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
+
+    // Receive capability even under ERTM is based on MTU option, not on the MPS in R&FC option.
+    EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
+
+    // Inbound request has no MTU option, so the peer's receive capability is the default.
+    EXPECT_EQ(kDefaultMTU, chan->info().max_tx_sdu_size);
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, {ChannelMode::kEnhancedRetransmission, kPreferredMtu},
+                           std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundOkConfigRspWithErtm));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

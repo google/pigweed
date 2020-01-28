@@ -331,6 +331,18 @@ BrEdrDynamicChannel::MtuConfiguration BrEdrDynamicChannel::mtu_configuration() c
   return config;
 }
 
+ChannelInfo BrEdrDynamicChannel::info() const {
+  ZX_ASSERT(local_config().retransmission_flow_control_option().has_value());
+  ZX_ASSERT(local_config().mtu_option().has_value());
+
+  const auto mode = local_config().retransmission_flow_control_option()->mode();
+  const auto max_rx_sdu_size = local_config().mtu_option()->mtu();
+  const auto max_tx_sdu_size = remote_config().mtu_option()->mtu();
+  ChannelInfo info(mode, max_rx_sdu_size, max_tx_sdu_size);
+
+  return info;
+}
+
 void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                                         BrEdrCommandHandler::ConfigurationResponder* responder) {
   bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request (options: %s)", local_cid(),

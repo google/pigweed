@@ -36,6 +36,10 @@ class FakeDynamicChannel final : public DynamicChannel {
 
   MtuConfiguration mtu_configuration() const override { return {kDefaultMTU, kDefaultMTU}; }
 
+  ChannelInfo info() const override {
+    return ChannelInfo(ChannelMode::kBasic, kDefaultMTU, kDefaultMTU);
+  }
+
   void DoConnect(ChannelId remote_cid) {
     ASSERT_TRUE(SetRemoteChannelId(remote_cid))
         << "Could not set non-unique remote_cid " << remote_cid;

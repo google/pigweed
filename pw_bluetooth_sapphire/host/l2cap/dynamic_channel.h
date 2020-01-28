@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -94,6 +95,9 @@ class DynamicChannel {
 
   // Currently configured MTU parameters that are common to both LE and BR/EDR channels.
   virtual MtuConfiguration mtu_configuration() const = 0;
+
+  // Parameters to use for the outward-facing l2cap::Channel implementation.
+  virtual ChannelInfo info() const = 0;
 
   // Service identifier provided by the endpoint requesting the channel.
   PSM psm() const { return psm_; }
