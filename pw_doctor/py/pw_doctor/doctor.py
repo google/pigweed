@@ -145,10 +145,10 @@ def main(strict=False, checks=None):
     if checks is None:
         checks = tuple(CHECKS)
 
-    ctx.info('Doctor running %d checks...', len(checks))
+    ctx.debug('Doctor running %d checks...', len(checks))
     for check in checks:
         try:
-            ctx.info('Running %s...', check.__name__)
+            ctx.debug('Running %s...', check.__name__)
             ctx.curr_checker = check.__name__
             check(ctx)
 
@@ -161,7 +161,7 @@ def main(strict=False, checks=None):
     if ctx.failures:
         ctx.info('Failed checks: %s', ', '.join(ctx.failures))
     else:
-        ctx.info('All checks passed!')
+        ctx.info('Pigweed environment passes all checks!')
     return len(ctx.failures)
 
 

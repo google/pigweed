@@ -94,7 +94,11 @@ class EnvSetup(object):
             env_vars=self._env,
         )
 
+        self._env.echo('Setting CIPD environment variables...done.')
+
     def virtualenv(self):
+        """Setup virtualenv."""
+
         venv_path = os.path.join(self._pw_root, '.python3-env')
 
         requirements = os.path.join(self._pw_root, 'env_setup', 'virtualenv',
@@ -128,11 +132,15 @@ class EnvSetup(object):
             env=self._env,
         )
 
+        self._env.echo('Setting virtualenv environment variables...done.')
+
     def host_build(self):
         host_build.init.init(pw_root=self._pw_root, env=self._env)
+        self._env.echo('Setting host_build environment variables...done.')
 
     def cargo(self):
         cargo.init.init(pw_root=self._pw_root, env=self._env)
+        self._env.echo('Setting cargo environment variables...done.')
 
 
 def parse(argv=None):

@@ -137,6 +137,33 @@ class _Append(_Action):
         env[self.name] = self._join(env.get(self.name, ''), self.value)
 
 
+class BadEchoValue(ValueError):
+    pass
+
+
+class _Echo(_Action):
+    def __init__(self, value, *args, **kwargs):
+        name = 'unused_non_empty_string_to_make_check_simpler'
+        # These values act funny on Windows.
+        if value.lower() in ('off', 'on'):
+            raise BadEchoValue(value)
+        super(_Echo, self).__init__(name, value, *args, **kwargs)
+
+    def write(self, outs, windows=(os.name == 'nt')):
+        # POSIX shells parse arguments and pass to echo, but Windows seems to
+        # pass the command line as is without parsing, so quoting is wrong.
+        if windows:
+            outs.write('echo {}\n'.format(self.value))
+        else:
+            # TODO(mohrr) use shlex.quote().
+            outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n')
+            outs.write('  echo "{}"\n'.format(self.value))
+            outs.write('fi\n')
+
+    def apply(self, env):  # pylint: disable=no-self-use
+        del env  # Unused.
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 class Environment(object):
@@ -180,6 +207,9 @@ class Environment(object):
         else:
             self._actions.append(_Set(name, value))
 
+    def echo(self, value):
+        self._actions.append(_Echo(value))
+
     def write(self, outs):
         """Writes a shell init script to outs."""
         if self._windows:
@@ -197,6 +227,12 @@ class Environment(object):
                 'if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n'
                 '    hash -r\n'
                 'fi\n')
+
+        outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n'
+                   '  pw --loglevel info doctor\n'
+                   'else\n'
+                   '  pw --loglevel warn doctor\n'
+                   'fi\n')
 
     @contextlib.contextmanager
     def __call__(self, export=True):
