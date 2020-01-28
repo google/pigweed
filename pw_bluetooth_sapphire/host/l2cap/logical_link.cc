@@ -427,12 +427,8 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   bt_log(TRACE, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
          local_cid, remote_cid);
 
-  auto mtu_config = dyn_chan->mtu_configuration();
-  auto mode = dyn_chan->parameters().mode.value();
-
   auto chan =
-      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, fbl::RefPtr(this),
-                                        ChannelInfo(mode, mtu_config.rx_mtu, mtu_config.tx_mtu));
+      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, fbl::RefPtr(this), dyn_chan->info());
   channels_[local_cid] = chan;
   RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
 }
