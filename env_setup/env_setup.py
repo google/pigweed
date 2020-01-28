@@ -25,7 +25,6 @@ with PyOxidizer it can be upgraded to recent Python 3.
 from __future__ import print_function
 
 import argparse
-import contextlib
 import glob
 import os
 import shutil
@@ -36,148 +35,19 @@ import sys
 # with it.
 import cipd.update  # pylint: disable=import-error
 import cipd.wrapper  # pylint: disable=import-error
+import environment  # pylint: disable=import-error
 import host_build.init  # pylint: disable=import-error
 import cargo.init  # pylint: disable=import-error
 import virtualenv.init  # pylint: disable=import-error
 
 
-class UnexpectedAction(ValueError):
-    pass
-
-
-# TODO(mohrr) use attrs.
-class _Action(object):  # pylint: disable=useless-object-inheritance
-    # pylint: disable=redefined-builtin,too-few-public-methods
-    def __init__(self, type, name, value, *args, **kwargs):
-        pathsep = kwargs.pop('pathsep', os.pathsep)
-        super(_Action, self).__init__(*args, **kwargs)
-        assert type in ('set', 'prepend', 'append')
-        self.type = type
-        self.name = name
-        self.value = value
-        self.pathsep = pathsep
-
-
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
-class Environment(object):
-    """Stores the environment changes necessary for Pigweed.
-
-    These changes can be accessed by writing them to a file for bash-like
-    shells to source or by using this as a context manager.
-    """
-    def __init__(self, *args, **kwargs):
-        pathsep = kwargs.pop('pathsep', os.pathsep)
-        windows = kwargs.pop('windows', os.name == 'nt')
-        super(Environment, self).__init__(*args, **kwargs)
-        self._actions = []
-        self._pathsep = pathsep
-        self._windows = windows
-
-    def set(self, name, value):
-        self._actions.append(_Action('set', name, value))
-
-    def clear(self, name):
-        self._actions.append(_Action('set', name, None))
-
-    def append(self, name, value):
-        self._actions.append(_Action('append', name, value))
-
-    def prepend(self, name, value):
-        self._actions.append(_Action('prepend', name, value))
-
-    def _action_str(self, action):
-        # TODO(mohrr) find a cleaner way to do this.
-        if action.type == 'set':
-            if action.value is None:
-                if self._windows:
-                    fmt = 'set {name}=\n'
-                else:
-                    fmt = 'unset {name}\n'
-            else:
-                if self._windows:
-                    fmt = 'set {name}={value}\n'
-                else:
-                    fmt = '{name}="{value}"\nexport {name}\n'
-
-        elif action.type == 'append':
-            if self._windows:
-                fmt = 'set {name}=%{name}%{sep}{value}\n'
-            else:
-                fmt = '{name}=${name}{sep}{value}\nexport {name}\n'
-
-        elif action.type == 'prepend':
-            if self._windows:
-                fmt = 'set {name}={value}{sep}%{name}%\n'
-            else:
-                fmt = '{name}="{value}{sep}${name}"\nexport {name}\n'
-
-        else:
-            raise UnexpectedAction(action.name)
-
-        return fmt.format(
-            name=action.name,
-            value=action.value,
-            sep=self._pathsep,
-        )
-
-    def write(self, outs):
-        if self._windows:
-            outs.write('@echo off\n')
-
-        for action in self._actions:
-            outs.write(self._action_str(action))
-
-        if not self._windows:
-            outs.write(
-                '# This should detect bash and zsh, which have a hash \n'
-                '# command that must be called to get it to forget past \n'
-                '# commands. Without forgetting past commands the $PATH \n'
-                '# changes we made may not be respected.\n'
-                'if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n'
-                '    hash -r\n'
-                'fi\n')
-
-    @contextlib.contextmanager
-    def __call__(self):
-        """Set environment as if this was written to a file and sourced."""
-
-        orig_env = os.environ.copy()
-        try:
-            for action in self._actions:
-                if action.type == 'set':
-                    if action.value is None:
-                        if action.name in os.environ:
-                            del os.environ[action.name]
-                    else:
-                        os.environ[action.name] = action.value
-                elif action.type == 'append':
-                    os.environ[action.name] = self._pathsep.join(
-                        os.environ.get(action.name, ''), action.value)
-                elif action.type == 'prepend':
-                    os.environ[action.name] = self._pathsep.join(
-                        (action.value, os.environ.get(action.name, '')))
-                else:
-                    raise UnexpectedAction(action.type)
-            yield self
-
-        finally:
-            for action in self._actions:
-                if action.name in orig_env:
-                    os.environ[action.name] = orig_env[action.name]
-                else:
-                    os.environ.pop(action.name, None)
-
-    def __getitem__(self, key):
-        with self():
-            return os.environ[key]
-
-
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, *args, **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
-        self._env = Environment()
+        self._env = environment.Environment()
         self._pw_root = pw_root
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
