@@ -1,0 +1,70 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
+pw_cc_library(
+    name = "pw_minimal_cpp_stdlib",
+    srcs = [
+        "public/internal/algorithm.h",
+        "public/internal/array.h",
+        "public/internal/cinttypes.h",
+        "public/internal/cmath.h",
+        "public/internal/cstdarg.h",
+        "public/internal/cstddef.h",
+        "public/internal/cstdint.h",
+        "public/internal/cstdio.h",
+        "public/internal/cstring.h",
+        "public/internal/iterator.h",
+        "public/internal/limits.h",
+        "public/internal/new.h",
+        "public/internal/string_view.h",
+        "public/internal/type_traits.h",
+        "public/internal/utility.h",
+    ],
+    hdrs = [
+        "public/algorithm",
+        "public/array",
+        "public/cinttypes",
+        "public/cmath",
+        "public/cstdarg",
+        "public/cstddef",
+        "public/cstdint",
+        "public/cstdio",
+        "public/cstring",
+        "public/iterator",
+        "public/limits",
+        "public/new",
+        "public/string_view",
+        "public/type_traits",
+        "public/utility",
+    ],
+    copts = ["-nostdinc++"],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "test",
+    srcs = [
+        "test.cc",
+    ],
+    copts = ["-nostdinc++"],
+    deps = [
+        ":pw_minimal_cpp_stdlib",
+    ],
+)

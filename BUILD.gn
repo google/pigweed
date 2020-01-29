@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -54,6 +54,7 @@ group("pw_modules") {
     "$dir_pw_base64",
     "$dir_pw_checksum",
     "$dir_pw_kvs",
+    "$dir_pw_minimal_cpp_stdlib",
     "$dir_pw_polyfill",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",
@@ -73,6 +74,7 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_checksum:tests",
     "$dir_pw_kvs:tests",
     "$dir_pw_log:tests",
+    "$dir_pw_minimal_cpp_stdlib:tests",
     "$dir_pw_polyfill:tests",
     "$dir_pw_preprocessor:tests",
     "$dir_pw_protobuf:tests",
