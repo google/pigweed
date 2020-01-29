@@ -28,15 +28,18 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
  private:
   // fuchsia::bluetooth::bredr::Profile overrides:
   void AddService(fuchsia::bluetooth::bredr::ServiceDefinition definition,
-                  fuchsia::bluetooth::bredr::SecurityLevel sec_level, bool devices,
+                  fuchsia::bluetooth::bredr::SecurityLevel sec_level,
+                  fuchsia::bluetooth::bredr::ChannelParameters parameters,
                   AddServiceCallback callback) override;
   void AddSearch(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
                  std::vector<uint16_t> attr_ids) override;
   void RemoveService(uint64_t service_id) override;
-  void ConnectL2cap(std::string peer_id, uint16_t psm, ConnectL2capCallback callback) override;
+  void ConnectL2cap(std::string peer_id, uint16_t psm,
+                    fuchsia::bluetooth::bredr::ChannelParameters parameters,
+                    ConnectL2capCallback callback) override;
 
   // Callback for incoming connections
-  void OnChannelConnected(uint64_t service_id, zx::socket connection,
+  void OnChannelConnected(uint64_t service_id, bt::l2cap::ChannelSocket chan_sock,
                           bt::hci::ConnectionHandle handle,
                           const bt::sdp::DataElement& protocol_list);
 

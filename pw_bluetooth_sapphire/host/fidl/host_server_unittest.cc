@@ -138,7 +138,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
     EXPECT_TRUE(peer->temporary());
     // This is to capture the channel created during the Connection process
     FakeChannel* fake_chan = nullptr;
-    fake_domain()->set_channel_callback(
+    data_domain()->set_channel_callback(
         [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
 
     auto fake_peer = std::make_unique<FakePeer>(device_addr);

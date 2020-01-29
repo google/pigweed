@@ -20,6 +20,50 @@ namespace bthost {
 
 namespace {
 
+bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelParameters& fidl) {
+  bt::l2cap::ChannelParameters params;
+  if (fidl.has_channel_mode()) {
+    switch (fidl.channel_mode()) {
+      case fidlbredr::ChannelMode::BASIC:
+        params.mode = bt::l2cap::ChannelMode::kBasic;
+        break;
+      case fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION:
+        params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
+        break;
+      default:
+        ZX_PANIC("FIDL channel parameter contains invalid mode");
+    }
+  }
+  if (fidl.has_max_rx_sdu_size()) {
+    params.max_sdu_size = fidl.max_rx_sdu_size();
+  }
+  return params;
+}
+
+fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
+  switch (mode) {
+    case bt::l2cap::ChannelMode::kBasic:
+      return fidlbredr::ChannelMode::BASIC;
+      break;
+    case bt::l2cap::ChannelMode::kEnhancedRetransmission:
+      return fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION;
+      break;
+    default:
+      ZX_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
+  }
+}
+
+fidlbredr::Channel ChannelSocketToFidlChannel(bt::l2cap::ChannelSocket chan_sock) {
+  fidlbredr::Channel chan;
+  if (!chan_sock) {
+    return chan;
+  }
+  chan.set_socket(std::move(chan_sock.socket));
+  chan.set_channel_mode(ChannelModeToFidl(chan_sock.params->mode));
+  chan.set_max_tx_sdu_size(chan_sock.params->max_tx_sdu_size);
+  return chan;
+}
+
 bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement* out) {
   ZX_DEBUG_ASSERT(out);
   switch (fidl.type) {
@@ -294,7 +338,8 @@ ProfileServer::~ProfileServer() {
 }
 
 void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
-                               fidlbredr::SecurityLevel sec_level, bool devices,
+                               fidlbredr::SecurityLevel sec_level,
+                               fidlbredr::ChannelParameters parameters,
                                AddServiceCallback callback) {
   // TODO: check that the service definition is valid for useful error messages
 
@@ -357,13 +402,10 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
   auto sdp = adapter()->sdp_server();
   ZX_DEBUG_ASSERT(sdp);
 
-  // TODO(872): convert FIDL channel parameters to bt::l2cap::ChannelParameters and use here
-  bt::l2cap::ChannelParameters chan_params;
   auto handle = sdp->RegisterService(
-      std::move(rec), chan_params,
+      std::move(rec), FidlToChannelParameters(parameters),
       [this, next](auto chan_sock, auto handle, const auto& protocol_list) {
-        // TODO(872): pass chan_sock.params to callback
-        OnChannelConnected(next, std::move(chan_sock.socket), handle, std::move(protocol_list));
+        OnChannelConnected(next, std::move(chan_sock), handle, std::move(protocol_list));
       });
 
   if (!handle) {
@@ -413,32 +455,32 @@ void ProfileServer::AddSearch(fidlbredr::ServiceClassProfileIdentifier service_u
 }
 
 void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
+                                 fidlbredr::ChannelParameters parameters,
                                  ConnectL2capCallback callback) {
   auto dev_id = fidl_helpers::PeerIdFromString(peer_id);
   if (!dev_id.has_value()) {
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid device ID"),
-             zx::socket());
+             fidlbredr::Channel());
     return;
   }
 
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
-    // TODO(872): pass chan_info to callback
-    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()), std::move(chan_sock.socket));
+    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()),
+       ChannelSocketToFidlChannel(std::move(chan_sock)));
   };
   ZX_DEBUG_ASSERT(adapter());
 
-  // TODO(872): translate FIDL channel parameters to bt::l2cap::ChannelParameters and use here
-  const bt::l2cap::ChannelParameters params;
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      *dev_id, channel, params, std::move(connected_cb), async_get_default_dispatcher());
+      *dev_id, channel, FidlToChannelParameters(parameters), std::move(connected_cb),
+      async_get_default_dispatcher());
   if (!connecting) {
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND,
                                         "Remote device not found - is it connected?"),
-             zx::socket());
+             fidlbredr::Channel());
   }
 }
 
-void ProfileServer::OnChannelConnected(uint64_t service_id, zx::socket socket,
+void ProfileServer::OnChannelConnected(uint64_t service_id, bt::l2cap::ChannelSocket chan_sock,
                                        bt::hci::ConnectionHandle handle,
                                        const bt::sdp::DataElement& protocol_list) {
   ZX_DEBUG_ASSERT(adapter());
@@ -450,14 +492,14 @@ void ProfileServer::OnChannelConnected(uint64_t service_id, zx::socket socket,
   if (!prot_seq) {
     prot_seq = protocol_list.At(0);
   }
-
-  ZX_DEBUG_ASSERT(prot_seq);
+  ZX_ASSERT(prot_seq);
 
   fidlbredr::ProtocolDescriptorPtr desc = DataElementToProtocolDescriptor(prot_seq);
+  ZX_ASSERT(desc);
 
-  ZX_DEBUG_ASSERT(desc);
-
-  binding()->events().OnConnected(id.ToString(), service_id, std::move(socket), std::move(*desc));
+  binding()->events().OnConnected(id.ToString(), service_id,
+                                  ChannelSocketToFidlChannel(std::move(chan_sock)),
+                                  std::move(*desc));
 }
 
 void ProfileServer::OnServiceFound(

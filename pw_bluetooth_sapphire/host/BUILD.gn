@@ -120,6 +120,7 @@ source_set("driver_tests") {
   deps = [
     ":sources",
     "data:testing",
+    "gap:testing",
     "gatt:testing",
     "testing:fake_controller",
     "testing:testing",

@@ -67,7 +67,7 @@ class Adapter final {
   // asynchronous tasks.
   //
   // This will take ownership of |hci|.
-  // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nulloptr is
+  // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
   explicit Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
                    std::optional<fbl::RefPtr<data::Domain>> data_domain);

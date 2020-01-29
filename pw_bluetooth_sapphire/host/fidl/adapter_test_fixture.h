@@ -30,7 +30,7 @@ class AdapterTestFixture : public bt::testing::FakeControllerTest<bt::testing::F
 
   fxl::WeakPtr<bt::gap::Adapter> adapter() const { return adapter_->AsWeakPtr(); }
   fbl::RefPtr<bt::gatt::testing::FakeLayer> gatt() const { return gatt_; }
-  fbl::RefPtr<bt::data::testing::FakeDomain> fake_domain() const { return data_plane_; }
+  fbl::RefPtr<bt::data::testing::FakeDomain> data_domain() const { return data_plane_; }
 
  private:
   std::unique_ptr<bt::gap::Adapter> adapter_;

@@ -58,6 +58,22 @@ static_library("gap") {
   ]
 }
 
+source_set("testing") {
+  testonly = true
+
+  sources = [
+    "fake_pairing_delegate.cc",
+    "fake_pairing_delegate.h",
+  ]
+
+  public_deps = [
+    ":gap",
+    "//garnet/public/lib/gtest",
+    "//src/lib/fxl",
+    "//third_party/googletest:gtest",
+  ]
+}
+
 source_set("tests") {
   testonly = true
 
@@ -67,8 +83,6 @@ source_set("tests") {
     "bredr_connection_manager_unittest.cc",
     "bredr_discovery_manager_unittest.cc",
     "discovery_filter_unittest.cc",
-    "fake_pairing_delegate.cc",
-    "fake_pairing_delegate.h",
     "fake_pairing_delegate_unittest.cc",
     "identity_resolving_list_unittest.cc",
     "low_energy_address_manager_unittest.cc",
@@ -81,6 +95,7 @@ source_set("tests") {
 
   deps = [
     ":gap",
+    ":testing",
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/data:testing",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
