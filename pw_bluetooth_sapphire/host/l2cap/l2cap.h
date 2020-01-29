@@ -11,41 +11,12 @@
 #include <limits>
 
 #include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
-#include <lib/fit/function.h>
 #include <zircon/compiler.h>
 
 #include "lib/zx/time.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace l2cap {
-
-class Channel;
-// Callback invoked when a channel has been created or when an error occurs during channel creation
-// (in which case the channel will be nullptr).
-using ChannelCallback = fit::function<void(fbl::RefPtr<Channel>)>;
-
-// Callback invoked when a logical link should be closed due to an error.
-using LinkErrorCallback = fit::closure;
-
-// Callback called to notify LE preferred connection parameters during the "LE
-// Connection Parameter Update" procedure.
-using LEConnectionParameterUpdateCallback =
-    fit::function<void(const hci::LEPreferredConnectionParameters&)>;
-
-// Callback used to deliver LE fixed channels that are created when a LE link is
-// registered with L2CAP.
-using LEFixedChannelsCallback =
-    fit::function<void(fbl::RefPtr<Channel> att, fbl::RefPtr<Channel> smp)>;
-
-// Callback used to request a security upgrade for an active logical link.
-// Invokes its |callback| argument with the result of the operation.
-using SecurityUpgradeCallback = fit::function<void(
-    hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
 // on the underlying logical link.
