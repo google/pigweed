@@ -330,7 +330,6 @@ struct RetransmissionAndFlowControlOptionPayload {
   uint8_t max_transmit;
   uint16_t rtx_timeout;
   uint16_t monitor_timeout;
-  // Maximum PDU size
   uint16_t mps;
 } __PACKED;
 

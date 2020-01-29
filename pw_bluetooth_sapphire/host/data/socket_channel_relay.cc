@@ -215,7 +215,7 @@ template <typename ChannelT>
 bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
   // Subtle: we make the read buffer larger than the TX MTU, so that we can
   // detect truncated datagrams.
-  const size_t read_buf_size = channel_->tx_mtu() + 1;
+  const size_t read_buf_size = channel_->max_tx_sdu_size() + 1;
 
   // TODO(NET-1390): Consider yielding occasionally. As-is, we run the risk of
   // starving other SocketChannelRelays on the same |dispatcher| (and anyone
@@ -244,7 +244,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     }
 
     ZX_DEBUG_ASSERT(n_bytes_read > 0);
-    if (n_bytes_read > channel_->tx_mtu()) {
+    if (n_bytes_read > channel_->max_tx_sdu_size()) {
       return false;
     }
 

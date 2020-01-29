@@ -60,7 +60,7 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
   l2cap::ChannelCallback& cb = cb_iter->second.channel_cb;
   auto chan_params = cb_iter->second.channel_params;
   auto mode = chan_params.mode.value_or(l2cap::ChannelMode::kBasic);
-  auto rx_mtu = chan_params.max_sdu_size.value_or(l2cap::kDefaultMTU);
+  auto rx_mtu = chan_params.max_rx_sdu_size.value_or(l2cap::kDefaultMTU);
 
   auto chan = OpenFakeChannel(&link_data, id, remote_id, l2cap::ChannelInfo(mode, rx_mtu, tx_mtu));
   cb(std::move(chan));
@@ -131,7 +131,7 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
   psm_it->second.pop();
 
   auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
-  auto rx_mtu = params.max_sdu_size.value_or(l2cap::kMaxMTU);
+  auto rx_mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
   ZX_ASSERT_MSG(chan_data.params == params,
                 "Didn't receive expected L2CAP channel parameters (expected: %s, found: %s)",

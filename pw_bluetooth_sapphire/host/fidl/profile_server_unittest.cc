@@ -177,7 +177,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
 
   bt::l2cap::ChannelParameters expected_params;
   expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
-  expected_params.max_sdu_size = bt::l2cap::kMinACLMTU;
+  expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
   data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
                                             expected_params);
 

@@ -590,7 +590,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
 
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_sdu_size = kMtu;
+  chan_params.max_rx_sdu_size = kMtu;
 
   set_data_cb(
       ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
@@ -611,7 +611,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(chan);
   EXPECT_EQ(kLinkHandle, chan->link_handle());
-  EXPECT_EQ(*chan_params.max_sdu_size, chan->rx_mtu());
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, chan->mode());
 }
 
@@ -623,7 +623,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
 
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_sdu_size = l2cap::kMinACLMTU;
+  chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   set_data_cb(
       ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
@@ -649,7 +649,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(chan_info);
-  EXPECT_EQ(*chan_params.max_sdu_size, chan_info->max_rx_sdu_size);
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan_info->max_rx_sdu_size);
   EXPECT_EQ(*chan_params.mode, chan_info->mode);
 }
 

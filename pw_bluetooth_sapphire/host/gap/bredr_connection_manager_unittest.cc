@@ -2765,7 +2765,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
   constexpr l2cap::ChannelId kLocalId = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
   params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  params.max_sdu_size = l2cap::kMinACLMTU;
+  params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
@@ -2802,7 +2802,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
   EXPECT_EQ(1u, sock_cb_count);
   ASSERT_TRUE(chan_info);
   EXPECT_EQ(*params.mode, chan_info->mode);
-  EXPECT_EQ(*params.max_sdu_size, chan_info->max_rx_sdu_size);
+  EXPECT_EQ(*params.max_rx_sdu_size, chan_info->max_rx_sdu_size);
 
   QueueDisconnection(kConnectionHandle);
 }

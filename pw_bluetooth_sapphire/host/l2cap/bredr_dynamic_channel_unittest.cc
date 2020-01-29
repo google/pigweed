@@ -1919,7 +1919,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
-      EXPECT_EQ(kPreferredMtu, chan->parameters().max_sdu_size.value());
+      EXPECT_EQ(kPreferredMtu, chan->parameters().max_rx_sdu_size.value());
     }
     open_cb_count++;
   };
@@ -1947,7 +1947,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
-      EXPECT_EQ(kMinACLMTU, chan->parameters().max_sdu_size.value());
+      EXPECT_EQ(kMinACLMTU, chan->parameters().max_rx_sdu_size.value());
     }
     open_cb_count++;
   };

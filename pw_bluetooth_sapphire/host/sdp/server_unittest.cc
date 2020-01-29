@@ -907,7 +907,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
 
   l2cap::ChannelParameters preferred_params;
   preferred_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  preferred_params.max_sdu_size = l2cap::kMinACLMTU;
+  preferred_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   std::optional<l2cap::ChannelInfo> params;
   size_t chan_cb_count = 0;
@@ -922,7 +922,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
   EXPECT_EQ(1u, chan_cb_count);
   ASSERT_TRUE(params);
   EXPECT_EQ(*preferred_params.mode, params->mode);
-  EXPECT_EQ(*preferred_params.max_sdu_size, params->max_rx_sdu_size);
+  EXPECT_EQ(*preferred_params.max_rx_sdu_size, params->max_rx_sdu_size);
 }
 
 #undef SDP_ERROR_RSP

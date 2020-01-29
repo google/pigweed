@@ -29,11 +29,11 @@ uint8_t NumFramesBetween(uint8_t low, uint8_t high) {
 
 }  // namespace
 
-Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
+Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx_sdu_size,
                                            uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
                                            SendFrameCallback send_frame_callback,
                                            ConnectionFailureCallback connection_failure_callback)
-    : TxEngine(channel_id, tx_mtu, std::move(send_frame_callback)),
+    : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)),
       max_transmissions_(max_transmissions),
       n_frames_in_tx_window_(n_frames_in_tx_window),
       connection_failure_callback_(std::move(connection_failure_callback)),
@@ -69,7 +69,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   // TODO(BT-440): Add support for segmentation
-  if (sdu->size() > tx_mtu_) {
+  if (sdu->size() > max_tx_sdu_size_) {
     bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
   }

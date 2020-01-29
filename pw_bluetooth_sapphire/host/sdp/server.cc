@@ -43,9 +43,10 @@ ServiceRecord MakeServiceDiscoveryService() {
   return sdp;
 }
 
-void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t tx_mtu, ErrorCode code) {
+void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_sdu_size,
+                       ErrorCode code) {
   ErrorResponse response(code);
-  chan->Send(response.GetPDU(0 /* ignored */, tid, tx_mtu, BufferView()));
+  chan->Send(response.GetPDU(0 /* ignored */, tid, max_tx_sdu_size, BufferView()));
 }
 
 // Finds the PSM that is specified in a ProtocolDescriptorList
@@ -135,9 +136,9 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel->ActivateWithDispatcher(
-      [self, handle, tx_mtu = channel->tx_mtu()](ByteBufferPtr sdu) {
+      [self, handle, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
         if (self) {
-          self->OnRxBFrame(handle, std::move(sdu), tx_mtu);
+          self->OnRxBFrame(handle, std::move(sdu), max_tx_sdu_size);
         }
       },
       [self, handle] {
@@ -355,7 +356,8 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
 
 void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.erase(handle); }
 
-void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t tx_mtu) {
+void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
+                        uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(sdu);
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
@@ -377,7 +379,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, 
   if (param_length != (sdu->size() - sizeof(Header))) {
     bt_log(SPEW, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
            sdu->size() - sizeof(Header));
-    SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidSize);
+    SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidSize);
     return;
   }
 
@@ -388,15 +390,15 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, 
       ServiceSearchRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(TRACE, "sdp", "ServiceSearchRequest not valid");
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRequestSyntax);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
       auto resp = SearchServices(request.service_search_pattern());
 
-      auto bytes =
-          resp.GetPDU(request.max_service_record_count(), tid, tx_mtu, request.ContinuationState());
+      auto bytes = resp.GetPDU(request.max_service_record_count(), tid, max_tx_sdu_size,
+                               request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidContinuationState);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
         return;
       }
       chan->Send(std::move(bytes));
@@ -406,20 +408,20 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, 
       ServiceAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(SPEW, "sdp", "ServiceAttributeRequest not valid");
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRequestSyntax);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
       auto handle = request.service_record_handle();
       if (records_.find(handle) == records_.end()) {
         bt_log(SPEW, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRecordHandle);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRecordHandle);
         return;
       }
       auto resp = GetServiceAttributes(handle, request.attribute_ranges());
-      auto bytes =
-          resp.GetPDU(request.max_attribute_byte_count(), tid, tx_mtu, request.ContinuationState());
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
+                               request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidContinuationState);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
         return;
       }
       chan->Send(std::move(bytes));
@@ -429,15 +431,15 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, 
       ServiceSearchAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(SPEW, "sdp", "ServiceSearchAttributeRequest not valid");
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRequestSyntax);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
       auto resp =
           SearchAllServiceAttributes(request.service_search_pattern(), request.attribute_ranges());
-      auto bytes =
-          resp.GetPDU(request.max_attribute_byte_count(), tid, tx_mtu, request.ContinuationState());
+      auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
+                               request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidContinuationState);
+        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
         return;
       }
       chan->Send(std::move(bytes));
@@ -445,12 +447,12 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, 
     }
     case kErrorResponse: {
       bt_log(SPEW, "sdp", "ErrorResponse isn't allowed as a request");
-      SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRequestSyntax);
+      SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
       return;
     }
     default: {
       bt_log(SPEW, "sdp", "unhandled request, returning InvalidRequest");
-      SendErrorResponse(chan, tid, tx_mtu, ErrorCode::kInvalidRequestSyntax);
+      SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
       return;
     }
   }

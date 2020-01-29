@@ -92,8 +92,8 @@ class Channel : public fbl::RefCounted<Channel> {
 
   ChannelMode mode() const { return info().mode; }
 
-  uint16_t rx_mtu() const { return info().max_rx_sdu_size; }
-  uint16_t tx_mtu() const { return info().max_tx_sdu_size; }
+  uint16_t max_rx_sdu_size() const { return info().max_rx_sdu_size; }
+  uint16_t max_tx_sdu_size() const { return info().max_tx_sdu_size; }
 
   ChannelInfo info() const { return info_; }
 

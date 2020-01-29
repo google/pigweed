@@ -39,7 +39,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // occurs on this connection. This callback _may_ occur synchronously. For
   // example, a call to UpdateAckSeq() may synchronously invoke
   // |connection_failure_callback|.
-  EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t tx_mtu,
+  EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx_sdu_size,
                                      uint8_t max_transmissions, uint8_t n_frames_in_tx_window,
                                      SendFrameCallback send_frame_callback,
                                      ConnectionFailureCallback connection_failure_callback);

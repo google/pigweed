@@ -17,19 +17,19 @@ namespace bt::l2cap {
 struct ChannelParameters {
   std::optional<ChannelMode> mode;
   // MTU
-  std::optional<uint16_t> max_sdu_size;
+  std::optional<uint16_t> max_rx_sdu_size;
 
   bool operator==(const ChannelParameters& rhs) const {
-    return mode == rhs.mode && max_sdu_size == rhs.max_sdu_size;
+    return mode == rhs.mode && max_rx_sdu_size == rhs.max_rx_sdu_size;
   }
 
   std::string ToString() const {
     auto mode_string = mode.has_value() ? fxl::StringPrintf("%#.2x", static_cast<uint8_t>(*mode))
                                         : std::string("nullopt");
-    auto sdu_string =
-        max_sdu_size.has_value() ? fxl::StringPrintf("%hu", *max_sdu_size) : std::string("nullopt");
-    return fxl::StringPrintf("ChannelParameters{mode: %s, max_sdu_size: %s}", mode_string.c_str(),
-                             sdu_string.c_str());
+    auto sdu_string = max_rx_sdu_size.has_value() ? fxl::StringPrintf("%hu", *max_rx_sdu_size)
+                                                  : std::string("nullopt");
+    return fxl::StringPrintf("ChannelParameters{mode: %s, max_rx_sdu_size: %s}",
+                             mode_string.c_str(), sdu_string.c_str());
   };
 };
 

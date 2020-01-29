@@ -19,12 +19,13 @@ namespace internal {
 // concurrently with the destructor.
 class BasicModeTxEngine final : public TxEngine {
  public:
-  BasicModeTxEngine(ChannelId channel_id, uint16_t tx_mtu, SendFrameCallback send_frame_callback)
-      : TxEngine(channel_id, tx_mtu, std::move(send_frame_callback)) {}
+  BasicModeTxEngine(ChannelId channel_id, uint16_t max_tx_sdu_size,
+                    SendFrameCallback send_frame_callback)
+      : TxEngine(channel_id, max_tx_sdu_size, std::move(send_frame_callback)) {}
   ~BasicModeTxEngine() override = default;
 
   // Queues |sdu| for transmission, returning true on success. This may fail,
-  // e.g., if the |sdu| is larger than |tx_mtu_|.
+  // e.g., if the |sdu| is larger than |max_tx_sdu_size_|.
   bool QueueSdu(ByteBufferPtr sdu) override;
 
  private:

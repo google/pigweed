@@ -112,9 +112,9 @@ bool FakeChannel::Send(ByteBufferPtr sdu) {
   if (!send_cb_)
     return false;
 
-  if (sdu->size() > tx_mtu()) {
-    bt_log(ERROR, "l2cap", "Dropping oversized SDU (sdu->size()=%zu, tx_mtu()=%u)", sdu->size(),
-           tx_mtu());
+  if (sdu->size() > max_tx_sdu_size()) {
+    bt_log(ERROR, "l2cap", "Dropping oversized SDU (sdu->size()=%zu, max_tx_sdu_size()=%u)",
+           sdu->size(), max_tx_sdu_size());
     return false;
   }
 

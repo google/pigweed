@@ -1745,8 +1745,8 @@ TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
-  EXPECT_EQ(kRemoteMtu, channel->tx_mtu());
-  EXPECT_EQ(kLocalMtu, channel->rx_mtu());
+  EXPECT_EQ(kRemoteMtu, channel->max_tx_sdu_size());
+  EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
 
 TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
@@ -1779,14 +1779,14 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
-  EXPECT_EQ(kRemoteMtu, channel->tx_mtu());
-  EXPECT_EQ(kLocalMtu, channel->rx_mtu());
+  EXPECT_EQ(kRemoteMtu, channel->max_tx_sdu_size());
+  EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
 
 TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_sdu_size = l2cap::kMinACLMTU;
+  chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
@@ -1801,7 +1801,7 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(
-      OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, *chan_params.mode),
       kHighPriority);
   const auto kInboundMtu = kDefaultMTU;
   EXPECT_ACL_PACKET_OUT(
@@ -1819,7 +1819,7 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
-  EXPECT_EQ(*chan_params.max_sdu_size, channel->rx_mtu());
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
 }
 
@@ -1828,7 +1828,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
 
   l2cap::ChannelParameters chan_params;
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_sdu_size = l2cap::kMinACLMTU;
+  chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
@@ -1845,7 +1845,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnReqId), kHighPriority);
   EXPECT_ACL_PACKET_OUT(
-      OutboundConfigurationRequest(config_req_id, *chan_params.max_sdu_size, *chan_params.mode),
+      OutboundConfigurationRequest(config_req_id, *chan_params.max_rx_sdu_size, *chan_params.mode),
       kHighPriority);
   const auto kInboundMtu = kDefaultMTU;
   EXPECT_ACL_PACKET_OUT(
@@ -1860,7 +1860,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(channel);
-  EXPECT_EQ(*chan_params.max_sdu_size, channel->rx_mtu());
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
 }
 

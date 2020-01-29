@@ -316,7 +316,7 @@ ChannelParameters BrEdrDynamicChannel::parameters() const {
 
   ChannelParameters params;
   params.mode = local_config().retransmission_flow_control_option()->mode();
-  params.max_sdu_size = local_config().mtu_option()->mtu();
+  params.max_rx_sdu_size = local_config().mtu_option()->mtu();
   return params;
 }
 
@@ -517,8 +517,8 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
   ZX_DEBUG_ASSERT(signaling_channel_);
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
-  if (params.max_sdu_size) {
-    const auto mtu = *params.max_sdu_size;
+  if (params.max_rx_sdu_size) {
+    const auto mtu = *params.max_rx_sdu_size;
     if (mtu < kMinACLMTU) {
       bt_log(WARN, "l2cap-bredr",
              "Channel %#.4x: preferred MTU channel parameter below minimum allowed, using minimum "

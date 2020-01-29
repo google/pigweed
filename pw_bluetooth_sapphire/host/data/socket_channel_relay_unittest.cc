@@ -215,7 +215,7 @@ TEST_F(DATA_SocketChannelRelayLifetimeTest,
 }
 
 TEST_F(DATA_SocketChannelRelayLifetimeTest, OversizedDatagramDeactivatesRelay) {
-  const size_t kMessageBufSize = channel()->tx_mtu() * 5;
+  const size_t kMessageBufSize = channel()->max_tx_sdu_size() * 5;
   DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill('a');
   ASSERT_TRUE(relay()->Activate());
@@ -610,7 +610,7 @@ TEST_F(DATA_SocketChannelRelayTxTest, MultipleSdusAreCopiedToChannelInOneRelayTa
 }
 
 TEST_F(DATA_SocketChannelRelayTxTest, OversizedSduIsDropped) {
-  const size_t kMessageBufSize = channel()->tx_mtu() * 5;
+  const size_t kMessageBufSize = channel()->max_tx_sdu_size() * 5;
   DynamicByteBuffer large_message(kMessageBufSize);
   large_message.Fill(kGoodChar);
   ASSERT_TRUE(relay()->Activate());
@@ -630,7 +630,7 @@ TEST_F(DATA_SocketChannelRelayTxTest, ValidSduAfterOversizedSduIsIgnored) {
   ASSERT_TRUE(relay()->Activate());
 
   {
-    DynamicByteBuffer dropped_msg(channel()->tx_mtu() + 1);
+    DynamicByteBuffer dropped_msg(channel()->max_tx_sdu_size() + 1);
     size_t n_bytes_written = 0;
     zx_status_t write_res = ZX_ERR_INTERNAL;
     dropped_msg.Fill(kGoodChar);

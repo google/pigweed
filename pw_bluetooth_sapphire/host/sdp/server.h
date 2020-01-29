@@ -80,7 +80,7 @@ class Server final {
 
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
-  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t tx_mtu);
+  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.

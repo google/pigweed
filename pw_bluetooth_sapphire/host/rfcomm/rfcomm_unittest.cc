@@ -267,9 +267,9 @@ void RFCOMM_ChannelManagerTest::OpenIncomingChannel(hci::ConnectionHandle handle
     params.dlci = dlci;
     params.credit_based_flow_handshake = CreditBasedFlowHandshake::kSupportedRequest;
     params.priority = 61;
-    params.maximum_frame_size = l2cap_channel->rx_mtu() < l2cap_channel->tx_mtu()
-                                    ? l2cap_channel->rx_mtu()
-                                    : l2cap_channel->tx_mtu();
+    params.maximum_frame_size = l2cap_channel->max_rx_sdu_size() < l2cap_channel->max_tx_sdu_size()
+                                    ? l2cap_channel->max_rx_sdu_size()
+                                    : l2cap_channel->max_tx_sdu_size();
     params.initial_credits = kMaxInitialCredits;
     ReceiveFrame(handle,
                  std::make_unique<MuxCommandFrame>(state.role, state.credit_based_flow,

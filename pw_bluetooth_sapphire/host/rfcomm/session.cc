@@ -864,8 +864,9 @@ ParameterNegotiationParams Session::GetIdealParameters(DLCI dlci) const {
   // We set the MTU of the RFCOMM channel based on the MTUs of the underlying
   // L2CAP link; we take the minimum of the two.
   uint16_t maximum_frame_size =
-      (l2cap_channel_->rx_mtu() < l2cap_channel_->tx_mtu() ? l2cap_channel_->rx_mtu()
-                                                           : l2cap_channel_->tx_mtu());
+      (l2cap_channel_->max_rx_sdu_size() < l2cap_channel_->max_tx_sdu_size()
+           ? l2cap_channel_->max_rx_sdu_size()
+           : l2cap_channel_->max_tx_sdu_size());
 
   // GSM Table 27.
   Priority priority = 61;

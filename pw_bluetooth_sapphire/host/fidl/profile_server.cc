@@ -35,7 +35,7 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
     }
   }
   if (fidl.has_max_rx_sdu_size()) {
-    params.max_sdu_size = fidl.max_rx_sdu_size();
+    params.max_rx_sdu_size = fidl.max_rx_sdu_size();
   }
   return params;
 }

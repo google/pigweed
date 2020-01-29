@@ -53,7 +53,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
       link_(link),
       rx_engine_(std::make_unique<BasicModeRxEngine>()),
       tx_engine_(std::make_unique<BasicModeTxEngine>(
-          id, tx_mtu(), [rid = remote_id, link = link_](auto pdu) {
+          id, max_tx_sdu_size(), [rid = remote_id, link = link_](auto pdu) {
             async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
               // |link| is expected to ignore this call and drop the packet if it has been closed.
               // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A,
