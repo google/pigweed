@@ -37,7 +37,7 @@ import cipd.update  # pylint: disable=import-error
 import cipd.wrapper  # pylint: disable=import-error
 import cargo_setup  # pylint: disable=import-error
 import environment  # pylint: disable=import-error
-import host_build.init  # pylint: disable=import-error
+import host_build_setup  # pylint: disable=import-error
 import virtualenv.init  # pylint: disable=import-error
 
 
@@ -135,7 +135,7 @@ class EnvSetup(object):
         self._env.echo('Setting virtualenv environment variables...done.')
 
     def host_build(self):
-        host_build.init.init(pw_root=self._pw_root, env=self._env)
+        host_build_setup.install(pw_root=self._pw_root, env=self._env)
         self._env.echo('Setting host_build environment variables...done.')
 
     def cargo(self):
