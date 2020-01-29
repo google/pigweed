@@ -104,7 +104,8 @@ class DATA_DomainTest : public TestingBase {
             case l2cap::InformationType::kFixedChannelsSupported: {
               test_device()->SendACLDataChannelPacket(
                   l2cap::testing::AclFixedChannelsSupportedInfoRsp(
-                      id, link_handle, l2cap::kFixedChannelsSupportedBitSignaling));
+                      id, link_handle, l2cap::InformationResult::kSuccess,
+                      l2cap::kFixedChannelsSupportedBitSignaling));
               return;
             }
             default:

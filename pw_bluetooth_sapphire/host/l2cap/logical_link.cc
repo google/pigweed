@@ -453,7 +453,14 @@ void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
 void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     const BrEdrCommandHandler::InformationResponse& rsp) {
   ZX_ASSERT(rsp.type() == InformationType::kFixedChannelsSupported);
-  bt_log(SPEW, "l2cap", "Received Fixed Channels Supported Information Request (mask: %#016lx)",
+
+  if (rsp.result() == InformationResult::kNotSupported) {
+    bt_log(SPEW, "l2cap",
+           "Received Fixed Channels Supported Information Response (result: Not Supported)");
+    return;
+  }
+
+  bt_log(SPEW, "l2cap", "Received Fixed Channels Supported Information Response (mask: %#016lx)",
          rsp.fixed_channels());
 }
 

@@ -171,17 +171,20 @@ class BrEdrCommandHandler final {
     InformationResult result() const { return result_; }
 
     uint16_t connectionless_mtu() const {
-      ZX_DEBUG_ASSERT(type() == InformationType::kConnectionlessMTU);
+      ZX_ASSERT(result() == InformationResult::kSuccess);
+      ZX_ASSERT(type() == InformationType::kConnectionlessMTU);
       return data_.As<uint16_t>();
     }
 
     ExtendedFeatures extended_features() const {
-      ZX_DEBUG_ASSERT(type() == InformationType::kExtendedFeaturesSupported);
+      ZX_ASSERT(result() == InformationResult::kSuccess);
+      ZX_ASSERT(type() == InformationType::kExtendedFeaturesSupported);
       return data_.As<ExtendedFeatures>();
     }
 
     FixedChannelsSupported fixed_channels() const {
-      ZX_DEBUG_ASSERT(type() == InformationType::kFixedChannelsSupported);
+      ZX_ASSERT(result() == InformationResult::kSuccess);
+      ZX_ASSERT(type() == InformationType::kFixedChannelsSupported);
       return data_.As<FixedChannelsSupported>();
     }
 

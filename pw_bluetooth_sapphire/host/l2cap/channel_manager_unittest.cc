@@ -1916,6 +1916,14 @@ TEST_F(L2CAP_ChannelManagerTest,
   ReceiveAclDataPacket(kPacket);
 }
 
+TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  // Handler should check for result and not crash from reading mask.
+  ReceiveAclDataPacket(testing::AclFixedChannelsSupportedInfoRsp(
+      cmd_ids.fixed_channels_supported_id, kTestHandle1, InformationResult::kNotSupported));
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt
