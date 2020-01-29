@@ -36,7 +36,8 @@ using LargeACLDataPacket =
                                                slab_allocators::kLargeACLDataPayloadSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
-  ZX_DEBUG_ASSERT(payload_size <= slab_allocators::kLargeACLDataPayloadSize);
+  ZX_ASSERT_MSG(payload_size <= slab_allocators::kLargeACLDataPayloadSize,
+                "payload size %zu too large", payload_size);
 
   if (payload_size <= slab_allocators::kSmallACLDataPayloadSize) {
     auto buffer = slab_allocators::SmallACLAllocator::New(payload_size);

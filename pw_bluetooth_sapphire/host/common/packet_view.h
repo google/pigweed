@@ -69,7 +69,8 @@ class PacketView {
   explicit PacketView(const ByteBuffer* buffer, size_t payload_size = 0u)
       : buffer_(buffer), size_(sizeof(HeaderType) + payload_size) {
     ZX_ASSERT(buffer_);
-    ZX_ASSERT(buffer_->size() >= size_);
+    ZX_ASSERT_MSG(buffer_->size() >= size_, "view size %zu exceeds buffer size %zu", size_,
+                  buffer_->size());
   }
 
   const BufferView data() const { return buffer_->view(0, size_); }
