@@ -18,23 +18,32 @@ namespace testing {
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
 
-DynamicByteBuffer DisconnectStatusResponsePacket();
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
+
+DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn);
+
 DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
+
 DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer DisconnectStatusResponsePacket();
 DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn);
+
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
+
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address);
+
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn);
+
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
                                                             bool extended_features);
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
+
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
 

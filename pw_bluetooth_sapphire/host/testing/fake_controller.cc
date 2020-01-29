@@ -780,6 +780,228 @@ void FakeController::OnDisconnectCommandReceived(const hci::DisconnectCommandPar
   }
 }
 
+void FakeController::OnReadRemoteNameRequestCommandReceived(
+    const hci::RemoteNameRequestCommandParams& params) {
+  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+
+  // Find the peer that matches the requested address.
+  FakePeer* peer = FindPeer(peer_address);
+  if (!peer) {
+    RespondWithCommandStatus(hci::kRemoteNameRequest, hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kRemoteNameRequest, hci::kSuccess);
+
+  struct RemoteNameRequestCompleteEventParams {
+    hci::StatusCode status;
+    DeviceAddressBytes bd_addr;
+    uint8_t remote_name[hci::kMaxNameLength];
+  } __PACKED;
+  RemoteNameRequestCompleteEventParams response = {};
+  response.bd_addr = params.bd_addr;
+  std::strncpy((char*)response.remote_name, peer->name().c_str(), hci::kMaxNameLength);
+  response.status = hci::kSuccess;
+  SendEvent(hci::kRemoteNameRequestCompleteEventCode, BufferView(&response, sizeof(response)));
+}
+
+void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
+    const hci::ReadRemoteSupportedFeaturesCommandParams& params) {
+  RespondWithCommandStatus(hci::kReadRemoteSupportedFeatures, hci::kSuccess);
+
+  hci::ReadRemoteSupportedFeaturesCompleteEventParams response = {};
+  response.status = hci::kSuccess;
+  response.connection_handle = params.connection_handle;
+  response.lmp_features = settings_.lmp_features_page0;
+  SendEvent(hci::kReadRemoteSupportedFeaturesCompleteEventCode,
+            BufferView(&response, sizeof(response)));
+}
+
+void FakeController::OnReadRemoteVersionInfoCommandReceived(
+    const hci::ReadRemoteVersionInfoCommandParams& params) {
+  RespondWithCommandStatus(hci::kReadRemoteVersionInfo, hci::kSuccess);
+
+  hci::ReadRemoteVersionInfoCompleteEventParams response = {};
+  response.status = hci::kSuccess;
+  response.connection_handle = params.connection_handle;
+  response.lmp_version = hci::HCIVersion::k4_2;
+  response.manufacturer_name = 0xFFFF;  // anything
+  response.lmp_subversion = 0xADDE;     // anything
+  SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode, BufferView(&response, sizeof(response)));
+}
+
+void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
+    const hci::ReadRemoteExtendedFeaturesCommandParams& params) {
+  hci::ReadRemoteExtendedFeaturesCompleteEventParams response = {};
+  switch (params.page_number) {
+    case 1:
+      response.lmp_features = settings_.lmp_features_page1;
+      break;
+    case 2:
+      response.lmp_features = settings_.lmp_features_page2;
+      break;
+    default:
+      RespondWithCommandStatus(hci::kReadRemoteExtendedFeatures,
+                               hci::StatusCode::kInvalidHCICommandParameters);
+      return;
+  }
+  RespondWithCommandStatus(hci::kReadRemoteExtendedFeatures, hci::kSuccess);
+  response.page_number = params.page_number;
+  response.max_page_number = 3;
+  response.connection_handle = params.connection_handle;
+  response.status = hci::kSuccess;
+  SendEvent(hci::kReadRemoteExtendedFeaturesCompleteEventCode,
+            BufferView(&response, sizeof(response)));
+}
+
+void FakeController::OnAuthenticationRequestedCommandReceived(
+    const hci::AuthenticationRequestedCommandParams& params) {
+  hci::ConnectionHandle handle = le16toh(params.connection_handle);
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    RespondWithCommandStatus(hci::kAuthenticationRequested, hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kAuthenticationRequested, hci::kSuccess);
+
+  hci::LinkKeyRequestParams request = {};
+  request.bd_addr = peer->address_.value();
+  SendEvent(hci::kLinkKeyRequestEventCode, BufferView(&request, sizeof(request)));
+}
+
+void FakeController::OnLinkKeyRequestReplyCommandReceived(
+    const hci::LinkKeyRequestReplyCommandParams& params) {
+  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+  if (!peer) {
+    RespondWithCommandStatus(hci::kLinkKeyRequestReply, hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kLinkKeyRequestReply, hci::kSuccess);
+
+  RespondWithSuccess(hci::kLinkKeyRequestReply);
+
+  ZX_ASSERT(!peer->logical_links().empty());
+  for (auto& conn_handle : peer->logical_links()) {
+    hci::AuthenticationCompleteEventParams auth_complete;
+    auth_complete.status = hci::kSuccess;
+    auth_complete.connection_handle = htole16(conn_handle);
+    SendEvent(hci::kAuthenticationCompleteEventCode,
+              BufferView(&auth_complete, sizeof(auth_complete)));
+  }
+}
+
+void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
+    const hci::LinkKeyRequestNegativeReplyCommandParams& params) {
+  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+  if (!peer) {
+    RespondWithCommandStatus(hci::kLinkKeyRequestNegativeReply,
+                             hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+  RespondWithCommandStatus(hci::kLinkKeyRequestNegativeReply, hci::kSuccess);
+
+  hci::IOCapabilityRequestEventParams request = {};
+  request.bd_addr = params.bd_addr;
+  SendEvent(hci::kIOCapabilityRequestEventCode, BufferView(&request, sizeof(request)));
+}
+
+void FakeController::OnIOCapabilityRequestReplyCommand(
+    const hci::IOCapabilityRequestReplyCommandParams& params) {
+  RespondWithCommandStatus(hci::kIOCapabilityRequestReply, hci::kSuccess);
+
+  hci::IOCapabilityResponseEventParams io_response = {};
+  io_response.bd_addr = params.bd_addr;
+  // By specifying kNoInputNoOutput, we constrain the possible subsequent event types
+  // to just UserConfirmationRequestEventCode.
+  io_response.io_capability = hci::IOCapability::kNoInputNoOutput;
+  io_response.oob_data_present = 0x00;  // OOB auth data not present
+  io_response.auth_requirements = hci::AuthRequirements::kMITMGeneralBonding;
+  SendEvent(hci::kIOCapabilityResponseEventCode, BufferView(&io_response, sizeof(io_response)));
+
+  // Event type based on |params.io_capability| and |io_response.io_capability|.
+  hci::UserConfirmationRequestEventParams request = {};
+  request.bd_addr = params.bd_addr;
+  request.numeric_value = 0;
+  SendEvent(hci::kUserConfirmationRequestEventCode, BufferView(&request, sizeof(request)));
+}
+
+void FakeController::OnUserConfirmationRequestReplyCommand(
+    const hci::UserConfirmationRequestReplyCommandParams& params) {
+  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+  if (!peer) {
+    RespondWithCommandStatus(hci::kUserConfirmationRequestReply,
+                             hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kUserConfirmationRequestReply, hci::kSuccess);
+
+  hci::SimplePairingCompleteEventParams pairing_event;
+  pairing_event.bd_addr = params.bd_addr;
+  pairing_event.status = hci::kSuccess;
+  SendEvent(hci::kSimplePairingCompleteEventCode,
+            BufferView(&pairing_event, sizeof(pairing_event)));
+
+  hci::LinkKeyNotificationEventParams link_key_event;
+  link_key_event.bd_addr = params.bd_addr;
+  uint8_t key[] = {0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d,
+                   0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca, 0xfe};
+  std::copy(key, key + sizeof(key), link_key_event.link_key);
+  link_key_event.key_type = 5;  // Authenticated Combination Key generated from P-192
+  SendEvent(hci::kLinkKeyNotificationEventCode,
+            BufferView(&link_key_event, sizeof(link_key_event)));
+
+  ZX_ASSERT(!peer->logical_links().empty());
+  for (auto& conn_handle : peer->logical_links()) {
+    hci::AuthenticationCompleteEventParams auth_complete;
+    auth_complete.status = hci::kSuccess;
+    auth_complete.connection_handle = htole16(conn_handle);
+    SendEvent(hci::kAuthenticationCompleteEventCode,
+              BufferView(&auth_complete, sizeof(auth_complete)));
+  }
+}
+
+void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
+    const hci::UserConfirmationRequestNegativeReplyCommandParams& params) {
+  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+  if (!peer) {
+    RespondWithCommandStatus(hci::kUserConfirmationRequestNegativeReply,
+                             hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+  RespondWithCommandStatus(hci::kUserConfirmationRequestNegativeReply, hci::kSuccess);
+
+  RespondWithSuccess(hci::kUserConfirmationRequestNegativeReply);
+
+  hci::SimplePairingCompleteEventParams pairing_event;
+  pairing_event.bd_addr = params.bd_addr;
+  pairing_event.status = hci::kAuthenticationFailure;
+  SendEvent(hci::kSimplePairingCompleteEventCode,
+            BufferView(&pairing_event, sizeof(pairing_event)));
+}
+
+void FakeController::OnSetConnectionEncryptionCommand(
+    const hci::SetConnectionEncryptionCommandParams& params) {
+  RespondWithCommandStatus(hci::kSetConnectionEncryption, hci::kSuccess);
+
+  hci::EncryptionChangeEventParams response;
+  response.connection_handle = params.connection_handle;
+  response.status = hci::kSuccess;
+  response.encryption_enabled = 0x01;
+  SendEvent(hci::kEncryptionChangeEventCode, BufferView(&response, sizeof(response)));
+}
+
+void FakeController::OnReadEncryptionKeySizeCommand(
+    const hci::ReadEncryptionKeySizeParams& params) {
+  hci::ReadEncryptionKeySizeReturnParams response;
+  response.status = hci::kSuccess;
+  response.connection_handle = params.connection_handle;
+  response.key_size = 16;
+  RespondWithCommandComplete(hci::kReadEncryptionKeySize, BufferView(&response, sizeof(response)));
+}
+
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
   if (MaybeRespondWithDefaultStatus(opcode))
@@ -1249,6 +1471,67 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
         UnsetBit(&settings_.lmp_features_page1, hci::LMPFeature::kLESupportedHost);
       }
       RespondWithSuccess(opcode);
+      break;
+    }
+    case hci::kRemoteNameRequest: {
+      const auto& params = command_packet.payload<hci::RemoteNameRequestCommandParams>();
+      OnReadRemoteNameRequestCommandReceived(params);
+      break;
+    }
+    case hci::kReadRemoteVersionInfo: {
+      const auto& params = command_packet.payload<hci::ReadRemoteVersionInfoCommandParams>();
+      OnReadRemoteVersionInfoCommandReceived(params);
+      break;
+    }
+    case hci::kReadRemoteSupportedFeatures: {
+      const auto& params = command_packet.payload<hci::ReadRemoteSupportedFeaturesCommandParams>();
+      OnReadRemoteSupportedFeaturesCommandReceived(params);
+      break;
+    }
+    case hci::kReadRemoteExtendedFeatures: {
+      const auto& params = command_packet.payload<hci::ReadRemoteExtendedFeaturesCommandParams>();
+      OnReadRemoteExtendedFeaturesCommandReceived(params);
+      break;
+    }
+    case hci::kAuthenticationRequested: {
+      const auto& params = command_packet.payload<hci::AuthenticationRequestedCommandParams>();
+      OnAuthenticationRequestedCommandReceived(params);
+      break;
+    }
+    case hci::kLinkKeyRequestReply: {
+      const auto& params = command_packet.payload<hci::LinkKeyRequestReplyCommandParams>();
+      OnLinkKeyRequestReplyCommandReceived(params);
+      break;
+    }
+    case hci::kLinkKeyRequestNegativeReply: {
+      const auto& params = command_packet.payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
+      OnLinkKeyRequestNegativeReplyCommandReceived(params);
+      break;
+    }
+    case hci::kIOCapabilityRequestReply: {
+      const auto& params = command_packet.payload<hci::IOCapabilityRequestReplyCommandParams>();
+      OnIOCapabilityRequestReplyCommand(params);
+      break;
+    }
+    case hci::kUserConfirmationRequestReply: {
+      const auto& params = command_packet.payload<hci::UserConfirmationRequestReplyCommandParams>();
+      OnUserConfirmationRequestReplyCommand(params);
+      break;
+    }
+    case hci::kUserConfirmationRequestNegativeReply: {
+      const auto& params =
+          command_packet.payload<hci::UserConfirmationRequestNegativeReplyCommandParams>();
+      OnUserConfirmationRequestNegativeReplyCommand(params);
+      break;
+    }
+    case hci::kSetConnectionEncryption: {
+      const auto& params = command_packet.payload<hci::SetConnectionEncryptionCommandParams>();
+      OnSetConnectionEncryptionCommand(params);
+      break;
+    }
+    case hci::kReadEncryptionKeySize: {
+      const auto& params = command_packet.payload<hci::ReadEncryptionKeySizeParams>();
+      OnReadEncryptionKeySizeCommand(params);
       break;
     }
     default: {

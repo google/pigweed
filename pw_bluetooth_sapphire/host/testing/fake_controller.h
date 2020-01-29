@@ -319,6 +319,53 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Called when a HCI_Disconnect command is received.
   void OnDisconnectCommandReceived(const hci::DisconnectCommandParams& params);
 
+  // Interrogation command handlers:
+
+  // Called when a HCI_Read_Remote_Name_Request command is received.
+  void OnReadRemoteNameRequestCommandReceived(const hci::RemoteNameRequestCommandParams& params);
+
+  // Called when a HCI_Read_Remote_Supported_Features command is received.
+  void OnReadRemoteSupportedFeaturesCommandReceived(
+      const hci::ReadRemoteSupportedFeaturesCommandParams& params);
+
+  // Called when a HCI_Read_Remote_Version_Information command is received.
+  void OnReadRemoteVersionInfoCommandReceived(
+      const hci::ReadRemoteVersionInfoCommandParams& params);
+
+  // Called when a HCI_Read_Remote_Extended_Features command is received.
+  void OnReadRemoteExtendedFeaturesCommandReceived(
+      const hci::ReadRemoteExtendedFeaturesCommandParams& params);
+
+  // Pairing command handlers:
+
+  // Called when a HCI_Authentication_Requested command is received.
+  void OnAuthenticationRequestedCommandReceived(
+      const hci::AuthenticationRequestedCommandParams& params);
+
+  // Called when a HCI_Link_Key_Request_Reply command is received.
+  void OnLinkKeyRequestReplyCommandReceived(const hci::LinkKeyRequestReplyCommandParams& params);
+
+  // Called when a HCI_Link_Key_Request_Negative_Reply command is received.
+  void OnLinkKeyRequestNegativeReplyCommandReceived(
+      const hci::LinkKeyRequestNegativeReplyCommandParams& params);
+
+  // Called when a HCI_IO_Capability_Request_Reply command is received.
+  void OnIOCapabilityRequestReplyCommand(const hci::IOCapabilityRequestReplyCommandParams& params);
+
+  // Called when a HCI_User_Confirmation_Request_Reply command is received.
+  void OnUserConfirmationRequestReplyCommand(
+      const hci::UserConfirmationRequestReplyCommandParams& params);
+
+  // Called when a HCI_User_Confirmation_Request_Negative_Reply command is received.
+  void OnUserConfirmationRequestNegativeReplyCommand(
+      const hci::UserConfirmationRequestNegativeReplyCommandParams& params);
+
+  // Called when a HCI_Set_Connection_Encryption command is received.
+  void OnSetConnectionEncryptionCommand(const hci::SetConnectionEncryptionCommandParams& params);
+
+  // Called when a HCI_Read_Encryption_Key_Size command is received.
+  void OnReadEncryptionKeySizeCommand(const hci::ReadEncryptionKeySizeParams& params);
+
   // FakeControllerBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;

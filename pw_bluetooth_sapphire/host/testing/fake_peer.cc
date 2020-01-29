@@ -33,6 +33,7 @@ void WriteRandomRSSI(int8_t* out_mem) {
 FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannable)
     : ctrl_(nullptr),
       address_(address),
+      name_("FakePeer"),
       connected_(false),
       connectable_(connectable),
       scannable_(scannable),

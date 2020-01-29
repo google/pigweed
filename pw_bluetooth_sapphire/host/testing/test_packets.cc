@@ -18,10 +18,6 @@ CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04,         \
                                 LowerBits((opcode)), UpperBits((opcode)))
 // clang-format on
 
-DynamicByteBuffer DisconnectStatusResponsePacket() {
-  return DynamicByteBuffer(COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess));
-}
-
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
   const auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
@@ -29,6 +25,14 @@ DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
       0x07,                                                  // parameter_total_size (7 bytes)
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
       0x00                                                   // role (become master)
+      ));
+}
+
+DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn) {
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      LowerBits(hci::kAuthenticationRequested), UpperBits(hci::kAuthenticationRequested),
+      0x02,                             // parameter_total_size (2 bytes)
+      LowerBits(conn), UpperBits(conn)  // Connection_Handle
       ));
 }
 
@@ -79,6 +83,10 @@ DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn) {
       UpperBits(conn),  // "
       0x13              // Reason (Remote User Terminated Connection)
       ));
+}
+
+DynamicByteBuffer DisconnectStatusResponsePacket() {
+  return DynamicByteBuffer(COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess));
 }
 
 DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn) {

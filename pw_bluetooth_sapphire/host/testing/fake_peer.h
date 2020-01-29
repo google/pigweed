@@ -70,6 +70,11 @@ class FakePeer {
 
   const DeviceAddress& address() const { return address_; }
 
+  // The local name of the device. Used in HCI Remote Name Request event.
+  std::string name() const { return name_; }
+
+  void set_name(std::string name) { name_ = name; }
+
   // Indicates whether or not this device should include the scan response and
   // the advertising data in the same HCI LE Advertising Report Event. This is
   // used to test that the host stack can correctly consolidate advertising
@@ -137,6 +142,7 @@ class FakePeer {
   FakeController* ctrl_;  // weak
 
   DeviceAddress address_;
+  std::string name_;
   bool connected_;
   bool connectable_;
   bool scannable_;
