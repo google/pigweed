@@ -11,3 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Sets up a Python 3 virtualenv for Pigweed."""
+
+# TODO(pwbug/67) move install.py contents to this file.
+from .install import *

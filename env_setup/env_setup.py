@@ -38,7 +38,7 @@ import cipd_setup.wrapper  # pylint: disable=import-error
 import cargo_setup  # pylint: disable=import-error
 import environment  # pylint: disable=import-error
 import host_build_setup  # pylint: disable=import-error
-import virtualenv.init  # pylint: disable=import-error
+import virtualenv_setup  # pylint: disable=import-error
 
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
@@ -101,8 +101,8 @@ class EnvSetup(object):
 
         venv_path = os.path.join(self._pw_root, '.python3-env')
 
-        requirements = os.path.join(self._pw_root, 'env_setup', 'virtualenv',
-                                    'requirements.txt')
+        requirements = os.path.join(self._pw_root, 'env_setup',
+                                    'virtualenv_setup', 'requirements.txt')
 
         cipd_bin = os.path.join(
             self._pw_root,
@@ -125,7 +125,7 @@ class EnvSetup(object):
 
         python = os.path.join(cipd_bin, py_executable)
 
-        virtualenv.init.init(
+        virtualenv_setup.install(
             venv_path=venv_path,
             requirements=[requirements],
             python=python,

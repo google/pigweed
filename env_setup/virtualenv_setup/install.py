@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,7 +15,6 @@
 
 from __future__ import print_function
 
-import argparse
 import glob
 import os
 import subprocess
@@ -77,7 +76,7 @@ def _pw_package_names(setup_py_files):
     ))
 
 
-def init(
+def install(
     venv_path,
     full_envsetup=True,
     requirements=(),
@@ -150,36 +149,3 @@ def init(
         env.set('VIRTUAL_ENV', venv_path)
         env.prepend('PATH', venv_bin)
         env.clear('PYTHONHOME')
-
-
-def _main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--venv_path',
-                        required=True,
-                        help='Path at which to create the venv')
-    parser.add_argument('-r',
-                        '--requirements',
-                        default=[],
-                        action='append',
-                        help='requirements.txt files to install')
-    parser.add_argument('--quick-setup',
-                        dest='full_envsetup',
-                        action='store_false',
-                        default='PW_ENVSETUP_FULL' in os.environ,
-                        help=('Do full setup or only minimal checks to see if '
-                              'full setup is required.'))
-    parser.add_argument('--python',
-                        default=sys.executable,
-                        help='Python to use when creating virtualenv.')
-
-    try:
-        init(**vars(parser.parse_args()))
-    except GitRepoNotFound:
-        print('git repository not found', file=sys.stderr)
-        return -1
-
-    return 0
-
-
-if __name__ == '__main__':
-    sys.exit(_main())

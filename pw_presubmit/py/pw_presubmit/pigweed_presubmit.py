@@ -68,13 +68,14 @@ def init_cipd(ctx: PresubmitContext):
 
 def init_virtualenv(ctx: PresubmitContext):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
-    virtualenv_source = ctx.repository_root.joinpath('env_setup/virtualenv')
+    virtualenv_source = ctx.repository_root.joinpath('env_setup',
+                                                     'virtualenv_setup')
 
     # For speed, don't build the venv if it exists. Use --clean to recreate it.
     if not ctx.output_directory.joinpath('pyvenv.cfg').is_file():
         call(
             'python3',
-            virtualenv_source.joinpath('init.py'),
+            virtualenv_source,
             f'--venv_path={ctx.output_directory}',
             '--requirements={}'.format(
                 virtualenv_source.joinpath('requirements.txt')),
