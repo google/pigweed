@@ -9,7 +9,6 @@
 #include <fbl/macros.h>
 #include <fbl/unique_fd.h>
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
-#include <lib/fzl/fdio.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
