@@ -83,7 +83,7 @@
         "_comment": "TODO(pwbug/69) Put rust in cipd for Windows."
     },
     {
-        "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch",
+        "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch}",
         "tags": [
             "version:8.1.0"
         ]
