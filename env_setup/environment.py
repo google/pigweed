@@ -110,8 +110,9 @@ class _Prepend(_Action):
 
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
-            outs.write(
-                'set {name}={value}{pathsep}%{name}%\n'.format(**vars(self)))
+            outs.write('set {name}={value}\n'.format(
+                name=self.name,
+                value=self._join(self.value, '%{}%'.format(self.name))))
         else:
             outs.write('{name}="{value}"\nexport {name}\n'.format(
                 name=self.name, value=self._join(self.value, '$' + self.name)))
@@ -127,8 +128,9 @@ class _Append(_Action):
 
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
-            outs.write(
-                'set {name}=%{name}%{pathsep}{value}\n'.format(**vars(self)))
+            outs.write('set {name}={value}\n'.format(
+                name=self.name,
+                value=self._join('%{}%'.format(self.name), self.value)))
         else:
             outs.write('{name}="{value}"\nexport {name}\n'.format(
                 name=self.name, value=self._join('$' + self.name, self.value)))

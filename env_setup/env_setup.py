@@ -55,7 +55,7 @@ class EnvSetup(object):
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
 
-        if isinstance(self._pw_root, bytes):
+        if isinstance(self._pw_root, bytes) and bytes != str:
             self._pw_root = self._pw_root.decode()
 
         self._env.set('PW_ROOT', self._pw_root)
