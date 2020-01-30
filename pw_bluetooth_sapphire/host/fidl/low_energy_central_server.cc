@@ -34,6 +34,15 @@ LowEnergyCentralServer::~LowEnergyCentralServer() {
   gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this));
 }
 
+bt::gap::LowEnergyConnectionRef* LowEnergyCentralServer::FindConnectionForTesting(
+    bt::PeerId identifier) {
+  auto conn_iter = connections_.find(identifier);
+  if (conn_iter != connections_.end()) {
+    return conn_iter->second.get();
+  }
+  return nullptr;
+}
+
 void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
                                             GetPeripheralsCallback callback) {
   // TODO:
@@ -119,9 +128,9 @@ void LowEnergyCentralServer::StopScan() {
   NotifyScanStateChanged(false);
 }
 
-void LowEnergyCentralServer::ConnectPeripheral(::std::string identifier,
-                                               ::fidl::InterfaceRequest<Client> client_request,
-                                               ConnectPeripheralCallback callback) {
+void LowEnergyCentralServer::ConnectPeripheral(
+    ::std::string identifier, fuchsia::bluetooth::le::ConnectionOptions connection_options,
+    ::fidl::InterfaceRequest<Client> client_request, ConnectPeripheralCallback callback) {
   bt_log(TRACE, "bt-host", "ConnectPeripheral()");
 
   auto peer_id = fidl_helpers::PeerIdFromString(identifier);
@@ -189,9 +198,11 @@ void LowEnergyCentralServer::ConnectPeripheral(::std::string identifier,
     iter->second = std::move(conn_ref);
     callback(Status());
   };
-
-  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb),
-                                                   BondableMode::Bondable)) {
+  BondableMode bondable_mode =
+      (!connection_options.has_bondable_mode() || connection_options.bondable_mode())
+          ? BondableMode::Bondable
+          : BondableMode::NonBondable;
+  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb), bondable_mode)) {
     bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;

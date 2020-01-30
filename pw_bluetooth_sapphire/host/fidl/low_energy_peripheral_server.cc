@@ -9,8 +9,11 @@
 #include <zircon/status.h>
 
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -118,7 +121,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
   }
   bt::gap::AdvertisingInterval interval = fidl_helpers::AdvertisingIntervalFromFidl(
       parameters.has_mode_hint() ? parameters.mode_hint() : fble::AdvertisingModeHint::SLOW);
-  bool connectable = parameters.has_connectable() && parameters.connectable();
+
+  bool connectable_parameter = parameters.has_connectable() && parameters.connectable();
 
   // Create an entry to mark that the request is in progress.
   advertisement_.emplace(std::move(token));
@@ -128,10 +132,23 @@ void LowEnergyPeripheralServer::StartAdvertising(
   // TODO(armansito): The conversion from hci::Connection to
   // gap::LowEnergyConnectionRef should be performed by a gap library object
   // and not in this layer (see NET-355).
-  if (connectable) {
-    connect_cb = [self](auto id, auto link) {
+
+  // Per the API contract of `AdvertisingParameters` FIDL, if `connection_options` is present or
+  // the deprecated `connectable` parameter is true, advertisements will be connectable.
+  // `connectable_parameter` was the predecessor of `connection_options` and
+  // TODO(44749): will be removed once all consumers of it have migrated to `connection_options`.
+  if (connectable_parameter || parameters.has_connection_options()) {
+    // Per the API contract of the `ConnectionOptions` FIDL, the bondable mode of the connection
+    // defaults to bondable mode unless the `connection_options` table exists and `bondable_mode`
+    // is explicitly set to false.
+    BondableMode bondable_mode = (!parameters.has_connection_options() ||
+                                  !parameters.connection_options().has_bondable_mode() ||
+                                  parameters.connection_options().bondable_mode())
+                                     ? BondableMode::Bondable
+                                     : BondableMode::NonBondable;
+    connect_cb = [self, bondable_mode](auto id, auto link) {
       if (self) {
-        self->OnConnected(id, std::move(link), BondableMode::Bondable);
+        self->OnConnected(id, std::move(link), bondable_mode);
       }
     };
   }
@@ -176,6 +193,15 @@ void LowEnergyPeripheralServer::StartAdvertising(
   ZX_DEBUG_ASSERT(am);
   am->StartAdvertising(adv_data, scan_rsp, std::move(connect_cb), interval, false /* anonymous */,
                        std::move(status_cb));
+}
+
+const bt::gap::LowEnergyConnectionRef* LowEnergyPeripheralServer::FindConnectionForTesting(
+    bt::PeerId id) const {
+  auto connections_iter = connections_.find(id);
+  if (connections_iter != connections_.end()) {
+    return connections_iter->second->conn();
+  }
+  return nullptr;
 }
 
 void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertisement_id,

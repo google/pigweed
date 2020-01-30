@@ -33,6 +33,10 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
                         ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
                         StartAdvertisingCallback callback) override;
 
+  // Returns the connection reference associated with the given |id|, or nullptr if the peer with
+  // |id| is no longer connected. Should only be used for testing.
+  const bt::gap::LowEnergyConnectionRef* FindConnectionForTesting(bt::PeerId id) const;
+
  private:
   using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
 
@@ -76,8 +80,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
   // Connections that were initiated to this peripheral. A single Peripheral instance can hold many
   // connections across numerous advertisements that it initiates during its lifetime (although
   // there is at most one active advertisement at a time).
-  std::unordered_map<bt::gap::AdvertisementId, std::unique_ptr<LowEnergyConnectionServer>>
-      connections_;
+  std::unordered_map<bt::PeerId, std::unique_ptr<LowEnergyConnectionServer>> connections_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

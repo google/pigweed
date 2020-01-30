@@ -367,11 +367,10 @@ void LowEnergyConnectionRef::MarkClosed() {
   }
 }
 
-BondableMode LowEnergyConnectionRef::bondable_mode() {
-  auto conn_mgr = manager_.get();
-  ZX_DEBUG_ASSERT(conn_mgr);
-  auto conn_iter = conn_mgr->connections_.find(peer_id_);
-  ZX_DEBUG_ASSERT(conn_iter != conn_mgr->connections_.end());
+BondableMode LowEnergyConnectionRef::bondable_mode() const {
+  ZX_DEBUG_ASSERT(manager_);
+  auto conn_iter = manager_->connections_.find(peer_id_);
+  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
   return conn_iter->second->bondable_mode();
 }
 

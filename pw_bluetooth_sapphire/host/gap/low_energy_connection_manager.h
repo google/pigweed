@@ -63,7 +63,7 @@ class LowEnergyConnectionRef final {
 
   // Returns the operational bondable mode of the underlying connection. See spec V5.1 Vol 3 Part
   // C Section 9.4 for more details.
-  sm::BondableMode bondable_mode();
+  sm::BondableMode bondable_mode() const;
 
   PeerId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }

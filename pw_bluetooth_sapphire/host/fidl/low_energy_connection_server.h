@@ -25,6 +25,9 @@ class LowEnergyConnectionServer : public ServerBase<fuchsia::bluetooth::le::Conn
   // owner of the LowEnergyConnectionServer instance is expected to destroy it.
   void set_closed_handler(fit::closure callback) { closed_handler_ = std::move(callback); }
 
+  // Return a reference to the underlying connection ref. Expected to only be used for testing.
+  const bt::gap::LowEnergyConnectionRef* conn() const { return conn_.get(); }
+
  private:
   void OnClosed();
 

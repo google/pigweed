@@ -28,6 +28,10 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
                          fbl::RefPtr<GattHost> gatt_host);
   ~LowEnergyCentralServer() override;
 
+  // If we have connected to the |identifier|-associated peer, this function returns the pointer
+  // to the underlying connection, or nullptr otherwise. Should only be used for testing.
+  bt::gap::LowEnergyConnectionRef* FindConnectionForTesting(bt::PeerId identifier);
+
  private:
   // fuchsia::bluetooth::le::Central overrides:
   void GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
@@ -36,6 +40,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   void StartScan(fuchsia::bluetooth::le::ScanFilterPtr filter, StartScanCallback callback) override;
   void StopScan() override;
   void ConnectPeripheral(::std::string identifier,
+                         fuchsia::bluetooth::le::ConnectionOptions connection_options,
                          ::fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> client_request,
                          ConnectPeripheralCallback callback) override;
   void DisconnectPeripheral(::std::string identifier,
