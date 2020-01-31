@@ -17,11 +17,21 @@ import argparse
 import logging
 import os
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
 
 _LOG = logging.getLogger(__name__)
+
+
+# TODO(mohrr) remove once gn bug is fixed.
+def _fix_windows_absolute_path(path):
+    if os.name != 'nt':
+        return path
+    if re.match(r'^/\w:', path):
+        return path[1:]
+    return path
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,19 +40,19 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--gn-root',
-        type=str,
+        type=_fix_windows_absolute_path,
         required=True,
         help='Path to the root of the GN tree',
     )
     parser.add_argument(
         '--out-dir',
-        type=str,
+        type=_fix_windows_absolute_path,
         required=True,
         help='Path to the GN build output directory',
     )
     parser.add_argument(
         '--touch',
-        type=str,
+        type=_fix_windows_absolute_path,
         help='File to touch after command is run',
     )
     parser.add_argument(
