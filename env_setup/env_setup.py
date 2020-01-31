@@ -35,9 +35,9 @@ import sys
 # with it.
 import cipd.update  # pylint: disable=import-error
 import cipd.wrapper  # pylint: disable=import-error
+import cargo_setup  # pylint: disable=import-error
 import environment  # pylint: disable=import-error
 import host_build.init  # pylint: disable=import-error
-import cargo.init  # pylint: disable=import-error
 import virtualenv.init  # pylint: disable=import-error
 
 
@@ -140,7 +140,7 @@ class EnvSetup(object):
 
     def cargo(self):
         if os.environ.get('PW_CARGO_SETUP', ''):
-            cargo.init.init(pw_root=self._pw_root, env=self._env)
+            cargo_setup.install(pw_root=self._pw_root, env=self._env)
             self._env.echo('Setting cargo environment variables...done.')
         else:
             msg = 'cargo setup skipped, set PW_CARGO_SETUP to include it'

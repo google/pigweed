@@ -17,7 +17,7 @@ import os
 import subprocess
 
 
-def init(pw_root, env):
+def install(pw_root, env):
     """Installs rust tools using cargo."""
     prefix = os.path.join(pw_root, '.cargo')
 
@@ -27,7 +27,8 @@ def init(pw_root, env):
 
     # packages.txt contains packages one per line with two fields: package
     # name and version.
-    package_path = os.path.join(pw_root, 'env_setup', 'cargo', 'packages.txt')
+    package_path = os.path.join(pw_root, 'env_setup', 'cargo_setup',
+                                'packages.txt')
     with env(), open(package_path, 'r') as ins:
         for line in ins:
             line = line.strip()
