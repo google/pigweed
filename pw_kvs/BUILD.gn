@@ -45,12 +45,38 @@ source_set("pw_kvs") {
   friend = [ ":key_value_store_test" ]
 }
 
+source_set("crc16") {
+  public = [
+    "public/pw_kvs/crc16_checksum.h",
+  ]
+  sources = public
+  public_deps = [
+    ":pw_kvs",
+    dir_pw_checksum,
+  ]
+}
+
 pw_test_group("tests") {
-  tests = [ ":key_value_store_test" ]
+  tests = [
+    ":checksum_test",
+    ":key_value_store_test",
+  ]
+}
+
+pw_test("checksum_test") {
+  deps = [
+    ":crc16",
+    ":pw_kvs",
+    dir_pw_log,
+  ]
+  sources = [
+    "checksum_test.cc",
+  ]
 }
 
 pw_test("key_value_store_test") {
   deps = [
+    ":crc16",
     ":pw_kvs",
     dir_pw_checksum,
     dir_pw_log,

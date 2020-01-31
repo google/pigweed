@@ -31,6 +31,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_checksum/ccitt_crc16.h"
+#include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs_private/format.h"
 #include "pw_kvs_private/macros.h"
@@ -143,8 +144,8 @@ FlashPartition large_test_partition(&large_test_flash,
 FlashPartition& test_partition = FlashExternalTestPartition();
 #endif  // USE_MEMORY_BUFFER
 
-// TODO: Need a checksum implementation (e.g. CRC16) to use for tests.
-constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+ChecksumCrc16 checksum;
+constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 KeyValueStore kvs(&test_partition, format);
 

@@ -26,24 +26,24 @@ class ChecksumAlgorithm {
   virtual void Reset() = 0;
 
   // Updates the checksum with the provided data.
-  virtual Status Update(span<const std::byte> data_to_checksum) = 0;
+  virtual void Update(span<const std::byte> data) = 0;
 
-  // Convnenience wrapper.
-  Status Update(const void* data, size_t size) {
-    return Update(span(static_cast<const std::byte*>(data), size));
+  // Update the checksum from a pointer and size.
+  void Update(const void* data, size_t size_bytes) {
+    return Update(span(static_cast<const std::byte*>(data), size_bytes));
   }
 
   // Returns the current state of the checksum algorithm.
   constexpr const span<const std::byte>& state() const { return state_; }
 
-  // Returns the size of the checksum's state.
+  // Returns the size of the checksum state.
   constexpr size_t size_bytes() const { return state_.size(); }
 
-  // Compares a calculated checksum to this checksum's data.
-  Status Verify(span<const std::byte> calculated_checksum) const;
+  // Compares a calculated checksum to this checksum's current state.
+  Status Verify(span<const std::byte> checksum) const;
 
  protected:
-  // Derived class provides a span of its state buffer.
+  // A derived class provides a span of its state buffer.
   constexpr ChecksumAlgorithm(span<const std::byte> state) : state_(state) {}
 
   // Protected destructor prevents deleting ChecksumAlgorithms from the base
