@@ -8,6 +8,8 @@
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
+#include <optional>
+
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
@@ -109,22 +111,29 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
           if (self) {
             bt_log(TRACE, "gap-le", "received security upgrade request on L2CAP channel");
             ZX_DEBUG_ASSERT(self->link_->handle() == handle);
-            self->UpgradeSecurity(level, std::move(cb));
+            self->OnSecurityRequest(level, std::move(cb));
           }
         },
         dispatcher_);
   }
 
-  // Handles a pairing request (i.e. security upgrade) received from "higher levels", likely
-  // initiated from GAP. This will only be used by pairing requests that are initiated
-  // in the context of testing. May only be called on an already-established connection.
-  void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback cb) {
+  // Tells the connection's pairing state to UpgradeSecurity to the desired level.
+  void OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb) {
     ZX_ASSERT(pairing_);
-
     pairing_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
       bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", bt_str(status), bt_str(sp));
       cb(status);
     });
+  }
+
+  // Handles a pairing request (i.e. security upgrade) received from "higher levels", likely
+  // initiated from GAP. This will only be used by pairing requests that are initiated
+  // in the context of testing. May only be called on an already-established connection.
+  void UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
+                       sm::StatusCallback cb) {
+    ZX_ASSERT(pairing_);
+    pairing_->set_bondable_mode(bondable_mode);
+    OnSecurityRequest(level, std::move(cb));
   }
 
   // Cancels any on-going pairing procedures and sets up SMP to use the provided
@@ -538,7 +547,7 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
 }
 
 void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_level,
-                                      sm::StatusCallback cb) {
+                                      sm::BondableMode bondable_mode, sm::StatusCallback cb) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
     bt_log(WARN, "gap-le", "cannot pair: peer not connected (id: %s)", bt_str(peer_id));
@@ -546,7 +555,7 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
     return;
   }
   bt_log(TRACE, "gap-le", "pairing with security level: %d", pairing_level);
-  iter->second->UpgradeSecurity(pairing_level, std::move(cb));
+  iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::RegisterRemoteInitiatedLink(

@@ -139,6 +139,8 @@ class PairingState final : public Bearer::Listener {
     return le_smp_->bondable_mode();
   }
 
+  void set_bondable_mode(sm::BondableMode mode) { le_smp_->set_bondable_mode(mode); }
+
  private:
   static constexpr size_t kPairingRequestSize = sizeof(Header) + sizeof(PairingRequestParams);
 

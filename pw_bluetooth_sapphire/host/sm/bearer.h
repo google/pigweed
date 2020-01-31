@@ -126,6 +126,9 @@ class Bearer final {
   // Sets whether MITM protection is required. False by default.
   void set_mitm_required(bool value) { mitm_required_ = value; }
 
+  // Sets whether or not the Bearer operates in bondable mode
+  void set_bondable_mode(sm::BondableMode mode) { bondable_mode_ = mode; }
+
   // Returns true if pairing has been initiated.
   bool pairing_started() const { return timeout_task_.is_pending(); }
 

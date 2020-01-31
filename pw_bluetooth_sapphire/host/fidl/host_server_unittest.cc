@@ -498,6 +498,45 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
+TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x04,  // AuthReq: no bonding, MITM (authenticated)
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: none
+  );
+  // clang-format on
+
+  auto [peer, fake_chan] = ConnectFakePeer();
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(fake_chan);
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  bool pairing_request_sent = false;
+  // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
+  // the call to Pair is only responsible for starting pairing, not for completing it.
+  auto expect_default_bytebuffer = [&pairing_request_sent, kExpected](bt::ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    pairing_request_sent = true;
+  };
+  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+
+  FidlStatus pair_status;
+  PairingOptions opts;
+  opts.set_non_bondable(true);
+  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
+                      std::move(opts),
+                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(pair_status.error, nullptr);
+  ASSERT_TRUE(pairing_request_sent);
+}
+
 TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
   auto [peer, fake_chan] = ConnectFakePeer();
   ASSERT_TRUE(peer);

@@ -188,12 +188,16 @@ class LowEnergyConnectionManager final {
   // Callback for hci::Connection, called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);
 
-  // Initiates the pairing process. This is expected to only be called during higher-level testing.
-  // |peer_id| is the peer to pair to - if the peer is not connected, this function will return
-  // false. |pairing_level| determines the security level of the resulting pairing. |cb| will be
-  // called upon completion of the pairing. If the security level of the link is already >=
-  // |pairing_level|, then nothing will be done, and |cb| will be called with a success status.
-  void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::StatusCallback cb);
+  // Initiates the pairing process. Expected to only be called during higher-level testing.
+  //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is called with an error.
+  //   |pairing_level|: determines the security level of the pairing. **Note**: If the security
+  //                    level of the link is already >= |pairing level|, no pairing takes place.
+  //   |bondable_mode|: sets the bonding mode of this connection. A device in bondable mode forms a
+  //                    bond to the peer upon pairing, assuming the peer is also in bondable mode.
+  //                    A device in non-bondable mode will not allow pairing that forms a bond.
+  //   |cb|: callback called upon completion of this function, whether pairing takes place or not.
+  void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
+            sm::StatusCallback cb);
 
  private:
   friend class LowEnergyConnectionRef;

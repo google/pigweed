@@ -1141,11 +1141,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairUnconnectedPeer) {
     ASSERT_EQ(status.error(), bt::HostError::kNotFound);
     count_cb_called++;
   };
-  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, cb);
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
+                   cb);
   ASSERT_EQ(count_cb_called, 1u);
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, Pair) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
   // clang-format off
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
@@ -1197,7 +1198,66 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Pair) {
   };
   fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, [](sm::Status cb_status) {});
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
+                   [](sm::Status cb_status) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_called);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      0x00,  // AuthReq: bonding, no MITM
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x00   // responder keys: enc key and identity info
+  );
+
+  // clang-format on
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+  // This is to capture the channel created during the Connection process
+  FakeChannel* fake_chan = nullptr;
+  fake_l2cap()->set_channel_callback(
+      [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->le());
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status);
+  ASSERT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+  ASSERT_TRUE(fake_chan);
+
+  bool cb_called = false;
+  // This test only checks that PairingState kicks off a pairing feature exchange correctly, as
+  // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
+  auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    cb_called = true;
+  };
+  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::NonBondable,
+                   [](sm::Status cb_status) {});
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_called);
 }

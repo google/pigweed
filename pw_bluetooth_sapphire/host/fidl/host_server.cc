@@ -645,6 +645,10 @@ void HostServer::PairLowEnergy(PeerId peer_id, PairingOptions options, PairCallb
   } else {
     security_level = bt::sm::SecurityLevel::kAuthenticated;
   }
+  bt::sm::BondableMode bondable_mode = bt::sm::BondableMode::Bondable;
+  if (options.has_non_bondable() && options.non_bondable()) {
+    bondable_mode = bt::sm::BondableMode::NonBondable;
+  }
   auto on_complete = [peer_id, callback = std::move(callback)](bt::sm::Status status) {
     if (!status) {
       bt_log(WARN, "bt-host", "failed to pair to peer (id %s)", bt_str(peer_id));
@@ -653,7 +657,8 @@ void HostServer::PairLowEnergy(PeerId peer_id, PairingOptions options, PairCallb
     }
     callback(Status());
   };
-  adapter()->le_connection_manager()->Pair(peer_id, *security_level, std::move(on_complete));
+  adapter()->le_connection_manager()->Pair(peer_id, *security_level, bondable_mode,
+                                           std::move(on_complete));
 }
 
 void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
