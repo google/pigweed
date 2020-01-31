@@ -15,7 +15,6 @@
 
 import argparse
 import logging
-import os
 import pathlib
 import re
 import shlex
@@ -68,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def find_binary(target: str) -> str:
+def find_binary(target: pathlib.Path) -> str:
     """Tries to find a binary for a gn build target.
 
     Args:
@@ -82,20 +81,24 @@ def find_binary(target: str) -> str:
         RuntimeError: No binary found for target.
     """
 
-    target_path, target_name = target.rsplit(':', 1)
+    target_dirname, target_name = target.name.rsplit(':', 1)
 
     for extension in ['', '.elf', '.exe']:
-        potential_filename = os.path.join(target_path,
-                                          f'{target_name}{extension}')
-        if os.path.isfile(potential_filename):
-            return potential_filename
+        potential_file = target.parent.joinpath(target_dirname,
+                                                f'{target_name}{extension}')
+        if potential_file.is_file():
+            return str(potential_file)
 
     raise FileNotFoundError(
         f'Could not find output binary for build target {target}')
 
 
 def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
-    """Resolves a string to a filesystem path if it is a GN path."""
+    """Resolves a string to a filesystem path if it is a GN path.
+
+    If the path specifies a GN target, attempts to find an compiled output
+    binary for the target name.
+    """
 
     is_gn_path = string.startswith('//')
     is_out_path = string.startswith(out_dir)
@@ -104,13 +107,17 @@ def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
         return string
 
     full_path = gn_root + string[2:] if is_gn_path else string
-    resolved_path = str(pathlib.Path(full_path).resolve())
+    resolved_path = pathlib.Path(full_path).resolve()
 
-    # GN targets have the format '/path/to/directory:target_name'.
-    if is_out_path and ':' in string:
+    # GN targets exist in the out directory and have the format
+    # '/path/to/directory:target_name'.
+    #
+    # Pathlib interprets 'directory:target_name' as the filename, so check if it
+    # contains a colon.
+    if is_out_path and ':' in resolved_path.name:
         return find_binary(resolved_path)
 
-    return resolved_path
+    return str(resolved_path)
 
 
 def resolve_path(gn_root: str, out_dir: str, string: str) -> str:
