@@ -135,7 +135,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PD
       std::make_unique<DynamicByteBuffer>(BufferView(&ack_frame, sizeof(ack_frame))));
 
   const auto header_len = sizeof(header);
-  const auto payload_len = pdu.length() - header_len;
+  const auto payload_len = pdu.length() - header_len - sizeof(FrameCheckSequence);
   auto sdu = std::make_unique<DynamicByteBuffer>(payload_len);
   pdu.Copy(sdu.get(), header_len, payload_len);
   return sdu;
