@@ -25,13 +25,26 @@ import sys
 _LOG = logging.getLogger(__name__)
 
 
-# TODO(mohrr) remove once gn bug is fixed.
-def _fix_windows_absolute_path(path):
-    if os.name != 'nt':
-        return path
-    if re.match(r'^/\w:', path):
-        return path[1:]
-    return path
+# Internally, all GN absolute paths start with a forward slash. This means that
+# Windows absolute paths take the form
+#
+#   /C:/foo/bar
+#
+# These are not valid filesystem paths, and break if used. As this script has
+# to duplicate GN's path resolution logic to convert internal paths to real
+# filesystem paths, it has to try to detect strings of this form and correct
+# them to well-formed paths.
+#
+# TODO(pwbug/110): This is the latest hack in a series of edge case handling
+# implemented by this script, which is run on every string in sys.argv and could
+# have unintended consequences. This script shouldn't have to exist--GN should
+# standardize a way of finding a compiled binary for a build target.
+def _resembles_internal_gn_windows_path(path: str) -> bool:
+    return os.name == 'nt' and re.match(r'^/[a-zA-Z]:[/\\]', path)
+
+
+def _fix_windows_absolute_path(path: str) -> str:
+    return path[1:] if _resembles_internal_gn_windows_path(path) else path
 
 
 def parse_args() -> argparse.Namespace:
@@ -100,6 +113,8 @@ def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
     If the path specifies a GN target, attempts to find an compiled output
     binary for the target name.
     """
+
+    string = _fix_windows_absolute_path(string)
 
     is_gn_path = string.startswith('//')
     is_out_path = string.startswith(out_dir)
