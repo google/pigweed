@@ -465,11 +465,22 @@ span(std::array<T, N>&) -> span<T, N>;
 template <class T, std::size_t N>
 span(const std::array<T, N>&) -> span<const T, N>;
 
+namespace internal {
+
+// Containers can be mutable or const and have mutable or const members. Check
+// the type of the accessed elements to determine which type of span should be
+// created (e.g. span<char> or span<const char>).
+template <typename T>
+using ValueType = std::remove_reference_t<decltype(std::declval<T>()[0])>;
+
+}  // namespace internal
+
+// This diverges a little from the standard, which uses std::ranges.
 template <class Container>
-span(Container&) -> span<typename Container::value_type>;
+span(Container&) -> span<internal::ValueType<Container>>;
 
 template <class Container>
-span(const Container&) -> span<const typename Container::value_type>;
+span(const Container&) -> span<internal::ValueType<const Container>>;
 
 #endif  // __cpp_deduction_guides
 

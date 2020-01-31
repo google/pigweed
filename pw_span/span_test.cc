@@ -58,7 +58,6 @@ constexpr bool constexpr_equal(InputIterator1 first1,
 
 }  // namespace
 
-// Pigweed: Test deducing from std::string_view.
 TEST(SpanTest, DeductionGuides_MutableArray) {
   char array[] = {'a', 'b', 'c', 'd', '\0'};
 
@@ -101,25 +100,110 @@ TEST(SpanTest, DeductionGuides_ConstStdArray) {
   EXPECT_STREQ(the_span.data(), "abcd");
 }
 
-TEST(SpanTest, DeductionGuides_MutableContainer) {
-  std::vector<int> foo = {3456};
-
-  auto the_span = span(foo);
-  static_assert(the_span.extent == dynamic_extent);
-
-  EXPECT_EQ(foo[0], the_span[0]);
-  EXPECT_EQ(foo.size(), the_span.size());
-
-  the_span[0] = 9876;
-  EXPECT_EQ(9876, foo[0]);
-}
-
-TEST(SpanTest, DeductionGuides_ConstContainer) {
-  auto the_span = span(std::string_view("Hello"));
+TEST(SpanTest, DeductionGuides_MutableContainerWithConstElements) {
+  std::string_view string("Hello");
+  auto the_span = span(string);
   static_assert(the_span.extent == dynamic_extent);
 
   EXPECT_STREQ("Hello", the_span.data());
   EXPECT_EQ(5u, the_span.size());
+}
+
+TEST(SpanTest, DeductionGuides_MutableContainerWithMutableElements) {
+  std::string string("Hello");
+  auto the_span = span(string);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(5u, the_span.size());
+  the_span[1] = 'a';
+  EXPECT_STREQ(the_span.data(), string.data());
+  EXPECT_STREQ("Hallo", the_span.data());
+}
+
+class MutableStringView {
+ public:
+  using element_type = char;
+  using value_type = char;
+  using size_type = size_t;
+  using difference_type = ptrdiff_t;
+  using pointer = char*;
+  using reference = char&;
+  using iterator = char*;
+  using const_iterator = const char*;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  MutableStringView(char* str) : data_(str, std::strlen(str)) {}
+
+  char& operator[](size_type index) const { return data_[index]; }
+  pointer data() const { return data_.data(); }
+  size_type size() const { return data_.size(); }
+  iterator begin() const { return data_.begin(); }
+  iterator end() const { return data_.end(); }
+
+ private:
+  span<char> data_;
+};
+
+TEST(SpanTest, DeductionGuides_ConstContainerWithMutableElements) {
+  char data[] = "54321";
+  MutableStringView view(data);
+
+  auto the_span = span(view);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(5u, the_span.size());
+  view[2] = '?';
+  EXPECT_STREQ("54?21", the_span.data());
+  EXPECT_STREQ("54?21", data);
+}
+
+TEST(SpanTest, DeductionGuides_ConstContainerWithMutableValueType) {
+  const std::string string("Hello");
+  auto the_span = span(string);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(5u, the_span.size());
+  EXPECT_STREQ("Hello", the_span.data());
+}
+
+TEST(SpanTest, DeductionGuides_ConstContainerWithConstElements) {
+  const std::string_view string("Hello");
+  auto the_span = span(string);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(5u, the_span.size());
+  EXPECT_STREQ("Hello", the_span.data());
+}
+
+TEST(SpanTest, DeductionGuides_FromTemporary_ContainerWithConstElements) {
+  auto the_span = span(std::string_view("Hello"));
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(5u, the_span.size());
+  EXPECT_STREQ("Hello", the_span.data());
+}
+
+TEST(SpanTest, DeductionGuides_FromReference) {
+  std::array<int, 5> array{1, 3, 5, 7, 9};
+  std::array<int, 5>& array_ref = array;
+
+  auto the_span = span(array_ref);
+  static_assert(the_span.extent == 5);
+
+  for (unsigned i = 0; i < array.size(); ++i) {
+    ASSERT_EQ(array[i], the_span[i]);
+  }
+}
+
+TEST(SpanTest, DeductionGuides_FromConstReference) {
+  std::string_view string = "yo!";
+  const std::string_view& string_ref = string;
+
+  auto the_span = span(string_ref);
+  static_assert(the_span.extent == dynamic_extent);
+
+  EXPECT_EQ(string, the_span.data());
 }
 
 TEST(SpanTest, DefaultConstructor) {
