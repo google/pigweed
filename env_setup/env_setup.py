@@ -139,8 +139,13 @@ class EnvSetup(object):
         self._env.echo('Setting host_build environment variables...done.')
 
     def cargo(self):
-        cargo.init.init(pw_root=self._pw_root, env=self._env)
-        self._env.echo('Setting cargo environment variables...done.')
+        if os.environ.get('PW_CARGO_SETUP', ''):
+            cargo.init.init(pw_root=self._pw_root, env=self._env)
+            self._env.echo('Setting cargo environment variables...done.')
+        else:
+            msg = 'cargo setup skipped, set PW_CARGO_SETUP to include it'
+            print(msg)
+            self._env.echo(msg)
 
 
 def parse(argv=None):
