@@ -304,6 +304,25 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumC
   EXPECT_FALSE(receive_is_poll_response.value());
 }
 
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallback) {
+  Engine rx_engine(NopTxCallback);
+
+  std::optional<uint8_t> ack_seq_num;
+  auto ack_seq_num_callback = [&ack_seq_num](uint8_t seq_num) { ack_seq_num = seq_num; };
+  rx_engine.set_ack_seq_num_callback(ack_seq_num_callback);
+
+  // Send an I-frame containing a sequence number for the first frame the receiver has sent.
+  // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
+  auto info_frame = StaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kNoFcs));
+  ASSERT_TRUE(ack_seq_num.has_value());
+
+  // We should now expect the next (second) frame to have a sequence number of 1.
+  EXPECT_EQ(1, ack_seq_num.value());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

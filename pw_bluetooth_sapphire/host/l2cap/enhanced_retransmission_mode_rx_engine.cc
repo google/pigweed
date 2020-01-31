@@ -125,6 +125,10 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header, PD
 
   AdvanceSeqNum();
 
+  if (ack_seq_num_callback_) {
+    ack_seq_num_callback_(next_seqnum_);
+  }
+
   SimpleReceiverReadyFrame ack_frame;
   ack_frame.set_receive_seq_num(next_seqnum_);
   send_frame_callback_(

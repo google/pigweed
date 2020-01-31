@@ -37,6 +37,13 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
     receive_seq_num_callback_ = std::move(receive_seq_num_callback);
   }
 
+  // Set a callback to be invoked that reports our acknowledgment of inbound frames from the peer.
+  // |ack_seq_num| is the TxSeq of the next I-frame we expect from the peer.
+  using AckSeqNumCallback = fit::function<void(uint8_t ack_seq_num)>;
+  void set_ack_seq_num_callback(AckSeqNumCallback ack_seq_num_callback) {
+    ack_seq_num_callback_ = std::move(ack_seq_num_callback);
+  }
+
  private:
   ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
   ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
@@ -52,6 +59,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   SendFrameCallback send_frame_callback_;
 
   ReceiveSeqNumCallback receive_seq_num_callback_;
+  AckSeqNumCallback ack_seq_num_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };
