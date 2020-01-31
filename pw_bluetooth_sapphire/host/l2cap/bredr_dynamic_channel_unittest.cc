@@ -1444,6 +1444,15 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
 INSTANTIATE_TEST_SUITE_P(L2CAP_BrEdrDynamicChannelTest, ConfigRspWithMtuTest,
                          ::testing::Values(std::nullopt, kMinACLMTU));
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
+  const auto kExpectedExtendedFeatures =
+      kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;
+  const auto kExpectedExtendedFeaturesInfoRsp =
+      MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess, kExpectedExtendedFeatures);
+  sig()->ReceiveExpect(kInformationRequest, kExtendedFeaturesInfoReq,
+                       kExpectedExtendedFeaturesInfoRsp);
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   const auto kExpectedExtendedFeatures =
       kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;

@@ -132,7 +132,8 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     }
 
     case InformationType::kExtendedFeaturesSupported: {
-      const ExtendedFeatures extended_features = kExtendedFeaturesBitFixedChannels;
+      const ExtendedFeatures extended_features =
+          kExtendedFeaturesBitFixedChannels | kExtendedFeaturesBitEnhancedRetransmission;
 
       // Express support for the Fixed Channel Supported feature
       responder->SendExtendedFeaturesSupported(extended_features);
