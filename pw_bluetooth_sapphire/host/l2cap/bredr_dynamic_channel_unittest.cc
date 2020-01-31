@@ -861,7 +861,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
       EXPECT_TRUE(chan->IsConnected());
       EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kRemoteCId, chan->remote_cid());
-      EXPECT_EQ(ChannelMode::kBasic, chan->parameters().mode.value());
+      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -1330,7 +1330,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
     channel_opened = true;
     ASSERT_TRUE(chan);
     EXPECT_TRUE(chan->IsOpen());
-    EXPECT_EQ(chan->mtu_configuration().tx_mtu, GetParam().response_mtu);
+    EXPECT_EQ(chan->info().max_tx_sdu_size, GetParam().response_mtu);
   };
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
@@ -1387,7 +1387,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
   size_t open_cb_count = 0;
   auto open_cb = [&](auto chan) {
     EXPECT_TRUE(chan->IsOpen());
-    EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->mtu_configuration().rx_mtu);
+    EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->info().max_rx_sdu_size);
     open_cb_count++;
   };
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
@@ -1425,7 +1425,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
   size_t open_cb_count = 0;
   auto open_cb = [&](auto chan) {
     EXPECT_TRUE(chan->IsOpen());
-    EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->mtu_configuration().rx_mtu);
+    EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->info().max_rx_sdu_size);
     open_cb_count++;
   };
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
@@ -1525,7 +1525,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_TRUE(chan->IsOpen());
-      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->parameters().mode.value());
+      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -1919,7 +1919,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
-      EXPECT_EQ(kPreferredMtu, chan->parameters().max_rx_sdu_size.value());
+      EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
     }
     open_cb_count++;
   };
@@ -1947,7 +1947,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
-      EXPECT_EQ(kMinACLMTU, chan->parameters().max_rx_sdu_size.value());
+      EXPECT_EQ(kMinACLMTU, chan->info().max_rx_sdu_size);
     }
     open_cb_count++;
   };

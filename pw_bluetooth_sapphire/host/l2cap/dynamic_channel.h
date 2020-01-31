@@ -83,19 +83,6 @@ class DynamicChannel {
   // can transfer data.
   virtual bool IsOpen() const = 0;
 
-  // Current high-level channel configuration parameters.
-  virtual ChannelParameters parameters() const = 0;
-
-  struct MtuConfiguration {
-    // Max SDU size peer is capable of accepting on this channel.
-    uint16_t tx_mtu;
-    // Max SDU size local device is capable of accepting on this channel.
-    uint16_t rx_mtu;
-  };
-
-  // Currently configured MTU parameters that are common to both LE and BR/EDR channels.
-  virtual MtuConfiguration mtu_configuration() const = 0;
-
   // Parameters to use for the outward-facing l2cap::Channel implementation.
   virtual ChannelInfo info() const = 0;
 
