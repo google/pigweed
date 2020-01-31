@@ -54,8 +54,16 @@ class StatusWithSize {
   explicit constexpr StatusWithSize(Status status, size_t size)
       : StatusWithSize(size | (static_cast<size_t>(status) << kStatusShift)) {}
 
+  // Allow implicit conversions from status.
+  constexpr StatusWithSize(Status status)
+      : StatusWithSize(static_cast<size_t>(status) << kStatusShift) {}
+  constexpr StatusWithSize(Status::Code status)
+      : StatusWithSize(Status(status)) {}
+
   constexpr StatusWithSize(const StatusWithSize&) = default;
   constexpr StatusWithSize& operator=(const StatusWithSize&) = default;
+
+  constexpr operator Status() const { return status(); }
 
   // Returns the size. The size is always present, even if status() is an error.
   constexpr size_t size() const { return size_ & kSizeMask; }

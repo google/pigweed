@@ -13,402 +13,301 @@
 // the License.
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <string_view>
-#include <type_traits>
 
+#include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::kvs {
-namespace cfg {
-
-// KVS requires a temporary buffer for some operations, this config allows
-// tuning the buffer size. This is a trade-off between a value which is large
-// and therefore requires more RAM, or having a value which is small which will
-// result in some operations taking longer, as the operations are broken into
-// smaller chunks.
-// NOTE: This value can not be smaller then the flash alignment, and it will
-//       round the size down to be a multiple of the flash alignment for all
-//       operations.
-inline constexpr size_t kKvsBufferSize = 64;
-
-// This represents the maximum amount of keys which can be in the KVS at any
-// given time.
-inline constexpr uint8_t kKvsMaxKeyCount = 50;
-
-// This is the maximum amount of sectors the KVS can operate on, an invalid
-// value will cause an error during enable.
-inline constexpr uint32_t kKvsMaxSectorCount = 20;
-
-}  // namespace cfg
-
 namespace internal {
+
+template <typename T, typename = decltype(span(std::declval<T>()))>
+constexpr bool ConvertsToSpan(int) {
+  return true;
+}
+
+// If the expression span(T) fails, then the type can't be converted to a span.
+template <typename T>
+constexpr bool ConvertsToSpan(...) {
+  return false;
+}
+
+}  // namespace internal
 
 // Traits class to detect if the type is a span. std::is_same is insufficient
 // because span is a class template. This is used to ensure that the correct
 // overload of the Put function is selected.
-template <typename>
-struct IsSpan : std::false_type {};
+template <typename T>
+using ConvertsToSpan =
+    std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
 
-template <typename T, size_t kExtent>
-struct IsSpan<span<T, kExtent>> : std::true_type {};
+// Internal-only persistent storage header format.
+struct EntryHeader;
 
-}  // namespace internal
+struct EntryHeaderFormat {
+  uint32_t magic;  // unique identifier
+  ChecksumAlgorithm* checksum;
+};
 
-// This object is very large (can be over 1500 B, depending on configuration)
-// and should not typically be placed on the stack.
+// TODO: Select the appropriate defaults, add descriptions.
+struct Options {
+  bool partial_gc_on_write = true;
+  bool verify_on_read = true;
+  bool verify_on_write = true;
+};
+
 class KeyValueStore {
  public:
-  constexpr KeyValueStore(FlashPartition* partition) : partition_(*partition) {}
+  // TODO: Make these configurable
+  static constexpr size_t kMaxKeyLength = 64;
+  static constexpr size_t kMaxEntries = 64;
+  static constexpr size_t kUsableSectors = 64;
 
-  KeyValueStore(const KeyValueStore&) = delete;
-  KeyValueStore& operator=(const KeyValueStore&) = delete;
+  // In the future, will be able to provide additional EntryHeaderFormats for
+  // backwards compatibility.
+  constexpr KeyValueStore(FlashPartition* partition,
+                          const EntryHeaderFormat& format,
+                          const Options& options = {})
+      : partition_(*partition),
+        entry_header_format_(format),
+        options_(options),
+        key_map_{},
+        key_map_size_(0),
+        sector_map_{},
+        last_written_sector_(0) {}
 
-  // Enable the KVS, scans the sectors of the partition for any current KVS
-  // data. Erases and initializes any sectors which are not initialized.
-  // Checks the CRC of all data in the KVS; on failure the corrupted data is
-  // lost and Enable will return Status::DATA_LOSS, but the KVS will still load
-  // other data and will be enabled.
-  Status Enable();
+  Status Init();
+  bool initialized() const { return false; }  // TODO: Implement this
 
-  bool IsEnabled() const { return enabled_; }
+  StatusWithSize Get(std::string_view key, span<std::byte> value) const;
 
-  void Disable() {
-    if (enabled_ == false) {
-      return;
-    }
-    // TODO: LOCK MUTEX
-    enabled_ = false;
-  }
-
-  // Erase a key value element.
-  // key is a null terminated c string.
-  // Returns OK if erased
-  //         NOT_FOUND if key was not found.
-  Status Erase(const std::string_view& key);
-
-  // Copy the first size bytes of key's value into value buffer.
-  // key is a null terminated c string. Size is the amount of bytes to read,
-  // Optional offset argument supports reading size bytes starting at the
-  // specified offset.
-  // Returns OK if successful
-  //         NOT_FOUND if key was not found
-  //         DATA_LOSS if the value failed crc check
-  Status Get(const std::string_view& key,
-             const span<std::byte>& value,
-             uint16_t offset = 0);
-
-  // Interpret the key's value as the given type and return it.
-  // Returns OK if successful
-  //         NOT_FOUND if key was not found
-  //         DATA_LOSS if the value failed crc check
-  //         INVALID_ARGUMENT if size of value != sizeof(T)
   template <typename T>
   Status Get(const std::string_view& key, T* value) {
     static_assert(std::is_trivially_copyable<T>(), "KVS values must copyable");
     static_assert(!std::is_pointer<T>(), "KVS values cannot be pointers");
 
-    StatusWithSize result = GetValueSize(key);
+    StatusWithSize result = ValueSize(key);
     if (!result.ok()) {
       return result.status();
     }
     if (result.size() != sizeof(T)) {
       return Status::INVALID_ARGUMENT;
     }
-    return Get(key, as_writable_bytes(span(value, 1)));
+    return Get(key, as_writable_bytes(span(value, 1))).status();
   }
 
-  // Writes the key value store to the partition. If the key already exists it
-  // will be deleted before writing the new value.
-  //
-  // Returns OK if successful
-  //         RESOURCE_EXHAUSTED if there is not enough available space
-  Status Put(const std::string_view& key, const span<const std::byte>& value);
+  Status Put(std::string_view key, span<const std::byte> value);
 
-  // Alternate Put function that takes an object. The object must be trivially
-  // copyable and cannot be a pointer or span.
   template <typename T,
             typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
                                         !std::is_pointer_v<T> &&
-                                        !internal::IsSpan<T>()>>
+                                        !ConvertsToSpan<T>::value>>
   Status Put(const std::string_view& key, const T& value) {
     return Put(key, as_bytes(span(&value, 1)));
   }
 
-  // Gets the size of the value stored for provided key.
-  // Returns OK if successful
-  //         INVALID_ARGUMENT if args are invalid.
-  //         FAILED_PRECONDITION if KVS is not enabled.
-  //         NOT_FOUND if key was not found.
-  StatusWithSize GetValueSize(const std::string_view& key);
+  Status Delete(std::string_view key);
 
-  // Tests if the proposed key value entry can be stored in the KVS.
-  bool CanFitEntry(uint16_t key_len, uint16_t value_len) {
-    return kSectorInvalid != FindSpace(ChunkSize(key_len, value_len));
+  StatusWithSize ValueSize(std::string_view key) const {
+    (void)key;
+    return Status::UNIMPLEMENTED;
   }
 
-  // CleanAll cleans each sector which is currently marked for cleaning.
-  // Note: if any data is invalid/corrupt it could be lost.
-  Status CleanAll() {
-    // TODO: LOCK MUTEX
-    return CleanAllInternal();
-  }
-  size_t PendingCleanCount() {
-    // TODO: LOCK MUTEX
-    size_t ret = 0;
-    for (size_t i = 0; i < SectorCount(); i++) {
-      ret += sector_space_remaining_[i] == 0 ? 1 : 0;
+  // Classes and functions to support STL-style iteration.
+  class Iterator;
+
+  class Entry {
+   public:
+    // Guaranteed to be null-terminated
+    std::string_view key() const { return key_buffer_.data(); }
+
+    Status Get(span<std::byte> value_buffer) const {
+      return kvs_.Get(key(), value_buffer).status();
     }
-    return ret;
-  }
 
-  // Clean a single sector and return, if all sectors are clean it will set
-  // all_sectors_have_been_cleaned to true and return.
-  Status CleanOneSector(bool* all_sectors_have_been_cleaned);
+    template <typename T>
+    Status Get(T* value) const {
+      return kvs_.Get(key(), value);
+    }
 
-  // For debugging, logging, and testing. (Don't use in regular code)
-  // Note: a key_index is not valid after an element is erased or updated.
-  size_t KeyCount() const;
-  std::string_view GetKey(size_t idx) const;
-  size_t GetValueSize(size_t idx) const;
-  size_t GetMaxKeys() const { return kListCapacityMax; }
-  bool HasEmptySector() const { return HasEmptySectorImpl(kSectorInvalid); }
+    StatusWithSize ValueSize() const { return kvs_.ValueSize(key()); }
 
-  static constexpr size_t kHeaderSize = 8;  // Sector and KVS Header size
-  static constexpr uint16_t MaxValueLength() { return kChunkValueLengthMax; }
+   private:
+    friend class Iterator;
+
+    constexpr Entry(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
+
+    const KeyValueStore& kvs_;
+    std::array<char, kMaxKeyLength + 1> key_buffer_;  // +1 for null-terminator
+  };
+
+  class Iterator {
+   public:
+    Iterator& operator++() {
+      index_ += 1;
+      return *this;
+    }
+
+    Iterator& operator++(int) { return operator++(); }
+
+    // Reads the entry's key from flash.
+    const Entry& operator*();
+
+    const Entry* operator->() {
+      operator*();  // Read the key into the Entry object.
+      return &entry_;
+    }
+
+    constexpr bool operator==(const Iterator& rhs) const {
+      return index_ == rhs.index_;
+    }
+
+    constexpr bool operator!=(const Iterator& rhs) const {
+      return index_ != rhs.index_;
+    }
+
+   private:
+    friend class KeyValueStore;
+
+    constexpr Iterator(const KeyValueStore& kvs, size_t index)
+        : entry_(kvs), index_(index) {}
+
+    Entry entry_;
+    size_t index_;
+  };
+
+  // Standard aliases for iterator types.
+  using iterator = Iterator;
+  using const_iterator = Iterator;
+
+  Iterator begin() const { return Iterator(*this, 0); }
+  Iterator end() const { return Iterator(*this, empty() ? 0 : size() - 1); }
+
+  // Returns the number of valid entries in the KeyValueStore.
+  size_t size() const { return key_map_size_; }
+
+  static constexpr size_t max_size() { return kMaxKeyLength; }
+
+  size_t empty() const { return size() == 0u; }
 
  private:
-  using KeyIndex = uint8_t;
-  using SectorIndex = uint32_t;
+  using Address = FlashPartition::Address;
 
-  static constexpr uint16_t kVersion = 1;
-  static constexpr KeyIndex kListCapacityMax = cfg::kKvsMaxKeyCount;
-  static constexpr SectorIndex kSectorCountMax = cfg::kKvsMaxSectorCount;
-
-  // Number of bits for fields in KVSHeader:
-  static constexpr int kChunkHeaderKeyFieldNumBits = 4;
-  static constexpr int kChunkHeaderChunkFieldNumBits = 12;
-
-  static constexpr uint16_t kSectorReadyValue = 0xABCD;
-  static constexpr uint16_t kChunkSyncValue = 0x55AA;
-
-  static constexpr uint16_t kChunkLengthMax =
-      ((1 << kChunkHeaderChunkFieldNumBits) - 1);
-  static constexpr uint16_t kChunkKeyLengthMax =
-      ((1 << kChunkHeaderKeyFieldNumBits) - 1);
-  static constexpr uint16_t kChunkValueLengthMax =
-      (kChunkLengthMax - kChunkKeyLengthMax);
-
-  static constexpr SectorIndex kSectorInvalid = 0xFFFFFFFFul;
-  static constexpr FlashPartition::Address kAddressInvalid = 0xFFFFFFFFul;
-  static constexpr uint64_t kSectorCleanNotPending = 0xFFFFFFFFFFFFFFFFull;
-
-  static constexpr uint16_t kFlagsIsErasedMask = 0x0001;
-  static constexpr uint16_t kMaxAlignmentBytes = 128;
-
-  // This packs into 16 bytes.
-  struct KvsSectorHeaderMeta {
-    uint16_t synchronize_token;
-    uint16_t version;
-    uint16_t alignment_bytes;  // alignment used for each chunk in this sector.
-    uint16_t padding;          // padding to support uint64_t alignment.
-  };
-  static_assert(sizeof(KvsSectorHeaderMeta) == kHeaderSize,
-                "Invalid KvsSectorHeaderMeta size");
-
-  // sector_clean_pending is broken off from KvsSectorHeaderMeta to support
-  // larger than sizeof(KvsSectorHeaderMeta) flash write alignments.
-  struct KvsSectorHeaderCleaning {
-    // When this sector is not marked for cleaning this will be in the erased
-    // state. When marked for clean this value indicates the order the sectors
-    // were marked for cleaning, and therfore which data is the newest.
-    // To remain backwards compatible with v2 and v3 KVS this is 8 bytes, if the
-    // alignment is greater than 8 we will check the entire alignment is in the
-    // default erased state.
-    uint64_t sector_clean_order;
-  };
-  static_assert(sizeof(KvsSectorHeaderCleaning) == kHeaderSize,
-                "Invalid KvsSectorHeaderCleaning size");
-
-  // This packs into 8 bytes, to support uint64_t alignment.
-  struct KvsHeader {
-    uint16_t synchronize_token;
-    uint16_t crc;  // Crc of the key + data (Ignoring any padding bytes)
-    // flags is a Bitmask: bits 15-1 reserved = 0,
-    // bit 0: is_erased [0 when not erased, 1 when erased]
-    uint16_t flags;
-    // On little endian the length fields map to memory as follows:
-    // byte array: [ 0x(c0to3 k0to3) 0x(c8to11 c4to7) ]
-    // Key length does not include trailing zero. That is not stored.
-    uint16_t key_len : kChunkHeaderKeyFieldNumBits;
-    // Chunk length is the total length of the chunk before alignment.
-    // That way we can work out the length of the value as:
-    // (chunk length - key length - size of chunk header).
-    uint16_t chunk_len : kChunkHeaderChunkFieldNumBits;
-  };
-  static_assert(sizeof(KvsHeader) == kHeaderSize, "Invalid KvsHeader size");
-
-  struct KeyMap {
-    std::string_view key() const { return {key_buffer, key_length}; }
-
-    FlashPartition::Address address;
-    char key_buffer[kChunkKeyLengthMax + 1];  // +1 for null terminator
-    uint8_t key_length;
-    bool is_erased;
-    uint16_t chunk_len;
-
-    static_assert(kChunkKeyLengthMax <=
-                  std::numeric_limits<decltype(key_length)>::max());
+  struct KeyMapEntry {
+    uint32_t key_hash;
+    uint32_t key_version;
+    Address address;  // In partition address.
   };
 
-  static constexpr bool InvalidKey(const std::string_view& key) {
-    return key.empty() || key.size() > kChunkKeyLengthMax;
-  }
+  struct SectorMapEntry {
+    uint16_t tail_free_bytes;
+    uint16_t valid_bytes;  // sum of sizes of valid entries
 
-  // NOTE: All public APIs handle the locking, the internal methods assume the
-  // lock has already been acquired.
-
-  SectorIndex AddressToSectorIndex(FlashPartition::Address address) const {
-    return address / partition_.GetSectorSizeBytes();
-  }
-
-  FlashPartition::Address SectorIndexToAddress(SectorIndex index) const {
-    return index * partition_.GetSectorSizeBytes();
-  }
-
-  // Returns kAddressInvalid if no space is found, otherwise the address.
-  FlashPartition::Address FindSpace(size_t requested_size) const;
-
-  // Attempts to rewrite a key's value by appending the new value to the same
-  // sector. If the sector is full the value is written to another sector, and
-  // the sector is marked for cleaning.
-  // Returns RESOURCE_EXHAUSTED if no space is available, OK otherwise.
-  Status RewriteValue(KeyIndex key_index,
-                      const span<const std::byte>& value,
-                      bool is_erased = false);
-
-  bool ValueMatches(KeyIndex key_index,
-                    const span<const std::byte>& value,
-                    bool is_erased);
-
-  // ResetSector erases the sector and writes the sector header.
-  Status ResetSector(SectorIndex sector_index);
-  Status WriteKeyValue(FlashPartition::Address address,
-                       const std::string_view& key,
-                       const span<const std::byte>& value,
-                       bool is_erased = false);
-  uint32_t SectorSpaceRemaining(SectorIndex sector_index) const;
-
-  // Returns idx if key is found, otherwise kListCapacityMax.
-  KeyIndex FindKeyInMap(const std::string_view& key) const;
-  bool IsKeyInMap(const std::string_view& key) const {
-    return FindKeyInMap(key) != kListCapacityMax;
-  }
-
-  void RemoveFromMap(KeyIndex key_index);
-  Status AppendToMap(const std::string_view& key,
-                     FlashPartition::Address address,
-                     size_t chunk_len,
-                     bool is_erased = false);
-  void UpdateMap(KeyIndex key_index,
-                 FlashPartition::Address address,
-                 uint16_t chunk_len,
-                 bool is_erased = false);
-  uint16_t CalculateCrc(const std::string_view& key,
-                        const span<const std::byte>& value) const;
-
-  // Calculates the CRC by reading the value from flash in chunks.
-  Status CalculateCrcFromValueAddress(const std::string_view& key,
-                                      FlashPartition::Address value_address,
-                                      uint16_t value_size,
-                                      uint16_t* crc_ret);
-
-  uint16_t RoundUpForAlignment(uint16_t size) const {
-    if (size % alignment_bytes_ != 0) {
-      return size + alignment_bytes_ - size % alignment_bytes_;
+    bool HasSpace(size_t required_space) const {
+      return (tail_free_bytes >= required_space);
     }
-    return size;
+  };
+
+  Status InvalidOperation(std::string_view key) const;
+
+  static constexpr bool InvalidKey(std::string_view key) {
+    return key.empty() || (key.size() > kMaxKeyLength);
   }
 
-  // The buffer is chosen to be no larger then the config value, and
-  // be a multiple of the flash alignment.
-  size_t TempBufferAlignedSize() const {
-    CHECK_GE(sizeof(temp_buffer_), partition_.GetAlignmentBytes());
-    return sizeof(temp_buffer_) -
-           (sizeof(temp_buffer_) % partition_.GetAlignmentBytes());
+  Status FindKeyMapEntry(std::string_view key,
+                         const KeyMapEntry** result) const;
+
+  // Non-const version of FindKeyMapEntry.
+  Status FindKeyMapEntry(std::string_view key, KeyMapEntry** result) {
+    return static_cast<const KeyValueStore&>(*this).FindKeyMapEntry(
+        key, const_cast<const KeyMapEntry**>(result));
   }
 
-  // Moves a key/value chunk from one address to another, all fields expected to
-  // be aligned.
-  Status MoveChunk(FlashPartition::Address dest_address,
-                   FlashPartition::Address src_address,
-                   uint16_t size);
+  Status ReadEntryHeader(const KeyMapEntry& entry, EntryHeader* header) const;
+  Status ReadEntryKey(const KeyMapEntry& entry,
+                      size_t key_length,
+                      char* key) const;
 
-  // Size of a chunk including header, key, value, and alignment padding.
-  size_t ChunkSize(size_t key_length, size_t value_length) const {
-    return RoundUpForAlignment(sizeof(KvsHeader)) +
-           RoundUpForAlignment(key_length) + RoundUpForAlignment(value_length);
+  StatusWithSize ReadEntryValue(const KeyMapEntry& entry,
+                                const EntryHeader& header,
+                                span<std::byte> value) const;
+
+  Status ValidateEntryChecksum(const EntryHeader& header,
+                               std::string_view key,
+                               span<const std::byte> value) const;
+
+  Status WriteEntryForExistingKey(KeyMapEntry* key_map_entry,
+                                  std::string_view key,
+                                  span<const std::byte> value);
+
+  Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
+
+  SectorMapEntry* FindSectorWithSpace(size_t size);
+
+  Status FindOrRecoverSectorWithSpace(SectorMapEntry** sector, size_t size);
+
+  Status GarbageCollectOneSector(SectorMapEntry** sector);
+
+  SectorMapEntry* FindSectorToGarbageCollect();
+
+  Status AppendEntry(SectorMapEntry* sector,
+                     KeyMapEntry* entry,
+                     std::string_view key,
+                     span<const std::byte> value);
+
+  Status VerifyEntry(SectorMapEntry* sector, KeyMapEntry* entry);
+
+  span<const std::byte> CalculateEntryChecksum(
+      const EntryHeader& header,
+      std::string_view key,
+      span<const std::byte> value) const;
+
+  Status RelocateEntry(KeyMapEntry* entry);
+
+  bool SectorEmpty(const SectorMapEntry& sector) const {
+    return (sector.tail_free_bytes == partition_.sector_available_size_bytes());
   }
 
-  // Sectors should be cleaned when full, every valid (Most recent, not erased)
-  // chunk of data is moved to another sector and the sector is erased.
-  // TODO: Clean sectors with lots of invalid data, without a rewrite
-  // or erase triggering it.
-  Status MarkSectorForClean(SectorIndex sector);
-  Status CleanSector(SectorIndex sector);
-  Status CleanAllInternal();
-  Status GarbageCollectImpl(bool clean_pending_sectors,
-                            bool exit_when_have_free_sector);
-  Status FullGarbageCollect();
-  Status EnforceFreeSector();
-
-  SectorIndex SectorCount() const {
-    return std::min(partition_.GetSectorCount(), kSectorCountMax);
+  size_t RecoverableBytes(const SectorMapEntry& sector) {
+    return partition_.sector_size_bytes() - sector.valid_bytes -
+           sector.tail_free_bytes;
   }
 
-  size_t SectorSpaceAvailableWhenEmpty() const {
-    return partition_.GetSectorSizeBytes() -
-           RoundUpForAlignment(sizeof(KvsSectorHeaderMeta)) -
-           RoundUpForAlignment(sizeof(KvsSectorHeaderCleaning));
+  Address SectorBaseAddress(SectorMapEntry* sector) const {
+    return (sector - sector_map_.data()) * partition_.sector_size_bytes();
   }
 
-  bool HasEmptySectorImpl(SectorIndex skip_sector) const {
-    for (SectorIndex i = 0; i < SectorCount(); i++) {
-      if (i != skip_sector &&
-          sector_space_remaining_[i] == SectorSpaceAvailableWhenEmpty()) {
-        return true;
-      }
-    }
-    return false;
+  Address NextWritableAddress(SectorMapEntry* sector) const {
+    return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
+           sector->tail_free_bytes;
   }
 
-  bool IsInLastFreeSector(FlashPartition::Address address) {
-    return sector_space_remaining_[AddressToSectorIndex(address)] ==
-               SectorSpaceAvailableWhenEmpty() &&
-           !HasEmptySectorImpl(AddressToSectorIndex(address));
+  bool EntryMapFull() const { return key_map_size_ == kMaxEntries; }
+
+  span<KeyMapEntry> entries() { return span(key_map_.data(), key_map_size_); }
+
+  span<const KeyMapEntry> entries() const {
+    return span(key_map_.data(), key_map_size_);
   }
 
   FlashPartition& partition_;
-  // TODO: MUTEX
-  bool enabled_ = false;
-  uint8_t alignment_bytes_ = 0;
-  uint64_t next_sector_clean_order_ = 0;
+  EntryHeaderFormat entry_header_format_;
+  Options options_;
 
-  // Free space available in each sector, set to 0 when clean is pending/active
-  uint32_t sector_space_remaining_[kSectorCountMax] = {0};
-  uint64_t sector_clean_order_[kSectorCountMax] = {kSectorCleanNotPending};
-  KeyMap key_map_[kListCapacityMax] = {};
-  KeyIndex map_size_ = 0;
+  // Map is unordered; finding a key requires scanning and
+  // verifying a match by reading the actual entry.
+  std::array<KeyMapEntry, kMaxEntries> key_map_;
+  size_t key_map_size_;  // Number of valid entries in entry_map
 
-  // Add +1 for a null terminator. The keys are used as string_views, but the
-  // null-terminator provides additional safetly.
-  char temp_key_buffer_[kChunkKeyLengthMax + 1u] = {0};
-  uint8_t temp_buffer_[cfg::kKvsBufferSize] = {0};
+  // This is dense, so sector_id == indexof(SectorMapEntry) in sector_map
+  std::array<SectorMapEntry, kUsableSectors> sector_map_;
+  size_t last_written_sector_;  // TODO: this variable is not used!
 };
 
 }  // namespace pw::kvs

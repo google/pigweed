@@ -14,6 +14,7 @@
 #pragma once
 
 #include <array>
+#include <cstring>
 
 #include "pw_kvs/flash_memory.h"
 #include "pw_status/status.h"
@@ -38,17 +39,17 @@ class InMemoryFakeFlash : public FlashMemory {
   // Returns: OK, on success.
   //          INVALID_ARGUMENT, if address or sector count is invalid.
   //          UNKNOWN, on HAL error
-  Status Erase(Address addr, uint32_t num_sectors) override {
-    if (addr % GetSectorSizeBytes() != 0) {
+  Status Erase(Address addr, size_t num_sectors) override {
+    if (addr % sector_size_bytes() != 0) {
       return Status::INVALID_ARGUMENT;
     }
-    if (addr / GetSectorSizeBytes() + num_sectors > GetSectorCount()) {
+    if (addr / sector_size_bytes() + num_sectors > sector_count()) {
       return Status::UNKNOWN;
     }
-    if (addr % GetAlignmentBytes() != 0) {
+    if (addr % alignment_bytes() != 0) {
       return Status::INVALID_ARGUMENT;
     }
-    memset(&buffer_[addr], 0xFF, GetSectorSizeBytes() * num_sectors);
+    std::memset(&buffer_[addr], 0xFF, sector_size_bytes() * num_sectors);
     return Status::OK;
   }
 
@@ -56,13 +57,11 @@ class InMemoryFakeFlash : public FlashMemory {
   // Returns: OK, on success.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  Status Read(uint8_t* dest_ram_addr,
-              Address source_flash_addr,
-              uint32_t len) override {
-    if ((source_flash_addr + len) >= GetSectorCount() * GetSizeBytes()) {
+  StatusWithSize Read(Address address, span<std::byte> output) override {
+    if (address + output.size() >= sector_count() * size_bytes()) {
       return Status::INVALID_ARGUMENT;
     }
-    memcpy(dest_ram_addr, &buffer_[source_flash_addr], len);
+    std::memcpy(output.data(), &buffer_[address], output.size());
     return Status::OK;
   }
 
@@ -70,22 +69,20 @@ class InMemoryFakeFlash : public FlashMemory {
   // Returns: OK, on success.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  Status Write(Address dest_flash_addr,
-               const uint8_t* source_ram_addr,
-               uint32_t len) override {
-    if ((dest_flash_addr + len) >= GetSectorCount() * GetSizeBytes() ||
-        dest_flash_addr % GetAlignmentBytes() != 0 ||
-        len % GetAlignmentBytes() != 0) {
+  StatusWithSize Write(Address address, span<const std::byte> data) override {
+    if ((address + data.size()) >= sector_count() * size_bytes() ||
+        address % alignment_bytes() != 0 ||
+        data.size() % alignment_bytes() != 0) {
       return Status::INVALID_ARGUMENT;
     }
     // Check in erased state
-    for (unsigned i = 0; i < len; i++) {
-      if (buffer_[dest_flash_addr + i] != 0xFF) {
+    for (unsigned i = 0; i < data.size(); i++) {
+      if (buffer_[address + i] != 0xFF) {
         return Status::UNKNOWN;
       }
     }
-    memcpy(&buffer_[dest_flash_addr], source_ram_addr, len);
-    return Status::OK;
+    std::memcpy(&buffer_[address], data.data(), data.size());
+    return StatusWithSize(data.size());
   }
 
  private:

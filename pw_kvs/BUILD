@@ -25,16 +25,17 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_kvs",
     srcs = [
-        "flash.cc",
+        "checksum.cc",
+        "flash_memory.cc",
         "key_value_store.cc",
+        "pw_kvs_private/format.h",
+        "pw_kvs_private/macros.h",
     ],
     hdrs = [
-        "public/pw_kvs/assert.h",
-        "public/pw_kvs/flash.h",
+        "public/pw_kvs/checksum.h",
         "public/pw_kvs/flash_memory.h",
         "public/pw_kvs/in_memory_fake_flash.h",
         "public/pw_kvs/key_value_store.h",
-        "public/pw_kvs/partition_table_entry.h",
     ],
     includes = ["public"],
     deps = [

@@ -13,32 +13,50 @@
 // the License.
 #pragma once
 
-#include <algorithm>
-#include <cinttypes>
-#include <cstring>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
 
-#include "pw_kvs/assert.h"
-#include "pw_kvs/partition_table_entry.h"
-#include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
+
+namespace pw {
+
+// TODO: These are general-purpose utility functions that should be moved
+//       elsewhere.
+constexpr size_t AlignDown(size_t value, size_t alignment) {
+  return (value / alignment) * alignment;
+}
+
+constexpr size_t AlignUp(size_t value, size_t alignment) {
+  return (value + alignment - 1) / alignment * alignment;
+}
+
+}  // namespace pw
 
 namespace pw::kvs {
+
+enum class PartitionPermission : bool {
+  kReadOnly,
+  kReadAndWrite,
+};
 
 class FlashMemory {
  public:
   // The flash address is in the range of: 0 to FlashSize.
   typedef uint32_t Address;
-  constexpr FlashMemory(uint32_t sector_size,
-                        uint32_t sector_count,
-                        uint8_t alignment,
+  constexpr FlashMemory(size_t sector_size,
+                        size_t sector_count,
+                        size_t alignment,
                         uint32_t start_address = 0,
                         uint32_t sector_start = 0,
-                        uint8_t erased_memory_content = 0xFF)
+                        std::byte erased_memory_content = std::byte{0xFF})
       : sector_size_(sector_size),
         flash_sector_count_(sector_count),
         alignment_(alignment),
         start_address_(start_address),
-        sector_start_(sector_start),
+        start_sector_(sector_start),
         erased_memory_content_(erased_memory_content) {}
 
   virtual ~FlashMemory() = default;
@@ -54,43 +72,40 @@ class FlashMemory {
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or sector count is invalid.
   //          UNKNOWN, on HAL error
-  virtual Status Erase(Address flash_address, uint32_t num_sectors) = 0;
+  virtual Status Erase(Address flash_address, size_t num_sectors) = 0;
 
   // Reads bytes from flash into buffer. Blocking call.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  virtual Status Read(uint8_t* destination_ram_address,
-                      Address source_flash_address,
-                      uint32_t len) = 0;
+  virtual StatusWithSize Read(Address address, span<std::byte> output) = 0;
 
   // Writes bytes to flash. Blocking call.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  virtual Status Write(Address destination_flash_address,
-                       const uint8_t* source_ram_address,
-                       uint32_t len) = 0;
+  virtual StatusWithSize Write(Address destination_flash_address,
+                               span<const std::byte> data) = 0;
 
   // Convert an Address to an MCU pointer, this can be used for memory
   // mapped reads. Return NULL if the memory is not memory mapped.
-  virtual uint8_t* FlashAddressToMcuAddress(Address) const { return nullptr; }
+  virtual std::byte* FlashAddressToMcuAddress(Address) const { return nullptr; }
 
-  // GetStartSector() is useful for FlashMemory instances where the
+  // start_sector() is useful for FlashMemory instances where the
   // sector start is not 0. (ex.: cases where there are portions of flash
   // that should be handled independently).
-  constexpr uint32_t GetStartSector() const { return sector_start_; }
-  constexpr uint32_t GetSectorSizeBytes() const { return sector_size_; }
-  constexpr uint32_t GetSectorCount() const { return flash_sector_count_; }
-  constexpr uint8_t GetAlignmentBytes() const { return alignment_; }
-  constexpr uint32_t GetSizeBytes() const {
+  constexpr uint32_t start_sector() const { return start_sector_; }
+  constexpr size_t sector_size_bytes() const { return sector_size_; }
+  constexpr size_t sector_count() const { return flash_sector_count_; }
+  constexpr size_t alignment_bytes() const { return alignment_; }
+  constexpr size_t size_bytes() const {
     return sector_size_ * flash_sector_count_;
   }
   // Address of the start of flash (the address of sector 0)
-  constexpr uint32_t GetStartAddress() const { return start_address_; }
-  constexpr uint8_t GetErasedMemoryContent() const {
+  constexpr uint32_t start_address() const { return start_address_; }
+  constexpr std::byte erased_memory_content() const {
     return erased_memory_content_;
   }
 
@@ -99,14 +114,14 @@ class FlashMemory {
   const uint32_t flash_sector_count_;
   const uint8_t alignment_;
   const uint32_t start_address_;
-  const uint32_t sector_start_;
-  const uint8_t erased_memory_content_;
+  const uint32_t start_sector_;
+  const std::byte erased_memory_content_;
 };
 
 class FlashPartition {
  public:
   // The flash address is in the range of: 0 to PartitionSize.
-  typedef uint32_t Address;
+  using Address = uint32_t;
 
   constexpr FlashPartition(
       FlashMemory* flash,
@@ -118,12 +133,17 @@ class FlashPartition {
         sector_count_(sector_count),
         permission_(permission) {}
 
-  constexpr FlashPartition(FlashMemory* flash, PartitionTableEntry entry)
+#if 0
+  constexpr FlashPartition(
+      FlashMemory* flash,
+      uint32_t start_sector_index,
+      uint32_t end_sector_index,
+      PartitionPermission permission = PartitionPermission::kReadAndWrite)
       : flash_(*flash),
-        start_sector_index_(entry.partition_start_sector_index),
-        sector_count_(entry.partition_end_sector_index -
-                      entry.partition_start_sector_index + 1),
-        permission_(entry.partition_permission) {}
+        start_sector_index_(start_sector_index),
+        sector_count_(end_sector_index - start_sector_index + 1),
+        permission_(permission) {}
+#endif
 
   virtual ~FlashPartition() = default;
 
@@ -134,32 +154,17 @@ class FlashPartition {
   //          INVALID_ARGUMENT, if address or sector count is invalid.
   //          PERMISSION_DENIED, if partition is read only.
   //          UNKNOWN, on HAL error
-  virtual Status Erase(Address address, uint32_t num_sectors) {
-    if (permission_ == PartitionPermission::kReadOnly) {
-      return Status::PERMISSION_DENIED;
-    }
-    if (Status status =
-            CheckBounds(address, num_sectors * GetSectorSizeBytes());
-        !status.ok()) {
-      return status;
-    }
-    return flash_.Erase(PartitionToFlashAddress(address), num_sectors);
-  }
+  virtual Status Erase(Address address, size_t num_sectors);
 
   // Reads bytes from flash into buffer. Blocking call.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  virtual Status Read(uint8_t* destination_ram_address,
-                      Address source_flash_address,
-                      uint32_t len) {
-    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
-      return status;
-    }
-    return flash_.Read(destination_ram_address,
-                       PartitionToFlashAddress(source_flash_address),
-                       len);
+  virtual StatusWithSize Read(Address address, span<std::byte> output);
+
+  StatusWithSize Read(Address address, size_t length, void* output) {
+    return Read(address, span(static_cast<std::byte*>(output), length));
   }
 
   // Writes bytes to flash. Blocking call.
@@ -168,20 +173,10 @@ class FlashPartition {
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          PERMISSION_DENIED, if partition is read only.
   //          UNKNOWN, on HAL error
-  virtual Status Write(Address destination_flash_address,
-                       const uint8_t* source_ram_address,
-                       uint32_t len) {
-    if (permission_ == PartitionPermission::kReadOnly) {
-      return Status::PERMISSION_DENIED;
-    }
-    if (Status status = CheckBounds(destination_flash_address, len);
-        !status.ok()) {
-      return status;
-    }
-    return flash_.Write(PartitionToFlashAddress(destination_flash_address),
-                        source_ram_address,
-                        len);
-  }
+  virtual StatusWithSize Write(Address address, span<const std::byte> data);
+
+  StatusWithSize Write(Address start_address,
+                       std::initializer_list<span<const std::byte>> data);
 
   // Check to see if chunk of flash memory is erased. Address and len need to
   // be aligned with FlashMemory.
@@ -189,163 +184,46 @@ class FlashPartition {
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  virtual Status IsChunkErased(Address source_flash_address,
-                               uint32_t len,
-                               bool* is_erased) {
-    // Max alignment is artifical to keep the stack usage low for this
-    // function. Using 16 because it's the alignment of encrypted flash.
-    const uint8_t kMaxAlignment = 16;
-    // Relying on Read() to check address and len arguments.
-    if (!is_erased) {
-      return Status::INVALID_ARGUMENT;
-    }
-    uint8_t alignment = GetAlignmentBytes();
-    if (alignment > kMaxAlignment || kMaxAlignment % alignment ||
-        len % alignment) {
-      return Status::INVALID_ARGUMENT;
-    }
+  // TODO: StatusWithBool
+  virtual Status IsRegionErased(Address source_flash_address,
+                                size_t len,
+                                bool* is_erased);
 
-    uint8_t buffer[kMaxAlignment];
-    uint8_t erased_pattern_buffer[kMaxAlignment];
-    size_t offset = 0;
-    std::memset(erased_pattern_buffer,
-                flash_.GetErasedMemoryContent(),
-                sizeof(erased_pattern_buffer));
-    *is_erased = false;
-    while (len > 0) {
-      // Check earlier that len is aligned, no need to round up
-      uint16_t read_size = std::min(static_cast<uint32_t>(sizeof(buffer)), len);
-      if (Status status =
-              Read(buffer, source_flash_address + offset, read_size);
-          !status.ok()) {
-        return status;
-      }
-      if (std::memcmp(buffer, erased_pattern_buffer, read_size)) {
-        // Detected memory chunk is not entirely erased
-        return Status::OK;
-      }
-      offset += read_size;
-      len -= read_size;
-    }
-    *is_erased = true;
-    return Status::OK;
+  constexpr uint32_t sector_size_bytes() const {
+    return flash_.sector_size_bytes();
   }
 
-  constexpr uint32_t GetSectorSizeBytes() const {
-    return flash_.GetSectorSizeBytes();
+  // Overridden by base classes which store metadata at the start of a sector.
+  virtual uint32_t sector_available_size_bytes() const {
+    return sector_size_bytes();
   }
 
-  uint32_t GetSizeBytes() const {
-    return GetSectorCount() * GetSectorSizeBytes();
-  }
+  size_t size_bytes() const { return sector_count() * sector_size_bytes(); }
 
-  virtual uint8_t GetAlignmentBytes() const {
-    return flash_.GetAlignmentBytes();
-  }
+  virtual size_t alignment_bytes() const { return flash_.alignment_bytes(); }
 
-  virtual uint32_t GetSectorCount() const { return sector_count_; }
+  virtual size_t sector_count() const { return sector_count_; }
 
   // Convert a FlashMemory::Address to an MCU pointer, this can be used for
   // memory mapped reads. Return NULL if the memory is not memory mapped.
-  uint8_t* PartitionAddressToMcuAddress(Address address) const {
+  std::byte* PartitionAddressToMcuAddress(Address address) const {
     return flash_.FlashAddressToMcuAddress(PartitionToFlashAddress(address));
   }
 
   FlashMemory::Address PartitionToFlashAddress(Address address) const {
-    return flash_.GetStartAddress() +
-           (start_sector_index_ - flash_.GetStartSector()) *
-               GetSectorSizeBytes() +
+    return flash_.start_address() +
+           (start_sector_index_ - flash_.start_sector()) * sector_size_bytes() +
            address;
   }
 
  protected:
-  Status CheckBounds(Address address, size_t len) const {
-    if (address + len > GetSizeBytes()) {
-      PW_LOG_ERROR(
-          "Attempted out-of-bound flash memory access (address: %" PRIu32
-          " length: %zu)",
-          address,
-          len);
-      return Status::INVALID_ARGUMENT;
-    }
-    return Status::OK;
-  }
+  Status CheckBounds(Address address, size_t len) const;
 
  private:
   FlashMemory& flash_;
   const uint32_t start_sector_index_;
   const uint32_t sector_count_;
   const PartitionPermission permission_;
-};
-
-// FlashSubPartition defines a new partition which maps itself as a smaller
-// piece of another partition. This can used when a partition has special
-// behaviours (for example encrypted flash).
-// For example, this will be the first sector of test_partition:
-//    FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-class FlashSubPartition : public FlashPartition {
- public:
-  constexpr FlashSubPartition(FlashPartition* parent_partition,
-                              uint32_t start_sector_index,
-                              uint32_t sector_count)
-      : FlashPartition(*parent_partition),
-        partition_(parent_partition),
-        start_sector_index_(start_sector_index),
-        sector_count_(sector_count) {}
-
-  Status Erase(Address address, uint32_t num_sectors) override {
-    if (Status status =
-            CheckBounds(address, num_sectors * GetSectorSizeBytes());
-        !status.ok()) {
-      return status;
-    }
-    return partition_->Erase(ParentAddress(address), num_sectors);
-  }
-
-  Status Read(uint8_t* destination_ram_address,
-              Address source_flash_address,
-              uint32_t len) override {
-    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
-      return status;
-    }
-    return partition_->Read(
-        destination_ram_address, ParentAddress(source_flash_address), len);
-  }
-
-  Status Write(Address destination_flash_address,
-               const uint8_t* source_ram_address,
-               uint32_t len) override {
-    if (Status status = CheckBounds(destination_flash_address, len);
-        !status.ok()) {
-      return status;
-    }
-    return partition_->Write(
-        ParentAddress(destination_flash_address), source_ram_address, len);
-  }
-
-  Status IsChunkErased(Address source_flash_address,
-                       uint32_t len,
-                       bool* is_erased) override {
-    if (Status status = CheckBounds(source_flash_address, len); !status.ok()) {
-      return status;
-    }
-    return partition_->IsChunkErased(
-        ParentAddress(source_flash_address), len, is_erased);
-  }
-
-  uint8_t GetAlignmentBytes() const override {
-    return partition_->GetAlignmentBytes();
-  }
-
-  uint32_t GetSectorCount() const override { return sector_count_; }
-
- private:
-  Address ParentAddress(Address address) const {
-    return address + start_sector_index_ * partition_->GetSectorSizeBytes();
-  }
-  FlashPartition* partition_;
-  const uint32_t start_sector_index_;
-  const uint32_t sector_count_;
 };
 
 }  // namespace pw::kvs

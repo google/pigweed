@@ -22,16 +22,17 @@ config("default_config") {
 source_set("pw_kvs") {
   public_configs = [ ":default_config" ]
   public = [
-    "public/pw_kvs/assert.h",
-    "public/pw_kvs/flash.h",
+    "public/pw_kvs/checksum.h",
     "public/pw_kvs/flash_memory.h",
     "public/pw_kvs/in_memory_fake_flash.h",
     "public/pw_kvs/key_value_store.h",
-    "public/pw_kvs/partition_table_entry.h",
   ]
   sources = [
-    "flash.cc",
+    "checksum.cc",
+    "flash_memory.cc",
     "key_value_store.cc",
+    "pw_kvs_private/format.h",
+    "pw_kvs_private/macros.h",
   ]
   sources += public
   public_deps = [
@@ -41,6 +42,7 @@ source_set("pw_kvs") {
     dir_pw_checksum,
     dir_pw_log,
   ]
+  friend = [ ":key_value_store_test" ]
 }
 
 pw_test_group("tests") {

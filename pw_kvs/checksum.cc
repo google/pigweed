@@ -11,23 +11,25 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
 
-#include "pw_kvs/flash_memory.h"
+#include "pw_kvs/checksum.h"
+
+#include <cstring>
 
 namespace pw::kvs {
 
-// Writes a buffer which is not guaranteed to be aligned, pads remaining
-// bytes with 0.
-Status PaddedWrite(FlashPartition* partition,
-                   FlashPartition::Address address,
-                   const void* buffer,
-                   uint16_t size);
+using std::byte;
 
-// Read into a buffer when size is not guaranteed to be aligned.
-Status UnalignedRead(FlashPartition* partition,
-                     void* buffer,
-                     FlashPartition::Address address,
-                     uint16_t size);
+Status ChecksumAlgorithm::Verify(span<const byte> checksum) const {
+  if (checksum.size() != size_bytes()) {
+    return Status::INVALID_ARGUMENT;
+  }
+
+  if (std::memcmp(state_.data(), checksum.data(), state_.size()) != 0) {
+    return Status::DATA_LOSS;
+  }
+
+  return Status::OK;
+}
 
 }  // namespace pw::kvs
