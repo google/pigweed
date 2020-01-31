@@ -33,8 +33,8 @@ import sys
 
 # TODO(mohrr) remove import-error disabling, not sure why pylint has issues
 # with it.
-import cipd.update  # pylint: disable=import-error
-import cipd.wrapper  # pylint: disable=import-error
+import cipd_setup.update  # pylint: disable=import-error
+import cipd_setup.wrapper  # pylint: disable=import-error
 import cargo_setup  # pylint: disable=import-error
 import environment  # pylint: disable=import-error
 import host_build_setup  # pylint: disable=import-error
@@ -82,11 +82,11 @@ class EnvSetup(object):
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
 
-        cipd_client = cipd.wrapper.init(install_dir)
+        cipd_client = cipd_setup.wrapper.init(install_dir)
 
         package_files = glob.glob(
-            os.path.join(self._pw_root, 'env_setup', 'cipd', '*.json'))
-        cipd.update.update(
+            os.path.join(self._pw_root, 'env_setup', 'cipd_setup', '*.json'))
+        cipd_setup.update.update(
             cipd=cipd_client,
             root_install_dir=install_dir,
             package_files=package_files,
