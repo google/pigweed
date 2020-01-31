@@ -14,7 +14,7 @@
 
 # This script must be tested on bash, zsh, and dash.
 
-function _abspath () {
+function _abspath {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
 
