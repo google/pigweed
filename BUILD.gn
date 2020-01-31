@@ -53,8 +53,6 @@ group("pw_modules") {
     "$dir_pigweed/docs",
     "$dir_pw_base64",
     "$dir_pw_checksum",
-    "$dir_pw_kvs",
-    "$dir_pw_minimal_cpp_stdlib",
     "$dir_pw_polyfill",
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf",
@@ -65,6 +63,14 @@ group("pw_modules") {
     "$dir_pw_unit_test",
     "$dir_pw_varint",
   ]
+
+  # TODO(frolv): Remove this when new KVS is ready.
+  if (host_os != "win") {
+    deps += [
+      "$dir_pw_kvs",
+      "$dir_pw_minimal_cpp_stdlib",
+    ]
+  }
 }
 
 # Targets for all module unit test groups.
@@ -72,9 +78,7 @@ pw_test_group("pw_module_tests") {
   group_deps = [
     "$dir_pw_base64:tests",
     "$dir_pw_checksum:tests",
-    "$dir_pw_kvs:tests",
     "$dir_pw_log:tests",
-    "$dir_pw_minimal_cpp_stdlib:tests",
     "$dir_pw_polyfill:tests",
     "$dir_pw_preprocessor:tests",
     "$dir_pw_protobuf:tests",
@@ -89,5 +93,13 @@ pw_test_group("pw_module_tests") {
   # TODO(pwbug/17): Re-think when Pigweed config system is added.
   if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
     group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
+  }
+
+  # TODO(frolv): Remove this when new KVS is ready.
+  if (host_os != "win") {
+    group_deps += [
+      "$dir_pw_kvs:tests",
+      "$dir_pw_minimal_cpp_stdlib:tests",
+    ]
   }
 }
