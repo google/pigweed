@@ -217,7 +217,10 @@ class FlashPartition {
     return flash_.FlashAddressToMcuAddress(PartitionToFlashAddress(address));
   }
 
-  FlashMemory::Address PartitionToFlashAddress(Address address) const {
+  // Converts an address from the partition address space to the flash address
+  // space. If the partition reserves additional space in the sector, the flash
+  // address space may not be contiguous, and this conversion accounts for that.
+  virtual FlashMemory::Address PartitionToFlashAddress(Address address) const {
     return flash_.start_address() +
            (start_sector_index_ - flash_.start_sector()) * sector_size_bytes() +
            address;
