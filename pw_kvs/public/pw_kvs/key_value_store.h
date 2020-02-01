@@ -77,8 +77,8 @@ class KeyValueStore {
       : partition_(*partition),
         entry_header_format_(format),
         options_(options),
-        key_map_{},
-        key_map_size_(0),
+        key_descriptor_list_{},
+        key_descriptor_list_size_(0),
         sector_map_{},
         last_written_sector_(0) {}
 
@@ -190,7 +190,7 @@ class KeyValueStore {
   Iterator end() const { return Iterator(*this, empty() ? 0 : size() - 1); }
 
   // Returns the number of valid entries in the KeyValueStore.
-  size_t size() const { return key_map_size_; }
+  size_t size() const { return key_descriptor_list_size_; }
 
   static constexpr size_t max_size() { return kMaxKeyLength; }
 
@@ -199,13 +199,13 @@ class KeyValueStore {
  private:
   using Address = FlashPartition::Address;
 
-  struct KeyMapEntry {
+  struct KeyDescriptor {
     uint32_t key_hash;
     uint32_t key_version;
     Address address;  // In partition address.
   };
 
-  struct SectorMapEntry {
+  struct SectorDescriptor {
     uint16_t tail_free_bytes;
     uint16_t valid_bytes;  // sum of sizes of valid entries
 
@@ -220,21 +220,22 @@ class KeyValueStore {
     return key.empty() || (key.size() > kMaxKeyLength);
   }
 
-  Status FindKeyMapEntry(std::string_view key,
-                         const KeyMapEntry** result) const;
+  Status FindKeyDescriptor(std::string_view key,
+                           const KeyDescriptor** result) const;
 
-  // Non-const version of FindKeyMapEntry.
-  Status FindKeyMapEntry(std::string_view key, KeyMapEntry** result) {
-    return static_cast<const KeyValueStore&>(*this).FindKeyMapEntry(
-        key, const_cast<const KeyMapEntry**>(result));
+  // Non-const version of FindKeyDescriptor.
+  Status FindKeyDescriptor(std::string_view key, KeyDescriptor** result) {
+    return static_cast<const KeyValueStore&>(*this).FindKeyDescriptor(
+        key, const_cast<const KeyDescriptor**>(result));
   }
 
-  Status ReadEntryHeader(const KeyMapEntry& entry, EntryHeader* header) const;
-  Status ReadEntryKey(const KeyMapEntry& entry,
+  Status ReadEntryHeader(const KeyDescriptor& descriptor,
+                         EntryHeader* header) const;
+  Status ReadEntryKey(const KeyDescriptor& descriptor,
                       size_t key_length,
                       char* key) const;
 
-  StatusWithSize ReadEntryValue(const KeyMapEntry& entry,
+  StatusWithSize ReadEntryValue(const KeyDescriptor& key_descriptor,
                                 const EntryHeader& header,
                                 span<std::byte> value) const;
 
@@ -242,65 +243,67 @@ class KeyValueStore {
                                std::string_view key,
                                span<const std::byte> value) const;
 
-  Status WriteEntryForExistingKey(KeyMapEntry* key_map_entry,
+  Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                   std::string_view key,
                                   span<const std::byte> value);
 
   Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
-  Status RelocateEntry(KeyMapEntry& entry);
+  Status RelocateEntry(KeyDescriptor& key_descriptor);
 
-  SectorMapEntry* FindSectorWithSpace(size_t size);
+  SectorDescriptor* FindSectorWithSpace(size_t size);
 
-  Status FindOrRecoverSectorWithSpace(SectorMapEntry** sector, size_t size);
+  Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 
-  Status GarbageCollectOneSector(SectorMapEntry** sector);
+  Status GarbageCollectOneSector(SectorDescriptor** sector);
 
-  SectorMapEntry* FindSectorToGarbageCollect();
+  SectorDescriptor* FindSectorToGarbageCollect();
 
-  Status AppendEntry(SectorMapEntry* sector,
-                     KeyMapEntry* entry,
+  Status AppendEntry(SectorDescriptor* sector,
+                     KeyDescriptor* key_descriptor,
                      std::string_view key,
                      span<const std::byte> value);
 
-  Status VerifyEntry(SectorMapEntry* sector, KeyMapEntry* entry);
+  Status VerifyEntry(SectorDescriptor* sector, KeyDescriptor* key_descriptor);
 
   span<const std::byte> CalculateEntryChecksum(
       const EntryHeader& header,
       std::string_view key,
       span<const std::byte> value) const;
 
-  bool AddressInSector(const SectorMapEntry& sector, Address address) const {
+  bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
     const Address sector_end = sector_base + partition_.sector_size_bytes();
 
     return ((address >= sector_base) && (address < sector_end));
   }
 
-  bool SectorEmpty(const SectorMapEntry& sector) const {
+  bool SectorEmpty(const SectorDescriptor& sector) const {
     return (sector.tail_free_bytes == partition_.sector_size_bytes());
   }
 
-  size_t RecoverableBytes(const SectorMapEntry& sector) {
+  size_t RecoverableBytes(const SectorDescriptor& sector) {
     return partition_.sector_size_bytes() - sector.valid_bytes -
            sector.tail_free_bytes;
   }
 
-  Address SectorBaseAddress(const SectorMapEntry* sector) const {
+  Address SectorBaseAddress(const SectorDescriptor* sector) const {
     return (sector - sector_map_.data()) * partition_.sector_size_bytes();
   }
 
-  Address NextWritableAddress(SectorMapEntry* sector) const {
+  Address NextWritableAddress(SectorDescriptor* sector) const {
     return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
            sector->tail_free_bytes;
   }
 
-  bool EntryMapFull() const { return key_map_size_ == kMaxEntries; }
+  bool KeyListFull() const { return key_descriptor_list_size_ == kMaxEntries; }
 
-  span<KeyMapEntry> entries() { return span(key_map_.data(), key_map_size_); }
+  span<KeyDescriptor> key_descriptors() {
+    return span(key_descriptor_list_.data(), key_descriptor_list_size_);
+  }
 
-  span<const KeyMapEntry> entries() const {
-    return span(key_map_.data(), key_map_size_);
+  span<const KeyDescriptor> key_descriptors() const {
+    return span(key_descriptor_list_.data(), key_descriptor_list_size_);
   }
 
   FlashPartition& partition_;
@@ -309,11 +312,12 @@ class KeyValueStore {
 
   // Map is unordered; finding a key requires scanning and
   // verifying a match by reading the actual entry.
-  std::array<KeyMapEntry, kMaxEntries> key_map_;
-  size_t key_map_size_;  // Number of valid entries in entry_map
+  std::array<KeyDescriptor, kMaxEntries> key_descriptor_list_;
+  size_t key_descriptor_list_size_;  // Number of valid entries in
+                                     // key_descriptor_list_
 
-  // This is dense, so sector_id == indexof(SectorMapEntry) in sector_map
-  std::array<SectorMapEntry, kUsableSectors> sector_map_;
+  // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
+  std::array<SectorDescriptor, kUsableSectors> sector_map_;
   size_t last_written_sector_;  // TODO: this variable is not used!
 };
 

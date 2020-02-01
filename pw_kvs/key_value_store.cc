@@ -56,12 +56,12 @@ StatusWithSize KeyValueStore::Get(string_view key,
                                   span<byte> value_buffer) const {
   TRY(InvalidOperation(key));
 
-  const KeyMapEntry* key_map_entry;
-  TRY(FindKeyMapEntry(key, &key_map_entry));
+  const KeyDescriptor* key_descriptor;
+  TRY(FindKeyDescriptor(key, &key_descriptor));
 
   EntryHeader header;
-  TRY(ReadEntryHeader(*key_map_entry, &header));
-  StatusWithSize result = ReadEntryValue(*key_map_entry, header, value_buffer);
+  TRY(ReadEntryHeader(*key_descriptor, &header));
+  StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
 
   if (result.ok() && options_.verify_on_read) {
     return ValidateEntryChecksum(header, key, value_buffer);
@@ -76,9 +76,11 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
     // TODO: Reject sizes that are larger than the maximum?
   }
 
-  if (KeyMapEntry * entry; FindKeyMapEntry(key, &entry).ok()) {
-    return WriteEntryForExistingKey(entry, key, value);
+  KeyDescriptor* key_descriptor;
+  if (FindKeyDescriptor(key, &key_descriptor).ok()) {
+    return WriteEntryForExistingKey(key_descriptor, key, value);
   }
+
   return WriteEntryForNewKey(key, value);
 }
 
@@ -89,12 +91,13 @@ Status KeyValueStore::Delete(string_view key) {
 }
 
 const KeyValueStore::Entry& KeyValueStore::Iterator::operator*() {
-  const KeyMapEntry& map_entry = entry_.kvs_.key_map_[index_];
+  const KeyDescriptor& key_descriptor =
+      entry_.kvs_.key_descriptor_list_[index_];
 
   EntryHeader header;
-  if (entry_.kvs_.ReadEntryHeader(map_entry, &header).ok()) {
+  if (entry_.kvs_.ReadEntryHeader(key_descriptor, &header).ok()) {
     entry_.kvs_.ReadEntryKey(
-        map_entry, header.key_length(), entry_.key_buffer_.data());
+        key_descriptor, header.key_length(), entry_.key_buffer_.data());
   }
 
   return entry_;
@@ -110,17 +113,17 @@ Status KeyValueStore::InvalidOperation(string_view key) const {
   return Status::OK;
 }
 
-Status KeyValueStore::FindKeyMapEntry(string_view key,
-                                      const KeyMapEntry** result) const {
+Status KeyValueStore::FindKeyDescriptor(string_view key,
+                                        const KeyDescriptor** result) const {
   char key_buffer[kMaxKeyLength];
   const uint32_t hash = HashKey(key);
 
-  for (auto& entry : entries()) {
-    if (entry.key_hash == hash) {
-      TRY(ReadEntryKey(entry, key.size(), key_buffer));
+  for (auto& descriptor : key_descriptors()) {
+    if (descriptor.key_hash == hash) {
+      TRY(ReadEntryKey(descriptor, key.size(), key_buffer));
 
       if (key == string_view(key_buffer, key.size())) {
-        *result = &entry;
+        *result = &descriptor;
         return Status::OK;
       }
     }
@@ -128,12 +131,12 @@ Status KeyValueStore::FindKeyMapEntry(string_view key,
   return Status::NOT_FOUND;
 }
 
-Status KeyValueStore::ReadEntryHeader(const KeyMapEntry& entry,
+Status KeyValueStore::ReadEntryHeader(const KeyDescriptor& descriptor,
                                       EntryHeader* header) const {
-  return partition_.Read(entry.address, sizeof(*header), header).status();
+  return partition_.Read(descriptor.address, sizeof(*header), header).status();
 }
 
-Status KeyValueStore::ReadEntryKey(const KeyMapEntry& entry,
+Status KeyValueStore::ReadEntryKey(const KeyDescriptor& descriptor,
                                    size_t key_length,
                                    char* key) const {
   // TODO: This check probably shouldn't be here; this is like
@@ -146,17 +149,19 @@ Status KeyValueStore::ReadEntryKey(const KeyMapEntry& entry,
     return Status::DATA_LOSS;
   }
   // The key is immediately after the entry header.
-  return partition_.Read(entry.address + sizeof(EntryHeader), key_length, key)
+  return partition_
+      .Read(descriptor.address + sizeof(EntryHeader), key_length, key)
       .status();
 }
 
-StatusWithSize KeyValueStore::ReadEntryValue(const KeyMapEntry& entry,
-                                             const EntryHeader& header,
-                                             span<byte> value) const {
+StatusWithSize KeyValueStore::ReadEntryValue(
+    const KeyDescriptor& key_descriptor,
+    const EntryHeader& header,
+    span<byte> value) const {
   const size_t read_size = std::min(header.value_length(), value.size());
-  StatusWithSize result =
-      partition_.Read(entry.address + sizeof(header) + header.key_length(),
-                      value.subspan(read_size));
+  StatusWithSize result = partition_.Read(
+      key_descriptor.address + sizeof(header) + header.key_length(),
+      value.subspan(read_size));
   TRY(result);
   if (read_size != header.value_length()) {
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
@@ -171,53 +176,56 @@ Status KeyValueStore::ValidateEntryChecksum(const EntryHeader& header,
   return entry_header_format_.checksum->Verify(header.checksum());
 }
 
-Status KeyValueStore::WriteEntryForExistingKey(KeyMapEntry* key_map_entry,
+Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                string_view key,
                                                span<const byte> value) {
-  SectorMapEntry* sector;
+  SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntrySize(key, value)));
-  return AppendEntry(sector, key_map_entry, key, value);
+  return AppendEntry(sector, key_descriptor, key, value);
 }
 
 Status KeyValueStore::WriteEntryForNewKey(string_view key,
                                           span<const byte> value) {
-  if (EntryMapFull()) {
+  if (KeyListFull()) {
     // TODO: Log, and also expose "in memory keymap full" in stats dump.
     return Status::RESOURCE_EXHAUSTED;
   }
 
-  // Modify the entry at the end of the array, without bumping the map size
-  // so the entry is prepared and written without committing first.
-  KeyMapEntry& entry = key_map_[key_map_size_];
-  entry.key_hash = HashKey(key);
-  entry.key_version = 0;  // will be incremented by AppendEntry()
+  // Modify the key descriptor at the end of the array, without bumping the map
+  // size so the key descriptor is prepared and written without committing
+  // first.
+  KeyDescriptor& key_descriptor =
+      key_descriptor_list_[key_descriptor_list_size_];
+  key_descriptor.key_hash = HashKey(key);
+  key_descriptor.key_version = 0;  // will be incremented by AppendEntry()
 
-  SectorMapEntry* sector;
+  SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntrySize(key, value)));
-  TRY(AppendEntry(sector, &entry, key, value));
+  TRY(AppendEntry(sector, &key_descriptor, key, value));
 
-  // Only increment key_map_size_ when we are certain the write
+  // Only increment key_descriptor_list_size_ when we are certain the write
   // succeeded.
-  key_map_size_ += 1;
+  key_descriptor_list_size_ += 1;
   return Status::OK;
 }
 
-Status KeyValueStore::RelocateEntry(KeyMapEntry& entry) {
+Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // TODO: implement me
-  (void)entry;
+  (void)key_descriptor;
   return Status::UNIMPLEMENTED;
 }
 
 // Find either an existing sector with enough space, or an empty sector.
 // Maintains the invariant that there is always at least 1 empty sector.
-KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorWithSpace(size_t size) {
+KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
+    size_t size) {
   int start = (last_written_sector_ + 1) % sector_map_.size();
-  SectorMapEntry* first_empty_sector = nullptr;
+  SectorDescriptor* first_empty_sector = nullptr;
   bool at_least_two_empty_sectors = false;
 
   for (size_t i = start; i != last_written_sector_;
        i = (i + 1) % sector_map_.size()) {
-    SectorMapEntry& sector = sector_map_[i];
+    SectorDescriptor& sector = sector_map_[i];
     if (!SectorEmpty(sector) && sector.HasSpace(size)) {
       return &sector;
     }
@@ -237,7 +245,7 @@ KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorWithSpace(size_t size) {
   return nullptr;
 }
 
-Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorMapEntry** sector,
+Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
                                                    size_t size) {
   *sector = FindSectorWithSpace(size);
   if (*sector != nullptr) {
@@ -249,8 +257,8 @@ Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorMapEntry** sector,
   return Status::RESOURCE_EXHAUSTED;
 }
 
-KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorToGarbageCollect() {
-  SectorMapEntry* sector_candidate = nullptr;
+KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
+  SectorDescriptor* sector_candidate = nullptr;
   size_t candidate_bytes = 0;
 
   // Step 1: Try to find a sectors with stale keys and no valid keys (no
@@ -278,9 +286,9 @@ KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorToGarbageCollect() {
   return sector_candidate;
 }
 
-Status KeyValueStore::GarbageCollectOneSector(SectorMapEntry** sector) {
+Status KeyValueStore::GarbageCollectOneSector(SectorDescriptor** sector) {
   // Step 1: Find the sector to garbage collect
-  SectorMapEntry* sector_to_gc = FindSectorToGarbageCollect();
+  SectorDescriptor* sector_to_gc = FindSectorToGarbageCollect();
 
   if (sector_to_gc == nullptr) {
     return Status::RESOURCE_EXHAUSTED;
@@ -288,9 +296,9 @@ Status KeyValueStore::GarbageCollectOneSector(SectorMapEntry** sector) {
 
   // Step 2: Move any valid entries in the GC sector to other sectors
   if (sector_to_gc->valid_bytes != 0) {
-    for (auto& entry : entries()) {
-      if (AddressInSector(*sector_to_gc, entry.address)) {
-        TRY(RelocateEntry(entry));
+    for (auto& descriptor : key_descriptors()) {
+      if (AddressInSector(*sector_to_gc, descriptor.address)) {
+        TRY(RelocateEntry(descriptor));
       }
     }
   }
@@ -308,8 +316,8 @@ Status KeyValueStore::GarbageCollectOneSector(SectorMapEntry** sector) {
   return Status::OK;
 }
 
-Status KeyValueStore::AppendEntry(SectorMapEntry* sector,
-                                  KeyMapEntry* entry,
+Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
+                                  KeyDescriptor* key_descriptor,
                                   const string_view key,
                                   span<const byte> value) {
   // write header, key, and value
@@ -317,7 +325,7 @@ Status KeyValueStore::AppendEntry(SectorMapEntry* sector,
                            CalculateEntryChecksum(header, key, value),
                            key.size(),
                            value.size(),
-                           entry->key_version + 1);
+                           key_descriptor->key_version + 1);
 
   // Handles writing multiple concatenated buffers, while breaking up the writes
   // into alignment-sized blocks.
@@ -328,22 +336,23 @@ Status KeyValueStore::AppendEntry(SectorMapEntry* sector,
           address, {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
 
   if (options_.verify_on_write) {
-    TRY(VerifyEntry(sector, entry));
+    TRY(VerifyEntry(sector, key_descriptor));
   }
 
   // TODO: UPDATE last_written_sector_ appropriately
 
-  entry->address = address;
-  entry->key_version = header.key_version();
+  key_descriptor->address = address;
+  key_descriptor->key_version = header.key_version();
   sector->valid_bytes += written;
   sector->tail_free_bytes -= written;
   return Status::OK;
 }
 
-Status KeyValueStore::VerifyEntry(SectorMapEntry* sector, KeyMapEntry* entry) {
+Status KeyValueStore::VerifyEntry(SectorDescriptor* sector,
+                                  KeyDescriptor* key_descriptor) {
   // TODO: Implement me!
   (void)sector;
-  (void)entry;
+  (void)key_descriptor;
   return Status::UNIMPLEMENTED;
 }
 
