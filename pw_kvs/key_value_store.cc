@@ -202,6 +202,12 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   return Status::OK;
 }
 
+Status KeyValueStore::RelocateEntry(KeyMapEntry& entry) {
+  // TODO: implement me
+  (void)entry;
+  return Status::UNIMPLEMENTED;
+}
+
 // Find either an existing sector with enough space, or an empty sector.
 // Maintains the invariant that there is always at least 1 empty sector.
 KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorWithSpace(size_t size) {
@@ -243,17 +249,49 @@ Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorMapEntry** sector,
   return Status::RESOURCE_EXHAUSTED;
 }
 
+KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorToGarbageCollect() {
+  SectorMapEntry* sector_candidate = nullptr;
+  size_t candidate_bytes = 0;
+
+  // Step 1: Try to find a sectors with stale keys and no valid keys (no
+  // relocation needed). If any such sectors are found, use the sector with the
+  // most reclaimable bytes.
+  for (auto& sector : sector_map_) {
+    if ((sector.valid_bytes == 0) &&
+        (RecoverableBytes(sector) > candidate_bytes)) {
+      sector_candidate = &sector;
+      candidate_bytes = RecoverableBytes(sector);
+    }
+  }
+
+  // Step 2: If step 1 yields no sectors, just find the sector with the most
+  // reclaimable bytes.
+  if (sector_candidate == nullptr) {
+    for (auto& sector : sector_map_) {
+      if (RecoverableBytes(sector) > candidate_bytes) {
+        sector_candidate = &sector;
+        candidate_bytes = RecoverableBytes(sector);
+      }
+    }
+  }
+
+  return sector_candidate;
+}
+
 Status KeyValueStore::GarbageCollectOneSector(SectorMapEntry** sector) {
-  // TODO: THIS NEEDS WORK
-  (void)sector;
+  // Step 1: Find the sector to garbage collect
   SectorMapEntry* sector_to_gc = FindSectorToGarbageCollect();
 
-  const Address sector_base = SectorBaseAddress(sector_to_gc);
-  const Address sector_end = sector_base + partition_.sector_size_bytes();
+  if (sector_to_gc == nullptr) {
+    return Status::RESOURCE_EXHAUSTED;
+  }
 
-  for (auto entry : entries()) {
-    if ((entry.address >= sector_base) && (entry.address < sector_end)) {
-      // RelocateEntry(entry);
+  // Step 2: Move any valid entries in the GC sector to other sectors
+  if (sector_to_gc->valid_bytes != 0) {
+    for (auto& entry : entries()) {
+      if (AddressInSector(*sector_to_gc, entry.address)) {
+        TRY(RelocateEntry(entry));
+      }
     }
   }
 
@@ -261,12 +299,13 @@ Status KeyValueStore::GarbageCollectOneSector(SectorMapEntry** sector) {
     return Status::INTERNAL;
   }
 
-  return Status::OK;
-}
+  // Step 3: Reinitialize the sector
+  sector_to_gc->tail_free_bytes = 0;
+  TRY(partition_.Erase(SectorBaseAddress(sector_to_gc), 1));
+  sector_to_gc->tail_free_bytes = partition_.sector_size_bytes();
 
-KeyValueStore::SectorMapEntry* KeyValueStore::FindSectorToGarbageCollect() {
-  // TODO: implement me
-  return nullptr;
+  *sector = sector_to_gc;
+  return Status::OK;
 }
 
 Status KeyValueStore::AppendEntry(SectorMapEntry* sector,
@@ -319,12 +358,6 @@ span<const byte> KeyValueStore::CalculateEntryChecksum(
   checksum.Update(as_bytes(span(key)));
   checksum.Update(value.data(), value.size_bytes());
   return checksum.state();
-}
-
-Status KeyValueStore::RelocateEntry(KeyMapEntry* entry) {
-  // TODO: implement me
-  (void)entry;
-  return Status::UNIMPLEMENTED;
 }
 
 }  // namespace pw::kvs

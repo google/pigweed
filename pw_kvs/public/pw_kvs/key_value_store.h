@@ -248,6 +248,8 @@ class KeyValueStore {
 
   Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
+  Status RelocateEntry(KeyMapEntry& entry);
+
   SectorMapEntry* FindSectorWithSpace(size_t size);
 
   Status FindOrRecoverSectorWithSpace(SectorMapEntry** sector, size_t size);
@@ -268,10 +270,15 @@ class KeyValueStore {
       std::string_view key,
       span<const std::byte> value) const;
 
-  Status RelocateEntry(KeyMapEntry* entry);
+  bool AddressInSector(const SectorMapEntry& sector, Address address) const {
+    const Address sector_base = SectorBaseAddress(&sector);
+    const Address sector_end = sector_base + partition_.sector_size_bytes();
+
+    return ((address >= sector_base) && (address < sector_end));
+  }
 
   bool SectorEmpty(const SectorMapEntry& sector) const {
-    return (sector.tail_free_bytes == partition_.sector_available_size_bytes());
+    return (sector.tail_free_bytes == partition_.sector_size_bytes());
   }
 
   size_t RecoverableBytes(const SectorMapEntry& sector) {
@@ -279,7 +286,7 @@ class KeyValueStore {
            sector.tail_free_bytes;
   }
 
-  Address SectorBaseAddress(SectorMapEntry* sector) const {
+  Address SectorBaseAddress(const SectorMapEntry* sector) const {
     return (sector - sector_map_.data()) * partition_.sector_size_bytes();
   }
 

@@ -189,13 +189,11 @@ class FlashPartition {
                                 size_t len,
                                 bool* is_erased);
 
-  constexpr uint32_t sector_size_bytes() const {
+  // Overridden by derived classes. The reported sector size is space available
+  // to users of FlashPartition. It accounts for space reserved in the sector
+  // for FlashPartition to store metadata.
+  virtual uint32_t sector_size_bytes() const {
     return flash_.sector_size_bytes();
-  }
-
-  // Overridden by base classes which store metadata at the start of a sector.
-  virtual uint32_t sector_available_size_bytes() const {
-    return sector_size_bytes();
   }
 
   size_t size_bytes() const { return sector_count() * sector_size_bytes(); }
