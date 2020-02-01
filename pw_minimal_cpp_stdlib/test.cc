@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <new>
@@ -80,6 +81,32 @@ TEST(Iterator, Basic) {
   EXPECT_EQ(foo[0], 99);
   EXPECT_EQ(foo[1], 99);
   EXPECT_EQ(foo[2], 99);
+}
+
+template <typename T>
+int SumFromInitializerList(std::initializer_list<T> values) {
+  int sum = 0;
+  for (auto value : values) {
+    sum += value;
+  }
+  return sum;
+}
+TEST(InitializerList, Empty) {
+  std::initializer_list<int> mt;
+  EXPECT_EQ(0, SumFromInitializerList(mt));
+
+  EXPECT_EQ(0, SumFromInitializerList<float>({}));
+}
+
+TEST(InitializerList, Declared) {
+  std::initializer_list<char> list{'\3', '\3', '\4'};
+  EXPECT_EQ(10, SumFromInitializerList(list));
+}
+
+TEST(InitializerList, Inline) {
+  EXPECT_EQ(42, SumFromInitializerList<long>({42}));
+  EXPECT_EQ(2, SumFromInitializerList<bool>({true, false, true}));
+  EXPECT_EQ(15, SumFromInitializerList({1, 2, 3, 4, 5}));
 }
 
 TEST(Limits, Basic) {
