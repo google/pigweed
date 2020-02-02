@@ -16,10 +16,16 @@
 
 #include <array>
 #include <cstdio>
+#if defined(__linux__)
+#include <vector>
+#endif  // defined(__linux__)
 #include <cstring>
 #include <type_traits>
 
 #include "pw_span/span.h"
+
+#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+#include "pw_log/log.h"
 
 #define USE_MEMORY_BUFFER 1
 
@@ -30,6 +36,7 @@
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_string/string_builder.h"
 
 #if USE_MEMORY_BUFFER
 #include "pw_kvs/in_memory_fake_flash.h"
@@ -69,6 +76,58 @@ static_assert(ConvertsToSpan<span<const int*>>());
 static_assert(ConvertsToSpan<span<bool>&&>());
 static_assert(ConvertsToSpan<const span<bool>&>());
 static_assert(ConvertsToSpan<span<bool>&&>());
+
+// This is a self contained flash unit with both memory and a single partition.
+template <uint32_t sector_size_bytes, uint16_t sector_count>
+struct FlashWithPartitionFake {
+  // Default to 16 byte alignment, which is common in practice.
+  FlashWithPartitionFake() : FlashWithPartitionFake(16) {}
+  FlashWithPartitionFake(size_t alignment_bytes)
+      : memory(alignment_bytes), partition(&memory, 0, memory.sector_count()) {}
+
+  InMemoryFakeFlash<sector_size_bytes, sector_count> memory;
+  FlashPartition partition;
+
+ public:
+#if defined(__linux__)
+  Status Dump(const char* filename) {
+    std::FILE* out_file = std::fopen(filename, "w+");
+    if (out_file == nullptr) {
+      PW_LOG_ERROR("Failed to dump to %s", filename);
+      return Status::DATA_LOSS;
+    }
+    std::vector<std::byte> out_vec(memory.size_bytes());
+    Status status =
+        memory.Read(0, pw::span<std::byte>(out_vec.data(), out_vec.size()));
+    if (status != Status::OK) {
+      fclose(out_file);
+      return status;
+    }
+
+    size_t written =
+        std::fwrite(out_vec.data(), 1, memory.size_bytes(), out_file);
+    if (written != memory.size_bytes()) {
+      PW_LOG_ERROR("Failed to dump to %s, written=%u",
+                   filename,
+                   static_cast<unsigned>(written));
+      status = Status::DATA_LOSS;
+    } else {
+      PW_LOG_INFO("Dumped to %s", filename);
+      status = Status::OK;
+    }
+
+    fclose(out_file);
+    return status;
+  }
+#else
+  Status Dump(const char* filename) {
+    (void)(filename);
+    return Status::OK;
+  }
+#endif  // defined(__linux__)
+};
+
+typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
 
 #if USE_MEMORY_BUFFER
 // Although it might be useful to test other configurations, some tests require
@@ -336,6 +395,151 @@ TEST_F(KeyValueStoreTest, DISABLED_Basic) {
 
   // Verify it was erased
   EXPECT_EQ(kvs.size(), 0u);
+}
+
+#define ASSERT_OK(expr) ASSERT_EQ(Status::OK, expr)
+#define EXPECT_OK(expr) EXPECT_EQ(Status::OK, expr)
+
+#define AS_SIZE(x) static_cast<size_t>(x)
+
+TEST(InMemoryKvs, DISABLED_WriteOneKeyMultipleTimes) {
+  // Create and erase the fake flash. It will persist across reloads.
+  Flash flash;
+  ASSERT_OK(flash.partition.Erase());
+
+  int num_reloads = 2;
+  for (int reload = 0; reload < num_reloads; ++reload) {
+    DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    DBG("xxx                                      xxxx");
+    DBG("xxx               Reload %2d              xxxx", reload);
+    DBG("xxx                                      xxxx");
+    DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+
+    // Create and initialize the KVS.
+    constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3,
+                                       .checksum = nullptr};
+    KeyValueStore kvs(&flash.partition, format);
+    ASSERT_OK(kvs.Init());
+
+    // Write the same entry many times.
+    const char* key = "abcd";
+    const size_t num_writes = 1;  // TODO: Make this > 1 when things work.
+    uint32_t written_value;
+    EXPECT_EQ(kvs.size(), (reload == 0) ? 0 : 1u);
+    for (uint32_t i = 0; i < num_writes; ++i) {
+      INF("PUT #%zu for key %s with value %zu", AS_SIZE(i), key, AS_SIZE(i));
+
+      written_value = i + 0xfc;  // Prevent accidental pass with zero.
+      EXPECT_OK(kvs.Put(key, written_value));
+      EXPECT_EQ(kvs.size(), 1u);
+    }
+
+    // Verify that we can read the value back.
+    INF("GET final value for key: %s", key);
+    uint32_t actual_value;
+    EXPECT_OK(kvs.Get(key, &actual_value));
+    EXPECT_EQ(actual_value, written_value);
+
+    kvs.LogDebugInfo();
+
+    char fname_buf[64] = {'\0'};
+    snprintf(&fname_buf[0],
+             sizeof(fname_buf),
+             "WriteOneKeyMultipleTimes_%d.bin",
+             reload);
+    flash.Dump(fname_buf);
+  }
+}
+
+TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
+  // Create and erase the fake flash.
+  Flash flash;
+  ASSERT_OK(flash.partition.Erase());
+
+  // Create and initialize the KVS.
+  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStore kvs(&flash.partition, format);
+  ASSERT_OK(kvs.Init());
+
+  // Write the same entry many times.
+  const size_t num_writes = 10;
+  EXPECT_EQ(kvs.size(), 0u);
+  for (size_t i = 0; i < num_writes; ++i) {
+    StringBuffer<150> key;
+    key << "key_" << i;
+    INF("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
+
+    size_t value = i + 77;  // Prevent accidental pass with zero.
+    EXPECT_OK(kvs.Put(key.view(), value));
+    EXPECT_EQ(kvs.size(), i + 1);
+  }
+  kvs.LogDebugInfo();
+  flash.Dump("WritingMultipleKeysIncreasesSize.bin");
+}
+
+TEST(InMemoryKvs, WriteAndReadOneKey) {
+  // Create and erase the fake flash.
+  Flash flash;
+  ASSERT_OK(flash.partition.Erase());
+
+  // Create and initialize the KVS.
+  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStore kvs(&flash.partition, format);
+  ASSERT_OK(kvs.Init());
+
+  // Add two entries with different keys and values.
+  const char* key = "Key1";
+  INF("PUT value for key: %s", key);
+  uint8_t written_value = 0xDA;
+  ASSERT_OK(kvs.Put(key, written_value));
+  EXPECT_EQ(kvs.size(), 1u);
+
+  INF("GET value for key: %s", key);
+  uint8_t actual_value;
+  ASSERT_OK(kvs.Get(key, &actual_value));
+  EXPECT_EQ(actual_value, written_value);
+
+  EXPECT_EQ(kvs.size(), 1u);
+}
+
+TEST(InMemoryKvs, Basic) {
+  const char* key1 = "Key1";
+  const char* key2 = "Key2";
+
+  // Create and erase the fake flash.
+  Flash flash;
+  ASSERT_EQ(Status::OK, flash.partition.Erase());
+
+  // Create and initialize the KVS.
+  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStore kvs(&flash.partition, format);
+  ASSERT_OK(kvs.Init());
+
+  // Add two entries with different keys and values.
+  INF("PUT first value");
+  uint8_t value1 = 0xDA;
+  ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
+  EXPECT_EQ(kvs.size(), 1u);
+
+  INF("PUT second value");
+  uint32_t value2 = 0xBAD0301f;
+  ASSERT_OK(kvs.Put(key2, value2));
+  EXPECT_EQ(kvs.size(), 2u);
+
+  INF("--------------------------------");
+  INF("GET second value");
+  // Verify data
+  uint32_t test2;
+  EXPECT_OK(kvs.Get(key2, &test2));
+
+  INF("GET first value");
+  uint8_t test1;
+  ASSERT_OK(kvs.Get(key1, &test1));
+
+  EXPECT_EQ(test1, value1);
+  EXPECT_EQ(test2, value2);
+
+  EXPECT_EQ(kvs.size(), 2u);
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_MaxKeyLength) {
@@ -700,7 +904,7 @@ TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
       0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // Header (GOOD CRC)
       0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
       0x1F, 0x30, 0xD0, 0xBA                           // Value
-  );                        
+  );
   static constexpr auto kKvsTestDataAligned8Top = ByteArray(
       0xCD, 0xAB, 0x03, 0x00, 0x08, 0x00, 0xFF, 0xFF   // Sector Header
   );
@@ -1474,5 +1678,29 @@ TEST_F(KeyValueStoreTest, DISABLED_LargePartition) {
   EXPECT_EQ(large_kvs.size(), 1u);
 }
 #endif  // USE_MEMORY_BUFFER
+
+TEST(KeyValueStoreEntryHeader, KeyValueSizes) {
+  EntryHeader header;
+
+  header.set_key_length(9u);
+  EXPECT_EQ(header.key_length(), 9u);
+
+  header.set_value_length(11u);
+  EXPECT_EQ(header.value_length(), 11u);
+
+  header.set_key_length(6u);
+  header.set_value_length(100u);
+  EXPECT_EQ(header.key_length(), 6u);
+  EXPECT_EQ(header.value_length(), 100u);
+
+  header.set_value_length(10u);
+  EXPECT_EQ(header.key_length(), 6u);
+  EXPECT_EQ(header.value_length(), 10u);
+
+  header.set_key_length(3u);
+  header.set_value_length(4000u);
+  EXPECT_EQ(header.key_length(), 3u);
+  EXPECT_EQ(header.value_length(), 4000u);
+}
 
 }  // namespace pw::kvs

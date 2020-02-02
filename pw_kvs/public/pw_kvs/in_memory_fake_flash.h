@@ -16,7 +16,10 @@
 #include <array>
 #include <cstring>
 
+// TODO: Push/pop log module name due to logging in header.
+//       Alternately: Push implementation into .cc
 #include "pw_kvs/flash_memory.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 
 namespace pw::kvs {
@@ -26,8 +29,8 @@ namespace pw::kvs {
 template <uint32_t kSectorSize, uint16_t kSectorCount>
 class InMemoryFakeFlash : public FlashMemory {
  public:
-  InMemoryFakeFlash(uint8_t alignment = 1)  // default 8 bit alignment
-      : FlashMemory(kSectorSize, kSectorCount, alignment) {}
+  InMemoryFakeFlash(uint8_t alignment_bytes = 1)  // default 8 bit alignment
+      : FlashMemory(kSectorSize, kSectorCount, alignment_bytes) {}
 
   // Always enabled
   Status Enable() override { return Status::OK; }
@@ -39,17 +42,24 @@ class InMemoryFakeFlash : public FlashMemory {
   // Returns: OK, on success.
   //          INVALID_ARGUMENT, if address or sector count is invalid.
   //          UNKNOWN, on HAL error
-  Status Erase(Address addr, size_t num_sectors) override {
-    if (addr % sector_size_bytes() != 0) {
+  Status Erase(Address address, size_t num_sectors) override {
+    if (address % sector_size_bytes() != 0) {
+      ERR("Attempted to erase sector at non-sector aligned boundary: %zx",
+          size_t(address));
       return Status::INVALID_ARGUMENT;
     }
-    if (addr / sector_size_bytes() + num_sectors > sector_count()) {
+    size_t sector_id = address / sector_size_bytes();
+    if (address / sector_size_bytes() + num_sectors > sector_count()) {
+      ERR("Tried to erase a sector at an address past partition end; "
+          "address: %zx, sector implied: %zu",
+          size_t(address),
+          sector_id);
       return Status::UNKNOWN;
     }
-    if (addr % alignment_bytes() != 0) {
+    if (address % alignment_bytes() != 0) {
       return Status::INVALID_ARGUMENT;
     }
-    std::memset(&buffer_[addr], 0xFF, sector_size_bytes() * num_sectors);
+    std::memset(&buffer_[address], 0xFF, sector_size_bytes() * num_sectors);
     return Status::OK;
   }
 
@@ -78,6 +88,7 @@ class InMemoryFakeFlash : public FlashMemory {
     // Check in erased state
     for (unsigned i = 0; i < data.size(); i++) {
       if (buffer_[address + i] != 0xFF) {
+        ERR("Writing to previously written address: %zx", size_t(address));
         return Status::UNKNOWN;
       }
     }

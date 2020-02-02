@@ -23,7 +23,7 @@ namespace pw::kvs {
 
 // In-flash header format.
 struct EntryHeader {
-  EntryHeader() = default;
+  EntryHeader() : key_value_length_(0) {}
 
   EntryHeader(uint32_t magic,
               span<const std::byte> checksum,
@@ -46,12 +46,29 @@ struct EntryHeader {
                 sizeof(*this) - offsetof(EntryHeader, key_value_length_));
   }
 
+  size_t entry_size() const {
+    return sizeof(*this) + key_length() + value_length();
+  }
+
   uint32_t magic() const { return magic_; }
+
   span<const std::byte> checksum() const {
     return as_bytes(span(&checksum_, 1));
   }
+
+  uint32_t checksum_as_uint32() const { return checksum_; }
+
   size_t key_length() const { return key_value_length_ & kKeyLengthMask; }
+  void set_key_length(uint32_t key_length) {
+    key_value_length_ = key_length | (~kKeyLengthMask & key_value_length_);
+  }
+
   size_t value_length() const { return key_value_length_ >> kValueLengthShift; }
+  void set_value_length(uint32_t value_length) {
+    key_value_length_ = (value_length << kValueLengthShift) |
+                        (kKeyLengthMask & key_value_length_);
+  }
+
   uint32_t key_version() const { return key_version_; }
 
  private:
@@ -60,7 +77,9 @@ struct EntryHeader {
 
   uint32_t magic_;
   uint32_t checksum_;
-  // 0:5 key_len 8:31 value_len
+  //  6 bits, 0: 5 - key - maximum 64 characters
+  //  2 bits, 6: 7 - reserved
+  // 24 bits, 8:31 - value - maximum 16MB
   uint32_t key_value_length_;
   uint32_t key_version_;
 };

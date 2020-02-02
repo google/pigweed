@@ -40,6 +40,7 @@
 // TODO(pwbug/17): Expose these through the config system.
 #define PW_USE_EMOJIS 1
 #define PW_LOG_SHOW_FILENAME 0
+#define PW_LOG_SHOW_FUNCTION 0
 #define PW_LOG_SHOW_FLAG 0
 #define PW_LOG_SHOW_MODULE 0
 
@@ -98,17 +99,22 @@ extern "C" void pw_Log(int level,
                        const char* function_name,
                        const char* message,
                        ...) {
-  PW_UNUSED(function_name);
-  PW_UNUSED(line_number);
-
   // Accumulate the log message in this buffer, then output it.
   pw::StringBuffer<150> buffer;
 
   // Column: Filename
 #if PW_LOG_SHOW_FILENAME
-  buffer.Format(" %-30s |", GetFileBasename(file_name));
+  buffer.Format(" %-30s:%4d |", GetFileBasename(file_name), line_number);
 #else
   PW_UNUSED(file_name);
+  PW_UNUSED(line_number);
+#endif
+
+  // Column: Function
+#if PW_LOG_SHOW_FUNCTION
+  buffer.Format(" %20s |", function_name);
+#else
+  PW_UNUSED(function_name);
 #endif
 
   // Column: Module

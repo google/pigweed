@@ -24,6 +24,8 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
+// TODO: Resolve uses of partition_.sector_count() vs kMaxUsableSectors.
+
 namespace pw::kvs {
 namespace internal {
 
@@ -69,6 +71,9 @@ class KeyValueStore {
   static constexpr size_t kMaxEntries = 64;
   static constexpr size_t kUsableSectors = 64;
 
+  // +1 for null-terminator.
+  typedef std::array<char, kMaxKeyLength + 1> KeyBuffer;
+
   // In the future, will be able to provide additional EntryHeaderFormats for
   // backwards compatibility.
   constexpr KeyValueStore(FlashPartition* partition,
@@ -92,6 +97,10 @@ class KeyValueStore {
     static_assert(std::is_trivially_copyable<T>(), "KVS values must copyable");
     static_assert(!std::is_pointer<T>(), "KVS values cannot be pointers");
 
+    // TODO: Re-enable this check once we are further along.
+#if 0
+    // Ensure that the size of the stored value matches the size of the type.
+    // Otherwise, report error. This check avoids potential memory corruption.
     StatusWithSize result = ValueSize(key);
     if (!result.ok()) {
       return result.status();
@@ -99,6 +108,7 @@ class KeyValueStore {
     if (result.size() != sizeof(T)) {
       return Status::INVALID_ARGUMENT;
     }
+#endif
     return Get(key, as_writable_bytes(span(value, 1))).status();
   }
 
@@ -115,9 +125,13 @@ class KeyValueStore {
   Status Delete(std::string_view key);
 
   StatusWithSize ValueSize(std::string_view key) const {
+    // TODO: Implement this! For now, just accept whatever size.
+    // return Status::OK;
     (void)key;
     return Status::UNIMPLEMENTED;
   }
+
+  void LogDebugInfo();
 
   // Classes and functions to support STL-style iteration.
   class Iterator;
@@ -243,6 +257,16 @@ class KeyValueStore {
                                std::string_view key,
                                span<const std::byte> value) const;
 
+  Status LoadEntry(Address entry_address, Address* next_entry_address);
+  Status AppendNewOrOverwriteStaleExistingDescriptor(
+      const KeyDescriptor& key_descriptor);
+  Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);
+
+  // This version reads from flash.
+  Status ValidateEntryChecksum(const EntryHeader& header,
+                               std::string_view key,
+                               const KeyDescriptor& entry) const;
+
   Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                   std::string_view key,
                                   span<const std::byte> value);
@@ -258,6 +282,10 @@ class KeyValueStore {
   Status GarbageCollectOneSector(SectorDescriptor** sector);
 
   SectorDescriptor* FindSectorToGarbageCollect();
+
+  bool HeaderLooksLikeUnwrittenData(const EntryHeader& header) const;
+
+  KeyDescriptor* FindDescriptor(uint32_t hash);
 
   Status AppendEntry(SectorDescriptor* sector,
                      KeyDescriptor* key_descriptor,
@@ -318,7 +346,9 @@ class KeyValueStore {
 
   // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
   std::array<SectorDescriptor, kUsableSectors> sector_map_;
-  size_t last_written_sector_;  // TODO: this variable is not used!
+  size_t last_written_sector_;
+
+  bool enabled_ = false;
 };
 
 }  // namespace pw::kvs

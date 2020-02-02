@@ -156,6 +156,8 @@ class FlashPartition {
   //          UNKNOWN, on HAL error
   virtual Status Erase(Address address, size_t num_sectors);
 
+  Status Erase() { return Erase(0, this->sector_count()); }
+
   // Reads bytes from flash into buffer. Blocking call.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.
@@ -192,7 +194,7 @@ class FlashPartition {
   // Overridden by derived classes. The reported sector size is space available
   // to users of FlashPartition. It accounts for space reserved in the sector
   // for FlashPartition to store metadata.
-  virtual uint32_t sector_size_bytes() const {
+  virtual size_t sector_size_bytes() const {
     return flash_.sector_size_bytes();
   }
 
