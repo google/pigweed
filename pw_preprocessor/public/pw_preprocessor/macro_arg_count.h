@@ -54,7 +54,7 @@
 // whether a variadic macro was called with no arguments or with one argument.
 // A macro invoked with no arguments is actually passed one empty argument.
 //
-// This macro works by checking for the presense of a comma in four situations.
+// This macro works by checking for the presence of a comma in four situations.
 // These situations give the following information about __VA_ARGS__:
 //
 //   1. It is two or more variadic arguments.

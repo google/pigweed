@@ -321,7 +321,7 @@ def _parse_args():
         parents=[option_db, option_tokens],
         help=(
             'Adds new strings to a database with tokenized strings from a set '
-            'of ELF files or other token databases. Missing entires are NOT '
+            'of ELF files or other token databases. Missing entries are NOT '
             'marked as removed.'))
     subparser.set_defaults(handler=_handle_add)
 
