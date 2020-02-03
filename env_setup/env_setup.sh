@@ -14,7 +14,7 @@
 
 # This script must be tested on bash, zsh, and dash.
 
-function _abspath {
+_abspath () {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
 
@@ -53,4 +53,4 @@ if \
   $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
 fi
 
-source $SETUP_SH
+. $SETUP_SH
