@@ -89,6 +89,13 @@ class FlashMemory {
   virtual StatusWithSize Write(Address destination_flash_address,
                                span<const std::byte> data) = 0;
 
+  StatusWithSize Write(Address destination_flash_address,
+                       const void* data,
+                       size_t len) {
+    return Write(destination_flash_address,
+                 span(static_cast<const std::byte*>(data), len));
+  }
+
   // Convert an Address to an MCU pointer, this can be used for memory
   // mapped reads. Return NULL if the memory is not memory mapped.
   virtual std::byte* FlashAddressToMcuAddress(Address) const { return nullptr; }
