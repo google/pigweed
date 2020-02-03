@@ -216,8 +216,13 @@ class FlashPartition {
            address;
   }
 
+  bool writable() const {
+    return permission_ == PartitionPermission::kReadAndWrite;
+  }
+
  protected:
   Status CheckBounds(Address address, size_t len) const;
+  FlashMemory& flash() const { return flash_; }
 
  private:
   FlashMemory& flash_;
