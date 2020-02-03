@@ -42,9 +42,8 @@ constexpr bool ConvertsToSpan(...) {
 
 }  // namespace internal
 
-// Traits class to detect if the type is a span. std::is_same is insufficient
-// because span is a class template. This is used to ensure that the correct
-// overload of the Put function is selected.
+// Traits class to detect if the type is a span. This is used to ensure that the
+// correct overload of the Put function is selected.
 template <typename T>
 using ConvertsToSpan =
     std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
@@ -201,7 +200,7 @@ class KeyValueStore {
   using const_iterator = Iterator;
 
   Iterator begin() const { return Iterator(*this, 0); }
-  Iterator end() const { return Iterator(*this, empty() ? 0 : size() - 1); }
+  Iterator end() const { return Iterator(*this, size()); }
 
   // Returns the number of valid entries in the KeyValueStore.
   size_t size() const { return key_descriptor_list_size_; }
