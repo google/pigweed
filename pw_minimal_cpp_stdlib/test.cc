@@ -175,4 +175,30 @@ TEST(TypeTraits, Basic) {
   static_assert(!std::is_same_v<char, unsigned char>);
 }
 
+struct MoveTester {
+  MoveTester(int magic_value) : magic_value(magic_value), moved(false) {}
+
+  MoveTester(const MoveTester&) = default;
+
+  MoveTester(MoveTester&& other) : magic_value(other.magic_value), moved(true) {
+    other.magic_value = 0xffff;
+  }
+
+  int magic_value;
+  bool moved;
+};
+
+TEST(Utility, Move) {
+  MoveTester test(123);
+
+  MoveTester copied(test);
+  EXPECT_EQ(copied.magic_value, 123);
+  EXPECT_FALSE(copied.moved);
+
+  MoveTester moved(std::move(copied));
+  EXPECT_EQ(123, moved.magic_value);
+  EXPECT_EQ(0xffff, copied.magic_value);
+  EXPECT_TRUE(moved.moved);
+}
+
 }  // namespace

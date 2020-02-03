@@ -29,7 +29,6 @@ using ::memset;
 
 using ::strcat;
 using ::strcpy;
-using ::strncat;
 using ::strncpy;
 
 using ::strcmp;

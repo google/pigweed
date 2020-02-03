@@ -15,6 +15,11 @@
 
 namespace std {
 
+template <typename T>
+constexpr remove_reference_t<T>&& move(T&& object) {
+  return (remove_reference_t<T> &&) object;
+}
+
 // Forward declare these classes, which are specialized in other headers.
 template <decltype(sizeof(0)), typename>
 struct tuple_element;
