@@ -144,49 +144,14 @@ FlashPartition large_test_partition(&large_test_flash,
 FlashPartition& test_partition = FlashExternalTestPartition();
 #endif  // USE_MEMORY_BUFFER
 
-ChecksumCrc16 checksum;
-constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
-
-KeyValueStore kvs(&test_partition, format);
-
-// Use test fixture for logging support
-class KeyValueStoreTest : public ::testing::Test {
- protected:
-  KeyValueStoreTest() : kvs_local_(&test_partition, format) {}
-
-  KeyValueStore kvs_local_;
-};
-
 std::array<byte, 512> buffer;
 constexpr std::array<const char*, 3> keys{"TestKey1", "Key2", "TestKey3"};
 
-Status PaddedWrite(FlashPartition* partition,
-                   FlashPartition::Address address,
-                   const std::byte* buf,
-                   size_t size) {
-  static constexpr size_t kMaxAlignmentBytes = 128;
-  byte alignment_buffer[kMaxAlignmentBytes] = {};
-
-  size_t aligned_bytes = size - (size % partition->alignment_bytes());
-  TRY(partition->Write(address, span(buf, aligned_bytes)));
-
-  uint16_t remaining_bytes = size - aligned_bytes;
-  if (remaining_bytes > 0) {
-    std::memcpy(alignment_buffer, &buf[aligned_bytes], remaining_bytes);
-    if (Status status = partition->Write(
-            address + aligned_bytes,
-            span(alignment_buffer, partition->alignment_bytes()));
-        !status.ok()) {
-      return status;
-    }
-  }
-  return Status::OK;
-}
+ChecksumCrc16 checksum;
+constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 size_t RoundUpForAlignment(size_t size) {
   // TODO: THIS IS SO PADDEDWRITE APPEARS USED
-  (void)PaddedWrite;
-
   uint16_t alignment = test_partition.alignment_bytes();
   if (size % alignment != 0) {
     return size + alignment - size % alignment;
@@ -228,39 +193,76 @@ class KvsAttributes {
   const size_t min_put_size_;
 };
 
-// Intention of this is to put and erase key-val to fill up sectors. It's a
-// helper function in testing how KVS handles cases where flash sector is full
-// or near full.
-void FillKvs(const char* key, size_t size_to_fill) {
-  constexpr size_t kTestDataSize = 8;
-  KvsAttributes kvs_attr(std::strlen(key), kTestDataSize);
-  const size_t kMaxPutSize =
-      buffer.size() + kvs_attr.ChunkHeaderSize() + kvs_attr.KeySize();
-
-  ASSERT_GE(size_to_fill, kvs_attr.MinPutSize() + kvs_attr.EraseSize());
-
-  // Saving enough space to perform erase after loop
-  size_to_fill -= kvs_attr.EraseSize();
-  // We start with possible small chunk to prevent too small of a Kvs.Put() at
-  // the end.
-  size_t chunk_len =
-      std::max(kvs_attr.MinPutSize(), size_to_fill % buffer.size());
-  std::memset(buffer.data(), 0, buffer.size());
-  while (size_to_fill > 0) {
-    // Changing buffer value so put actually does something
-    buffer[0] = static_cast<byte>(static_cast<uint8_t>(buffer[0]) + 1);
-    ASSERT_EQ(Status::OK,
-              kvs.Put(key,
-                      span(buffer.data(),
-                           chunk_len - kvs_attr.ChunkHeaderSize() -
-                               kvs_attr.KeySize())));
-    size_to_fill -= chunk_len;
-    chunk_len = std::min(size_to_fill, kMaxPutSize);
+// Use test fixture for logging support
+class KeyValueStoreTest : public ::testing::Test {
+ protected:
+  KeyValueStoreTest() : kvs_(&test_partition, format) {
+    test_partition.Erase(0, test_partition.sector_count());
+    ASSERT_EQ(Status::OK, kvs_.Init());
   }
-  ASSERT_EQ(Status::OK, kvs.Delete(key));
+
+  // Intention of this is to put and erase key-val to fill up sectors. It's a
+  // helper function in testing how KVS handles cases where flash sector is full
+  // or near full.
+  void FillKvs(const char* key, size_t size_to_fill) {
+    constexpr size_t kTestDataSize = 8;
+    KvsAttributes kvs_attr(std::strlen(key), kTestDataSize);
+    const size_t kMaxPutSize =
+        buffer.size() + kvs_attr.ChunkHeaderSize() + kvs_attr.KeySize();
+
+    ASSERT_GE(size_to_fill, kvs_attr.MinPutSize() + kvs_attr.EraseSize());
+
+    // Saving enough space to perform erase after loop
+    size_to_fill -= kvs_attr.EraseSize();
+    // We start with possible small chunk to prevent too small of a Kvs.Put() at
+    // the end.
+    size_t chunk_len =
+        std::max(kvs_attr.MinPutSize(), size_to_fill % buffer.size());
+    std::memset(buffer.data(), 0, buffer.size());
+    while (size_to_fill > 0) {
+      // Changing buffer value so put actually does something
+      buffer[0] = static_cast<byte>(static_cast<uint8_t>(buffer[0]) + 1);
+      ASSERT_EQ(Status::OK,
+                kvs_.Put(key,
+                         span(buffer.data(),
+                              chunk_len - kvs_attr.ChunkHeaderSize() -
+                                  kvs_attr.KeySize())));
+      size_to_fill -= chunk_len;
+      chunk_len = std::min(size_to_fill, kMaxPutSize);
+    }
+    ASSERT_EQ(Status::OK, kvs_.Delete(key));
+  }
+
+  KeyValueStore kvs_;
+};
+
+Status PaddedWrite(FlashPartition* partition,
+                   FlashPartition::Address address,
+                   const std::byte* buf,
+                   size_t size) {
+  static constexpr size_t kMaxAlignmentBytes = 128;
+  byte alignment_buffer[kMaxAlignmentBytes] = {};
+
+  size_t aligned_bytes = size - (size % partition->alignment_bytes());
+  TRY(partition->Write(address, span(buf, aligned_bytes)));
+
+  uint16_t remaining_bytes = size - aligned_bytes;
+  if (remaining_bytes > 0) {
+    std::memcpy(alignment_buffer, &buf[aligned_bytes], remaining_bytes);
+    if (Status status = partition->Write(
+            address + aligned_bytes,
+            span(alignment_buffer, partition->alignment_bytes()));
+        !status.ok()) {
+      return status;
+    }
+  }
+  return Status::OK;
 }
 
 uint16_t CalcKvsCrc(const char* key, const void* data, size_t data_len) {
+  // TODO: remove this; it's only to prevent unused function warnings
+  (void)PaddedWrite;
+
   uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, std::strlen(key))));
   return checksum::CcittCrc16(span(static_cast<const byte*>(data), data_len),
                               crc);
@@ -281,16 +283,14 @@ uint16_t CalcTestPartitionCrc() {
 }  // namespace
 
 TEST_F(KeyValueStoreTest, Iteration_Empty_ByReference) {
-  kvs.Init();
-  for (const KeyValueStore::Entry& entry : kvs) {
+  for (const KeyValueStore::Entry& entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }
 }
 
 TEST_F(KeyValueStoreTest, Iteration_Empty_ByValue) {
-  kvs.Init();
-  for (KeyValueStore::Entry entry : kvs) {
+  for (KeyValueStore::Entry entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }
@@ -302,11 +302,6 @@ TEST_F(KeyValueStoreTest, DISABLED_FuzzTest) {
     PW_LOG_INFO("Sectors too small, skipping test.");
     return;  // TODO: Test could be generalized
   }
-  // Erase
-  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
   const char* key1 = "Buf1";
   const char* key2 = "Buf2";
   const size_t kLargestBufSize = 3 * 1024;
@@ -316,10 +311,10 @@ TEST_F(KeyValueStoreTest, DISABLED_FuzzTest) {
   std::memset(buf2, 2, sizeof(buf2));
 
   // Start with things in KVS
-  ASSERT_EQ(Status::OK, kvs.Put(key1, buf1));
-  ASSERT_EQ(Status::OK, kvs.Put(key2, buf2));
+  ASSERT_EQ(Status::OK, kvs_.Put(key1, buf1));
+  ASSERT_EQ(Status::OK, kvs_.Put(key2, buf2));
   for (size_t j = 0; j < keys.size(); j++) {
-    ASSERT_EQ(Status::OK, kvs.Put(keys[j], j));
+    ASSERT_EQ(Status::OK, kvs_.Put(keys[j], j));
   }
 
   for (size_t i = 0; i < 100; i++) {
@@ -328,74 +323,68 @@ TEST_F(KeyValueStoreTest, DISABLED_FuzzTest) {
     size_t size2 = (kLargestBufSize) / (100 - i);
     for (size_t j = 0; j < 50; j++) {
       // Rewrite a single key many times, can fill up a sector
-      ASSERT_EQ(Status::OK, kvs.Put("some_data", j));
+      ASSERT_EQ(Status::OK, kvs_.Put("some_data", j));
     }
     // Delete and re-add everything
-    ASSERT_EQ(Status::OK, kvs.Delete(key1));
-    ASSERT_EQ(Status::OK, kvs.Put(key1, span(buf1, size1)));
-    ASSERT_EQ(Status::OK, kvs.Delete(key2));
-    ASSERT_EQ(Status::OK, kvs.Put(key2, span(buf2, size2)));
+    ASSERT_EQ(Status::OK, kvs_.Delete(key1));
+    ASSERT_EQ(Status::OK, kvs_.Put(key1, span(buf1, size1)));
+    ASSERT_EQ(Status::OK, kvs_.Delete(key2));
+    ASSERT_EQ(Status::OK, kvs_.Put(key2, span(buf2, size2)));
     for (size_t j = 0; j < keys.size(); j++) {
-      ASSERT_EQ(Status::OK, kvs.Delete(keys[j]));
-      ASSERT_EQ(Status::OK, kvs.Put(keys[j], j));
+      ASSERT_EQ(Status::OK, kvs_.Delete(keys[j]));
+      ASSERT_EQ(Status::OK, kvs_.Put(keys[j], j));
     }
 
     // Re-enable and verify
-    ASSERT_EQ(Status::OK, kvs.Init());
+    ASSERT_EQ(Status::OK, kvs_.Init());
     static byte buf[4 * 1024];
-    ASSERT_EQ(Status::OK, kvs.Get(key1, span(buf, size1)).status());
+    ASSERT_EQ(Status::OK, kvs_.Get(key1, span(buf, size1)).status());
     ASSERT_EQ(std::memcmp(buf, buf1, size1), 0);
-    ASSERT_EQ(Status::OK, kvs.Get(key2, span(buf, size2)).status());
+    ASSERT_EQ(Status::OK, kvs_.Get(key2, span(buf, size2)).status());
     ASSERT_EQ(std::memcmp(buf2, buf2, size2), 0);
     for (size_t j = 0; j < keys.size(); j++) {
       size_t ret = 1000;
-      ASSERT_EQ(Status::OK, kvs.Get(keys[j], &ret));
+      ASSERT_EQ(Status::OK, kvs_.Get(keys[j], &ret));
       ASSERT_EQ(ret, j);
     }
   }
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_Basic) {
-  // Erase
-  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Add some data
   uint8_t value1 = 0xDA;
   ASSERT_EQ(Status::OK,
-            kvs.Put(keys[0], as_bytes(span(&value1, sizeof(value1)))));
+            kvs_.Put(keys[0], as_bytes(span(&value1, sizeof(value1)))));
 
   uint32_t value2 = 0xBAD0301f;
-  ASSERT_EQ(Status::OK, kvs.Put(keys[1], value2));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[1], value2));
 
   // Verify data
   uint32_t test2;
-  EXPECT_EQ(Status::OK, kvs.Get(keys[1], &test2));
+  EXPECT_EQ(Status::OK, kvs_.Get(keys[1], &test2));
   uint8_t test1;
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &test1));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &test1));
 
   EXPECT_EQ(test1, value1);
   EXPECT_EQ(test2, value2);
 
   // Erase a key
-  EXPECT_EQ(Status::OK, kvs.Delete(keys[0]));
+  EXPECT_EQ(Status::OK, kvs_.Delete(keys[0]));
 
   // Verify it was erased
-  EXPECT_EQ(kvs.Get(keys[0], &test1), Status::NOT_FOUND);
+  EXPECT_EQ(kvs_.Get(keys[0], &test1), Status::NOT_FOUND);
   test2 = 0;
   ASSERT_EQ(
       Status::OK,
-      kvs.Get(keys[1], span(reinterpret_cast<byte*>(&test2), sizeof(test2)))
+      kvs_.Get(keys[1], span(reinterpret_cast<byte*>(&test2), sizeof(test2)))
           .status());
   EXPECT_EQ(test2, value2);
 
   // Erase other key
-  kvs.Delete(keys[1]);
+  kvs_.Delete(keys[1]);
 
   // Verify it was erased
-  EXPECT_EQ(kvs.size(), 0u);
+  EXPECT_EQ(kvs_.size(), 0u);
 }
 
 #define ASSERT_OK(expr) ASSERT_EQ(Status::OK, expr)
@@ -544,32 +533,24 @@ TEST(InMemoryKvs, Basic) {
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_MaxKeyLength) {
-  // Erase
-  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Add some data
   char key[16] = "123456789abcdef";  // key length 15 (without \0)
   int value = 1;
-  ASSERT_EQ(Status::OK, kvs.Put(key, value));
+  ASSERT_EQ(Status::OK, kvs_.Put(key, value));
 
   // Verify data
   int test = 0;
-  ASSERT_EQ(Status::OK, kvs.Get(key, &test));
+  ASSERT_EQ(Status::OK, kvs_.Get(key, &test));
   EXPECT_EQ(test, value);
 
   // Erase a key
-  kvs.Delete(key);
+  kvs_.Delete(key);
 
   // Verify it was erased
-  EXPECT_EQ(kvs.Get(key, &test), Status::NOT_FOUND);
+  EXPECT_EQ(kvs_.Get(key, &test), Status::NOT_FOUND);
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
-  test_partition.Erase(0, test_partition.sector_count());
-
   // Note this assumes that no other keys larger then key0
   static_assert(sizeof(keys[0]) >= sizeof(keys[1]) &&
                 sizeof(keys[0]) >= sizeof(keys[2]));
@@ -588,17 +569,15 @@ TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
     PW_LOG_INFO("KVS too small, skipping test.");
     return;
   }
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
 
   // Add and verify
   for (unsigned add_idx = 0; add_idx < keys.size(); add_idx++) {
     std::memset(buffer.data(), add_idx, buffer.size());
-    ASSERT_EQ(Status::OK, kvs.Put(keys[add_idx], buffer));
-    EXPECT_EQ(kvs.size(), add_idx + 1);
+    ASSERT_EQ(Status::OK, kvs_.Put(keys[add_idx], buffer));
+    EXPECT_EQ(kvs_.size(), add_idx + 1);
     for (unsigned verify_idx = 0; verify_idx <= add_idx; verify_idx++) {
       std::memset(buffer.data(), 0, buffer.size());
-      ASSERT_EQ(Status::OK, kvs.Get(keys[verify_idx], buffer).status());
+      ASSERT_EQ(Status::OK, kvs_.Get(keys[verify_idx], buffer).status());
       for (unsigned i = 0; i < buffer.size(); i++) {
         EXPECT_EQ(static_cast<unsigned>(buffer[i]), verify_idx);
       }
@@ -607,15 +586,15 @@ TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
 
   // Erase and verify
   for (unsigned erase_idx = 0; erase_idx < keys.size(); erase_idx++) {
-    ASSERT_EQ(Status::OK, kvs.Delete(keys[erase_idx]));
-    EXPECT_EQ(kvs.size(), keys.size() - erase_idx - 1);
+    ASSERT_EQ(Status::OK, kvs_.Delete(keys[erase_idx]));
+    EXPECT_EQ(kvs_.size(), keys.size() - erase_idx - 1);
     for (unsigned verify_idx = 0; verify_idx < keys.size(); verify_idx++) {
       std::memset(buffer.data(), 0, buffer.size());
       if (verify_idx <= erase_idx) {
-        ASSERT_EQ(kvs.Get(keys[verify_idx], buffer).status(),
+        ASSERT_EQ(kvs_.Get(keys[verify_idx], buffer).status(),
                   Status::NOT_FOUND);
       } else {
-        ASSERT_EQ(Status::OK, kvs.Get(keys[verify_idx], buffer).status());
+        ASSERT_EQ(Status::OK, kvs_.Get(keys[verify_idx], buffer).status());
         for (uint32_t i = 0; i < buffer.size(); i++) {
           EXPECT_EQ(buffer[i], static_cast<byte>(verify_idx));
         }
@@ -625,8 +604,6 @@ TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_Enable) {
-  test_partition.Erase(0, test_partition.sector_count());
-
   KvsAttributes kvs_attr(std::strlen(keys[0]), buffer.size());
 
   // Verify the data will fit in this test partition. This checks that all the
@@ -643,34 +620,32 @@ TEST_F(KeyValueStoreTest, DISABLED_Enable) {
     return;
   }
 
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Add some items
   for (unsigned add_idx = 0; add_idx < keys.size(); add_idx++) {
     std::memset(buffer.data(), add_idx, buffer.size());
-    ASSERT_EQ(Status::OK, kvs.Put(keys[add_idx], buffer));
-    EXPECT_EQ(kvs.size(), add_idx + 1);
+    ASSERT_EQ(Status::OK, kvs_.Put(keys[add_idx], buffer));
+    EXPECT_EQ(kvs_.size(), add_idx + 1);
   }
 
   // Enable different KVS which should be able to properly setup the same map
   // from what is stored in flash.
-  ASSERT_EQ(Status::OK, kvs_local_.Init());
-  EXPECT_EQ(kvs_local_.size(), keys.size());
+  static KeyValueStore kvs_local(&test_partition, format);
+  ASSERT_EQ(Status::OK, kvs_local.Init());
+  EXPECT_EQ(kvs_local.size(), keys.size());
 
   // Ensure adding to new KVS works
   uint8_t value = 0xDA;
   const char* key = "new_key";
-  ASSERT_EQ(Status::OK, kvs_local_.Put(key, value));
+  ASSERT_EQ(Status::OK, kvs_local.Put(key, value));
   uint8_t test;
-  ASSERT_EQ(Status::OK, kvs_local_.Get(key, &test));
+  ASSERT_EQ(Status::OK, kvs_local.Get(key, &test));
   EXPECT_EQ(value, test);
-  EXPECT_EQ(kvs_local_.size(), keys.size() + 1);
+  EXPECT_EQ(kvs_local.size(), keys.size() + 1);
 
   // Verify previous data
   for (unsigned verify_idx = 0; verify_idx < keys.size(); verify_idx++) {
     std::memset(buffer.data(), 0, buffer.size());
-    ASSERT_EQ(Status::OK, kvs_local_.Get(keys[verify_idx], buffer).status());
+    ASSERT_EQ(Status::OK, kvs_local.Get(keys[verify_idx], buffer).status());
     for (uint32_t i = 0; i < buffer.size(); i++) {
       EXPECT_EQ(static_cast<unsigned>(buffer[i]), verify_idx);
     }
@@ -678,15 +653,10 @@ TEST_F(KeyValueStoreTest, DISABLED_Enable) {
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_MultiSector) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Calculate number of elements to ensure multiple sectors are required.
   uint16_t add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
-  if (kvs.max_size() < add_count) {
+  if (kvs_.max_size() < add_count) {
     PW_LOG_INFO("Sector size too large, skipping test.");
     return;  // this chip has very large sectors, test won't work
   }
@@ -699,14 +669,14 @@ TEST_F(KeyValueStoreTest, DISABLED_MultiSector) {
   for (unsigned add_idx = 0; add_idx < add_count; add_idx++) {
     std::memset(buffer.data(), add_idx, buffer.size());
     snprintf(key, sizeof(key), "key_%u", add_idx);
-    ASSERT_EQ(Status::OK, kvs.Put(key, buffer));
-    EXPECT_EQ(kvs.size(), add_idx + 1);
+    ASSERT_EQ(Status::OK, kvs_.Put(key, buffer));
+    EXPECT_EQ(kvs_.size(), add_idx + 1);
   }
 
   for (unsigned verify_idx = 0; verify_idx < add_count; verify_idx++) {
     std::memset(buffer.data(), 0, buffer.size());
     snprintf(key, sizeof(key), "key_%u", verify_idx);
-    ASSERT_EQ(Status::OK, kvs.Get(key, buffer).status());
+    ASSERT_EQ(Status::OK, kvs_.Get(key, buffer).status());
     for (uint32_t i = 0; i < buffer.size(); i++) {
       EXPECT_EQ(static_cast<unsigned>(buffer[i]), verify_idx);
     }
@@ -715,49 +685,39 @@ TEST_F(KeyValueStoreTest, DISABLED_MultiSector) {
   // Check erase
   for (unsigned erase_idx = 0; erase_idx < add_count; erase_idx++) {
     snprintf(key, sizeof(key), "key_%u", erase_idx);
-    ASSERT_EQ(Status::OK, kvs.Delete(key));
-    EXPECT_EQ(kvs.size(), add_count - erase_idx - 1);
+    ASSERT_EQ(Status::OK, kvs_.Delete(key));
+    EXPECT_EQ(kvs_.size(), add_count - erase_idx - 1);
   }
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_RewriteValue) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Write first value
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
   const char* key = "the_key";
-  ASSERT_EQ(Status::OK, kvs.Put(key, as_bytes(span(&kValue1, 1))));
+  ASSERT_EQ(Status::OK, kvs_.Put(key, as_bytes(span(&kValue1, 1))));
 
   // Verify
   uint8_t value;
   ASSERT_EQ(Status::OK,
-            kvs.Get(key, as_writable_bytes(span(&value, 1))).status());
+            kvs_.Get(key, as_writable_bytes(span(&value, 1))).status());
   EXPECT_EQ(kValue1, value);
 
   // Write new value for key
-  ASSERT_EQ(Status::OK, kvs.Put(key, as_bytes(span(&kValue2, 1))));
+  ASSERT_EQ(Status::OK, kvs_.Put(key, as_bytes(span(&kValue2, 1))));
 
   // Verify
   ASSERT_EQ(Status::OK,
-            kvs.Get(key, as_writable_bytes(span(&value, 1))).status());
+            kvs_.Get(key, as_writable_bytes(span(&value, 1))).status());
   EXPECT_EQ(kValue2, value);
 
   // Verify only 1 element exists
-  EXPECT_EQ(kvs.size(), 1u);
+  EXPECT_EQ(kvs_.size(), 1u);
 }
 
 #if 0  // Offset reads are not yet supported
 
 TEST_F(KeyValueStoreTest, OffsetRead) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   const char* key = "the_key";
   constexpr size_t kReadSize = 16;  // needs to be a multiple of alignment
   constexpr size_t kTestBufferSize = kReadSize * 10;
@@ -768,15 +728,15 @@ TEST_F(KeyValueStoreTest, OffsetRead) {
   for (size_t i = 0; i < kTestBufferSize; i++) {
     buffer[i] = byte(i);
   }
-  ASSERT_EQ(Status::OK, kvs.Put(key, span(buffer.data(), kTestBufferSize)));
-  EXPECT_EQ(kvs.size(), 1u);
+  ASSERT_EQ(Status::OK, kvs_.Put(key, span(buffer.data(), kTestBufferSize)));
+  EXPECT_EQ(kvs_.size(), 1u);
 
   // Read in small chunks and verify
   for (unsigned i = 0; i < kTestBufferSize / kReadSize; i++) {
     std::memset(buffer.data(), 0, buffer.size());
     ASSERT_EQ(
         Status::OK,
-        kvs.Get(key, span(buffer.data(), kReadSize), i * kReadSize).status());
+        kvs_.Get(key, span(buffer.data(), kReadSize), i * kReadSize).status());
     for (unsigned j = 0; j < kReadSize; j++) {
       ASSERT_EQ(static_cast<unsigned>(buffer[j]), j + i * kReadSize);
     }
@@ -785,12 +745,6 @@ TEST_F(KeyValueStoreTest, OffsetRead) {
 #endif
 
 TEST_F(KeyValueStoreTest, DISABLED_MultipleRewrite) {
-  // Write many large buffers to force moving to new sector.
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Calculate number of elements to ensure multiple sectors are required.
   unsigned add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
@@ -802,26 +756,19 @@ TEST_F(KeyValueStoreTest, DISABLED_MultipleRewrite) {
     if (add_idx == add_count - 1) {  // last value
       std::memset(buffer.data(), kGoodVal, buffer.size());
     }
-    ASSERT_EQ(Status::OK, kvs.Put(key, buffer));
-    EXPECT_EQ(kvs.size(), 1u);
+    ASSERT_EQ(Status::OK, kvs_.Put(key, buffer));
+    EXPECT_EQ(kvs_.size(), 1u);
   }
 
   // Verify
   std::memset(buffer.data(), 0, buffer.size());
-  ASSERT_EQ(Status::OK, kvs.Get(key, buffer).status());
+  ASSERT_EQ(Status::OK, kvs_.Get(key, buffer).status());
   for (uint32_t i = 0; i < buffer.size(); i++) {
     ASSERT_EQ(buffer[i], static_cast<byte>(kGoodVal));
   }
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_FillSector) {
-  // Write key[0], Write/erase Key[2] multiple times to fill sector check
-  // everything makes sense after.
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   ASSERT_EQ(std::strlen(keys[0]), 8U);  // Easier for alignment
   ASSERT_EQ(std::strlen(keys[2]), 8U);  // Easier for alignment
   constexpr size_t kTestDataSize = 8;
@@ -833,16 +780,16 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector) {
   std::memset(
       buffer.data(), static_cast<int>(kKey0Pattern), kvs_attr.DataSize());
   ASSERT_EQ(Status::OK,
-            kvs.Put(keys[0], span(buffer.data(), kvs_attr.DataSize())));
+            kvs_.Put(keys[0], span(buffer.data(), kvs_attr.DataSize())));
   bytes_remaining -= kvs_attr.MinPutSize();
   std::memset(buffer.data(), 1, kvs_attr.DataSize());
   ASSERT_EQ(Status::OK,
-            kvs.Put(keys[2], span(buffer.data(), kvs_attr.DataSize())));
+            kvs_.Put(keys[2], span(buffer.data(), kvs_attr.DataSize())));
   bytes_remaining -= kvs_attr.MinPutSize();
-  EXPECT_EQ(kvs.size(), 2u);
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[2]));
+  EXPECT_EQ(kvs_.size(), 2u);
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[2]));
   bytes_remaining -= kvs_attr.EraseSize();
-  EXPECT_EQ(kvs.size(), 1u);
+  EXPECT_EQ(kvs_.size(), 1u);
 
   // Intentionally adding erase size to trigger sector cleanup
   bytes_remaining += kvs_attr.EraseSize();
@@ -852,32 +799,27 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector) {
   std::memset(buffer.data(), 0, kvs_attr.DataSize());
   ASSERT_EQ(
       Status::OK,
-      kvs.Get(keys[0], span(buffer.data(), kvs_attr.DataSize())).status());
+      kvs_.Get(keys[0], span(buffer.data(), kvs_attr.DataSize())).status());
   for (uint32_t i = 0; i < kvs_attr.DataSize(); i++) {
     EXPECT_EQ(buffer[i], kKey0Pattern);
   }
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_Interleaved) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
   uint8_t value;
-  ASSERT_EQ(Status::OK, kvs.Put(keys[0], kValue1));
-  EXPECT_EQ(kvs.size(), 1u);
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[0]));
-  EXPECT_EQ(kvs.Get(keys[0], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, kvs.Put(keys[1], as_bytes(span(&kValue1, 1))));
-  ASSERT_EQ(Status::OK, kvs.Put(keys[2], kValue2));
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[1]));
-  EXPECT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue1));
+  EXPECT_EQ(kvs_.size(), 1u);
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
+  EXPECT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[1], as_bytes(span(&kValue1, 1))));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[2], kValue2));
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[1]));
+  EXPECT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   EXPECT_EQ(kValue2, value);
 
-  EXPECT_EQ(kvs.size(), 1u);
+  EXPECT_EQ(kvs_.size(), 1u);
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
@@ -936,7 +878,6 @@ TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // Alignment to 16
   );
   // clang-format on
-  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
 
   // We don't actually care about the size values provided, since we are only
   // using kvs_attr to get Sector Size
@@ -978,27 +919,24 @@ TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
     ASSERT_EQ(Status::OK, false);
   }
 
-  EXPECT_EQ(kvs_local_.Init(), Status::OK);
-  EXPECT_TRUE(kvs_local_.initialized());
-
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_local_.Get(keys[0], span(buffer.data(), 1)).status());
+            kvs_.Get(keys[0], span(buffer.data(), 1)).status());
 
   // Value with correct CRC should still be available.
   uint32_t test2 = 0;
-  ASSERT_EQ(Status::OK, kvs_local_.Get(keys[1], &test2));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &test2));
   EXPECT_EQ(kTestPattern, test2);
 
   // Test rewriting over corrupted data.
-  ASSERT_EQ(Status::OK, kvs_local_.Put(keys[0], kTestPattern));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kTestPattern));
   test2 = 0;
-  EXPECT_EQ(Status::OK, kvs_local_.Get(keys[0], &test2));
+  EXPECT_EQ(Status::OK, kvs_.Get(keys[0], &test2));
   EXPECT_EQ(kTestPattern, test2);
 
   // Check correct when re-enabled
-  EXPECT_EQ(kvs_local_.Init(), Status::OK);
+  EXPECT_EQ(kvs_.Init(), Status::OK);
   test2 = 0;
-  EXPECT_EQ(Status::OK, kvs_local_.Get(keys[0], &test2));
+  EXPECT_EQ(Status::OK, kvs_.Get(keys[0], &test2));
   EXPECT_EQ(kTestPattern, test2);
 }
 
@@ -1017,68 +955,43 @@ TEST_F(KeyValueStoreTest, DISABLED_TestVersion2) {
     // Test only runs on 1 byte alignment partitions
     test_partition.Erase(0, test_partition.sector_count());
     test_partition.Write(0, as_bytes(span(kKvsTestDataAligned1)));
-    EXPECT_EQ(Status::OK, kvs_local_.Init());
+    EXPECT_EQ(Status::OK, kvs_.Init());
     uint32_t test2 = 0;
-    ASSERT_EQ(
-        Status::OK,
-        kvs_local_.Get(keys[1], as_writable_bytes(span(&test2, 1))).status());
+    ASSERT_EQ(Status::OK,
+              kvs_.Get(keys[1], as_writable_bytes(span(&test2, 1))).status());
     EXPECT_EQ(kTestPattern, test2);
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_ReEnable) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-  EXPECT_EQ(Status::OK, kvs_local_.Init());
-  // Write value
-  const uint8_t kValue = 0xDA;
-  ASSERT_EQ(Status::OK, kvs_local_.Put(keys[0], kValue));
-  uint8_t value;
-  ASSERT_EQ(Status::OK, kvs_local_.Get(keys[0], &value));
-
-  // Verify
-  EXPECT_EQ(kValue, value);
-}
-
 TEST_F(KeyValueStoreTest, DISABLED_Erase) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Write value
   const uint8_t kValue = 0xDA;
-  ASSERT_EQ(Status::OK, kvs.Put(keys[0], kValue));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
 
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[0]));
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
   uint8_t value;
-  ASSERT_EQ(kvs.Get(keys[0], &value), Status::NOT_FOUND);
+  ASSERT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
 
   // Reset KVS, ensure captured at enable
-  ASSERT_EQ(Status::OK, kvs.Init());
+  ASSERT_EQ(Status::OK, kvs_.Init());
 
-  ASSERT_EQ(kvs.Get(keys[0], &value), Status::NOT_FOUND);
+  ASSERT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_TemplatedPutAndGet) {
-  test_partition.Erase(0, test_partition.sector_count());
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
   // Store a value with the convenience method.
   const uint32_t kValue = 0x12345678;
-  ASSERT_EQ(Status::OK, kvs.Put(keys[0], kValue));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
 
   // Read it back with the other convenience method.
   uint32_t value;
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(kValue, value);
 
   // Make sure we cannot get something where size isn't what we expect
   const uint8_t kSmallValue = 0xBA;
   uint8_t small_value = kSmallValue;
-  ASSERT_EQ(kvs.Get(keys[0], &small_value), Status::INVALID_ARGUMENT);
+  ASSERT_EQ(kvs_.Get(keys[0], &small_value), Status::INVALID_ARGUMENT);
   ASSERT_EQ(small_value, kSmallValue);
 }
 
@@ -1161,11 +1074,8 @@ TEST_F(KeyValueStoreTest, DISABLED_SameValueRewrite) {
     ASSERT_EQ(true, false);
   }
 
-  ASSERT_EQ(Status::OK, kvs_local_.Init());
-  EXPECT_TRUE(kvs_local_.initialized());
-
   // Put in same key/value pair
-  ASSERT_EQ(Status::OK, kvs_local_.Put(keys[1], kTestPattern));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[1], kTestPattern));
 
   bool is_erased = false;
   ASSERT_EQ(Status::OK,
@@ -1182,10 +1092,6 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector2) {
     PW_LOG_INFO("Not enough sectors, skipping test.");
     return;  // need at least 3 sectors
   }
-
-  // Reset KVS
-  test_partition.Erase(0, test_partition.sector_count());
-  ASSERT_EQ(Status::OK, kvs.Init());
 
   // Start of by filling flash sector to near full
   constexpr int kHalfBufferSize = buffer.size() / 2;
@@ -1224,15 +1130,15 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector2) {
   new_keyvalue_size -= kValueLessThanChunkHeaderSize;
   std::memset(buffer.data(), static_cast<int>(kTestPattern), new_keyvalue_size);
   ASSERT_EQ(Status::OK,
-            kvs.Put(kNewKey, span(buffer.data(), new_keyvalue_size)));
+            kvs_.Put(kNewKey, span(buffer.data(), new_keyvalue_size)));
 
   // In failed corner case, adding new key is deceptively successful. It isn't
   // until KVS is disabled and reenabled that issue can be detected.
-  ASSERT_EQ(Status::OK, kvs.Init());
+  ASSERT_EQ(Status::OK, kvs_.Init());
 
   // Might as well check that new key-value is what we expect it to be
   ASSERT_EQ(Status::OK,
-            kvs.Get(kNewKey, span(buffer.data(), new_keyvalue_size)).status());
+            kvs_.Get(kNewKey, span(buffer.data(), new_keyvalue_size)).status());
   for (size_t i = 0; i < new_keyvalue_size; i++) {
     EXPECT_EQ(buffer[i], kTestPattern);
   }
@@ -1242,36 +1148,32 @@ TEST_F(KeyValueStoreTest, DISABLED_GetValueSizeTests) {
   constexpr uint16_t kSizeOfValueToFill = 20U;
   constexpr uint8_t kKey0Pattern = 0xBA;
   // Start off with disabled KVS
-  // kvs.Disable();
+  // kvs_.Disable();
 
   // Try getting value when KVS is disabled, expect failure
-  EXPECT_EQ(kvs.ValueSize(keys[0]).status(), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(kvs_.ValueSize(keys[0]).status(), Status::FAILED_PRECONDITION);
 
   // Reset KVS
   test_partition.Erase(0, test_partition.sector_count());
-  ASSERT_EQ(Status::OK, kvs.Init());
+  ASSERT_EQ(Status::OK, kvs_.Init());
 
   // Try some case that are expected to fail
-  ASSERT_EQ(kvs.ValueSize(keys[0]).status(), Status::NOT_FOUND);
-  ASSERT_EQ(kvs.ValueSize("").status(), Status::INVALID_ARGUMENT);
+  ASSERT_EQ(kvs_.ValueSize(keys[0]).status(), Status::NOT_FOUND);
+  ASSERT_EQ(kvs_.ValueSize("").status(), Status::INVALID_ARGUMENT);
 
   // Add key[0] and test we get the right value size for it.
   std::memset(buffer.data(), kKey0Pattern, kSizeOfValueToFill);
   ASSERT_EQ(Status::OK,
-            kvs.Put(keys[0], span(buffer.data(), kSizeOfValueToFill)));
-  ASSERT_EQ(kSizeOfValueToFill, kvs.ValueSize(keys[0]).size());
+            kvs_.Put(keys[0], span(buffer.data(), kSizeOfValueToFill)));
+  ASSERT_EQ(kSizeOfValueToFill, kvs_.ValueSize(keys[0]).size());
 
   // Verify after erase key is not found
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[0]));
-  ASSERT_EQ(kvs.ValueSize(keys[0]).status(), Status::NOT_FOUND);
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
+  ASSERT_EQ(kvs_.ValueSize(keys[0]).status(), Status::NOT_FOUND);
 }
 
 #if 0  // TODO: not CanFitEntry function yet
 TEST_F(KeyValueStoreTest, DISABLED_CanFitEntryTests) {
-  // Reset KVS
-  test_partition.Erase(0, test_partition.sector_count());
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   // Get exactly the number of bytes that can fit in the space remaining for
   // a large value, accounting for alignment.
   constexpr uint16_t kTestKeySize = 2;
@@ -1284,13 +1186,12 @@ TEST_F(KeyValueStoreTest, DISABLED_CanFitEntryTests) {
   space_remaining -= test_partition.alignment_bytes() / 2;
   space_remaining = RoundUpForAlignment(space_remaining);
 
-  EXPECT_TRUE(kvs.CanFitEntry(kTestKeySize, space_remaining));
-  EXPECT_FALSE(kvs.CanFitEntry(kTestKeySize, space_remaining + 1));
+  EXPECT_TRUE(kvs_.CanFitEntry(kTestKeySize, space_remaining));
+  EXPECT_FALSE(kvs_.CanFitEntry(kTestKeySize, space_remaining + 1));
 }
 #endif
 
 TEST_F(KeyValueStoreTest, DISABLED_DifferentValueSameCrc16) {
-  test_partition.Erase(0, test_partition.sector_count());
   const char kKey[] = "k";
   // With the key and our CRC16 algorithm these both have CRC of 0x82AE
   // Given they are the same size and same key, the KVS will need to check
@@ -1302,30 +1203,23 @@ TEST_F(KeyValueStoreTest, DISABLED_DifferentValueSameCrc16) {
   ASSERT_EQ(CalcKvsCrc(kKey, kValue1, sizeof(kValue1)),
             CalcKvsCrc(kKey, kValue2, sizeof(kValue2)));
 
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-  ASSERT_EQ(Status::OK, kvs.Put(kKey, kValue1));
+  ASSERT_EQ(Status::OK, kvs_.Put(kKey, kValue1));
 
   // Now try to rewrite with the similar value.
-  ASSERT_EQ(Status::OK, kvs.Put(kKey, kValue2));
+  ASSERT_EQ(Status::OK, kvs_.Put(kKey, kValue2));
 
   // Read it back and check it is correct
   char value[3];
-  ASSERT_EQ(Status::OK, kvs.Get(kKey, &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(kKey, &value));
   ASSERT_EQ(std::memcmp(value, kValue2, sizeof(value)), 0);
 }
 
 TEST_F(KeyValueStoreTest, DISABLED_CallingEraseTwice) {
-  test_partition.Erase(0, test_partition.sector_count());
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-
   const uint8_t kValue = 0xDA;
-  ASSERT_EQ(Status::OK, kvs.Put(keys[0], kValue));
-  ASSERT_EQ(Status::OK, kvs.Delete(keys[0]));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
   uint16_t crc = CalcTestPartitionCrc();
-  EXPECT_EQ(kvs.Delete(keys[0]), Status::NOT_FOUND);
+  EXPECT_EQ(kvs_.Delete(keys[0]), Status::NOT_FOUND);
   // Verify the flash has not changed
   EXPECT_EQ(crc, CalcTestPartitionCrc());
 }
@@ -1370,21 +1264,21 @@ void __attribute__((noinline)) StackHeavyPartialClean() {
                         sizeof(uint64_t)));
 
   // Reset KVS
-  kvs.Disable();
-  ASSERT_EQ(Status::OK, kvs.Init());
+  kvs_.Disable();
+  ASSERT_EQ(Status::OK, kvs_.Init());
   int value;
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values2[0], value);
-  ASSERT_EQ(kvs.Get(keys[1], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NOT_FOUND);
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values1[2], value);
 
   if (test_partition.sector_count() == 2) {
-    EXPECT_EQ(kvs.PendingCleanCount(), 0u);
+    EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
     // Has forced a clean, mark again for next test
     return;  // Not enough sectors to test 2 partial cleans.
   } else {
-    EXPECT_EQ(kvs.PendingCleanCount(), 1u);
+    EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
   }
 
   mark_clean_count--;
@@ -1394,14 +1288,14 @@ void __attribute__((noinline)) StackHeavyPartialClean() {
                         reinterpret_cast<uint8_t*>(&mark_clean_count),
                         sizeof(uint64_t)));
   // Reset KVS
-  kvs.Disable();
-  ASSERT_EQ(Status::OK, kvs.Init());
-  EXPECT_EQ(kvs.PendingCleanCount(), 2u);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  kvs_.Disable();
+  ASSERT_EQ(Status::OK, kvs_.Init());
+  EXPECT_EQ(kvs_.PendingCleanCount(), 2u);
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[1], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
   ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values1[2], value);
 #endif
 }
@@ -1444,17 +1338,17 @@ void __attribute__((noinline)) StackHeavyCleanAll() {
                         sizeof(uint64_t)));
 
   // Reset KVS
-  kvs.Disable();
-  ASSERT_EQ(Status::OK, kvs.Init());
+  kvs_.Disable();
+  ASSERT_EQ(Status::OK, kvs_.Init());
   int value;
-  EXPECT_EQ(kvs.PendingCleanCount(), 1u);
-  ASSERT_EQ(Status::OK, kvs.CleanAll());
-  EXPECT_EQ(kvs.PendingCleanCount(), 0u);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
+  ASSERT_EQ(Status::OK, kvs_.CleanAll());
+  EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[1], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
   ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values1[2], value);
 #endif
 }
@@ -1493,7 +1387,7 @@ void __attribute__((noinline)) StackHeavyPartialCleanLargeCounts() {
 
   kvs1.Disable();
   kvs2.Disable();
-  kvs.Disable();
+  kvs_.Disable();
 
   // Key 0 is value1 in first sector, value 2 in second
   // Key 1 is value1 in first sector, erased in second
@@ -1507,23 +1401,23 @@ void __attribute__((noinline)) StackHeavyPartialCleanLargeCounts() {
                         sizeof(uint64_t)));
 
   // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
+  ASSERT_EQ(Status::OK, kvs_.Init());
   int value;
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values2[0], value);
-  ASSERT_EQ(kvs.Get(keys[1], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NOT_FOUND);
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values1[2], value);
 
   if (test_partition.sector_count() == 2) {
-    EXPECT_EQ(kvs.PendingCleanCount(), 0u);
+    EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
     // Has forced a clean, mark again for next test
     // Has forced a clean, mark again for next test
     return;  // Not enough sectors to test 2 partial cleans.
   } else {
-    EXPECT_EQ(kvs.PendingCleanCount(), 1u);
+    EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
   }
-  kvs.Disable();
+  kvs_.Disable();
 
   mark_clean_count--;
   ASSERT_EQ(Status::OK,
@@ -1532,13 +1426,13 @@ void __attribute__((noinline)) StackHeavyPartialCleanLargeCounts() {
                         reinterpret_cast<uint8_t*>(&mark_clean_count),
                         sizeof(uint64_t)));
   // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
-  EXPECT_EQ(kvs.PendingCleanCount(), 2u);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, kvs_.Init());
+  EXPECT_EQ(kvs_.PendingCleanCount(), 2u);
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[1], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
   ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values1[2], value);
 #endif
 }
@@ -1613,7 +1507,7 @@ void __attribute__((noinline)) StackHeavyCleanOneSector() {
   ASSERT_EQ(Status::OK, kvs1.Put(keys[2], values[2]));
 
   kvs1.Disable();
-  kvs.Disable();
+  kvs_.Disable();
 
   uint64_t mark_clean_count = 1;
   ASSERT_EQ(Status::OK,
@@ -1623,22 +1517,22 @@ void __attribute__((noinline)) StackHeavyCleanOneSector() {
                         sizeof(uint64_t)));
 
   // Reset KVS
-  ASSERT_EQ(Status::OK, kvs.Init());
+  ASSERT_EQ(Status::OK, kvs_.Init());
 
-  EXPECT_EQ(kvs.PendingCleanCount(), 1u);
+  EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
 
   bool all_sectors_have_been_cleaned = false;
-  ASSERT_EQ(Status::OK, kvs.CleanOneSector(&all_sectors_have_been_cleaned));
+  ASSERT_EQ(Status::OK, kvs_.CleanOneSector(&all_sectors_have_been_cleaned));
   EXPECT_EQ(all_sectors_have_been_cleaned, true);
-  EXPECT_EQ(kvs.PendingCleanCount(), 0u);
-  ASSERT_EQ(Status::OK, kvs.CleanOneSector(&all_sectors_have_been_cleaned));
+  EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
+  ASSERT_EQ(Status::OK, kvs_.CleanOneSector(&all_sectors_have_been_cleaned));
   EXPECT_EQ(all_sectors_have_been_cleaned, true);
   int value;
-  ASSERT_EQ(Status::OK, kvs.Get(keys[0], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
   ASSERT_EQ(values[0], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[1], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
   ASSERT_EQ(values[1], value);
-  ASSERT_EQ(Status::OK, kvs.Get(keys[2], &value));
+  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
   ASSERT_EQ(values[2], value);
 #endif
 }
@@ -1658,10 +1552,7 @@ TEST_F(KeyValueStoreTest, DISABLED_LargePartition) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
   }
-  large_test_partition.Erase(0, large_test_partition.sector_count());
   KeyValueStore large_kvs(&large_test_partition, format);
-  // Reset KVS
-  ASSERT_EQ(Status::OK, large_kvs.Init());
 
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
