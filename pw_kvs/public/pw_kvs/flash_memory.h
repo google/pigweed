@@ -81,6 +81,10 @@ class FlashMemory {
   //          UNKNOWN, on HAL error
   virtual StatusWithSize Read(Address address, span<std::byte> output) = 0;
 
+  StatusWithSize Read(Address address, void* buffer, size_t len) {
+    return Read(address, span(static_cast<std::byte*>(buffer), len));
+  }
+
   // Writes bytes to flash. Blocking call.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.

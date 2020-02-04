@@ -14,6 +14,7 @@
 
 #include "pw_kvs/key_value_store.h"
 
+#include <algorithm>
 #include <cstring>
 #include <type_traits>
 
@@ -29,6 +30,13 @@ using std::string_view;
 
 namespace {
 
+using Address = FlashPartition::Address;
+
+constexpr union {
+  byte bytes[4];
+  uint32_t value;
+} kNoChecksum{};
+
 // constexpr uint32_t SixFiveFiveNineNine(std::string_view string) {
 constexpr uint32_t HashKey(std::string_view string) {
   uint32_t hash = 0;
@@ -42,14 +50,9 @@ constexpr uint32_t HashKey(std::string_view string) {
   return hash;
 }
 
-// TODO: Remove this when checksums in test are implemented.
-const uint32_t kNoChecksum = 0x12345678;
-
 constexpr size_t EntrySize(string_view key, span<const byte> value) {
   return sizeof(EntryHeader) + key.size() + value.size();
 }
-
-typedef FlashPartition::Address Address;
 
 }  // namespace
 
@@ -166,9 +169,10 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   // Read the key from flash & validate the entry (which reads the value).
   KeyBuffer key_buffer;
   TRY(ReadEntryKey(key_descriptor, header.key_length(), key_buffer.data()));
-  TRY(ValidateEntryChecksum(
-      header, string_view(key_buffer.data()), key_descriptor));
-  key_descriptor.key_hash = HashKey(string_view(key_buffer.data()));
+  const string_view key(key_buffer.data(), header.key_length());
+
+  TRY(ValidateEntryChecksumInFlash(header, key, key_descriptor));
+  key_descriptor.key_hash = HashKey(key);
 
   DBG("Key hash: %zx (%zu)",
       size_t(key_descriptor.key_hash),
@@ -284,13 +288,14 @@ Status KeyValueStore::Delete(string_view key) {
 }
 
 const KeyValueStore::Entry& KeyValueStore::Iterator::operator*() {
-  const KeyDescriptor& key_descriptor =
-      entry_.kvs_.key_descriptor_list_[index_];
+  const KeyDescriptor& descriptor = entry_.kvs_.key_descriptor_list_[index_];
+
+  std::memset(entry_.key_buffer_.data(), 0, sizeof(entry_.key_buffer_));
 
   EntryHeader header;
-  if (entry_.kvs_.ReadEntryHeader(key_descriptor, &header).ok()) {
+  if (entry_.kvs_.ReadEntryHeader(descriptor, &header).ok()) {
     entry_.kvs_.ReadEntryKey(
-        key_descriptor, header.key_length(), entry_.key_buffer_.data());
+        descriptor, header.key_length(), entry_.key_buffer_.data());
   }
 
   return entry_;
@@ -308,28 +313,34 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
   return StatusWithSize(header.value_length());
 }
 
-Status KeyValueStore::ValidateEntryChecksum(const EntryHeader& header,
-                                            string_view key,
-                                            const KeyDescriptor& entry) const {
-  // TODO: Remove this block once the checksums are implemented in test.
+Status KeyValueStore::ValidateEntryChecksumInFlash(
+    const EntryHeader& header,
+    const string_view key,
+    const KeyDescriptor& entry) const {
   if (entry_header_format_.checksum == nullptr) {
-    const auto header_checksum = header.checksum();
-    const auto fixed_checksum = as_bytes(span(&kNoChecksum, 1));
-    if (std::memcmp(header_checksum.data(),
-                    fixed_checksum.data(),
-                    header_checksum.size()) == 0) {
-      return Status::OK;
-    }
-    return Status::DATA_LOSS;
-
-    // TODO: It's unclear why the below version doesn't work.
-    // return header.checksum() == as_bytes(span(&kNoChecksum, 1));
+    return header.checksum_as_uint32() == 0 ? Status::OK : Status::DATA_LOSS;
   }
-  (void)(header);
-  (void)(key);
-  (void)(entry);
-  // TODO: Do incremental checksum verification by reading the value from
-  // flash a few blocks at a time.
+
+  auto& checksum = *entry_header_format_.checksum;
+  checksum.Reset();
+  checksum.Update(header.DataForChecksum());
+  checksum.Update(as_bytes(span(key)));
+
+  // Read the value piece-by-piece into a small buffer.
+  // TODO: This read may be unaligned. The partition can handle this, but
+  // consider creating a API that skips the intermediate buffering.
+  byte buffer[32];
+
+  size_t bytes_to_read = header.value_length();
+  Address address = entry.address + sizeof(header) + header.key_length();
+
+  while (bytes_to_read > 0u) {
+    const size_t read_size = std::min(sizeof(buffer), bytes_to_read);
+    TRY(partition_.Read(address, read_size, buffer));
+    address += read_size;
+    checksum.Update(buffer, read_size);
+  }
+
   return Status::OK;
 }
 
@@ -404,8 +415,10 @@ StatusWithSize KeyValueStore::ReadEntryValue(
 Status KeyValueStore::ValidateEntryChecksum(const EntryHeader& header,
                                             string_view key,
                                             span<const byte> value) const {
-  // TODO: Re-enable this when we have checksum implementations.
-  return Status::OK;
+  if (entry_header_format_.checksum == nullptr) {
+    return header.checksum_as_uint32() == kNoChecksum.value ? Status::OK
+                                                            : Status::DATA_LOSS;
+  }
 
   CalculateEntryChecksum(header, key, value);
   return entry_header_format_.checksum->Verify(header.checksum());
@@ -619,10 +632,10 @@ span<const byte> KeyValueStore::CalculateEntryChecksum(
     const string_view key,
     span<const byte> value) const {
   if (entry_header_format_.checksum == nullptr) {
-    return as_bytes(span(&kNoChecksum, 1));
+    return kNoChecksum.bytes;
   }
-  auto& checksum = *entry_header_format_.checksum;
 
+  auto& checksum = *entry_header_format_.checksum;
   checksum.Reset();
   checksum.Update(header.DataForChecksum());
   checksum.Update(as_bytes(span(key)));

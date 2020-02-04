@@ -71,7 +71,7 @@ class KeyValueStore {
   static constexpr size_t kUsableSectors = 64;
 
   // +1 for null-terminator.
-  typedef std::array<char, kMaxKeyLength + 1> KeyBuffer;
+  using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
 
   // In the future, will be able to provide additional EntryHeaderFormats for
   // backwards compatibility.
@@ -149,7 +149,7 @@ class KeyValueStore {
     constexpr Entry(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
 
     const KeyValueStore& kvs_;
-    std::array<char, kMaxKeyLength + 1> key_buffer_;  // +1 for null-terminator
+    KeyBuffer key_buffer_;
   };
 
   class Iterator {
@@ -253,10 +253,9 @@ class KeyValueStore {
       const KeyDescriptor& key_descriptor);
   Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);
 
-  // This version reads from flash.
-  Status ValidateEntryChecksum(const EntryHeader& header,
-                               std::string_view key,
-                               const KeyDescriptor& entry) const;
+  Status ValidateEntryChecksumInFlash(const EntryHeader& header,
+                                      std::string_view key,
+                                      const KeyDescriptor& entry) const;
 
   Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                   std::string_view key,
