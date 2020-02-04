@@ -49,6 +49,10 @@ constexpr size_t EntrySize(string_view key, span<const byte> value) {
   return sizeof(EntryHeader) + key.size() + value.size();
 }
 
+constexpr size_t EntrySize(const EntryHeader& header) {
+  return sizeof(EntryHeader) + header.key_length() + header.value_length();
+}
+
 }  // namespace
 
 Status KeyValueStore::Init() {
@@ -57,6 +61,14 @@ Status KeyValueStore::Init() {
 
   const size_t sector_size_bytes = partition_.sector_size_bytes();
   const size_t sector_count = partition_.sector_count();
+
+  if (working_buffer_.size() < sector_size_bytes) {
+    CRT("ERROR: working_buffer_ (%zu bytes) is smaller than sector "
+        "size (%zu bytes)",
+        working_buffer_.size(),
+        sector_size_bytes);
+    return Status::INVALID_ARGUMENT;
+  }
 
   DBG("First pass: Read all entries from all sectors");
   for (size_t sector_id = 0; sector_id < sector_count; ++sector_id) {
@@ -432,10 +444,42 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
 }
 
 Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
-  // TODO: Implement this function!
-  (void)key_descriptor;
-  return Status::OK;
-  return Status::UNIMPLEMENTED;
+  struct TempEntry {
+    std::array<char, kMaxKeyLength + 1> key;
+    std::array<char, sizeof(working_buffer_) - sizeof(key)> value;
+  };
+  TempEntry* entry = reinterpret_cast<TempEntry*>(working_buffer_.data());
+
+  // Read the entry to be relocated. Store the header in a local variable and
+  // store the key and value in the TempEntry stored in the static allocated
+  // working_buffer_.
+  EntryHeader header;
+  TRY(ReadEntryHeader(key_descriptor, &header));
+  TRY(ReadEntryKey(key_descriptor, header.key_length(), entry->key.data()));
+  string_view key = string_view(entry->key.data(), header.key_length());
+  StatusWithSize result = ReadEntryValue(
+      key_descriptor, header, as_writable_bytes(span(entry->value)));
+  if (!result.status().ok()) {
+    return Status::INTERNAL;
+  }
+
+  auto value = span(entry->value.data(), result.size());
+
+  TRY(header.VerifyChecksum(
+      entry_header_format_.checksum, key, as_bytes(value)));
+
+  SectorDescriptor* old_sector = SectorFromAddress(key_descriptor.address);
+  if (old_sector == nullptr) {
+    return Status::INTERNAL;
+  }
+
+  // Find a new sector for the entry and write it to the new location.
+  SectorDescriptor* new_sector =
+      FindSectorWithSpace(EntrySize(header), old_sector, true);
+  if (new_sector == nullptr) {
+    return Status::RESOURCE_EXHAUSTED;
+  }
+  return AppendEntry(new_sector, &key_descriptor, key, as_bytes(value));
 }
 
 // Find either an existing sector with enough space that is not the sector to
@@ -479,7 +523,7 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
   }
 
   if (at_least_two_empty_sectors) {
-    DBG("Found a empty sector and a spare one; returning the first found (%d)",
+    DBG("Found a usable empty sector; returning the first found (%d)",
         static_cast<int>(first_empty_sector - sector_map_.data()));
     return first_empty_sector;
   }

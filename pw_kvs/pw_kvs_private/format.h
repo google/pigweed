@@ -53,12 +53,16 @@ class EntryHeader {
 
   uint32_t checksum() const { return checksum_; }
 
-  size_t key_length() const { return key_value_length_ & kKeyLengthMask; }
+  constexpr size_t key_length() const {
+    return key_value_length_ & kKeyLengthMask;
+  }
   void set_key_length(uint32_t key_length) {
     key_value_length_ = key_length | (~kKeyLengthMask & key_value_length_);
   }
 
-  size_t value_length() const { return key_value_length_ >> kValueLengthShift; }
+  constexpr size_t value_length() const {
+    return key_value_length_ >> kValueLengthShift;
+  }
   void set_value_length(uint32_t value_length) {
     key_value_length_ = (value_length << kValueLengthShift) |
                         (kKeyLengthMask & key_value_length_);

@@ -69,6 +69,7 @@ class KeyValueStore {
   static constexpr size_t kMaxKeyLength = 64;
   static constexpr size_t kMaxEntries = 64;
   static constexpr size_t kUsableSectors = 64;
+  static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
   // +1 for null-terminator.
   using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
@@ -84,7 +85,8 @@ class KeyValueStore {
         key_descriptor_list_{},
         key_descriptor_list_size_(0),
         sector_map_{},
-        last_written_sector_(0) {}
+        last_written_sector_(0),
+        working_buffer_{} {}
 
   Status Init();
   bool initialized() const { return false; }  // TODO: Implement this
@@ -304,6 +306,10 @@ class KeyValueStore {
     return (sector - sector_map_.data()) * partition_.sector_size_bytes();
   }
 
+  SectorDescriptor* SectorFromAddress(Address address) {
+    return &sector_map_[address / partition_.sector_size_bytes()];
+  }
+
   Address NextWritableAddress(SectorDescriptor* sector) const {
     return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
            sector->tail_free_bytes;
@@ -334,6 +340,11 @@ class KeyValueStore {
   size_t last_written_sector_;
 
   bool enabled_ = false;
+
+  // Working buffer is a general purpose buffer for operations (such as init or
+  // relcate) to use for working space to remove the need to allocate temporary
+  // space.
+  std::array<char, kWorkingBufferSizeBytes> working_buffer_;
 };
 
 }  // namespace pw::kvs
