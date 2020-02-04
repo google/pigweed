@@ -280,15 +280,21 @@ CMAKE = (cmake_tests, )
 #
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
 def bazel_test(ctx: PresubmitContext):
-    call('bazel',
-         'test',
-         '//...',
-         '--verbose_failures',
-         '--verbose_explanations',
-         '--worker_verbose',
-         '--symlink_prefix',
-         ctx.output_directory.joinpath('bazel-'),
-         cwd=ctx.repository_root)
+    try:
+        call('bazel',
+             'test',
+             '//...',
+             '--verbose_failures',
+             '--verbose_explanations',
+             '--worker_verbose',
+             '--symlink_prefix',
+             ctx.output_directory.joinpath('bazel-'),
+             cwd=ctx.repository_root)
+    except:
+        _LOG.info('If the Bazel build inexplicably fails while the '
+                  'other builds are passing, try deleting the Bazel cache:\n'
+                  '    rm -rf ~/.cache/bazel')
+        raise
 
 
 BAZEL = (bazel_test, )
