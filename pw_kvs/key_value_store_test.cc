@@ -1144,32 +1144,37 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector2) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_GetValueSizeTests) {
-  constexpr uint16_t kSizeOfValueToFill = 20U;
-  constexpr uint8_t kKey0Pattern = 0xBA;
-  // Start off with disabled KVS
-  // kvs_.Disable();
+TEST_F(KeyValueStoreTest, ValueSize_Positive) {
+  constexpr auto kData = ByteArray('h', 'i', '!');
+  ASSERT_EQ(Status::OK, kvs_.Put("TheKey", kData));
 
-  // Try getting value when KVS is disabled, expect failure
-  EXPECT_EQ(kvs_.ValueSize(keys[0]).status(), Status::FAILED_PRECONDITION);
+  auto result = kvs_.ValueSize("TheKey");
 
-  // Reset KVS
-  test_partition.Erase(0, test_partition.sector_count());
-  ASSERT_EQ(Status::OK, kvs_.Init());
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(kData.size(), result.size());
+}
 
-  // Try some case that are expected to fail
-  ASSERT_EQ(kvs_.ValueSize(keys[0]).status(), Status::NOT_FOUND);
-  ASSERT_EQ(kvs_.ValueSize("").status(), Status::INVALID_ARGUMENT);
+TEST_F(KeyValueStoreTest, ValueSize_Zero) {
+  ASSERT_EQ(Status::OK, kvs_.Put("TheKey", as_bytes(span("123", 3))));
+  auto result = kvs_.ValueSize("TheKey");
 
-  // Add key[0] and test we get the right value size for it.
-  std::memset(buffer.data(), kKey0Pattern, kSizeOfValueToFill);
-  ASSERT_EQ(Status::OK,
-            kvs_.Put(keys[0], span(buffer.data(), kSizeOfValueToFill)));
-  ASSERT_EQ(kSizeOfValueToFill, kvs_.ValueSize(keys[0]).size());
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(3u, result.size());
+}
 
-  // Verify after erase key is not found
-  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
-  ASSERT_EQ(kvs_.ValueSize(keys[0]).status(), Status::NOT_FOUND);
+TEST_F(KeyValueStoreTest, ValueSize_InvalidKey) {
+  EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.ValueSize("").status());
+}
+
+TEST_F(KeyValueStoreTest, ValueSize_MissingKey) {
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("Not in there").status());
+}
+
+TEST_F(KeyValueStoreTest, DISABLED_ValueSize_DeletedKey) {
+  ASSERT_EQ(Status::OK, kvs_.Put("TheKey", as_bytes(span("123", 3))));
+  ASSERT_EQ(Status::OK, kvs_.Delete("TheKey"));
+
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("TheKey").status());
 }
 
 #if 0  // TODO: not CanFitEntry function yet

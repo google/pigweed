@@ -296,6 +296,18 @@ const KeyValueStore::Entry& KeyValueStore::Iterator::operator*() {
   return entry_;
 }
 
+StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
+  TRY(InvalidOperation(key));
+
+  const KeyDescriptor* key_descriptor;
+  TRY(FindKeyDescriptor(key, &key_descriptor));
+
+  EntryHeader header;
+  TRY(ReadEntryHeader(*key_descriptor, &header));
+
+  return StatusWithSize(header.value_length());
+}
+
 Status KeyValueStore::ValidateEntryChecksum(const EntryHeader& header,
                                             string_view key,
                                             const KeyDescriptor& entry) const {
@@ -590,12 +602,12 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
 
 Status KeyValueStore::VerifyEntry(SectorDescriptor* sector,
                                   KeyDescriptor* key_descriptor) {
+  // TODO: Remove this once checksums are fully implemented.
+  return Status::OK;
+
   if (entry_header_format_.checksum == nullptr) {
-    // TODO: Remove this once checksums are fully implemented.
     return Status::OK;
   }
-  return Status::UNIMPLEMENTED;
-
   // TODO: Implement me!
   (void)sector;
   (void)key_descriptor;

@@ -96,8 +96,6 @@ class KeyValueStore {
     static_assert(std::is_trivially_copyable<T>(), "KVS values must copyable");
     static_assert(!std::is_pointer<T>(), "KVS values cannot be pointers");
 
-    // TODO: Re-enable this check once we are further along.
-#if 0
     // Ensure that the size of the stored value matches the size of the type.
     // Otherwise, report error. This check avoids potential memory corruption.
     StatusWithSize result = ValueSize(key);
@@ -107,7 +105,6 @@ class KeyValueStore {
     if (result.size() != sizeof(T)) {
       return Status::INVALID_ARGUMENT;
     }
-#endif
     return Get(key, as_writable_bytes(span(value, 1))).status();
   }
 
@@ -123,12 +120,7 @@ class KeyValueStore {
 
   Status Delete(std::string_view key);
 
-  StatusWithSize ValueSize(std::string_view key) const {
-    // TODO: Implement this! For now, just accept whatever size.
-    // return Status::OK;
-    (void)key;
-    return Status::UNIMPLEMENTED;
-  }
+  StatusWithSize ValueSize(std::string_view key) const;
 
   void LogDebugInfo();
 
