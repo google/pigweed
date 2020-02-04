@@ -265,7 +265,10 @@ class KeyValueStore {
 
   Status RelocateEntry(KeyDescriptor& key_descriptor);
 
-  SectorDescriptor* FindSectorWithSpace(size_t size);
+  SectorDescriptor* FindSectorWithSpace(
+      size_t size,
+      SectorDescriptor* sector_to_skip = nullptr,
+      bool bypass_empty_sector_rule = false);
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 

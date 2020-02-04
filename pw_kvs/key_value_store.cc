@@ -468,10 +468,13 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   return Status::UNIMPLEMENTED;
 }
 
-// Find either an existing sector with enough space, or an empty sector.
-// Maintains the invariant that there is always at least 1 empty sector.
+// Find either an existing sector with enough space that is not the sector to
+// skip, or an empty sector. Maintains the invariant that there is always at
+// least 1 empty sector unless set to bypass the rule.
 KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
-    size_t size) {
+    size_t size,
+    SectorDescriptor* sector_to_skip,
+    bool bypass_empty_sector_rule) {
   const size_t sector_count = partition_.sector_count();
 
   // TODO: Ignore last written sector for now and scan from the beginning.
@@ -479,12 +482,17 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
 
   size_t start = (last_written_sector_ + 1) % sector_count;
   SectorDescriptor* first_empty_sector = nullptr;
-  bool at_least_two_empty_sectors = false;
+  bool at_least_two_empty_sectors = bypass_empty_sector_rule;
 
   for (size_t i = start; i != last_written_sector_;
        i = (i + 1) % sector_count) {
     DBG("Examining sector %zu", i);
     SectorDescriptor& sector = sector_map_[i];
+
+    if (sector_to_skip == &sector) {
+      DBG("Skipping the skip sector");
+      continue;
+    }
 
     if (!SectorEmpty(sector) && sector.HasSpace(size)) {
       DBG("Partially occupied sector with enough space; done!");
