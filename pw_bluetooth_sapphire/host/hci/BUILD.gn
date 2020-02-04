@@ -70,7 +70,7 @@ static_library("hci") {
     "//zircon/public/lib/fdio",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/fzl",
-    "//zircon/system/banjo/ddk.protocol.bt.hci",
+    "//sdk/banjo/ddk.protocol.bt.hci",
     "//zircon/system/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c",
     "//zircon/system/fidl/fuchsia-hardware-bluetooth:fuchsia-hardware-bluetooth_c_client",
   ]
