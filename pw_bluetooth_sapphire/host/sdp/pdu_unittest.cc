@@ -119,6 +119,18 @@ TEST_F(SDP_PDUTest, ServiceSearchRequestParse) {
 
   ServiceSearchRequest req3(kInvalidTooManyItems);
   EXPECT_FALSE(req3.valid());
+
+  const auto kInvalidMaxSizeZero = CreateStaticByteBuffer(
+      // ServiceSearchPattern
+      0x35, 0x06,        // Sequence uint8 6 bytes
+      0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+      0x19, 0xED, 0xFE,  // UUID: 0xEDFE (unknown, doesn't need to be found)
+      0x00, 0x00,        // MaximumServiceRecordCount: 0
+      0x00               // Contunuation State: none
+  );
+
+  ServiceSearchRequest req4(kInvalidMaxSizeZero);
+  EXPECT_FALSE(req4.valid());
 };
 
 TEST_F(SDP_PDUTest, ServiceSearchRequestGetPDU) {

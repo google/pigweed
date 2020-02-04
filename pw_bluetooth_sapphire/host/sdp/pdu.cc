@@ -210,7 +210,7 @@ ServiceSearchRequest::ServiceSearchRequest(const ByteBuffer& params) : ServiceSe
   size_t count;
   for (count = 0, it = search_pattern.At(count); it != nullptr; it = search_pattern.At(++count)) {
     if ((count >= kMaxServiceSearchSize) || (it->type() != DataElement::Type::kUuid)) {
-      bt_log(SPEW, "sdp", "Search pattern invalid");
+      bt_log(SPEW, "sdp", "Search pattern invalid: wrong type or too many");
       service_search_pattern_.clear();
       return;
     }
@@ -221,6 +221,11 @@ ServiceSearchRequest::ServiceSearchRequest(const ByteBuffer& params) : ServiceSe
     return;
   }
   max_service_record_count_ = betoh16(params.view(read_size).As<uint16_t>());
+  // Max returned count must be 0x0001-0xFFFF (Spec Vol 3, Part B, 4.5.1)
+  if (max_service_record_count_ == 0) {
+    bt_log(SPEW, "sdp", "Search invalid: max record count must be > 0");
+    return;
+  }
   read_size += sizeof(uint16_t);
   if (!ParseContinuationState(params.view(read_size))) {
     service_search_pattern_.clear();
@@ -230,8 +235,8 @@ ServiceSearchRequest::ServiceSearchRequest(const ByteBuffer& params) : ServiceSe
 }
 
 bool ServiceSearchRequest::valid() const {
-  return service_search_pattern_.size() > 0 &&
-         service_search_pattern_.size() <= kMaxServiceSearchSize && max_service_record_count_ > 0;
+  return max_service_record_count_ > 0 && service_search_pattern_.size() > 0 &&
+         service_search_pattern_.size() <= kMaxServiceSearchSize;
 }
 
 ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
