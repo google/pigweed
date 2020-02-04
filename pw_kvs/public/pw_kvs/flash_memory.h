@@ -230,6 +230,8 @@ class FlashPartition {
     return permission_ == PartitionPermission::kReadAndWrite;
   }
 
+  uint32_t start_sector_index() const { return start_sector_index_; }
+
  protected:
   Status CheckBounds(Address address, size_t len) const;
   FlashMemory& flash() const { return flash_; }
