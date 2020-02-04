@@ -154,6 +154,9 @@ class FlashPartition {
 
   virtual ~FlashPartition() = default;
 
+  // Performs any required partition or flash-level initialization.
+  virtual Status Init() { return Status::OK; }
+
   // Erase num_sectors starting at a given address. Blocking call.
   // Address should be on a sector boundary.
   // Returns: OK, on success.
