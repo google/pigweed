@@ -52,8 +52,9 @@ source_set("sources") {
 
   deps = [
     "//src/devices:driver",
-    "//src/devices/driver_host",
+    "//src/devices/bin/driver_host",
   ]
+
   public_deps = [
     ":stack",
     "//sdk/fidl/fuchsia.bluetooth",
