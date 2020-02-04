@@ -23,16 +23,6 @@ void RegisterEventHandler(EventHandler* event_handler) {
 }
 
 namespace internal {
-namespace {
-
-bool TestIsEnabled(const TestInfo& test) {
-  constexpr size_t kStringSize = sizeof("DISABLED_") - 1;
-  return std::strncmp("DISABLED_", test.test_case.test_name, kStringSize) !=
-             0 &&
-         std::strncmp("DISABLED_", test.test_case.suite_name, kStringSize) != 0;
-}
-
-}  // namespace
 
 // Singleton instance of the unit test framework class.
 Framework Framework::framework_;
@@ -41,12 +31,18 @@ Framework Framework::framework_;
 // populated using static initialization.
 TestInfo* Framework::tests_ = nullptr;
 
-void Framework::RegisterTest(TestInfo* test) {
-  // Append the test case to the end of the test list.
-  TestInfo** pos = &tests_;
-  for (; *pos != nullptr; pos = &(*pos)->next) {
+void Framework::RegisterTest(TestInfo* new_test) {
+  // If the test list is empty, set new_test as the first test.
+  if (tests_ == nullptr) {
+    tests_ = new_test;
+    return;
   }
-  *pos = test;
+
+  // Append the test case to the end of the test list.
+  TestInfo* info = tests_;
+  for (; info->next() != nullptr; info = info->next()) {
+  }
+  info->set_next(new_test);
 }
 
 int Framework::RunAllTests() {
@@ -56,11 +52,11 @@ int Framework::RunAllTests() {
   if (event_handler_ != nullptr) {
     event_handler_->RunAllTestsStart();
   }
-  for (TestInfo* test = tests_; test != nullptr; test = test->next) {
-    if (TestIsEnabled(*test)) {
+  for (const TestInfo* test = tests_; test != nullptr; test = test->next()) {
+    if (test->enabled()) {
       test->run();
     } else {
-      event_handler_->TestCaseDisabled(test->test_case);
+      event_handler_->TestCaseDisabled(test->test_case());
     }
   }
   if (event_handler_ != nullptr) {
@@ -69,18 +65,16 @@ int Framework::RunAllTests() {
   return exit_status_;
 }
 
-void Framework::StartTest(Test* test) {
-  current_test_ = test;
+void Framework::StartTest(const TestInfo& test) {
+  current_test_ = &test;
   current_result_ = TestResult::kSuccess;
 
-  if (event_handler_ == nullptr) {
-    return;
+  if (event_handler_ != nullptr) {
+    event_handler_->TestCaseStart(test.test_case());
   }
-  event_handler_->TestCaseStart(test->pigweed_test_info_->test_case);
 }
 
-void Framework::EndTest(Test* test) {
-  current_test_ = nullptr;
+void Framework::EndCurrentTest() {
   switch (current_result_) {
     case TestResult::kSuccess:
       run_tests_summary_.passed_tests++;
@@ -90,12 +84,11 @@ void Framework::EndTest(Test* test) {
       break;
   }
 
-  if (event_handler_ == nullptr) {
-    return;
+  if (event_handler_ != nullptr) {
+    event_handler_->TestCaseEnd(current_test_->test_case(), current_result_);
   }
 
-  event_handler_->TestCaseEnd(test->pigweed_test_info_->test_case,
-                              current_result_);
+  current_test_ = nullptr;
 }
 
 void Framework::ExpectationResult(const char* expression,
@@ -118,10 +111,14 @@ void Framework::ExpectationResult(const char* expression,
       .success = success,
   };
 
-  event_handler_->TestCaseExpect(current_test_->pigweed_test_info_->test_case,
-                                 expectation);
+  event_handler_->TestCaseExpect(current_test_->test_case(), expectation);
+}
+
+bool TestInfo::enabled() const {
+  constexpr size_t kStringSize = sizeof("DISABLED_") - 1;
+  return std::strncmp("DISABLED_", test_case().test_name, kStringSize) != 0 &&
+         std::strncmp("DISABLED_", test_case().suite_name, kStringSize) != 0;
 }
 
 }  // namespace internal
-
 }  // namespace pw::unit_test

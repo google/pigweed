@@ -143,7 +143,7 @@ class Test;
 
 namespace internal {
 
-struct TestInfo;
+class TestInfo;
 
 // Singleton test framework class responsible for managing and running test
 // cases. This implementation is internal to Pigweed test; free functions
@@ -184,7 +184,7 @@ class Framework {
   // statically allocated per test case, with a run() function that references
   // this method instantiated for its test class.
   template <typename TestInstance>
-  static void CreateAndRunTest() {
+  static void CreateAndRunTest(const TestInfo& test_info) {
     // TODO(frolv): Update the assert message with the name of the config option
     // for memory pool size once it is configurable.
     static_assert(
@@ -193,17 +193,18 @@ class Framework {
         "kTestMemoryPoolSizeBytes or decrease the size of your test fixture.");
 
     Framework& framework = Get();
+    framework.StartTest(test_info);
 
-    // Construct the test object within the static memory pool.
+    // Construct the test object within the static memory pool. The StartTest
+    // function has already been called by the TestInfo at this point.
     TestInstance* test_instance = new (&framework.memory_pool_) TestInstance;
-
-    framework.StartTest(test_instance);
     test_instance->PigweedTestRun();
-    framework.EndTest(test_instance);
 
     // Manually call the destructor as it is not called automatically for
     // objects constructed using placement new.
     test_instance->~TestInstance();
+
+    framework.EndCurrentTest();
   }
 
   // Runs an expectation function for the currently active test case.
@@ -245,11 +246,11 @@ class Framework {
                          bool success);
 
  private:
-  // Dispatches an event indicating that a test started running.
-  void StartTest(Test* test);
+  // Sets current_test_ and dispatches an event indicating that a test started.
+  void StartTest(const TestInfo& test);
 
-  // Dispatches an event indicating that a test finished running.
-  void EndTest(Test* test);
+  // Dispatches event indicating that a test finished and clears current_test_.
+  void EndCurrentTest();
 
   // Singleton instance of the framework class.
   static Framework framework_;
@@ -259,7 +260,7 @@ class Framework {
   static TestInfo* tests_;
 
   // The current test case which is running.
-  Test* current_test_;
+  const TestInfo* current_test_;
 
   // Overall result of the current test case (pass/fail).
   TestResult current_result_;
@@ -283,30 +284,41 @@ class Framework {
 // Information about a single test case, including a pointer to a function which
 // constructs and runs the test class. These are statically allocated instead of
 // the test classes, as test classes can be very large.
-struct TestInfo {
+class TestInfo {
+ public:
   TestInfo(const char* const test_suite_name,
            const char* const test_name,
            const char* const file_name,
-           void (*run)())
-      : test_case{
+           void (*run)(const TestInfo&))
+      : test_case_{
         .suite_name = test_suite_name,
         .test_name = test_name,
         .file_name = file_name,
-       }, run(run) {
+       }, run_(run) {
     Framework::Get().RegisterTest(this);
   }
 
   // The name of the suite to which the test case belongs, the name of the test
   // case itself, and the path to the file in which the test case is located.
-  TestCase test_case;
+  const TestCase& test_case() const { return test_case_; }
+
+  bool enabled() const;
+
+  void run() const { run_(*this); }
+
+  TestInfo* next() const { return next_; }
+  void set_next(TestInfo* next) { next_ = next; }
+
+ private:
+  TestCase test_case_;
 
   // Function which runs the test case. Refers to Framework::CreateAndRunTest
   // instantiated for the test case's class.
-  void (*run)();
+  void (*run_)(const TestInfo&);
 
   // TestInfo structs are registered with the test framework and stored as a
   // linked list.
-  TestInfo* next = nullptr;
+  TestInfo* next_ = nullptr;
 };
 
 }  // namespace internal
@@ -332,17 +344,8 @@ class Test {
 
   virtual ~Test() = default;
 
- protected:
-  // Called by subclasses' constructors with their TestInfo instances.
-  void PigweedSetTestInfo(const internal::TestInfo* test_info) {
-    pigweed_test_info_ = test_info;
-  }
-
  private:
   friend class internal::Framework;
-
-  // Pointer to the TestInfo struct statically allocated for the test case.
-  const internal::TestInfo* pigweed_test_info_;
 
   // The user-provided body of the test case. Populated by the TEST macro.
   virtual void PigweedTestBody() = 0;
@@ -354,32 +357,26 @@ class Test {
 #define _PW_TEST_CLASS_NAME(test_suite_name, test_name) \
   PW_CONCAT(test_suite_name, _, test_name, _Test)
 
-#define _PW_TEST(test_suite_name, test_name, parent_class)         \
-  static_assert(sizeof(PW_STRINGIFY(test_suite_name)) > 1,         \
-                "test_suite_name must not be empty");              \
-  static_assert(sizeof(PW_STRINGIFY(test_name)) > 1,               \
-                "test_name must not be empty");                    \
-                                                                   \
-  class _PW_TEST_CLASS_NAME(test_suite_name, test_name) final      \
-      : public parent_class {                                      \
-   public:                                                         \
-    _PW_TEST_CLASS_NAME(test_suite_name, test_name)() {            \
-      PigweedSetTestInfo(&test_info_);                             \
-    }                                                              \
-                                                                   \
-   private:                                                        \
-    void PigweedTestBody() override;                               \
-    static ::pw::unit_test::internal::TestInfo test_info_;         \
-  };                                                               \
-                                                                   \
-  ::pw::unit_test::internal::TestInfo                              \
-      _PW_TEST_CLASS_NAME(test_suite_name, test_name)::test_info_( \
-          PW_STRINGIFY(test_suite_name),                           \
-          PW_STRINGIFY(test_name),                                 \
-          __FILE__,                                                \
-          ::pw::unit_test::internal::Framework::CreateAndRunTest<  \
-              _PW_TEST_CLASS_NAME(test_suite_name, test_name)>);   \
-                                                                   \
+#define _PW_TEST(test_suite_name, test_name, parent_class)              \
+  static_assert(sizeof(#test_suite_name) > 1,                           \
+                "test_suite_name must not be empty");                   \
+  static_assert(sizeof(#test_name) > 1, "test_name must not be empty"); \
+                                                                        \
+  class _PW_TEST_CLASS_NAME(test_suite_name, test_name) final           \
+      : public parent_class {                                           \
+   private:                                                             \
+    void PigweedTestBody() override;                                    \
+    static ::pw::unit_test::internal::TestInfo test_info_;              \
+  };                                                                    \
+                                                                        \
+  ::pw::unit_test::internal::TestInfo                                   \
+      _PW_TEST_CLASS_NAME(test_suite_name, test_name)::test_info_(      \
+          #test_suite_name,                                             \
+          #test_name,                                                   \
+          __FILE__,                                                     \
+          ::pw::unit_test::internal::Framework::CreateAndRunTest<       \
+              _PW_TEST_CLASS_NAME(test_suite_name, test_name)>);        \
+                                                                        \
   void _PW_TEST_CLASS_NAME(test_suite_name, test_name)::PigweedTestBody()
 
 #define _PW_TEST_EXPECT(lhs, rhs, expectation, expectation_string) \

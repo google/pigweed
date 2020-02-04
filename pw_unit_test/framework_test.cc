@@ -162,5 +162,16 @@ TEST_F(PigweedTestFixture, YupTheNumberIs35) {
   EXPECT_EQ(cool_number_, 3500);
 }
 
+class Expectations : public ::testing::Test {
+ protected:
+  Expectations() : cool_number_(3) { ASSERT_EQ(cool_number_, 3); }
+
+  ~Expectations() { ASSERT_EQ(cool_number_, 14159); }
+
+  int cool_number_;
+};
+
+TEST_F(Expectations, SetCoolNumber) { cool_number_ = 14159; }
+
 }  // namespace
 }  // namespace pw
