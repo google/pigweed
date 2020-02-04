@@ -390,8 +390,6 @@ TEST_F(KeyValueStoreTest, DISABLED_Basic) {
 #define ASSERT_OK(expr) ASSERT_EQ(Status::OK, expr)
 #define EXPECT_OK(expr) EXPECT_EQ(Status::OK, expr)
 
-#define AS_SIZE(x) static_cast<size_t>(x)
-
 TEST(InMemoryKvs, DISABLED_WriteOneKeyMultipleTimes) {
   // Create and erase the fake flash. It will persist across reloads.
   Flash flash;
@@ -417,7 +415,7 @@ TEST(InMemoryKvs, DISABLED_WriteOneKeyMultipleTimes) {
     uint32_t written_value;
     EXPECT_EQ(kvs.size(), (reload == 0) ? 0 : 1u);
     for (uint32_t i = 0; i < num_writes; ++i) {
-      INF("PUT #%zu for key %s with value %zu", AS_SIZE(i), key, AS_SIZE(i));
+      INF("PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
 
       written_value = i + 0xfc;  // Prevent accidental pass with zero.
       EXPECT_OK(kvs.Put(key, written_value));
@@ -1196,7 +1194,7 @@ TEST_F(KeyValueStoreTest, DISABLED_CanFitEntryTests) {
 }
 #endif
 
-TEST_F(KeyValueStoreTest, DISABLED_DifferentValueSameCrc16) {
+TEST_F(KeyValueStoreTest, DifferentValueSameCrc16) {
   const char kKey[] = "k";
   // With the key and our CRC16 algorithm these both have CRC of 0x82AE
   // Given they are the same size and same key, the KVS will need to check
@@ -1214,7 +1212,7 @@ TEST_F(KeyValueStoreTest, DISABLED_DifferentValueSameCrc16) {
   ASSERT_EQ(Status::OK, kvs_.Put(kKey, kValue2));
 
   // Read it back and check it is correct
-  char value[3];
+  char value[3] = {};
   ASSERT_EQ(Status::OK, kvs_.Get(kKey, &value));
   ASSERT_EQ(std::memcmp(value, kValue2, sizeof(value)), 0);
 }

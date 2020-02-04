@@ -39,7 +39,9 @@ class ChecksumAlgorithm {
   // Returns the size of the checksum state.
   constexpr size_t size_bytes() const { return state_.size(); }
 
-  // Compares a calculated checksum to this checksum's current state.
+  // Compares a calculated checksum to this checksum's current state. The
+  // checksum must be at least as large as size_bytes(). If it is larger, bytes
+  // beyond size_bytes() are ignored.
   Status Verify(span<const std::byte> checksum) const;
 
  protected:

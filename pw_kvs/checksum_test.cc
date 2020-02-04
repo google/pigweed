@@ -43,13 +43,25 @@ TEST(Checksum, Verify_Failure) {
 TEST(Checksum, Verify_InvalidSize) {
   ChecksumCrc16 algo;
   EXPECT_EQ(Status::INVALID_ARGUMENT, algo.Verify({}));
-  EXPECT_EQ(Status::INVALID_ARGUMENT, algo.Verify(as_bytes(span(kString))));
+  EXPECT_EQ(Status::INVALID_ARGUMENT,
+            algo.Verify(as_bytes(span(kString.substr(0, 1)))));
+}
+
+TEST(Checksum, Verify_LargerState_ComparesToTruncatedData) {
+  byte crc[3] = {byte{0x84}, byte{0xC1}, byte{0x33}};
+  ChecksumCrc16 algo;
+  ASSERT_GT(sizeof(crc), algo.size_bytes());
+
+  algo.Update(as_bytes(span(kString)));
+
+  EXPECT_EQ(Status::OK, algo.Verify(crc));
 }
 
 TEST(Checksum, Reset) {
   ChecksumCrc16 crc_algo;
   crc_algo.Update(as_bytes(span(kString)));
   crc_algo.Reset();
+
   EXPECT_EQ(crc_algo.state()[0], byte{0xFF});
   EXPECT_EQ(crc_algo.state()[1], byte{0xFF});
 }

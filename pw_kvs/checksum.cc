@@ -21,14 +21,12 @@ namespace pw::kvs {
 using std::byte;
 
 Status ChecksumAlgorithm::Verify(span<const byte> checksum) const {
-  if (checksum.size() != size_bytes()) {
+  if (checksum.size() < size_bytes()) {
     return Status::INVALID_ARGUMENT;
   }
-
-  if (std::memcmp(state_.data(), checksum.data(), state_.size()) != 0) {
+  if (std::memcmp(state_.data(), checksum.data(), size_bytes()) != 0) {
     return Status::DATA_LOSS;
   }
-
   return Status::OK;
 }
 

@@ -32,11 +32,6 @@ namespace {
 
 using Address = FlashPartition::Address;
 
-constexpr union {
-  byte bytes[4];
-  uint32_t value;
-} kNoChecksum{};
-
 // constexpr uint32_t SixFiveFiveNineNine(std::string_view string) {
 constexpr uint32_t HashKey(std::string_view string) {
   uint32_t hash = 0;
@@ -144,7 +139,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   DBG("Header: ");
   DBG("   Address      = 0x%zx", size_t(entry_address));
   DBG("   Magic        = 0x%zx", size_t(header.magic()));
-  DBG("   Checksum     = 0x%zx", size_t(header.checksum_as_uint32()));
+  DBG("   Checksum     = 0x%zx", size_t(header.checksum()));
   DBG("   Key length   = 0x%zx", size_t(header.key_length()));
   DBG("   Value length = 0x%zx", size_t(header.value_length()));
   DBG("   Entry size   = 0x%zx", size_t(header.entry_size()));
@@ -171,7 +166,8 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   TRY(ReadEntryKey(key_descriptor, header.key_length(), key_buffer.data()));
   const string_view key(key_buffer.data(), header.key_length());
 
-  TRY(ValidateEntryChecksumInFlash(header, key, key_descriptor));
+  TRY(header.VerifyChecksumInFlash(
+      &partition_, key_descriptor.address, entry_header_format_.checksum, key));
   key_descriptor.key_hash = HashKey(key);
 
   DBG("Key hash: %zx (%zu)",
@@ -257,7 +253,9 @@ StatusWithSize KeyValueStore::Get(string_view key,
 
   StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
   if (result.ok() && options_.verify_on_read) {
-    return ValidateEntryChecksum(header, key, value_buffer);
+    return header.VerifyChecksum(entry_header_format_.checksum,
+                                 key,
+                                 value_buffer.subspan(0, result.size()));
   }
   return result;
 }
@@ -290,7 +288,7 @@ Status KeyValueStore::Delete(string_view key) {
 const KeyValueStore::Entry& KeyValueStore::Iterator::operator*() {
   const KeyDescriptor& descriptor = entry_.kvs_.key_descriptor_list_[index_];
 
-  std::memset(entry_.key_buffer_.data(), 0, sizeof(entry_.key_buffer_));
+  std::memset(entry_.key_buffer_.data(), 0, entry_.key_buffer_.size());
 
   EntryHeader header;
   if (entry_.kvs_.ReadEntryHeader(descriptor, &header).ok()) {
@@ -313,35 +311,19 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
   return StatusWithSize(header.value_length());
 }
 
-Status KeyValueStore::ValidateEntryChecksumInFlash(
-    const EntryHeader& header,
-    const string_view key,
-    const KeyDescriptor& entry) const {
-  if (entry_header_format_.checksum == nullptr) {
-    return header.checksum_as_uint32() == 0 ? Status::OK : Status::DATA_LOSS;
+Status KeyValueStore::FixedSizeGet(std::string_view key,
+                                   byte* value,
+                                   size_t size_bytes) const {
+  // Ensure that the size of the stored value matches the size of the type.
+  // Otherwise, report error. This check avoids potential memory corruption.
+  StatusWithSize result = ValueSize(key);
+  if (!result.ok()) {
+    return result.status();
   }
-
-  auto& checksum = *entry_header_format_.checksum;
-  checksum.Reset();
-  checksum.Update(header.DataForChecksum());
-  checksum.Update(as_bytes(span(key)));
-
-  // Read the value piece-by-piece into a small buffer.
-  // TODO: This read may be unaligned. The partition can handle this, but
-  // consider creating a API that skips the intermediate buffering.
-  byte buffer[32];
-
-  size_t bytes_to_read = header.value_length();
-  Address address = entry.address + sizeof(header) + header.key_length();
-
-  while (bytes_to_read > 0u) {
-    const size_t read_size = std::min(sizeof(buffer), bytes_to_read);
-    TRY(partition_.Read(address, read_size, buffer));
-    address += read_size;
-    checksum.Update(buffer, read_size);
+  if (result.size() != size_bytes) {
+    return Status::INVALID_ARGUMENT;
   }
-
-  return Status::OK;
+  return Get(key, span(value, size_bytes)).status();
 }
 
 Status KeyValueStore::InvalidOperation(string_view key) const {
@@ -410,18 +392,6 @@ StatusWithSize KeyValueStore::ReadEntryValue(
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
   }
   return StatusWithSize(read_size);
-}
-
-Status KeyValueStore::ValidateEntryChecksum(const EntryHeader& header,
-                                            string_view key,
-                                            span<const byte> value) const {
-  if (entry_header_format_.checksum == nullptr) {
-    return header.checksum_as_uint32() == kNoChecksum.value ? Status::OK
-                                                            : Status::DATA_LOSS;
-  }
-
-  CalculateEntryChecksum(header, key, value);
-  return entry_header_format_.checksum->Verify(header.checksum());
 }
 
 Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
@@ -593,9 +563,9 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
                                   span<const byte> value) {
   // write header, key, and value
   const EntryHeader header(entry_header_format_.magic,
-                           CalculateEntryChecksum(header, key, value),
-                           key.size(),
-                           value.size(),
+                           entry_header_format_.checksum,
+                           key,
+                           value,
                            key_descriptor->key_version + 1);
   DBG("Appending entry with key version: %zx", size_t(header.key_version()));
 
@@ -633,22 +603,6 @@ Status KeyValueStore::VerifyEntry(SectorDescriptor* sector,
   (void)sector;
   (void)key_descriptor;
   return Status::UNIMPLEMENTED;
-}
-
-span<const byte> KeyValueStore::CalculateEntryChecksum(
-    const EntryHeader& header,
-    const string_view key,
-    span<const byte> value) const {
-  if (entry_header_format_.checksum == nullptr) {
-    return kNoChecksum.bytes;
-  }
-
-  auto& checksum = *entry_header_format_.checksum;
-  checksum.Reset();
-  checksum.Update(header.DataForChecksum());
-  checksum.Update(as_bytes(span(key)));
-  checksum.Update(value.data(), value.size_bytes());
-  return checksum.state();
 }
 
 void KeyValueStore::LogDebugInfo() {

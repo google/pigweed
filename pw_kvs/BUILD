@@ -27,6 +27,7 @@ pw_cc_library(
     srcs = [
         "checksum.cc",
         "flash_memory.cc",
+        "format.cc",
         "key_value_store.cc",
         "pw_kvs_private/format.h",
         "pw_kvs_private/macros.h",

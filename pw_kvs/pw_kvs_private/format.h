@@ -11,40 +11,40 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+// This file defines classes for managing the in-flash format for KVS entires.
 #pragma once
 
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string_view>
 
+#include "pw_kvs/checksum.h"
+#include "pw_kvs/flash_memory.h"
 #include "pw_span/span.h"
 
 namespace pw::kvs {
 
-// In-flash header format.
-struct EntryHeader {
-  EntryHeader() : key_value_length_(0) {}
+// EntryHeader represents a key-value entry as stored in flash.
+class EntryHeader {
+ public:
+  EntryHeader() = default;
 
   EntryHeader(uint32_t magic,
-              span<const std::byte> checksum,
-              size_t key_length,
-              size_t value_length,
-              uint32_t key_version)
-      : magic_(magic),
-        checksum_(0),
-        key_value_length_(value_length << kValueLengthShift |
-                          (key_length & kKeyLengthMask)),
-        key_version_(key_version) {
-    std::memcpy(&checksum_,
-                checksum.data(),
-                std::min(checksum.size(), sizeof(checksum_)));
-  }
+              ChecksumAlgorithm* algorithm,
+              std::string_view key,
+              span<const std::byte> value,
+              uint32_t key_version);
 
-  span<const std::byte> DataForChecksum() const {
-    return span(reinterpret_cast<const std::byte*>(this) +
-                    offsetof(EntryHeader, key_value_length_),
-                sizeof(*this) - offsetof(EntryHeader, key_value_length_));
-  }
+  Status VerifyChecksum(ChecksumAlgorithm* algorithm,
+                        std::string_view key,
+                        span<const std::byte> value) const;
+
+  Status VerifyChecksumInFlash(FlashPartition* partition,
+                               FlashPartition::Address header_address,
+                               ChecksumAlgorithm* algorithm,
+                               std::string_view key) const;
 
   size_t entry_size() const {
     return sizeof(*this) + key_length() + value_length();
@@ -52,11 +52,7 @@ struct EntryHeader {
 
   uint32_t magic() const { return magic_; }
 
-  span<const std::byte> checksum() const {
-    return as_bytes(span(&checksum_, 1));
-  }
-
-  uint32_t checksum_as_uint32() const { return checksum_; }
+  uint32_t checksum() const { return checksum_; }
 
   size_t key_length() const { return key_value_length_ & kKeyLengthMask; }
   void set_key_length(uint32_t key_length) {
@@ -72,8 +68,17 @@ struct EntryHeader {
   uint32_t key_version() const { return key_version_; }
 
  private:
+  static constexpr uint32_t kNoChecksum = 0;
   static constexpr uint32_t kKeyLengthMask = 0b111111;
   static constexpr uint32_t kValueLengthShift = 8;
+
+  span<const std::byte> checksum_bytes() const {
+    return as_bytes(span(&checksum_, 1));
+  }
+
+  void CalculateChecksum(ChecksumAlgorithm* algorithm,
+                         std::string_view key,
+                         span<const std::byte> value = {}) const;
 
   uint32_t magic_;
   uint32_t checksum_;

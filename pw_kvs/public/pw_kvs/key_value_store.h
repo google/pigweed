@@ -49,7 +49,7 @@ using ConvertsToSpan =
     std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
 
 // Internal-only persistent storage header format.
-struct EntryHeader;
+class EntryHeader;
 
 struct EntryHeaderFormat {
   uint32_t magic;  // unique identifier
@@ -91,21 +91,19 @@ class KeyValueStore {
 
   StatusWithSize Get(std::string_view key, span<std::byte> value) const;
 
-  template <typename T>
-  Status Get(const std::string_view& key, T* value) {
-    static_assert(std::is_trivially_copyable<T>(), "KVS values must copyable");
-    static_assert(!std::is_pointer<T>(), "KVS values cannot be pointers");
+  // This overload of Get accepts a pointer to a trivially copyable object.
+  // const T& is used instead of T* to prevent arrays from satisfying this
+  // overload. To call Get with an array, pass as_writable_bytes(span(array)),
+  // or pass a pointer to the array instead of the array itself.
+  template <typename Pointer,
+            typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
+  Status Get(const std::string_view& key, const Pointer& pointer) const {
+    using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
 
-    // Ensure that the size of the stored value matches the size of the type.
-    // Otherwise, report error. This check avoids potential memory corruption.
-    StatusWithSize result = ValueSize(key);
-    if (!result.ok()) {
-      return result.status();
-    }
-    if (result.size() != sizeof(T)) {
-      return Status::INVALID_ARGUMENT;
-    }
-    return Get(key, as_writable_bytes(span(value, 1))).status();
+    static_assert(std::is_trivially_copyable<T>(), "Values must be copyable");
+    static_assert(!std::is_pointer<T>(), "Values cannot be pointers");
+
+    return FixedSizeGet(key, reinterpret_cast<std::byte*>(pointer), sizeof(T));
   }
 
   Status Put(std::string_view key, span<const std::byte> value);
@@ -136,9 +134,10 @@ class KeyValueStore {
       return kvs_.Get(key(), value_buffer).status();
     }
 
-    template <typename T>
-    Status Get(T* value) const {
-      return kvs_.Get(key(), value);
+    template <typename Pointer,
+              typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
+    Status Get(const Pointer& pointer) const {
+      return kvs_.Get(key(), pointer);
     }
 
     StatusWithSize ValueSize() const { return kvs_.ValueSize(key()); }
@@ -219,6 +218,10 @@ class KeyValueStore {
     }
   };
 
+  Status FixedSizeGet(std::string_view key,
+                      std::byte* value,
+                      size_t size_bytes) const;
+
   Status InvalidOperation(std::string_view key) const;
 
   static constexpr bool InvalidKey(std::string_view key) {
@@ -243,10 +246,6 @@ class KeyValueStore {
   StatusWithSize ReadEntryValue(const KeyDescriptor& key_descriptor,
                                 const EntryHeader& header,
                                 span<std::byte> value) const;
-
-  Status ValidateEntryChecksum(const EntryHeader& header,
-                               std::string_view key,
-                               span<const std::byte> value) const;
 
   Status LoadEntry(Address entry_address, Address* next_entry_address);
   Status AppendNewOrOverwriteStaleExistingDescriptor(
@@ -286,11 +285,6 @@ class KeyValueStore {
                      span<const std::byte> value);
 
   Status VerifyEntry(SectorDescriptor* sector, KeyDescriptor* key_descriptor);
-
-  span<const std::byte> CalculateEntryChecksum(
-      const EntryHeader& header,
-      std::string_view key,
-      span<const std::byte> value) const;
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
