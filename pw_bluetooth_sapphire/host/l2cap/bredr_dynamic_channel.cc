@@ -434,11 +434,26 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   if (BothConfigsAccepted() && !AcceptedChannelModesAreConsistent()) {
     bt_log(WARN, "l2cap-bredr",
            "Channel %#.4x: inconsistent channel mode negotiation (local mode: %#.2x, remote "
-           "mode: %#.2x)",
+           "mode: %#.2x); falling back to Basic Mode",
            local_cid(),
            static_cast<uint8_t>(local_config().retransmission_flow_control_option()->mode()),
            static_cast<uint8_t>(remote_config().retransmission_flow_control_option()->mode()));
-    PassOpenError();
+
+    // The most applicable guidance for the case where the peer send conflicting modes is in Core
+    // Spec v5.0 Vol 3, Part A, Sec 5.4: "If the mode proposed by the remote device has a higher
+    // precedence (according to the state 1 precedence) then the algorithm will operate such that
+    // creation of a channel using the remote device's mode has higher priority than disconnecting
+    // the channel."
+    //
+    // Note also that, "In state 1, Basic L2CAP mode has the highest precedence and shall take
+    // precedence over Enhanced Retransmission mode..."
+    //
+    // So, if we are to continue the connection, it makes the most sense to use Basic Mode.
+    local_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+    remote_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+    PassOpenResult();
     return;
   }
 
@@ -883,11 +898,17 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
   if (BothConfigsAccepted() && !AcceptedChannelModesAreConsistent()) {
     bt_log(WARN, "l2cap-bredr",
            "Channel %#.4x: inconsistent channel mode negotiation (local mode: %#.2x, remote "
-           "mode: %#.2x)",
+           "mode: %#.2x); falling back to Basic Mode",
            local_cid(),
            static_cast<uint8_t>(local_config().retransmission_flow_control_option()->mode()),
            static_cast<uint8_t>(remote_config().retransmission_flow_control_option()->mode()));
-    PassOpenError();
+
+    // See spec justification in OnRxConfigReq.
+    local_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+    remote_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+    PassOpenResult();
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 

@@ -1841,9 +1841,9 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
 // the local device must accept. These modes are incompatible, so the local device should
-// disconnect.
+// default to Basic Mode.
 TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       DisconnectOnInconsistentChannelModeNegotiationFailureWhenPeerConfigRequestIsLast) {
+       OpenBasicModeChannelAfterPeerAcceptsErtmThenPeerRequestsBasicMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -1855,7 +1855,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
-      ASSERT_FALSE(chan);
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
@@ -1878,9 +1879,9 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
   EXPECT_EQ(1, open_cb_count);
 }
 
-// Same as above, but the local config response is last.
+// Same as above, but the peer sends its positive response after sending its Basic Mode request.
 TEST_F(L2CAP_BrEdrDynamicChannelTest,
-       DisconnectOnInconsistentChannelModeNegotiationFailureWhenLocalConfigResponseIsLast) {
+       OpenBasicModeChannelAfterPeerRequestsBasicModeThenPeerAcceptsErtm) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
@@ -1892,7 +1893,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
-      ASSERT_FALSE(chan);
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
   };
