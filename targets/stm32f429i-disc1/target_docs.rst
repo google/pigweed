@@ -45,7 +45,7 @@ device and then runs it.
 .. code:: sh
 
   # Setup pigweed environment.
-  $ . env_setup/setup.sh
+  $ . pw_env_setup/setup.sh
   # Run test.
   $ stm32f429i_disc1_unit_test_runner /path/to/binary
 
@@ -61,7 +61,7 @@ specified with the ``--test`` option.
 .. code:: sh
 
   # Setup Pigweed environment.
-  $ . env_setup/setup.sh
+  $ . pw_env_setup/setup.sh
   # Run test.
   $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
 

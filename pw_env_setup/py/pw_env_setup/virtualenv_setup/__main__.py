@@ -17,9 +17,9 @@ import argparse
 import os
 import sys
 
-# TODO(mohrr) remove import-error disabling, not sure why pylint has issues
-# with it.
-import install  # pylint: disable=import-error
+# TODO(pwbug/67) switch back to 'from pw_env_setup import virtualenv_setup'.
+# from pw_env_setup import virtualenv_setup
+import install as virtualenv_setup  # pylint: disable=import-error
 
 
 def _main():
@@ -42,11 +42,7 @@ def _main():
                         default=sys.executable,
                         help='Python to use when creating virtualenv.')
 
-    try:
-        install.install(**vars(parser.parse_args()))
-    except install.GitRepoNotFound:
-        print('git repository not found', file=sys.stderr)
-        return -1
+    virtualenv_setup.install(**vars(parser.parse_args()))
 
     return 0
 

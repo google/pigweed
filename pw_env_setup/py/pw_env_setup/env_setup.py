@@ -25,20 +25,52 @@ with PyOxidizer it can be upgraded to recent Python 3.
 from __future__ import print_function
 
 import argparse
+import copy
 import glob
+import inspect
 import os
 import shutil
 import subprocess
 import sys
 
-# TODO(mohrr) remove import-error disabling, not sure why pylint has issues
-# with it.
-import cipd_setup.update  # pylint: disable=import-error
-import cipd_setup.wrapper  # pylint: disable=import-error
-import cargo_setup  # pylint: disable=import-error
-import environment  # pylint: disable=import-error
-import host_build_setup  # pylint: disable=import-error
-import virtualenv_setup  # pylint: disable=import-error
+# TODO(pwbug/67): Remove import hacks once the oxidized prebuilt binaries are
+# proven stable for first-time bootstrapping. For now, continue to support
+# running directly from source without assuming a functioning Python
+# environment when running for the first time.
+
+# If we're running oxidized, filesystem-centric import hacks won't work. In that
+# case, jump straight to the imports and assume oxidation brought in the deps.
+if not getattr(sys, 'oxidized', False):
+    try:
+        # Even if we're running from source, the user may have a functioning
+        # Python environment already set up. Prefer using it over hacks.
+        # pylint: disable=no-name-in-module
+        from pw_env_setup import cargo_setup
+        # pylint: enable=no-name-in-module
+    except ImportError:
+        old_sys_path = copy.deepcopy(sys.path)
+        filename = None
+        if hasattr(sys.modules[__name__], '__file__'):
+            filename = __file__
+        else:
+            # Try introspection in environments where __file__ is not populated.
+            filename = inspect.getfile(inspect.currentframe())
+        # If none of our strategies worked, the imports are going to fail.
+        if filename is None:
+            raise
+        sys.path.append(
+            os.path.abspath(
+                os.path.join(filename, os.path.pardir, os.path.pardir)))
+        import pw_env_setup  # pylint: disable=unused-import
+        sys.path = old_sys_path
+
+# pylint: disable=wrong-import-position
+from pw_env_setup.cipd_setup import update as cipd_update
+from pw_env_setup.cipd_setup import wrapper as cipd_wrapper
+from pw_env_setup import cargo_setup
+from pw_env_setup import environment
+from pw_env_setup import host_build_setup
+from pw_env_setup import virtualenv_setup
 
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
@@ -49,6 +81,8 @@ class EnvSetup(object):
         super(EnvSetup, self).__init__(*args, **kwargs)
         self._env = environment.Environment()
         self._pw_root = pw_root
+        self._setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
+                                        'pw_env_setup')
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
 
@@ -82,11 +116,11 @@ class EnvSetup(object):
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
 
-        cipd_client = cipd_setup.wrapper.init(install_dir)
+        cipd_client = cipd_wrapper.init(install_dir)
 
         package_files = glob.glob(
-            os.path.join(self._pw_root, 'env_setup', 'cipd_setup', '*.json'))
-        cipd_setup.update.update(
+            os.path.join(self._setup_root, 'cipd_setup', '*.json'))
+        cipd_update.update(
             cipd=cipd_client,
             root_install_dir=install_dir,
             package_files=package_files,
@@ -101,8 +135,8 @@ class EnvSetup(object):
 
         venv_path = os.path.join(self._pw_root, '.python3-env')
 
-        requirements = os.path.join(self._pw_root, 'env_setup',
-                                    'virtualenv_setup', 'requirements.txt')
+        requirements = os.path.join(self._setup_root, 'virtualenv_setup',
+                                    'requirements.txt')
 
         cipd_bin = os.path.join(
             self._pw_root,

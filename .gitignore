@@ -42,7 +42,7 @@ __pycache__/
 *_REMOTE_*.txt
 
 # Env Setup
-env_setup/.setup.sh
-env_setup/.env_setup.bat
+pw_env_setup/.setup.sh
+pw_env_setup/.env_setup.bat
 .cipd
 .cargo

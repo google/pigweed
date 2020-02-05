@@ -29,25 +29,28 @@ import shutil
 import subprocess
 import sys
 
-SCRIPT_ROOT = os.path.abspath(os.path.dirname(__file__))
-GIT_ROOT = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
-                                   cwd=SCRIPT_ROOT).decode('utf-8').strip()
-
 
 def parse(argv=None):
     """Parse arguments."""
+
+    script_root = os.path.join(os.environ['PW_ROOT'], 'pw_env_setup', 'py',
+                               'pw_env_setup', 'cipd_setup')
+    git_root = subprocess.check_output(
+        ('git', 'rev-parse', '--show-toplevel'),
+        cwd=script_root,
+    ).decode('utf-8').strip()
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         '--install-dir',
         dest='root_install_dir',
-        default=os.path.join(GIT_ROOT, '.cipd'),
+        default=os.path.join(git_root, '.cipd'),
     )
     parser.add_argument('--package-file',
                         dest='package_files',
                         action='append')
     parser.add_argument('--cipd',
-                        default=os.path.join(SCRIPT_ROOT, 'wrapper.py'))
+                        default=os.path.join(script_root, 'wrapper.py'))
     parser.add_argument('--cache-dir',
                         default=os.environ.get(
                             'CIPD_CACHE_DIR',
@@ -111,8 +114,15 @@ def update(
         env_vars.set('PW_CIPD_INSTALL_DIR', root_install_dir)
         env_vars.set('CIPD_CACHE_DIR', cache_dir)
 
+    pw_root = None
+    if env_vars:
+        pw_root = env_vars.get('PW_ROOT', None)
+    if not pw_root:
+        pw_root = os.environ['PW_ROOT']
+
     # Run cipd for each json file.
-    default_packages = os.path.join(SCRIPT_ROOT, '*.json')
+    default_packages = os.path.join(pw_root, 'pw_env_setup', 'py',
+                                    'pw_env_setup', 'cipd_setup', '*.json')
     for package_file in package_files or glob.glob(default_packages):
         ensure_file = os.path.join(
             root_install_dir,

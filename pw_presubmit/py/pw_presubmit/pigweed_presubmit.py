@@ -51,9 +51,11 @@ def run_python_module(*args, **kwargs):
 #
 def init_cipd(ctx: PresubmitContext):
     # TODO(mohrr) invoke by importing rather than by subprocess.
-    call(sys.executable,
-         ctx.repository_root.joinpath('env_setup/cipd_setup/update.py'),
-         '--install-dir', ctx.output_directory)
+    call(
+        sys.executable,
+        ctx.repository_root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
+                                     'cipd_setup', 'update.py'),
+        '--install-dir', ctx.output_directory)
 
     paths = [ctx.output_directory, ctx.output_directory.joinpath('bin')]
     for base in ctx.output_directory.glob('*'):
@@ -68,7 +70,8 @@ def init_cipd(ctx: PresubmitContext):
 
 def init_virtualenv(ctx: PresubmitContext):
     """Set up virtualenv, assumes recent Python 3 is already installed."""
-    virtualenv_source = ctx.repository_root.joinpath('env_setup',
+    virtualenv_source = ctx.repository_root.joinpath('pw_env_setup', 'py',
+                                                     'pw_env_setup',
                                                      'virtualenv_setup')
 
     # For speed, don't build the venv if it exists. Use --clean to recreate it.

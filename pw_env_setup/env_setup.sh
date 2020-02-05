@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -36,7 +36,7 @@ fi
 PW_ROOT=$(dirname $(dirname $PW_SETUP_SCRIPT_PATH))
 export PW_ROOT
 
-SETUP_SH="$PW_ROOT/env_setup/.setup.sh"
+SETUP_SH="$PW_ROOT/pw_env_setup/.setup.sh"
 
 # Try to use Python 3 if possible by default, before Python 2.
 if which python3 &> /dev/null; then
@@ -50,7 +50,7 @@ if \
   [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
   [ ! -f $SETUP_SH ] || \
   [ ! -s $SETUP_SH ]; then
-  $PYTHON $PW_ROOT/env_setup/env_setup.py --shell-file $SETUP_SH
+  $PYTHON $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py --shell-file $SETUP_SH
 fi
 
 . $SETUP_SH

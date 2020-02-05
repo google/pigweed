@@ -27,8 +27,8 @@ def install(pw_root, env):
 
     # packages.txt contains packages one per line with two fields: package
     # name and version.
-    package_path = os.path.join(pw_root, 'env_setup', 'cargo_setup',
-                                'packages.txt')
+    package_path = os.path.join(pw_root, 'pw_env_setup', 'py', 'pw_env_setup',
+                                'cargo_setup', 'packages.txt')
     with env(), open(package_path, 'r') as ins:
         for line in ins:
             line = line.strip()

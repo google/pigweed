@@ -17,12 +17,12 @@
 
 :: Calls a Powershell script that determines the correct PW_ROOT directory and
 :: exports it as an environment variable.
-for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\env_setup\env_setup.ps1`) do set PW_ROOT=%%i
+for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\pw_env_setup\env_setup.ps1`) do set PW_ROOT=%%i
 
-set shell_file="%PW_ROOT%\env_setup\.env_setup.bat"
+set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
 if not exist %shell_file% (
-  call python %PW_ROOT%\env_setup\env_setup.py --pw-root %PW_ROOT% --shell-file %shell_file%
+  call python %PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py --pw-root %PW_ROOT% --shell-file %shell_file%
 )
 
 call %shell_file%

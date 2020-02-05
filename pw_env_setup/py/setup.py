@@ -30,7 +30,9 @@ setuptools.setup(
     description='Environment setup for Pigweed',
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
-    entry_points={'console_scripts': ['_pw_env_setup = env_setup:main']},
+    entry_points={
+        'console_scripts': ['_pw_env_setup = pw_env_setup.env_setup:main'],
+    },
     package_data={
         'pw_env_setup': [
             'cargo_setup/packages.txt',

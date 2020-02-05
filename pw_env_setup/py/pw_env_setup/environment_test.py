@@ -29,9 +29,7 @@ import subprocess
 import tempfile
 import unittest
 
-# TODO(mohrr) remove import-error disabling, not sure why pylint has issues
-# with it.
-import environment  # pylint: disable=import-error
+from pw_env_setup import environment
 
 
 class WrittenEnvFailure(Exception):

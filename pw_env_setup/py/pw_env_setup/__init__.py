@@ -11,16 +11,4 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Builds and sets up environment to use host build."""
-
-import os
-import subprocess
-
-
-def install(pw_root, env):
-    host_dir = os.path.join(pw_root, 'out', 'host')
-    with env():
-        subprocess.check_call(['gn', 'gen', host_dir], cwd=pw_root)
-        subprocess.check_call(['ninja', '-C', host_dir], cwd=pw_root)
-
-    env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
+"""Pigweed environment setup."""

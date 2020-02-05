@@ -101,9 +101,6 @@ def install(
 
     setup_py_files = git_list_files('setup.py', '*/setup.py', cwd=pw_root)
 
-    # Don't install the env_setup "module".
-    setup_py_files = [x for x in setup_py_files if b'env_setup' not in x]
-
     # If not forcing full setup, check if all expected packages are installed,
     # ignoring versions. If they are, skip reinstalling.
     if not full_envsetup:

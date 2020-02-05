@@ -20,14 +20,15 @@ that we expect everyone who interacts with the project to respect.
 ```bash
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
-$ env_setup/cipd/wrapper.py auth-login  # Once per machine.
-$ . env_setup/bootstrap.sh
+# Only need to run auth-login once per machine.
+$ pw_env_setup/py/pw_env_setup/cipd_setup/wrapper.py auth-login
+$ . pw_env_setup/bootstrap.sh
 ```
 
-You can use `. env_setup/env_setup.sh` in place of `. env_setup/bootstrap.sh`.
+You can use `. pw_env_setup/setup.sh` in place of `. pw_env_setup/bootstrap.sh`.
 Both should work every time, but `bootstrap.sh` tends to remove and reinstall
-things at the expense of time whereas `env_setup.sh` tends to do basic checks
-to see if time can be saved by skipping expensive operations.
+things at the expense of time whereas `setup.sh` assumes things have
+already been installed and only sets environment variables.
 
 If you're using Homebrew and you get an error saying
 `module 'http.client' has no attribute 'HTTPSConnection'` then your
