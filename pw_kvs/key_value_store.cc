@@ -51,6 +51,10 @@ Status KeyValueStore::Init() {
   // Reset the number of occupied key descriptors; we will fill them later.
   key_descriptor_list_size_ = 0;
 
+  // TODO: init last_new_sector_ to a random sector. Since the on-flash stored
+  // information does not allow recovering the previous last_new_sector_ after
+  // clean start, random is a good second choice.
+
   const size_t sector_size_bytes = partition_.sector_size_bytes();
   const size_t sector_count = partition_.sector_count();
 
@@ -405,8 +409,7 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                span<const byte> value) {
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
-  DBG("Writing existing entry; found sector: %d",
-      static_cast<int>(sector - sector_map_.data()));
+  DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
   return AppendEntry(sector, key_descriptor, key, value);
 }
 
@@ -428,8 +431,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
-  DBG("Writing new entry; found sector: %d",
-      static_cast<int>(sector - sector_map_.data()));
+  DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, &key_descriptor, key, value));
 
   // Only increment bump our size when we are certain the write succeeded.
@@ -468,31 +470,40 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   }
 
   // Find a new sector for the entry and write it to the new location.
-  SectorDescriptor* new_sector =
-      FindSectorWithSpace(header.size(), old_sector, true);
-  if (new_sector == nullptr) {
-    return Status::RESOURCE_EXHAUSTED;
-  }
+  SectorDescriptor* new_sector;
+  TRY(FindSectorWithSpace(&new_sector, header.size(), old_sector, true));
   return AppendEntry(new_sector, &key_descriptor, key, as_bytes(value));
 }
 
 // Find either an existing sector with enough space that is not the sector to
 // skip, or an empty sector. Maintains the invariant that there is always at
 // least 1 empty sector unless set to bypass the rule.
-KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
-    size_t size,
-    SectorDescriptor* sector_to_skip,
-    bool bypass_empty_sector_rule) {
+Status KeyValueStore::FindSectorWithSpace(SectorDescriptor** found_sector,
+                                          size_t size,
+                                          SectorDescriptor* sector_to_skip,
+                                          bool bypass_empty_sector_rule) {
   const size_t sector_count = partition_.sector_count();
 
-  // TODO: Ignore last written sector for now and scan from the beginning.
-  last_written_sector_ = sector_count - 1;
-
-  size_t start = (last_written_sector_ + 1) % sector_count;
+  // The last_new_sector_ is the sector that was last selected as the "new empty
+  // sector" to write to. This last new sector is used as the starting point for
+  // the next "find a new empty sector to write to" operation. By using the last
+  // new sector as the start point we will cycle which empty sector is selected
+  // next, spreading the wear across all the empty sectors and get a wear
+  // leveling benefit, rather than putting more wear on the lower number
+  // sectors.
+  //
+  // Locally use the sector index for ease of iterating through the sectors. For
+  // the persistent storage use SectorDescriptor* rather than sector index
+  // because SectorDescriptor* is the standard way to identify a sector.
+  size_t last_new_sector_index_ = SectorIndex(last_new_sector_);
+  size_t start = (last_new_sector_index_ + 1) % sector_count;
   SectorDescriptor* first_empty_sector = nullptr;
   bool at_least_two_empty_sectors = bypass_empty_sector_rule;
 
-  for (size_t i = start; i != last_written_sector_;
+  // Look for a partial sector to use with enough space. Immediately use the
+  // first one of those that is found. While scanning for a partial sector, keep
+  // track of the first empty sector and if a second sector was seen.
+  for (size_t i = start; i != last_new_sector_index_;
        i = (i + 1) % sector_count) {
     DBG("Examining sector %zu", i);
     SectorDescriptor& sector = sector_map_[i];
@@ -504,7 +515,8 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
 
     if (!SectorEmpty(sector) && sector.HasSpace(size)) {
       DBG("Partially occupied sector with enough space; done!");
-      return &sector;
+      *found_sector = &sector;
+      return Status::OK;
     }
 
     if (SectorEmpty(sector)) {
@@ -516,24 +528,33 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorWithSpace(
     }
   }
 
+  // If the scan for a partial sector does not find a suitable sector, use the
+  // first empty sector that was found. Normally it is required to keep 1 empty
+  // sector after the sector found here, but that rule can be bypassed in
+  // special circumstances (such as during garbage collection).
   if (at_least_two_empty_sectors) {
-    DBG("Found a usable empty sector; returning the first found (%d)",
-        static_cast<int>(first_empty_sector - sector_map_.data()));
-    return first_empty_sector;
+    DBG("Found a usable empty sector; returning the first found (%zu)",
+        SectorIndex(first_empty_sector));
+    last_new_sector_ = first_empty_sector;
+    *found_sector = first_empty_sector;
+    return Status::OK;
   }
-  return nullptr;
+
+  // No sector was found.
+  *found_sector = nullptr;
+  return Status::RESOURCE_EXHAUSTED;
 }
 
 Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
                                                    size_t size) {
-  *sector = FindSectorWithSpace(size);
-  if (*sector != nullptr) {
-    return Status::OK;
+  Status result = FindSectorWithSpace(sector, size);
+  if (result.ok()) {
+    return result;
   }
   if (options_.partial_gc_on_write) {
     return GarbageCollectOneSector(sector);
   }
-  return Status::RESOURCE_EXHAUSTED;
+  return result;
 }
 
 KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
@@ -620,8 +641,6 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
     TRY(header.VerifyChecksumInFlash(
         &partition_, address, entry_header_format_.checksum));
   }
-
-  // TODO: UPDATE last_written_sector_ appropriately
 
   key_descriptor->address = address;
   key_descriptor->key_version = header.key_version();

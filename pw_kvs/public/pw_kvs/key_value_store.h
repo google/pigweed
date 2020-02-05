@@ -85,7 +85,7 @@ class KeyValueStore {
         key_descriptor_list_{},
         key_descriptor_list_size_(0),
         sector_map_{},
-        last_written_sector_(0),
+        last_new_sector_(sector_map_.data()),
         working_buffer_{} {}
 
   Status Init();
@@ -267,10 +267,10 @@ class KeyValueStore {
 
   Status RelocateEntry(KeyDescriptor& key_descriptor);
 
-  SectorDescriptor* FindSectorWithSpace(
-      size_t size,
-      SectorDescriptor* sector_to_skip = nullptr,
-      bool bypass_empty_sector_rule = false);
+  Status FindSectorWithSpace(SectorDescriptor** found_sector,
+                             size_t size,
+                             SectorDescriptor* sector_to_skip = nullptr,
+                             bool bypass_empty_sector_rule = false);
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 
@@ -303,8 +303,13 @@ class KeyValueStore {
            sector.tail_free_bytes;
   }
 
+  size_t SectorIndex(const SectorDescriptor* sector) const {
+    // TODO: perhaps add assert that the index is valid.
+    return (sector - sector_map_.data());
+  }
+
   Address SectorBaseAddress(const SectorDescriptor* sector) const {
-    return (sector - sector_map_.data()) * partition_.sector_size_bytes();
+    return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
   SectorDescriptor* SectorFromAddress(Address address) {
@@ -338,7 +343,17 @@ class KeyValueStore {
 
   // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
   std::array<SectorDescriptor, kUsableSectors> sector_map_;
-  size_t last_written_sector_;
+
+  // The last sector that was selected as the "new empty sector" to write to.
+  // This last new sector is used as the starting point for the next "find a new
+  // empty sector to write to" operation. By using the last new sector as the
+  // start point we will cycle which empty sector is selected next, spreading
+  // the wear across all the empty sectors, rather than putting more wear on the
+  // lower number sectors.
+  //
+  // Use SectorDescriptor* for the persistent storage rather than sector index
+  // because SectorDescriptor* is the standard way to identify a sector.
+  SectorDescriptor* last_new_sector_;
 
   bool initialized_ = false;
 
