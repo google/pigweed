@@ -36,7 +36,6 @@ pw_cc_library(
         "public/pw_kvs/checksum.h",
         "public/pw_kvs/crc16_checksum.h",
         "public/pw_kvs/flash_memory.h",
-        "public/pw_kvs/in_memory_fake_flash.h",
         "public/pw_kvs/key_value_store.h",
     ],
     includes = ["public"],
@@ -58,6 +57,18 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "in_memory_fake_flash",
+    hdrs = [
+        "public/pw_kvs/in_memory_fake_flash.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_log",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "checksum_test",
     srcs = ["checksum_test.cc"],
@@ -74,6 +85,7 @@ pw_cc_test(
     srcs = ["key_value_store_test.cc"],
     deps = [
         ":crc16",
+        ":in_memory_fake_flash",
         ":pw_kvs",
         "//pw_checksum",
         "//pw_log",

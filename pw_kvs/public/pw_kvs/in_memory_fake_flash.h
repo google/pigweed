@@ -44,13 +44,15 @@ class InMemoryFakeFlash : public FlashMemory {
   //          UNKNOWN, on HAL error
   Status Erase(Address address, size_t num_sectors) override {
     if (address % sector_size_bytes() != 0) {
-      ERR("Attempted to erase sector at non-sector aligned boundary: %zx",
+      PW_LOG_ERROR(
+          "Attempted to erase sector at non-sector aligned boundary: %zx",
           size_t(address));
       return Status::INVALID_ARGUMENT;
     }
     size_t sector_id = address / sector_size_bytes();
     if (address / sector_size_bytes() + num_sectors > sector_count()) {
-      ERR("Tried to erase a sector at an address past partition end; "
+      PW_LOG_ERROR(
+          "Tried to erase a sector at an address past partition end; "
           "address: %zx, sector implied: %zu",
           size_t(address),
           sector_id);
@@ -88,7 +90,8 @@ class InMemoryFakeFlash : public FlashMemory {
     // Check in erased state
     for (unsigned i = 0; i < data.size(); i++) {
       if (buffer_[address + i] != 0xFF) {
-        ERR("Writing to previously written address: %zx", size_t(address));
+        PW_LOG_ERROR("Writing to previously written address: %zx",
+                     size_t(address));
         return Status::UNKNOWN;
       }
     }

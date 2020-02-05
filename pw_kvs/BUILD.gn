@@ -24,7 +24,6 @@ source_set("pw_kvs") {
   public = [
     "public/pw_kvs/checksum.h",
     "public/pw_kvs/flash_memory.h",
-    "public/pw_kvs/in_memory_fake_flash.h",
     "public/pw_kvs/key_value_store.h",
   ]
   sources = [
@@ -37,7 +36,8 @@ source_set("pw_kvs") {
   ]
   sources += public
   public_deps = [
-    "$dir_pw_status",
+    dir_pw_span,
+    dir_pw_status,
   ]
   deps = [
     dir_pw_checksum,
@@ -54,6 +54,17 @@ source_set("crc16") {
   public_deps = [
     ":pw_kvs",
     dir_pw_checksum,
+  ]
+}
+
+source_set("in_memory_fake_flash") {
+  public = [
+    "public/pw_kvs/in_memory_fake_flash.h",
+  ]
+  sources = public
+  visibility = [ ":*" ]
+  public_deps = [
+    dir_pw_log,
   ]
 }
 
@@ -78,6 +89,7 @@ pw_test("checksum_test") {
 pw_test("key_value_store_test") {
   deps = [
     ":crc16",
+    ":in_memory_fake_flash",
     ":pw_kvs",
     dir_pw_checksum,
     dir_pw_log,
