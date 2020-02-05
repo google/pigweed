@@ -45,14 +45,6 @@ constexpr uint32_t HashKey(std::string_view string) {
   return hash;
 }
 
-constexpr size_t EntrySize(string_view key, span<const byte> value) {
-  return sizeof(EntryHeader) + key.size() + value.size();
-}
-
-constexpr size_t EntrySize(const EntryHeader& header) {
-  return sizeof(EntryHeader) + header.key_length() + header.value_length();
-}
-
 }  // namespace
 
 Status KeyValueStore::Init() {
@@ -132,7 +124,7 @@ Status KeyValueStore::Init() {
     key_descriptor.address = key_descriptor_list_[key_id].address;
     EntryHeader header;
     TRY(ReadEntryHeader(key_descriptor, &header));
-    sector_map_[sector_id].valid_bytes += header.entry_size();
+    sector_map_[sector_id].valid_bytes += header.size();
   }
   enabled_ = true;
   return Status::OK;
@@ -154,9 +146,9 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   DBG("   Checksum     = 0x%zx", size_t(header.checksum()));
   DBG("   Key length   = 0x%zx", size_t(header.key_length()));
   DBG("   Value length = 0x%zx", size_t(header.value_length()));
-  DBG("   Entry size   = 0x%zx", size_t(header.entry_size()));
+  DBG("   Entry size   = 0x%zx", size_t(header.size()));
   DBG("   Padded size  = 0x%zx",
-      size_t(AlignUp(header.entry_size(), alignment_bytes)));
+      size_t(AlignUp(header.size(), alignment_bytes)));
 
   if (HeaderLooksLikeUnwrittenData(header)) {
     return Status::NOT_FOUND;
@@ -190,7 +182,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 
   // TODO: Extract this to something like "NextValidEntryAddress".
   *next_entry_address =
-      AlignUp(key_descriptor.address + header.entry_size(), alignment_bytes);
+      AlignUp(key_descriptor.address + header.size(), alignment_bytes);
 
   return Status::OK;
 }
@@ -410,7 +402,7 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                string_view key,
                                                span<const byte> value) {
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(&sector, EntrySize(key, value)));
+  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
   DBG("Writing existing entry; found sector: %d",
       static_cast<int>(sector - sector_map_.data()));
   return AppendEntry(sector, key_descriptor, key, value);
@@ -433,7 +425,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   key_descriptor.key_version = 0;  // will be incremented by AppendEntry()
 
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(&sector, EntrySize(key, value)));
+  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
   DBG("Writing new entry; found sector: %d",
       static_cast<int>(sector - sector_map_.data()));
   TRY(AppendEntry(sector, &key_descriptor, key, value));
@@ -475,7 +467,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
 
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector =
-      FindSectorWithSpace(EntrySize(header), old_sector, true);
+      FindSectorWithSpace(header.size(), old_sector, true);
   if (new_sector == nullptr) {
     return Status::RESOURCE_EXHAUSTED;
   }

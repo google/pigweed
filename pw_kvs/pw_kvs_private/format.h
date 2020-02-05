@@ -45,8 +45,14 @@ class EntryHeader {
                                FlashPartition::Address header_address,
                                ChecksumAlgorithm* algorithm) const;
 
-  size_t entry_size() const {
-    return sizeof(*this) + key_length() + value_length();
+  // Calculates the total size of the entry: header, key, and value.
+  static constexpr size_t size(std::string_view key,
+                               span<const std::byte> value) {
+    return sizeof(EntryHeader) + key.size() + value.size();
+  }
+
+  size_t size() const {
+    return sizeof(EntryHeader) + key_length() + value_length();
   }
 
   uint32_t magic() const { return magic_; }

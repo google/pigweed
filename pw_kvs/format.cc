@@ -64,7 +64,7 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
   byte buffer[32];
 
   address += checked_data_offset();
-  size_t bytes_to_read = entry_size() - checked_data_offset();
+  size_t bytes_to_read = size() - checked_data_offset();
 
   while (bytes_to_read > 0u) {
     const size_t read_size = std::min(sizeof(buffer), bytes_to_read);
