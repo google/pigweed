@@ -207,6 +207,11 @@ class KeyValueStore {
   using Address = FlashPartition::Address;
 
   struct KeyDescriptor {
+    KeyDescriptor() = default;
+
+    KeyDescriptor(std::string_view key, uint32_t version, Address address)
+        : key_hash(HashKey(key)), key_version(version), address(address) {}
+
     uint32_t key_hash;
     uint32_t key_version;
     Address address;  // In partition address.
@@ -220,6 +225,8 @@ class KeyValueStore {
       return (tail_free_bytes >= required_space);
     }
   };
+
+  static uint32_t HashKey(std::string_view string);
 
   Status FixedSizeGet(std::string_view key,
                       std::byte* value,
@@ -240,11 +247,8 @@ class KeyValueStore {
         key, const_cast<const KeyDescriptor**>(result));
   }
 
-  Status ReadEntryHeader(const KeyDescriptor& descriptor,
-                         EntryHeader* header) const;
-  Status ReadEntryKey(const KeyDescriptor& descriptor,
-                      size_t key_length,
-                      char* key) const;
+  Status ReadEntryHeader(Address address, EntryHeader* header) const;
+  Status ReadEntryKey(Address address, size_t key_length, char* key) const;
 
   StatusWithSize ReadEntryValue(const KeyDescriptor& key_descriptor,
                                 const EntryHeader& header,

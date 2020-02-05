@@ -28,25 +28,6 @@ namespace pw::kvs {
 using std::byte;
 using std::string_view;
 
-namespace {
-
-using Address = FlashPartition::Address;
-
-// constexpr uint32_t SixFiveFiveNineNine(std::string_view string) {
-constexpr uint32_t HashKey(std::string_view string) {
-  uint32_t hash = 0;
-  uint32_t coefficient = 65599u;
-
-  for (char ch : string) {
-    hash += coefficient * unsigned(ch);
-    coefficient *= 65599u;
-  }
-
-  return hash;
-}
-
-}  // namespace
-
 Status KeyValueStore::Init() {
   // Reset the number of occupied key descriptors; we will fill them later.
   key_descriptor_list_size_ = 0;
@@ -124,10 +105,8 @@ Status KeyValueStore::Init() {
   for (size_t key_id = 0; key_id < key_descriptor_list_size_; ++key_id) {
     uint32_t sector_id =
         key_descriptor_list_[key_id].address / sector_size_bytes;
-    KeyDescriptor key_descriptor;
-    key_descriptor.address = key_descriptor_list_[key_id].address;
     EntryHeader header;
-    TRY(ReadEntryHeader(key_descriptor, &header));
+    TRY(ReadEntryHeader(key_descriptor_list_[key_id].address, &header));
     sector_map_[sector_id].valid_bytes += header.size();
   }
   initialized_ = true;
@@ -138,11 +117,8 @@ Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
   const size_t alignment_bytes = partition_.alignment_bytes();
 
-  KeyDescriptor key_descriptor;
-  key_descriptor.address = entry_address;
-
   EntryHeader header;
-  TRY(ReadEntryHeader(key_descriptor, &header));
+  TRY(ReadEntryHeader(entry_address, &header));
   // TODO: Should likely add a "LogHeader" method or similar.
   DBG("Header: ");
   DBG("   Address      = 0x%zx", size_t(entry_address));
@@ -157,7 +133,6 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   if (HeaderLooksLikeUnwrittenData(header)) {
     return Status::NOT_FOUND;
   }
-  key_descriptor.key_version = header.key_version();
 
   // TODO: Handle multiple magics for formats that have changed.
   if (header.magic() != entry_header_format_.magic) {
@@ -171,12 +146,13 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 
   // Read the key from flash & validate the entry (which reads the value).
   KeyBuffer key_buffer;
-  TRY(ReadEntryKey(key_descriptor, header.key_length(), key_buffer.data()));
+  TRY(ReadEntryKey(entry_address, header.key_length(), key_buffer.data()));
   const string_view key(key_buffer.data(), header.key_length());
 
   TRY(header.VerifyChecksumInFlash(
-      &partition_, key_descriptor.address, entry_header_format_.checksum));
-  key_descriptor.key_hash = HashKey(key);
+      &partition_, entry_address, entry_header_format_.checksum));
+
+  KeyDescriptor key_descriptor(key, header.key_version(), entry_address);
 
   DBG("Key hash: %zx (%zu)",
       size_t(key_descriptor.key_hash),
@@ -257,7 +233,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
   TRY(FindKeyDescriptor(key, &key_descriptor));
 
   EntryHeader header;
-  TRY(ReadEntryHeader(*key_descriptor, &header));
+  TRY(ReadEntryHeader(key_descriptor->address, &header));
 
   StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
   if (result.ok() && options_.verify_on_read) {
@@ -301,9 +277,9 @@ const KeyValueStore::Item& KeyValueStore::Iterator::operator*() {
   std::memset(entry_.key_buffer_.data(), 0, entry_.key_buffer_.size());
 
   EntryHeader header;
-  if (entry_.kvs_.ReadEntryHeader(descriptor, &header).ok()) {
+  if (entry_.kvs_.ReadEntryHeader(descriptor.address, &header).ok()) {
     entry_.kvs_.ReadEntryKey(
-        descriptor, header.key_length(), entry_.key_buffer_.data());
+        descriptor.address, header.key_length(), entry_.key_buffer_.data());
   }
 
   return entry_;
@@ -316,9 +292,21 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
   TRY(FindKeyDescriptor(key, &key_descriptor));
 
   EntryHeader header;
-  TRY(ReadEntryHeader(*key_descriptor, &header));
+  TRY(ReadEntryHeader(key_descriptor->address, &header));
 
   return StatusWithSize(header.value_length());
+}
+
+uint32_t KeyValueStore::HashKey(string_view string) {
+  uint32_t hash = 0;
+  uint32_t coefficient = 65599u;
+
+  for (char ch : string) {
+    hash += coefficient * unsigned(ch);
+    coefficient *= 65599u;
+  }
+
+  return hash;
 }
 
 Status KeyValueStore::FixedSizeGet(std::string_view key,
@@ -354,7 +342,7 @@ Status KeyValueStore::FindKeyDescriptor(string_view key,
   for (auto& descriptor : key_descriptors()) {
     if (descriptor.key_hash == hash) {
       DBG("Found match! For hash: %zx", size_t(hash));
-      TRY(ReadEntryKey(descriptor, key.size(), key_buffer));
+      TRY(ReadEntryKey(descriptor.address, key.size(), key_buffer));
 
       if (key == string_view(key_buffer, key.size())) {
         DBG("Keys matched too");
@@ -366,12 +354,12 @@ Status KeyValueStore::FindKeyDescriptor(string_view key,
   return Status::NOT_FOUND;
 }
 
-Status KeyValueStore::ReadEntryHeader(const KeyDescriptor& descriptor,
+Status KeyValueStore::ReadEntryHeader(Address address,
                                       EntryHeader* header) const {
-  return partition_.Read(descriptor.address, sizeof(*header), header).status();
+  return partition_.Read(address, sizeof(*header), header).status();
 }
 
-Status KeyValueStore::ReadEntryKey(const KeyDescriptor& descriptor,
+Status KeyValueStore::ReadEntryKey(Address address,
                                    size_t key_length,
                                    char* key) const {
   // TODO: This check probably shouldn't be here; this is like
@@ -384,8 +372,7 @@ Status KeyValueStore::ReadEntryKey(const KeyDescriptor& descriptor,
     return Status::DATA_LOSS;
   }
   // The key is immediately after the entry header.
-  return partition_
-      .Read(descriptor.address + sizeof(EntryHeader), key_length, key)
+  return partition_.Read(address + sizeof(EntryHeader), key_length, key)
       .status();
 }
 
@@ -450,8 +437,9 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
   EntryHeader header;
-  TRY(ReadEntryHeader(key_descriptor, &header));
-  TRY(ReadEntryKey(key_descriptor, header.key_length(), entry->key.data()));
+  TRY(ReadEntryHeader(key_descriptor.address, &header));
+  TRY(ReadEntryKey(
+      key_descriptor.address, header.key_length(), entry->key.data()));
   string_view key = string_view(entry->key.data(), header.key_length());
   StatusWithSize result = ReadEntryValue(
       key_descriptor, header, as_writable_bytes(span(entry->value)));
