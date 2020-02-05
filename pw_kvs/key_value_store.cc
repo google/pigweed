@@ -152,7 +152,11 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   TRY(header.VerifyChecksumInFlash(
       &partition_, entry_address, entry_header_format_.checksum));
 
-  KeyDescriptor key_descriptor(key, header.key_version(), entry_address);
+  KeyDescriptor key_descriptor(
+      key,
+      header.key_version(),
+      entry_address,
+      header.deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
 
   DBG("Key hash: %zx (%zu)",
       size_t(key_descriptor.key_hash),
@@ -232,6 +236,10 @@ StatusWithSize KeyValueStore::Get(string_view key,
   const KeyDescriptor* key_descriptor;
   TRY(FindKeyDescriptor(key, &key_descriptor));
 
+  if (key_descriptor->deleted()) {
+    return Status::NOT_FOUND;
+  }
+
   EntryHeader header;
   TRY(ReadEntryHeader(key_descriptor->address, &header));
 
@@ -268,21 +276,63 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
 Status KeyValueStore::Delete(string_view key) {
   TRY(CheckOperation(key));
 
-  return Status::UNIMPLEMENTED;
-}
+  KeyDescriptor* key_descriptor;
+  TRY(FindKeyDescriptor(key, &key_descriptor));
 
-const KeyValueStore::Item& KeyValueStore::Iterator::operator*() {
-  const KeyDescriptor& descriptor = entry_.kvs_.key_descriptor_list_[index_];
-
-  std::memset(entry_.key_buffer_.data(), 0, entry_.key_buffer_.size());
-
-  EntryHeader header;
-  if (entry_.kvs_.ReadEntryHeader(descriptor.address, &header).ok()) {
-    entry_.kvs_.ReadEntryKey(
-        descriptor.address, header.key_length(), entry_.key_buffer_.data());
+  if (key_descriptor->deleted()) {
+    return Status::NOT_FOUND;
   }
 
-  return entry_;
+  key_descriptor->state = KeyDescriptor::kDeleted;
+
+  SectorDescriptor* sector;
+  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, {})));
+
+  DBG("Writing tombstone; found sector: %zu", SectorIndex(sector));
+  return AppendEntry(sector, key_descriptor, key, {});
+}
+
+KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
+  // Skip to the next entry that is valid (not deleted).
+  while (++index_ < item_.kvs_.key_descriptor_list_size_ &&
+         descriptor().deleted()) {
+  }
+  return *this;
+}
+
+const KeyValueStore::Item& KeyValueStore::iterator::operator*() {
+  std::memset(item_.key_buffer_.data(), 0, item_.key_buffer_.size());
+
+  EntryHeader header;
+  if (item_.kvs_.ReadEntryHeader(descriptor().address, &header).ok()) {
+    item_.kvs_.ReadEntryKey(
+        descriptor().address, header.key_length(), item_.key_buffer_.data());
+  }
+
+  return item_;
+}
+
+KeyValueStore::iterator KeyValueStore::begin() const {
+  size_t i = 0;
+  // Skip over any deleted entries at the start of the descriptor list.
+  while (i < key_descriptor_list_size_ && key_descriptor_list_[i].deleted()) {
+    i += 1;
+  }
+  return iterator(*this, i);
+}
+
+// TODO(hepler): The valid entry count could be tracked in the KVS to avoid the
+// need for this for-loop.
+size_t KeyValueStore::size() const {
+  size_t valid_entries = 0;
+
+  for (size_t i = 0; i < key_descriptor_list_size_; ++i) {
+    if (!key_descriptor_list_[i].deleted()) {
+      valid_entries += 1;
+    }
+  }
+
+  return valid_entries;
 }
 
 StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
@@ -290,6 +340,10 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
 
   const KeyDescriptor* key_descriptor;
   TRY(FindKeyDescriptor(key, &key_descriptor));
+
+  if (key_descriptor->deleted()) {
+    return Status::NOT_FOUND;
+  }
 
   EntryHeader header;
   TRY(ReadEntryHeader(key_descriptor->address, &header));
@@ -319,6 +373,7 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
     return result.status();
   }
   if (result.size() != size_bytes) {
+    DBG("Requested %zu B read, but value is %zu B", size_bytes, result.size());
     return Status::INVALID_ARGUMENT;
   }
   return Get(key, span(value, size_bytes)).status();
@@ -394,6 +449,8 @@ StatusWithSize KeyValueStore::ReadEntryValue(
 Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                string_view key,
                                                span<const byte> value) {
+  key_descriptor->state = KeyDescriptor::kValid;
+
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
@@ -415,6 +472,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
       key_descriptor_list_[key_descriptor_list_size_];
   key_descriptor.key_hash = HashKey(key);
   key_descriptor.key_version = 0;  // will be incremented by AppendEntry()
+  key_descriptor.state = KeyDescriptor::kValid;
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
@@ -609,11 +667,21 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
                                   const string_view key,
                                   span<const byte> value) {
   // write header, key, and value
-  const EntryHeader header(entry_header_format_.magic,
-                           entry_header_format_.checksum,
-                           key,
-                           value,
-                           key_descriptor->key_version + 1);
+  EntryHeader header;
+
+  if (key_descriptor->deleted()) {
+    header = EntryHeader::Tombstone(entry_header_format_.magic,
+                                    entry_header_format_.checksum,
+                                    key,
+                                    key_descriptor->key_version + 1);
+  } else {
+    header = EntryHeader::Valid(entry_header_format_.magic,
+                                entry_header_format_.checksum,
+                                key,
+                                value,
+                                key_descriptor->key_version + 1);
+  }
+
   DBG("Appending entry with key version: %zx", size_t(header.key_version()));
 
   // Handles writing multiple concatenated buffers, while breaking up the writes

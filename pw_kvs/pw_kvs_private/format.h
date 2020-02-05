@@ -31,11 +31,23 @@ class EntryHeader {
  public:
   EntryHeader() = default;
 
-  EntryHeader(uint32_t magic,
-              ChecksumAlgorithm* algorithm,
-              std::string_view key,
-              span<const std::byte> value,
-              uint32_t key_version);
+  // Creates a new EntryHeader for a valid (non-deleted) entry.
+  static EntryHeader Valid(uint32_t magic,
+                           ChecksumAlgorithm* algorithm,
+                           std::string_view key,
+                           span<const std::byte> value,
+                           uint32_t key_version) {
+    return EntryHeader(magic, algorithm, key, value, value.size(), key_version);
+  }
+
+  // Creates a new EntryHeader for a tombstone entry, which marks a deleted key.
+  static EntryHeader Tombstone(uint32_t magic,
+                               ChecksumAlgorithm* algorithm,
+                               std::string_view key,
+                               uint32_t key_version) {
+    return EntryHeader(
+        magic, algorithm, key, {}, kDeletedValueLength, key_version);
+  }
 
   Status VerifyChecksum(ChecksumAlgorithm* algorithm,
                         std::string_view key,
@@ -59,15 +71,17 @@ class EntryHeader {
 
   uint32_t checksum() const { return checksum_; }
 
-  constexpr size_t key_length() const {
-    return key_value_length_ & kKeyLengthMask;
+  bool deleted() const {
+    return (key_value_length_ >> kValueLengthShift) == kDeletedValueLength;
   }
+
+  size_t key_length() const { return key_value_length_ & kKeyLengthMask; }
   void set_key_length(uint32_t key_length) {
     key_value_length_ = key_length | (~kKeyLengthMask & key_value_length_);
   }
 
-  constexpr size_t value_length() const {
-    return key_value_length_ >> kValueLengthShift;
+  size_t value_length() const {
+    return deleted() ? 0u : (key_value_length_ >> kValueLengthShift);
   }
   void set_value_length(uint32_t value_length) {
     key_value_length_ = (value_length << kValueLengthShift) |
@@ -80,6 +94,14 @@ class EntryHeader {
   static constexpr uint32_t kNoChecksum = 0;
   static constexpr uint32_t kKeyLengthMask = 0b111111;
   static constexpr uint32_t kValueLengthShift = 8;
+  static constexpr uint32_t kDeletedValueLength = 0xFFFFFF;
+
+  EntryHeader(uint32_t magic,
+              ChecksumAlgorithm* algorithm,
+              std::string_view key,
+              span<const std::byte> value,
+              uint32_t value_length_field,
+              uint32_t key_version);
 
   static constexpr size_t checked_data_offset() {
     return offsetof(EntryHeader, key_value_length_);

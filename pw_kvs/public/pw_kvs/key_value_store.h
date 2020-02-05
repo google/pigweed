@@ -64,6 +64,9 @@ struct Options {
 };
 
 class KeyValueStore {
+ private:
+  struct KeyDescriptor;
+
  public:
   // TODO: Make these configurable
   static constexpr size_t kMaxKeyLength = 64;
@@ -126,7 +129,7 @@ class KeyValueStore {
   void LogDebugInfo();
 
   // Classes and functions to support STL-style iteration.
-  class Iterator;
+  class iterator;
 
   class Item {
    public:
@@ -146,7 +149,7 @@ class KeyValueStore {
     StatusWithSize ValueSize() const { return kvs_.ValueSize(key()); }
 
    private:
-    friend class Iterator;
+    friend class iterator;
 
     constexpr Item(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
 
@@ -154,50 +157,49 @@ class KeyValueStore {
     KeyBuffer key_buffer_;
   };
 
-  class Iterator {
+  class iterator {
    public:
-    Iterator& operator++() {
-      index_ += 1;
-      return *this;
-    }
+    iterator& operator++();
 
-    Iterator& operator++(int) { return operator++(); }
+    iterator& operator++(int) { return operator++(); }
 
     // Reads the entry's key from flash.
     const Item& operator*();
 
     const Item* operator->() {
       operator*();  // Read the key into the Item object.
-      return &entry_;
+      return &item_;
     }
 
-    constexpr bool operator==(const Iterator& rhs) const {
+    constexpr bool operator==(const iterator& rhs) const {
       return index_ == rhs.index_;
     }
 
-    constexpr bool operator!=(const Iterator& rhs) const {
+    constexpr bool operator!=(const iterator& rhs) const {
       return index_ != rhs.index_;
     }
 
    private:
     friend class KeyValueStore;
 
-    constexpr Iterator(const KeyValueStore& kvs, size_t index)
-        : entry_(kvs), index_(index) {}
+    constexpr iterator(const KeyValueStore& kvs, size_t index)
+        : item_(kvs), index_(index) {}
 
-    Item entry_;
+    const KeyDescriptor& descriptor() const {
+      return item_.kvs_.key_descriptor_list_[index_];
+    }
+
+    Item item_;
     size_t index_;
   };
 
-  // Standard aliases for iterator types.
-  using iterator = Iterator;
-  using const_iterator = Iterator;
+  using const_iterator = iterator;  // Standard alias for iterable types.
 
-  Iterator begin() const { return Iterator(*this, 0); }
-  Iterator end() const { return Iterator(*this, size()); }
+  iterator begin() const;
+  iterator end() const { return iterator(*this, key_descriptor_list_size_); }
 
   // Returns the number of valid entries in the KeyValueStore.
-  size_t size() const { return key_descriptor_list_size_; }
+  size_t size() const;
 
   static constexpr size_t max_size() { return kMaxKeyLength; }
 
@@ -207,14 +209,27 @@ class KeyValueStore {
   using Address = FlashPartition::Address;
 
   struct KeyDescriptor {
+    enum State { kValid, kDeleted };
+
     KeyDescriptor() = default;
 
-    KeyDescriptor(std::string_view key, uint32_t version, Address address)
-        : key_hash(HashKey(key)), key_version(version), address(address) {}
+    KeyDescriptor(std::string_view key,
+                  uint32_t version,
+                  Address address,
+                  State state = kValid)
+        : key_hash(HashKey(key)),
+          key_version(version),
+          address(address),
+          state(state) {}
+
+    bool deleted() const { return state == kDeleted; }
 
     uint32_t key_hash;
     uint32_t key_version;
     Address address;  // In partition address.
+
+    // TODO: This information should be packed into the above fields to save RAM
+    State state;
   };
 
   struct SectorDescriptor {

@@ -141,7 +141,7 @@ Status FlashPartition::CheckBounds(Address address, size_t length) const {
                  " length: %zu)",
                  address,
                  length);
-    return Status::INVALID_ARGUMENT;
+    return Status::OUT_OF_RANGE;
   }
   return Status::OK;
 }

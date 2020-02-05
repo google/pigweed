@@ -26,10 +26,11 @@ EntryHeader::EntryHeader(uint32_t magic,
                          ChecksumAlgorithm* algorithm,
                          string_view key,
                          span<const byte> value,
+                         uint32_t value_length,
                          uint32_t key_version)
     : magic_(magic),
       checksum_(kNoChecksum),
-      key_value_length_(value.size() << kValueLengthShift |
+      key_value_length_(value_length << kValueLengthShift |
                         (key.size() & kKeyLengthMask)),
       key_version_(key_version) {
   if (algorithm != nullptr) {
@@ -53,12 +54,6 @@ Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
 Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
                                           FlashPartition::Address address,
                                           ChecksumAlgorithm* algorithm) const {
-  if (algorithm == nullptr) {
-    return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
-  }
-
-  algorithm->Reset();
-
   // Read the entire entry piece-by-piece into a small buffer.
   // TODO: This read may be unaligned. The partition can handle this, but
   // consider creating a API that skips the intermediate buffering.
@@ -83,6 +78,12 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
 
     return Status::DATA_LOSS;
   }
+
+  if (algorithm == nullptr) {
+    return Status::OK;
+  }
+
+  algorithm->Reset();
 
   // Read and calculate the checksum of the remaining header, key, and value.
   address += checked_data_offset();

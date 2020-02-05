@@ -282,6 +282,40 @@ uint16_t CalcTestPartitionCrc() {
 
 }  // namespace
 
+TEST_F(KeyValueStoreTest, Delete_GetDeletedKey_ReturnsNotFound) {
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
+
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("kEy", {}).status());
+}
+
+TEST_F(KeyValueStoreTest, Delete_AddBackKey_PersistsAfterInitialization) {
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
+
+  EXPECT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("45678"))));
+  char data[6] = {};
+  ASSERT_EQ(Status::OK, kvs_.Get("kEy", &data));
+  EXPECT_STREQ(data, "45678");
+
+  // Ensure that the re-added key is still present after reinitialization.
+  KeyValueStore new_kvs(&test_partition, format);
+  ASSERT_EQ(Status::OK, new_kvs.Init());
+
+  EXPECT_EQ(Status::OK, new_kvs.Put("kEy", as_bytes(span("45678"))));
+  char new_data[6] = {};
+  EXPECT_EQ(Status::OK, new_kvs.Get("kEy", &new_data));
+  EXPECT_STREQ(data, "45678");
+}
+
+TEST_F(KeyValueStoreTest, Delete_AllItems_KvsIsEmpty) {
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
+
+  EXPECT_EQ(0u, kvs_.size());
+  EXPECT_TRUE(kvs_.empty());
+}
+
 TEST_F(KeyValueStoreTest, Iteration_Empty_ByReference) {
   for (const KeyValueStore::Item& entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
@@ -293,6 +327,30 @@ TEST_F(KeyValueStoreTest, Iteration_Empty_ByValue) {
   for (KeyValueStore::Item entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
+  }
+}
+
+TEST_F(KeyValueStoreTest, Iteration_OneItem) {
+  char value[] = "123";
+
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span(value))));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    EXPECT_STREQ(entry.key().data(), "kEy");  // Make sure null-terminated.
+
+    char buffer[sizeof(value)] = {};
+    EXPECT_EQ(Status::OK, entry.Get(&buffer));
+    EXPECT_STREQ(value, buffer);
+  }
+}
+
+TEST_F(KeyValueStoreTest, Iteration_EmptyAfterDeletion) {
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
+  ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    static_cast<void>(entry);
+    FAIL();
   }
 }
 
@@ -368,10 +426,7 @@ TEST_F(KeyValueStoreTest, Basic) {
   EXPECT_EQ(test1, value1);
   EXPECT_EQ(test2, value2);
 
-  // TODO: ENABLE THE REST OF THIS TEST
-  return;
-
-  // Erase a key
+  // Delete a key
   EXPECT_EQ(Status::OK, kvs_.Delete(keys[0]));
 
   // Verify it was erased
@@ -383,7 +438,7 @@ TEST_F(KeyValueStoreTest, Basic) {
           .status());
   EXPECT_EQ(test2, value2);
 
-  // Erase other key
+  // Delete other key
   kvs_.Delete(keys[1]);
 
   // Verify it was erased
@@ -533,7 +588,7 @@ TEST(InMemoryKvs, Basic) {
   EXPECT_EQ(kvs.size(), 2u);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_MaxKeyLength) {
+TEST_F(KeyValueStoreTest, MaxKeyLength) {
   // Add some data
   char key[16] = "123456789abcdef";  // key length 15 (without \0)
   int value = 1;
@@ -544,14 +599,14 @@ TEST_F(KeyValueStoreTest, DISABLED_MaxKeyLength) {
   ASSERT_EQ(Status::OK, kvs_.Get(key, &test));
   EXPECT_EQ(test, value);
 
-  // Erase a key
+  // Delete a key
   kvs_.Delete(key);
 
   // Verify it was erased
   EXPECT_EQ(kvs_.Get(key, &test), Status::NOT_FOUND);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
+TEST_F(KeyValueStoreTest, LargeBuffers) {
   // Note this assumes that no other keys larger then key0
   static_assert(sizeof(keys[0]) >= sizeof(keys[1]) &&
                 sizeof(keys[0]) >= sizeof(keys[2]));
@@ -653,7 +708,7 @@ TEST_F(KeyValueStoreTest, Enable) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_MultiSector) {
+TEST_F(KeyValueStoreTest, MultiSector) {
   // Calculate number of elements to ensure multiple sectors are required.
   uint16_t add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
@@ -769,7 +824,7 @@ TEST_F(KeyValueStoreTest, MultipleRewrite) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_FillSector) {
+TEST_F(KeyValueStoreTest, FillSector) {
   ASSERT_EQ(std::strlen(keys[0]), 8U);  // Easier for alignment
   ASSERT_EQ(std::strlen(keys[2]), 8U);  // Easier for alignment
   constexpr size_t kTestDataSize = 8;
@@ -806,7 +861,7 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Interleaved) {
+TEST_F(KeyValueStoreTest, Interleaved) {
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
   uint8_t value;
@@ -964,7 +1019,7 @@ TEST_F(KeyValueStoreTest, TestVersion2) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Erase) {
+TEST_F(KeyValueStoreTest, DeleteAndReinitialize) {
   // Write value
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
@@ -996,7 +1051,7 @@ TEST_F(KeyValueStoreTest, TemplatedPutAndGet) {
   ASSERT_EQ(small_value, kSmallValue);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_SameValueRewrite) {
+TEST_F(KeyValueStoreTest, Delete) {
   static constexpr uint32_t kTestPattern = 0xBAD0301f;
   // clang-format off
   static constexpr auto kKvsTestDataAligned1Top = ByteArray(
@@ -1171,7 +1226,7 @@ TEST_F(KeyValueStoreTest, ValueSize_MissingKey) {
   EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("Not in there").status());
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_ValueSize_DeletedKey) {
+TEST_F(KeyValueStoreTest, ValueSize_DeletedKey) {
   ASSERT_EQ(Status::OK, kvs_.Put("TheKey", as_bytes(span("123", 3))));
   ASSERT_EQ(Status::OK, kvs_.Delete("TheKey"));
 
@@ -1220,7 +1275,7 @@ TEST_F(KeyValueStoreTest, DifferentValueSameCrc16) {
   ASSERT_EQ(std::memcmp(value, kValue2, sizeof(value)), 0);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_CallingEraseTwice) {
+TEST_F(KeyValueStoreTest, CallingEraseTwice) {
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
   ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
