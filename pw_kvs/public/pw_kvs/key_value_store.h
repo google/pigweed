@@ -89,7 +89,8 @@ class KeyValueStore {
         working_buffer_{} {}
 
   Status Init();
-  bool initialized() const { return false; }  // TODO: Implement this
+
+  bool initialized() const { return initialized_; }
 
   StatusWithSize Get(std::string_view key, span<std::byte> value) const;
 
@@ -224,7 +225,7 @@ class KeyValueStore {
                       std::byte* value,
                       size_t size_bytes) const;
 
-  Status InvalidOperation(std::string_view key) const;
+  Status CheckOperation(std::string_view key) const;
 
   static constexpr bool InvalidKey(std::string_view key) {
     return key.empty() || (key.size() > kMaxKeyLength);
@@ -339,7 +340,7 @@ class KeyValueStore {
   std::array<SectorDescriptor, kUsableSectors> sector_map_;
   size_t last_written_sector_;
 
-  bool enabled_ = false;
+  bool initialized_ = false;
 
   // Working buffer is a general purpose buffer for operations (such as init or
   // relcate) to use for working space to remove the need to allocate temporary

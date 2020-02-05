@@ -126,7 +126,7 @@ Status KeyValueStore::Init() {
     TRY(ReadEntryHeader(key_descriptor, &header));
     sector_map_[sector_id].valid_bytes += header.size();
   }
-  enabled_ = true;
+  initialized_ = true;
   return Status::OK;
 }
 
@@ -247,7 +247,7 @@ KeyValueStore::KeyDescriptor* KeyValueStore::FindDescriptor(uint32_t hash) {
 
 StatusWithSize KeyValueStore::Get(string_view key,
                                   span<byte> value_buffer) const {
-  TRY(InvalidOperation(key));
+  TRY(CheckOperation(key));
 
   const KeyDescriptor* key_descriptor;
   TRY(FindKeyDescriptor(key, &key_descriptor));
@@ -268,7 +268,8 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
   DBG("Writing key/value; key length=%zu, value length=%zu",
       key.size(),
       value.size());
-  TRY(InvalidOperation(key));
+
+  TRY(CheckOperation(key));
 
   if (value.size() > (1 << 24)) {
     // TODO: Reject sizes that are larger than the maximum?
@@ -285,7 +286,8 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
 }
 
 Status KeyValueStore::Delete(string_view key) {
-  TRY(InvalidOperation(key));
+  TRY(CheckOperation(key));
+
   return Status::UNIMPLEMENTED;
 }
 
@@ -304,7 +306,7 @@ const KeyValueStore::Item& KeyValueStore::Iterator::operator*() {
 }
 
 StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
-  TRY(InvalidOperation(key));
+  TRY(CheckOperation(key));
 
   const KeyDescriptor* key_descriptor;
   TRY(FindKeyDescriptor(key, &key_descriptor));
@@ -330,11 +332,11 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
   return Get(key, span(value, size_bytes)).status();
 }
 
-Status KeyValueStore::InvalidOperation(string_view key) const {
+Status KeyValueStore::CheckOperation(string_view key) const {
   if (InvalidKey(key)) {
     return Status::INVALID_ARGUMENT;
   }
-  if (!enabled_) {
+  if (!initialized_) {
     return Status::FAILED_PRECONDITION;
   }
   return Status::OK;
