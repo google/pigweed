@@ -350,7 +350,7 @@ TEST_F(KeyValueStoreTest, DISABLED_FuzzTest) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Basic) {
+TEST_F(KeyValueStoreTest, Basic) {
   // Add some data
   uint8_t value1 = 0xDA;
   ASSERT_EQ(Status::OK,
@@ -367,6 +367,9 @@ TEST_F(KeyValueStoreTest, DISABLED_Basic) {
 
   EXPECT_EQ(test1, value1);
   EXPECT_EQ(test2, value2);
+
+  // TODO: ENABLE THE REST OF THIS TEST
+  return;
 
   // Erase a key
   EXPECT_EQ(Status::OK, kvs_.Delete(keys[0]));
@@ -390,7 +393,7 @@ TEST_F(KeyValueStoreTest, DISABLED_Basic) {
 #define ASSERT_OK(expr) ASSERT_EQ(Status::OK, expr)
 #define EXPECT_OK(expr) EXPECT_EQ(Status::OK, expr)
 
-TEST(InMemoryKvs, DISABLED_WriteOneKeyMultipleTimes) {
+TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
   // Create and erase the fake flash. It will persist across reloads.
   Flash flash;
   ASSERT_OK(flash.partition.Erase());
@@ -601,7 +604,7 @@ TEST_F(KeyValueStoreTest, DISABLED_LargeBuffers) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Enable) {
+TEST_F(KeyValueStoreTest, Enable) {
   KvsAttributes kvs_attr(std::strlen(keys[0]), buffer.size());
 
   // Verify the data will fit in this test partition. This checks that all the
@@ -688,7 +691,7 @@ TEST_F(KeyValueStoreTest, DISABLED_MultiSector) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_RewriteValue) {
+TEST_F(KeyValueStoreTest, RewriteValue) {
   // Write first value
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
@@ -742,7 +745,7 @@ TEST_F(KeyValueStoreTest, OffsetRead) {
 }
 #endif
 
-TEST_F(KeyValueStoreTest, DISABLED_MultipleRewrite) {
+TEST_F(KeyValueStoreTest, MultipleRewrite) {
   // Calculate number of elements to ensure multiple sectors are required.
   unsigned add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
@@ -938,7 +941,7 @@ TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
   EXPECT_EQ(kTestPattern, test2);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_TestVersion2) {
+TEST_F(KeyValueStoreTest, TestVersion2) {
   static constexpr uint32_t kTestPattern = 0xBAD0301f;
   // Since this test is not run on encypted flash, we can write the clean
   // pending flag for just this test.
@@ -976,7 +979,7 @@ TEST_F(KeyValueStoreTest, DISABLED_Erase) {
   ASSERT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_TemplatedPutAndGet) {
+TEST_F(KeyValueStoreTest, TemplatedPutAndGet) {
   // Store a value with the convenience method.
   const uint32_t kValue = 0x12345678;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
