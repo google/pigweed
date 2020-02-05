@@ -61,7 +61,7 @@ source_set("gtest_main") {
 
   deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/devices:driver",
+    "//src/devices/lib/driver",
     "//src/lib/fsl",
     "//src/lib/fxl/test:test_settings",
   ]
