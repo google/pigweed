@@ -86,6 +86,20 @@ constexpr uint16_t kMaxMTU = 0xFFFF;
 // The maximum length of a L2CAP B-frame information payload.
 constexpr uint16_t kMaxBasicFramePayloadSize = 65535;
 
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. We do not have a limit on inbound data that we
+// can receive in bursts based on memory constraints or other considerations, so this is simply the
+// maximum permissible value.
+static constexpr uint8_t kErtmMaxUnackedInboundFrames = 63;
+
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. We rely on the ERTM Monitor Timeout and the
+// ACL-U Link Supervision Timeout to terminate links based on data loss rather than rely on the peer
+// to handle unacked ERTM frames in the peer-to-local direction.
+static constexpr uint8_t kErtmMaxInboundRetransmissions = 0;  // Infinite retransmissions
+
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. We can receive as large of a PDU as the peer
+// can encode and transmit.
+static constexpr auto kMaxInboundPduPayloadSize = std::numeric_limits<uint16_t>::max();
+
 // Channel configuration option type field (Core Spec v5.1, Vol 3, Part A, Section 5):
 enum class OptionType : uint8_t {
   kMTU = 0x01,

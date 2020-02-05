@@ -288,7 +288,8 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU) {
 const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
 
 const ByteBuffer& kOutboundConfigReqWithErtm = MakeConfigReqWithMtuAndRfc(
-    kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
+    kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
+    kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
@@ -2007,7 +2008,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 TEST_F(L2CAP_BrEdrDynamicChannelTest, ErtmChannelReportsChannelInfoWithErtmAndSduCapacities) {
   constexpr uint16_t kPreferredMtu = kDefaultMTU + 1;
   const auto kExpectedOutboundConfigReq = MakeConfigReqWithMtuAndRfc(
-      kRemoteCId, kPreferredMtu, ChannelMode::kEnhancedRetransmission, 0, 0, 0, 0, 0);
+      kRemoteCId, kPreferredMtu, ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
+      kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});

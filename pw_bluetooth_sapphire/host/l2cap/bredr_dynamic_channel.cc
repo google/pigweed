@@ -14,6 +14,16 @@
 namespace bt {
 namespace l2cap {
 namespace internal {
+namespace {
+
+ChannelConfiguration::RetransmissionAndFlowControlOption WriteRfcOutboundTimeouts(
+    ChannelConfiguration::RetransmissionAndFlowControlOption rfc_option) {
+  rfc_option.set_rtx_timeout(kErtmReceiverReadyPollTimerDuration.to_msecs());
+  rfc_option.set_monitor_timeout(kErtmMonitorTimerDuration.to_msecs());
+  return rfc_option;
+}
+
+}  // namespace
 
 BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig,
                                                          DynamicChannelCallback close_cb,
@@ -408,11 +418,9 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   config.set_mtu_option(response_config.mtu_option());
 
   if (req_mode == ChannelMode::kEnhancedRetransmission) {
-    ChannelConfiguration::RetransmissionAndFlowControlOption outbound_rfc_option =
-        config.retransmission_flow_control_option().value();
-    outbound_rfc_option.set_rtx_timeout(kErtmReceiverReadyPollTimerDuration.to_msecs());
-    outbound_rfc_option.set_monitor_timeout(kErtmMonitorTimerDuration.to_msecs());
-    response_config.set_retransmission_flow_control_option(outbound_rfc_option);
+    auto outbound_rfc_option =
+        WriteRfcOutboundTimeouts(config.retransmission_flow_control_option().value());
+    response_config.set_retransmission_flow_control_option(std::move(outbound_rfc_option));
   } else {
     response_config.set_retransmission_flow_control_option(
         config.retransmission_flow_control_option());
@@ -530,12 +538,12 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
     // Core Spec v5.0 Vol 3, Part A, Sec 8.6.2.1 "When configuring a channel over an ACL-U logical
     // link the values sent in a Configuration Request packet for Retransmission timeout and Monitor
     // timeout shall be 0."
-    //
-    // TODO(xow): select remaining ERTM option values
     auto option =
         ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
-            /*tx_window_size=*/0, /*max_transmit=*/0, /*rtx_timeout=*/0, /*monitor_timeout=*/0,
-            /*mps=*/0);
+            /*tx_window_size=*/kErtmMaxUnackedInboundFrames,
+            /*max_transmit=*/kErtmMaxInboundRetransmissions, /*rtx_timeout=*/0,
+            /*monitor_timeout=*/0,
+            /*mps=*/kMaxInboundPduPayloadSize);
     local_config_.set_retransmission_flow_control_option(option);
   } else {
     local_config_.set_retransmission_flow_control_option(
@@ -680,8 +688,20 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
              local_cid(), static_cast<uint8_t>(req_mode));
 
       // All other modes are lower precedence than what local device supports, so send local mode.
-      unacceptable.set_retransmission_flow_control_option(
-          local_config().retransmission_flow_control_option());
+      if (local_mode == ChannelMode::kEnhancedRetransmission) {
+        // Retransmission & Flow Control fields for ERTM are not negotiable, so do not propose
+        // acceptable values per Core Spec v5.0, Vol 3, Part A, Sec 7.1.4.
+        unacceptable.set_retransmission_flow_control_option(
+            ChannelConfiguration::RetransmissionAndFlowControlOption::
+                MakeEnhancedRetransmissionMode(
+                    /*tx_window_size=*/0,
+                    /*max_transmit=*/0, /*rtx_timeout=*/0,
+                    /*monitor_timeout=*/0,
+                    /*mps=*/0));
+      } else {
+        unacceptable.set_retransmission_flow_control_option(
+            local_config().retransmission_flow_control_option());
+      }
   }
 
   return unacceptable;

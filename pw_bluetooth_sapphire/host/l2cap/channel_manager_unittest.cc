@@ -966,8 +966,11 @@ auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaul
         // Mtu option (ID, Length, MTU)
         0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
 
-        // Retransmission & Flow Control option (type, length: 9, mode, unused parameters)
-        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+        // Retransmission & Flow Control option (type, length: 9, mode, tx_window: 63,
+        // max_retransmit: 0, retransmit timeout: 0 ms, monitor timeout: 0 ms, mps: 65535)
+        0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames,
+        kErtmMaxInboundRetransmissions, 0x00, 0x00, 0x00, 0x00,
+        LowerBits(kMaxInboundPduPayloadSize), UpperBits(kMaxInboundPduPayloadSize)));
   }
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
@@ -1045,6 +1048,8 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
   const uint8_t kConfigLength = 10 + (mode.has_value() ? 11 : 0);
   const uint16_t kL2capLength = kConfigLength + 4;
   const uint16_t kAclLength = kL2capLength + 4;
+  const uint16_t kErtmReceiverReadyPollTimerMsecs = kErtmReceiverReadyPollTimerDuration.to_msecs();
+  const uint16_t kErtmMonitorTimerMsecs = kErtmMonitorTimerDuration.to_msecs();
 
   if (mode.has_value()) {
     return DynamicByteBuffer(StaticByteBuffer(
@@ -1063,7 +1068,11 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
 
         // Retransmission & Flow Control option (type, length: 9, mode, TxWindow, MaxTransmit, rtx
         // timeout: 2 secs, monitor timeout: 12 secs, mps)
-        0x04, 0x09, static_cast<uint8_t>(*mode), 0x00, 0x00, 0xd0, 0x07, 0xe0, 0x2e, 0x00, 0x00));
+        0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames,
+        kErtmMaxInboundRetransmissions, LowerBits(kErtmReceiverReadyPollTimerMsecs),
+        UpperBits(kErtmReceiverReadyPollTimerMsecs), LowerBits(kErtmMonitorTimerMsecs),
+        UpperBits(kErtmMonitorTimerMsecs), LowerBits(kMaxInboundPduPayloadSize),
+        UpperBits(kMaxInboundPduPayloadSize)));
   } else {
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 14 bytes)
