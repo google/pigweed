@@ -167,7 +167,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   const string_view key(key_buffer.data(), header.key_length());
 
   TRY(header.VerifyChecksumInFlash(
-      &partition_, key_descriptor.address, entry_header_format_.checksum, key));
+      &partition_, key_descriptor.address, entry_header_format_.checksum));
   key_descriptor.key_hash = HashKey(key);
 
   DBG("Key hash: %zx (%zu)",
@@ -579,7 +579,8 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
           address, {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
 
   if (options_.verify_on_write) {
-    TRY(VerifyEntry(sector, key_descriptor));
+    TRY(header.VerifyChecksumInFlash(
+        &partition_, address, entry_header_format_.checksum));
   }
 
   // TODO: UPDATE last_written_sector_ appropriately
@@ -589,20 +590,6 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   sector->valid_bytes += written;
   sector->tail_free_bytes -= written;
   return Status::OK;
-}
-
-Status KeyValueStore::VerifyEntry(SectorDescriptor* sector,
-                                  KeyDescriptor* key_descriptor) {
-  // TODO: Remove this once checksums are fully implemented.
-  return Status::OK;
-
-  if (entry_header_format_.checksum == nullptr) {
-    return Status::OK;
-  }
-  // TODO: Implement me!
-  (void)sector;
-  (void)key_descriptor;
-  return Status::UNIMPLEMENTED;
 }
 
 void KeyValueStore::LogDebugInfo() {

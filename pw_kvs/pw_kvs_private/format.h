@@ -43,8 +43,7 @@ class EntryHeader {
 
   Status VerifyChecksumInFlash(FlashPartition* partition,
                                FlashPartition::Address header_address,
-                               ChecksumAlgorithm* algorithm,
-                               std::string_view key) const;
+                               ChecksumAlgorithm* algorithm) const;
 
   size_t entry_size() const {
     return sizeof(*this) + key_length() + value_length();
@@ -72,13 +71,17 @@ class EntryHeader {
   static constexpr uint32_t kKeyLengthMask = 0b111111;
   static constexpr uint32_t kValueLengthShift = 8;
 
+  static constexpr size_t checked_data_offset() {
+    return offsetof(EntryHeader, key_value_length_);
+  }
+
   span<const std::byte> checksum_bytes() const {
     return as_bytes(span(&checksum_, 1));
   }
 
   void CalculateChecksum(ChecksumAlgorithm* algorithm,
                          std::string_view key,
-                         span<const std::byte> value = {}) const;
+                         span<const std::byte> value) const;
 
   uint32_t magic_;
   uint32_t checksum_;

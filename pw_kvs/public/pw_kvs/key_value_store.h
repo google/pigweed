@@ -284,8 +284,6 @@ class KeyValueStore {
                      std::string_view key,
                      span<const std::byte> value);
 
-  Status VerifyEntry(SectorDescriptor* sector, KeyDescriptor* key_descriptor);
-
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
     const Address sector_end = sector_base + partition_.sector_size_bytes();

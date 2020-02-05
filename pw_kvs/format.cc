@@ -49,31 +49,31 @@ Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
   return algorithm->Verify(checksum_bytes());
 }
 
-Status EntryHeader::VerifyChecksumInFlash(
-    FlashPartition* partition,
-    FlashPartition::Address header_address,
-    ChecksumAlgorithm* algorithm,
-    string_view key) const {
+Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
+                                          FlashPartition::Address address,
+                                          ChecksumAlgorithm* algorithm) const {
   if (algorithm == nullptr) {
     return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
   }
 
-  CalculateChecksum(algorithm, key);
+  algorithm->Reset();
 
-  // Read the value piece-by-piece into a small buffer.
+  // Read the entire entry piece-by-piece into a small buffer.
   // TODO: This read may be unaligned. The partition can handle this, but
   // consider creating a API that skips the intermediate buffering.
   byte buffer[32];
 
-  size_t bytes_to_read = value_length();
-  FlashPartition::Address address =
-      header_address + sizeof(*this) + key_length();
+  address += checked_data_offset();
+  size_t bytes_to_read = entry_size() - checked_data_offset();
 
   while (bytes_to_read > 0u) {
     const size_t read_size = std::min(sizeof(buffer), bytes_to_read);
+
     TRY(partition->Read(address, read_size, buffer));
-    address += read_size;
     algorithm->Update(buffer, read_size);
+
+    address += read_size;
+    bytes_to_read -= read_size;
   }
 
   return algorithm->Verify(checksum_bytes());
@@ -83,9 +83,8 @@ void EntryHeader::CalculateChecksum(ChecksumAlgorithm* algorithm,
                                     const string_view key,
                                     span<const byte> value) const {
   algorithm->Reset();
-  algorithm->Update(reinterpret_cast<const byte*>(this) +
-                        offsetof(EntryHeader, key_value_length_),
-                    sizeof(*this) - offsetof(EntryHeader, key_value_length_));
+  algorithm->Update(reinterpret_cast<const byte*>(this) + checked_data_offset(),
+                    sizeof(*this) - checked_data_offset());
   algorithm->Update(as_bytes(span(key)));
   algorithm->Update(value);
 }
