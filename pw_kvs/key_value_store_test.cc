@@ -283,14 +283,14 @@ uint16_t CalcTestPartitionCrc() {
 }  // namespace
 
 TEST_F(KeyValueStoreTest, Iteration_Empty_ByReference) {
-  for (const KeyValueStore::Entry& entry : kvs_) {
+  for (const KeyValueStore::Item& entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }
 }
 
 TEST_F(KeyValueStoreTest, Iteration_Empty_ByValue) {
-  for (KeyValueStore::Entry entry : kvs_) {
+  for (KeyValueStore::Item entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }

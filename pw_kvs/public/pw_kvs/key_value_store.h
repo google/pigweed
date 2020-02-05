@@ -125,7 +125,7 @@ class KeyValueStore {
   // Classes and functions to support STL-style iteration.
   class Iterator;
 
-  class Entry {
+  class Item {
    public:
     // Guaranteed to be null-terminated
     std::string_view key() const { return key_buffer_.data(); }
@@ -145,7 +145,7 @@ class KeyValueStore {
    private:
     friend class Iterator;
 
-    constexpr Entry(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
+    constexpr Item(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
 
     const KeyValueStore& kvs_;
     KeyBuffer key_buffer_;
@@ -161,10 +161,10 @@ class KeyValueStore {
     Iterator& operator++(int) { return operator++(); }
 
     // Reads the entry's key from flash.
-    const Entry& operator*();
+    const Item& operator*();
 
-    const Entry* operator->() {
-      operator*();  // Read the key into the Entry object.
+    const Item* operator->() {
+      operator*();  // Read the key into the Item object.
       return &entry_;
     }
 
@@ -182,7 +182,7 @@ class KeyValueStore {
     constexpr Iterator(const KeyValueStore& kvs, size_t index)
         : entry_(kvs), index_(index) {}
 
-    Entry entry_;
+    Item entry_;
     size_t index_;
   };
 

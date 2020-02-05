@@ -285,7 +285,7 @@ Status KeyValueStore::Delete(string_view key) {
   return Status::UNIMPLEMENTED;
 }
 
-const KeyValueStore::Entry& KeyValueStore::Iterator::operator*() {
+const KeyValueStore::Item& KeyValueStore::Iterator::operator*() {
   const KeyDescriptor& descriptor = entry_.kvs_.key_descriptor_list_[index_];
 
   std::memset(entry_.key_buffer_.data(), 0, entry_.key_buffer_.size());
