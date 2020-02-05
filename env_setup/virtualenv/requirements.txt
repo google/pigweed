@@ -1,1 +1,0 @@
-../../pw_env_setup/py/pw_env_setup/virtualenv_setup/requirements.txt
