@@ -15,6 +15,7 @@
 #include "pw_kvs_private/format.h"
 
 #include "pw_kvs_private/macros.h"
+#include "pw_log/log.h"
 
 namespace pw::kvs {
 
@@ -63,6 +64,27 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
   // consider creating a API that skips the intermediate buffering.
   byte buffer[32];
 
+  // Read and compare the magic and checksum.
+  TRY(partition->Read(address, checked_data_offset(), buffer));
+  if (std::memcmp(this, buffer, checked_data_offset()) != 0) {
+    static_assert(sizeof(unsigned) >= sizeof(uint32_t));
+    unsigned actual_magic;
+    std::memcpy(&actual_magic, &buffer[0], sizeof(uint32_t));
+    unsigned actual_checksum;
+    std::memcpy(&actual_checksum, &buffer[4], sizeof(uint32_t));
+
+    PW_LOG_ERROR(
+        "Expected: magic=%08x, checksum=%08x; "
+        "Actual: magic=%08x, checksum=%08x",
+        unsigned(magic()),
+        unsigned(checksum()),
+        actual_magic,
+        actual_checksum);
+
+    return Status::DATA_LOSS;
+  }
+
+  // Read and calculate the checksum of the remaining header, key, and value.
   address += checked_data_offset();
   size_t bytes_to_read = size() - checked_data_offset();
 
