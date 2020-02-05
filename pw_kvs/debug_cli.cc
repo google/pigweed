@@ -41,31 +41,41 @@ void Run() {
   std::string line;
   while (std::getline(std::cin, line)) {
     std::istringstream data(line);
-    std::string key, value;
-    data >> key >> value;
+    std::string cmd, key, value;
+    data >> cmd >> key >> value;
 
-    if (key == "Init()") {
-      printf("Init: %s\n", kvs.Init().str());
-    } else if (!key.empty()) {
-      printf("Adding %s='%s'\n", key.c_str(), value.c_str());
-
-      if (Status status = kvs.Put(key, as_bytes(span(value))); !status.ok()) {
-        printf("FAILED to Put key: %s\n", status.str());
+    if (cmd == "init") {
+      printf("Init() -> %s\n", kvs.Init().str());
+    } else if (cmd == "delete") {
+      printf("Delete(\"%s\") -> %s\n", key.c_str(), kvs.Delete(key).str());
+    } else if (cmd == "put") {
+      printf("Put(\"%s\", \"%s\") -> %s\n",
+             key.c_str(),
+             value.c_str(),
+             kvs.Put(key, as_bytes(span(value))).str());
+    } else if (cmd == "get") {
+      byte buffer[128] = {};
+      Status status = kvs.Get(key, buffer).status();
+      printf("Get(\"%s\") -> %s\n", key.c_str(), status.str());
+      if (status.ok()) {
+        printf("  Key: \"%s\"\n", key.c_str());
+        printf("Value: \"%s\"\n", reinterpret_cast<const char*>(buffer));
       }
-    }
-
-    int i = 0;
-    printf("KVS CONTENTS ----------------------------------------------\n");
-    for (auto& entry : kvs) {
-      char value[64] = {};
-      if (Status status = entry.Get(as_writable_bytes(span(value)));
-          status.ok()) {
-        printf("%2d: %s='%s'\n", ++i, entry.key().data(), value);
-      } else {
-        printf("FAILED to Get key %s: %s\n", entry.key().data(), status.str());
+    } else {
+      int i = 0;
+      printf("KVS CONTENTS ----------------------------------------------\n");
+      for (auto& entry : kvs) {
+        char value[64] = {};
+        if (Status status = entry.Get(as_writable_bytes(span(value)));
+            status.ok()) {
+          printf("%2d: %s='%s'\n", ++i, entry.key().data(), value);
+        } else {
+          printf(
+              "FAILED to Get key %s: %s\n", entry.key().data(), status.str());
+        }
       }
+      printf("---------------------------------------------- END CONTENTS\n");
     }
-    printf("---------------------------------------------- END CONTENTS\n");
   }
 }
 
