@@ -91,3 +91,14 @@ pw_cc_test(
         "//pw_log",
     ],
 )
+
+cc_binary(
+    name = "debug_cli",
+    srcs = ["debug_cli.cc"],
+    copts = ["-std=c++17"],
+    deps = [
+        ":crc16",
+        ":in_memory_fake_flash",
+        ":pw_kvs",
+    ],
+)

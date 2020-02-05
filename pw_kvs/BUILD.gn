@@ -68,6 +68,17 @@ source_set("in_memory_fake_flash") {
   ]
 }
 
+executable("debug_cli") {
+  sources = [
+    "debug_cli.cc",
+  ]
+  deps = [
+    ":crc16",
+    ":in_memory_fake_flash",
+    ":pw_kvs",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":checksum_test",
