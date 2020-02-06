@@ -28,7 +28,31 @@ namespace pw::kvs {
 using std::byte;
 using std::string_view;
 
+KeyValueStore::KeyValueStore(FlashPartition* partition,
+                             const EntryHeaderFormat& format,
+                             const Options& options)
+    : partition_(*partition),
+      entry_header_format_(format),
+      options_(options),
+      key_descriptor_list_{},
+      key_descriptor_list_size_(0),
+      sector_map_{},
+      sector_map_size_(partition_.sector_count()),
+      last_new_sector_(sector_map_.data()),
+      working_buffer_{} {}
+
 Status KeyValueStore::Init() {
+  if (kMaxUsableSectors < sector_map_size_) {
+    CRT("KeyValueStore::kMaxUsableSectors must be at least as large as the "
+        "number of sectors in the flash partition");
+    return Status::FAILED_PRECONDITION;
+  }
+
+  if (kMaxUsableSectors > sector_map_size_) {
+    DBG("KeyValueStore::kMaxUsableSectors is %zu sectors larger than needed",
+        kMaxUsableSectors - sector_map_size_);
+  }
+
   // Reset the number of occupied key descriptors; we will fill them later.
   key_descriptor_list_size_ = 0;
 
@@ -37,7 +61,6 @@ Status KeyValueStore::Init() {
   // clean start, random is a good second choice.
 
   const size_t sector_size_bytes = partition_.sector_size_bytes();
-  const size_t sector_count = partition_.sector_count();
 
   if (working_buffer_.size() < sector_size_bytes) {
     CRT("ERROR: working_buffer_ (%zu bytes) is smaller than sector "
@@ -48,7 +71,7 @@ Status KeyValueStore::Init() {
   }
 
   DBG("First pass: Read all entries from all sectors");
-  for (size_t sector_id = 0; sector_id < sector_count; ++sector_id) {
+  for (size_t sector_id = 0; sector_id < sector_map_size_; ++sector_id) {
     // Track writable bytes in this sector. Updated after reading each entry.
     sector_map_[sector_id].tail_free_bytes = sector_size_bytes;
 
@@ -98,7 +121,7 @@ Status KeyValueStore::Init() {
 
   DBG("Second pass: Count valid bytes in each sector");
   // Initialize the sector sizes.
-  for (size_t sector_id = 0; sector_id < sector_count; ++sector_id) {
+  for (size_t sector_id = 0; sector_id < sector_map_size_; ++sector_id) {
     sector_map_[sector_id].valid_bytes = 0;
   }
   // For every valid key, increment the valid bytes for that sector.
@@ -528,8 +551,6 @@ Status KeyValueStore::FindSectorWithSpace(SectorDescriptor** found_sector,
                                           size_t size,
                                           SectorDescriptor* sector_to_skip,
                                           bool bypass_empty_sector_rule) {
-  const size_t sector_count = partition_.sector_count();
-
   // The last_new_sector_ is the sector that was last selected as the "new empty
   // sector" to write to. This last new sector is used as the starting point for
   // the next "find a new empty sector to write to" operation. By using the last
@@ -542,7 +563,7 @@ Status KeyValueStore::FindSectorWithSpace(SectorDescriptor** found_sector,
   // the persistent storage use SectorDescriptor* rather than sector index
   // because SectorDescriptor* is the standard way to identify a sector.
   size_t last_new_sector_index_ = SectorIndex(last_new_sector_);
-  size_t start = (last_new_sector_index_ + 1) % sector_count;
+  size_t start = (last_new_sector_index_ + 1) % sector_map_size_;
   SectorDescriptor* first_empty_sector = nullptr;
   bool at_least_two_empty_sectors = bypass_empty_sector_rule;
 
@@ -550,7 +571,7 @@ Status KeyValueStore::FindSectorWithSpace(SectorDescriptor** found_sector,
   // first one of those that is found. While scanning for a partial sector, keep
   // track of the first empty sector and if a second sector was seen.
   for (size_t i = start; i != last_new_sector_index_;
-       i = (i + 1) % sector_count) {
+       i = (i + 1) % sector_map_size_) {
     DBG("Examining sector %zu", i);
     SectorDescriptor& sector = sector_map_[i];
 
@@ -610,7 +631,7 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   // Step 1: Try to find a sectors with stale keys and no valid keys (no
   // relocation needed). If any such sectors are found, use the sector with the
   // most reclaimable bytes.
-  for (auto& sector : sector_map_) {
+  for (auto& sector : sectors()) {
     if ((sector.valid_bytes == 0) &&
         (RecoverableBytes(sector) > candidate_bytes)) {
       sector_candidate = &sector;
@@ -621,7 +642,7 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   // Step 2: If step 1 yields no sectors, just find the sector with the most
   // reclaimable bytes.
   if (sector_candidate == nullptr) {
-    for (auto& sector : sector_map_) {
+    for (auto& sector : sectors()) {
       if (RecoverableBytes(sector) > candidate_bytes) {
         sector_candidate = &sector;
         candidate_bytes = RecoverableBytes(sector);
@@ -706,13 +727,13 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
 }
 
 void KeyValueStore::LogDebugInfo() {
-  const size_t sector_count = partition_.sector_count();
   const size_t sector_size_bytes = partition_.sector_size_bytes();
   DBG("====================== KEY VALUE STORE DUMP =========================");
   DBG(" ");
   DBG("Flash partition:");
-  DBG("  Sector count     = %zu", sector_count);
-  DBG("  Sector max count = %zu", kUsableSectors);
+  DBG("  Sector count     = %zu", partition_.sector_count());
+  DBG("  Sector max count = %zu", kMaxUsableSectors);
+  DBG("  Sectors in use   = %zu", sector_map_size_);
   DBG("  Sector size      = %zu", sector_size_bytes);
   DBG("  Total size       = %zu", partition_.size_bytes());
   DBG("  Alignment        = %zu", partition_.alignment_bytes());
@@ -735,7 +756,7 @@ void KeyValueStore::LogDebugInfo() {
 
   DBG("Sector descriptors:");
   DBG("      #     tail free  valid    has_space");
-  for (size_t sector_id = 0; sector_id < sector_count; ++sector_id) {
+  for (size_t sector_id = 0; sector_id < sector_map_size_; ++sector_id) {
     const SectorDescriptor& sd = sector_map_[sector_id];
     DBG("   |%3zu: | %8zu  |%8zu  | %s",
         sector_id,
@@ -748,7 +769,7 @@ void KeyValueStore::LogDebugInfo() {
   // TODO: This should stop logging after some threshold.
   // size_t dumped_bytes = 0;
   DBG("Sector raw data:");
-  for (size_t sector_id = 0; sector_id < sector_count; ++sector_id) {
+  for (size_t sector_id = 0; sector_id < sector_map_size_; ++sector_id) {
     // Read sector data. Yes, this will blow the stack on embedded.
     std::array<byte, 500> raw_sector_data;  // TODO
     StatusWithSize sws =

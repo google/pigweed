@@ -282,6 +282,30 @@ uint16_t CalcTestPartitionCrc() {
 
 }  // namespace
 
+TEST_F(KeyValueStoreTest,
+       DISABLED_Put_SameKeySameValueRepeatedly_AlignedEntries) {
+  std::array<char, 8> value{'v', 'a', 'l', 'u', 'e', '6', '7', '\0'};
+
+  for (int i = 0; i < 1000; ++i) {
+    ASSERT_EQ(Status::OK, kvs_.Put("The Key!", as_bytes(span(value))));
+  }
+}
+
+TEST_F(KeyValueStoreTest,
+       DISABLED_Put_SameKeySameValueRepeatedly_UnalignedEntries) {
+  std::array<char, 7> value{'v', 'a', 'l', 'u', 'e', '6', '\0'};
+
+  for (int i = 0; i < 1000; ++i) {
+    ASSERT_EQ(Status::OK, kvs_.Put("The Key!", as_bytes(span(value))));
+  }
+}
+
+TEST_F(KeyValueStoreTest, DISABLED_Put_SameKeyDifferentValueRepeatedly) {
+  for (uint64_t i = 0; i < 1000u; ++i) {
+    ASSERT_EQ(Status::OK, kvs_.Put("The Key!", i));
+  }
+}
+
 TEST_F(KeyValueStoreTest, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));

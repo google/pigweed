@@ -24,8 +24,6 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-// TODO: Resolve uses of partition_.sector_count() vs kMaxUsableSectors.
-
 namespace pw::kvs {
 namespace internal {
 
@@ -71,7 +69,7 @@ class KeyValueStore {
   // TODO: Make these configurable
   static constexpr size_t kMaxKeyLength = 64;
   static constexpr size_t kMaxEntries = 64;
-  static constexpr size_t kUsableSectors = 64;
+  static constexpr size_t kMaxUsableSectors = 64;
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
   // +1 for null-terminator.
@@ -79,17 +77,9 @@ class KeyValueStore {
 
   // In the future, will be able to provide additional EntryHeaderFormats for
   // backwards compatibility.
-  constexpr KeyValueStore(FlashPartition* partition,
-                          const EntryHeaderFormat& format,
-                          const Options& options = {})
-      : partition_(*partition),
-        entry_header_format_(format),
-        options_(options),
-        key_descriptor_list_{},
-        key_descriptor_list_size_(0),
-        sector_map_{},
-        last_new_sector_(sector_map_.data()),
-        working_buffer_{} {}
+  KeyValueStore(FlashPartition* partition,
+                const EntryHeaderFormat& format,
+                const Options& options = {});
 
   Status Init();
 
@@ -350,6 +340,10 @@ class KeyValueStore {
     return span(key_descriptor_list_.data(), key_descriptor_list_size_);
   }
 
+  span<SectorDescriptor> sectors() {
+    return {sector_map_.data(), sector_map_size_};
+  }
+
   FlashPartition& partition_;
   EntryHeaderFormat entry_header_format_;
   Options options_;
@@ -361,7 +355,10 @@ class KeyValueStore {
                                      // key_descriptor_list_
 
   // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
-  std::array<SectorDescriptor, kUsableSectors> sector_map_;
+  // TODO: This may need to be a span that points to an externally allocated
+  // array. This could be handled by a templated KVS derived class.
+  std::array<SectorDescriptor, kMaxUsableSectors> sector_map_;
+  const size_t sector_map_size_;
 
   // The last sector that was selected as the "new empty sector" to write to.
   // This last new sector is used as the starting point for the next "find a new
