@@ -21,8 +21,16 @@ def install(pw_root, env):
     host_dir = os.path.join(pw_root, 'out', 'host')
     with env():
         try:
-            subprocess.check_call(['gn', 'gen', host_dir], cwd=pw_root)
+            gn_gen = [
+                'gn',
+                'gen',
+                '--args=pw_target_toolchain="//pw_toolchain:host_clang_og"',
+                host_dir,
+            ]
+            subprocess.check_call(gn_gen, cwd=pw_root)
+
             subprocess.check_call(['ninja', '-C', host_dir], cwd=pw_root)
+
         except subprocess.CalledProcessError:
             env.echo('warning: host tools failed to build')
 
