@@ -81,6 +81,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "entry_test",
+    srcs = [
+        "entry_test.cc",
+    ],
+    deps = [
+        ":pw_kvs",
+    ],
+)
+
+pw_cc_test(
     name = "key_value_store_test",
     srcs = ["key_value_store_test.cc"],
     deps = [

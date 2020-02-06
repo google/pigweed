@@ -26,12 +26,14 @@ EntryHeader::EntryHeader(uint32_t magic,
                          ChecksumAlgorithm* algorithm,
                          string_view key,
                          span<const byte> value,
-                         uint32_t value_length,
+                         uint16_t value_length_bytes,
+                         size_t alignment_bytes,
                          uint32_t key_version)
     : magic_(magic),
       checksum_(kNoChecksum),
-      key_value_length_(value_length << kValueLengthShift |
-                        (key.size() & kKeyLengthMask)),
+      alignment_units_(alignment_bytes_to_units(alignment_bytes)),
+      key_length_bytes_(key.size()),
+      value_length_bytes_(value_length_bytes),
       key_version_(key_version) {
   if (algorithm != nullptr) {
     CalculateChecksum(algorithm, key, value);
@@ -39,6 +41,9 @@ EntryHeader::EntryHeader(uint32_t magic,
                 algorithm->state().data(),
                 std::min(algorithm->size_bytes(), sizeof(checksum_)));
   }
+
+  // TODO: 0 is an invalid alignment value. There should be an assert for this.
+  // DCHECK_NE(alignment_bytes, 0);
 }
 
 Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
@@ -87,7 +92,7 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
 
   // Read and calculate the checksum of the remaining header, key, and value.
   address += checked_data_offset();
-  size_t bytes_to_read = size() - checked_data_offset();
+  size_t bytes_to_read = content_size() - checked_data_offset();
 
   while (bytes_to_read > 0u) {
     const size_t read_size = std::min(sizeof(buffer), bytes_to_read);

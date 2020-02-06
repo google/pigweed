@@ -43,7 +43,10 @@ source_set("pw_kvs") {
     dir_pw_checksum,
     dir_pw_log,
   ]
-  friend = [ ":key_value_store_test" ]
+  friend = [
+    ":entry_test",
+    ":key_value_store_test",
+  ]
 }
 
 source_set("crc16") {
@@ -82,6 +85,7 @@ executable("debug_cli") {
 pw_test_group("tests") {
   tests = [
     ":checksum_test",
+    ":entry_test",
     ":key_value_store_test",
   ]
 }
@@ -94,6 +98,15 @@ pw_test("checksum_test") {
   ]
   sources = [
     "checksum_test.cc",
+  ]
+}
+
+pw_test("entry_test") {
+  deps = [
+    ":pw_kvs",
+  ]
+  sources = [
+    "entry_test.cc",
   ]
 }
 

@@ -189,8 +189,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   TRY(AppendNewOrOverwriteStaleExistingDescriptor(key_descriptor));
 
   // TODO: Extract this to something like "NextValidEntryAddress".
-  *next_entry_address =
-      AlignUp(key_descriptor.address + header.size(), alignment_bytes);
+  *next_entry_address = key_descriptor.address + header.size();
 
   return Status::OK;
 }
@@ -476,7 +475,8 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
   SectorDescriptor& old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
+  TRY(FindOrRecoverSectorWithSpace(
+      &sector, EntryHeader::size(partition_.alignment_bytes(), key, value)));
 
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, key_descriptor, key, value, new_state));
@@ -503,7 +503,8 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   key_descriptor.state = KeyDescriptor::kValid;
 
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
+  TRY(FindOrRecoverSectorWithSpace(
+      &sector, EntryHeader::size(partition_.alignment_bytes(), key, value)));
   DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, &key_descriptor, key, value));
 
@@ -719,16 +720,20 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
     header = EntryHeader::Tombstone(entry_header_format_.magic,
                                     entry_header_format_.checksum,
                                     key,
+                                    partition_.alignment_bytes(),
                                     key_descriptor->key_version + 1);
   } else {
     header = EntryHeader::Valid(entry_header_format_.magic,
                                 entry_header_format_.checksum,
                                 key,
                                 value,
+                                partition_.alignment_bytes(),
                                 key_descriptor->key_version + 1);
   }
 
-  DBG("Appending entry with key version: %zx", size_t(header.key_version()));
+  DBG("Appending %zu B entry with key version: %x",
+      header.size(),
+      unsigned(header.key_version()));
 
   Address address = NextWritableAddress(sector);
   DBG("Appending to address: %zx", size_t(address));
