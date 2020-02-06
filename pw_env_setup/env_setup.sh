@@ -18,8 +18,18 @@ _abspath () {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
 
+# Users are not expected to set PW_CHECKOUT_ROOT, it's only used because it
+# seems to be impossible to reliably determine the path to a sourced file in
+# dash when sourced from a dash script instead of a dash interactive prompt.
+# To reinforce that users should not be using PW_CHECKOUT_ROOT, it is cleared
+# here after it is used, and other pw tools will complain if they see that
+# variable set.
+# TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
+if test -n "$PW_CHECKOUT_ROOT"; then
+  PW_SETUP_SCRIPT_PATH=$(_abspath "$PW_CHECKOUT_ROOT/pw_env_setup/bootstrap.sh")
+  unset PW_CHECKOUT_ROOT
 # Shell: bash.
-if test -n "$BASH"; then
+elif test -n "$BASH"; then
   PW_SETUP_SCRIPT_PATH=$(_abspath $BASH_SOURCE)
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
