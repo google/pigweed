@@ -16,7 +16,9 @@ import("host_common.gni")
 
 pw_automatic_test_runner = get_path_info("run_test.bat", "abspath")
 
-pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+declare_args() {
+  pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+}
 
 # This is here as bloaty_config_file cannot be an empty string or GN fails.
 # TODO(frolv): Add this file and enable size reports on Windows.
