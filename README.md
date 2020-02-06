@@ -5,9 +5,6 @@ These modules are designed for small-footprint MMU-less microcontrollers like
 the ST Micro STM32L452 or the Nordic NRF82832. The modules are designed to
 facilitate easy integration into existing codebases.
 
-Some Pigweed modules have been used in the development of Google’s first-party
-devices, including the Stadia Controller and Pixel Buds.
-
 Pigweed is in the early stages of development, and should be considered
 experimental. We’re continuing to evolve the platform and add new modules. We
 value developer feedback along the way.
