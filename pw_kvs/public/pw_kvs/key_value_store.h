@@ -269,6 +269,7 @@ class KeyValueStore {
                                       const KeyDescriptor& entry) const;
 
   Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
+                                  KeyDescriptor::State new_state,
                                   std::string_view key,
                                   span<const std::byte> value);
 
@@ -278,7 +279,7 @@ class KeyValueStore {
 
   Status FindSectorWithSpace(SectorDescriptor** found_sector,
                              size_t size,
-                             SectorDescriptor* sector_to_skip = nullptr,
+                             const SectorDescriptor* sector_to_skip = nullptr,
                              bool bypass_empty_sector_rule = false);
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
@@ -294,7 +295,8 @@ class KeyValueStore {
   Status AppendEntry(SectorDescriptor* sector,
                      KeyDescriptor* key_descriptor,
                      std::string_view key,
-                     span<const std::byte> value);
+                     span<const std::byte> value,
+                     KeyDescriptor::State new_state = KeyDescriptor::kValid);
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
@@ -321,8 +323,11 @@ class KeyValueStore {
     return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
-  SectorDescriptor* SectorFromAddress(Address address) {
-    return &sector_map_[address / partition_.sector_size_bytes()];
+  SectorDescriptor& SectorFromAddress(Address address) {
+    const size_t index = address / partition_.sector_size_bytes();
+    // TODO: Add boundary checking once asserts are supported.
+    // DCHECK_LT(index, sector_map_size_);
+    return sector_map_[index];
   }
 
   Address NextWritableAddress(SectorDescriptor* sector) const {

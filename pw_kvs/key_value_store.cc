@@ -15,6 +15,7 @@
 #include "pw_kvs/key_value_store.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstring>
 #include <type_traits>
 
@@ -288,11 +289,12 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
 
   KeyDescriptor* key_descriptor;
   if (FindKeyDescriptor(key, &key_descriptor).ok()) {
-    DBG("Writing over existing entry");
-    return WriteEntryForExistingKey(key_descriptor, key, value);
+    DBG("Writing over existing entry for key 0x%08" PRIx32,
+        key_descriptor->key_hash);
+    return WriteEntryForExistingKey(
+        key_descriptor, KeyDescriptor::kValid, key, value);
   }
 
-  DBG("Writing new entry");
   return WriteEntryForNewKey(key, value);
 }
 
@@ -306,13 +308,9 @@ Status KeyValueStore::Delete(string_view key) {
     return Status::NOT_FOUND;
   }
 
-  key_descriptor->state = KeyDescriptor::kDeleted;
-
-  SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, {})));
-
-  DBG("Writing tombstone; found sector: %zu", SectorIndex(sector));
-  return AppendEntry(sector, key_descriptor, key, {});
+  DBG("Writing tombstone for key 0x%08" PRIx32, key_descriptor->key_hash);
+  return WriteEntryForExistingKey(
+      key_descriptor, KeyDescriptor::kDeleted, key, {});
 }
 
 KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
@@ -419,11 +417,10 @@ Status KeyValueStore::FindKeyDescriptor(string_view key,
 
   for (auto& descriptor : key_descriptors()) {
     if (descriptor.key_hash == hash) {
-      DBG("Found match! For hash: %zx", size_t(hash));
       TRY(ReadEntryKey(descriptor.address, key.size(), key_buffer));
 
       if (key == string_view(key_buffer, key.size())) {
-        DBG("Keys matched too");
+        DBG("Found match for key hash 0x%08" PRIx32, hash);
         *result = &descriptor;
         return Status::OK;
       }
@@ -470,14 +467,22 @@ StatusWithSize KeyValueStore::ReadEntryValue(
 }
 
 Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
+                                               KeyDescriptor::State new_state,
                                                string_view key,
                                                span<const byte> value) {
-  key_descriptor->state = KeyDescriptor::kValid;
+  // Find the original entry and sector to update the sector's valid_bytes.
+  EntryHeader original_entry;
+  TRY(ReadEntryHeader(key_descriptor->address, &original_entry));
+  SectorDescriptor& old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector, EntryHeader::size(key, value)));
+
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
-  return AppendEntry(sector, key_descriptor, key, value);
+  TRY(AppendEntry(sector, key_descriptor, key, value, new_state));
+
+  old_sector.valid_bytes -= original_entry.size();
+  return Status::OK;
 }
 
 Status KeyValueStore::WriteEntryForNewKey(string_view key,
@@ -533,24 +538,22 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   TRY(header.VerifyChecksum(
       entry_header_format_.checksum, key, as_bytes(value)));
 
-  SectorDescriptor* old_sector = SectorFromAddress(key_descriptor.address);
-  if (old_sector == nullptr) {
-    return Status::INTERNAL;
-  }
+  SectorDescriptor& old_sector = SectorFromAddress(key_descriptor.address);
 
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
-  TRY(FindSectorWithSpace(&new_sector, header.size(), old_sector, true));
+  TRY(FindSectorWithSpace(&new_sector, header.size(), &old_sector, true));
   return AppendEntry(new_sector, &key_descriptor, key, as_bytes(value));
 }
 
 // Find either an existing sector with enough space that is not the sector to
 // skip, or an empty sector. Maintains the invariant that there is always at
 // least 1 empty sector unless set to bypass the rule.
-Status KeyValueStore::FindSectorWithSpace(SectorDescriptor** found_sector,
-                                          size_t size,
-                                          SectorDescriptor* sector_to_skip,
-                                          bool bypass_empty_sector_rule) {
+Status KeyValueStore::FindSectorWithSpace(
+    SectorDescriptor** found_sector,
+    size_t size,
+    const SectorDescriptor* sector_to_skip,
+    bool bypass_empty_sector_rule) {
   // The last_new_sector_ is the sector that was last selected as the "new empty
   // sector" to write to. This last new sector is used as the starting point for
   // the next "find a new empty sector to write to" operation. By using the last
@@ -671,6 +674,7 @@ Status KeyValueStore::GarbageCollectOneSector(SectorDescriptor** sector) {
   }
 
   if (sector_to_gc->valid_bytes != 0) {
+    ERR("Failed to relocate valid entries from sector being garbage collected");
     return Status::INTERNAL;
   }
 
@@ -686,11 +690,12 @@ Status KeyValueStore::GarbageCollectOneSector(SectorDescriptor** sector) {
 Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
                                   KeyDescriptor* key_descriptor,
                                   const string_view key,
-                                  span<const byte> value) {
+                                  span<const byte> value,
+                                  KeyDescriptor::State new_state) {
   // write header, key, and value
   EntryHeader header;
 
-  if (key_descriptor->deleted()) {
+  if (new_state == KeyDescriptor::kDeleted) {
     header = EntryHeader::Tombstone(entry_header_format_.magic,
                                     entry_header_format_.checksum,
                                     key,
@@ -705,10 +710,11 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
 
   DBG("Appending entry with key version: %zx", size_t(header.key_version()));
 
-  // Handles writing multiple concatenated buffers, while breaking up the writes
-  // into alignment-sized blocks.
   Address address = NextWritableAddress(sector);
   DBG("Appending to address: %zx", size_t(address));
+
+  // Handles writing multiple concatenated buffers, while breaking up the writes
+  // into alignment-sized blocks.
   TRY_ASSIGN(
       size_t written,
       partition_.Write(
@@ -721,6 +727,8 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
 
   key_descriptor->address = address;
   key_descriptor->key_version = header.key_version();
+  key_descriptor->state = new_state;
+
   sector->valid_bytes += written;
   sector->tail_free_bytes -= written;
   return Status::OK;
