@@ -460,16 +460,17 @@ BROKEN: Sequence = (
 #
 QUICK_PRESUBMIT: Sequence = (
     *INIT,
-    *PYTHON,
-    gn_clang_build,
-    pw_presubmit.pragma_once,
     *CODE_FORMAT,
     *GENERAL,
+    *CC,
+    gn_clang_build,
+    gn_arm_build,
+    *PYTHON,
 )
 
 PROGRAMS: Dict[str, Sequence] = {
     'broken': BROKEN,
-    'full': INIT + GN + CC + PYTHON + CMAKE + BAZEL + CODE_FORMAT + GENERAL,
+    'full': INIT + CODE_FORMAT + GENERAL + CC + GN + PYTHON + CMAKE + BAZEL,
     'quick': QUICK_PRESUBMIT,
 }
 
@@ -537,6 +538,9 @@ def main(
 ) -> int:
     """Entry point for presubmit."""
 
+    os.environ.setdefault('PW_ROOT',
+                          str(pw_presubmit.git_repo_path(repo=repository)))
+
     if not output_directory:
         output_directory = pw_presubmit.git_repo_path('.presubmit',
                                                       repo=repository)
@@ -549,7 +553,8 @@ def main(
         shutil.rmtree(environment.joinpath('init_virtualenv'))
 
     if install:
-        install_hook(__file__, 'pre-push', ['--base', 'origin/master..HEAD'],
+        install_hook(__file__, 'pre-push',
+                     ['--base', 'origin/master..HEAD', '--program', 'quick'],
                      repository)
         return 0
 
