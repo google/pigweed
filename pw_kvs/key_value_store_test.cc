@@ -282,8 +282,7 @@ uint16_t CalcTestPartitionCrc() {
 
 }  // namespace
 
-TEST_F(KeyValueStoreTest,
-       DISABLED_Put_SameKeySameValueRepeatedly_AlignedEntries) {
+TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_AlignedEntries) {
   std::array<char, 8> value{'v', 'a', 'l', 'u', 'e', '6', '7', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
@@ -291,8 +290,7 @@ TEST_F(KeyValueStoreTest,
   }
 }
 
-TEST_F(KeyValueStoreTest,
-       DISABLED_Put_SameKeySameValueRepeatedly_UnalignedEntries) {
+TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_UnalignedEntries) {
   std::array<char, 7> value{'v', 'a', 'l', 'u', 'e', '6', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
@@ -300,9 +298,13 @@ TEST_F(KeyValueStoreTest,
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Put_SameKeyDifferentValueRepeatedly) {
-  for (uint64_t i = 0; i < 1000u; ++i) {
-    ASSERT_EQ(Status::OK, kvs_.Put("The Key!", i));
+TEST_F(KeyValueStoreTest, Put_SameKeyDifferentValuesRepeatedly) {
+  std::array<char, 10> value{'v', 'a', 'l', 'u', 'e', '6', '7', '8', '9', '\0'};
+
+  for (int i = 0; i < 100; ++i) {
+    for (unsigned size = 0; size < value.size(); ++size) {
+      ASSERT_EQ(Status::OK, kvs_.Put("The Key!", i));
+    }
   }
 }
 

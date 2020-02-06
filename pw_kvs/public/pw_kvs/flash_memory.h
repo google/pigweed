@@ -57,7 +57,10 @@ class FlashMemory {
         alignment_(alignment),
         start_address_(start_address),
         start_sector_(sector_start),
-        erased_memory_content_(erased_memory_content) {}
+        erased_memory_content_(erased_memory_content) {
+    // TODO: The smallest possible alignment is 1 B; 0 is invalid.
+    // DCHECK_NE(alignment_, 0);
+  }
 
   virtual ~FlashMemory() = default;
 
@@ -138,23 +141,14 @@ class FlashPartition {
       FlashMemory* flash,
       uint32_t start_sector_index,
       uint32_t sector_count,
+      uint32_t alignment_bytes = 0,  // Defaults to flash alignment
       PartitionPermission permission = PartitionPermission::kReadAndWrite)
       : flash_(*flash),
         start_sector_index_(start_sector_index),
         sector_count_(sector_count),
+        alignment_bytes_(alignment_bytes == 0 ? flash_.alignment_bytes()
+                                              : alignment_bytes),
         permission_(permission) {}
-
-#if 0
-  constexpr FlashPartition(
-      FlashMemory* flash,
-      uint32_t start_sector_index,
-      uint32_t end_sector_index,
-      PartitionPermission permission = PartitionPermission::kReadAndWrite)
-      : flash_(*flash),
-        start_sector_index_(start_sector_index),
-        sector_count_(end_sector_index - start_sector_index + 1),
-        permission_(permission) {}
-#endif
 
   virtual ~FlashPartition() = default;
 
@@ -191,8 +185,9 @@ class FlashPartition {
   //          UNKNOWN, on HAL error
   virtual StatusWithSize Write(Address address, span<const std::byte> data);
 
-  StatusWithSize Write(Address start_address,
-                       std::initializer_list<span<const std::byte>> data);
+  // Returns the total number of bytes written, including any padding.
+  StatusWithSize WriteAligned(
+      Address start_address, std::initializer_list<span<const std::byte>> data);
 
   // Check to see if chunk of flash memory is erased. Address and len need to
   // be aligned with FlashMemory.
@@ -214,9 +209,9 @@ class FlashPartition {
 
   size_t size_bytes() const { return sector_count() * sector_size_bytes(); }
 
-  virtual size_t alignment_bytes() const { return flash_.alignment_bytes(); }
+  size_t alignment_bytes() const { return alignment_bytes_; }
 
-  virtual size_t sector_count() const { return sector_count_; }
+  size_t sector_count() const { return sector_count_; }
 
   // Convert a FlashMemory::Address to an MCU pointer, this can be used for
   // memory mapped reads. Return NULL if the memory is not memory mapped.
@@ -247,6 +242,7 @@ class FlashPartition {
   FlashMemory& flash_;
   const uint32_t start_sector_index_;
   const uint32_t sector_count_;
+  const uint32_t alignment_bytes_;
   const PartitionPermission permission_;
 };
 

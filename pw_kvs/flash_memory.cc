@@ -47,7 +47,7 @@ StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
   return flash_.Write(PartitionToFlashAddress(address), data);
 }
 
-StatusWithSize FlashPartition::Write(
+StatusWithSize FlashPartition::WriteAligned(
     const Address start_address, std::initializer_list<span<const byte>> data) {
   byte buffer[64];  // TODO: Configure this?
 
@@ -89,7 +89,7 @@ StatusWithSize FlashPartition::Write(
         !status.ok()) {
       return StatusWithSize(status, bytes_written());
     }
-    address += remaining_write_size;
+    address += remaining_write_size;  // Include padding bytes in the total.
   }
 
   return StatusWithSize(bytes_written());

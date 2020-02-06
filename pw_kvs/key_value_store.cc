@@ -139,8 +139,6 @@ Status KeyValueStore::Init() {
 
 Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
-  const size_t alignment_bytes = partition_.alignment_bytes();
-
   EntryHeader header;
   TRY(ReadEntryHeader(entry_address, &header));
   // TODO: Should likely add a "LogHeader" method or similar.
@@ -151,8 +149,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   DBG("   Key length   = 0x%zx", size_t(header.key_length()));
   DBG("   Value length = 0x%zx", size_t(header.value_length()));
   DBG("   Entry size   = 0x%zx", size_t(header.size()));
-  DBG("   Padded size  = 0x%zx",
-      size_t(AlignUp(header.size(), alignment_bytes)));
+  DBG("   Alignment    = 0x%zx", size_t(header.alignment_bytes()));
 
   if (HeaderLooksLikeUnwrittenData(header)) {
     return Status::NOT_FOUND;
@@ -741,8 +738,8 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   // Handles writing multiple concatenated buffers, while breaking up the writes
   // into alignment-sized blocks.
   TRY_ASSIGN(
-      size_t written,
-      partition_.Write(
+      const size_t written,
+      partition_.WriteAligned(
           address, {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
 
   if (options_.verify_on_write) {
