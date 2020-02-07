@@ -357,6 +357,8 @@ class KeyValueStore {
     return sector_map_[index];
   }
 
+  void LogSectors(void);
+
   Address NextWritableAddress(SectorDescriptor* sector) const {
     return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
            sector->tail_free_bytes;

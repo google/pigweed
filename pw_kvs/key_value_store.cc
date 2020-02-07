@@ -711,6 +711,7 @@ Status KeyValueStore::GarbageCollectOneSector() {
   sector_to_gc->tail_free_bytes = partition_.sector_size_bytes();
 
   DBG("  Garbage Collect complete");
+  LogSectors();
   return Status::OK;
 }
 
@@ -839,6 +840,16 @@ void KeyValueStore::LogDebugInfo() {
   }
 
   DBG("////////////////////// KEY VALUE STORE DUMP END /////////////////////");
+}
+
+void KeyValueStore::LogSectors(void) {
+  for (auto& sector : sectors()) {
+    DBG("  - Sector %zu: valid %hu, recoverable %zu, free %hu",
+        SectorIndex(&sector),
+        sector.valid_bytes,
+        RecoverableBytes(sector),
+        sector.tail_free_bytes);
+  }
 }
 
 }  // namespace pw::kvs
