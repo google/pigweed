@@ -311,7 +311,7 @@ class KeyValueStore {
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 
-  Status GarbageCollectOneSector(SectorDescriptor** sector);
+  Status GarbageCollectOneSector();
 
   SectorDescriptor* FindSectorToGarbageCollect();
 

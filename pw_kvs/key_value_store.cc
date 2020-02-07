@@ -587,8 +587,8 @@ Status KeyValueStore::FindSectorWithSpace(
   // Look for a partial sector to use with enough space. Immediately use the
   // first one of those that is found. While scanning for a partial sector, keep
   // track of the first empty sector and if a second sector was seen.
-  for (size_t i = start; i != last_new_sector_index_;
-       i = (i + 1) % sector_map_size_) {
+  for (size_t j = 0; j < sector_map_size_; j++) {
+    size_t i = (j + start) % sector_map_size_;
     SectorDescriptor& sector = sector_map_[i];
 
     if (sector_to_skip == &sector) {
@@ -639,7 +639,9 @@ Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
     return result;
   }
   if (options_.partial_gc_on_write) {
-    return GarbageCollectOneSector(sector);
+    // Garbage collect and then try again to find the best sector.
+    TRY(GarbageCollectOneSector());
+    return FindSectorWithSpace(sector, size);
   }
   return result;
 }
@@ -676,7 +678,7 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   return sector_candidate;
 }
 
-Status KeyValueStore::GarbageCollectOneSector(SectorDescriptor** sector) {
+Status KeyValueStore::GarbageCollectOneSector() {
   DBG("Garbage Collect a single sector");
 
   // Step 1: Find the sector to garbage collect
@@ -709,7 +711,6 @@ Status KeyValueStore::GarbageCollectOneSector(SectorDescriptor** sector) {
   sector_to_gc->tail_free_bytes = partition_.sector_size_bytes();
 
   DBG("  Garbage Collect complete");
-  *sector = sector_to_gc;
   return Status::OK;
 }
 
