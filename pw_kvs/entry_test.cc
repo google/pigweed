@@ -39,6 +39,7 @@ TEST(EntryHeader, ValidEntry) {
   EXPECT_EQ(entry.checksum(), 0u);  // kNoChecksum
   EXPECT_EQ(entry.key_length(), 1u);
   EXPECT_EQ(entry.value_length(), sizeof("123"));
+  EXPECT_EQ(entry.alignment_bytes(), 16u);
   EXPECT_EQ(entry.key_version(), 9876u);
 }
 
@@ -50,6 +51,7 @@ TEST(EntryHeader, Tombstone) {
   EXPECT_EQ(entry.checksum(), 0u);  // kNoChecksum
   EXPECT_EQ(entry.key_length(), 3u);
   EXPECT_EQ(entry.value_length(), 0u);
+  EXPECT_EQ(entry.alignment_bytes(), 16u);
   EXPECT_EQ(entry.key_version(), 123u);
 }
 

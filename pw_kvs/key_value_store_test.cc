@@ -151,32 +151,22 @@ ChecksumCrc16 checksum;
 constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 size_t RoundUpForAlignment(size_t size) {
-  // TODO: THIS IS SO PADDEDWRITE APPEARS USED
-  uint16_t alignment = test_partition.alignment_bytes();
-  if (size % alignment != 0) {
-    return size + alignment - size % alignment;
-  }
-  return size;
+  return AlignUp(size, test_partition.alignment_bytes());
 }
 
 // This class gives attributes of KVS that we are testing against
 class KvsAttributes {
  public:
   KvsAttributes(size_t key_size, size_t data_size)
-      : sector_header_meta_size_(
-            RoundUpForAlignment(sizeof(EntryHeader))),  // TODO: not correct
-        sector_header_clean_size_(
-            RoundUpForAlignment(sizeof(EntryHeader))),  // TODO: not correct
-        chunk_header_size_(RoundUpForAlignment(sizeof(EntryHeader))),
+      : chunk_header_size_(RoundUpForAlignment(sizeof(EntryHeader))),
         data_size_(RoundUpForAlignment(data_size)),
         key_size_(RoundUpForAlignment(key_size)),
         erase_size_(chunk_header_size_ + key_size_),
-        min_put_size_(chunk_header_size_ + key_size_ + data_size_) {}
+        min_put_size_(
+            RoundUpForAlignment(chunk_header_size_ + key_size_ + data_size_)) {}
 
-  size_t SectorHeaderSize() {
-    return sector_header_meta_size_ + sector_header_clean_size_;
-  }
-  size_t SectorHeaderMetaSize() { return sector_header_meta_size_; }
+  size_t SectorHeaderSize() { return 0; }
+  size_t SectorHeaderMetaSize() { return 0; }
   size_t ChunkHeaderSize() { return chunk_header_size_; }
   size_t DataSize() { return data_size_; }
   size_t KeySize() { return key_size_; }
@@ -184,8 +174,6 @@ class KvsAttributes {
   size_t MinPutSize() { return min_put_size_; }
 
  private:
-  const size_t sector_header_meta_size_;
-  const size_t sector_header_clean_size_;
   const size_t chunk_header_size_;
   const size_t data_size_;
   const size_t key_size_;
@@ -193,10 +181,9 @@ class KvsAttributes {
   const size_t min_put_size_;
 };
 
-// Use test fixture for logging support
-class KeyValueStoreTest : public ::testing::Test {
+class EmptyInitializedKvs : public ::testing::Test {
  protected:
-  KeyValueStoreTest() : kvs_(&test_partition, format) {
+  EmptyInitializedKvs() : kvs_(&test_partition, format) {
     test_partition.Erase(0, test_partition.sector_count());
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
@@ -236,33 +223,7 @@ class KeyValueStoreTest : public ::testing::Test {
   KeyValueStore kvs_;
 };
 
-Status PaddedWrite(FlashPartition* partition,
-                   FlashPartition::Address address,
-                   const std::byte* buf,
-                   size_t size) {
-  static constexpr size_t kMaxAlignmentBytes = 128;
-  byte alignment_buffer[kMaxAlignmentBytes] = {};
-
-  size_t aligned_bytes = size - (size % partition->alignment_bytes());
-  TRY(partition->Write(address, span(buf, aligned_bytes)));
-
-  uint16_t remaining_bytes = size - aligned_bytes;
-  if (remaining_bytes > 0) {
-    std::memcpy(alignment_buffer, &buf[aligned_bytes], remaining_bytes);
-    if (Status status = partition->Write(
-            address + aligned_bytes,
-            span(alignment_buffer, partition->alignment_bytes()));
-        !status.ok()) {
-      return status;
-    }
-  }
-  return Status::OK;
-}
-
 uint16_t CalcKvsCrc(const char* key, const void* data, size_t data_len) {
-  // TODO: remove this; it's only to prevent unused function warnings
-  (void)PaddedWrite;
-
   uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, std::strlen(key))));
   return checksum::CcittCrc16(span(static_cast<const byte*>(data), data_len),
                               crc);
@@ -282,7 +243,7 @@ uint16_t CalcTestPartitionCrc() {
 
 }  // namespace
 
-TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_AlignedEntries) {
+TEST_F(EmptyInitializedKvs, Put_SameKeySameValueRepeatedly_AlignedEntries) {
   std::array<char, 8> value{'v', 'a', 'l', 'u', 'e', '6', '7', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
@@ -290,7 +251,7 @@ TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_AlignedEntries) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_UnalignedEntries) {
+TEST_F(EmptyInitializedKvs, Put_SameKeySameValueRepeatedly_UnalignedEntries) {
   std::array<char, 7> value{'v', 'a', 'l', 'u', 'e', '6', '\0'};
 
   for (int i = 0; i < 1000; ++i) {
@@ -298,7 +259,7 @@ TEST_F(KeyValueStoreTest, Put_SameKeySameValueRepeatedly_UnalignedEntries) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Put_SameKeyDifferentValuesRepeatedly) {
+TEST_F(EmptyInitializedKvs, Put_SameKeyDifferentValuesRepeatedly) {
   std::array<char, 10> value{'v', 'a', 'l', 'u', 'e', '6', '7', '8', '9', '\0'};
 
   for (int i = 0; i < 100; ++i) {
@@ -308,37 +269,31 @@ TEST_F(KeyValueStoreTest, Put_SameKeyDifferentValuesRepeatedly) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Put_VaryingKeysAndValues) {
+TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
   char value[] =
-      "abcdefghijklmnopqrstuvwxyz"  // 26
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  // 52
-      "34567890123";                // 64 (with final \0);
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"  // 52
+      "34567890123";  // 64 (with final \0);
   static_assert(sizeof(value) == 64);
 
   for (int i = 0; i < 2; ++i) {
     for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
       for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
-        const std::string_view key(value, key_size);
-        auto status = kvs_.Put(key, as_bytes(span(value, value_size)));
-        if (!status.ok()) {
-          PW_LOG_ERROR("Failed for %s", MakeString<64>(key).c_str());
-          kvs_.LogDebugInfo();
-        }
-
-        ASSERT_EQ(Status::OK, status);
+        ASSERT_EQ(Status::OK,
+                  kvs_.Put(std::string_view(value, key_size),
+                           as_bytes(span(value, value_size))));
       }
     }
   }
 }
 
-TEST_F(KeyValueStoreTest, Delete_GetDeletedKey_ReturnsNotFound) {
+TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
 
   EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("kEy", {}).status());
 }
 
-TEST_F(KeyValueStoreTest, Delete_AddBackKey_PersistsAfterInitialization) {
+TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
 
@@ -357,7 +312,7 @@ TEST_F(KeyValueStoreTest, Delete_AddBackKey_PersistsAfterInitialization) {
   EXPECT_STREQ(data, "45678");
 }
 
-TEST_F(KeyValueStoreTest, Delete_AllItems_KvsIsEmpty) {
+TEST_F(EmptyInitializedKvs, Delete_AllItems_KvsIsEmpty) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
 
@@ -365,21 +320,21 @@ TEST_F(KeyValueStoreTest, Delete_AllItems_KvsIsEmpty) {
   EXPECT_TRUE(kvs_.empty());
 }
 
-TEST_F(KeyValueStoreTest, Iteration_Empty_ByReference) {
+TEST_F(EmptyInitializedKvs, Iteration_Empty_ByReference) {
   for (const KeyValueStore::Item& entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }
 }
 
-TEST_F(KeyValueStoreTest, Iteration_Empty_ByValue) {
+TEST_F(EmptyInitializedKvs, Iteration_Empty_ByValue) {
   for (KeyValueStore::Item entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.
     static_cast<void>(entry);
   }
 }
 
-TEST_F(KeyValueStoreTest, Iteration_OneItem) {
+TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
   char value[] = "123";
 
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span(value))));
@@ -393,7 +348,7 @@ TEST_F(KeyValueStoreTest, Iteration_OneItem) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Iteration_EmptyAfterDeletion) {
+TEST_F(EmptyInitializedKvs, Iteration_EmptyAfterDeletion) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
 
@@ -403,7 +358,7 @@ TEST_F(KeyValueStoreTest, Iteration_EmptyAfterDeletion) {
   }
 }
 
-TEST_F(KeyValueStoreTest, FuzzTest) {
+TEST_F(EmptyInitializedKvs, FuzzTest) {
   if (test_partition.sector_size_bytes() < 4 * 1024 ||
       test_partition.sector_count() < 4) {
     PW_LOG_INFO("Sectors too small, skipping test.");
@@ -457,7 +412,7 @@ TEST_F(KeyValueStoreTest, FuzzTest) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Basic) {
+TEST_F(EmptyInitializedKvs, Basic) {
   // Add some data
   uint8_t value1 = 0xDA;
   ASSERT_EQ(Status::OK,
@@ -637,7 +592,7 @@ TEST(InMemoryKvs, Basic) {
   EXPECT_EQ(kvs.size(), 2u);
 }
 
-TEST_F(KeyValueStoreTest, MaxKeyLength) {
+TEST_F(EmptyInitializedKvs, MaxKeyLength) {
   // Add some data
   char key[16] = "123456789abcdef";  // key length 15 (without \0)
   int value = 1;
@@ -655,7 +610,7 @@ TEST_F(KeyValueStoreTest, MaxKeyLength) {
   EXPECT_EQ(kvs_.Get(key, &test), Status::NOT_FOUND);
 }
 
-TEST_F(KeyValueStoreTest, LargeBuffers) {
+TEST_F(EmptyInitializedKvs, LargeBuffers) {
   // Note this assumes that no other keys larger then key0
   static_assert(sizeof(keys[0]) >= sizeof(keys[1]) &&
                 sizeof(keys[0]) >= sizeof(keys[2]));
@@ -664,10 +619,7 @@ TEST_F(KeyValueStoreTest, LargeBuffers) {
   // Verify the data will fit in this test partition. This checks that all the
   // keys chunks will fit and a header for each sector will fit. It requires 1
   // empty sector also.
-  const size_t kAllChunkSize = kvs_attr.MinPutSize() * keys.size();
-  const size_t kAllSectorHeaderSizes =
-      kvs_attr.SectorHeaderSize() * (test_partition.sector_count() - 1);
-  const size_t kMinSize = kAllChunkSize + kAllSectorHeaderSizes;
+  const size_t kMinSize = kvs_attr.MinPutSize() * keys.size();
   const size_t kAvailSectorSpace =
       test_partition.sector_size_bytes() * (test_partition.sector_count() - 1);
   if (kAvailSectorSpace < kMinSize) {
@@ -708,16 +660,13 @@ TEST_F(KeyValueStoreTest, LargeBuffers) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Enable) {
+TEST_F(EmptyInitializedKvs, Enable) {
   KvsAttributes kvs_attr(std::strlen(keys[0]), buffer.size());
 
   // Verify the data will fit in this test partition. This checks that all the
   // keys chunks will fit and a header for each sector will fit. It requires 1
   // empty sector also.
-  const size_t kAllChunkSize = kvs_attr.MinPutSize() * keys.size();
-  const size_t kAllSectorHeaderSizes =
-      kvs_attr.SectorHeaderSize() * (test_partition.sector_count() - 1);
-  const size_t kMinSize = kAllChunkSize + kAllSectorHeaderSizes;
+  const size_t kMinSize = kvs_attr.MinPutSize() * keys.size();
   const size_t kAvailSectorSpace =
       test_partition.sector_size_bytes() * (test_partition.sector_count() - 1);
   if (kAvailSectorSpace < kMinSize) {
@@ -757,7 +706,7 @@ TEST_F(KeyValueStoreTest, Enable) {
   }
 }
 
-TEST_F(KeyValueStoreTest, MultiSector) {
+TEST_F(EmptyInitializedKvs, MultiSector) {
   // Calculate number of elements to ensure multiple sectors are required.
   uint16_t add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
@@ -795,7 +744,7 @@ TEST_F(KeyValueStoreTest, MultiSector) {
   }
 }
 
-TEST_F(KeyValueStoreTest, RewriteValue) {
+TEST_F(EmptyInitializedKvs, RewriteValue) {
   // Write first value
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
@@ -822,7 +771,7 @@ TEST_F(KeyValueStoreTest, RewriteValue) {
 
 #if 0  // Offset reads are not yet supported
 
-TEST_F(KeyValueStoreTest, OffsetRead) {
+TEST_F(EmptyInitializedKvs, OffsetRead) {
   const char* key = "the_key";
   constexpr size_t kReadSize = 16;  // needs to be a multiple of alignment
   constexpr size_t kTestBufferSize = kReadSize * 10;
@@ -849,7 +798,7 @@ TEST_F(KeyValueStoreTest, OffsetRead) {
 }
 #endif
 
-TEST_F(KeyValueStoreTest, MultipleRewrite) {
+TEST_F(EmptyInitializedKvs, MultipleRewrite) {
   // Calculate number of elements to ensure multiple sectors are required.
   unsigned add_count = (test_partition.sector_size_bytes() / buffer.size()) + 1;
 
@@ -873,13 +822,12 @@ TEST_F(KeyValueStoreTest, MultipleRewrite) {
   }
 }
 
-TEST_F(KeyValueStoreTest, FillSector) {
+TEST_F(EmptyInitializedKvs, FillSector) {
   ASSERT_EQ(std::strlen(keys[0]), 8U);  // Easier for alignment
   ASSERT_EQ(std::strlen(keys[2]), 8U);  // Easier for alignment
   constexpr size_t kTestDataSize = 8;
   KvsAttributes kvs_attr(std::strlen(keys[2]), kTestDataSize);
-  int bytes_remaining =
-      test_partition.sector_size_bytes() - kvs_attr.SectorHeaderSize();
+  int bytes_remaining = test_partition.sector_size_bytes();
   constexpr byte kKey0Pattern = byte{0xBA};
 
   std::memset(
@@ -910,7 +858,7 @@ TEST_F(KeyValueStoreTest, FillSector) {
   }
 }
 
-TEST_F(KeyValueStoreTest, Interleaved) {
+TEST_F(EmptyInitializedKvs, Interleaved) {
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
   uint8_t value;
@@ -927,148 +875,7 @@ TEST_F(KeyValueStoreTest, Interleaved) {
   EXPECT_EQ(kvs_.size(), 1u);
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_BadCrc) {
-  static constexpr uint32_t kTestPattern = 0xBAD0301f;
-  // clang-format off
-  // There is a top and bottom because for each because we don't want to write
-  // the erase 0xFF, especially on encrypted flash.
-  static constexpr auto kKvsTestDataAligned1Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x01, 0x00, 0xFF, 0xFF   // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned1Bottom = ByteArray(
-      0xAA, 0x55, 0xBA, 0xDD, 0x00, 0x00, 0x18, 0x00,  // header (BAD CRC)
-      0x54, 0x65, 0x73, 0x74, 0x4B, 0x65, 0x79, 0x31,  // Key (keys[0])
-      0xDA,                                            // Value
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // Header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA);                         // Value
-  static constexpr auto kKvsTestDataAligned2Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x02, 0x00, 0xFF, 0xFF   // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned2Bottom = ByteArray(
-      0xAA, 0x55, 0xBA, 0xDD, 0x00, 0x00, 0x18, 0x00,  // header (BAD CRC)
-      0x54, 0x65, 0x73, 0x74, 0x4B, 0x65, 0x79, 0x31,  // Key (keys[0])
-      0xDA, 0x00,                                      // Value + padding
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // Header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA                           // Value
-  );
-  static constexpr auto kKvsTestDataAligned8Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x08, 0x00, 0xFF, 0xFF   // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned8Bottom = ByteArray(
-      0xAA, 0x55, 0xBA, 0xDD, 0x00, 0x00, 0x18, 0x00,  // header (BAD CRC)
-      0x54, 0x65, 0x73, 0x74, 0x4B, 0x65, 0x79, 0x31,  // Key (keys[0])
-      0xDA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Value + padding
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32, 0x00, 0x00, 0x00, 0x00,  // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA, 0x00, 0x00, 0x00, 0x00   // Value + padding
-  );
-  static constexpr auto kKvsTestDataAligned16Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x10, 0x00, 0xFF, 0xFF,  // Sector Header
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // Alignment to 16
-  );
-  static constexpr auto kKvsTestDataAligned16Bottom = ByteArray(
-      0xAA, 0x55, 0xBA, 0xDD, 0x00, 0x00, 0x18, 0x00,  // header (BAD CRC)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0x54, 0x65, 0x73, 0x74, 0x4B, 0x65, 0x79, 0x31,  // Key (keys[0])
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0xDA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Value + padding
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // header (GOOD CRC)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0x4B, 0x65, 0x79, 0x32, 0x00, 0x00, 0x00, 0x00,  // Key (keys[1])
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0x1F, 0x30, 0xD0, 0xBA, 0x00, 0x00, 0x00, 0x00,  // Value + padding
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // Alignment to 16
-  );
-  // clang-format on
-
-  // We don't actually care about the size values provided, since we are only
-  // using kvs_attr to get Sector Size
-  KvsAttributes kvs_attr(8, 8);
-  if (test_partition.alignment_bytes() == 1) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned1Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition
-            .Write(kvs_attr.SectorHeaderSize(), kKvsTestDataAligned1Bottom)
-            .status());
-  } else if (test_partition.alignment_bytes() == 2) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned2Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition
-            .Write(kvs_attr.SectorHeaderSize(), kKvsTestDataAligned2Bottom)
-            .status());
-  } else if (test_partition.alignment_bytes() == 8) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned8Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition
-            .Write(kvs_attr.SectorHeaderSize(), kKvsTestDataAligned8Bottom)
-            .status());
-  } else if (test_partition.alignment_bytes() == 16) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned16Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition
-            .Write(kvs_attr.SectorHeaderSize(), kKvsTestDataAligned16Bottom)
-            .status());
-  } else {
-    PW_LOG_ERROR("Test only supports 1, 2, 8 and 16 byte alignments.");
-    ASSERT_EQ(Status::OK, false);
-  }
-
-  EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get(keys[0], span(buffer.data(), 1)).status());
-
-  // Value with correct CRC should still be available.
-  uint32_t test2 = 0;
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &test2));
-  EXPECT_EQ(kTestPattern, test2);
-
-  // Test rewriting over corrupted data.
-  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kTestPattern));
-  test2 = 0;
-  EXPECT_EQ(Status::OK, kvs_.Get(keys[0], &test2));
-  EXPECT_EQ(kTestPattern, test2);
-
-  // Check correct when re-enabled
-  EXPECT_EQ(kvs_.Init(), Status::OK);
-  test2 = 0;
-  EXPECT_EQ(Status::OK, kvs_.Get(keys[0], &test2));
-  EXPECT_EQ(kTestPattern, test2);
-}
-
-TEST_F(KeyValueStoreTest, TestVersion2) {
-  static constexpr uint32_t kTestPattern = 0xBAD0301f;
-  // Since this test is not run on encypted flash, we can write the clean
-  // pending flag for just this test.
-  static constexpr uint8_t kKvsTestDataAligned1[] = {
-      0xCD, 0xAB, 0x02, 0x00, 0x00, 0x00, 0xFF, 0xFF,  // Sector Header
-      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  // Clean pending flag
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // Header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA};                         // Value
-
-  if (test_partition.alignment_bytes() == 1) {
-    // Test only runs on 1 byte alignment partitions
-    test_partition.Erase(0, test_partition.sector_count());
-    test_partition.Write(0, as_bytes(span(kKvsTestDataAligned1)));
-    EXPECT_EQ(Status::OK, kvs_.Init());
-    uint32_t test2 = 0;
-    ASSERT_EQ(Status::OK,
-              kvs_.Get(keys[1], as_writable_bytes(span(&test2, 1))).status());
-    EXPECT_EQ(kTestPattern, test2);
-  }
-}
-
-TEST_F(KeyValueStoreTest, DeleteAndReinitialize) {
+TEST_F(EmptyInitializedKvs, DeleteAndReinitialize) {
   // Write value
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
@@ -1083,7 +890,7 @@ TEST_F(KeyValueStoreTest, DeleteAndReinitialize) {
   ASSERT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
 }
 
-TEST_F(KeyValueStoreTest, TemplatedPutAndGet) {
+TEST_F(EmptyInitializedKvs, TemplatedPutAndGet) {
   // Store a value with the convenience method.
   const uint32_t kValue = 0x12345678;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
@@ -1100,99 +907,10 @@ TEST_F(KeyValueStoreTest, TemplatedPutAndGet) {
   ASSERT_EQ(small_value, kSmallValue);
 }
 
-TEST_F(KeyValueStoreTest, Delete) {
-  static constexpr uint32_t kTestPattern = 0xBAD0301f;
-  // clang-format off
-  static constexpr auto kKvsTestDataAligned1Top = ByteArray(
-      0xCD, 0xAB, 0x02, 0x00, 0x00, 0x00, 0xFF, 0xFF  // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned1Bottom = ByteArray(
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00, // Header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA  // Value
-      );
-  static constexpr auto kKvsTestDataAligned2Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x02, 0x00, 0xFF, 0xFF   // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned2Bottom = ByteArray(
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // Header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32,                          // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA                           // Value
-  );
-  static constexpr auto kKvsTestDataAligned8Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x08, 0x00, 0xFF, 0xFF   // Sector Header
-  );
-  static constexpr auto kKvsTestDataAligned8Bottom = ByteArray(
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // header (GOOD CRC)
-      0x4B, 0x65, 0x79, 0x32, 0x00, 0x00, 0x00, 0x00,  // Key (keys[1])
-      0x1F, 0x30, 0xD0, 0xBA, 0x00, 0x00, 0x00, 0x00   // Value + padding
-  );
-  static constexpr auto kKvsTestDataAligned16Top = ByteArray(
-      0xCD, 0xAB, 0x03, 0x00, 0x10, 0x00, 0xFF, 0xFF,  // Sector Header
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // Alignment to 16
-  );
-  static constexpr auto kKvsTestDataAligned16Bottom = ByteArray(
-      0xAA, 0x55, 0xB5, 0x87, 0x00, 0x00, 0x44, 0x00,  // header (GOOD CRC)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0x4B, 0x65, 0x79, 0x32, 0x00, 0x00, 0x00, 0x00,  // Key (keys[1])
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // Alignment to 16
-      0x1F, 0x30, 0xD0, 0xBA, 0x00, 0x00, 0x00, 0x00,  // Value + padding
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   // Alignment to 16
-  );
-  // clang-format on
-
-  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
-  // We don't actually care about the size values provided, since we are only
-  // using kvs_attr to get Sector Size
-  KvsAttributes kvs_attr(8, 8);
-  FlashPartition::Address address = kvs_attr.SectorHeaderSize();
-  if (test_partition.alignment_bytes() == 1) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned1Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition.Write(address, kKvsTestDataAligned1Bottom).status());
-    address += sizeof(kKvsTestDataAligned1Bottom);
-  } else if (test_partition.alignment_bytes() == 2) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned2Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition.Write(address, kKvsTestDataAligned2Bottom).status());
-    address += sizeof(kKvsTestDataAligned2Bottom);
-  } else if (test_partition.alignment_bytes() == 8) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned8Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition.Write(address, kKvsTestDataAligned8Bottom).status());
-    address += sizeof(kKvsTestDataAligned8Bottom);
-  } else if (test_partition.alignment_bytes() == 16) {
-    ASSERT_EQ(Status::OK,
-              test_partition.Write(0, kKvsTestDataAligned16Top).status());
-    ASSERT_EQ(
-        Status::OK,
-        test_partition.Write(address, kKvsTestDataAligned16Bottom).status());
-    address += sizeof(kKvsTestDataAligned16Bottom);
-  } else {
-    PW_LOG_ERROR("Test only supports 1, 2, 8 and 16 byte alignments.");
-    ASSERT_EQ(true, false);
-  }
-
-  // Put in same key/value pair
-  ASSERT_EQ(Status::OK, kvs_.Put(keys[1], kTestPattern));
-
-  bool is_erased = false;
-  ASSERT_EQ(Status::OK,
-            test_partition.IsRegionErased(
-                address, test_partition.alignment_bytes(), &is_erased));
-  EXPECT_EQ(is_erased, true);
-}
-
 // This test is derived from bug that was discovered. Testing this corner case
 // relies on creating a new key-value just under the size that is left over in
 // the sector.
-TEST_F(KeyValueStoreTest, DISABLED_FillSector2) {
+TEST_F(EmptyInitializedKvs, FillSector2) {
   if (test_partition.sector_count() < 3) {
     PW_LOG_INFO("Not enough sectors, skipping test.");
     return;  // need at least 3 sectors
@@ -1249,7 +967,7 @@ TEST_F(KeyValueStoreTest, DISABLED_FillSector2) {
   }
 }
 
-TEST_F(KeyValueStoreTest, ValueSize_Positive) {
+TEST_F(EmptyInitializedKvs, ValueSize_Positive) {
   constexpr auto kData = ByteArray('h', 'i', '!');
   ASSERT_EQ(Status::OK, kvs_.Put("TheKey", kData));
 
@@ -1259,7 +977,7 @@ TEST_F(KeyValueStoreTest, ValueSize_Positive) {
   EXPECT_EQ(kData.size(), result.size());
 }
 
-TEST_F(KeyValueStoreTest, ValueSize_Zero) {
+TEST_F(EmptyInitializedKvs, ValueSize_Zero) {
   ASSERT_EQ(Status::OK, kvs_.Put("TheKey", as_bytes(span("123", 3))));
   auto result = kvs_.ValueSize("TheKey");
 
@@ -1267,41 +985,55 @@ TEST_F(KeyValueStoreTest, ValueSize_Zero) {
   EXPECT_EQ(3u, result.size());
 }
 
-TEST_F(KeyValueStoreTest, ValueSize_InvalidKey) {
+TEST_F(EmptyInitializedKvs, ValueSize_InvalidKey) {
   EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.ValueSize("").status());
 }
 
-TEST_F(KeyValueStoreTest, ValueSize_MissingKey) {
+TEST_F(EmptyInitializedKvs, ValueSize_MissingKey) {
   EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("Not in there").status());
 }
 
-TEST_F(KeyValueStoreTest, ValueSize_DeletedKey) {
+TEST_F(EmptyInitializedKvs, ValueSize_DeletedKey) {
   ASSERT_EQ(Status::OK, kvs_.Put("TheKey", as_bytes(span("123", 3))));
   ASSERT_EQ(Status::OK, kvs_.Delete("TheKey"));
 
   EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("TheKey").status());
 }
 
-#if 0  // TODO: not CanFitEntry function yet
-TEST_F(KeyValueStoreTest, DISABLED_CanFitEntryTests) {
-  // Get exactly the number of bytes that can fit in the space remaining for
-  // a large value, accounting for alignment.
-  constexpr uint16_t kTestKeySize = 2;
-  size_t space_remaining =
-      test_partition.sector_size_bytes()          //
-      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Sector Header
-      - RoundUpForAlignment(sizeof(EntryHeader))  // Cleaning Header
-      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Chunk Header
-      - RoundUpForAlignment(kTestKeySize);
-  space_remaining -= test_partition.alignment_bytes() / 2;
-  space_remaining = RoundUpForAlignment(space_remaining);
+#if USE_MEMORY_BUFFER
 
-  EXPECT_TRUE(kvs_.CanFitEntry(kTestKeySize, space_remaining));
-  EXPECT_FALSE(kvs_.CanFitEntry(kTestKeySize, space_remaining + 1));
+class LargeEmptyInitializedKvs : public ::testing::Test {
+ protected:
+  LargeEmptyInitializedKvs() : kvs_(&large_test_partition, format) {
+    ASSERT_EQ(
+        Status::OK,
+        large_test_partition.Erase(0, large_test_partition.sector_count()));
+    ASSERT_EQ(Status::OK, kvs_.Init());
+  }
+
+  KeyValueStore kvs_;
+};
+
+TEST_F(LargeEmptyInitializedKvs, Basic) {
+  const uint8_t kValue1 = 0xDA;
+  const uint8_t kValue2 = 0x12;
+  uint8_t value;
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue1));
+  EXPECT_EQ(kvs_.size(), 1u);
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
+  EXPECT_EQ(kvs_.Get(keys[0], &value), Status::NOT_FOUND);
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[1], kValue1));
+  ASSERT_EQ(Status::OK, kvs_.Put(keys[2], kValue2));
+  ASSERT_EQ(Status::OK, kvs_.Delete(keys[1]));
+  EXPECT_EQ(Status::OK, kvs_.Get(keys[2], &value));
+  EXPECT_EQ(kValue2, value);
+  ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NOT_FOUND);
+  EXPECT_EQ(kvs_.size(), 1u);
 }
-#endif
 
-TEST_F(KeyValueStoreTest, DifferentValueSameCrc16) {
+#endif  // USE_MEMORY_BUFFER
+
+TEST_F(EmptyInitializedKvs, DifferentValueSameCrc16) {
   const char kKey[] = "k";
   // With the key and our CRC16 algorithm these both have CRC of 0x82AE
   // Given they are the same size and same key, the KVS will need to check
@@ -1324,7 +1056,7 @@ TEST_F(KeyValueStoreTest, DifferentValueSameCrc16) {
   ASSERT_EQ(std::memcmp(value, kValue2, sizeof(value)), 0);
 }
 
-TEST_F(KeyValueStoreTest, CallingEraseTwice) {
+TEST_F(EmptyInitializedKvs, CallingEraseTwice) {
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
   ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
@@ -1333,6 +1065,25 @@ TEST_F(KeyValueStoreTest, CallingEraseTwice) {
   // Verify the flash has not changed
   EXPECT_EQ(crc, CalcTestPartitionCrc());
 }
+
+#if 0  // TODO: not CanFitEntry function yet
+TEST_F(EmptyInitializedKvs, DISABLED_CanFitEntryTests) {
+  // Get exactly the number of bytes that can fit in the space remaining for
+  // a large value, accounting for alignment.
+  constexpr uint16_t kTestKeySize = 2;
+  size_t space_remaining =
+      test_partition.sector_size_bytes()          //
+      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Sector Header
+      - RoundUpForAlignment(sizeof(EntryHeader))  // Cleaning Header
+      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Chunk Header
+      - RoundUpForAlignment(kTestKeySize);
+  space_remaining -= test_partition.alignment_bytes() / 2;
+  space_remaining = RoundUpForAlignment(space_remaining);
+
+  EXPECT_TRUE(kvs_.CanFitEntry(kTestKeySize, space_remaining));
+  EXPECT_FALSE(kvs_.CanFitEntry(kTestKeySize, space_remaining + 1));
+}
+#endif
 
 void __attribute__((noinline)) StackHeavyPartialClean() {
 #if 0  // TODO: No FlashSubPartition
@@ -1413,7 +1164,7 @@ void __attribute__((noinline)) StackHeavyPartialClean() {
 // TODO: This doesn't do anything, and would be unreliable anyway.
 size_t CurrentTaskStackFree() { return -1; }
 
-TEST_F(KeyValueStoreTest, DISABLED_PartialClean) {
+TEST_F(EmptyInitializedKvs, DISABLED_PartialClean) {
   if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 2) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
@@ -1463,7 +1214,7 @@ void __attribute__((noinline)) StackHeavyCleanAll() {
 #endif
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_CleanAll) {
+TEST_F(EmptyInitializedKvs, DISABLED_CleanAll) {
   if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 1) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
@@ -1547,7 +1298,7 @@ void __attribute__((noinline)) StackHeavyPartialCleanLargeCounts() {
 #endif
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_PartialCleanLargeCounts) {
+TEST_F(EmptyInitializedKvs, DISABLED_PartialCleanLargeCounts) {
   if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 2) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
@@ -1591,7 +1342,7 @@ void __attribute__((noinline)) StackHeavyRecoverNoFreeSectors() {
 #endif
 }
 
-TEST_F(KeyValueStoreTest, RecoverNoFreeSectors) {
+TEST_F(EmptyInitializedKvs, RecoverNoFreeSectors) {
   if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 3) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
@@ -1647,62 +1398,12 @@ void __attribute__((noinline)) StackHeavyCleanOneSector() {
 #endif
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_CleanOneSector) {
+TEST_F(EmptyInitializedKvs, DISABLED_CleanOneSector) {
   if (CurrentTaskStackFree() < sizeof(KeyValueStore)) {
     PW_LOG_ERROR("Not enough stack for test, skipping");
     return;
   }
   StackHeavyCleanOneSector();
-}
-
-#if USE_MEMORY_BUFFER
-
-TEST_F(KeyValueStoreTest, DISABLED_LargePartition) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore)) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  KeyValueStore large_kvs(&large_test_partition, format);
-
-  const uint8_t kValue1 = 0xDA;
-  const uint8_t kValue2 = 0x12;
-  uint8_t value;
-  ASSERT_EQ(Status::OK, large_kvs.Put(keys[0], kValue1));
-  EXPECT_EQ(large_kvs.size(), 1u);
-  ASSERT_EQ(Status::OK, large_kvs.Delete(keys[0]));
-  EXPECT_EQ(large_kvs.Get(keys[0], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, large_kvs.Put(keys[1], kValue1));
-  ASSERT_EQ(Status::OK, large_kvs.Put(keys[2], kValue2));
-  ASSERT_EQ(Status::OK, large_kvs.Delete(keys[1]));
-  EXPECT_EQ(Status::OK, large_kvs.Get(keys[2], &value));
-  EXPECT_EQ(kValue2, value);
-  ASSERT_EQ(large_kvs.Get(keys[1], &value), Status::NOT_FOUND);
-  EXPECT_EQ(large_kvs.size(), 1u);
-}
-#endif  // USE_MEMORY_BUFFER
-
-TEST(KeyValueStoreEntryHeader, KeyValueSizes) {
-  EntryHeader header;
-
-  header.set_key_length(9u);
-  EXPECT_EQ(header.key_length(), 9u);
-
-  header.set_value_length(11u);
-  EXPECT_EQ(header.value_length(), 11u);
-
-  header.set_key_length(6u);
-  header.set_value_length(100u);
-  EXPECT_EQ(header.key_length(), 6u);
-  EXPECT_EQ(header.value_length(), 100u);
-
-  header.set_value_length(10u);
-  EXPECT_EQ(header.key_length(), 6u);
-  EXPECT_EQ(header.value_length(), 10u);
-
-  header.set_key_length(3u);
-  header.set_value_length(4000u);
-  EXPECT_EQ(header.key_length(), 3u);
-  EXPECT_EQ(header.value_length(), 4000u);
 }
 
 }  // namespace pw::kvs
