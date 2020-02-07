@@ -478,7 +478,7 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, key_descriptor, key, value, new_state));
 
-  old_sector.valid_bytes -= original_entry.size();
+  old_sector.RemoveValidBytes(original_entry.size());
   return Status::OK;
 }
 
@@ -547,9 +547,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
 
   // Do the valid bytes accounting for the sector the entry was relocated out
   // of.
-  // TODO: Move this accounting to a method in SectorDescriptor, with a
-  // safety/correctness check that valid_bytes >= size.
-  old_sector.valid_bytes -= header.size();
+  old_sector.RemoveValidBytes(header.size());
 
   return Status::OK;
 }
@@ -762,7 +760,7 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   key_descriptor->state = new_state;
 
   sector->valid_bytes += written;
-  sector->tail_free_bytes -= written;
+  sector->RemoveFreeBytes(written);
   return Status::OK;
 }
 

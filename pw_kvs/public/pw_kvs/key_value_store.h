@@ -246,6 +246,16 @@ class KeyValueStore {
     bool HasSpace(size_t required_space) const {
       return (tail_free_bytes >= required_space);
     }
+
+    void RemoveFreeBytes(size_t size) {
+      // TODO: add safety check for tail_free_bytes > size.
+      tail_free_bytes -= size;
+    }
+
+    void RemoveValidBytes(size_t size) {
+      // TODO: add safety check for valid_bytes > size.
+      valid_bytes -= size;
+    }
   };
 
   static uint32_t HashKey(std::string_view string);
