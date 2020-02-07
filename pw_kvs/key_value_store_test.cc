@@ -380,7 +380,7 @@ TEST_F(KeyValueStoreTest, Iteration_EmptyAfterDeletion) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_FuzzTest) {
+TEST_F(KeyValueStoreTest, FuzzTest) {
   if (test_partition.sector_size_bytes() < 4 * 1024 ||
       test_partition.sector_count() < 4) {
     PW_LOG_INFO("Sectors too small, skipping test.");

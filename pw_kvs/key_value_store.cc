@@ -517,6 +517,8 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   };
   TempEntry* entry = reinterpret_cast<TempEntry*>(working_buffer_.data());
 
+  DBG("Relocating entry");  // TODO: add entry info to the log statement.
+
   // Read the entry to be relocated. Store the header in a local variable and
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
@@ -541,7 +543,15 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
   TRY(FindSectorWithSpace(&new_sector, header.size(), &old_sector, true));
-  return AppendEntry(new_sector, &key_descriptor, key, as_bytes(value));
+  TRY(AppendEntry(new_sector, &key_descriptor, key, as_bytes(value)));
+
+  // Do the valid bytes accounting for the sector the entry was relocated out
+  // of.
+  // TODO: Move this accounting to a method in SectorDescriptor, with a
+  // safety/correctness check that valid_bytes >= size.
+  old_sector.valid_bytes -= header.size();
+
+  return Status::OK;
 }
 
 // Find either an existing sector with enough space that is not the sector to
