@@ -285,8 +285,9 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
 
   KeyDescriptor* key_descriptor;
   if (FindKeyDescriptor(key, &key_descriptor).ok()) {
-    DBG("Writing over existing entry for key 0x%08" PRIx32,
-        key_descriptor->key_hash);
+    DBG("Writing over existing entry for key 0x%08" PRIx32 " in sector %zu",
+        key_descriptor->key_hash,
+        SectorIndex(SectorFromAddress(key_descriptor->address)));
     return WriteEntryForExistingKey(
         key_descriptor, KeyDescriptor::kValid, key, value);
   }
@@ -304,7 +305,9 @@ Status KeyValueStore::Delete(string_view key) {
     return Status::NOT_FOUND;
   }
 
-  DBG("Writing tombstone for key 0x%08" PRIx32, key_descriptor->key_hash);
+  DBG("Writing tombstone for existing key 0x%08" PRIx32 " in sector %zu",
+      key_descriptor->key_hash,
+      SectorIndex(SectorFromAddress(key_descriptor->address)));
   return WriteEntryForExistingKey(
       key_descriptor, KeyDescriptor::kDeleted, key, {});
 }
@@ -469,16 +472,25 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
   // Find the original entry and sector to update the sector's valid_bytes.
   EntryHeader original_entry;
   TRY(ReadEntryHeader(key_descriptor->address, &original_entry));
-  SectorDescriptor& old_sector = SectorFromAddress(key_descriptor->address);
+  SectorDescriptor* old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(
       &sector, EntryHeader::size(partition_.alignment_bytes(), key, value)));
-
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
+
+  if (old_sector != SectorFromAddress(key_descriptor->address)) {
+    DBG("Sector for old entry (size %zu) was garbage collected. Old entry "
+        "relocated to sector %zu",
+        original_entry.size(),
+        SectorIndex(SectorFromAddress(key_descriptor->address)));
+
+    old_sector = SectorFromAddress(key_descriptor->address);
+  }
+
   TRY(AppendEntry(sector, key_descriptor, key, value, new_state));
 
-  old_sector.RemoveValidBytes(original_entry.size());
+  old_sector->RemoveValidBytes(original_entry.size());
   return Status::OK;
 }
 
@@ -538,16 +550,16 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   TRY(header.VerifyChecksum(
       entry_header_format_.checksum, key, as_bytes(value)));
 
-  SectorDescriptor& old_sector = SectorFromAddress(key_descriptor.address);
+  SectorDescriptor* old_sector = SectorFromAddress(key_descriptor.address);
 
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
-  TRY(FindSectorWithSpace(&new_sector, header.size(), &old_sector, true));
+  TRY(FindSectorWithSpace(&new_sector, header.size(), old_sector, true));
   TRY(AppendEntry(new_sector, &key_descriptor, key, as_bytes(value)));
 
   // Do the valid bytes accounting for the sector the entry was relocated out
   // of.
-  old_sector.RemoveValidBytes(header.size());
+  old_sector->RemoveValidBytes(header.size());
 
   return Status::OK;
 }
@@ -683,6 +695,7 @@ Status KeyValueStore::GarbageCollectOneSector() {
 
   // Step 1: Find the sector to garbage collect
   SectorDescriptor* sector_to_gc = FindSectorToGarbageCollect();
+  LogSectors();
 
   if (sector_to_gc == nullptr) {
     return Status::RESOURCE_EXHAUSTED;
@@ -743,7 +756,7 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
       unsigned(header.key_version()));
 
   Address address = NextWritableAddress(sector);
-  DBG("Appending to address: %zx", size_t(address));
+  DBG("Appending to address: %#zx", size_t(address));
 
   // Handles writing multiple concatenated buffers, while breaking up the writes
   // into alignment-sized blocks.
@@ -850,6 +863,18 @@ void KeyValueStore::LogSectors(void) {
         RecoverableBytes(sector),
         sector.tail_free_bytes);
   }
+}
+
+void KeyValueStore::SectorDescriptor::RemoveValidBytes(size_t size) {
+  // TODO: add safety check for valid_bytes > size.
+  if (size > valid_bytes) {
+    CRT("!!!!!!!!!!!!!!!");
+    CRT("Remove too many valid bytes!!! remove %zu, only have %hu",
+        size,
+        valid_bytes);
+    valid_bytes = size;
+  }
+  valid_bytes -= size;
 }
 
 }  // namespace pw::kvs

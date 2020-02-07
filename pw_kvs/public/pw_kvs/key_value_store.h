@@ -252,10 +252,7 @@ class KeyValueStore {
       tail_free_bytes -= size;
     }
 
-    void RemoveValidBytes(size_t size) {
-      // TODO: add safety check for valid_bytes > size.
-      valid_bytes -= size;
-    }
+    void RemoveValidBytes(size_t size);
   };
 
   static uint32_t HashKey(std::string_view string);
@@ -350,11 +347,11 @@ class KeyValueStore {
     return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
-  SectorDescriptor& SectorFromAddress(Address address) {
+  SectorDescriptor* SectorFromAddress(Address address) {
     const size_t index = address / partition_.sector_size_bytes();
     // TODO: Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);
-    return sector_map_[index];
+    return &sector_map_[index];
   }
 
   void LogSectors(void);
