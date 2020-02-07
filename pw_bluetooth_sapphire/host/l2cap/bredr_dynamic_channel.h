@@ -279,6 +279,13 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Sections 5 and 7.1.1).
   ChannelConfiguration remote_config_;
 
+  // Each peer configuration request may be split into multiple requests with the continuation flag
+  // (C) set to 1. This variable accumulates the options received in each request until C is 0. This
+  // is not simply done with |remote_config_| because the previous value of |remote_config_| may be
+  // accessed during this process, or the final request may be rejected. This variable is nullopt
+  // when no sequence of continuation requests is being processed.
+  std::optional<ChannelConfiguration> remote_config_accum_;
+
   // Contains options configured by local configuration requests (Core Spec v5.1, Vol 3, Part A,
   // Sections 5 and 7.1.2).
   ChannelConfiguration local_config_;

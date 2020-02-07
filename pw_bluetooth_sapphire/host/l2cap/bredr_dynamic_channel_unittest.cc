@@ -273,13 +273,13 @@ auto MakeConfigReqWithMtuAndRfc(ChannelId dest_cid, uint16_t mtu, ChannelMode mo
       LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
 }
 
-auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU) {
+auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU, uint16_t flags = 0x0000) {
   return StaticByteBuffer(
       // Destination CID
       LowerBits(dest_cid), UpperBits(dest_cid),
 
       // Flags
-      0x00, 0x00,
+      LowerBits(flags), UpperBits(flags),
 
       // MTU option (Type, Length, MTU value)
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu));
@@ -318,17 +318,21 @@ const ByteBuffer& kInboundConfigReqWithERTM = CreateStaticByteBuffer(
 // Configuration Responses
 
 auto MakeEmptyConfigRsp(ChannelId src_id,
-                        ConfigurationResult result = ConfigurationResult::kSuccess) {
+                        ConfigurationResult result = ConfigurationResult::kSuccess,
+                        uint16_t flags = 0x0000) {
   return CreateStaticByteBuffer(
       // Source CID
       LowerBits(src_id), UpperBits(src_id),
 
       // Flags
-      0x00, 0x00,
+      LowerBits(flags), UpperBits(flags),
 
       // Result
       LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)));
 }
+
+const ByteBuffer& kOutboundEmptyContinuationConfigRsp =
+    MakeEmptyConfigRsp(kRemoteCId, ConfigurationResult::kSuccess, kConfigurationContinuation);
 
 const ByteBuffer& kInboundEmptyConfigRsp = MakeEmptyConfigRsp(kLocalCId);
 
@@ -341,13 +345,14 @@ const ByteBuffer& kInboundEmptyPendingConfigRsp =
     MakeEmptyConfigRsp(kLocalCId, ConfigurationResult::kPending);
 
 auto MakeConfigRspWithMtu(ChannelId source_cid, uint16_t mtu,
-                          ConfigurationResult result = ConfigurationResult::kSuccess) {
+                          ConfigurationResult result = ConfigurationResult::kSuccess,
+                          uint16_t flags = 0x0000) {
   return CreateStaticByteBuffer(
       // Source CID
       LowerBits(source_cid), UpperBits(source_cid),
 
       // Flags
-      0x00, 0x00,
+      LowerBits(flags), UpperBits(flags),
 
       // Result
       LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)),
@@ -404,7 +409,7 @@ auto MakeConfigRspWithMtuAndRfc(ChannelId source_cid, ConfigurationResult result
       // MTU option (Type, Length, MTU value)
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
 
-      // Retransmission & Flow Control option (Type, Length = 9, mode, unused fields)
+      // Retransmission & Flow Control option (Type, Length = 9, mode, ERTM fields)
       0x04, 0x09, static_cast<uint8_t>(mode), tx_window, max_transmit,
       LowerBits(retransmission_timeout), UpperBits(retransmission_timeout),
       LowerBits(monitor_timeout), UpperBits(monitor_timeout), LowerBits(mps), UpperBits(mps));
@@ -2045,6 +2050,101 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ErtmChannelReportsChannelInfoWithErtmAndSd
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq) {
+  constexpr uint16_t kTxMtu = kMinACLMTU;
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  const auto kInboundConfigReq0 =
+      MakeConfigReqWithMtu(kLocalCId, kTxMtu, kConfigurationContinuation);
+  const auto kOutboundConfigRsp1 = MakeConfigRspWithMtuAndRfc(
+      kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kTxMtu, 1, 2,
+      2000, 12000, 0x0807);
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(kTxMtu, chan->info().max_tx_sdu_size);
+      EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
+    }
+    open_cb_count++;
+  };
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, open_cb);
+  RunLoopUntilIdle();
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq0,
+                       kOutboundEmptyContinuationConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundConfigRsp1);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, open_cb_count);
+}
+
+// The unknown options from both configuration requests should be included when responding
+// with the "unkown options" result.
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       Receive2ConfigReqsWithContinuationFlagInFirstReqAndUnknownOptionInBothReqs) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  constexpr uint8_t kUnknownOption0Type = 0x70;
+  constexpr uint8_t kUnknownOption1Type = 0x71;
+  const auto kInboundConfigReq0 = StaticByteBuffer(
+      // Destination CID
+      LowerBits(kLocalCId), UpperBits(kLocalCId),
+      // Flags (C = 1)
+      0x01, 0x00,
+      // Unknown Option
+      kUnknownOption0Type, 0x01, 0x00);
+  const auto kInboundConfigReq1 = StaticByteBuffer(
+      // Destination CID
+      LowerBits(kLocalCId), UpperBits(kLocalCId),
+      // Flags (C = 0)
+      0x00, 0x00,
+      // Unknown Option
+      kUnknownOption1Type, 0x01, 0x00);
+
+  const auto kOutboundUnknownOptionsConfigRsp = StaticByteBuffer(
+      // Source CID
+      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+      // Flags (C = 0)
+      0x00, 0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      UpperBits(static_cast<uint16_t>(ConfigurationResult::kUnknownOptions)),
+      // Unknown Options
+      kUnknownOption0Type, 0x01, 0x00, kUnknownOption1Type, 0x01, 0x00);
+
+  size_t open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) { open_cb_count++; };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, open_cb);
+  RunLoopUntilIdle();
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq0,
+                       kOutboundEmptyContinuationConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
+
+  sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq1, kOutboundUnknownOptionsConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, open_cb_count);
 }
 
 }  // namespace

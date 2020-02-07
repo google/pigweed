@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <lib/fit/function.h>
 
+#include <iterator>
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -275,7 +276,7 @@ std::string ChannelConfiguration::ToString() const {
   return str;
 }
 
-void ChannelConfiguration::Merge(const ChannelConfiguration& other) {
+void ChannelConfiguration::Merge(ChannelConfiguration other) {
   if (other.mtu_option_) {
     mtu_option_ = other.mtu_option_;
   }
@@ -287,6 +288,10 @@ void ChannelConfiguration::Merge(const ChannelConfiguration& other) {
   if (other.flush_timeout_option_) {
     flush_timeout_option_ = other.flush_timeout_option_;
   }
+
+  unknown_options_.insert(unknown_options_.end(),
+                          std::make_move_iterator(other.unknown_options_.begin()),
+                          std::make_move_iterator(other.unknown_options_.end()));
 }
 
 void ChannelConfiguration::OnReadUnknownOption(UnknownOption option) {

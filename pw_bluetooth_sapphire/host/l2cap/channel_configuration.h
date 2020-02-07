@@ -206,8 +206,6 @@ class ChannelConfiguration final {
     // refused).
     bool IsHint() const;
 
-    // uint8_t payload_length() const { return payload_length_; }
-
     const ByteBuffer& payload() const { return payload_; }
 
     // ConfigurationOptionInterface overrides
@@ -229,8 +227,9 @@ class ChannelConfiguration final {
 
   // Update this configuration based on other configuration's options. Used for accumulating
   // configuration options sent in a series of packets. Options that are already set in this
-  // configuration will be overwritten if they are set in |other|. Does not merge unknown options.
-  void Merge(const ChannelConfiguration& other);
+  // configuration will be overwritten if they are set in |other|. Unknown options will be appended
+  // to the unknown options in this configuration.
+  void Merge(ChannelConfiguration other);
 
   // Read encoded list of configuration options from |buffer| and update options accordingly.
   // Returns true if all options decoded successfully.

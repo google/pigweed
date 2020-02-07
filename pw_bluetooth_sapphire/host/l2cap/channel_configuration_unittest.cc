@@ -267,6 +267,37 @@ TEST_F(L2CAP_ChannelConfigurationTest, MergingConfigurations) {
   EXPECT_EQ(kTimeout, config1.flush_timeout_option()->flush_timeout());
 }
 
+TEST_F(L2CAP_ChannelConfigurationTest, MergingUnknownOptionsAppendsThem) {
+  const auto kUnknownOption0 = StaticByteBuffer(
+      // code, length, payload
+      0x70, 0x01, 0x01);
+  const auto kUnknownOption1 = StaticByteBuffer(
+      // code, length, payload
+      0x71, 0x01, 0x01);
+  ChannelConfiguration config0;
+  EXPECT_TRUE(config0.ReadOptions(kUnknownOption0));
+  EXPECT_EQ(1u, config0.unknown_options().size());
+
+  ChannelConfiguration config1;
+  EXPECT_TRUE(config1.ReadOptions(kUnknownOption1));
+  EXPECT_EQ(1u, config1.unknown_options().size());
+
+  config0.Merge(std::move(config1));
+  EXPECT_EQ(2u, config0.unknown_options().size());
+  EXPECT_EQ(kUnknownOption0.data()[0], static_cast<uint8_t>(config0.unknown_options()[0].type()));
+  EXPECT_EQ(kUnknownOption1.data()[0], static_cast<uint8_t>(config0.unknown_options()[1].type()));
+
+  ChannelConfiguration config2;
+  EXPECT_TRUE(config2.ReadOptions(kUnknownOption0));
+  EXPECT_EQ(1u, config2.unknown_options().size());
+
+  // Merge duplicate of kUnknownOption0. Duplicates should be appended.
+  config0.Merge(std::move(config2));
+  EXPECT_EQ(3u, config0.unknown_options().size());
+  EXPECT_EQ(kUnknownOption0.data()[0], static_cast<uint8_t>(config0.unknown_options()[0].type()));
+  EXPECT_EQ(kUnknownOption0.data()[0], static_cast<uint8_t>(config0.unknown_options()[2].type()));
+}
+
 TEST_F(L2CAP_ChannelConfigurationTest, ReadOptions) {
   const auto kOptionBuffer = CreateStaticByteBuffer(
       // MTU Option

@@ -334,8 +334,9 @@ ChannelInfo BrEdrDynamicChannel::info() const {
 
 void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
                                         BrEdrCommandHandler::ConfigurationResponder* responder) {
-  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request (options: %s)", local_cid(),
-         bt_str(config));
+  bool continuation = flags & kConfigurationContinuation;
+  bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Got Configuration Request (C: %d, options: %s)",
+         local_cid(), continuation, bt_str(config));
 
   if (!IsConnected()) {
     bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Unexpected Configuration Request, state %x",
@@ -343,14 +344,32 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
     return;
   }
 
-  // Set default config MTU option if not already in request.
-  if (!config.mtu_option()) {
-    config.set_mtu_option(ChannelConfiguration::MtuOption(kDefaultMTU));
+  // Always add options to accumulator, even if C = 0, for later code simplicity.
+  if (remote_config_accum_.has_value()) {
+    remote_config_accum_->Merge(std::move(config));
+  } else {
+    // TODO(40053): if channel is being re-configured, merge with existing configuration
+    remote_config_accum_ = std::move(config);
   }
 
-  const auto req_mode = config.retransmission_flow_control_option()
-                            ? config.retransmission_flow_control_option()->mode()
+  if (continuation) {
+    // keep responding with success until all options have been received (C flag is 0)
+    responder->Send(remote_cid(), kConfigurationContinuation, ConfigurationResult::kSuccess,
+                    ChannelConfiguration::ConfigurationOptions());
+    bt_log(SPEW, "l2cap-bredr", "Channel %#.4x: Sent Configuration Response (C: 1)", local_cid());
+    return;
+  }
+
+  auto req_config = std::exchange(remote_config_accum_, std::nullopt).value();
+
+  const auto req_mode = req_config.retransmission_flow_control_option()
+                            ? req_config.retransmission_flow_control_option()->mode()
                             : ChannelMode::kBasic;
+
+  // Set default config options if not already in request.
+  if (!req_config.mtu_option()) {
+    req_config.set_mtu_option(ChannelConfiguration::MtuOption(kDefaultMTU));
+  }
 
   if (state_ & kRemoteConfigReceived) {
     // Disconnect if second configuraton request does not contain desired mode.
@@ -377,10 +396,10 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
 
   // Reject request if it contains unknown options.
   // See Core Spec v5.1, Volume 3, Section 4.5: Configuration Options
-  if (!config.unknown_options().empty()) {
+  if (!req_config.unknown_options().empty()) {
     ChannelConfiguration::ConfigurationOptions unknown_options;
     std::string unknown_string;
-    for (auto& option : config.unknown_options()) {
+    for (auto& option : req_config.unknown_options()) {
       unknown_options.push_back(std::make_unique<ChannelConfiguration::UnknownOption>(option));
       unknown_string += std::string(" ") + option.ToString();
     }
@@ -394,7 +413,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
     return;
   }
 
-  auto unacceptable_config = CheckForUnacceptableConfigReqOptions(config);
+  auto unacceptable_config = CheckForUnacceptableConfigReqOptions(req_config);
   auto unacceptable_options = unacceptable_config.Options();
   if (!unacceptable_options.empty()) {
     responder->Send(remote_cid(), 0x0000, ConfigurationResult::kUnacceptableParameters,
@@ -413,17 +432,17 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   // Successful response should include actual MTU local device will use. This must be min(received
   // MTU, local outgoing MTU capability). Currently, we accept any MTU.
   // TODO(41376): determine the upper bound of what we are actually capable of sending
-  uint16_t actual_mtu = config.mtu_option() ? config.mtu_option()->mtu() : kDefaultMTU;
+  uint16_t actual_mtu = req_config.mtu_option()->mtu();
   response_config.set_mtu_option(ChannelConfiguration::MtuOption(actual_mtu));
-  config.set_mtu_option(response_config.mtu_option());
+  req_config.set_mtu_option(response_config.mtu_option());
 
   if (req_mode == ChannelMode::kEnhancedRetransmission) {
     auto outbound_rfc_option =
-        WriteRfcOutboundTimeouts(config.retransmission_flow_control_option().value());
+        WriteRfcOutboundTimeouts(req_config.retransmission_flow_control_option().value());
     response_config.set_retransmission_flow_control_option(std::move(outbound_rfc_option));
   } else {
     response_config.set_retransmission_flow_control_option(
-        config.retransmission_flow_control_option());
+        req_config.retransmission_flow_control_option());
   }
 
   responder->Send(remote_cid(), 0x0000, ConfigurationResult::kSuccess, response_config.Options());
@@ -432,7 +451,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
          local_cid(), bt_str(response_config));
 
   // Save accepted options.
-  remote_config_.Merge(config);
+  remote_config_.Merge(std::move(req_config));
 
   if (!remote_config_.retransmission_flow_control_option()) {
     remote_config_.set_retransmission_flow_control_option(
