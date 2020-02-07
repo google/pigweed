@@ -308,6 +308,29 @@ TEST_F(KeyValueStoreTest, Put_SameKeyDifferentValuesRepeatedly) {
   }
 }
 
+TEST_F(KeyValueStoreTest, DISABLED_Put_VaryingKeysAndValues) {
+  char value[] =
+      "abcdefghijklmnopqrstuvwxyz"  // 26
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  // 52
+      "34567890123";                // 64 (with final \0);
+  static_assert(sizeof(value) == 64);
+
+  for (int i = 0; i < 100; ++i) {
+    for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
+      for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
+        const std::string_view key(value, key_size);
+        auto status = kvs_.Put(key, as_bytes(span(value, value_size)));
+        if (!status.ok()) {
+          PW_LOG_ERROR("Failed for %s", MakeString<64>(key).c_str());
+          kvs_.LogDebugInfo();
+        }
+
+        ASSERT_EQ(Status::OK, status);
+      }
+    }
+  }
+}
+
 TEST_F(KeyValueStoreTest, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
