@@ -64,14 +64,14 @@ group("pw_modules") {
   ]
 
   if (host_os != "win") {
-    # TODO(frolv): Remove this when new KVS is ready.
     deps += [
+      # TODO(frolv): Remove these two when new KVS is ready.
       "$dir_pw_kvs",
       "$dir_pw_minimal_cpp_stdlib",
-    ]
 
-    # TODO(pwbug/111): Remove this when building successfully on Windows.
-    deps += [ "$dir_pw_tokenizer" ]
+      # TODO(pwbug/111): Remove this when building successfully on Windows.
+      "$dir_pw_tokenizer",
+    ]
   }
 }
 
@@ -97,13 +97,13 @@ pw_test_group("pw_module_tests") {
   }
 
   if (host_os != "win") {
-    # TODO(frolv): Remove this when new KVS is ready.
     group_deps += [
+      # TODO(frolv): Remove these two when new KVS is ready.
       "$dir_pw_kvs:tests",
       "$dir_pw_minimal_cpp_stdlib:tests",
-    ]
 
-    # TODO(pwbug/111): Remove this when building successfully on Windows.
-    group_deps += [ "$dir_pw_tokenizer:tests" ]
+      # TODO(pwbug/111): Remove this when building successfully on Windows.
+      "$dir_pw_tokenizer:tests",
+    ]
   }
 }
