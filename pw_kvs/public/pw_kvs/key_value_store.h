@@ -85,8 +85,8 @@ class KeyValueStore {
  public:
   // TODO: Make these configurable
   static constexpr size_t kMaxKeyLength = 64;
-  static constexpr size_t kMaxEntries = 64;
-  static constexpr size_t kMaxUsableSectors = 64;
+  static constexpr size_t kMaxEntries = 256;
+  static constexpr size_t kMaxUsableSectors = 256;
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
   // +1 for null-terminator.
@@ -222,12 +222,12 @@ class KeyValueStore {
 
     KeyDescriptor(std::string_view key,
                   uint32_t version,
-                  Address address,
-                  State state = kValid)
+                  Address addr,
+                  State initial_state = kValid)
         : key_hash(HashKey(key)),
           key_version(version),
-          address(address),
-          state(state) {}
+          address(addr),
+          state(initial_state) {}
 
     bool deleted() const { return state == kDeleted; }
 

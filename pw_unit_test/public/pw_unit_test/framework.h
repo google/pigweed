@@ -276,7 +276,7 @@ class Framework {
 
   // Memory region in which to construct test case classes as they are run.
   // TODO(frolv): Make the memory pool size configurable.
-  static constexpr size_t kTestMemoryPoolSizeBytes = 8192;
+  static constexpr size_t kTestMemoryPoolSizeBytes = 16384;
   std::aligned_storage_t<kTestMemoryPoolSizeBytes, alignof(std::max_align_t)>
       memory_pool_;
 };
