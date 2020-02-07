@@ -308,14 +308,14 @@ TEST_F(KeyValueStoreTest, Put_SameKeyDifferentValuesRepeatedly) {
   }
 }
 
-TEST_F(KeyValueStoreTest, DISABLED_Put_VaryingKeysAndValues) {
+TEST_F(KeyValueStoreTest, Put_VaryingKeysAndValues) {
   char value[] =
       "abcdefghijklmnopqrstuvwxyz"  // 26
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  // 52
       "34567890123";                // 64 (with final \0);
   static_assert(sizeof(value) == 64);
 
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < 2; ++i) {
     for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
       for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
         const std::string_view key(value, key_size);
