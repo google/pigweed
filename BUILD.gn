@@ -59,17 +59,19 @@ group("pw_modules") {
     "$dir_pw_span",
     "$dir_pw_status",
     "$dir_pw_string",
-    "$dir_pw_tokenizer",
     "$dir_pw_unit_test",
     "$dir_pw_varint",
   ]
 
-  # TODO(frolv): Remove this when new KVS is ready.
   if (host_os != "win") {
+    # TODO(frolv): Remove this when new KVS is ready.
     deps += [
       "$dir_pw_kvs",
       "$dir_pw_minimal_cpp_stdlib",
     ]
+
+    # TODO(pwbug/111): Remove this when building successfully on Windows.
+    deps += [ "$dir_pw_tokenizer" ]
   }
 }
 
@@ -85,7 +87,6 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_span:tests",
     "$dir_pw_status:tests",
     "$dir_pw_string:tests",
-    "$dir_pw_tokenizer:tests",
     "$dir_pw_unit_test:tests",
     "$dir_pw_varint:tests",
   ]
@@ -95,11 +96,14 @@ pw_test_group("pw_module_tests") {
     group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
   }
 
-  # TODO(frolv): Remove this when new KVS is ready.
   if (host_os != "win") {
+    # TODO(frolv): Remove this when new KVS is ready.
     group_deps += [
       "$dir_pw_kvs:tests",
       "$dir_pw_minimal_cpp_stdlib:tests",
     ]
+
+    # TODO(pwbug/111): Remove this when building successfully on Windows.
+    group_deps += [ "$dir_pw_tokenizer:tests" ]
   }
 }
