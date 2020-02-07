@@ -33,8 +33,9 @@ class ChecksumAlgorithm {
     return Update(span(static_cast<const std::byte*>(data), size_bytes));
   }
 
-  // Returns the current state of the checksum algorithm.
-  constexpr const span<const std::byte>& state() const { return state_; }
+  // Returns the final result of the checksum. Update() can no longer be called
+  // after this. The returned span is valid until a call to Reset().
+  virtual span<const std::byte> Finish() = 0;
 
   // Returns the size of the checksum state.
   constexpr size_t size_bytes() const { return state_.size(); }
@@ -51,6 +52,9 @@ class ChecksumAlgorithm {
   // Protected destructor prevents deleting ChecksumAlgorithms from the base
   // class, so that it is safe to have a non-virtual destructor.
   ~ChecksumAlgorithm() = default;
+
+  // Returns the current checksum state.
+  constexpr span<const std::byte> state() const { return state_; }
 
  private:
   span<const std::byte> state_;

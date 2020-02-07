@@ -62,8 +62,9 @@ TEST(Checksum, Reset) {
   crc_algo.Update(as_bytes(span(kString)));
   crc_algo.Reset();
 
-  EXPECT_EQ(crc_algo.state()[0], byte{0xFF});
-  EXPECT_EQ(crc_algo.state()[1], byte{0xFF});
+  span state = crc_algo.Finish();
+  EXPECT_EQ(state[0], byte{0xFF});
+  EXPECT_EQ(state[1], byte{0xFF});
 }
 
 }  // namespace

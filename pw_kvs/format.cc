@@ -38,7 +38,7 @@ EntryHeader::EntryHeader(uint32_t magic,
   if (algorithm != nullptr) {
     CalculateChecksum(algorithm, key, value);
     std::memcpy(&checksum_,
-                algorithm->state().data(),
+                algorithm->Finish().data(),
                 std::min(algorithm->size_bytes(), sizeof(checksum_)));
   }
 

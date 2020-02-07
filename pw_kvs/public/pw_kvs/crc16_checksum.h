@@ -29,6 +29,8 @@ class ChecksumCrc16 final : public ChecksumAlgorithm {
     crc_ = checksum::CcittCrc16(data, crc_);
   }
 
+  span<const std::byte> Finish() final { return state(); }
+
  private:
   uint16_t crc_ = checksum::kCcittCrc16DefaultInitialValue;
 };
