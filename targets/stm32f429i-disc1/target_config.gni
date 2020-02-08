@@ -61,6 +61,7 @@ if (pw_use_test_server) {
 }
 
 # Facade backends
+dir_pw_assert_backend = dir_pw_assert_basic
 dir_pw_boot_backend = dir_pw_boot_armv7m
 dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
 dir_pw_dumb_io_backend = dir_pw_dumb_io_baremetal_stm32f429
