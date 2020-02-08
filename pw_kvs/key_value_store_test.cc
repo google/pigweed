@@ -12,22 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define DUMP_KVS_STATE_TO_FILE 0
+#define USE_MEMORY_BUFFER 1
+#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+
 #include "pw_kvs/key_value_store.h"
 
 #include <array>
 #include <cstdio>
-#if defined(__linux__)
-#include <vector>
-#endif  // defined(__linux__)
 #include <cstring>
-#include <type_traits>
-
-#include "pw_span/span.h"
-
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
-#include "pw_log/log.h"
-
-#define USE_MEMORY_BUFFER 1
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "pw_checksum/ccitt_crc16.h"
@@ -36,6 +30,7 @@
 #include "pw_kvs_private/format.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 
@@ -90,7 +85,7 @@ struct FlashWithPartitionFake {
   FlashPartition partition;
 
  public:
-#if defined(__linux__)
+#if DUMP_KVS_STATE_TO_FILE
   Status Dump(const char* filename) {
     std::FILE* out_file = std::fopen(filename, "w+");
     if (out_file == nullptr) {
@@ -121,11 +116,8 @@ struct FlashWithPartitionFake {
     return status;
   }
 #else
-  Status Dump(const char* filename) {
-    (void)(filename);
-    return Status::OK;
-  }
-#endif  // defined(__linux__)
+  Status Dump(const char*) { return Status::OK; }
+#endif  // DUMP_KVS_STATE_TO_FILE
 };
 
 typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
@@ -165,8 +157,6 @@ class KvsAttributes {
         min_put_size_(
             RoundUpForAlignment(chunk_header_size_ + key_size_ + data_size_)) {}
 
-  size_t SectorHeaderSize() { return 0; }
-  size_t SectorHeaderMetaSize() { return 0; }
   size_t ChunkHeaderSize() { return chunk_header_size_; }
   size_t DataSize() { return data_size_; }
   size_t KeySize() { return key_size_; }
@@ -265,23 +255,6 @@ TEST_F(EmptyInitializedKvs, Put_SameKeyDifferentValuesRepeatedly) {
   for (int i = 0; i < 100; ++i) {
     for (unsigned size = 0; size < value.size(); ++size) {
       ASSERT_EQ(Status::OK, kvs_.Put("The Key!", i));
-    }
-  }
-}
-
-TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
-  char value[] =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"  // 52
-      "34567890123";  // 64 (with final \0);
-  static_assert(sizeof(value) == 64);
-
-  for (int i = 0; i < 2; ++i) {
-    for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
-      for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
-        ASSERT_EQ(Status::OK,
-                  kvs_.Put(std::string_view(value, key_size),
-                           as_bytes(span(value, value_size))));
-      }
     }
   }
 }
@@ -943,8 +916,7 @@ TEST_F(EmptyInitializedKvs, FillSector2) {
     }
   }
 
-  size_t expected_remaining = test_partition.sector_size_bytes() -
-                              kvs_attr.SectorHeaderSize() - kSizeToFill;
+  size_t expected_remaining = test_partition.sector_size_bytes() - kSizeToFill;
   ASSERT_EQ(new_keyvalue_size, expected_remaining);
 
   const char* kNewKey = "NewKey";

@@ -87,6 +87,7 @@ pw_test_group("tests") {
     ":checksum_test",
     ":entry_test",
     ":key_value_store_test",
+    ":key_value_store_fuzz_test",
   ]
 }
 
@@ -120,6 +121,17 @@ pw_test("key_value_store_test") {
   ]
   sources = [
     "key_value_store_test.cc",
+  ]
+}
+
+pw_test("key_value_store_fuzz_test") {
+  deps = [
+    ":crc16",
+    ":in_memory_fake_flash",
+    ":pw_kvs",
+  ]
+  sources = [
+    "key_value_store_fuzz_test.cc",
   ]
 }
 
