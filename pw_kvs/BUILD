@@ -41,6 +41,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_checksum",
+        "//pw_containers",
         "//pw_log",
         "//pw_status",
     ],

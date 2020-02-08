@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_span/span.h"
@@ -193,7 +194,7 @@ class KeyValueStore {
         : item_(kvs), index_(index) {}
 
     const KeyDescriptor& descriptor() const {
-      return item_.kvs_.key_descriptor_list_[index_];
+      return item_.kvs_.key_descriptors_[index_];
     }
 
     Item item_;
@@ -203,12 +204,12 @@ class KeyValueStore {
   using const_iterator = iterator;  // Standard alias for iterable types.
 
   iterator begin() const;
-  iterator end() const { return iterator(*this, key_descriptor_list_size_); }
+  iterator end() const { return iterator(*this, key_descriptors_.size()); }
 
   // Returns the number of valid entries in the KeyValueStore.
   size_t size() const;
 
-  static constexpr size_t max_size() { return kMaxKeyLength; }
+  size_t max_size() const { return key_descriptors_.max_size(); }
 
   size_t empty() const { return size() == 0u; }
 
@@ -340,7 +341,7 @@ class KeyValueStore {
 
   size_t SectorIndex(const SectorDescriptor* sector) const {
     // TODO: perhaps add assert that the index is valid.
-    return (sector - sector_map_.data());
+    return (sector - sectors_.data());
   }
 
   Address SectorBaseAddress(const SectorDescriptor* sector) const {
@@ -351,7 +352,7 @@ class KeyValueStore {
     const size_t index = address / partition_.sector_size_bytes();
     // TODO: Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);
-    return &sector_map_[index];
+    return &sectors_[index];
   }
 
   void LogSectors(void);
@@ -361,35 +362,18 @@ class KeyValueStore {
            sector->tail_free_bytes;
   }
 
-  bool KeyListFull() const { return key_descriptor_list_size_ == kMaxEntries; }
-
-  span<KeyDescriptor> key_descriptors() {
-    return span(key_descriptor_list_.data(), key_descriptor_list_size_);
-  }
-
-  span<const KeyDescriptor> key_descriptors() const {
-    return span(key_descriptor_list_.data(), key_descriptor_list_size_);
-  }
-
-  span<SectorDescriptor> sectors() {
-    return {sector_map_.data(), sector_map_size_};
-  }
-
   FlashPartition& partition_;
   EntryHeaderFormat entry_header_format_;
   Options options_;
 
   // Map is unordered; finding a key requires scanning and
   // verifying a match by reading the actual entry.
-  std::array<KeyDescriptor, kMaxEntries> key_descriptor_list_;
-  size_t key_descriptor_list_size_;  // Number of valid entries in
-                                     // key_descriptor_list_
+  Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
 
   // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
   // TODO: This may need to be a span that points to an externally allocated
   // array. This could be handled by a templated KVS derived class.
-  std::array<SectorDescriptor, kMaxUsableSectors> sector_map_;
-  const size_t sector_map_size_;
+  Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
 
   // The last sector that was selected as the "new empty sector" to write to.
   // This last new sector is used as the starting point for the next "find a new
@@ -405,7 +389,7 @@ class KeyValueStore {
   bool initialized_ = false;
 
   // Working buffer is a general purpose buffer for operations (such as init or
-  // relcate) to use for working space to remove the need to allocate temporary
+  // relocate) to use for working space to remove the need to allocate temporary
   // space.
   std::array<char, kWorkingBufferSizeBytes> working_buffer_;
 };

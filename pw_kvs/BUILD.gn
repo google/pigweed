@@ -36,6 +36,7 @@ source_set("pw_kvs") {
   ]
   sources += public
   public_deps = [
+    dir_pw_containers,
     dir_pw_span,
     dir_pw_status,
   ]
