@@ -19,6 +19,7 @@
 // TODO(pwbug/88): Add verification of the actually logged statements.
 
 // clang-format off
+#define PW_ASSERT_USE_SHORT_NAMES 1
 #include "pw_assert/assert.h"
 // clang-format on
 
@@ -166,4 +167,31 @@ TEST(Check, BinaryOpOnlyEvaluatesOnce) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
 }
 
+// Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
+TEST(Check, ShortNamesWork) {
+  MAYBE_SKIP_TEST;
+
+  // Crash
+  CRASH(FAIL_IF_HIDDEN);
+  CRASH(FAIL_IF_HIDDEN_ARGS, z);
+
+  // Check
+  CHECK(true, FAIL_IF_DISPLAYED);
+  CHECK(true, FAIL_IF_DISPLAYED_ARGS, z);
+  CHECK(false, FAIL_IF_HIDDEN);
+  CHECK(false, FAIL_IF_HIDDEN_ARGS, z);
+
+  // Check with binary comparison
+  int x_int = 50;
+  int y_int = 66;
+
+  CHECK_INT_LE(Add3(1, 2, 3), y_int);
+  CHECK_INT_LE(x_int, Add3(1, 2, 3));
+
+  CHECK_INT_LE(Add3(1, 2, 3), y_int, FAIL_IF_DISPLAYED);
+  CHECK_INT_LE(x_int, Add3(1, 2, 3), FAIL_IF_DISPLAYED_ARGS, z);
+
+  CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
+  CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
+}
 }  // namespace

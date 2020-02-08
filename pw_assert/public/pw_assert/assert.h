@@ -221,7 +221,7 @@
                                           argument_b_str,        \
                                           argument_b_val,        \
                                           type_fmt,              \
-                                          __VA_ARGS__);
+                                          __VA_ARGS__)
 
 // For the binary assertions, this private macro is re-used for all the
 // variants. Due to limitations of C formatting, it is necessary to have
@@ -247,3 +247,34 @@
                                                __VA_ARGS__);             \
     }                                                                    \
   } while (0)
+
+// Define short, usable names if requested. Note that the CHECK() macro will
+// conflict with Google Log, which expects stream style logs.
+//
+// TODO(pwbug/17): Convert this to the config system when available.
+#ifndef PW_ASSERT_USE_SHORT_NAMES
+#define PW_ASSERT_USE_SHORT_NAMES 0
+#endif
+
+// clang-format off
+#if PW_ASSERT_USE_SHORT_NAMES
+#define CRASH          PW_CRASH
+#define CHECK          PW_CHECK
+#define CHECK          PW_CHECK
+#define CHECK_INT_LE   PW_CHECK_INT_LE
+#define CHECK_INT_LT   PW_CHECK_INT_LT
+#define CHECK_INT_GE   PW_CHECK_INT_GE
+#define CHECK_INT_GT   PW_CHECK_INT_GT
+#define CHECK_INT_EQ   PW_CHECK_INT_EQ
+#define CHECK_UINT_LE  PW_CHECK_UINT_LE
+#define CHECK_UINT_LT  PW_CHECK_UINT_LT
+#define CHECK_UINT_GE  PW_CHECK_UINT_GE
+#define CHECK_UINT_GT  PW_CHECK_UINT_GT
+#define CHECK_UINT_EQ  PW_CHECK_UINT_EQ
+#define CHECK_FLOAT_LE PW_CHECK_FLOAT_LE
+#define CHECK_FLOAT_LT PW_CHECK_FLOAT_LT
+#define CHECK_FLOAT_GE PW_CHECK_FLOAT_GE
+#define CHECK_FLOAT_GT PW_CHECK_FLOAT_GT
+#define CHECK_FLOAT_EQ PW_CHECK_FLOAT_EQ
+#endif  // PW_ASSERT_SHORT_NAMES
+// clang-format on
