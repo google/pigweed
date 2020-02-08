@@ -143,8 +143,8 @@ class KeyValueStore {
     // Guaranteed to be null-terminated
     std::string_view key() const { return key_buffer_.data(); }
 
-    Status Get(span<std::byte> value_buffer) const {
-      return kvs_.Get(key(), value_buffer).status();
+    StatusWithSize Get(span<std::byte> value_buffer) const {
+      return kvs_.Get(key(), value_buffer);
     }
 
     template <typename Pointer,
