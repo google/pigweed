@@ -122,14 +122,16 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
     return nullptr;
   }
 
-  std::list<PDU> pending;
+  auto chan = ChannelImpl::CreateFixedChannel(id, fbl::RefPtr(this));
+
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
-    pending = std::move(pp_iter->second);
+    for (auto &pdu : pp_iter->second) {
+      chan->HandleRxPdu(std::move(pdu));
+    }
     pending_pdus_.erase(pp_iter);
   }
 
-  auto chan = ChannelImpl::CreateFixedChannel(id, fbl::RefPtr(this), std::move(pending));
   channels_[id] = chan;
 
   return chan;

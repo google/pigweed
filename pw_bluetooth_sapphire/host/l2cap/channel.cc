@@ -31,22 +31,21 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 namespace internal {
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
-                                                         fbl::RefPtr<internal::LogicalLink> link,
-                                                         std::list<PDU> buffered_pdus) {
+                                                         fbl::RefPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
-  return fbl::AdoptRef(new ChannelImpl(id, id, link, std::move(buffered_pdus),
+  return fbl::AdoptRef(new ChannelImpl(id, id, link,
                                        ChannelInfo(ChannelMode::kBasic, kDefaultMTU, kDefaultMTU)));
 }
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
                                                            fbl::RefPtr<internal::LogicalLink> link,
                                                            ChannelInfo info) {
-  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, {}, info));
+  return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, info));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-                         std::list<PDU> buffered_pdus, ChannelInfo info)
+                         ChannelInfo info)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       dispatcher_(nullptr),
@@ -62,11 +61,6 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
             });
           })) {
   ZX_DEBUG_ASSERT(link_);
-  for (const auto& pdu : buffered_pdus) {
-    auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
-    pdu.Copy(sdu.get());
-    pending_rx_sdus_.push(std::move(sdu));
-  }
 }
 
 const sm::SecurityProperties ChannelImpl::security() {

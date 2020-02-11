@@ -209,8 +209,7 @@ class LogicalLink;
 class ChannelImpl : public Channel {
  public:
   static fbl::RefPtr<ChannelImpl> CreateFixedChannel(ChannelId id,
-                                                     fbl::RefPtr<internal::LogicalLink> link,
-                                                     std::list<PDU> buffered_pdus);
+                                                     fbl::RefPtr<internal::LogicalLink> link);
 
   static fbl::RefPtr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
                                                        fbl::RefPtr<internal::LogicalLink> link,
@@ -240,7 +239,7 @@ class ChannelImpl : public Channel {
   friend class fbl::RefPtr<ChannelImpl>;
 
   ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-              std::list<PDU> buffered_pdus, ChannelInfo info);
+              ChannelInfo info);
   ~ChannelImpl() override = default;
 
   // TODO(armansito): Add MPS fields when we support segmentation/flow-control.
