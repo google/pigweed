@@ -134,13 +134,19 @@ TEST(Limits, Basic) {
                 18446744073709551615ull);
 }
 
-TEST(New, Basic) {
+TEST(New, PlacementNew) {
   unsigned char value[4];
   new (value) int(1234);
 
   int int_value;
   std::memcpy(&int_value, value, sizeof(int_value));
   EXPECT_EQ(1234, int_value);
+}
+
+TEST(New, Launder) {
+  unsigned char value[4];
+  int* int_ptr = std::launder(reinterpret_cast<int*>(value));
+  EXPECT_EQ(static_cast<void*>(int_ptr), static_cast<void*>(value));
 }
 
 TEST(StringView, Basic) {

@@ -206,6 +206,12 @@ struct is_void : is_same<void, typename remove_cv<T>::type> {};
 template <typename T>
 inline constexpr bool is_void_v = is_void<T>::value;
 
+template <typename T>
+struct negation : bool_constant<!bool(T::value)> {};
+
+template <typename T>
+inline constexpr bool negation_v = negation<T>::value;
+
 template <bool kBool, typename TrueType, typename FalseType>
 struct conditional {
   using type = TrueType;
@@ -358,11 +364,30 @@ using type_identity_t = typename type_identity<T>::type;
 template <typename...>
 using void_t = void;
 
-// NOT IMPLEMENTED: add_rvalue_refernce does work with reference types.
+namespace impl {
+
 template <typename T>
-struct add_rvalue_reference {
-  using type = T&&;
-};
+type_identity<T&> AddLValueReference(int);
+
+template <typename T>
+type_identity<T> AddLValueReference(...);
+
+template <typename T>
+type_identity<T&&> AddRValueReference(int);
+
+template <typename T>
+type_identity<T> AddRValueReference(...);
+
+}  // namespace impl
+
+template <class T>
+struct add_lvalue_reference : decltype(impl::AddLValueReference<T>(0)) {};
+
+template <typename T>
+using add_lvalue_reference_t = typename add_lvalue_reference<T>::type;
+
+template <class T>
+struct add_rvalue_reference : decltype(impl::AddRValueReference<T>(0)) {};
 
 template <typename T>
 using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;

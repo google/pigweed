@@ -15,3 +15,14 @@
 
 // Placement new
 inline void* operator new(decltype(sizeof(0)), void* ptr) { return ptr; }
+
+#define __cpp_lib_launder 201606L
+
+namespace std {
+
+template <typename T>
+[[nodiscard]] constexpr T* launder(T* pointer) noexcept {
+  return __builtin_launder(pointer);
+}
+
+}  // namespace std

@@ -21,7 +21,10 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+
+#if DUMP_KVS_STATE_TO_FILE
 #include <vector>
+#endif  // DUMP_KVS_STATE_TO_FILE
 
 #include "gtest/gtest.h"
 #include "pw_checksum/ccitt_crc16.h"

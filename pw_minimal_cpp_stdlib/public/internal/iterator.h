@@ -44,6 +44,10 @@ constexpr decltype(sizeof(int)) size(const T (&)[kSize]) noexcept {
   return kSize;
 }
 
+// NOT IMPLEMENTED: iterator_traits does not work
+template <typename>
+struct iterator_traits {};
+
 // NOT IMPLEMENTED: Reverse iterators are not implemented.
 template <typename>
 struct reverse_iterator;

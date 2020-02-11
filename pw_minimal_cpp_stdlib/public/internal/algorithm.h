@@ -37,4 +37,38 @@ constexpr T&& forward(remove_reference_t<T>&& value) {
   return static_cast<T&&>(value);
 }
 
+template <class LhsIterator, class RhsIterator>
+constexpr bool equal(LhsIterator first_l,
+                     LhsIterator last_l,
+                     RhsIterator first_r,
+                     RhsIterator last_r) {
+  while (first_l != last_l && first_r != last_r) {
+    if (*first_l != *first_r) {
+      return false;
+    }
+    ++first_l;
+    ++first_r;
+  }
+  return first_l == last_l && first_r == last_r;
+}
+
+template <class LhsIterator, class RhsIterator>
+constexpr bool lexicographical_compare(LhsIterator first_l,
+                                       LhsIterator last_l,
+                                       RhsIterator first_r,
+                                       RhsIterator last_r) {
+  while (first_l != last_l && first_r != last_r) {
+    if (*first_l < *first_r) {
+      return true;
+    }
+    if (*first_r < *first_l) {
+      return false;
+    }
+
+    ++first_l;
+    ++first_r;
+  }
+  return (first_l == last_l) && (first_r != last_r);
+}
+
 }  // namespace std
