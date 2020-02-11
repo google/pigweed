@@ -34,8 +34,8 @@ fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
                                                          fbl::RefPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
-  return fbl::AdoptRef(new ChannelImpl(id, id, link,
-                                       ChannelInfo(ChannelMode::kBasic, kDefaultMTU, kDefaultMTU)));
+  return fbl::AdoptRef(
+      new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU)));
 }
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,

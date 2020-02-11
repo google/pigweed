@@ -66,12 +66,38 @@ struct ChannelParameters {
 // Convenience struct for passsing around information about an opened channel.
 // For example, this is useful when describing the L2CAP channel underlying a zx::socket.
 struct ChannelInfo {
-  ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size)
-      : mode(mode), max_rx_sdu_size(max_rx_sdu_size), max_tx_sdu_size(max_tx_sdu_size) {}
+  static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size) {
+    return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0);
+  }
+
+  static ChannelInfo MakeEnhancedRetransmissionMode(uint16_t max_rx_sdu_size,
+                                                    uint16_t max_tx_sdu_size,
+                                                    uint8_t n_frames_in_tx_window,
+                                                    uint8_t max_transmissions,
+                                                    uint16_t max_tx_pdu_payload_size) {
+    return ChannelInfo(ChannelMode::kEnhancedRetransmission, max_rx_sdu_size, max_tx_sdu_size,
+                       n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size);
+  }
+
+  ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
+              uint8_t n_frames_in_tx_window, uint8_t max_transmissions,
+              uint16_t max_tx_pdu_payload_size)
+      : mode(mode),
+        max_rx_sdu_size(max_rx_sdu_size),
+        max_tx_sdu_size(max_tx_sdu_size),
+        n_frames_in_tx_window(n_frames_in_tx_window),
+        max_transmissions(max_transmissions),
+        max_tx_pdu_payload_size(max_tx_pdu_payload_size) {}
 
   ChannelMode mode;
   uint16_t max_rx_sdu_size;
   uint16_t max_tx_sdu_size;
+
+  // For Enhanced Retransmission Mode only. See Core Spec v5.0 Vol 3, Part A, Sec 5.4 for details on
+  // each field. Values are not meaningful if mode = ChannelMode::kBasic.
+  uint8_t n_frames_in_tx_window;
+  uint8_t max_transmissions;
+  uint16_t max_tx_pdu_payload_size;
 };
 
 // Data stored for services registered by higher layers.

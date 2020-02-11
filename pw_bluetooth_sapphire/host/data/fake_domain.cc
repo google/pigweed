@@ -17,6 +17,15 @@ using l2cap::testing::FakeChannel;
 
 namespace data {
 namespace testing {
+namespace {
+
+// Use plausible ERTM parameters that do not necessarily match values in production. See Core Spec
+// v5.0 Vol 3, Part A, Sec 5.4 for meanings.
+constexpr uint8_t kErtmNFramesInTxWindow = 32;
+constexpr uint8_t kErtmMaxTransmissions = 8;
+constexpr uint16_t kMaxTxPduPayloadSize = 1024;
+
+}  // namespace
 
 bool FakeDomain::IsLinkConnected(hci::ConnectionHandle handle) const {
   auto link_iter = links_.find(handle);
@@ -49,7 +58,7 @@ void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 
 void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                             l2cap::ChannelId id, l2cap::ChannelId remote_id,
-                                            uint16_t tx_mtu) {
+                                            uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
@@ -60,9 +69,16 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
   l2cap::ChannelCallback& cb = cb_iter->second.channel_cb;
   auto chan_params = cb_iter->second.channel_params;
   auto mode = chan_params.mode.value_or(l2cap::ChannelMode::kBasic);
-  auto rx_mtu = chan_params.max_rx_sdu_size.value_or(l2cap::kDefaultMTU);
+  auto max_rx_sdu_size = chan_params.max_rx_sdu_size.value_or(l2cap::kDefaultMTU);
+  auto channel_info = l2cap::ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size);
+  if (mode == l2cap::ChannelMode::kEnhancedRetransmission) {
+    channel_info = l2cap::ChannelInfo::MakeEnhancedRetransmissionMode(
+        max_rx_sdu_size, max_tx_sdu_size, /*n_frames_in_tx_window=*/kErtmNFramesInTxWindow,
+        /*max_transmissions=*/kErtmMaxTransmissions,
+        /*max_tx_pdu_payload_size=*/kMaxTxPduPayloadSize);
+  }
 
-  auto chan = OpenFakeChannel(&link_data, id, remote_id, l2cap::ChannelInfo(mode, rx_mtu, tx_mtu));
+  auto chan = OpenFakeChannel(&link_data, id, remote_id, channel_info);
   cb(std::move(chan));
 }
 
@@ -131,14 +147,21 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
   psm_it->second.pop();
 
   auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
-  auto rx_mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
+  auto max_rx_sdu_size = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
   ZX_ASSERT_MSG(chan_data.params == params,
                 "Didn't receive expected L2CAP channel parameters (expected: %s, found: %s)",
                 bt_str(chan_data.params), bt_str(params));
 
-  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id,
-                              l2cap::ChannelInfo(mode, rx_mtu, l2cap::kDefaultMTU));
+  auto channel_info = l2cap::ChannelInfo::MakeBasicMode(max_rx_sdu_size, l2cap::kDefaultMTU);
+  if (mode == l2cap::ChannelMode::kEnhancedRetransmission) {
+    channel_info = l2cap::ChannelInfo::MakeEnhancedRetransmissionMode(
+        max_rx_sdu_size, l2cap::kDefaultMTU, /*n_frames_in_tx_window=*/kErtmNFramesInTxWindow,
+        /*max_transmissions=*/kErtmMaxTransmissions,
+        /*max_tx_pdu_payload_size=*/kMaxTxPduPayloadSize);
+  }
+
+  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, channel_info);
 
   async::PostTask(dispatcher,
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });

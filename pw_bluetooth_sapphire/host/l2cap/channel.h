@@ -95,6 +95,7 @@ class Channel : public fbl::RefCounted<Channel> {
   uint16_t max_rx_sdu_size() const { return info().max_rx_sdu_size; }
   uint16_t max_tx_sdu_size() const { return info().max_tx_sdu_size; }
 
+  // Returns the current configuration parameters for this channel.
   ChannelInfo info() const { return info_; }
 
   // Returns the current link security properties of the underlying link.

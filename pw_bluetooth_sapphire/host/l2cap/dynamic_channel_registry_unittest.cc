@@ -32,9 +32,7 @@ class FakeDynamicChannel final : public DynamicChannel {
   bool IsConnected() const override { return connected_; }
   bool IsOpen() const override { return open_; }
 
-  ChannelInfo info() const override {
-    return ChannelInfo(ChannelMode::kBasic, kDefaultMTU, kDefaultMTU);
-  }
+  ChannelInfo info() const override { return ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU); }
 
   void DoConnect(ChannelId remote_cid) {
     ASSERT_TRUE(SetRemoteChannelId(remote_cid))
