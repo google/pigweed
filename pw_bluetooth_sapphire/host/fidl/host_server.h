@@ -89,7 +89,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
                       SetDeviceClassCallback callback) override;
 
   void StartDiscovery(StartDiscoveryCallback callback) override;
-  void StopDiscovery(StopDiscoveryCallback callback) override;
+  void StopDiscovery() override;
   void SetConnectable(bool connectable, SetConnectableCallback callback) override;
   void SetDiscoverable(bool discoverable, SetDiscoverableCallback callback) override;
   void EnableBackgroundScan(bool enabled) override;
@@ -98,11 +98,11 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fuchsia::bluetooth::control::InputCapabilityType input,
       ::fuchsia::bluetooth::control::OutputCapabilityType output,
       ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate> delegate) override;
-  void Connect(::std::string device_id, ConnectCallback callback) override;
-  void Disconnect(::std::string device_id, DisconnectCallback callback) override;
+  void Connect(::fuchsia::bluetooth::PeerId id, ConnectCallback callback) override;
+  void Disconnect(::fuchsia::bluetooth::PeerId id, DisconnectCallback callback) override;
   void Pair(::fuchsia::bluetooth::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
             PairCallback callback) override;
-  void Forget(::std::string peer_id, ForgetCallback callback) override;
+  void Forget(::fuchsia::bluetooth::PeerId id, ForgetCallback callback) override;
 
   void RequestLowEnergyCentral(
       ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> central) override;

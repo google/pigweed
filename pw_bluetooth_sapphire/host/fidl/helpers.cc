@@ -189,7 +189,7 @@ std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& 
   return bt::DeviceAddressBytes(bytes);
 }
 
-ErrorCode HostErrorToFidl(bt::HostError host_error) {
+ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error) {
   switch (host_error) {
     case bt::HostError::kFailed:
       return ErrorCode::FAILED;
@@ -220,6 +220,29 @@ Status NewFidlError(ErrorCode error_code, std::string description) {
   status.error->error_code = error_code;
   status.error->description = description;
   return status;
+}
+
+fsys::Error HostErrorToFidl(bt::HostError error) {
+  ZX_DEBUG_ASSERT(error != bt::HostError::kNoError);
+  switch (error) {
+    case bt::HostError::kFailed:
+      return fsys::Error::FAILED;
+    case bt::HostError::kTimedOut:
+      return fsys::Error::TIMED_OUT;
+    case bt::HostError::kInvalidParameters:
+      return fsys::Error::INVALID_ARGUMENTS;
+    case bt::HostError::kCanceled:
+      return fsys::Error::CANCELED;
+    case bt::HostError::kInProgress:
+      return fsys::Error::IN_PROGRESS;
+    case bt::HostError::kNotSupported:
+      return fsys::Error::NOT_SUPPORTED;
+    case bt::HostError::kNotFound:
+      return fsys::Error::PEER_NOT_FOUND;
+    default:
+      break;
+  }
+  return fsys::Error::FAILED;
 }
 
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {

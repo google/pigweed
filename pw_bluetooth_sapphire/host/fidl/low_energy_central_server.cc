@@ -167,7 +167,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
     if (!status) {
       ZX_DEBUG_ASSERT(!conn_ref);
       bt_log(TRACE, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
-      callback(fidl_helpers::StatusToFidl(status, "failed to connect"));
+      callback(fidl_helpers::StatusToFidlDeprecated(status, "failed to connect"));
       return;
     }
 

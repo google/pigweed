@@ -19,6 +19,19 @@ namespace bthost {
 namespace fidl_helpers {
 namespace {
 
+TEST(FidlHelpersTest, HostErrorToFidl) {
+  EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kFailed));
+  EXPECT_EQ(fsys::Error::TIMED_OUT, HostErrorToFidl(bt::HostError::kTimedOut));
+  EXPECT_EQ(fsys::Error::INVALID_ARGUMENTS, HostErrorToFidl(bt::HostError::kInvalidParameters));
+  EXPECT_EQ(fsys::Error::CANCELED, HostErrorToFidl(bt::HostError::kCanceled));
+  EXPECT_EQ(fsys::Error::IN_PROGRESS, HostErrorToFidl(bt::HostError::kInProgress));
+  EXPECT_EQ(fsys::Error::NOT_SUPPORTED, HostErrorToFidl(bt::HostError::kNotSupported));
+  EXPECT_EQ(fsys::Error::PEER_NOT_FOUND, HostErrorToFidl(bt::HostError::kNotFound));
+
+  // All other errors currently map to FAILED.
+  EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
+}
+
 TEST(FIDL_HelpersTest, AddressBytesFrommString) {
   EXPECT_FALSE(AddressBytesFromString(""));
   EXPECT_FALSE(AddressBytesFromString("FF"));

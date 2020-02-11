@@ -45,7 +45,8 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
   auto cb = [callback = std::move(callback)](bt::att::Status status, auto services) {
     std::vector<ServiceInfo> out;
     if (!status) {
-      auto fidl_status = fidl_helpers::StatusToFidl(status, "Failed to discover services");
+      auto fidl_status =
+          fidl_helpers::StatusToFidlDeprecated(status, "Failed to discover services");
       callback(std::move(fidl_status), std::move(out));
       return;
     }

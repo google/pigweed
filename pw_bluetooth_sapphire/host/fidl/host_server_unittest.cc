@@ -36,24 +36,15 @@ using bt::LowerBits;
 using bt::UpperBits;
 using bt::l2cap::testing::FakeChannel;
 using bt::testing::FakePeer;
-using HostPairingDelegate = bt::gap::PairingDelegate;
-using fuchsia::bluetooth::control::InputCapabilityType;
-using fuchsia::bluetooth::control::OutputCapabilityType;
-using FidlErrorCode = fuchsia::bluetooth::ErrorCode;
-using FidlStatus = fuchsia::bluetooth::Status;
-using fuchsia::bluetooth::control::PairingOptions;
-using FidlPairingDelegate = fuchsia::bluetooth::control::PairingDelegate;
-using fuchsia::bluetooth::control::PairingSecurityLevel;
-
-using FidlRemoteDevice = fuchsia::bluetooth::control::RemoteDevice;
 
 namespace fbt = fuchsia::bluetooth;
+namespace fctrl = fuchsia::bluetooth::control;
 namespace fsys = fuchsia::bluetooth::sys;
 
 const bt::DeviceAddress kLeTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const bt::DeviceAddress kBredrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
 
-class MockPairingDelegate : public fuchsia::bluetooth::control::testing::PairingDelegate_TestBase {
+class MockPairingDelegate : public fctrl::testing::PairingDelegate_TestBase {
  public:
   MockPairingDelegate(fidl::InterfaceRequest<PairingDelegate> request,
                       async_dispatcher_t* dispatcher)
@@ -62,14 +53,12 @@ class MockPairingDelegate : public fuchsia::bluetooth::control::testing::Pairing
   ~MockPairingDelegate() override = default;
 
   MOCK_METHOD(void, OnPairingRequest,
-              (fuchsia::bluetooth::control::RemoteDevice device,
-               fuchsia::bluetooth::control::PairingMethod method, fidl::StringPtr displayed_passkey,
-               OnPairingRequestCallback callback),
+              (fctrl::RemoteDevice device, fctrl::PairingMethod method,
+               fidl::StringPtr displayed_passkey, OnPairingRequestCallback callback),
               (override));
   MOCK_METHOD(void, OnPairingComplete, (std::string device_id, fuchsia::bluetooth::Status status),
               (override));
-  MOCK_METHOD(void, OnRemoteKeypress,
-              (std::string device_id, fuchsia::bluetooth::control::PairingKeypressType keypress),
+  MOCK_METHOD(void, OnRemoteKeypress, (std::string device_id, fctrl::PairingKeypressType keypress),
               (override));
 
  private:
@@ -119,9 +108,9 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   // Create and bind a MockPairingDelegate and attach it to the HostServer under test. It is
   // heap-allocated to permit its explicit destruction.
   [[nodiscard]] std::unique_ptr<MockPairingDelegate> SetMockPairingDelegate(
-      InputCapabilityType input_capability, OutputCapabilityType output_capability) {
+      fctrl::InputCapabilityType input_capability, fctrl::OutputCapabilityType output_capability) {
     using ::testing::StrictMock;
-    fidl::InterfaceHandle<FidlPairingDelegate> pairing_delegate_handle;
+    fidl::InterfaceHandle<fctrl::PairingDelegate> pairing_delegate_handle;
     auto pairing_delegate = std::make_unique<StrictMock<MockPairingDelegate>>(
         pairing_delegate_handle.NewRequest(), dispatcher());
     host_client()->SetPairingDelegate(input_capability, output_capability,
@@ -143,15 +132,15 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
     auto fake_peer = std::make_unique<FakePeer>(device_addr);
     test_device()->AddPeer(std::move(fake_peer));
-    // Initialize with error to ensure callback is called
-    FidlStatus connect_status =
-        fidl_helpers::NewFidlError(FidlErrorCode::BAD_STATE, "This should disappear");
-    host_client()->Connect(peer->identifier().ToString(), [&connect_status](FidlStatus cb_status) {
-      ASSERT_FALSE(cb_status.error);
-      connect_status = std::move(cb_status);
+
+    std::optional<fit::result<void, fsys::Error>> connect_result;
+    host_client()->Connect(fbt::PeerId{peer->identifier().value()}, [&](auto result) {
+      ASSERT_FALSE(result.is_err());
+      connect_result = std::move(result);
     });
     RunLoopUntilIdle();
-    if (connect_status.error != nullptr) {
+
+    if (!connect_result || connect_result->is_error()) {
       peer = nullptr;
       fake_chan = nullptr;
     }
@@ -168,13 +157,13 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
 TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
-  auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
+  auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
 
   // Getter should be safe to call when no PairingDelegate assigned.
   EXPECT_EQ(bt::sm::IOCapability::kNoInputNoOutput, host_pairing_delegate->io_capability());
 
-  auto fidl_pairing_delegate =
-      SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
+  auto fidl_pairing_delegate = SetMockPairingDelegate(fctrl::InputCapabilityType::KEYBOARD,
+                                                      fctrl::OutputCapabilityType::DISPLAY);
   EXPECT_EQ(bt::sm::IOCapability::kKeyboardDisplay, host_pairing_delegate->io_capability());
 }
 
@@ -182,9 +171,9 @@ TEST_F(FIDL_HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
   using namespace ::testing;
 
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
-  auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
-  auto fidl_pairing_delegate =
-      SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
+  auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
+  auto fidl_pairing_delegate = SetMockPairingDelegate(fctrl::InputCapabilityType::KEYBOARD,
+                                                      fctrl::OutputCapabilityType::DISPLAY);
 
   // fuchsia::bluetooth::Status is move-only so check its value in a lambda.
   EXPECT_CALL(*fidl_pairing_delegate, OnPairingComplete(EndsWith("c0decafe"), _))
@@ -203,24 +192,24 @@ TEST_F(FIDL_HostServerTest, HostCompletePairingCallsFidlOnPairingComplete) {
 
 TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
   using namespace ::testing;
-  auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
-  auto fidl_pairing_delegate =
-      SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
+  auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
+  auto fidl_pairing_delegate = SetMockPairingDelegate(fctrl::InputCapabilityType::KEYBOARD,
+                                                      fctrl::OutputCapabilityType::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   EXPECT_CALL(*fidl_pairing_delegate,
-              OnPairingRequest(_, fuchsia::bluetooth::control::PairingMethod::CONSENT,
-                               fidl::StringPtr(nullptr), _))
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
-                                          FidlPairingDelegate::OnPairingRequestCallback callback) {
-        EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
-        callback(/*accept=*/true, /*entered_passkey=*/nullptr);
-      });
+              OnPairingRequest(_, fctrl::PairingMethod::CONSENT, fidl::StringPtr(nullptr), _))
+      .WillOnce(
+          [id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
+                                    fctrl::PairingDelegate::OnPairingRequestCallback callback) {
+            EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
+            callback(/*accept=*/true, /*entered_passkey=*/nullptr);
+          });
 
   bool confirm_cb_value = false;
-  HostPairingDelegate::ConfirmCallback confirm_cb = [&confirm_cb_value](bool confirmed) {
+  bt::gap::PairingDelegate::ConfirmCallback confirm_cb = [&confirm_cb_value](bool confirmed) {
     confirm_cb_value = confirmed;
   };
   host_pairing_delegate->ConfirmPairing(peer->identifier(), std::move(confirm_cb));
@@ -233,19 +222,19 @@ TEST_F(FIDL_HostServerTest, HostConfirmPairingRequestsConsentPairingOverFidl) {
 TEST_F(FIDL_HostServerTest,
        HostDisplayPasskeyRequestsPasskeyDisplayOrNumericComparisonPairingOverFidl) {
   using namespace ::testing;
-  auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
-  auto fidl_pairing_delegate =
-      SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
+  auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
+  auto fidl_pairing_delegate = SetMockPairingDelegate(fctrl::InputCapabilityType::KEYBOARD,
+                                                      fctrl::OutputCapabilityType::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
   // This call should use PASSKEY_DISPLAY to request that the user perform peer passkey entry.
-  using fuchsia::bluetooth::control::PairingMethod;
-  using OnPairingRequestCallback = FidlPairingDelegate::OnPairingRequestCallback;
+  using fctrl::PairingMethod;
+  using OnPairingRequestCallback = fctrl::PairingDelegate::OnPairingRequestCallback;
   EXPECT_CALL(*fidl_pairing_delegate,
               OnPairingRequest(_, PairingMethod::PASSKEY_DISPLAY, fidl::StringPtr("012345"), _))
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/false, /*entered_passkey=*/nullptr);
@@ -256,7 +245,7 @@ TEST_F(FIDL_HostServerTest,
     EXPECT_FALSE(confirmed);
     confirm_cb_called = true;
   };
-  using DisplayMethod = HostPairingDelegate::DisplayMethod;
+  using DisplayMethod = bt::gap::PairingDelegate::DisplayMethod;
   host_pairing_delegate->DisplayPasskey(peer->identifier(), 12345, DisplayMethod::kPeerEntry,
                                         confirm_cb);
 
@@ -268,7 +257,7 @@ TEST_F(FIDL_HostServerTest,
   // the local and peer devices.
   EXPECT_CALL(*fidl_pairing_delegate,
               OnPairingRequest(_, PairingMethod::PASSKEY_COMPARISON, fidl::StringPtr("012345"), _))
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/false, /*entered_passkey=*/nullptr);
@@ -285,33 +274,32 @@ TEST_F(FIDL_HostServerTest,
 
 TEST_F(FIDL_HostServerTest, HostRequestPasskeyRequestsPasskeyEntryPairingOverFidl) {
   using namespace ::testing;
-  auto host_pairing_delegate = static_cast<HostPairingDelegate*>(host_server());
-  auto fidl_pairing_delegate =
-      SetMockPairingDelegate(InputCapabilityType::KEYBOARD, OutputCapabilityType::DISPLAY);
+  auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());
+  auto fidl_pairing_delegate = SetMockPairingDelegate(fctrl::InputCapabilityType::KEYBOARD,
+                                                      fctrl::OutputCapabilityType::DISPLAY);
 
   auto* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  using OnPairingRequestCallback = FidlPairingDelegate::OnPairingRequestCallback;
+  using OnPairingRequestCallback = fctrl::PairingDelegate::OnPairingRequestCallback;
   EXPECT_CALL(*fidl_pairing_delegate,
-              OnPairingRequest(_, fuchsia::bluetooth::control::PairingMethod::PASSKEY_ENTRY,
-                               fidl::StringPtr(nullptr), _))
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+              OnPairingRequest(_, fctrl::PairingMethod::PASSKEY_ENTRY, fidl::StringPtr(nullptr), _))
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/false, "012345");
       })
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/true, nullptr);
       })
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/true, u8"🍂");
       })
-      .WillOnce([id = peer->identifier()](FidlRemoteDevice device, Unused, Unused,
+      .WillOnce([id = peer->identifier()](fctrl::RemoteDevice device, Unused, Unused,
                                           OnPairingRequestCallback callback) {
         EXPECT_THAT(device.identifier, EndsWith(id.ToString()));
         callback(/*accept=*/true, "012345");
@@ -387,7 +375,7 @@ TEST_F(FIDL_HostServerTest, WatchDiscoveryState) {
   info.reset();
   host_server()->WatchState([&](auto value) { info = std::move(value); });
   EXPECT_FALSE(info.has_value());
-  host_server()->StopDiscovery([](auto) {});
+  host_server()->StopDiscovery();
   RunLoopUntilIdle();
   ASSERT_TRUE(info.has_value());
   ASSERT_TRUE(info->has_discovering());
@@ -449,13 +437,17 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
     pairing_request_sent = true;
   };
   fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
-  FidlStatus pair_status;
-  PairingOptions opts;
-  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
-                      std::move(opts),
-                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+
+  std::optional<fit::result<void, fsys::Error>> pair_result;
+  fctrl::PairingOptions opts;
+  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+                      [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
-  ASSERT_EQ(pair_status.error, nullptr);
+
+  // TODO(fxb/886): We don't have a good mechanism for driving pairing to completion without faking
+  // the entire SMP exchange. We should add SMP mocks that allows us to propagate a result up to the
+  // FIDL layer. For now we assert that pairing has started and remains pending.
+  ASSERT_FALSE(pair_result);  // Pairing request is pending
   ASSERT_TRUE(pairing_request_sent);
 }
 
@@ -487,14 +479,17 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
   };
   fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  FidlStatus pair_status;
-  PairingOptions opts;
-  opts.set_le_security_level(PairingSecurityLevel::ENCRYPTED);
-  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
-                      std::move(opts),
-                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+  std::optional<fit::result<void, fsys::Error>> pair_result;
+  fctrl::PairingOptions opts;
+  opts.set_le_security_level(fctrl::PairingSecurityLevel::ENCRYPTED);
+  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+                      [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
-  ASSERT_EQ(pair_status.error, nullptr);
+
+  // TODO(fxb/886): We don't have a good mechanism for driving pairing to completion without faking
+  // the entire SMP exchange. We should add SMP mocks that allows us to propagate a result up to the
+  // FIDL layer. For now we assert that pairing has started and remains pending.
+  ASSERT_FALSE(pair_result);  // Pairing request is pending
   ASSERT_TRUE(pairing_request_sent);
 }
 
@@ -526,14 +521,17 @@ TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
   };
   fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
-  FidlStatus pair_status;
-  PairingOptions opts;
+  std::optional<fit::result<void, fsys::Error>> pair_result;
+  fctrl::PairingOptions opts;
   opts.set_non_bondable(true);
-  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
-                      std::move(opts),
-                      [&pair_status](FidlStatus status) { pair_status = std::move(status); });
+  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+                      [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
-  ASSERT_EQ(pair_status.error, nullptr);
+
+  // TODO(fxb/886): We don't have a good mechanism for driving pairing to completion without faking
+  // the entire SMP exchange. We should add SMP mocks that allows us to propagate a result up to the
+  // FIDL layer. For now we assert that pairing has started and remains pending.
+  ASSERT_FALSE(pair_result);  // Pairing request is pending
   ASSERT_TRUE(pairing_request_sent);
 }
 
@@ -543,18 +541,18 @@ TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
   ASSERT_TRUE(fake_chan);
   ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
 
-  FidlStatus pair_status;
-  PairingOptions opts;
+  std::optional<fit::result<void, fsys::Error>> pair_result;
+  fctrl::PairingOptions opts;
   // Set pairing option with classic
-  opts.set_transport(fuchsia::bluetooth::control::TechnologyType::CLASSIC);
-  auto pair_cb = [&pair_status](FidlStatus cb_status) {
-    ASSERT_TRUE(cb_status.error);
-    pair_status = std::move(cb_status);
+  opts.set_transport(fctrl::TechnologyType::CLASSIC);
+  auto pair_cb = [&](auto result) {
+    ASSERT_TRUE(result.is_err());
+    pair_result = std::move(result);
   };
-  host_client()->Pair(fuchsia::bluetooth::PeerId{.value = peer->identifier().value()},
-                      std::move(opts), pair_cb);
+  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts), std::move(pair_cb));
   RunLoopUntilIdle();
-  ASSERT_EQ(pair_status.error->error_code, FidlErrorCode::NOT_FOUND);
+  ASSERT_TRUE(pair_result);
+  ASSERT_EQ(pair_result->error(), fsys::Error::PEER_NOT_FOUND);
 }
 
 TEST_F(FIDL_HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {

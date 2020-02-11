@@ -48,21 +48,21 @@ std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& 
 
 // Functions for generating a FIDL bluetooth::Status
 
-fuchsia::bluetooth::ErrorCode HostErrorToFidl(bt::HostError host_error);
+fuchsia::bluetooth::ErrorCode HostErrorToFidlDeprecated(bt::HostError host_error);
 
 fuchsia::bluetooth::Status NewFidlError(fuchsia::bluetooth::ErrorCode error_code,
                                         std::string description);
 
 template <typename ProtocolErrorCode>
-fuchsia::bluetooth::Status StatusToFidl(const bt::Status<ProtocolErrorCode>& status,
-                                        std::string msg = "") {
+fuchsia::bluetooth::Status StatusToFidlDeprecated(const bt::Status<ProtocolErrorCode>& status,
+                                                  std::string msg = "") {
   fuchsia::bluetooth::Status fidl_status;
   if (status.is_success()) {
     return fidl_status;
   }
 
   auto error = fuchsia::bluetooth::Error::New();
-  error->error_code = HostErrorToFidl(status.error());
+  error->error_code = HostErrorToFidlDeprecated(status.error());
   error->description = msg.empty() ? status.ToString() : std::move(msg);
   if (status.is_protocol_error()) {
     error->protocol_error_code = static_cast<uint32_t>(status.protocol_error());
@@ -70,6 +70,23 @@ fuchsia::bluetooth::Status StatusToFidl(const bt::Status<ProtocolErrorCode>& sta
 
   fidl_status.error = std::move(error);
   return fidl_status;
+}
+
+// Convert a bt::HostError to fuchsia.bluetooth.sys.Error. This function does only
+// deals with bt::HostError types and does not support Bluetooth protocol-specific errors; to
+// represent such errors use protocol-specific FIDL error types. An |error| value of
+// HostError::kNoError is not allowed.
+fuchsia::bluetooth::sys::Error HostErrorToFidl(bt::HostError error);
+
+// Convert any bt::Status to a fit::result that uses the fuchsia.bluetooth.sys library error codes.
+template <typename ProtocolErrorCode>
+fit::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
+    bt::Status<ProtocolErrorCode> status) {
+  if (status) {
+    return fit::ok();
+  } else {
+    return fit::error(HostErrorToFidl(status.error()));
+  }
 }
 
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);

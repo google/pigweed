@@ -417,7 +417,7 @@ void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
 
   registered_.emplace(next, handle);
   last_service_id_ = next;
-  callback(fidl_helpers::StatusToFidl(bt::sdp::Status()), next);
+  callback(fidl_helpers::StatusToFidlDeprecated(bt::sdp::Status()), next);
 }
 
 void ProfileServer::RemoveService(uint64_t service_id) {
@@ -465,7 +465,7 @@ void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
   }
 
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
-    cb(fidl_helpers::StatusToFidl(bt::sdp::Status()),
+    cb(fidl_helpers::StatusToFidlDeprecated(bt::sdp::Status()),
        ChannelSocketToFidlChannel(std::move(chan_sock)));
   };
   ZX_DEBUG_ASSERT(adapter());

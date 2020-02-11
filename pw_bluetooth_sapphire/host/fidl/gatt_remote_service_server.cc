@@ -77,7 +77,7 @@ void GattRemoteServiceServer::DiscoverCharacteristics(DiscoverCharacteristicsCal
       }
     }
 
-    callback(fidl_helpers::StatusToFidl(status, ""), std::move(fidl_chrcs));
+    callback(fidl_helpers::StatusToFidlDeprecated(status, ""), std::move(fidl_chrcs));
   };
 
   service_->DiscoverCharacteristics(std::move(res_cb));
@@ -95,7 +95,7 @@ void GattRemoteServiceServer::ReadCharacteristic(uint64_t id, ReadCharacteristic
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
+    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
   };
 
   service_->ReadCharacteristic(CharacteristicHandle(id), std::move(cb));
@@ -115,7 +115,7 @@ void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offse
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
+    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
   };
 
   service_->ReadLongCharacteristic(CharacteristicHandle(id), offset, max_bytes, std::move(cb));
@@ -124,7 +124,7 @@ void GattRemoteServiceServer::ReadLongCharacteristic(uint64_t id, uint16_t offse
 void GattRemoteServiceServer::WriteCharacteristic(uint64_t id, ::std::vector<uint8_t> value,
                                                   WriteCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](bt::att::Status status) {
-    callback(fidl_helpers::StatusToFidl(status, ""));
+    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
   };
 
   service_->WriteCharacteristic(CharacteristicHandle(id), std::move(value), std::move(cb));
@@ -134,7 +134,7 @@ void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offs
                                                       ::std::vector<uint8_t> value,
                                                       WriteLongCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](bt::att::Status status) {
-    callback(fidl_helpers::StatusToFidl(status, ""));
+    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
   };
 
   service_->WriteLongCharacteristic(CharacteristicHandle(id), offset, std::move(value),
@@ -158,7 +158,7 @@ void GattRemoteServiceServer::ReadDescriptor(uint64_t id, ReadDescriptorCallback
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
+    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
   };
 
   service_->ReadDescriptor(DescriptorHandle(id), std::move(cb));
@@ -177,7 +177,7 @@ void GattRemoteServiceServer::ReadLongDescriptor(uint64_t id, uint16_t offset, u
       value.Copy(&vec_view);
     }
 
-    callback(fidl_helpers::StatusToFidl(status), std::move(vec));
+    callback(fidl_helpers::StatusToFidlDeprecated(status), std::move(vec));
   };
 
   service_->ReadLongDescriptor(DescriptorHandle(id), offset, max_bytes, std::move(cb));
@@ -187,7 +187,7 @@ void GattRemoteServiceServer::WriteDescriptor(uint64_t id, ::std::vector<uint8_t
                                               WriteDescriptorCallback callback) {
   service_->WriteDescriptor(DescriptorHandle(id), std::move(value),
                             [callback = std::move(callback)](bt::att::Status status) {
-                              callback(fidl_helpers::StatusToFidl(status, ""));
+                              callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
                             });
 }
 
@@ -196,7 +196,7 @@ void GattRemoteServiceServer::WriteLongDescriptor(uint64_t id, uint16_t offset,
                                                   WriteLongDescriptorCallback callback) {
   service_->WriteLongDescriptor(DescriptorHandle(id), offset, std::move(value),
                                 [callback = std::move(callback)](bt::att::Status status) {
-                                  callback(fidl_helpers::StatusToFidl(status, ""));
+                                  callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
                                 });
 }
 
@@ -218,7 +218,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
 
     service_->DisableNotifications(handle, iter->second,
                                    [callback = std::move(callback)](bt::att::Status status) {
-                                     callback(fidl_helpers::StatusToFidl(status, ""));
+                                     callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
                                    });
     notify_handlers_.erase(iter);
 
@@ -263,7 +263,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
       self->notify_handlers_.erase(handle);
     }
 
-    callback(fidl_helpers::StatusToFidl(status, ""));
+    callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
   };
 
   service_->EnableNotifications(handle, std::move(value_cb), std::move(status_cb));
