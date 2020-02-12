@@ -338,11 +338,30 @@ class TestInfo {
 // the block provided to the TEST macro.
 class Test {
  public:
-  // Runs the unit test. Currently, this simply executes the test body, but it
-  // could be expanded to perform more bookkeeping operations.
-  void PigweedTestRun() { PigweedTestBody(); }
+  Test(const Test&) = delete;
+  Test& operator=(const Test&) = delete;
 
   virtual ~Test() = default;
+
+  // Runs the unit test.
+  void PigweedTestRun() {
+    SetUp();
+    PigweedTestBody();
+    TearDown();
+  }
+
+ protected:
+  Test() = default;
+
+  // Called immediately before executing the test body.
+  //
+  // Setup and cleanup can typically be done in the test fixture's constructor
+  // and destructor, but there are cases where SetUp/TearDown must be used
+  // instead. See the Google Test documentation for more information.
+  virtual void SetUp() {}
+
+  // Called immediately after executing the test body.
+  virtual void TearDown() {}
 
  private:
   friend class internal::Framework;
@@ -366,6 +385,7 @@ class Test {
       : public parent_class {                                           \
    private:                                                             \
     void PigweedTestBody() override;                                    \
+                                                                        \
     static ::pw::unit_test::internal::TestInfo test_info_;              \
   };                                                                    \
                                                                         \

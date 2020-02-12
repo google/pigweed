@@ -173,5 +173,23 @@ class Expectations : public ::testing::Test {
 
 TEST_F(Expectations, SetCoolNumber) { cool_number_ = 14159; }
 
+class SetUpAndTearDown : public ::testing::Test {
+ protected:
+  SetUpAndTearDown() : value_(0) { EXPECT_EQ(value_, 0); }
+
+  ~SetUpAndTearDown() { EXPECT_EQ(value_, 1); }
+
+  void SetUp() override { value_ = 1337; }
+
+  void TearDown() override { value_ = 1; }
+
+  int value_;
+};
+
+TEST_F(SetUpAndTearDown, MakeSureItIsSet) {
+  EXPECT_EQ(value_, 1337);
+  value_ = 3210;
+}
+
 }  // namespace
 }  // namespace pw
