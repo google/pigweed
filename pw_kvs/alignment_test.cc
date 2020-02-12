@@ -85,6 +85,37 @@ TEST(AlignDown, NonAligned_NonPowerOf2) {
   EXPECT_EQ(15u, AlignDown(16, 15));
 }
 
+TEST(Padding, Zero) {
+  EXPECT_EQ(0u, Padding(0, 1));
+  EXPECT_EQ(0u, Padding(0, 2));
+  EXPECT_EQ(0u, Padding(0, 15));
+}
+
+TEST(Padding, Aligned) {
+  for (size_t i = 1; i < 130; ++i) {
+    EXPECT_EQ(0u, Padding(i, i));
+    EXPECT_EQ(0u, Padding(2 * i, i));
+    EXPECT_EQ(0u, Padding(3 * i, i));
+  }
+}
+
+TEST(Padding, NonAligned_PowerOf2) {
+  EXPECT_EQ(31u, Padding(1, 32));
+  EXPECT_EQ(1u, Padding(31, 32));
+  EXPECT_EQ(31u, Padding(33, 32));
+  EXPECT_EQ(19u, Padding(45, 32));
+  EXPECT_EQ(1u, Padding(63, 32));
+  EXPECT_EQ(1u, Padding(127, 32));
+}
+
+TEST(Padding, NonAligned_NonPowerOf2) {
+  EXPECT_EQ(1u, Padding(1, 2));
+
+  EXPECT_EQ(14u, Padding(1, 15));
+  EXPECT_EQ(1u, Padding(14, 15));
+  EXPECT_EQ(14u, Padding(16, 15));
+}
+
 constexpr std::string_view kData =
     "123456789_123456789_123456789_123456789_123456789_"   //  50
     "123456789_123456789_123456789_123456789_123456789_";  // 100

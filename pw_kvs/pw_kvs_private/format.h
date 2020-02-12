@@ -143,7 +143,6 @@ class Entry {
     return sizeof(EntryHeader) + key_length() + value_length();
   }
 
-  static constexpr uint32_t kNoChecksum = 0;
   static constexpr uint32_t kKeyLengthMask = 0b111111;
   static constexpr uint16_t kDeletedValueLength = 0xFFFF;
 
@@ -154,10 +153,6 @@ class Entry {
         uint16_t value_length_bytes,
         size_t alignment_bytes,
         uint32_t key_version);
-
-  static constexpr size_t checked_data_offset() {
-    return offsetof(EntryHeader, alignment_units);
-  }
 
   span<const std::byte> checksum_bytes() const {
     return as_bytes(span(&header_.checksum, 1));

@@ -14,6 +14,8 @@
 
 #include "pw_kvs_private/format.h"
 
+#include <cinttypes>
+
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
@@ -30,7 +32,7 @@ Entry::Entry(uint32_t magic,
              size_t alignment_bytes,
              uint32_t key_version)
     : header_{.magic = magic,
-              .checksum = kNoChecksum,
+              .checksum = 0,
               .alignment_units = alignment_bytes_to_units(alignment_bytes),
               .key_length_bytes = static_cast<uint8_t>(key.size()),
               .value_length_bytes = value_length_bytes,
@@ -50,7 +52,7 @@ Status Entry::VerifyChecksum(ChecksumAlgorithm* algorithm,
                              string_view key,
                              span<const byte> value) const {
   if (algorithm == nullptr) {
-    return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
+    return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
   }
   CalculateChecksum(algorithm, key, value);
   return algorithm->Verify(checksum_bytes());
@@ -59,28 +61,23 @@ Status Entry::VerifyChecksum(ChecksumAlgorithm* algorithm,
 Status Entry::VerifyChecksumInFlash(FlashPartition* partition,
                                     FlashPartition::Address address,
                                     ChecksumAlgorithm* algorithm) const {
-  // Read the entire entry piece-by-piece into a small buffer.
-  // TODO: This read may be unaligned. The partition can handle this, but
-  // consider creating a API that skips the intermediate buffering.
-  byte buffer[32];
+  // Read the entire entry piece-by-piece into a small buffer. If the entry is
+  // 32 B or less, only one read is required.
+  union {
+    EntryHeader header_to_verify;
+    byte buffer[sizeof(EntryHeader) * 2];
+  };
 
-  // Read and compare the magic and checksum.
-  TRY(partition->Read(address, checked_data_offset(), buffer));
-  if (std::memcmp(this, buffer, checked_data_offset()) != 0) {
-    static_assert(sizeof(unsigned) >= sizeof(uint32_t));
-    unsigned actual_magic;
-    std::memcpy(&actual_magic, &buffer[0], sizeof(uint32_t));
-    unsigned actual_checksum;
-    std::memcpy(&actual_checksum, &buffer[4], sizeof(uint32_t));
+  size_t bytes_to_read = size();
+  size_t read_size = std::min(sizeof(buffer), bytes_to_read);
 
-    PW_LOG_ERROR(
-        "Expected: magic=%08x, checksum=%08x; "
-        "Actual: magic=%08x, checksum=%08x",
-        unsigned(magic()),
-        unsigned(checksum()),
-        actual_magic,
-        actual_checksum);
+  // Read the first chunk, which includes the header, and compare the checksum.
+  TRY(partition->Read(address, read_size, buffer));
 
+  if (header_to_verify.checksum != checksum()) {
+    PW_LOG_ERROR("Expected checksum %08" PRIx32 ", found %08" PRIx32,
+                 checksum(),
+                 header_to_verify.checksum);
     return Status::DATA_LOSS;
   }
 
@@ -88,20 +85,24 @@ Status Entry::VerifyChecksumInFlash(FlashPartition* partition,
     return Status::OK;
   }
 
+  // The checksum is calculated as if the header's checksum field were 0.
+  header_to_verify.checksum = 0;
+
   algorithm->Reset();
 
-  // Read and calculate the checksum of the remaining header, key, and value.
-  address += checked_data_offset();
-  size_t bytes_to_read = content_size() - checked_data_offset();
-
-  while (bytes_to_read > 0u) {
-    const size_t read_size = std::min(sizeof(buffer), bytes_to_read);
-
-    TRY(partition->Read(address, read_size, buffer));
+  while (true) {
+    // Add the chunk in the buffer to the checksum.
     algorithm->Update(buffer, read_size);
 
-    address += read_size;
     bytes_to_read -= read_size;
+    if (bytes_to_read == 0u) {
+      break;
+    }
+
+    // Read the next chunk into the buffer.
+    address += read_size;
+    read_size = std::min(sizeof(buffer), bytes_to_read);
+    TRY(partition->Read(address, read_size, buffer));
   }
 
   algorithm->Finish();
@@ -112,10 +113,25 @@ span<const byte> Entry::CalculateChecksum(ChecksumAlgorithm* algorithm,
                                           const string_view key,
                                           span<const byte> value) const {
   algorithm->Reset();
-  algorithm->Update(reinterpret_cast<const byte*>(this) + checked_data_offset(),
-                    sizeof(*this) - checked_data_offset());
-  algorithm->Update(as_bytes(span(key)));
-  algorithm->Update(value);
+
+  {
+    EntryHeader header_for_checksum = header_;
+    header_for_checksum.checksum = 0;
+
+    algorithm->Update(&header_for_checksum, sizeof(header_for_checksum));
+    algorithm->Update(as_bytes(span(key)));
+    algorithm->Update(value);
+  }
+
+  // Update the checksum with 0s to pad the entry to its alignment boundary.
+  constexpr byte padding[kMinAlignmentBytes - 1] = {};
+  size_t padding_to_add = Padding(content_size(), alignment_bytes());
+
+  while (padding_to_add > 0u) {
+    const size_t chunk_size = std::min(padding_to_add, sizeof(padding));
+    algorithm->Update(padding, chunk_size);
+    padding_to_add -= chunk_size;
+  }
 
   return algorithm->Finish();
 }
