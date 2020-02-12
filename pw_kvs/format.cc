@@ -53,6 +53,7 @@ Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
     return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
   }
   CalculateChecksum(algorithm, key, value);
+  algorithm->Finish();
   return algorithm->Verify(checksum_bytes());
 }
 
@@ -103,6 +104,7 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
     address += read_size;
     bytes_to_read -= read_size;
   }
+  algorithm->Finish();
 
   return algorithm->Verify(checksum_bytes());
 }
