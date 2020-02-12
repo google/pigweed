@@ -94,6 +94,8 @@ const span<const byte> kBytes = as_bytes(span(kData));
 TEST(AlignedWriter, VaryingLengthWriteCalls) {
   static constexpr size_t kAlignment = 10;
 
+  // The output function checks that the data is properly aligned and matches
+  // the expected value (should always be 123456789_...).
   OutputToFunction output([](span<const byte> data) {
     EXPECT_EQ(data.size() % kAlignment, 0u);
     EXPECT_EQ(kData.substr(0, data.size()),
@@ -102,19 +104,26 @@ TEST(AlignedWriter, VaryingLengthWriteCalls) {
     return StatusWithSize(data.size());
   });
 
-  AlignedWriterBuffer<64> writer(kAlignment, output);
+  AlignedWriterBuffer<32> writer(kAlignment, output);
 
+  // Write values smaller than the alignment.
   EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(0, 1)));
   EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(1, 9)));
+
+  // Write values larger than the alignment but smaller than the buffer.
   EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(10, 11)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(21, 20)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(41, 9)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(50, 10)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(60, 30)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(90, 5)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(95, 0)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(95, 4)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(99, 1)));
+
+  // Exactly fill the remainder of the buffer.
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(21, 11)));
+
+  // Fill the buffer more than once.
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(32, 66)));
+
+  // Write nothing.
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 0)));
+
+  // Write the remaining data.
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 2)));
 
   auto result = writer.Flush();
   EXPECT_EQ(Status::OK, result.status());

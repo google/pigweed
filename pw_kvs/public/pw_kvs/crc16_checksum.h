@@ -23,13 +23,11 @@ class ChecksumCrc16 final : public ChecksumAlgorithm {
  public:
   ChecksumCrc16() : ChecksumAlgorithm(as_bytes(span(&crc_, 1))) {}
 
-  void Reset() final { crc_ = checksum::kCcittCrc16DefaultInitialValue; }
+  void Reset() override { crc_ = checksum::kCcittCrc16DefaultInitialValue; }
 
-  void Update(span<const std::byte> data) final {
+  void Update(span<const std::byte> data) override {
     crc_ = checksum::CcittCrc16(data, crc_);
   }
-
-  span<const std::byte> Finish() final { return state(); }
 
  private:
   uint16_t crc_ = checksum::kCcittCrc16DefaultInitialValue;

@@ -15,6 +15,7 @@
 
 #include <cstddef>
 
+#include "pw_kvs/alignment.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
@@ -28,21 +29,28 @@ class ChecksumAlgorithm {
   // Updates the checksum with the provided data.
   virtual void Update(span<const std::byte> data) = 0;
 
-  // Update the checksum from a pointer and size.
+  // Updates the checksum from a pointer and size.
   void Update(const void* data, size_t size_bytes) {
     return Update(span(static_cast<const std::byte*>(data), size_bytes));
   }
 
   // Returns the final result of the checksum. Update() can no longer be called
   // after this. The returned span is valid until a call to Reset().
-  virtual span<const std::byte> Finish() = 0;
+  //
+  // Finish MUST be called before calling Verify.
+  span<const std::byte> Finish() {
+    Finalize();  // Implemented by derived classes, if required.
+    return state();
+  }
 
   // Returns the size of the checksum state.
   constexpr size_t size_bytes() const { return state_.size(); }
 
-  // Compares a calculated checksum to this checksum's current state. The
-  // checksum must be at least as large as size_bytes(). If it is larger, bytes
-  // beyond size_bytes() are ignored.
+  // Compares a calculated checksum to this checksum's state. The checksum must
+  // be at least as large as size_bytes(). If it is larger, bytes beyond
+  // size_bytes() are ignored.
+  //
+  // Finish MUST be called before calling Verify.
   Status Verify(span<const std::byte> checksum) const;
 
  protected:
@@ -57,7 +65,40 @@ class ChecksumAlgorithm {
   constexpr span<const std::byte> state() const { return state_; }
 
  private:
+  // Checksums that require finalizing operations may override this method.
+  virtual void Finalize() {}
+
   span<const std::byte> state_;
+};
+
+// Calculates a checksum in kAlignmentBytes chunks. Checksum classes can inherit
+// from this and implement UpdateAligned and FinalizeAligned instead of Update
+// and Finalize.
+template <size_t kAlignmentBytes, size_t kBufferSize = kAlignmentBytes>
+class AlignedChecksum : public ChecksumAlgorithm {
+ public:
+  void Update(span<const std::byte> data) final { writer_.Write(data); }
+
+ protected:
+  constexpr AlignedChecksum(span<const std::byte> state)
+      : ChecksumAlgorithm(state),
+        output_(this),
+        writer_(kAlignmentBytes, output_) {}
+
+  ~AlignedChecksum() = default;
+
+ private:
+  void Finalize() final {
+    writer_.Flush();
+    FinalizeAligned();
+  }
+
+  virtual void UpdateAligned(span<const std::byte> data) = 0;
+
+  virtual void FinalizeAligned() = 0;
+
+  OutputToMethod<&AlignedChecksum::UpdateAligned> output_;
+  AlignedWriterBuffer<kBufferSize> writer_;
 };
 
 }  // namespace pw::kvs

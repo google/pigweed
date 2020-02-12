@@ -137,9 +137,9 @@ class EntryHeader {
     return as_bytes(span(&checksum_, 1));
   }
 
-  void CalculateChecksum(ChecksumAlgorithm* algorithm,
-                         std::string_view key,
-                         span<const std::byte> value) const;
+  span<const std::byte> CalculateChecksum(ChecksumAlgorithm* algorithm,
+                                          std::string_view key,
+                                          span<const std::byte> value) const;
 
   static constexpr uint8_t alignment_bytes_to_units(size_t alignment_bytes) {
     return (alignment_bytes + 15) / 16 - 1;  // An alignment of 0 is invalid.

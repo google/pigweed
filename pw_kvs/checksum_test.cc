@@ -67,5 +67,64 @@ TEST(Checksum, Reset) {
   EXPECT_EQ(state[1], byte{0xFF});
 }
 
+constexpr size_t kAlignment = 10;
+
+constexpr std::string_view kData =
+    "123456789_123456789_123456789_123456789_123456789_"   //  50
+    "123456789_123456789_123456789_123456789_123456789_";  // 100
+const span<const byte> kBytes = as_bytes(span(kData));
+
+class PickyChecksum final : public AlignedChecksum<kAlignment, 32> {
+ public:
+  PickyChecksum() : AlignedChecksum(data_), data_{}, size_(0) {}
+
+  void Reset() override {}
+
+  void FinalizeAligned() override { EXPECT_EQ(kData.size(), size_); }
+
+  void UpdateAligned(span<const std::byte> data) override {
+    ASSERT_EQ(data.size() % kAlignment, 0u);
+    EXPECT_EQ(kData.substr(0, data.size()),
+              std::string_view(reinterpret_cast<const char*>(data.data()),
+                               data.size()));
+
+    std::memcpy(&data_[size_], data.data(), data.size());
+    size_ += data.size();
+  }
+
+ private:
+  std::byte data_[kData.size()];
+  size_t size_;
+};
+
+TEST(AlignedChecksum, MaintainsAlignment) {
+  PickyChecksum checksum;
+
+  // Write values smaller than the alignment.
+  checksum.Update(kBytes.subspan(0, 1));
+  checksum.Update(kBytes.subspan(1, 9));
+
+  // Write values larger than the alignment but smaller than the buffer.
+  checksum.Update(kBytes.subspan(10, 11));
+
+  // Exactly fill the remainder of the buffer.
+  checksum.Update(kBytes.subspan(21, 11));
+
+  // Fill the buffer more than once.
+  checksum.Update(kBytes.subspan(32, 66));
+
+  // Write nothing.
+  checksum.Update(kBytes.subspan(98, 0));
+
+  // Write the remaining data.
+  checksum.Update(kBytes.subspan(98, 2));
+
+  auto state = checksum.Finish();
+  EXPECT_EQ(std::string_view(reinterpret_cast<const char*>(state.data()),
+                             state.size()),
+            kData);
+  EXPECT_EQ(Status::OK, checksum.Verify(kBytes));
+}
+
 }  // namespace
 }  // namespace pw::kvs

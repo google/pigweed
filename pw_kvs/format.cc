@@ -36,10 +36,10 @@ EntryHeader::EntryHeader(uint32_t magic,
       value_length_bytes_(value_length_bytes),
       key_version_(key_version) {
   if (algorithm != nullptr) {
-    CalculateChecksum(algorithm, key, value);
+    span<const byte> checksum = CalculateChecksum(algorithm, key, value);
     std::memcpy(&checksum_,
-                algorithm->Finish().data(),
-                std::min(algorithm->size_bytes(), sizeof(checksum_)));
+                checksum.data(),
+                std::min(checksum.size(), sizeof(checksum_)));
   }
 
   // TODO: 0 is an invalid alignment value. There should be an assert for this.
@@ -53,7 +53,6 @@ Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
     return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
   }
   CalculateChecksum(algorithm, key, value);
-  algorithm->Finish();
   return algorithm->Verify(checksum_bytes());
 }
 
@@ -104,19 +103,21 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
     address += read_size;
     bytes_to_read -= read_size;
   }
-  algorithm->Finish();
 
+  algorithm->Finish();
   return algorithm->Verify(checksum_bytes());
 }
 
-void EntryHeader::CalculateChecksum(ChecksumAlgorithm* algorithm,
-                                    const string_view key,
-                                    span<const byte> value) const {
+span<const byte> EntryHeader::CalculateChecksum(ChecksumAlgorithm* algorithm,
+                                                const string_view key,
+                                                span<const byte> value) const {
   algorithm->Reset();
   algorithm->Update(reinterpret_cast<const byte*>(this) + checked_data_offset(),
                     sizeof(*this) - checked_data_offset());
   algorithm->Update(as_bytes(span(key)));
   algorithm->Update(value);
+
+  return algorithm->Finish();
 }
 
 }  // namespace pw::kvs
