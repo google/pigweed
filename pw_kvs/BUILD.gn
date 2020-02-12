@@ -22,11 +22,14 @@ config("default_config") {
 source_set("pw_kvs") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_kvs/alignment.h",
     "public/pw_kvs/checksum.h",
     "public/pw_kvs/flash_memory.h",
     "public/pw_kvs/key_value_store.h",
+    "public/pw_kvs/output.h",
   ]
   sources = [
+    "alignment.cc",
     "checksum.cc",
     "flash_memory.cc",
     "format.cc",
@@ -85,10 +88,20 @@ executable("debug_cli") {
 
 pw_test_group("tests") {
   tests = [
+    ":alignment_test",
     ":checksum_test",
     ":entry_test",
     ":key_value_store_test",
     ":key_value_store_fuzz_test",
+  ]
+}
+
+pw_test("alignment_test") {
+  deps = [
+    ":pw_kvs",
+  ]
+  sources = [
+    "alignment_test.cc",
   ]
 }
 

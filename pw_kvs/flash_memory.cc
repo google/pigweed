@@ -20,10 +20,17 @@
 
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::kvs {
 
 using std::byte;
+
+StatusWithSize FlashPartition::Output::Write(span<const byte> data) {
+  TRY(flash_.Write(address_, data));
+  address_ += data.size();
+  return StatusWithSize(data.size());
+}
 
 Status FlashPartition::Erase(Address address, size_t num_sectors) {
   if (permission_ == PartitionPermission::kReadOnly) {
@@ -45,54 +52,6 @@ StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
   }
   TRY(CheckBounds(address, data.size()));
   return flash_.Write(PartitionToFlashAddress(address), data);
-}
-
-StatusWithSize FlashPartition::WriteAligned(
-    const Address start_address, std::initializer_list<span<const byte>> data) {
-  byte buffer[64];  // TODO: Configure this?
-
-  Address address = start_address;
-  auto bytes_written = [&]() { return address - start_address; };
-
-  const size_t write_size = AlignDown(sizeof(buffer), alignment_bytes());
-  size_t bytes_in_buffer = 0;
-
-  for (span<const byte> chunk : data) {
-    while (!chunk.empty()) {
-      const size_t to_copy =
-          std::min(write_size - bytes_in_buffer, chunk.size());
-
-      std::memcpy(&buffer[bytes_in_buffer], chunk.data(), to_copy);
-      chunk = chunk.subspan(to_copy);
-      bytes_in_buffer += to_copy;
-
-      // If the buffer is full, write it out.
-      if (bytes_in_buffer == write_size) {
-        Status status = Write(address, span(buffer, write_size));
-        if (!status.ok()) {
-          return StatusWithSize(status, bytes_written());
-        }
-
-        address += write_size;
-        bytes_in_buffer = 0;
-      }
-    }
-  }
-
-  // If data remains in the buffer, pad it to the alignment size and flush
-  // the remaining data.
-  if (bytes_in_buffer != 0u) {
-    size_t remaining_write_size = AlignUp(bytes_in_buffer, alignment_bytes());
-    std::memset(
-        &buffer[bytes_in_buffer], 0, remaining_write_size - bytes_in_buffer);
-    if (Status status = Write(address, span(buffer, remaining_write_size));
-        !status.ok()) {
-      return StatusWithSize(status, bytes_written());
-    }
-    address += remaining_write_size;  // Include padding bytes in the total.
-  }
-
-  return StatusWithSize(bytes_written());
 }
 
 Status FlashPartition::IsRegionErased(Address source_flash_address,

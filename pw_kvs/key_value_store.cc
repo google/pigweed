@@ -750,12 +750,13 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   Address address = NextWritableAddress(sector);
   DBG("Appending to address: %#zx", size_t(address));
 
-  // Handles writing multiple concatenated buffers, while breaking up the writes
-  // into alignment-sized blocks.
-  TRY_ASSIGN(
-      const size_t written,
-      partition_.WriteAligned(
-          address, {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
+  // Write multiple concatenated buffers and pad the results.
+  FlashPartition::Output flash(partition_, address);
+  TRY_ASSIGN(const size_t written,
+             AlignedWrite<32>(
+                 flash,
+                 header.alignment_bytes(),
+                 {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
 
   if (options_.verify_on_write) {
     TRY(header.VerifyChecksumInFlash(

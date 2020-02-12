@@ -17,23 +17,10 @@
 #include <cstdint>
 #include <initializer_list>
 
+#include "pw_kvs/alignment.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
-
-namespace pw {
-
-// TODO: These are general-purpose utility functions that should be moved
-//       elsewhere.
-constexpr size_t AlignDown(size_t value, size_t alignment) {
-  return (value / alignment) * alignment;
-}
-
-constexpr size_t AlignUp(size_t value, size_t alignment) {
-  return (value + alignment - 1) / alignment * alignment;
-}
-
-}  // namespace pw
 
 namespace pw::kvs {
 
@@ -137,6 +124,19 @@ class FlashPartition {
   // The flash address is in the range of: 0 to PartitionSize.
   using Address = uint32_t;
 
+  // Implement Output for the Write method.
+  class Output final : public pw::Output {
+   public:
+    constexpr Output(FlashPartition& flash, FlashPartition::Address address)
+        : flash_(flash), address_(address) {}
+
+    StatusWithSize Write(span<const std::byte> data) override;
+
+   private:
+    FlashPartition& flash_;
+    FlashPartition::Address address_;
+  };
+
   constexpr FlashPartition(
       FlashMemory* flash,
       uint32_t start_sector_index,
@@ -184,10 +184,6 @@ class FlashPartition {
   //          PERMISSION_DENIED, if partition is read only.
   //          UNKNOWN, on HAL error
   virtual StatusWithSize Write(Address address, span<const std::byte> data);
-
-  // Returns the total number of bytes written, including any padding.
-  StatusWithSize WriteAligned(
-      Address start_address, std::initializer_list<span<const std::byte>> data);
 
   // Check to see if chunk of flash memory is erased. Address and len need to
   // be aligned with FlashMemory.

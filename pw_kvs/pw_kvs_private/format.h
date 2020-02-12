@@ -20,6 +20,7 @@
 #include <cstring>
 #include <string_view>
 
+#include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_span/span.h"

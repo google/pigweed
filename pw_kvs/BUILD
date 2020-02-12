@@ -25,6 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_kvs",
     srcs = [
+        "alignment.cc",
         "checksum.cc",
         "flash_memory.cc",
         "format.cc",
@@ -33,10 +34,12 @@ pw_cc_library(
         "pw_kvs_private/macros.h",
     ],
     hdrs = [
+        "public/pw_kvs/alignment.h",
         "public/pw_kvs/checksum.h",
         "public/pw_kvs/crc16_checksum.h",
         "public/pw_kvs/flash_memory.h",
         "public/pw_kvs/key_value_store.h",
+        "public/pw_kvs/output.h",
     ],
     includes = ["public"],
     deps = [
@@ -67,6 +70,16 @@ pw_cc_library(
     deps = [
         "//pw_log",
         "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "alignment_test",
+    srcs = [
+        "alignment_test.cc",
+    ],
+    deps = [
+        ":pw_kvs",
     ],
 )
 

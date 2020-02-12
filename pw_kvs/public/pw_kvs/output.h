@@ -1,0 +1,89 @@
+// Copyright 2020 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+#include <cstddef>
+#include <type_traits>
+
+#include "pw_span/span.h"
+#include "pw_status/status_with_size.h"
+
+namespace pw {
+namespace internal {
+
+template <typename T>
+struct FunctionTraits;
+
+template <typename T, typename ReturnType, typename... Args>
+struct FunctionTraits<ReturnType (T::*)(Args...)> {
+  using Class = T;
+  using Return = ReturnType;
+};
+
+}  // namespace internal
+
+// Writes bytes to an unspecified output. Provides a Write function that takes a
+// span of bytes and returns a Status.
+class Output {
+ public:
+  virtual StatusWithSize Write(span<const std::byte> data) = 0;
+
+  // Convenience wrapper for writing data from a pointer and length.
+  StatusWithSize Write(const void* data, size_t size_bytes) {
+    return Write(span(static_cast<const std::byte*>(data), size_bytes));
+  }
+
+ protected:
+  ~Output() = default;
+};
+
+// Output adapter that calls a method on a class with a span of bytes. If the
+// method returns void instead of the expected Status, Write always returns
+// Status::OK.
+template <auto kMethod>
+class OutputToMethod final : public Output {
+  using Class = typename internal::FunctionTraits<decltype(kMethod)>::Class;
+
+ public:
+  constexpr OutputToMethod(Class* object) : object_(*object) {}
+
+  StatusWithSize Write(span<const std::byte> data) override {
+    using Return = typename internal::FunctionTraits<decltype(kMethod)>::Return;
+
+    if constexpr (std::is_void_v<Return>) {
+      (object_.*kMethod)(data);
+      return StatusWithSize(data.size());
+    } else {
+      return (object_.*kMethod)(data);
+    }
+  }
+
+ private:
+  Class& object_;
+};
+
+// Output adapter that calls a free function.
+class OutputToFunction final : public Output {
+ public:
+  OutputToFunction(StatusWithSize (*function)(span<const std::byte>))
+      : function_(function) {}
+
+  StatusWithSize Write(span<const std::byte> data) override {
+    return function_(data);
+  }
+
+  StatusWithSize (*function_)(span<const std::byte>);
+};
+
+}  // namespace pw
