@@ -48,7 +48,7 @@ using ConvertsToSpan =
     std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
 
 // Internal-only persistent storage header format.
-class EntryHeader;
+class Entry;
 
 struct EntryHeaderFormat {
   // Magic is a unique constant identifier for entries.
@@ -277,11 +277,11 @@ class KeyValueStore {
         key, const_cast<const KeyDescriptor**>(result));
   }
 
-  Status ReadEntryHeader(Address address, EntryHeader* header) const;
+  Status ReadEntryHeader(Address address, Entry* header) const;
   Status ReadEntryKey(Address address, size_t key_length, char* key) const;
 
   StatusWithSize ReadEntryValue(const KeyDescriptor& key_descriptor,
-                                const EntryHeader& header,
+                                const Entry& header,
                                 span<std::byte> value) const;
 
   Status LoadEntry(Address entry_address, Address* next_entry_address);
@@ -289,7 +289,7 @@ class KeyValueStore {
       const KeyDescriptor& key_descriptor);
   Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);
 
-  Status ValidateEntryChecksumInFlash(const EntryHeader& header,
+  Status ValidateEntryChecksumInFlash(const Entry& header,
                                       std::string_view key,
                                       const KeyDescriptor& entry) const;
 
@@ -313,7 +313,7 @@ class KeyValueStore {
 
   SectorDescriptor* FindSectorToGarbageCollect();
 
-  bool HeaderLooksLikeUnwrittenData(const EntryHeader& header) const;
+  bool HeaderLooksLikeUnwrittenData(const Entry& header) const;
 
   KeyDescriptor* FindDescriptor(uint32_t hash);
 

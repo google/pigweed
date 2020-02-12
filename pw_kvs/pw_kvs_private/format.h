@@ -27,42 +27,70 @@
 
 namespace pw::kvs {
 
-// EntryHeader represents a key-value entry as stored in flash.
-class EntryHeader {
+// Disk format of the header used for each key-value entry.
+struct EntryHeader {
+  uint32_t magic;
+
+  // The checksum of the entire entry, including the header, key, value, and
+  // zero-value padding bytes. The checksum is calculated as if the checksum
+  // field value was zero.
+  uint32_t checksum;
+
+  // Stores the alignment in 16-byte units, starting from 16. To calculate the
+  // number of bytes, add one to this number and multiply by 16.
+  uint8_t alignment_units;
+
+  // The length of the key in bytes. The key is not null terminated.
+  //  6 bits, 0:5 - key length - maximum 64 characters
+  //  2 bits, 6:7 - reserved
+  uint8_t key_length_bytes;
+
+  // Byte length of the value; maximum of 65534. The max uint16_t value (65535
+  // or 0xFFFF) is reserved to indicate this is a tombstone (deleted) entry.
+  uint16_t value_length_bytes;
+
+  // The version of the key. Monotonically increasing.
+  uint32_t key_version;
+};
+
+static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
+
+// Entry represents a key-value entry.
+class Entry {
  public:
-  static constexpr size_t kMinAlignmentBytes = 16;
+  static constexpr size_t kMinAlignmentBytes = sizeof(EntryHeader);
 
-  EntryHeader() = default;
+  Entry() = default;
 
-  // Creates a new EntryHeader for a valid (non-deleted) entry.
-  static EntryHeader Valid(uint32_t magic,
-                           ChecksumAlgorithm* algorithm,
-                           std::string_view key,
-                           span<const std::byte> value,
-                           size_t alignment_bytes,
-                           uint32_t key_version) {
-    return EntryHeader(magic,
-                       algorithm,
-                       key,
-                       value,
-                       value.size(),
-                       alignment_bytes,
-                       key_version);
+  // Creates a new Entry for a valid (non-deleted) entry.
+  static Entry Valid(uint32_t magic,
+                     ChecksumAlgorithm* algorithm,
+                     std::string_view key,
+                     span<const std::byte> value,
+                     size_t alignment_bytes,
+                     uint32_t key_version) {
+    return Entry(magic,
+                 algorithm,
+                 key,
+                 value,
+                 value.size(),
+                 alignment_bytes,
+                 key_version);
   }
 
-  // Creates a new EntryHeader for a tombstone entry, which marks a deleted key.
-  static EntryHeader Tombstone(uint32_t magic,
-                               ChecksumAlgorithm* algorithm,
-                               std::string_view key,
-                               size_t alignment_bytes,
-                               uint32_t key_version) {
-    return EntryHeader(magic,
-                       algorithm,
-                       key,
-                       {},
-                       kDeletedValueLength,
-                       alignment_bytes,
-                       key_version);
+  // Creates a new Entry for a tombstone entry, which marks a deleted key.
+  static Entry Tombstone(uint32_t magic,
+                         ChecksumAlgorithm* algorithm,
+                         std::string_view key,
+                         size_t alignment_bytes,
+                         uint32_t key_version) {
+    return Entry(magic,
+                 algorithm,
+                 key,
+                 {},
+                 kDeletedValueLength,
+                 alignment_bytes,
+                 key_version);
   }
 
   Status VerifyChecksum(ChecksumAlgorithm* algorithm,
@@ -84,32 +112,30 @@ class EntryHeader {
   // Total size of this entry, including padding.
   size_t size() const { return AlignUp(content_size(), alignment_bytes()); }
 
-  uint32_t magic() const { return magic_; }
+  uint32_t magic() const { return header_.magic; }
 
-  uint32_t checksum() const { return checksum_; }
+  uint32_t checksum() const { return header_.checksum; }
 
   // The length of the key in bytes. Keys are not null terminated.
-  size_t key_length() const { return key_length_bytes_; }
+  size_t key_length() const { return header_.key_length_bytes; }
 
   static constexpr size_t max_key_length() { return kKeyLengthMask; }
 
-  void set_key_length(uint32_t key_length) { key_length_bytes_ = key_length; }
-
   // The length of the value, which is 0 if this is a tombstone entry.
-  size_t value_length() const { return deleted() ? 0u : value_length_bytes_; }
+  size_t value_length() const {
+    return deleted() ? 0u : header_.value_length_bytes;
+  }
 
   static constexpr size_t max_value_length() { return 0xFFFE; }
 
-  void set_value_length(uint16_t value_length) {
-    value_length_bytes_ = value_length;
-  }
+  size_t alignment_bytes() const { return (header_.alignment_units + 1) * 16; }
 
-  size_t alignment_bytes() const { return (alignment_units_ + 1) * 16; }
-
-  uint32_t key_version() const { return key_version_; }
+  uint32_t key_version() const { return header_.key_version; }
 
   // True if this is a tombstone entry.
-  bool deleted() const { return value_length_bytes_ == kDeletedValueLength; }
+  bool deleted() const {
+    return header_.value_length_bytes == kDeletedValueLength;
+  }
 
  private:
   // The total size of the entry, excluding padding.
@@ -121,20 +147,20 @@ class EntryHeader {
   static constexpr uint32_t kKeyLengthMask = 0b111111;
   static constexpr uint16_t kDeletedValueLength = 0xFFFF;
 
-  EntryHeader(uint32_t magic,
-              ChecksumAlgorithm* algorithm,
-              std::string_view key,
-              span<const std::byte> value,
-              uint16_t value_length_bytes,
-              size_t alignment_bytes,
-              uint32_t key_version);
+  Entry(uint32_t magic,
+        ChecksumAlgorithm* algorithm,
+        std::string_view key,
+        span<const std::byte> value,
+        uint16_t value_length_bytes,
+        size_t alignment_bytes,
+        uint32_t key_version);
 
   static constexpr size_t checked_data_offset() {
-    return offsetof(EntryHeader, alignment_units_);
+    return offsetof(EntryHeader, alignment_units);
   }
 
   span<const std::byte> checksum_bytes() const {
-    return as_bytes(span(&checksum_, 1));
+    return as_bytes(span(&header_.checksum, 1));
   }
 
   span<const std::byte> CalculateChecksum(ChecksumAlgorithm* algorithm,
@@ -145,27 +171,7 @@ class EntryHeader {
     return (alignment_bytes + 15) / 16 - 1;  // An alignment of 0 is invalid.
   }
 
-  uint32_t magic_;
-  uint32_t checksum_;
-
-  // Stores the alignment in 16-byte units, starting from 16. To calculate the
-  // number of bytes, add one to this number and multiply by 16.
-  uint8_t alignment_units_;
-
-  // The length of the key in bytes.
-  //  6 bits, 0:5 - key - maximum 64 characters
-  //  2 bits, 6:7 - reserved
-  uint8_t key_length_bytes_;
-
-  // Byte length of the value; maximum of 65534. The max uint16_t value (65535
-  // or 0xFFFF) is reserved to indicate this is a tombstone (deleted) entry.
-  uint16_t value_length_bytes_;
-
-  // The version of the key. Monotonically increasing.
-  uint32_t key_version_;
+  EntryHeader header_;
 };
-
-static_assert(sizeof(EntryHeader) == 16, "EntryHeader should have no padding");
-static_assert(sizeof(EntryHeader) == EntryHeader::kMinAlignmentBytes);
 
 }  // namespace pw::kvs

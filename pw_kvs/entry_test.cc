@@ -19,20 +19,19 @@
 namespace pw::kvs {
 namespace {
 
-TEST(EntryHeader, Alignment) {
+TEST(Entry, Alignment) {
   for (size_t alignment_bytes = 1; alignment_bytes <= 4096; ++alignment_bytes) {
-    ASSERT_EQ(AlignUp(alignment_bytes, EntryHeader::kMinAlignmentBytes),
-              EntryHeader::Valid(9, nullptr, "k", {}, alignment_bytes, 0)
+    ASSERT_EQ(AlignUp(alignment_bytes, Entry::kMinAlignmentBytes),
+              Entry::Valid(9, nullptr, "k", {}, alignment_bytes, 0)
                   .alignment_bytes());
-    ASSERT_EQ(AlignUp(alignment_bytes, EntryHeader::kMinAlignmentBytes),
-              EntryHeader::Tombstone(9, nullptr, "k", alignment_bytes, 0)
+    ASSERT_EQ(AlignUp(alignment_bytes, Entry::kMinAlignmentBytes),
+              Entry::Tombstone(9, nullptr, "k", alignment_bytes, 0)
                   .alignment_bytes());
   }
 }
 
-TEST(EntryHeader, ValidEntry) {
-  EntryHeader entry =
-      EntryHeader::Valid(9, nullptr, "k", as_bytes(span("123")), 1, 9876);
+TEST(Entry, ValidEntry) {
+  Entry entry = Entry::Valid(9, nullptr, "k", as_bytes(span("123")), 1, 9876);
 
   EXPECT_FALSE(entry.deleted());
   EXPECT_EQ(entry.magic(), 9u);
@@ -43,8 +42,8 @@ TEST(EntryHeader, ValidEntry) {
   EXPECT_EQ(entry.key_version(), 9876u);
 }
 
-TEST(EntryHeader, Tombstone) {
-  EntryHeader entry = EntryHeader::Tombstone(99, nullptr, "key", 1, 123);
+TEST(Entry, Tombstone) {
+  Entry entry = Entry::Tombstone(99, nullptr, "key", 1, 123);
 
   EXPECT_TRUE(entry.deleted());
   EXPECT_EQ(entry.magic(), 99u);

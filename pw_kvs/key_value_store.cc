@@ -125,7 +125,7 @@ Status KeyValueStore::Init() {
   // For every valid key, increment the valid bytes for that sector.
   for (KeyDescriptor& key_descriptor : key_descriptors_) {
     uint32_t sector_id = key_descriptor.address / sector_size_bytes;
-    EntryHeader header;
+    Entry header;
     TRY(ReadEntryHeader(key_descriptor.address, &header));
     sectors_[sector_id].valid_bytes += header.size();
   }
@@ -135,7 +135,7 @@ Status KeyValueStore::Init() {
 
 Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
-  EntryHeader header;
+  Entry header;
   TRY(ReadEntryHeader(entry_address, &header));
   // TODO: Should likely add a "LogHeader" method or similar.
   DBG("Header: ");
@@ -231,8 +231,7 @@ Status KeyValueStore::AppendEmptyDescriptor(KeyDescriptor** new_descriptor) {
 }
 
 // TODO: Finish.
-bool KeyValueStore::HeaderLooksLikeUnwrittenData(
-    const EntryHeader& header) const {
+bool KeyValueStore::HeaderLooksLikeUnwrittenData(const Entry& header) const {
   // TODO: This is not correct; it should call through to flash memory.
   return header.magic() == 0xffffffff;
 }
@@ -257,7 +256,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
     return Status::NOT_FOUND;
   }
 
-  EntryHeader header;
+  Entry header;
   TRY(ReadEntryHeader(key_descriptor->address, &header));
 
   StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
@@ -320,7 +319,7 @@ KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
 const KeyValueStore::Item& KeyValueStore::iterator::operator*() {
   std::memset(item_.key_buffer_.data(), 0, item_.key_buffer_.size());
 
-  EntryHeader header;
+  Entry header;
   if (item_.kvs_.ReadEntryHeader(descriptor().address, &header).ok()) {
     item_.kvs_.ReadEntryKey(
         descriptor().address, header.key_length(), item_.key_buffer_.data());
@@ -362,7 +361,7 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
     return Status::NOT_FOUND;
   }
 
-  EntryHeader header;
+  Entry header;
   TRY(ReadEntryHeader(key_descriptor->address, &header));
 
   return StatusWithSize(header.value_length());
@@ -425,8 +424,7 @@ Status KeyValueStore::FindKeyDescriptor(string_view key,
   return Status::NOT_FOUND;
 }
 
-Status KeyValueStore::ReadEntryHeader(Address address,
-                                      EntryHeader* header) const {
+Status KeyValueStore::ReadEntryHeader(Address address, Entry* header) const {
   return partition_.Read(address, sizeof(*header), header).status();
 }
 
@@ -436,7 +434,7 @@ Status KeyValueStore::ReadEntryKey(Address address,
   // TODO: This check probably shouldn't be here; this is like
   // checking that the Cortex M's RAM isn't corrupt. This should be
   // done at boot time.
-  // ^^ This argument sometimes comes from EntryHeader::key_value_len,
+  // ^^ This argument sometimes comes from Entry::key_value_len,
   // which is read directly from flash. If it's corrupted, we shouldn't try
   // to read a bunch of extra data.
   if (key_length == 0u || key_length > kMaxKeyLength) {
@@ -449,7 +447,7 @@ Status KeyValueStore::ReadEntryKey(Address address,
 
 StatusWithSize KeyValueStore::ReadEntryValue(
     const KeyDescriptor& key_descriptor,
-    const EntryHeader& header,
+    const Entry& header,
     span<byte> value) const {
   const size_t read_size = std::min(header.value_length(), value.size());
   StatusWithSize result = partition_.Read(
@@ -467,13 +465,13 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                string_view key,
                                                span<const byte> value) {
   // Find the original entry and sector to update the sector's valid_bytes.
-  EntryHeader original_entry;
+  Entry original_entry;
   TRY(ReadEntryHeader(key_descriptor->address, &original_entry));
   SectorDescriptor* old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(
-      &sector, EntryHeader::size(partition_.alignment_bytes(), key, value)));
+      &sector, Entry::size(partition_.alignment_bytes(), key, value)));
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
 
   if (old_sector != SectorFromAddress(key_descriptor->address)) {
@@ -505,7 +503,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(
-      &sector, EntryHeader::size(partition_.alignment_bytes(), key, value)));
+      &sector, Entry::size(partition_.alignment_bytes(), key, value)));
   DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, &key_descriptor, key, value));
 
@@ -526,7 +524,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // Read the entry to be relocated. Store the header in a local variable and
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
-  EntryHeader header;
+  Entry header;
   TRY(ReadEntryHeader(key_descriptor.address, &header));
   TRY(ReadEntryKey(
       key_descriptor.address, header.key_length(), entry->key.data()));
@@ -726,21 +724,21 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
                                   span<const byte> value,
                                   KeyDescriptor::State new_state) {
   // write header, key, and value
-  EntryHeader header;
+  Entry header;
 
   if (new_state == KeyDescriptor::kDeleted) {
-    header = EntryHeader::Tombstone(entry_header_format_.magic,
-                                    entry_header_format_.checksum,
-                                    key,
-                                    partition_.alignment_bytes(),
-                                    key_descriptor->key_version + 1);
+    header = Entry::Tombstone(entry_header_format_.magic,
+                              entry_header_format_.checksum,
+                              key,
+                              partition_.alignment_bytes(),
+                              key_descriptor->key_version + 1);
   } else {
-    header = EntryHeader::Valid(entry_header_format_.magic,
-                                entry_header_format_.checksum,
-                                key,
-                                value,
-                                partition_.alignment_bytes(),
-                                key_descriptor->key_version + 1);
+    header = Entry::Valid(entry_header_format_.magic,
+                          entry_header_format_.checksum,
+                          key,
+                          value,
+                          partition_.alignment_bytes(),
+                          key_descriptor->key_version + 1);
   }
 
   DBG("Appending %zu B entry with key version: %x",

@@ -22,33 +22,33 @@ namespace pw::kvs {
 using std::byte;
 using std::string_view;
 
-EntryHeader::EntryHeader(uint32_t magic,
-                         ChecksumAlgorithm* algorithm,
-                         string_view key,
-                         span<const byte> value,
-                         uint16_t value_length_bytes,
-                         size_t alignment_bytes,
-                         uint32_t key_version)
-    : magic_(magic),
-      checksum_(kNoChecksum),
-      alignment_units_(alignment_bytes_to_units(alignment_bytes)),
-      key_length_bytes_(key.size()),
-      value_length_bytes_(value_length_bytes),
-      key_version_(key_version) {
+Entry::Entry(uint32_t magic,
+             ChecksumAlgorithm* algorithm,
+             string_view key,
+             span<const byte> value,
+             uint16_t value_length_bytes,
+             size_t alignment_bytes,
+             uint32_t key_version)
+    : header_{.magic = magic,
+              .checksum = kNoChecksum,
+              .alignment_units = alignment_bytes_to_units(alignment_bytes),
+              .key_length_bytes = static_cast<uint8_t>(key.size()),
+              .value_length_bytes = value_length_bytes,
+              .key_version = key_version} {
   if (algorithm != nullptr) {
     span<const byte> checksum = CalculateChecksum(algorithm, key, value);
-    std::memcpy(&checksum_,
+    std::memcpy(&header_.checksum,
                 checksum.data(),
-                std::min(checksum.size(), sizeof(checksum_)));
+                std::min(checksum.size(), sizeof(header_.checksum)));
   }
 
   // TODO: 0 is an invalid alignment value. There should be an assert for this.
   // DCHECK_NE(alignment_bytes, 0);
 }
 
-Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
-                                   string_view key,
-                                   span<const byte> value) const {
+Status Entry::VerifyChecksum(ChecksumAlgorithm* algorithm,
+                             string_view key,
+                             span<const byte> value) const {
   if (algorithm == nullptr) {
     return checksum() == kNoChecksum ? Status::OK : Status::DATA_LOSS;
   }
@@ -56,9 +56,9 @@ Status EntryHeader::VerifyChecksum(ChecksumAlgorithm* algorithm,
   return algorithm->Verify(checksum_bytes());
 }
 
-Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
-                                          FlashPartition::Address address,
-                                          ChecksumAlgorithm* algorithm) const {
+Status Entry::VerifyChecksumInFlash(FlashPartition* partition,
+                                    FlashPartition::Address address,
+                                    ChecksumAlgorithm* algorithm) const {
   // Read the entire entry piece-by-piece into a small buffer.
   // TODO: This read may be unaligned. The partition can handle this, but
   // consider creating a API that skips the intermediate buffering.
@@ -108,9 +108,9 @@ Status EntryHeader::VerifyChecksumInFlash(FlashPartition* partition,
   return algorithm->Verify(checksum_bytes());
 }
 
-span<const byte> EntryHeader::CalculateChecksum(ChecksumAlgorithm* algorithm,
-                                                const string_view key,
-                                                span<const byte> value) const {
+span<const byte> Entry::CalculateChecksum(ChecksumAlgorithm* algorithm,
+                                          const string_view key,
+                                          span<const byte> value) const {
   algorithm->Reset();
   algorithm->Update(reinterpret_cast<const byte*>(this) + checked_data_offset(),
                     sizeof(*this) - checked_data_offset());
