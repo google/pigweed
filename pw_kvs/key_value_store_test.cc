@@ -745,7 +745,7 @@ TEST_F(EmptyInitializedKvs, RewriteValue) {
   EXPECT_EQ(kvs_.size(), 1u);
 }
 
-TEST_F(EmptyInitializedKvs, DISABLED_RepeatingValueWithOtherData) {
+TEST_F(EmptyInitializedKvs, RepeatingValueWithOtherData) {
   std::byte set_buf[150];
   std::byte get_buf[sizeof(set_buf)];
 
@@ -759,7 +759,7 @@ TEST_F(EmptyInitializedKvs, DISABLED_RepeatingValueWithOtherData) {
   // that is already in env before each test
   for (size_t test_iteration = 0; test_iteration < sizeof(set_buf);
        test_iteration++) {
-    ASSERT_EQ(Status::OK, test_partition.Erase());
+    // TOD0: Add KVS erase
     // Add a constant unchanging entry so that the updates are not
     // the only entries in the env.  The size of this initial entry
     // we vary between no bytes to sizeof(set_buf).

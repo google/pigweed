@@ -261,9 +261,16 @@ StatusWithSize KeyValueStore::Get(string_view key,
 
   StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
   if (result.ok() && options_.verify_on_read) {
-    return header.VerifyChecksum(entry_header_format_.checksum,
-                                 key,
-                                 value_buffer.subspan(0, result.size()));
+    Status verify_result =
+        header.VerifyChecksum(entry_header_format_.checksum,
+                              key,
+                              value_buffer.subspan(0, result.size()));
+    if (!verify_result.ok()) {
+      memset(value_buffer.subspan(0, result.size()).data(), 0, result.size());
+      return verify_result;
+    }
+
+    return StatusWithSize(verify_result, result.size());
   }
   return result;
 }
@@ -846,13 +853,25 @@ void KeyValueStore::LogDebugInfo() {
   DBG("////////////////////// KEY VALUE STORE DUMP END /////////////////////");
 }
 
-void KeyValueStore::LogSectors(void) {
+void KeyValueStore::LogSectors() const {
+  DBG("Sector descriptors: count %zu", sectors_.size());
   for (auto& sector : sectors_) {
     DBG("  - Sector %zu: valid %hu, recoverable %zu, free %hu",
         SectorIndex(&sector),
         sector.valid_bytes,
         RecoverableBytes(sector),
         sector.tail_free_bytes);
+  }
+}
+
+void KeyValueStore::LogKeyDescriptor() const {
+  DBG("Key descriptors: count %zu", key_descriptors_.size());
+  for (auto& key : key_descriptors_) {
+    DBG("  - Key: %s, hash %#zx, version %zu, address %#zx",
+        key.deleted() ? "Deleted" : "Valid",
+        static_cast<size_t>(key.key_hash),
+        static_cast<size_t>(key.key_version),
+        static_cast<size_t>(key.address));
   }
 }
 

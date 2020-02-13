@@ -334,7 +334,7 @@ class KeyValueStore {
     return (sector.tail_free_bytes == partition_.sector_size_bytes());
   }
 
-  size_t RecoverableBytes(const SectorDescriptor& sector) {
+  size_t RecoverableBytes(const SectorDescriptor& sector) const {
     return partition_.sector_size_bytes() - sector.valid_bytes -
            sector.tail_free_bytes;
   }
@@ -355,7 +355,8 @@ class KeyValueStore {
     return &sectors_[index];
   }
 
-  void LogSectors(void);
+  void LogSectors() const;
+  void LogKeyDescriptor() const;
 
   Address NextWritableAddress(SectorDescriptor* sector) const {
     return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
