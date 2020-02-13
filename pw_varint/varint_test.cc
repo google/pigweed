@@ -426,10 +426,11 @@ TEST_F(Varint, EncodeSizeSigned64_MultiByte_C) {
       std::memcmp("\xfe\xff\xff\xff\xff\xff\xff\xff\xff\x01", buffer_, 10), 0);
 }
 
-TEST_F(Varint, EncodeDecodeSigned32) {
-  // Set the increment to 1 to test every number (this is slow)
-  static constexpr int kIncrement = 1'000'009;
+// How much to increment by for each iteration of the exhaustive encode/decode
+// tests. Set the increment to 1 to test every number (this is slow).
+constexpr int kIncrement = 100'000'009;
 
+TEST_F(Varint, EncodeDecodeSigned32) {
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
     size_t encoded = Encode(i, buffer_);
@@ -449,9 +450,6 @@ TEST_F(Varint, EncodeDecodeSigned32) {
 }
 
 TEST_F(Varint, EncodeDecodeSigned32_C) {
-  // Set the increment to 1 to test every number (this is slow)
-  static constexpr int kIncrement = 1'000'009;
-
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
     size_t encoded = pw_VarintCallZigZagEncode(i, buffer_, sizeof(buffer_));
@@ -472,9 +470,6 @@ TEST_F(Varint, EncodeDecodeSigned32_C) {
 }
 
 TEST_F(Varint, EncodeDecodeUnsigned32) {
-  // Set the increment to 1 to test every number (this is slow)
-  static constexpr int kIncrement = 1'000'009;
-
   uint32_t i = 0;
   while (true) {
     size_t encoded = Encode(i, buffer_);
@@ -494,9 +489,6 @@ TEST_F(Varint, EncodeDecodeUnsigned32) {
 }
 
 TEST_F(Varint, EncodeDecodeUnsigned32_C) {
-  // Set the increment to 1 to test every number (this is slow)
-  static constexpr int kIncrement = 1'000'009;
-
   uint32_t i = 0;
   while (true) {
     size_t encoded = pw_VarintCallEncode(i, buffer_, sizeof(buffer_));
