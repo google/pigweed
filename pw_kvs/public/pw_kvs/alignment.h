@@ -101,7 +101,7 @@ StatusWithSize AlignedWrite(Output& output,
 
   for (const span<const std::byte>& chunk : data) {
     if (Status status = buffer.Write(chunk); !status.ok()) {
-      return status;
+      return StatusWithSize(status);
     }
   }
 

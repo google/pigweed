@@ -26,8 +26,8 @@ Status AlignedWriter::Write(span<const std::byte> data) {
 
     // If the buffer is full, write it out.
     if (bytes_in_buffer_ == write_size_) {
-      if (Status status = output_.Write(buffer_, write_size_); !status.ok()) {
-        return status;
+      if (auto result = output_.Write(buffer_, write_size_); !result.ok()) {
+        return result.status();
       }
 
       bytes_written_ += write_size_;
@@ -49,8 +49,8 @@ StatusWithSize AlignedWriter::Flush() {
                 int(kPadByte),
                 remaining_bytes - bytes_in_buffer_);
 
-    if (Status status = output_.Write(buffer_, remaining_bytes); !status.ok()) {
-      return StatusWithSize(status, bytes_written_);
+    if (auto result = output_.Write(buffer_, remaining_bytes); !result.ok()) {
+      return StatusWithSize(result.status(), bytes_written_);
     }
 
     bytes_written_ += remaining_bytes;  // Include padding in the total.

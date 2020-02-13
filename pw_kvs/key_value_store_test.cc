@@ -267,6 +267,7 @@ TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
 
   EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("kEy", {}).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize("kEy").status());
 }
 
 TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
@@ -580,7 +581,7 @@ TEST_F(EmptyInitializedKvs, MaxKeyLength) {
   EXPECT_EQ(test, value);
 
   // Delete a key
-  kvs_.Delete(key);
+  EXPECT_EQ(Status::OK, kvs_.Delete(key));
 
   // Verify it was erased
   EXPECT_EQ(kvs_.Get(key, &test), Status::NOT_FOUND);

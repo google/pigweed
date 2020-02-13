@@ -27,7 +27,7 @@ namespace pw::kvs {
 using std::byte;
 
 StatusWithSize FlashPartition::Output::Write(span<const byte> data) {
-  TRY(flash_.Write(address_, data));
+  TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();
   return StatusWithSize(data.size());
 }
@@ -42,15 +42,15 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
 }
 
 StatusWithSize FlashPartition::Read(Address address, span<byte> output) {
-  TRY(CheckBounds(address, output.size()));
+  TRY_WITH_SIZE(CheckBounds(address, output.size()));
   return flash_.Read(PartitionToFlashAddress(address), output);
 }
 
 StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
   if (permission_ == PartitionPermission::kReadOnly) {
-    return Status::PERMISSION_DENIED;
+    return StatusWithSize(Status::PERMISSION_DENIED);
   }
-  TRY(CheckBounds(address, data.size()));
+  TRY_WITH_SIZE(CheckBounds(address, data.size()));
   return flash_.Write(PartitionToFlashAddress(address), data);
 }
 

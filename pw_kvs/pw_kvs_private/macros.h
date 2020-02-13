@@ -13,28 +13,59 @@
 // the License.
 #pragma once
 
-// Macros for cleanly working with Status or StatusWithSize objects.
+// Macros for cleanly working with Status or StatusWithSize objects in functions
+// that return Status.
 #define PW_TRY(expr) _PW_TRY(_PW_TRY_UNIQUE(__LINE__), expr)
 
-#define _PW_TRY(result, expr)                 \
-  do {                                        \
-    if (auto result = (expr); !result.ok()) { \
-      return result;                          \
-    }                                         \
+#define _PW_TRY(result, expr)                         \
+  do {                                                \
+    if (auto result = (expr); !result.ok()) {         \
+      return ::pw::internal::ConvertToStatus(result); \
+    }                                                 \
   } while (0)
 
 #define PW_TRY_ASSIGN(assignment_lhs, expression) \
   _PW_TRY_ASSIGN(_PW_TRY_UNIQUE(__LINE__), assignment_lhs, expression)
 
-#define _PW_TRY_ASSIGN(result, lhs, expr) \
-  auto result = (expr);                   \
-  if (!result.ok()) {                     \
-    return result;                        \
-  }                                       \
+#define _PW_TRY_ASSIGN(result, lhs, expr)           \
+  auto result = (expr);                             \
+  if (!result.ok()) {                               \
+    return ::pw::internal::ConvertToStatus(result); \
+  }                                                 \
   lhs = std::move(result.size())
+
+// Macro for cleanly working with Status or StatusWithSize objects in functions
+// that return StatusWithSize.
+#define PW_TRY_WITH_SIZE(expr) _PW_TRY_WITH_SIZE(_PW_TRY_UNIQUE(__LINE__), expr)
+
+#define _PW_TRY_WITH_SIZE(result, expr)                       \
+  do {                                                        \
+    if (auto result = (expr); !result.ok()) {                 \
+      return ::pw::internal::ConvertToStatusWithSize(result); \
+    }                                                         \
+  } while (0)
 
 #define _PW_TRY_UNIQUE(line) _PW_TRY_UNIQUE_EXPANDED(line)
 #define _PW_TRY_UNIQUE_EXPANDED(line) _pw_try_unique_name_##line
 
 #define TRY PW_TRY
+#define TRY_WITH_SIZE PW_TRY_WITH_SIZE
 #define TRY_ASSIGN PW_TRY_ASSIGN
+
+namespace pw::internal {
+
+inline Status ConvertToStatus(Status status) { return status; }
+
+inline Status ConvertToStatus(StatusWithSize status_with_size) {
+  return status_with_size.status();
+}
+
+inline StatusWithSize ConvertToStatusWithSize(Status status) {
+  return StatusWithSize(status);
+}
+
+inline StatusWithSize ConvertToStatusWithSize(StatusWithSize status_with_size) {
+  return status_with_size;
+}
+
+}  // namespace pw::internal

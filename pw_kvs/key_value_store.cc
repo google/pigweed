@@ -247,17 +247,17 @@ KeyValueStore::KeyDescriptor* KeyValueStore::FindDescriptor(uint32_t hash) {
 
 StatusWithSize KeyValueStore::Get(string_view key,
                                   span<byte> value_buffer) const {
-  TRY(CheckOperation(key));
+  TRY_WITH_SIZE(CheckOperation(key));
 
   const KeyDescriptor* key_descriptor;
-  TRY(FindKeyDescriptor(key, &key_descriptor));
+  TRY_WITH_SIZE(FindKeyDescriptor(key, &key_descriptor));
 
   if (key_descriptor->deleted()) {
-    return Status::NOT_FOUND;
+    return StatusWithSize(Status::NOT_FOUND);
   }
 
   Entry header;
-  TRY(ReadEntryHeader(key_descriptor->address, &header));
+  TRY_WITH_SIZE(ReadEntryHeader(key_descriptor->address, &header));
 
   StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
   if (result.ok() && options_.verify_on_read) {
@@ -266,8 +266,9 @@ StatusWithSize KeyValueStore::Get(string_view key,
                               key,
                               value_buffer.subspan(0, result.size()));
     if (!verify_result.ok()) {
-      memset(value_buffer.subspan(0, result.size()).data(), 0, result.size());
-      return verify_result;
+      std::memset(
+          value_buffer.subspan(0, result.size()).data(), 0, result.size());
+      return StatusWithSize(verify_result);
     }
 
     return StatusWithSize(verify_result, result.size());
@@ -359,17 +360,17 @@ size_t KeyValueStore::size() const {
 }
 
 StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
-  TRY(CheckOperation(key));
+  TRY_WITH_SIZE(CheckOperation(key));
 
   const KeyDescriptor* key_descriptor;
-  TRY(FindKeyDescriptor(key, &key_descriptor));
+  TRY_WITH_SIZE(FindKeyDescriptor(key, &key_descriptor));
 
   if (key_descriptor->deleted()) {
-    return Status::NOT_FOUND;
+    return StatusWithSize(Status::NOT_FOUND);
   }
 
   Entry header;
-  TRY(ReadEntryHeader(key_descriptor->address, &header));
+  TRY_WITH_SIZE(ReadEntryHeader(key_descriptor->address, &header));
 
   return StatusWithSize(header.value_length());
 }
@@ -460,7 +461,7 @@ StatusWithSize KeyValueStore::ReadEntryValue(
   StatusWithSize result = partition_.Read(
       key_descriptor.address + sizeof(header) + header.key_length(),
       value.subspan(0, read_size));
-  TRY(result);
+  TRY_WITH_SIZE(result);
   if (read_size != header.value_length()) {
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
   }

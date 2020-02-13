@@ -31,7 +31,7 @@ StatusWithSize FormatVaList(const span<char>& buffer,
                             const char* format,
                             va_list args) {
   if (buffer.empty()) {
-    return StatusWithSize(Status::RESOURCE_EXHAUSTED, 0);
+    return StatusWithSize(Status::RESOURCE_EXHAUSTED);
   }
 
   const int result = std::vsnprintf(buffer.data(), buffer.size(), format, args);
@@ -40,7 +40,7 @@ StatusWithSize FormatVaList(const span<char>& buffer,
   // Discard any output by terminating the buffer.
   if (result < 0) {
     buffer[0] = '\0';
-    return StatusWithSize(Status::INVALID_ARGUMENT, 0);
+    return StatusWithSize(Status::INVALID_ARGUMENT);
   }
 
   // If result >= buffer.size(), the output was truncated and null-terminated.

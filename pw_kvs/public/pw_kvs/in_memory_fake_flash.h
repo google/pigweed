@@ -71,10 +71,10 @@ class InMemoryFakeFlash : public FlashMemory {
   //          UNKNOWN, on HAL error
   StatusWithSize Read(Address address, span<std::byte> output) override {
     if (address + output.size() >= sector_count() * size_bytes()) {
-      return Status::INVALID_ARGUMENT;
+      return StatusWithSize(Status::INVALID_ARGUMENT);
     }
     std::memcpy(output.data(), &buffer_[address], output.size());
-    return Status::OK;
+    return StatusWithSize(output.size());
   }
 
   // Writes bytes to flash. Blocking call.
@@ -85,14 +85,14 @@ class InMemoryFakeFlash : public FlashMemory {
     if ((address + data.size()) >= sector_count() * size_bytes() ||
         address % alignment_bytes() != 0 ||
         data.size() % alignment_bytes() != 0) {
-      return Status::INVALID_ARGUMENT;
+      return StatusWithSize(Status::INVALID_ARGUMENT);
     }
     // Check in erased state
     for (unsigned i = 0; i < data.size(); i++) {
       if (buffer_[address + i] != 0xFF) {
         PW_LOG_ERROR("Writing to previously written address: %zx",
                      size_t(address));
-        return Status::UNKNOWN;
+        return StatusWithSize(Status::UNKNOWN);
       }
     }
     std::memcpy(&buffer_[address], data.data(), data.size());

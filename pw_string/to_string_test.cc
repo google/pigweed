@@ -43,7 +43,7 @@ StatusWithSize ToString(const CustomType&, const span<char>& buffer) {
   int result =
       std::snprintf(buffer.data(), buffer.size(), CustomType::kToString);
   if (result < 0) {
-    return StatusWithSize(Status::UNKNOWN, 0);
+    return StatusWithSize(Status::UNKNOWN);
   }
   if (static_cast<size_t>(result) < buffer.size()) {
     return StatusWithSize(result);

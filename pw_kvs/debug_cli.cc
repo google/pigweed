@@ -66,12 +66,13 @@ void Run() {
       printf("KVS CONTENTS ----------------------------------------------\n");
       for (auto& entry : kvs) {
         char value[64] = {};
-        if (Status status = entry.Get(as_writable_bytes(span(value)));
-            status.ok()) {
+        if (StatusWithSize result = entry.Get(as_writable_bytes(span(value)));
+            result.ok()) {
           printf("%2d: %s='%s'\n", ++i, entry.key().data(), value);
         } else {
-          printf(
-              "FAILED to Get key %s: %s\n", entry.key().data(), status.str());
+          printf("FAILED to Get key %s: %s\n",
+                 entry.key().data(),
+                 result.status().str());
         }
       }
       printf("---------------------------------------------- END CONTENTS\n");
