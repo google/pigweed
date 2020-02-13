@@ -681,9 +681,13 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
     }
   }
 
-  DBG("Found sector %zu to Garbage Collect, %zu recoverable bytes",
-      SectorIndex(sector_candidate),
-      RecoverableBytes(*sector_candidate));
+  if (sector_candidate != nullptr) {
+    DBG("Found sector %zu to Garbage Collect, %zu recoverable bytes",
+        SectorIndex(sector_candidate),
+        RecoverableBytes(*sector_candidate));
+  } else {
+    DBG("Unable to find sector to garbage collect!");
+  }
   return sector_candidate;
 }
 
