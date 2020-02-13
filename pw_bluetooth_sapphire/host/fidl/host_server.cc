@@ -391,7 +391,7 @@ void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr 
   bt::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
-    bt_log(WARN, "bt-host", "peer already connected; reference dropped");
+    bt_log(SPEW, "bt-host", "peer already connected; reference dropped");
     return;
   }
 
@@ -473,10 +473,8 @@ void HostServer::EnablePrivacy(bool enabled) {
   }
 }
 
-void HostServer::SetPairingDelegate(
-    ::fuchsia::bluetooth::control::InputCapabilityType input,
-    ::fuchsia::bluetooth::control::OutputCapabilityType output,
-    ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate> delegate) {
+void HostServer::SetPairingDelegate(fsys::InputCapability input, fsys::OutputCapability output,
+                                    ::fidl::InterfaceHandle<fsys::PairingDelegate> delegate) {
   bool cleared = !delegate;
   pairing_delegate_.Bind(std::move(delegate));
 
@@ -743,21 +741,20 @@ bt::sm::IOCapability HostServer::io_capability() const {
 void HostServer::CompletePairing(PeerId id, bt::sm::Status status) {
   bt_log(TRACE, "bt-host", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
   ZX_DEBUG_ASSERT(pairing_delegate_);
-  pairing_delegate_->OnPairingComplete(id.ToString(), StatusToFidlDeprecated(status));
+  pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_success());
 }
 
 void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {
   bt_log(TRACE, "bt-host", "pairing confirmation request for peer: %s", bt_str(id));
-  DisplayPairingRequest(id, std::nullopt, fuchsia::bluetooth::control::PairingMethod::CONSENT,
-                        std::move(confirm));
+  DisplayPairingRequest(id, std::nullopt, fsys::PairingMethod::CONSENT, std::move(confirm));
 }
 
 void HostServer::DisplayPasskey(PeerId id, uint32_t passkey, DisplayMethod method,
                                 ConfirmCallback confirm) {
-  auto fidl_method = fuchsia::bluetooth::control::PairingMethod::PASSKEY_DISPLAY;
+  auto fidl_method = fsys::PairingMethod::PASSKEY_DISPLAY;
   if (method == DisplayMethod::kComparison) {
     bt_log(TRACE, "bt-host", "compare passkey %06u on peer: %s", passkey, bt_str(id));
-    fidl_method = fuchsia::bluetooth::control::PairingMethod::PASSKEY_COMPARISON;
+    fidl_method = fsys::PairingMethod::PASSKEY_COMPARISON;
   } else {
     bt_log(TRACE, "bt-host", "enter passkey %06u on peer: %s", passkey, bt_str(id));
   }
@@ -768,55 +765,37 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   bt_log(TRACE, "bt-host", "passkey request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
   ZX_ASSERT(found_peer);
-  auto device = fidl_helpers::NewRemoteDevicePtr(*found_peer);
-  ZX_ASSERT(device);
+  auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
   ZX_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
-      std::move(*device), fuchsia::bluetooth::control::PairingMethod::PASSKEY_ENTRY, nullptr,
-      [respond = std::move(respond)](const bool success, fidl::StringPtr passkey) {
-        bt_log(TRACE, "bt-host", "got peer response: %s, \"%s\"", success ? "success" : "failure",
-               passkey.has_value() ? passkey.value().c_str() : "(null)");
-        if (!success) {
+      std::move(peer), fsys::PairingMethod::PASSKEY_ENTRY, 0u,
+      [respond = std::move(respond)](const bool accept, uint32_t entered_passkey) {
+        bt_log(TRACE, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
+               entered_passkey);
+        if (!accept) {
           respond(-1);
-          return;
+        } else {
+          bt_log(SPEW, "bt-host", "got peer passkey: \"%u\"", entered_passkey);
+          respond(entered_passkey);
         }
-        if (!passkey.has_value()) {
-          bt_log(WARN, "bt-host", "Passkey not supplied");
-          respond(-1);
-          return;
-        }
-        uint32_t response;
-        if (!fxl::StringToNumberWithError<uint32_t>(passkey.value(), &response)) {
-          bt_log(WARN, "bt-host", "Unrecognized integer in string: \"%s\"",
-                 passkey.value().c_str());
-          respond(-1);
-          return;
-        }
-        bt_log(SPEW, "bt-host", "got peer passkey: \"%u\"", response);
-        respond(response);
       });
 }
 
 void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> passkey,
-                                       fuchsia::bluetooth::control::PairingMethod method,
-                                       ConfirmCallback confirm) {
+                                       fsys::PairingMethod method, ConfirmCallback confirm) {
   auto found_peer = adapter()->peer_cache()->FindById(id);
   ZX_ASSERT(found_peer);
-  auto device = fidl_helpers::NewRemoteDevicePtr(*found_peer);
-  ZX_ASSERT(device);
+  auto peer = fidl_helpers::PeerToFidl(*found_peer);
 
   ZX_ASSERT(pairing_delegate_);
-  fidl::StringPtr displayed_passkey = nullptr;
-  if (passkey) {
-    displayed_passkey = fxl::StringPrintf("%06u", *passkey);
-  }
+  uint32_t displayed_passkey = passkey ? *passkey : 0u;
   pairing_delegate_->OnPairingRequest(
-      std::move(*device), method, displayed_passkey,
-      [confirm = std::move(confirm)](const bool success, fidl::StringPtr passkey) {
-        bt_log(TRACE, "bt-host", "got peer response: %s, \"%s\"", success ? "success" : "failure",
-               passkey.has_value() ? passkey.value().c_str() : "(null)");
-        confirm(success);
+      std::move(peer), method, displayed_passkey,
+      [confirm = std::move(confirm)](const bool accept, uint32_t entered_passkey) {
+        bt_log(TRACE, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
+               entered_passkey);
+        confirm(accept);
       });
 }
 

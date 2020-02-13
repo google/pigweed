@@ -255,23 +255,22 @@ bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
   return output;
 }
 
-bt::sm::IOCapability IoCapabilityFromFidl(fctrl::InputCapabilityType input,
-                                          fctrl::OutputCapabilityType output) {
-  if (input == fctrl::InputCapabilityType::NONE && output == fctrl::OutputCapabilityType::NONE) {
+bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
+                                          fsys::OutputCapability output) {
+  if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::NONE) {
     return bt::sm::IOCapability::kNoInputNoOutput;
-  } else if (input == fctrl::InputCapabilityType::KEYBOARD &&
-             output == fctrl::OutputCapabilityType::DISPLAY) {
+  } else if (input == fsys::InputCapability::KEYBOARD &&
+             output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kKeyboardDisplay;
-  } else if (input == fctrl::InputCapabilityType::KEYBOARD &&
-             output == fctrl::OutputCapabilityType::NONE) {
+  } else if (input == fsys::InputCapability::KEYBOARD && output == fsys::OutputCapability::NONE) {
     return bt::sm::IOCapability::kKeyboardOnly;
-  } else if (input == fctrl::InputCapabilityType::NONE &&
-             output == fctrl::OutputCapabilityType::DISPLAY) {
+  } else if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kDisplayOnly;
-  } else if (input == fctrl::InputCapabilityType::CONFIRMATION &&
-             output == fctrl::OutputCapabilityType::DISPLAY) {
+  } else if (input == fsys::InputCapability::CONFIRMATION &&
+             output == fsys::OutputCapability::DISPLAY) {
     return bt::sm::IOCapability::kDisplayYesNo;
   }
+
   return bt::sm::IOCapability::kNoInputNoOutput;
 }
 

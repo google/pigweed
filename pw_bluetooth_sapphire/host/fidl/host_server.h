@@ -95,9 +95,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void EnableBackgroundScan(bool enabled) override;
   void EnablePrivacy(bool enabled) override;
   void SetPairingDelegate(
-      ::fuchsia::bluetooth::control::InputCapabilityType input,
-      ::fuchsia::bluetooth::control::OutputCapabilityType output,
-      ::fidl::InterfaceHandle<::fuchsia::bluetooth::control::PairingDelegate> delegate) override;
+      ::fuchsia::bluetooth::sys::InputCapability input,
+      ::fuchsia::bluetooth::sys::OutputCapability output,
+      ::fidl::InterfaceHandle<::fuchsia::bluetooth::sys::PairingDelegate> delegate) override;
   void Connect(::fuchsia::bluetooth::PeerId id, ConnectCallback callback) override;
   void Disconnect(::fuchsia::bluetooth::PeerId id, DisconnectCallback callback) override;
   void Pair(::fuchsia::bluetooth::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
@@ -125,7 +125,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // Common code used for showing a user intent (except passkey request).
   void DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> passkey,
-                             fuchsia::bluetooth::control::PairingMethod method,
+                             fuchsia::bluetooth::sys::PairingMethod method,
                              ConfirmCallback confirm);
 
   // Called by |adapter()->peer_cache()| when a peer is updated.
@@ -170,7 +170,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
     servers_[server.get()] = std::move(server);
   }
 
-  fuchsia::bluetooth::control::PairingDelegatePtr pairing_delegate_;
+  fuchsia::bluetooth::sys::PairingDelegatePtr pairing_delegate_;
 
   // We hold a reference to GattHost for dispatching GATT FIDL requests.
   fbl::RefPtr<GattHost> gatt_host_;

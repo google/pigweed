@@ -92,8 +92,8 @@ fit::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);
 
 // Functions that convert FIDL types to library objects.
-bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::control::InputCapabilityType,
-                                          const fuchsia::bluetooth::control::OutputCapabilityType);
+bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::sys::InputCapability,
+                                          const fuchsia::bluetooth::sys::OutputCapability);
 
 // Functions to construct FIDL control library objects from library objects.
 fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer);
