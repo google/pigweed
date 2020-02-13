@@ -202,7 +202,7 @@
                                           argument_b_str,        \
                                           argument_b_val,        \
                                           type_fmt,              \
-                                          "");
+                                          "")
 
 // PW_CHECK_BINARY_COMPARISON version 2: With message (and maybe args)
 //
