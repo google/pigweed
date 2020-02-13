@@ -745,6 +745,65 @@ TEST_F(EmptyInitializedKvs, RewriteValue) {
   EXPECT_EQ(kvs_.size(), 1u);
 }
 
+TEST_F(EmptyInitializedKvs, DISABLED_RepeatingValueWithOtherData) {
+  std::byte set_buf[150];
+  std::byte get_buf[sizeof(set_buf)];
+
+  for (size_t set_index = 0; set_index < sizeof(set_buf); set_index++) {
+    set_buf[set_index] = static_cast<std::byte>(set_index);
+  }
+
+  StatusWithSize result;
+
+  // Test setting the same entry 10 times but varying the amount of data
+  // that is already in env before each test
+  for (size_t test_iteration = 0; test_iteration < sizeof(set_buf);
+       test_iteration++) {
+    ASSERT_EQ(Status::OK, test_partition.Erase());
+    // Add a constant unchanging entry so that the updates are not
+    // the only entries in the env.  The size of this initial entry
+    // we vary between no bytes to sizeof(set_buf).
+    ASSERT_EQ(Status::OK,
+              kvs_.Put("const_entry", span(set_buf, test_iteration)));
+
+    // The value we read back should be the last value we set
+    std::memset(get_buf, 0, sizeof(get_buf));
+    result = kvs_.Get("const_entry", span(get_buf));
+    ASSERT_TRUE(result.ok());
+    ASSERT_EQ(result.size(), test_iteration);
+    for (size_t j = 0; j < test_iteration; j++) {
+      EXPECT_EQ(set_buf[j], get_buf[j]);
+    }
+
+    // Update the test entry 5 times
+    static_assert(sizeof(std::byte) == sizeof(uint8_t));
+    uint8_t set_entry_buf[]{1, 2, 3, 4, 5, 6, 7, 8};
+    std::byte* set_entry = reinterpret_cast<std::byte*>(set_entry_buf);
+    std::byte get_entry_buf[sizeof(set_entry_buf)];
+    for (size_t i = 0; i < 5; i++) {
+      set_entry[0] = static_cast<std::byte>(i);
+      ASSERT_EQ(Status::OK,
+                kvs_.Put("test_entry", span(set_entry, sizeof(set_entry_buf))));
+      std::memset(get_entry_buf, 0, sizeof(get_entry_buf));
+      result = kvs_.Get("test_entry", span(get_entry_buf));
+      ASSERT_TRUE(result.ok());
+      ASSERT_EQ(result.size(), sizeof(get_entry_buf));
+      for (uint32_t j = 0; j < sizeof(set_entry_buf); j++) {
+        EXPECT_EQ(set_entry[j], get_entry_buf[j]);
+      }
+    }
+
+    // Check that the const entry is still present and has the right value
+    std::memset(get_buf, 0, sizeof(get_buf));
+    result = kvs_.Get("const_entry", span(get_buf));
+    ASSERT_TRUE(result.ok());
+    ASSERT_EQ(result.size(), test_iteration);
+    for (size_t j = 0; j < test_iteration; j++) {
+      EXPECT_EQ(set_buf[j], get_buf[j]);
+    }
+  }
+}
+
 #if 0  // Offset reads are not yet supported
 
 TEST_F(EmptyInitializedKvs, OffsetRead) {
