@@ -512,7 +512,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   TRY(FindOrRecoverSectorWithSpace(
       &sector, Entry::size(partition_.alignment_bytes(), key, value)));
   DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
-  TRY(AppendEntry(sector, &key_descriptor, key, value));
+  TRY(AppendEntry(sector, &key_descriptor, key, value, KeyDescriptor::kValid));
 
   // Only add the entry when we are certain the write succeeded.
   key_descriptors_.push_back(key_descriptor);
@@ -552,7 +552,8 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
   TRY(FindSectorWithSpace(&new_sector, header.size(), old_sector, true));
-  TRY(AppendEntry(new_sector, &key_descriptor, key, as_bytes(value)));
+  TRY(AppendEntry(
+      new_sector, &key_descriptor, key, as_bytes(value), key_descriptor.state));
 
   // Do the valid bytes accounting for the sector the entry was relocated out
   // of.

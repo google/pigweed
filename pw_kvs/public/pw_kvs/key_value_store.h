@@ -321,7 +321,7 @@ class KeyValueStore {
                      KeyDescriptor* key_descriptor,
                      std::string_view key,
                      span<const std::byte> value,
-                     KeyDescriptor::State new_state = KeyDescriptor::kValid);
+                     KeyDescriptor::State new_state);
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
