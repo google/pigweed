@@ -105,6 +105,18 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "key_value_store_test",
+    srcs = ["key_value_store_test.cc"],
+    deps = [
+        ":crc16",
+        ":in_memory_fake_flash",
+        ":pw_kvs",
+        "//pw_checksum",
+        "//pw_log",
+    ],
+)
+
+pw_cc_test(
     name = "key_value_store_fuzz_test",
     srcs = ["key_value_store_fuzz_test.cc"],
     deps = [
@@ -116,14 +128,13 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "key_value_store_test",
-    srcs = ["key_value_store_test.cc"],
+    name = "key_value_store_map_test",
+    srcs = ["key_value_store_map_test.cc"],
     deps = [
         ":crc16",
         ":in_memory_fake_flash",
         ":pw_kvs",
         "//pw_checksum",
-        "//pw_log",
     ],
 )
 

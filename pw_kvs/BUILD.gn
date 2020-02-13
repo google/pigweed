@@ -93,6 +93,7 @@ pw_test_group("tests") {
     ":entry_test",
     ":key_value_store_test",
     ":key_value_store_fuzz_test",
+    ":key_value_store_map_test",
   ]
 }
 
@@ -146,6 +147,18 @@ pw_test("key_value_store_fuzz_test") {
   ]
   sources = [
     "key_value_store_fuzz_test.cc",
+  ]
+}
+
+pw_test("key_value_store_map_test") {
+  deps = [
+    ":crc16",
+    ":in_memory_fake_flash",
+    ":pw_kvs",
+    dir_pw_checksum,
+  ]
+  sources = [
+    "key_value_store_map_test.cc",
   ]
 }
 
