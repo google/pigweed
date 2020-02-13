@@ -46,9 +46,12 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
       last_new_sector_(sectors_.data()) {}
 
 Status KeyValueStore::Init() {
-  if (kMaxUsableSectors < sectors_.size()) {
-    CRT("KeyValueStore::kMaxUsableSectors must be at least as large as the "
-        "number of sectors in the flash partition");
+  INF("Initializing key value store");
+  if (kMaxUsableSectors < partition_.sector_count()) {
+    ERR("KVS init failed: kMaxUsableSectors (=%zu) must be at least as "
+        "large as the number of sectors in the flash partition (=%zu)",
+        kMaxUsableSectors,
+        partition_.sector_count());
     return Status::FAILED_PRECONDITION;
   }
 
@@ -67,7 +70,8 @@ Status KeyValueStore::Init() {
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
   if (working_buffer_.size() < sector_size_bytes) {
-    CRT("working_buffer_ (%zu bytes) is smaller than sector size (%zu bytes)",
+    ERR("KVS init failed: working_buffer_ (%zu bytes) is smaller than sector "
+        "size (%zu bytes)",
         working_buffer_.size(),
         sector_size_bytes);
     return Status::INVALID_ARGUMENT;
@@ -109,6 +113,9 @@ Status KeyValueStore::Init() {
         // fine. Later, we can wipe and maybe recover the sector.
         //
         // TODO: Implement rest-of-sector scanning for valid entries.
+        ERR("KVS init failed: data loss detected in sector %zu at address %zu",
+            sector_id,
+            static_cast<size_t>(entry_address));
         return Status::DATA_LOSS;
       }
       TRY(status);
@@ -135,6 +142,14 @@ Status KeyValueStore::Init() {
     sectors_[sector_id].valid_bytes += entry.size();
   }
   initialized_ = true;
+
+  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
+      "%zu, logical sector size %zu bytes",
+      size(),
+      (key_descriptors_.size() - size()),
+      sectors_.size(),
+      partition_.sector_size_bytes());
+
   return Status::OK;
 }
 
@@ -548,7 +563,9 @@ Status KeyValueStore::FindSectorWithSpace(
   SectorDescriptor* first_empty_sector = nullptr;
   bool at_least_two_empty_sectors = bypass_empty_sector_rule;
 
-  DBG("Find sector with %zu bytes available", size);
+  DBG("Find sector with %zu bytes available, starting with sector %zu",
+      size,
+      start);
   if (sector_to_skip != nullptr) {
     DBG("  Skip sector %zu", SectorIndex(sector_to_skip));
   }
@@ -838,8 +855,7 @@ void KeyValueStore::LogKeyDescriptor() const {
 void KeyValueStore::SectorDescriptor::RemoveValidBytes(size_t size) {
   // TODO: add safety check for valid_bytes > size.
   if (size > valid_bytes) {
-    CRT("!!!!!!!!!!!!!!!");
-    CRT("Remove too many valid bytes!!! remove %zu, only have %hu",
+    ERR("Trying to remove too many valid bytes, remove %zu, only have %hu",
         size,
         valid_bytes);
     valid_bytes = size;
