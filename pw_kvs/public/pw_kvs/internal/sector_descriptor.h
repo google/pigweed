@@ -50,15 +50,13 @@ class SectorDescriptor {
     }
   }
 
-  // Adds valid bytes and removes writable bytes.
-  void MarkValidBytesWritten(size_t written) {
-    valid_bytes_ += written;
-
-    if (written > tail_free_bytes_) {
+  // Removes writable bytes without updating the valid bytes.
+  void RemoveWritableBytes(uint16_t bytes) {
+    if (bytes > writable_bytes()) {
       // TODO: use a DCHECK instead -- this is a programming error
       tail_free_bytes_ = 0;
     } else {
-      tail_free_bytes_ -= written;
+      tail_free_bytes_ -= bytes;
     }
   }
 

@@ -138,23 +138,23 @@ TEST(AlignedWriter, VaryingLengthWriteCalls) {
   AlignedWriterBuffer<32> writer(kAlignment, output);
 
   // Write values smaller than the alignment.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(0, 1)));
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(1, 9)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(0, 1)).status());
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(1, 9)).status());
 
   // Write values larger than the alignment but smaller than the buffer.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(10, 11)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(10, 11)).status());
 
   // Exactly fill the remainder of the buffer.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(21, 11)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(21, 11)).status());
 
   // Fill the buffer more than once.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(32, 66)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(32, 66)).status());
 
   // Write nothing.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 0)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 0)).status());
 
   // Write the remaining data.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 2)));
+  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 2)).status());
 
   auto result = writer.Flush();
   EXPECT_EQ(Status::OK, result.status());

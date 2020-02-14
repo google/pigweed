@@ -58,10 +58,11 @@ class AlignedWriter {
   ~AlignedWriter() { Flush(); }
 
   // Writes bytes to the AlignedWriter. The output may be called if the internal
-  // buffer is filled.
-  Status Write(span<const std::byte> data);
+  // buffer is filled. The size in the return value represents the total number
+  // of bytes written since flush/reset.
+  StatusWithSize Write(span<const std::byte> data);
 
-  Status Write(const void* data, size_t size) {
+  StatusWithSize Write(const void* data, size_t size) {
     return Write(span(static_cast<const std::byte*>(data), size));
   }
 
@@ -106,8 +107,8 @@ StatusWithSize AlignedWrite(Output& output,
   AlignedWriterBuffer<kBufferSize> buffer(alignment_bytes, output);
 
   for (const span<const std::byte>& chunk : data) {
-    if (Status status = buffer.Write(chunk); !status.ok()) {
-      return StatusWithSize(status);
+    if (StatusWithSize status = buffer.Write(chunk); !status.ok()) {
+      return status;
     }
   }
 

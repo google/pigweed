@@ -16,7 +16,7 @@
 
 namespace pw {
 
-Status AlignedWriter::Write(span<const std::byte> data) {
+StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
   while (!data.empty()) {
     size_t to_copy = std::min(write_size_ - bytes_in_buffer_, data.size());
 
@@ -26,16 +26,20 @@ Status AlignedWriter::Write(span<const std::byte> data) {
 
     // If the buffer is full, write it out.
     if (bytes_in_buffer_ == write_size_) {
-      if (auto result = output_.Write(buffer_, write_size_); !result.ok()) {
-        return result.status();
+      StatusWithSize result = output_.Write(buffer_, write_size_);
+
+      // Always use write_size_ for the bytes written. If there was an error
+      // assume the space was written or at least disturbed.
+      bytes_written_ += write_size_;
+      if (!result.ok()) {
+        return StatusWithSize(result.status(), bytes_written_);
       }
 
-      bytes_written_ += write_size_;
       bytes_in_buffer_ = 0;
     }
   }
 
-  return Status::OK;
+  return StatusWithSize(bytes_written_);
 }
 
 StatusWithSize AlignedWriter::Flush() {

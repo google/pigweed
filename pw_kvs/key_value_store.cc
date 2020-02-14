@@ -708,14 +708,27 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
       entry.transaction_id(),
       size_t(address));
 
-  TRY_ASSIGN(const size_t written, entry.Write(key, value));
+  StatusWithSize result = entry.Write(key, value);
+  // Remove any bytes that were written, even if the write was not successful.
+  sector->RemoveWritableBytes(result.size());
+
+  if (!result.ok()) {
+    // TODO: add testing coverage for this once flash errors are supported in
+    // tests.
+    ERR("Failed to write %zu bytes. %zu actually written",
+        entry.size(),
+        result.size());
+    return result.status();
+  }
 
   if (options_.verify_on_write) {
     TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
   }
 
+  // Entry was written successfully, update the key descriptor and the sector
+  // descriptor to reflect the new entry.
   entry.UpdateDescriptor(key_descriptor);
-  sector->MarkValidBytesWritten(written);
+  sector->AddValidBytes(result.size());
   return Status::OK;
 }
 
