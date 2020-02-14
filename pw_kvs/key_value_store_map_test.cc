@@ -107,16 +107,17 @@ class KvsTester {
         if (empty() || random_int() % 8 == 0) {
           Delete("not_a_key" + std::to_string(random_int()));
         } else {
-          Delete(RandomKey());
+          Delete(RandomPresentKey());
         }
       } else {
         std::string key;
 
         // Either add a new key or replace an existing one.
         if (empty() || random_int() % 2 == 0) {
-          key = random_string(random_int() % KeyValueStore::kMaxKeyLength);
+          key =
+              random_string(random_int() % (KeyValueStore::kMaxKeyLength + 1));
         } else {
-          key = RandomKey();
+          key = RandomPresentKey();
         }
 
         Put(key, random_string(random_int() % kMaxValueLength));
@@ -247,7 +248,7 @@ class KvsTester {
 
     Status result = kvs_.Delete(key);
 
-    if (key.empty() || key.size() >= KeyValueStore::kMaxKeyLength) {
+    if (key.empty() || key.size() > KeyValueStore::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
     } else if (map_.count(key) == 0) {
       EXPECT_EQ(Status::NOT_FOUND, result);
@@ -285,7 +286,7 @@ class KvsTester {
 
   bool empty() const { return map_.empty(); }
 
-  std::string RandomKey() const {
+  std::string RandomPresentKey() const {
     return map_.empty() ? "" : map_.begin()->second;
   }
 

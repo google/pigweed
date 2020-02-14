@@ -150,6 +150,9 @@ class FlashPartition {
                                               : alignment_bytes),
         permission_(permission) {}
 
+  FlashPartition(const FlashPartition&) = delete;
+  FlashPartition& operator=(const FlashPartition&) = delete;
+
   virtual ~FlashPartition() = default;
 
   // Performs any required partition or flash-level initialization.
@@ -195,6 +198,11 @@ class FlashPartition {
   virtual Status IsRegionErased(Address source_flash_address,
                                 size_t len,
                                 bool* is_erased);
+
+  // Checks to see if the data appears to be erased. No reads or writes occur;
+  // the FlashPartition simply compares the data to
+  // flash_.erased_memory_content().
+  bool AppearsErased(span<const std::byte> data) const;
 
   // Overridden by derived classes. The reported sector size is space available
   // to users of FlashPartition. It accounts for space reserved in the sector

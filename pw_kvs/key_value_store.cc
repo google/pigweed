@@ -61,8 +61,7 @@ Status KeyValueStore::Init() {
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
   if (working_buffer_.size() < sector_size_bytes) {
-    CRT("ERROR: working_buffer_ (%zu bytes) is smaller than sector "
-        "size (%zu bytes)",
+    CRT("working_buffer_ (%zu bytes) is smaller than sector size (%zu bytes)",
         working_buffer_.size(),
         sector_size_bytes);
     return Status::INVALID_ARGUMENT;
@@ -125,9 +124,9 @@ Status KeyValueStore::Init() {
   // For every valid key, increment the valid bytes for that sector.
   for (KeyDescriptor& key_descriptor : key_descriptors_) {
     uint32_t sector_id = key_descriptor.address / sector_size_bytes;
-    Entry header;
-    TRY(ReadEntryHeader(key_descriptor.address, &header));
-    sectors_[sector_id].valid_bytes += header.size();
+    Entry entry;
+    TRY(Entry::Read(partition_, key_descriptor.address, &entry));
+    sectors_[sector_id].valid_bytes += entry.size();
   }
   initialized_ = true;
   return Status::OK;
@@ -135,27 +134,14 @@ Status KeyValueStore::Init() {
 
 Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
-  Entry header;
-  TRY(ReadEntryHeader(entry_address, &header));
-  // TODO: Should likely add a "LogHeader" method or similar.
-  DBG("Header: ");
-  DBG("   Address      = 0x%zx", size_t(entry_address));
-  DBG("   Magic        = 0x%zx", size_t(header.magic()));
-  DBG("   Checksum     = 0x%zx", size_t(header.checksum()));
-  DBG("   Key length   = 0x%zx", size_t(header.key_length()));
-  DBG("   Value length = 0x%zx", size_t(header.value_length()));
-  DBG("   Entry size   = 0x%zx", size_t(header.size()));
-  DBG("   Alignment    = 0x%zx", size_t(header.alignment_bytes()));
-
-  if (HeaderLooksLikeUnwrittenData(header)) {
-    return Status::NOT_FOUND;
-  }
+  Entry entry;
+  TRY(Entry::Read(partition_, entry_address, &entry));
 
   // TODO: Handle multiple magics for formats that have changed.
-  if (header.magic() != entry_header_format_.magic) {
+  if (entry.magic() != entry_header_format_.magic) {
     // TODO: It may be cleaner to have some logging helpers for these cases.
-    CRT("Found corrupt magic: %zx; expecting %zx; at address %zx",
-        size_t(header.magic()),
+    ERR("Found corrupt magic: %zx; expecting %zx; at address %zx",
+        size_t(entry.magic()),
         size_t(entry_header_format_.magic),
         size_t(entry_address));
     return Status::DATA_LOSS;
@@ -163,17 +149,16 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 
   // Read the key from flash & validate the entry (which reads the value).
   KeyBuffer key_buffer;
-  TRY(ReadEntryKey(entry_address, header.key_length(), key_buffer.data()));
-  const string_view key(key_buffer.data(), header.key_length());
+  TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
+  const string_view key(key_buffer.data(), key_length);
 
-  TRY(header.VerifyChecksumInFlash(
-      &partition_, entry_address, entry_header_format_.checksum));
+  TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
 
   KeyDescriptor key_descriptor(
       key,
-      header.key_version(),
+      entry.key_version(),
       entry_address,
-      header.deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
+      entry.deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
 
   DBG("Key hash: %zx (%zu)",
       size_t(key_descriptor.key_hash),
@@ -181,9 +166,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 
   TRY(AppendNewOrOverwriteStaleExistingDescriptor(key_descriptor));
 
-  // TODO: Extract this to something like "NextValidEntryAddress".
-  *next_entry_address = key_descriptor.address + header.size();
-
+  *next_entry_address = entry.next_address();
   return Status::OK;
 }
 
@@ -222,18 +205,11 @@ Status KeyValueStore::AppendNewOrOverwriteStaleExistingDescriptor(
 // TODO: Need a better name.
 Status KeyValueStore::AppendEmptyDescriptor(KeyDescriptor** new_descriptor) {
   if (key_descriptors_.full()) {
-    // TODO: Is this the right return code?
     return Status::RESOURCE_EXHAUSTED;
   }
   key_descriptors_.emplace_back();
   *new_descriptor = &key_descriptors_.back();
   return Status::OK;
-}
-
-// TODO: Finish.
-bool KeyValueStore::HeaderLooksLikeUnwrittenData(const Entry& header) const {
-  // TODO: This is not correct; it should call through to flash memory.
-  return header.magic() == 0xffffffff;
 }
 
 KeyValueStore::KeyDescriptor* KeyValueStore::FindDescriptor(uint32_t hash) {
@@ -252,15 +228,15 @@ StatusWithSize KeyValueStore::Get(string_view key,
   const KeyDescriptor* key_descriptor;
   TRY_WITH_SIZE(FindExistingKeyDescriptor(key, &key_descriptor));
 
-  Entry header;
-  TRY_WITH_SIZE(ReadEntryHeader(key_descriptor->address, &header));
+  Entry entry;
+  TRY_WITH_SIZE(Entry::Read(partition_, key_descriptor->address, &entry));
 
-  StatusWithSize result = ReadEntryValue(*key_descriptor, header, value_buffer);
+  StatusWithSize result = entry.ReadValue(value_buffer);
   if (result.ok() && options_.verify_on_read) {
     Status verify_result =
-        header.VerifyChecksum(entry_header_format_.checksum,
-                              key,
-                              value_buffer.subspan(0, result.size()));
+        entry.VerifyChecksum(entry_header_format_.checksum,
+                             key,
+                             value_buffer.subspan(0, result.size()));
     if (!verify_result.ok()) {
       std::memset(
           value_buffer.subspan(0, result.size()).data(), 0, result.size());
@@ -325,10 +301,9 @@ KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
 const KeyValueStore::Item& KeyValueStore::iterator::operator*() {
   std::memset(item_.key_buffer_.data(), 0, item_.key_buffer_.size());
 
-  Entry header;
-  if (item_.kvs_.ReadEntryHeader(descriptor().address, &header).ok()) {
-    item_.kvs_.ReadEntryKey(
-        descriptor().address, header.key_length(), item_.key_buffer_.data());
+  Entry entry;
+  if (Entry::Read(item_.kvs_.partition_, descriptor().address, &entry).ok()) {
+    entry.ReadKey(item_.key_buffer_);
   }
 
   return item_;
@@ -363,10 +338,10 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
   const KeyDescriptor* key_descriptor;
   TRY_WITH_SIZE(FindExistingKeyDescriptor(key, &key_descriptor));
 
-  Entry header;
-  TRY_WITH_SIZE(ReadEntryHeader(key_descriptor->address, &header));
+  Entry entry;
+  TRY_WITH_SIZE(Entry::Read(partition_, key_descriptor->address, &entry));
 
-  return StatusWithSize(header.value_length());
+  return StatusWithSize(entry.value_size());
 }
 
 uint32_t KeyValueStore::HashKey(string_view string) {
@@ -418,14 +393,15 @@ Status KeyValueStore::CheckOperation(string_view key) const {
 //
 Status KeyValueStore::FindKeyDescriptor(string_view key,
                                         const KeyDescriptor** result) const {
-  char key_buffer[kMaxKeyLength];
+  Entry::KeyBuffer key_buffer;
   const uint32_t hash = HashKey(key);
 
   for (auto& descriptor : key_descriptors_) {
     if (descriptor.key_hash == hash) {
-      TRY(ReadEntryKey(descriptor.address, key.size(), key_buffer));
+      TRY(Entry::ReadKey(
+          partition_, descriptor.address, key.size(), key_buffer));
 
-      if (key == string_view(key_buffer, key.size())) {
+      if (key == string_view(key_buffer.data(), key.size())) {
         DBG("Found match for key hash 0x%08" PRIx32, hash);
         *result = &descriptor;
         return Status::OK;
@@ -457,49 +433,13 @@ Status KeyValueStore::FindExistingKeyDescriptor(
   return status;
 }
 
-Status KeyValueStore::ReadEntryHeader(Address address, Entry* header) const {
-  return partition_.Read(address, sizeof(*header), header).status();
-}
-
-Status KeyValueStore::ReadEntryKey(Address address,
-                                   size_t key_length,
-                                   char* key) const {
-  // TODO: This check probably shouldn't be here; this is like
-  // checking that the Cortex M's RAM isn't corrupt. This should be
-  // done at boot time.
-  // ^^ This argument sometimes comes from Entry::key_value_len,
-  // which is read directly from flash. If it's corrupted, we shouldn't try
-  // to read a bunch of extra data.
-  if (key_length == 0u || key_length > kMaxKeyLength) {
-    return Status::DATA_LOSS;
-  }
-  // The key is immediately after the entry header.
-  return partition_.Read(address + sizeof(EntryHeader), key_length, key)
-      .status();
-}
-
-StatusWithSize KeyValueStore::ReadEntryValue(
-    const KeyDescriptor& key_descriptor,
-    const Entry& header,
-    span<byte> value) const {
-  const size_t read_size = std::min(header.value_length(), value.size());
-  StatusWithSize result = partition_.Read(
-      key_descriptor.address + sizeof(header) + header.key_length(),
-      value.subspan(0, read_size));
-  TRY_WITH_SIZE(result);
-  if (read_size != header.value_length()) {
-    return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
-  }
-  return StatusWithSize(read_size);
-}
-
 Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                KeyDescriptor::State new_state,
                                                string_view key,
                                                span<const byte> value) {
   // Find the original entry and sector to update the sector's valid_bytes.
   Entry original_entry;
-  TRY(ReadEntryHeader(key_descriptor->address, &original_entry));
+  TRY(Entry::Read(partition_, key_descriptor->address, &original_entry));
   SectorDescriptor* old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
@@ -547,43 +487,40 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
 
 Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   struct TempEntry {
-    std::array<char, kMaxKeyLength + 1> key;
+    Entry::KeyBuffer key;
     std::array<char, sizeof(working_buffer_) - sizeof(key)> value;
   };
-  TempEntry* entry = reinterpret_cast<TempEntry*>(working_buffer_.data());
+  TempEntry* temp_entry = reinterpret_cast<TempEntry*>(working_buffer_.data());
 
   DBG("Relocating entry");  // TODO: add entry info to the log statement.
 
-  // Read the entry to be relocated. Store the header in a local variable and
+  // Read the entry to be relocated. Store the entry in a local variable and
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
-  Entry header;
-  TRY(ReadEntryHeader(key_descriptor.address, &header));
-  TRY(ReadEntryKey(
-      key_descriptor.address, header.key_length(), entry->key.data()));
-  string_view key = string_view(entry->key.data(), header.key_length());
-  StatusWithSize result = ReadEntryValue(
-      key_descriptor, header, as_writable_bytes(span(entry->value)));
+  Entry entry;
+  TRY(Entry::Read(partition_, key_descriptor.address, &entry));
+  TRY_ASSIGN(size_t key_length, entry.ReadKey(temp_entry->key));
+  string_view key = string_view(temp_entry->key.data(), key_length);
+  auto result = entry.ReadValue(as_writable_bytes(span(temp_entry->value)));
   if (!result.status().ok()) {
     return Status::INTERNAL;
   }
 
-  auto value = span(entry->value.data(), result.size());
-
-  TRY(header.VerifyChecksum(
+  auto value = span(temp_entry->value.data(), result.size());
+  TRY(entry.VerifyChecksum(
       entry_header_format_.checksum, key, as_bytes(value)));
 
   SectorDescriptor* old_sector = SectorFromAddress(key_descriptor.address);
 
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
-  TRY(FindSectorWithSpace(&new_sector, header.size(), old_sector, true));
+  TRY(FindSectorWithSpace(&new_sector, entry.size(), old_sector, true));
   TRY(AppendEntry(
       new_sector, &key_descriptor, key, as_bytes(value), key_descriptor.state));
 
   // Do the valid bytes accounting for the sector the entry was relocated out
   // of.
-  old_sector->RemoveValidBytes(header.size());
+  old_sector->RemoveValidBytes(entry.size());
 
   return Status::OK;
 }
@@ -758,46 +695,42 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
                                   const string_view key,
                                   span<const byte> value,
                                   KeyDescriptor::State new_state) {
-  // write header, key, and value
-  Entry header;
+  const Address address = NextWritableAddress(sector);
+  DBG("Appending to address: %#zx", size_t(address));
+
+  Entry entry;
 
   if (new_state == KeyDescriptor::kDeleted) {
-    header = Entry::Tombstone(entry_header_format_.magic,
-                              entry_header_format_.checksum,
-                              key,
-                              partition_.alignment_bytes(),
-                              key_descriptor->key_version + 1);
+    entry = Entry::Tombstone(partition_,
+                             address,
+                             entry_header_format_.magic,
+                             entry_header_format_.checksum,
+                             key,
+                             partition_.alignment_bytes(),
+                             key_descriptor->key_version + 1);
   } else {
-    header = Entry::Valid(entry_header_format_.magic,
-                          entry_header_format_.checksum,
-                          key,
-                          value,
-                          partition_.alignment_bytes(),
-                          key_descriptor->key_version + 1);
+    entry = Entry::Valid(partition_,
+                         address,
+                         entry_header_format_.magic,
+                         entry_header_format_.checksum,
+                         key,
+                         value,
+                         partition_.alignment_bytes(),
+                         key_descriptor->key_version + 1);
   }
 
   DBG("Appending %zu B entry with key version: %x",
-      header.size(),
-      unsigned(header.key_version()));
+      entry.size(),
+      unsigned(entry.key_version()));
 
-  Address address = NextWritableAddress(sector);
-  DBG("Appending to address: %#zx", size_t(address));
-
-  // Write multiple concatenated buffers and pad the results.
-  FlashPartition::Output flash(partition_, address);
-  TRY_ASSIGN(const size_t written,
-             AlignedWrite<32>(
-                 flash,
-                 header.alignment_bytes(),
-                 {as_bytes(span(&header, 1)), as_bytes(span(key)), value}));
+  TRY_ASSIGN(const size_t written, entry.Write(key, value));
 
   if (options_.verify_on_write) {
-    TRY(header.VerifyChecksumInFlash(
-        &partition_, address, entry_header_format_.checksum));
+    TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
   }
 
   key_descriptor->address = address;
-  key_descriptor->key_version = header.key_version();
+  key_descriptor->key_version = entry.key_version();
   key_descriptor->state = new_state;
 
   sector->valid_bytes += written;

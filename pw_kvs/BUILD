@@ -100,6 +100,7 @@ pw_cc_test(
         "entry_test.cc",
     ],
     deps = [
+        ":in_memory_fake_flash",
         ":pw_kvs",
     ],
 )

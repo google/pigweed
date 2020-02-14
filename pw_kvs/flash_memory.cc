@@ -94,6 +94,15 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   return Status::OK;
 }
 
+bool FlashPartition::AppearsErased(span<const byte> data) const {
+  for (byte b : data) {
+    if (b != flash_.erased_memory_content()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 Status FlashPartition::CheckBounds(Address address, size_t length) const {
   if (address + length > size_bytes()) {
     PW_LOG_ERROR("Attempted out-of-bound flash memory access (address: %" PRIu32

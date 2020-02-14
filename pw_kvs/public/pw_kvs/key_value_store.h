@@ -86,12 +86,13 @@ class KeyValueStore {
 
  public:
   // TODO: Make these configurable
-  static constexpr size_t kMaxKeyLength = 64;
   static constexpr size_t kMaxEntries = 256;
   static constexpr size_t kMaxUsableSectors = 256;
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
-  // +1 for null-terminator.
+  // TODO: Remove the duplicate kMaxKeyLength and KeyBuffer definitions. These
+  // should be provided by the Entry class.
+  static constexpr size_t kMaxKeyLength = 0b111111;
   using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
 
   // In the future, will be able to provide additional EntryHeaderFormats for
@@ -301,21 +302,10 @@ class KeyValueStore {
         key, const_cast<const KeyDescriptor**>(result));
   }
 
-  Status ReadEntryHeader(Address address, Entry* header) const;
-  Status ReadEntryKey(Address address, size_t key_length, char* key) const;
-
-  StatusWithSize ReadEntryValue(const KeyDescriptor& key_descriptor,
-                                const Entry& header,
-                                span<std::byte> value) const;
-
   Status LoadEntry(Address entry_address, Address* next_entry_address);
   Status AppendNewOrOverwriteStaleExistingDescriptor(
       const KeyDescriptor& key_descriptor);
   Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);
-
-  Status ValidateEntryChecksumInFlash(const Entry& header,
-                                      std::string_view key,
-                                      const KeyDescriptor& entry) const;
 
   Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                   KeyDescriptor::State new_state,
@@ -336,8 +326,6 @@ class KeyValueStore {
   Status GarbageCollectOneSector();
 
   SectorDescriptor* FindSectorToGarbageCollect();
-
-  bool HeaderLooksLikeUnwrittenData(const Entry& header) const;
 
   KeyDescriptor* FindDescriptor(uint32_t hash);
 

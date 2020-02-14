@@ -119,6 +119,7 @@ pw_test("checksum_test") {
 
 pw_test("entry_test") {
   deps = [
+    ":in_memory_fake_flash",
     ":pw_kvs",
   ]
   sources = [

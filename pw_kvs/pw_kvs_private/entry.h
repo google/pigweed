@@ -15,9 +15,9 @@
 // This file defines classes for managing the in-flash format for KVS entires.
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <string_view>
 
 #include "pw_kvs/alignment.h"
@@ -47,7 +47,7 @@ struct EntryHeader {
 
   // Byte length of the value; maximum of 65534. The max uint16_t value (65535
   // or 0xFFFF) is reserved to indicate this is a tombstone (deleted) entry.
-  uint16_t value_length_bytes;
+  uint16_t value_size_bytes;
 
   // The version of the key. Monotonically increasing.
   uint32_t key_version;
@@ -55,21 +55,43 @@ struct EntryHeader {
 
 static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
 
-// Entry represents a key-value entry.
+// Entry represents a key-value entry in a flash partition.
 class Entry {
  public:
   static constexpr size_t kMinAlignmentBytes = sizeof(EntryHeader);
+  static constexpr size_t kMaxKeyLength = 0b111111;
+  static constexpr size_t kMaxValueSize = 0xFFFF;
 
-  Entry() = default;
+  using Address = FlashPartition::Address;
+
+  // Buffer capable of holding a null-terminated version of any valid key.
+  using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
+
+  // Returns flash partition Read error codes, or one of the following:
+  //
+  //          OK: successfully read the header and initialized the Entry
+  //   NOT_FOUND: read the header, but the data appears to be erased
+  //
+  static Status Read(FlashPartition& partition, Address address, Entry* entry);
+
+  static StatusWithSize ReadKey(FlashPartition& partition,
+                                Address address,
+                                size_t key_length,
+                                KeyBuffer& key);
 
   // Creates a new Entry for a valid (non-deleted) entry.
-  static Entry Valid(uint32_t magic,
+  static Entry Valid(FlashPartition& partition,
+                     Address address,
+                     // TODO: Use EntryHeaderFormat here?
+                     uint32_t magic,
                      ChecksumAlgorithm* algorithm,
                      std::string_view key,
                      span<const std::byte> value,
                      size_t alignment_bytes,
                      uint32_t key_version) {
-    return Entry(magic,
+    return Entry(partition,
+                 address,
+                 magic,
                  algorithm,
                  key,
                  value,
@@ -79,12 +101,16 @@ class Entry {
   }
 
   // Creates a new Entry for a tombstone entry, which marks a deleted key.
-  static Entry Tombstone(uint32_t magic,
+  static Entry Tombstone(FlashPartition& partition,
+                         Address address,
+                         uint32_t magic,
                          ChecksumAlgorithm* algorithm,
                          std::string_view key,
                          size_t alignment_bytes,
                          uint32_t key_version) {
-    return Entry(magic,
+    return Entry(partition,
+                 address,
+                 magic,
                  algorithm,
                  key,
                  {},
@@ -93,13 +119,21 @@ class Entry {
                  key_version);
   }
 
+  Entry() = default;
+
+  StatusWithSize Write(std::string_view key, span<const std::byte> value) const;
+
+  StatusWithSize ReadKey(KeyBuffer& key) const {
+    return ReadKey(partition(), address_, key_length(), key);
+  }
+
+  StatusWithSize ReadValue(span<std::byte> value) const;
+
   Status VerifyChecksum(ChecksumAlgorithm* algorithm,
                         std::string_view key,
                         span<const std::byte> value) const;
 
-  Status VerifyChecksumInFlash(FlashPartition* partition,
-                               FlashPartition::Address header_address,
-                               ChecksumAlgorithm* algorithm) const;
+  Status VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const;
 
   // Calculates the total size of an entry, including padding.
   static constexpr size_t size(size_t alignment_bytes,
@@ -109,50 +143,60 @@ class Entry {
                    alignment_bytes);
   }
 
+  // The address at which the next possible entry could be located.
+  Address next_address() const { return address_ + size(); }
+
   // Total size of this entry, including padding.
   size_t size() const { return AlignUp(content_size(), alignment_bytes()); }
 
+  // The size of the value, without padding. The size is 0 if this is a
+  // tombstone entry.
+  size_t value_size() const {
+    return deleted() ? 0u : header_.value_size_bytes;
+  }
+
   uint32_t magic() const { return header_.magic; }
+
+  uint32_t key_version() const { return header_.key_version; }
+
+  // True if this is a tombstone entry.
+  bool deleted() const {
+    return header_.value_size_bytes == kDeletedValueLength;
+  }
+
+  void DebugLog();
+
+ private:
+  static constexpr uint16_t kDeletedValueLength = 0xFFFF;
+
+  FlashPartition& partition() const { return *partition_; }
 
   uint32_t checksum() const { return header_.checksum; }
 
   // The length of the key in bytes. Keys are not null terminated.
   size_t key_length() const { return header_.key_length_bytes; }
 
-  static constexpr size_t max_key_length() { return kKeyLengthMask; }
-
-  // The length of the value, which is 0 if this is a tombstone entry.
-  size_t value_length() const {
-    return deleted() ? 0u : header_.value_length_bytes;
-  }
-
-  static constexpr size_t max_value_length() { return 0xFFFE; }
-
   size_t alignment_bytes() const { return (header_.alignment_units + 1) * 16; }
 
-  uint32_t key_version() const { return header_.key_version; }
-
-  // True if this is a tombstone entry.
-  bool deleted() const {
-    return header_.value_length_bytes == kDeletedValueLength;
-  }
-
- private:
   // The total size of the entry, excluding padding.
   size_t content_size() const {
-    return sizeof(EntryHeader) + key_length() + value_length();
+    return sizeof(EntryHeader) + key_length() + value_size();
   }
 
-  static constexpr uint32_t kKeyLengthMask = 0b111111;
-  static constexpr uint16_t kDeletedValueLength = 0xFFFF;
-
-  Entry(uint32_t magic,
+  Entry(FlashPartition& partition,
+        Address address,
+        uint32_t magic,
         ChecksumAlgorithm* algorithm,
         std::string_view key,
         span<const std::byte> value,
-        uint16_t value_length_bytes,
+        uint16_t value_size_bytes,
         size_t alignment_bytes,
         uint32_t key_version);
+
+  constexpr Entry(FlashPartition* partition,
+                  Address address,
+                  EntryHeader header)
+      : partition_(partition), address_(address), header_(header) {}
 
   span<const std::byte> checksum_bytes() const {
     return as_bytes(span(&header_.checksum, 1));
@@ -166,6 +210,8 @@ class Entry {
     return (alignment_bytes + 15) / 16 - 1;  // An alignment of 0 is invalid.
   }
 
+  FlashPartition* partition_;
+  Address address_;
   EntryHeader header_;
 };
 

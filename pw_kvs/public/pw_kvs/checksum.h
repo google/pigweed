@@ -88,6 +88,8 @@ class AlignedChecksum : public ChecksumAlgorithm {
   ~AlignedChecksum() = default;
 
  private:
+  static_assert(kBufferSize >= kAlignmentBytes);
+
   void Finalize() final {
     writer_.Flush();
     FinalizeAligned();
