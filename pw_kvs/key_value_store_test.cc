@@ -297,6 +297,43 @@ TEST_F(EmptyInitializedKvs, Delete_AllItems_KvsIsEmpty) {
   EXPECT_TRUE(kvs_.empty());
 }
 
+TEST_F(EmptyInitializedKvs, Collision_WithPresentKey) {
+  // Both hash to 0x19df36f0.
+  constexpr std::string_view key1 = "D4";
+  constexpr std::string_view key2 = "dFU6S";
+
+  ASSERT_EQ(Status::OK, kvs_.Put(key1, 1000));
+
+  EXPECT_EQ(Status::ALREADY_EXISTS, kvs_.Put(key2, 999));
+
+  int value = 0;
+  EXPECT_EQ(Status::OK, kvs_.Get(key1, &value));
+  EXPECT_EQ(1000, value);
+
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get(key2, &value));
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize(key2).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Delete(key2));
+}
+
+TEST_F(EmptyInitializedKvs, Collision_WithDeletedKey) {
+  // Both hash to 0x4060f732.
+  constexpr std::string_view key1 = "1U2";
+  constexpr std::string_view key2 = "ahj9d";
+
+  ASSERT_EQ(Status::OK, kvs_.Put(key1, 1000));
+  ASSERT_EQ(Status::OK, kvs_.Delete(key1));
+
+  // key2 collides with key1's tombstone.
+  EXPECT_EQ(Status::ALREADY_EXISTS, kvs_.Put(key2, 999));
+
+  int value = 0;
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get(key1, &value));
+
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get(key2, &value));
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.ValueSize(key2).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Delete(key2));
+}
+
 TEST_F(EmptyInitializedKvs, Iteration_Empty_ByReference) {
   for (const KeyValueStore::Item& entry : kvs_) {
     FAIL();  // The KVS is empty; this shouldn't execute.

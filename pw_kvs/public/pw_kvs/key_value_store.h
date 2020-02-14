@@ -121,6 +121,20 @@ class KeyValueStore {
     return FixedSizeGet(key, reinterpret_cast<std::byte*>(pointer), sizeof(T));
   }
 
+  // Adds a key-value entry to the KVS. If the key was already present, its
+  // value is overwritten.
+  //
+  // In the current implementation, all keys in the KVS must have a unique hash.
+  // If Put is called with a key whose hash matches an existing key, nothing
+  // is added and ALREADY_EXISTS is returned.
+  //
+  //                    OK: the entry was successfully added or updated
+  //   FAILED_PRECONDITION: the KVS is not initialized
+  //    RESOURCE_EXHAUSTED: there is not enough space to add the entry
+  //      INVALID_ARGUMENT: key is empty or too long or value is too large
+  //        ALREADY_EXISTS: the entry could not be added because a different key
+  //                        with the same hash is already in the KVS
+  //
   Status Put(std::string_view key, span<const std::byte> value);
 
   template <typename T,
@@ -275,6 +289,15 @@ class KeyValueStore {
   // Non-const version of FindKeyDescriptor.
   Status FindKeyDescriptor(std::string_view key, KeyDescriptor** result) {
     return static_cast<const KeyValueStore&>(*this).FindKeyDescriptor(
+        key, const_cast<const KeyDescriptor**>(result));
+  }
+
+  Status FindExistingKeyDescriptor(std::string_view key,
+                                   const KeyDescriptor** result) const;
+
+  Status FindExistingKeyDescriptor(std::string_view key,
+                                   KeyDescriptor** result) {
+    return static_cast<const KeyValueStore&>(*this).FindExistingKeyDescriptor(
         key, const_cast<const KeyDescriptor**>(result));
   }
 
