@@ -12,22 +12,43 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-filegroup(
-    name = "pw_assert",
-    srcs = [
+# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+PW_ASSERT_BACKEND = "//pw_assert_basic"
+
+pw_cc_library(
+    name = "facade",
+    hdrs = [
         "public/pw_assert/assert.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
     ],
 )
 
-# TODO: This isn't a real Bazel build yet.
-filegroup(
+pw_cc_library(
+    name = "pw_assert",
+    deps = [
+        ":facade",
+        PW_ASSERT_BACKEND,
+    ],
+)
+
+pw_cc_test(
     name = "test",
     srcs = [
         "assert_test.cc",
         "assert_test.c",
     ],
+    deps = [":pw_assert"],
 )
