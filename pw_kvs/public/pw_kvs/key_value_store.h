@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <type_traits>
 
 #include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"

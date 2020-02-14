@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <type_traits>
+
 namespace std {
 
 template <typename T>
