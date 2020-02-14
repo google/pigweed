@@ -68,11 +68,10 @@ void Run() {
         char value[64] = {};
         if (StatusWithSize result = entry.Get(as_writable_bytes(span(value)));
             result.ok()) {
-          printf("%2d: %s='%s'\n", ++i, entry.key().data(), value);
+          printf("%2d: %s='%s'\n", ++i, entry.key(), value);
         } else {
-          printf("FAILED to Get key %s: %s\n",
-                 entry.key().data(),
-                 result.status().str());
+          printf(
+              "FAILED to Get key %s: %s\n", entry.key(), result.status().str());
         }
       }
       printf("---------------------------------------------- END CONTENTS\n");

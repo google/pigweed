@@ -374,7 +374,7 @@ TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span(value))));
 
   for (KeyValueStore::Item entry : kvs_) {
-    EXPECT_STREQ(entry.key().data(), "kEy");  // Make sure null-terminated.
+    EXPECT_STREQ(entry.key(), "kEy");  // Make sure null-terminated.
 
     char buffer[sizeof(value)] = {};
     EXPECT_EQ(Status::OK, entry.Get(&buffer));

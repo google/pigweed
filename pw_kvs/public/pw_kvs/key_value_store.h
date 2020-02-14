@@ -90,11 +90,6 @@ class KeyValueStore {
   static constexpr size_t kMaxUsableSectors = 256;
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
-  // TODO: Remove the duplicate kMaxKeyLength and KeyBuffer definitions. These
-  // should be provided by the Entry class.
-  static constexpr size_t kMaxKeyLength = 0b111111;
-  using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
-
   // In the future, will be able to provide additional EntryHeaderFormats for
   // backwards compatibility.
   KeyValueStore(FlashPartition* partition,
@@ -157,8 +152,8 @@ class KeyValueStore {
 
   class Item {
    public:
-    // Guaranteed to be null-terminated
-    std::string_view key() const { return key_buffer_.data(); }
+    // The key as a null-terminated string.
+    const char* key() const { return key_buffer_.data(); }
 
     StatusWithSize Get(span<std::byte> value_buffer) const {
       return kvs_.Get(key(), value_buffer);
@@ -178,7 +173,13 @@ class KeyValueStore {
     constexpr Item(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
 
     const KeyValueStore& kvs_;
-    KeyBuffer key_buffer_;
+
+    // TODO: Remove the duplicate kMaxKeyLength definition. This should be
+    // provided by the Entry class.
+    static constexpr size_t kMaxKeyLength = 0b111111;
+
+    // Buffer large enough for a null-terminated version of any valid key.
+    std::array<char, kMaxKeyLength + 1> key_buffer_;
   };
 
   class iterator {
@@ -279,10 +280,6 @@ class KeyValueStore {
                       size_t size_bytes) const;
 
   Status CheckOperation(std::string_view key) const;
-
-  static constexpr bool InvalidKey(std::string_view key) {
-    return key.empty() || (key.size() > kMaxKeyLength);
-  }
 
   Status FindKeyDescriptor(std::string_view key,
                            const KeyDescriptor** result) const;

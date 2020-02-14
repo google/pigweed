@@ -25,9 +25,16 @@
 #include "pw_log/log.h"
 
 namespace pw::kvs {
+namespace {
 
 using std::byte;
 using std::string_view;
+
+constexpr bool InvalidKey(std::string_view key) {
+  return key.empty() || (key.size() > Entry::kMaxKeyLength);
+}
+
+}  // namespace
 
 KeyValueStore::KeyValueStore(FlashPartition* partition,
                              const EntryHeaderFormat& format,
@@ -148,7 +155,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   }
 
   // Read the key from flash & validate the entry (which reads the value).
-  KeyBuffer key_buffer;
+  Entry::KeyBuffer key_buffer;
   TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
   const string_view key(key_buffer.data(), key_length);
 
@@ -393,13 +400,13 @@ Status KeyValueStore::CheckOperation(string_view key) const {
 //
 Status KeyValueStore::FindKeyDescriptor(string_view key,
                                         const KeyDescriptor** result) const {
-  Entry::KeyBuffer key_buffer;
   const uint32_t hash = HashKey(key);
+  Entry::KeyBuffer key_buffer;
 
   for (auto& descriptor : key_descriptors_) {
     if (descriptor.key_hash == hash) {
       TRY(Entry::ReadKey(
-          partition_, descriptor.address, key.size(), key_buffer));
+          partition_, descriptor.address, key.size(), key_buffer.data()));
 
       if (key == string_view(key_buffer.data(), key.size())) {
         DBG("Found match for key hash 0x%08" PRIx32, hash);

@@ -50,6 +50,7 @@ source_set("pw_kvs") {
   friend = [
     ":entry_test",
     ":key_value_store_test",
+    ":key_value_store_map_test",
   ]
 }
 

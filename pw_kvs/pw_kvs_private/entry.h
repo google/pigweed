@@ -64,20 +64,22 @@ class Entry {
 
   using Address = FlashPartition::Address;
 
-  // Buffer capable of holding a null-terminated version of any valid key.
-  using KeyBuffer = std::array<char, kMaxKeyLength + 1>;
+  // Buffer capable of holding any valid key (without a null terminator);
+  using KeyBuffer = std::array<char, kMaxKeyLength>;
 
   // Returns flash partition Read error codes, or one of the following:
   //
   //          OK: successfully read the header and initialized the Entry
   //   NOT_FOUND: read the header, but the data appears to be erased
+  //   DATA_LOSS: read the header, but it contained invalid data
   //
   static Status Read(FlashPartition& partition, Address address, Entry* entry);
 
-  static StatusWithSize ReadKey(FlashPartition& partition,
-                                Address address,
-                                size_t key_length,
-                                KeyBuffer& key);
+  // Reads a key into a buffer, which must be at least key_length bytes.
+  static Status ReadKey(FlashPartition& partition,
+                        Address address,
+                        size_t key_length,
+                        char* key);
 
   // Creates a new Entry for a valid (non-deleted) entry.
   static Entry Valid(FlashPartition& partition,
@@ -123,8 +125,14 @@ class Entry {
 
   StatusWithSize Write(std::string_view key, span<const std::byte> value) const;
 
-  StatusWithSize ReadKey(KeyBuffer& key) const {
-    return ReadKey(partition(), address_, key_length(), key);
+  // Reads a key into a buffer, which must be large enough for a max-length key.
+  // If successful, the size is returned in the StatusWithSize. The key is not
+  // null terminated.
+  template <size_t kSize>
+  StatusWithSize ReadKey(std::array<char, kSize>& key) const {
+    static_assert(kSize >= kMaxKeyLength);
+    return StatusWithSize(
+        ReadKey(partition(), address_, key_length(), key.data()), key_length());
   }
 
   StatusWithSize ReadValue(span<std::byte> value) const;
@@ -149,6 +157,9 @@ class Entry {
   // Total size of this entry, including padding.
   size_t size() const { return AlignUp(content_size(), alignment_bytes()); }
 
+  // The length of the key in bytes. Keys are not null terminated.
+  size_t key_length() const { return header_.key_length_bytes; }
+
   // The size of the value, without padding. The size is 0 if this is a
   // tombstone entry.
   size_t value_size() const {
@@ -172,9 +183,6 @@ class Entry {
   FlashPartition& partition() const { return *partition_; }
 
   uint32_t checksum() const { return header_.checksum; }
-
-  // The length of the key in bytes. Keys are not null terminated.
-  size_t key_length() const { return header_.key_length_bytes; }
 
   size_t alignment_bytes() const { return (header_.alignment_units + 1) * 16; }
 

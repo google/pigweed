@@ -30,6 +30,7 @@
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/key_value_store.h"
+#include "pw_kvs_private/entry.h"
 #include "pw_log/log.h"
 #include "pw_span/span.h"
 
@@ -114,8 +115,7 @@ class KvsTester {
 
         // Either add a new key or replace an existing one.
         if (empty() || random_int() % 2 == 0) {
-          key =
-              random_string(random_int() % (KeyValueStore::kMaxKeyLength + 1));
+          key = random_string(random_int() % (Entry::kMaxKeyLength + 1));
         } else {
           key = RandomPresentKey();
         }
@@ -197,7 +197,7 @@ class KvsTester {
 
       auto map_entry = map_.find(std::string(item.key()));
       if (map_entry == map_.end()) {
-        PW_LOG_CRITICAL("Entry %s missing from map", item.key().data());
+        PW_LOG_CRITICAL("Entry %s missing from map", item.key());
       } else if (map_entry != map_.end()) {
         EXPECT_EQ(map_entry->first, item.key());
 
@@ -218,7 +218,7 @@ class KvsTester {
 
     Status result = kvs_.Put(key, as_bytes(span(value)));
 
-    if (key.empty() || key.size() > KeyValueStore::kMaxKeyLength) {
+    if (key.empty() || key.size() > Entry::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
     } else if (map_.size() == KeyValueStore::kMaxEntries) {
       EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result);
@@ -248,7 +248,7 @@ class KvsTester {
 
     Status result = kvs_.Delete(key);
 
-    if (key.empty() || key.size() > KeyValueStore::kMaxKeyLength) {
+    if (key.empty() || key.size() > Entry::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
     } else if (map_.count(key) == 0) {
       EXPECT_EQ(Status::NOT_FOUND, result);
@@ -270,18 +270,18 @@ class KvsTester {
 
   void StartOperation(const std::string& operation, const std::string& key) {
     count_ += 1;
-    PW_LOG_CRITICAL(
+    PW_LOG_DEBUG(
         "[%3u] START %s for '%s'", count_, operation.c_str(), key.c_str());
   }
 
   void FinishOperation(const std::string& operation,
                        Status result,
                        const std::string& key) {
-    PW_LOG_CRITICAL("[%3u] FINISH %s <%s> for '%s'",
-                    count_,
-                    operation.c_str(),
-                    result.str(),
-                    key.c_str());
+    PW_LOG_DEBUG("[%3u] FINISH %s <%s> for '%s'",
+                 count_,
+                 operation.c_str(),
+                 result.str(),
+                 key.c_str());
   }
 
   bool empty() const { return map_.empty(); }

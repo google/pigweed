@@ -28,23 +28,28 @@ using std::string_view;
 Status Entry::Read(FlashPartition& partition, Address address, Entry* entry) {
   EntryHeader header;
   TRY(partition.Read(address, sizeof(header), &header));
-  *entry = Entry(&partition, address, header);
 
   if (partition.AppearsErased(as_bytes(span(&header.magic, 1)))) {
     return Status::NOT_FOUND;
   }
+  if (header.key_length_bytes > kMaxKeyLength) {
+    return Status::DATA_LOSS;
+  }
+
+  *entry = Entry(&partition, address, header);
   return Status::OK;
 }
 
-StatusWithSize Entry::ReadKey(FlashPartition& partition,
-                              Address address,
-                              size_t key_length,
-                              KeyBuffer& key) {
+Status Entry::ReadKey(FlashPartition& partition,
+                      Address address,
+                      size_t key_length,
+                      char* key) {
   if (key_length == 0u || key_length > kMaxKeyLength) {
-    return StatusWithSize(Status::DATA_LOSS);
+    return Status::DATA_LOSS;
   }
 
-  return partition.Read(address + sizeof(EntryHeader), key_length, key.data());
+  return partition.Read(address + sizeof(EntryHeader), key_length, key)
+      .status();
 }
 
 Entry::Entry(FlashPartition& partition,
@@ -131,7 +136,7 @@ Status Entry::VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const {
   }
 
   if (algorithm == nullptr) {
-    return Status::OK;
+    return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
   }
 
   // The checksum is calculated as if the header's checksum field were 0.
