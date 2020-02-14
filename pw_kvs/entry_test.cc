@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_kvs_private/entry.h"
+
 #include "gtest/gtest.h"
 #include "pw_kvs/flash_memory.h"
-#include "pw_kvs_private/format.h"
 
 namespace pw::kvs {
 namespace {

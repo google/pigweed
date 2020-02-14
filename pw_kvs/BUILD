@@ -27,10 +27,10 @@ pw_cc_library(
     srcs = [
         "alignment.cc",
         "checksum.cc",
+        "entry.cc",
         "flash_memory.cc",
-        "format.cc",
         "key_value_store.cc",
-        "pw_kvs_private/format.h",
+        "pw_kvs_private/entry.h",
         "pw_kvs_private/macros.h",
     ],
     hdrs = [

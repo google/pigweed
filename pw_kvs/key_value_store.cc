@@ -20,7 +20,7 @@
 #include <type_traits>
 
 #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
-#include "pw_kvs_private/format.h"
+#include "pw_kvs_private/entry.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 

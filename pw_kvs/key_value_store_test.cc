@@ -30,7 +30,7 @@
 #include "pw_checksum/ccitt_crc16.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
-#include "pw_kvs_private/format.h"
+#include "pw_kvs_private/entry.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_span/span.h"
