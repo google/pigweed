@@ -236,8 +236,6 @@ class KeyValueStore {
   struct KeyDescriptor {
     enum State { kValid, kDeleted };
 
-    KeyDescriptor() = default;
-
     KeyDescriptor(std::string_view key,
                   uint32_t version,
                   Address addr,
@@ -401,7 +399,7 @@ class KeyValueStore {
   // Working buffer is a general purpose buffer for operations (such as init or
   // relocate) to use for working space to remove the need to allocate temporary
   // space.
-  std::array<char, kWorkingBufferSizeBytes> working_buffer_;
+  std::array<std::byte, kWorkingBufferSizeBytes> working_buffer_;
 };
 
 }  // namespace pw::kvs

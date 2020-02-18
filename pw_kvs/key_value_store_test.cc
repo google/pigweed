@@ -282,6 +282,22 @@ TEST_F(EmptyInitializedKvs, Put_SameKeyDifferentValuesRepeatedly) {
   }
 }
 
+TEST_F(EmptyInitializedKvs, Put_MaxValueSize) {
+  size_t max_value_size =
+      test_partition.sector_size_bytes() - sizeof(EntryHeader) - 1;
+
+  // Use the large_test_flash as a big chunk of data for the Put statement.
+  ASSERT_GT(sizeof(large_test_flash), max_value_size + 2 * sizeof(EntryHeader));
+  auto big_data = as_bytes(span(&large_test_flash, 1));
+
+  EXPECT_EQ(Status::OK, kvs_.Put("K", big_data.subspan(0, max_value_size)));
+
+  // Larger than maximum is rejected.
+  EXPECT_EQ(Status::INVALID_ARGUMENT,
+            kvs_.Put("K", big_data.subspan(0, max_value_size + 1)));
+  EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.Put("K", big_data));
+}
+
 TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));

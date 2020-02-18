@@ -15,6 +15,7 @@
 // This file defines classes for managing the in-flash format for KVS entires.
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -60,7 +61,6 @@ class Entry {
  public:
   static constexpr size_t kMinAlignmentBytes = sizeof(EntryHeader);
   static constexpr size_t kMaxKeyLength = 0b111111;
-  static constexpr size_t kMaxValueSize = 0xFFFF;
 
   using Address = FlashPartition::Address;
 
@@ -144,11 +144,11 @@ class Entry {
   Status VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const;
 
   // Calculates the total size of an entry, including padding.
-  static constexpr size_t size(size_t alignment_bytes,
-                               std::string_view key,
-                               span<const std::byte> value) {
+  static size_t size(const FlashPartition& partition,
+                     std::string_view key,
+                     span<const std::byte> value) {
     return AlignUp(sizeof(EntryHeader) + key.size() + value.size(),
-                   alignment_bytes);
+                   std::max(partition.alignment_bytes(), kMinAlignmentBytes));
   }
 
   // The address at which the next possible entry could be located.

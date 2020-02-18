@@ -43,8 +43,7 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
       entry_header_format_(format),
       options_(options),
       sectors_(partition_.sector_count()),
-      last_new_sector_(sectors_.data()),
-      working_buffer_{} {}
+      last_new_sector_(sectors_.data()) {}
 
 Status KeyValueStore::Init() {
   if (kMaxUsableSectors < sectors_.size()) {
@@ -186,36 +185,26 @@ Status KeyValueStore::AppendNewOrOverwriteStaleExistingDescriptor(
   // With the new key descriptor, either add it to the descriptor table or
   // overwrite an existing entry with an older version of the key.
   KeyDescriptor* existing_descriptor = FindDescriptor(key_descriptor.key_hash);
-  if (existing_descriptor) {
-    if (existing_descriptor->key_version < key_descriptor.key_version) {
-      // Existing entry is old; replace the existing entry with the new one.
-      *existing_descriptor = key_descriptor;
-    } else {
-      // Otherwise, check for data integrity and leave the existing entry.
-      if (existing_descriptor->key_version == key_descriptor.key_version) {
-        ERR("Data loss: Duplicated old(=%zu) and new(=%zu) version",
-            size_t(existing_descriptor->key_version),
-            size_t(key_descriptor.key_version));
-        return Status::DATA_LOSS;
-      }
-      DBG("Found stale entry when appending; ignoring");
-    }
-    return Status::OK;
-  }
-  // Write new entry.
-  KeyDescriptor* newly_allocated_key_descriptor;
-  TRY(AppendEmptyDescriptor(&newly_allocated_key_descriptor));
-  *newly_allocated_key_descriptor = key_descriptor;
-  return Status::OK;
-}
 
-// TODO: Need a better name.
-Status KeyValueStore::AppendEmptyDescriptor(KeyDescriptor** new_descriptor) {
-  if (key_descriptors_.full()) {
-    return Status::RESOURCE_EXHAUSTED;
+  // Write a new entry.
+  if (existing_descriptor == nullptr) {
+    if (key_descriptors_.full()) {
+      return Status::RESOURCE_EXHAUSTED;
+    }
+    key_descriptors_.push_back(key_descriptor);
+  } else if (existing_descriptor->key_version < key_descriptor.key_version) {
+    // Existing entry is old; replace the existing entry with the new one.
+    *existing_descriptor = key_descriptor;
+  } else {
+    // Otherwise, check for data integrity and leave the existing entry.
+    if (existing_descriptor->key_version == key_descriptor.key_version) {
+      ERR("Data loss: Duplicated old(=%zu) and new(=%zu) version",
+          size_t(existing_descriptor->key_version),
+          size_t(key_descriptor.key_version));
+      return Status::DATA_LOSS;
+    }
+    DBG("Found stale entry when appending; ignoring");
   }
-  key_descriptors_.emplace_back();
-  *new_descriptor = &key_descriptors_.back();
   return Status::OK;
 }
 
@@ -262,8 +251,11 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
 
   TRY(CheckOperation(key));
 
-  if (value.size() > (1 << 24)) {
-    // TODO: Reject sizes that are larger than the maximum?
+  if (Entry::size(partition_, key, value) > partition_.sector_size_bytes()) {
+    DBG("%zu B value with %zu B key cannot fit in one sector",
+        value.size(),
+        key.size());
+    return Status::INVALID_ARGUMENT;
   }
 
   KeyDescriptor* key_descriptor;
@@ -450,8 +442,8 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
   SectorDescriptor* old_sector = SectorFromAddress(key_descriptor->address);
 
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(
-      &sector, Entry::size(partition_.alignment_bytes(), key, value)));
+  TRY(FindOrRecoverSectorWithSpace(&sector,
+                                   Entry::size(partition_, key, value)));
   DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
 
   if (old_sector != SectorFromAddress(key_descriptor->address)) {
@@ -482,8 +474,8 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   KeyDescriptor key_descriptor(key, 0, 0);
 
   SectorDescriptor* sector;
-  TRY(FindOrRecoverSectorWithSpace(
-      &sector, Entry::size(partition_.alignment_bytes(), key, value)));
+  TRY(FindOrRecoverSectorWithSpace(&sector,
+                                   Entry::size(partition_, key, value)));
   DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
   TRY(AppendEntry(sector, &key_descriptor, key, value, KeyDescriptor::kValid));
 
