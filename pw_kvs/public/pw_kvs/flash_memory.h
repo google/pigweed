@@ -58,17 +58,19 @@ class FlashMemory {
 
   // Erase num_sectors starting at a given address. Blocking call.
   // Address should be on a sector boundary.
-  // Returns: OK, on success.
-  //          TIMEOUT, on timeout.
-  //          INVALID_ARGUMENT, if address or sector count is invalid.
-  //          UNKNOWN, on HAL error
+  //
+  //                OK: success
+  // DEADLINE_EXCEEDED: timeout
+  //  INVALID_ARGUMENT: address is not sector-aligned
+  //      OUT_OF_RANGE: erases past the end of the memory
+  //
   virtual Status Erase(Address flash_address, size_t num_sectors) = 0;
 
   // Reads bytes from flash into buffer. Blocking call.
-  // Returns: OK, on success.
-  //          TIMEOUT, on timeout.
-  //          INVALID_ARGUMENT, if address or length is invalid.
-  //          UNKNOWN, on HAL error
+  //
+  //                OK: success
+  // DEADLINE_EXCEEDED: timeout
+  //      OUT_OF_RANGE: write does not fit in the flash memory
   virtual StatusWithSize Read(Address address, span<std::byte> output) = 0;
 
   StatusWithSize Read(Address address, void* buffer, size_t len) {
@@ -76,10 +78,12 @@ class FlashMemory {
   }
 
   // Writes bytes to flash. Blocking call.
-  // Returns: OK, on success.
-  //          TIMEOUT, on timeout.
-  //          INVALID_ARGUMENT, if address or length is invalid.
-  //          UNKNOWN, on HAL error
+  //
+  //                OK: success
+  // DEADLINE_EXCEEDED: timeout
+  //  INVALID_ARGUMENT: address or data size are not aligned
+  //      OUT_OF_RANGE: write does not fit in the memory
+  //
   virtual StatusWithSize Write(Address destination_flash_address,
                                span<const std::byte> data) = 0;
 
@@ -149,6 +153,11 @@ class FlashPartition {
         alignment_bytes_(alignment_bytes == 0 ? flash_.alignment_bytes()
                                               : alignment_bytes),
         permission_(permission) {}
+
+  // Creates a FlashPartition that uses the entire flash with its alignment.
+  constexpr FlashPartition(FlashMemory* flash)
+      : FlashPartition(
+            flash, 0, flash->sector_count(), flash->alignment_bytes()) {}
 
   FlashPartition(const FlashPartition&) = delete;
   FlashPartition& operator=(const FlashPartition&) = delete;

@@ -24,7 +24,7 @@ namespace {
 
 // TODO(hepler): expand these tests
 
-InMemoryFakeFlash<128, 4> test_flash(16);
+FakeFlashBuffer<128, 4> test_flash(16);
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
 TEST(Entry, Size_RoundsUpToAlignment) {

@@ -62,12 +62,18 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "in_memory_fake_flash",
+    name = "test_utils",
+    srcs = [
+        "in_memory_fake_flash.cc",
+    ],
     hdrs = [
         "public/pw_kvs/in_memory_fake_flash.h",
+        "pw_kvs_private/byte_utils.h",
     ],
+    includes = ["public"],
     visibility = ["//visibility:private"],
     deps = [
+        "//pw_kvs",
         "//pw_log",
         "//pw_status",
     ],
@@ -100,8 +106,8 @@ pw_cc_test(
         "entry_test.cc",
     ],
     deps = [
-        ":in_memory_fake_flash",
         ":pw_kvs",
+        ":test_utils",
     ],
 )
 
@@ -110,8 +116,8 @@ pw_cc_test(
     srcs = ["key_value_store_test.cc"],
     deps = [
         ":crc16",
-        ":in_memory_fake_flash",
         ":pw_kvs",
+        ":test_utils",
         "//pw_checksum",
         "//pw_log",
     ],
@@ -122,8 +128,8 @@ pw_cc_test(
     srcs = ["key_value_store_fuzz_test.cc"],
     deps = [
         ":crc16",
-        ":in_memory_fake_flash",
         ":pw_kvs",
+        ":test_utils",
         "//pw_checksum",
     ],
 )
@@ -133,19 +139,26 @@ pw_cc_test(
     srcs = ["key_value_store_map_test.cc"],
     deps = [
         ":crc16",
-        ":in_memory_fake_flash",
         ":pw_kvs",
+        ":test_utils",
         "//pw_checksum",
     ],
 )
 
-cc_binary(
+# TODO: This binary is not building due to a linker error. The error does not occur in GN Builds.
+# A filegroup is used below so that the file is included in the Bazel build.
+# cc_binary(
+#     name = "debug_cli",
+#     srcs = ["debug_cli.cc"],
+#     copts = ["-std=c++17"],
+#     deps = [
+#         ":crc16",
+#         ":pw_kvs",
+#         ":test_utils",
+#     ],
+# )
+
+filegroup(
     name = "debug_cli",
     srcs = ["debug_cli.cc"],
-    copts = ["-std=c++17"],
-    deps = [
-        ":crc16",
-        ":in_memory_fake_flash",
-        ":pw_kvs",
-    ],
 )

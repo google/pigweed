@@ -30,6 +30,7 @@
 #include "pw_checksum/ccitt_crc16.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs_private/byte_utils.h"
 #include "pw_kvs_private/entry.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
@@ -46,10 +47,29 @@ namespace {
 
 using std::byte;
 
-template <typename... Args>
-constexpr auto ByteArray(Args... args) {
-  return std::array<byte, sizeof...(args)>{static_cast<byte>(args)...};
-}
+// Test the functions in byte_utils.h. Create a byte array with AsBytes and
+// ByteStr and check that its contents are correct.
+inline constexpr std::array<char, 2> kTestArray = {'a', 'b'};
+
+inline constexpr auto kAsBytesTest = AsBytes(
+    'a', uint16_t(1), uint8_t(23), kTestArray, ByteStr("c"), uint64_t(-1));
+
+static_assert(kAsBytesTest.size() == 15);
+static_assert(kAsBytesTest[0] == std::byte{'a'});
+static_assert(kAsBytesTest[1] == std::byte{1});
+static_assert(kAsBytesTest[2] == std::byte{0});
+static_assert(kAsBytesTest[3] == std::byte{23});
+static_assert(kAsBytesTest[4] == std::byte{'a'});
+static_assert(kAsBytesTest[5] == std::byte{'b'});
+static_assert(kAsBytesTest[6] == std::byte{'c'});
+static_assert(kAsBytesTest[7] == std::byte{0xff});
+static_assert(kAsBytesTest[8] == std::byte{0xff});
+static_assert(kAsBytesTest[9] == std::byte{0xff});
+static_assert(kAsBytesTest[10] == std::byte{0xff});
+static_assert(kAsBytesTest[11] == std::byte{0xff});
+static_assert(kAsBytesTest[12] == std::byte{0xff});
+static_assert(kAsBytesTest[13] == std::byte{0xff});
+static_assert(kAsBytesTest[14] == std::byte{0xff});
 
 // Test that the ConvertsToSpan trait correctly idenitifies types that convert
 // to span.
@@ -84,7 +104,7 @@ struct FlashWithPartitionFake {
   FlashWithPartitionFake(size_t alignment_bytes)
       : memory(alignment_bytes), partition(&memory, 0, memory.sector_count()) {}
 
-  InMemoryFakeFlash<sector_size_bytes, sector_count> memory;
+  FakeFlashBuffer<sector_size_bytes, sector_count> memory;
   FlashPartition partition;
 
  public:
@@ -128,10 +148,10 @@ typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
 #if USE_MEMORY_BUFFER
 // Although it might be useful to test other configurations, some tests require
 // at least 3 sectors; therfore it should have this when checked in.
-InMemoryFakeFlash<4 * 1024, 4> test_flash(
+FakeFlashBuffer<4 * 1024, 4> test_flash(
     16);  // 4 x 4k sectors, 16 byte alignment
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
-InMemoryFakeFlash<1024, 60> large_test_flash(8);
+FakeFlashBuffer<1024, 60> large_test_flash(8);
 FlashPartition large_test_partition(&large_test_flash,
                                     0,
                                     large_test_flash.sector_count());
@@ -177,7 +197,7 @@ class KvsAttributes {
 class EmptyInitializedKvs : public ::testing::Test {
  protected:
   EmptyInitializedKvs() : kvs_(&test_partition, format) {
-    test_partition.Erase(0, test_partition.sector_count());
+    test_partition.Erase();
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
 
@@ -1040,7 +1060,7 @@ TEST_F(EmptyInitializedKvs, FillSector2) {
 }
 
 TEST_F(EmptyInitializedKvs, ValueSize_Positive) {
-  constexpr auto kData = ByteArray('h', 'i', '!');
+  constexpr auto kData = AsBytes('h', 'i', '!');
   ASSERT_EQ(Status::OK, kvs_.Put("TheKey", kData));
 
   auto result = kvs_.ValueSize("TheKey");

@@ -22,8 +22,8 @@ namespace {
 
 using std::byte;
 
-InMemoryFakeFlash<4 * 1024, 4> test_flash(
-    16);  // 4 x 4k sectors, 16 byte alignment
+// 4 x 4k sectors, 16 byte alignment
+FakeFlashBuffer<4 * 1024, 4> test_flash(16);
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
 ChecksumCrc16 checksum;

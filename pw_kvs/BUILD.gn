@@ -64,13 +64,16 @@ source_set("crc16") {
   ]
 }
 
-source_set("in_memory_fake_flash") {
+source_set("test_utils") {
+  public_configs = [ ":default_config" ]
   public = [
     "public/pw_kvs/in_memory_fake_flash.h",
+    "pw_kvs_private/byte_utils.h",
   ]
-  sources = public
+  sources = [ "in_memory_fake_flash.cc" ] + public
   visibility = [ ":*" ]
   public_deps = [
+    dir_pw_kvs,
     dir_pw_log,
   ]
 }
@@ -81,8 +84,8 @@ executable("debug_cli") {
   ]
   deps = [
     ":crc16",
-    ":in_memory_fake_flash",
     ":pw_kvs",
+    ":test_utils",
   ]
 }
 
@@ -119,8 +122,9 @@ pw_test("checksum_test") {
 
 pw_test("entry_test") {
   deps = [
-    ":in_memory_fake_flash",
+    ":crc16",
     ":pw_kvs",
+    ":test_utils",
   ]
   sources = [
     "entry_test.cc",
@@ -130,8 +134,8 @@ pw_test("entry_test") {
 pw_test("key_value_store_test") {
   deps = [
     ":crc16",
-    ":in_memory_fake_flash",
     ":pw_kvs",
+    ":test_utils",
     dir_pw_checksum,
     dir_pw_log,
   ]
@@ -143,8 +147,8 @@ pw_test("key_value_store_test") {
 pw_test("key_value_store_fuzz_test") {
   deps = [
     ":crc16",
-    ":in_memory_fake_flash",
     ":pw_kvs",
+    ":test_utils",
   ]
   sources = [
     "key_value_store_fuzz_test.cc",
@@ -154,8 +158,8 @@ pw_test("key_value_store_fuzz_test") {
 pw_test("key_value_store_map_test") {
   deps = [
     ":crc16",
-    ":in_memory_fake_flash",
     ":pw_kvs",
+    ":test_utils",
     dir_pw_checksum,
   ]
   sources = [

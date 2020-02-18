@@ -292,7 +292,7 @@ class KvsTester {
 
   static constexpr size_t kMaxValueLength = 64;
 
-  static InMemoryFakeFlash<kParams.sector_size, kParams.sector_count> flash_;
+  static FakeFlashBuffer<kParams.sector_size, kParams.sector_count> flash_;
   FlashPartition partition_;
 
   KeyValueStore kvs_;
@@ -302,9 +302,9 @@ class KvsTester {
 };
 
 template <const TestParameters& kParams>
-InMemoryFakeFlash<kParams.sector_size, kParams.sector_count>
+FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
     KvsTester<kParams>::flash_ =
-        InMemoryFakeFlash<kParams.sector_size, kParams.sector_count>(
+        FakeFlashBuffer<kParams.sector_size, kParams.sector_count>(
             kParams.sector_alignment);
 
 #define _TEST(fixture, test, ...) \
