@@ -50,7 +50,9 @@ except KeyError:
     try:
         with open(os.devnull, 'w') as outs:
             PW_ROOT = subprocess.check_output(
-                ['git', 'rev-parse', '--show-toplevel'], stderr=outs).strip()
+                ['git', 'rev-parse', '--show-toplevel'],
+                stderr=outs,
+            ).strip().decode('utf-8')
     except subprocess.CalledProcessError:
         PW_ROOT = None
 
