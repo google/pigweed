@@ -112,8 +112,6 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
     return *this;
   }
 
-  static constexpr size_type max_size() noexcept { return kMaxSize; }
-
   // All other vector methods are implemented on the Vector<T> base class.
 
  private:
@@ -241,6 +239,8 @@ class Vector<T, vector_impl::kGeneric> {
 
   [[nodiscard]] bool empty() const noexcept { return size() == 0u; }
 
+  // True if there is no free space in the vector. Operations that add elements
+  // (push_back, insert, etc.) will fail if full() is true.
   [[nodiscard]] bool full() const noexcept { return size() == max_size(); }
 
   size_type size() const noexcept { return size_; }
