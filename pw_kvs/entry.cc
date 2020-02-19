@@ -89,14 +89,20 @@ StatusWithSize Entry::Write(const string_view key,
       {as_bytes(span(&header_, 1)), as_bytes(span(key)), value});
 }
 
-StatusWithSize Entry::ReadValue(span<byte> value) const {
-  const size_t read_size = std::min(value_size(), value.size());
-  StatusWithSize result =
-      partition().Read(address_ + sizeof(EntryHeader) + key_length(),
-                       value.subspan(0, read_size));
+StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
+  if (offset_bytes > value_size()) {
+    return StatusWithSize(Status::OUT_OF_RANGE);
+  }
+
+  const size_t remaining_bytes = value_size() - offset_bytes;
+  const size_t read_size = std::min(buffer.size(), remaining_bytes);
+
+  StatusWithSize result = partition().Read(
+      address_ + sizeof(EntryHeader) + key_length() + offset_bytes,
+      buffer.subspan(0, read_size));
   TRY_WITH_SIZE(result);
 
-  if (read_size != value_size()) {
+  if (read_size != remaining_bytes) {
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
   }
   return StatusWithSize(read_size);

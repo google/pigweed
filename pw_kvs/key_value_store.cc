@@ -233,7 +233,8 @@ KeyValueStore::KeyDescriptor* KeyValueStore::FindDescriptor(uint32_t hash) {
 }
 
 StatusWithSize KeyValueStore::Get(string_view key,
-                                  span<byte> value_buffer) const {
+                                  span<byte> value_buffer,
+                                  size_t offset_bytes) const {
   TRY_WITH_SIZE(CheckOperation(key));
 
   const KeyDescriptor* key_descriptor;
@@ -242,8 +243,8 @@ StatusWithSize KeyValueStore::Get(string_view key,
   Entry entry;
   TRY_WITH_SIZE(Entry::Read(partition_, key_descriptor->address, &entry));
 
-  StatusWithSize result = entry.ReadValue(value_buffer);
-  if (result.ok() && options_.verify_on_read) {
+  StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
+  if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
     Status verify_result =
         entry.VerifyChecksum(entry_header_format_.checksum,
                              key,

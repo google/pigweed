@@ -133,7 +133,7 @@ TEST_F(ValidEntryInFlash, ReadValue) {
   EXPECT_STREQ(value, "VALUE!");
 }
 
-TEST_F(ValidEntryInFlash, ReadValue_ResourceExhaustedIfBufferFills) {
+TEST_F(ValidEntryInFlash, ReadValue_BufferTooSmall) {
   char value[3] = {};
   auto result = entry_.ReadValue(as_writable_bytes(span(value)));
 
@@ -142,6 +142,43 @@ TEST_F(ValidEntryInFlash, ReadValue_ResourceExhaustedIfBufferFills) {
   EXPECT_EQ(value[0], 'V');
   EXPECT_EQ(value[1], 'A');
   EXPECT_EQ(value[2], 'L');
+}
+
+TEST_F(ValidEntryInFlash, ReadValue_WithOffset) {
+  char value[3] = {};
+  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 3);
+
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(3u, result.size());
+  EXPECT_EQ(value[0], 'U');
+  EXPECT_EQ(value[1], 'E');
+  EXPECT_EQ(value[2], '!');
+}
+
+TEST_F(ValidEntryInFlash, ReadValue_WithOffset_BufferTooSmall) {
+  char value[1] = {};
+  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 4);
+
+  ASSERT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(1u, result.size());
+  EXPECT_EQ(value[0], 'E');
+}
+
+TEST_F(ValidEntryInFlash, ReadValue_WithOffset_EmptyRead) {
+  char value[16] = {'?'};
+  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 6);
+
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(0u, result.size());
+  EXPECT_EQ(value[0], '?');
+}
+
+TEST_F(ValidEntryInFlash, ReadValue_WithOffset_PastEnd) {
+  char value[16] = {};
+  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 7);
+
+  EXPECT_EQ(Status::OUT_OF_RANGE, result.status());
+  EXPECT_EQ(0u, result.size());
 }
 
 TEST(ValidEntry, Write) {

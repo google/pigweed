@@ -135,7 +135,8 @@ class Entry {
         ReadKey(partition(), address_, key_length(), key.data()), key_length());
   }
 
-  StatusWithSize ReadValue(span<std::byte> value) const;
+  StatusWithSize ReadValue(span<std::byte> buffer,
+                           size_t offset_bytes = 0) const;
 
   Status VerifyChecksum(ChecksumAlgorithm* algorithm,
                         std::string_view key,

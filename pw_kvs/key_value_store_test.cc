@@ -298,6 +298,46 @@ TEST_F(EmptyInitializedKvs, Put_MaxValueSize) {
   EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.Put("K", big_data));
 }
 
+TEST_F(EmptyInitializedKvs, Get_Simple) {
+  ASSERT_EQ(Status::OK, kvs_.Put("Charles", as_bytes(span("Mingus"))));
+
+  char value[16];
+  auto result = kvs_.Get("Charles", as_writable_bytes(span(value)));
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(sizeof("Mingus"), result.size());
+  EXPECT_STREQ("Mingus", value);
+}
+
+TEST_F(EmptyInitializedKvs, Get_WithOffset) {
+  ASSERT_EQ(Status::OK, kvs_.Put("Charles", as_bytes(span("Mingus"))));
+
+  char value[16];
+  auto result = kvs_.Get("Charles", as_writable_bytes(span(value)), 4);
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(sizeof("Mingus") - 4, result.size());
+  EXPECT_STREQ("us", value);
+}
+
+TEST_F(EmptyInitializedKvs, Get_WithOffset_FillBuffer) {
+  ASSERT_EQ(Status::OK, kvs_.Put("Charles", as_bytes(span("Mingus"))));
+
+  char value[4] = {};
+  auto result = kvs_.Get("Charles", as_writable_bytes(span(value, 3)), 1);
+  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(3u, result.size());
+  EXPECT_STREQ("ing", value);
+}
+
+TEST_F(EmptyInitializedKvs, Get_WithOffset_PastEnd) {
+  ASSERT_EQ(Status::OK, kvs_.Put("Charles", as_bytes(span("Mingus"))));
+
+  char value[16];
+  auto result =
+      kvs_.Get("Charles", as_writable_bytes(span(value)), sizeof("Mingus") + 1);
+  EXPECT_EQ(Status::OUT_OF_RANGE, result.status());
+  EXPECT_EQ(0u, result.size());
+}
+
 TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
   ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
   ASSERT_EQ(Status::OK, kvs_.Delete("kEy"));
@@ -385,16 +425,26 @@ TEST_F(EmptyInitializedKvs, Iteration_Empty_ByValue) {
 }
 
 TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
-  char value[] = "123";
-
-  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span(value))));
+  ASSERT_EQ(Status::OK, kvs_.Put("kEy", as_bytes(span("123"))));
 
   for (KeyValueStore::Item entry : kvs_) {
     EXPECT_STREQ(entry.key(), "kEy");  // Make sure null-terminated.
 
-    char buffer[sizeof(value)] = {};
+    char buffer[sizeof("123")] = {};
     EXPECT_EQ(Status::OK, entry.Get(&buffer));
-    EXPECT_STREQ(value, buffer);
+    EXPECT_STREQ("123", buffer);
+  }
+}
+
+TEST_F(EmptyInitializedKvs, Iteration_GetWithOffset) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", as_bytes(span("not bad!"))));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    char buffer[5];
+    auto result = entry.Get(as_writable_bytes(span(buffer)), 4);
+    EXPECT_EQ(Status::OK, result.status());
+    EXPECT_EQ(5u, result.size());
+    EXPECT_STREQ("bad!", buffer);
   }
 }
 
@@ -843,7 +893,7 @@ TEST_F(EmptyInitializedKvs, RepeatingValueWithOtherData) {
     // The value we read back should be the last value we set
     std::memset(get_buf, 0, sizeof(get_buf));
     result = kvs_.Get("const_entry", span(get_buf));
-    ASSERT_TRUE(result.ok());
+    ASSERT_EQ(Status::OK, result.status());
     ASSERT_EQ(result.size(), test_iteration);
     for (size_t j = 0; j < test_iteration; j++) {
       EXPECT_EQ(set_buf[j], get_buf[j]);

@@ -100,7 +100,9 @@ class KeyValueStore {
 
   bool initialized() const { return initialized_; }
 
-  StatusWithSize Get(std::string_view key, span<std::byte> value) const;
+  StatusWithSize Get(std::string_view key,
+                     span<std::byte> value,
+                     size_t offset_bytes = 0) const;
 
   // This overload of Get accepts a pointer to a trivially copyable object.
   // const T& is used instead of T* to prevent arrays from satisfying this
@@ -155,8 +157,9 @@ class KeyValueStore {
     // The key as a null-terminated string.
     const char* key() const { return key_buffer_.data(); }
 
-    StatusWithSize Get(span<std::byte> value_buffer) const {
-      return kvs_.Get(key(), value_buffer);
+    StatusWithSize Get(span<std::byte> value_buffer,
+                       size_t offset_bytes = 0) const {
+      return kvs_.Get(key(), value_buffer, offset_bytes);
     }
 
     template <typename Pointer,
