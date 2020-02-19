@@ -14,11 +14,20 @@
 """Builds and sets up environment to use host build."""
 
 import os
+import platform
 import subprocess
 
 
 def install(pw_root, env):
     host_dir = os.path.join(pw_root, 'out', 'host')
+    env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
+
+    if platform.system() == 'Linux':
+        msg = 'skipping host tools setup--got from CIPD'
+        print(msg)
+        env.echo(msg)
+        return
+
     with env():
         try:
             gn_gen = [
@@ -33,5 +42,3 @@ def install(pw_root, env):
 
         except subprocess.CalledProcessError:
             env.echo('warning: host tools failed to build')
-
-    env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
