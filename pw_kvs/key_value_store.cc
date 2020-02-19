@@ -78,20 +78,21 @@ Status KeyValueStore::Init() {
   }
 
   DBG("First pass: Read all entries from all sectors");
-  for (size_t sector_id = 0; sector_id < sectors_.size(); ++sector_id) {
-    // Track writable bytes in this sector. Updated after reading each entry.
-    sectors_[sector_id].tail_free_bytes = sector_size_bytes;
+  Address sector_address = 0;
 
-    const Address sector_address = sector_id * sector_size_bytes;
+  for (SectorDescriptor& sector : sectors_) {
+    // Reset the sector's valid and writable byte counts. These will be updated
+    // after reading each entry.
+    sector.Reset(sector_size_bytes);
     Address entry_address = sector_address;
 
-    for (int num_entries_in_sector = 0;; num_entries_in_sector++) {
-      DBG("Load entry: sector=%zu, entry#=%d, address=%zu",
-          sector_id,
+    for (int num_entries_in_sector = 0; true; num_entries_in_sector++) {
+      DBG("Load entry: sector=%" PRIx32 ", entry#=%d, address=%" PRIx32,
+          sector_address,
           num_entries_in_sector,
-          size_t(entry_address));
+          entry_address);
 
-      if (!AddressInSector(sectors_[sector_id], entry_address)) {
+      if (!AddressInSector(sector, entry_address)) {
         DBG("Fell off end of sector; moving to the next sector");
         break;
       }
@@ -113,9 +114,9 @@ Status KeyValueStore::Init() {
         // fine. Later, we can wipe and maybe recover the sector.
         //
         // TODO: Implement rest-of-sector scanning for valid entries.
-        ERR("KVS init failed: data loss detected in sector %zu at address %zu",
-            sector_id,
-            static_cast<size_t>(entry_address));
+        ERR("KVS init failed: data loss detected in sector %u at address %zu",
+            SectorIndex(&sector),
+            size_t(entry_address));
         return Status::DATA_LOSS;
       }
       TRY(status);
@@ -124,22 +125,19 @@ Status KeyValueStore::Init() {
       entry_address = next_entry_address;
 
       // Update of the number of writable bytes in this sector.
-      sectors_[sector_id].tail_free_bytes =
-          sector_size_bytes - (entry_address - sector_address);
+      sector.set_writable_bytes(sector_size_bytes -
+                                (entry_address - sector_address));
     }
+
+    sector_address += sector_size_bytes;
   }
 
   DBG("Second pass: Count valid bytes in each sector");
-  // Initialize the sector sizes.
-  for (SectorDescriptor& sector : sectors_) {
-    sector.valid_bytes = 0;
-  }
   // For every valid key, increment the valid bytes for that sector.
   for (KeyDescriptor& key_descriptor : key_descriptors_) {
-    uint32_t sector_id = key_descriptor.address / sector_size_bytes;
     Entry entry;
     TRY(Entry::Read(partition_, key_descriptor.address, &entry));
-    sectors_[sector_id].valid_bytes += entry.size();
+    SectorFromAddress(key_descriptor.address)->AddValidBytes(entry.size());
   }
   initialized_ = true;
 
@@ -278,7 +276,7 @@ Status KeyValueStore::Put(string_view key, span<const byte> value) {
   Status status = FindKeyDescriptor(key, &key_descriptor);
 
   if (status.ok()) {
-    DBG("Writing over existing entry for key 0x%08" PRIx32 " in sector %zu",
+    DBG("Overwriting entry for key %#08" PRIx32 " in sector %u",
         key_descriptor->key_hash,
         SectorIndex(SectorFromAddress(key_descriptor->address)));
     return WriteEntryForExistingKey(
@@ -298,7 +296,7 @@ Status KeyValueStore::Delete(string_view key) {
   KeyDescriptor* key_descriptor;
   TRY(FindExistingKeyDescriptor(key, &key_descriptor));
 
-  DBG("Writing tombstone for existing key 0x%08" PRIx32 " in sector %zu",
+  DBG("Writing tombstone for key %#08" PRIx32 " in sector %u",
       key_descriptor->key_hash,
       SectorIndex(SectorFromAddress(key_descriptor->address)));
   return WriteEntryForExistingKey(
@@ -460,11 +458,13 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector,
                                    Entry::size(partition_, key, value)));
-  DBG("Writing existing entry; found sector: %zu", SectorIndex(sector));
+  DBG("Writing existing entry; found sector %u (%#" PRIx32 ")",
+      SectorIndex(sector),
+      SectorBaseAddress(sector));
 
   if (old_sector != SectorFromAddress(key_descriptor->address)) {
     DBG("Sector for old entry (size %zu) was garbage collected. Old entry "
-        "relocated to sector %zu",
+        "relocated to sector %u",
         original_entry.size(),
         SectorIndex(SectorFromAddress(key_descriptor->address)));
 
@@ -492,7 +492,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector,
                                    Entry::size(partition_, key, value)));
-  DBG("Writing new entry; found sector: %zu", SectorIndex(sector));
+  DBG("Writing new entry; found sector: %u", SectorIndex(sector));
   TRY(AppendEntry(sector, &key_descriptor, key, value, KeyDescriptor::kValid));
 
   // Only add the entry when we are certain the write succeeded.
@@ -548,6 +548,19 @@ Status KeyValueStore::FindSectorWithSpace(
     size_t size,
     const SectorDescriptor* sector_to_skip,
     bool bypass_empty_sector_rule) {
+  SectorDescriptor* first_empty_sector = nullptr;
+  bool at_least_two_empty_sectors = bypass_empty_sector_rule;
+
+  DBG("Find sector with %zu bytes available, starting with sector %u",
+      size,
+      SectorIndex(last_new_sector_));
+  if (sector_to_skip != nullptr) {
+    DBG("  Skip sector %u", SectorIndex(sector_to_skip));
+  }
+  if (bypass_empty_sector_rule) {
+    DBG("  Bypassing empty sector rule");
+  }
+
   // The last_new_sector_ is the sector that was last selected as the "new empty
   // sector" to write to. This last new sector is used as the starting point for
   // the next "find a new empty sector to write to" operation. By using the last
@@ -555,49 +568,30 @@ Status KeyValueStore::FindSectorWithSpace(
   // next, spreading the wear across all the empty sectors and get a wear
   // leveling benefit, rather than putting more wear on the lower number
   // sectors.
-  //
-  // Locally use the sector index for ease of iterating through the sectors. For
-  // the persistent storage use SectorDescriptor* rather than sector index
-  // because SectorDescriptor* is the standard way to identify a sector.
-  size_t last_new_sector_index_ = SectorIndex(last_new_sector_);
-  size_t start = (last_new_sector_index_ + 1) % sectors_.size();
-  SectorDescriptor* first_empty_sector = nullptr;
-  bool at_least_two_empty_sectors = bypass_empty_sector_rule;
-
-  DBG("Find sector with %zu bytes available, starting with sector %zu",
-      size,
-      start);
-  if (sector_to_skip != nullptr) {
-    DBG("  Skip sector %zu", SectorIndex(sector_to_skip));
-  }
-  if (bypass_empty_sector_rule) {
-    DBG("  Bypassing empty sector rule");
-  }
+  SectorDescriptor* sector = last_new_sector_;
 
   // Look for a partial sector to use with enough space. Immediately use the
   // first one of those that is found. While scanning for a partial sector, keep
   // track of the first empty sector and if a second sector was seen.
   for (size_t j = 0; j < sectors_.size(); j++) {
-    size_t i = (j + start) % sectors_.size();
-    SectorDescriptor& sector = sectors_[i];
+    sector += 1;
+    if (sector == sectors_.end()) {
+      sector = sectors_.begin();
+    }
 
-    if (sector_to_skip == &sector) {
-      DBG("  Skipping the skip sector %zu", i);
+    if (sector_to_skip == sector) {
       continue;
     }
 
-    DBG("  Examining sector %zu with %hu bytes available",
-        i,
-        sector.tail_free_bytes);
-    if (!SectorEmpty(sector) && sector.HasSpace(size)) {
-      DBG("  Partially occupied sector %zu with enough space; done!", i);
-      *found_sector = &sector;
+    const size_t sector_size_bytes = partition_.sector_size_bytes();
+    if (!sector->Empty(sector_size_bytes) && sector->HasSpace(size)) {
+      *found_sector = sector;
       return Status::OK;
     }
 
-    if (SectorEmpty(sector)) {
+    if (sector->Empty(sector_size_bytes)) {
       if (first_empty_sector == nullptr) {
-        first_empty_sector = &sector;
+        first_empty_sector = sector;
       } else {
         at_least_two_empty_sectors = true;
       }
@@ -609,7 +603,7 @@ Status KeyValueStore::FindSectorWithSpace(
   // sector after the sector found here, but that rule can be bypassed in
   // special circumstances (such as during garbage collection).
   if (at_least_two_empty_sectors) {
-    DBG("  Found a usable empty sector; returning the first found (%zu)",
+    DBG("  Found a usable empty sector; returning the first found (%u)",
         SectorIndex(first_empty_sector));
     last_new_sector_ = first_empty_sector;
     *found_sector = first_empty_sector;
@@ -634,6 +628,7 @@ Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
 }
 
 KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
+  const size_t sector_size_bytes = partition_.sector_size_bytes();
   SectorDescriptor* sector_candidate = nullptr;
   size_t candidate_bytes = 0;
 
@@ -641,10 +636,10 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   // relocation needed). If any such sectors are found, use the sector with the
   // most reclaimable bytes.
   for (auto& sector : sectors_) {
-    if ((sector.valid_bytes == 0) &&
-        (RecoverableBytes(sector) > candidate_bytes)) {
+    if ((sector.valid_bytes() == 0) &&
+        (sector.RecoverableBytes(sector_size_bytes) > candidate_bytes)) {
       sector_candidate = &sector;
-      candidate_bytes = RecoverableBytes(sector);
+      candidate_bytes = sector.RecoverableBytes(sector_size_bytes);
     }
   }
 
@@ -652,17 +647,17 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   // reclaimable bytes.
   if (sector_candidate == nullptr) {
     for (auto& sector : sectors_) {
-      if (RecoverableBytes(sector) > candidate_bytes) {
+      if (sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) {
         sector_candidate = &sector;
-        candidate_bytes = RecoverableBytes(sector);
+        candidate_bytes = sector.RecoverableBytes(sector_size_bytes);
       }
     }
   }
 
   if (sector_candidate != nullptr) {
-    DBG("Found sector %zu to Garbage Collect, %zu recoverable bytes",
+    DBG("Found sector %u to Garbage Collect, %zu recoverable bytes",
         SectorIndex(sector_candidate),
-        RecoverableBytes(*sector_candidate));
+        sector_candidate->RecoverableBytes(sector_size_bytes));
   } else {
     DBG("Unable to find sector to garbage collect!");
   }
@@ -681,7 +676,7 @@ Status KeyValueStore::GarbageCollectOneSector() {
   }
 
   // Step 2: Move any valid entries in the GC sector to other sectors
-  if (sector_to_gc->valid_bytes != 0) {
+  if (sector_to_gc->valid_bytes() != 0) {
     for (auto& descriptor : key_descriptors_) {
       if (AddressInSector(*sector_to_gc, descriptor.address)) {
         DBG("  Relocate entry");
@@ -690,17 +685,17 @@ Status KeyValueStore::GarbageCollectOneSector() {
     }
   }
 
-  if (sector_to_gc->valid_bytes != 0) {
+  if (sector_to_gc->valid_bytes() != 0) {
     ERR("  Failed to relocate valid entries from sector being garbage "
-        "collected, %hu valid bytes remain",
-        sector_to_gc->valid_bytes);
+        "collected, %zu valid bytes remain",
+        sector_to_gc->valid_bytes());
     return Status::INTERNAL;
   }
 
   // Step 3: Reinitialize the sector
-  sector_to_gc->tail_free_bytes = 0;
+  sector_to_gc->set_writable_bytes(0);
   TRY(partition_.Erase(SectorBaseAddress(sector_to_gc), 1));
-  sector_to_gc->tail_free_bytes = partition_.sector_size_bytes();
+  sector_to_gc->set_writable_bytes(partition_.sector_size_bytes());
 
   DBG("  Garbage Collect complete");
   LogSectors();
@@ -750,8 +745,7 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   key_descriptor->key_version = entry.key_version();
   key_descriptor->state = new_state;
 
-  sector->valid_bytes += written;
-  sector->RemoveFreeBytes(written);
+  sector->MarkValidBytesWritten(written);
   return Status::OK;
 }
 
@@ -789,9 +783,9 @@ void KeyValueStore::LogDebugInfo() {
     const SectorDescriptor& sd = sectors_[sector_id];
     DBG("   |%3zu: | %8zu  |%8zu  | %s",
         sector_id,
-        size_t(sd.tail_free_bytes),
-        size_t(sd.valid_bytes),
-        sd.tail_free_bytes ? "YES" : "");
+        size_t(sd.writable_bytes()),
+        sd.valid_bytes(),
+        sd.writable_bytes() ? "YES" : "");
   }
   DBG(" ");
 
@@ -834,11 +828,11 @@ void KeyValueStore::LogDebugInfo() {
 void KeyValueStore::LogSectors() const {
   DBG("Sector descriptors: count %zu", sectors_.size());
   for (auto& sector : sectors_) {
-    DBG("  - Sector %zu: valid %hu, recoverable %zu, free %hu",
+    DBG("  - Sector %u: valid %zu, recoverable %zu, free %zu",
         SectorIndex(&sector),
-        sector.valid_bytes,
-        RecoverableBytes(sector),
-        sector.tail_free_bytes);
+        sector.valid_bytes(),
+        sector.RecoverableBytes(partition_.sector_size_bytes()),
+        sector.writable_bytes());
   }
 }
 
@@ -851,17 +845,6 @@ void KeyValueStore::LogKeyDescriptor() const {
         static_cast<size_t>(key.key_version),
         static_cast<size_t>(key.address));
   }
-}
-
-void KeyValueStore::SectorDescriptor::RemoveValidBytes(size_t size) {
-  // TODO: add safety check for valid_bytes > size.
-  if (size > valid_bytes) {
-    ERR("Trying to remove too many valid bytes, remove %zu, only have %hu",
-        size,
-        valid_bytes);
-    valid_bytes = size;
-  }
-  valid_bytes -= size;
 }
 
 }  // namespace pw::kvs

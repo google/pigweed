@@ -22,6 +22,7 @@
 #include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/internal/sector_descriptor.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -235,6 +236,7 @@ class KeyValueStore {
 
  private:
   using Address = FlashPartition::Address;
+  using SectorDescriptor = internal::SectorDescriptor;
 
   struct KeyDescriptor {
     enum State { kValid, kDeleted };
@@ -256,22 +258,6 @@ class KeyValueStore {
 
     // TODO: This information should be packed into the above fields to save RAM
     State state;
-  };
-
-  struct SectorDescriptor {
-    uint16_t tail_free_bytes;
-    uint16_t valid_bytes;  // sum of sizes of valid entries
-
-    bool HasSpace(size_t required_space) const {
-      return (tail_free_bytes >= required_space);
-    }
-
-    void RemoveFreeBytes(size_t size) {
-      // TODO: add safety check for tail_free_bytes > size.
-      tail_free_bytes -= size;
-    }
-
-    void RemoveValidBytes(size_t size);
   };
 
   static uint32_t HashKey(std::string_view string);
@@ -340,18 +326,8 @@ class KeyValueStore {
     return ((address >= sector_base) && (address < sector_end));
   }
 
-  bool SectorEmpty(const SectorDescriptor& sector) const {
-    return (sector.tail_free_bytes == partition_.sector_size_bytes());
-  }
-
-  size_t RecoverableBytes(const SectorDescriptor& sector) const {
-    return partition_.sector_size_bytes() - sector.valid_bytes -
-           sector.tail_free_bytes;
-  }
-
-  size_t SectorIndex(const SectorDescriptor* sector) const {
-    // TODO: perhaps add assert that the index is valid.
-    return (sector - sectors_.data());
+  unsigned SectorIndex(const SectorDescriptor* sector) const {
+    return sector - sectors_.begin();
   }
 
   Address SectorBaseAddress(const SectorDescriptor* sector) const {
@@ -365,25 +341,27 @@ class KeyValueStore {
     return &sectors_[index];
   }
 
+  Address NextWritableAddress(const SectorDescriptor* sector) const {
+    return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
+           sector->writable_bytes();
+  }
+
   void LogSectors() const;
   void LogKeyDescriptor() const;
-
-  Address NextWritableAddress(SectorDescriptor* sector) const {
-    return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
-           sector->tail_free_bytes;
-  }
 
   FlashPartition& partition_;
   EntryHeaderFormat entry_header_format_;
   Options options_;
 
-  // Map is unordered; finding a key requires scanning and
+  // TODO: To allow setting kMaxEntries and kMaxUsableSectors, these vectors
+  // should instead be Vector<KeyDescriptor>& and Vector<SectorDescriptor>& that
+  // refer to vectors in a templated derived class.
+
+  // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
   Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
 
-  // This is dense, so sector_id == indexof(SectorDescriptor) in sector_map
-  // TODO: This may need to be a span that points to an externally allocated
-  // array. This could be handled by a templated KVS derived class.
+  // List of sectors used by this KVS.
   Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
 
   // The last sector that was selected as the "new empty sector" to write to.
