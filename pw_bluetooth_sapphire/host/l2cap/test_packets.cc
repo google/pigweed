@@ -4,6 +4,20 @@
 
 namespace bt::l2cap::testing {
 
+DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
+                                                   hci::ConnectionHandle handle) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link_handle|, length: 10 bytes)
+      LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
+      // L2CAP B-frame header (length: 6 bytes, channel-id: 0x0001 (ACL sig))
+      0x06, 0x00, 0x01, 0x00,
+      // Information Response (type, ID, length: 2)
+      l2cap::kCommandRejectCode, id, 0x02, 0x00,
+      // Reason = Not Understood
+      LowerBits(static_cast<uint16_t>(RejectReason::kNotUnderstood)),
+      UpperBits(static_cast<uint16_t>(RejectReason::kNotUnderstood))));
+}
+
 DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHandle handle,
                                         l2cap::ExtendedFeatures features) {
   const auto features_bytes = ToBytes(features);
@@ -40,22 +54,7 @@ DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
 
 DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
                                                    hci::ConnectionHandle handle,
-                                                   l2cap::InformationResult result,
                                                    l2cap::FixedChannelsSupported chan_mask) {
-  if (result == l2cap::InformationResult::kNotSupported) {
-    return DynamicByteBuffer(StaticByteBuffer(
-        // ACL data header (handle: |link_handle|, length: 12 bytes)
-        LowerBits(handle), UpperBits(handle), 0x0c, 0x00,
-        // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
-        0x08, 0x00, 0x01, 0x00,
-        // Information Response (type, ID, length: 4)
-        l2cap::kInformationResponse, id, 0x04, 0x00,
-        // Type = Fixed Channels Supported
-        0x03, 0x00,
-        // Result
-        LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result))));
-  }
-
   const auto chan_bytes = ToBytes(chan_mask);
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 20 bytes)
@@ -66,11 +65,27 @@ DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
       l2cap::kInformationResponse, id, 0x0c, 0x00,
       // Type = Fixed Channels Supported
       0x03, 0x00,
-      // Result
-      LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)),
+      // Result = Success
+      0x00, 0x00,
       // Data (Mask)
       chan_bytes[0], chan_bytes[1], chan_bytes[2], chan_bytes[3], chan_bytes[4], chan_bytes[5],
       chan_bytes[6], chan_bytes[7]));
+}
+
+DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
+                                                     hci::ConnectionHandle handle) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link_handle|, length: 12 bytes)
+      LowerBits(handle), UpperBits(handle), 0x0c, 0x00,
+      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
+      0x08, 0x00, 0x01, 0x00,
+      // Information Response (type, ID, length: 4)
+      l2cap::kInformationResponse, id, 0x04, 0x00,
+      // Type = invalid type
+      0xFF, 0xFF,
+      // Result
+      LowerBits(static_cast<uint16_t>(l2cap::InformationResult::kNotSupported)),
+      UpperBits(static_cast<uint16_t>(l2cap::InformationResult::kNotSupported))));
 }
 
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,

@@ -8,14 +8,19 @@
 namespace bt::l2cap::testing {
 
 // Signaling Packets
+
+DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
+                                                   hci::ConnectionHandle handle);
+
 DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHandle handle,
                                         l2cap::ExtendedFeatures features);
 DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
                                                    hci::ConnectionHandle handle);
-DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(
-    l2cap::CommandId id, hci::ConnectionHandle handle,
-    l2cap::InformationResult = InformationResult::kSuccess,
-    l2cap::FixedChannelsSupported chan_mask = 0);
+DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
+                                                   hci::ConnectionHandle handle,
+                                                   l2cap::FixedChannelsSupported chan_mask);
+DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
+                                                     hci::ConnectionHandle handle);
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,
                                l2cap::ChannelId dst_id, uint16_t mtu = l2cap::kDefaultMTU,
                                l2cap::ChannelMode mode = l2cap::ChannelMode::kBasic);

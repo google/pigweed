@@ -1927,9 +1927,25 @@ TEST_F(L2CAP_ChannelManagerTest,
 
 TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
-  // Handler should check for result and not crash from reading mask.
-  ReceiveAclDataPacket(testing::AclFixedChannelsSupportedInfoRsp(
-      cmd_ids.fixed_channels_supported_id, kTestHandle1, InformationResult::kNotSupported));
+  // Handler should check for result and not crash from reading mask or type.
+  ReceiveAclDataPacket(testing::AclNotSupportedInformationResponse(
+      cmd_ids.fixed_channels_supported_id, kTestHandle1));
+  RunLoopUntilIdle();
+}
+
+TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  // Handler should check type and not attempt to read fixed channel mask.
+  ReceiveAclDataPacket(
+      testing::AclExtFeaturesInfoRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1, 0));
+  RunLoopUntilIdle();
+}
+
+TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithRejectStatus) {
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  // Handler should check status and not attempt to read fields.
+  ReceiveAclDataPacket(
+      testing::AclCommandRejectNotUnderstoodRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1));
   RunLoopUntilIdle();
 }
 

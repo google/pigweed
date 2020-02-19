@@ -126,7 +126,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
-    for (auto &pdu : pp_iter->second) {
+    for (auto& pdu : pp_iter->second) {
       chan->HandleRxPdu(std::move(pdu));
     }
     pending_pdus_.erase(pp_iter);
@@ -454,11 +454,22 @@ void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
 
 void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     const BrEdrCommandHandler::InformationResponse& rsp) {
-  ZX_ASSERT(rsp.type() == InformationType::kFixedChannelsSupported);
+  if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
+    bt_log(SPEW, "l2cap", "Fixed Channels Supported Information Request rejected (reason %#.4hx)",
+           rsp.reject_reason());
+    return;
+  }
 
   if (rsp.result() == InformationResult::kNotSupported) {
     bt_log(SPEW, "l2cap",
            "Received Fixed Channels Supported Information Response (result: Not Supported)");
+    return;
+  }
+
+  if (rsp.type() != InformationType::kFixedChannelsSupported) {
+    bt_log(SPEW, "l2cap",
+           "Incorrect Fixed Channels Supported Information Response type (type: %#.4hx)",
+           rsp.type());
     return;
   }
 
