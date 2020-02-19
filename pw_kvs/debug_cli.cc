@@ -48,7 +48,7 @@ void Run() {
   FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
   test_partition.Erase(0, test_partition.sector_count());
 
-  KeyValueStore kvs(&test_partition, format);
+  KeyValueStoreBuffer<256, 256> kvs(&test_partition, format);
   kvs.Init();
 
   while (true) {

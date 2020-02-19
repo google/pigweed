@@ -39,6 +39,9 @@ namespace {
 
 using std::byte;
 
+constexpr size_t kMaxEntries = 256;
+constexpr size_t kMaxUsableSectors = 256;
+
 constexpr std::string_view kChars =
     "abcdefghijklmnopqrstuvwxyz"
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -220,7 +223,7 @@ class KvsTester {
 
     if (key.empty() || key.size() > Entry::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
-    } else if (map_.size() == KeyValueStore::kMaxEntries) {
+    } else if (map_.size() == kvs_.max_size()) {
       EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result);
     } else if (result == Status::RESOURCE_EXHAUSTED) {
       EXPECT_FALSE(map_.empty());
@@ -295,7 +298,7 @@ class KvsTester {
   static FakeFlashBuffer<kParams.sector_size, kParams.sector_count> flash_;
   FlashPartition partition_;
 
-  KeyValueStore kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
   std::unordered_map<std::string, std::string> map_;
   std::unordered_set<std::string> deleted_;
   unsigned count_ = 0;

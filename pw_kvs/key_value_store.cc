@@ -37,30 +37,29 @@ constexpr bool InvalidKey(std::string_view key) {
 }  // namespace
 
 KeyValueStore::KeyValueStore(FlashPartition* partition,
+                             Vector<KeyDescriptor>& key_descriptor_list,
+                             Vector<SectorDescriptor>& sector_descriptor_list,
                              const EntryHeaderFormat& format,
                              const Options& options)
     : partition_(*partition),
       entry_header_format_(format),
       options_(options),
-      sectors_(partition_.sector_count()),
+      key_descriptors_(key_descriptor_list),
+      sectors_(sector_descriptor_list),
       last_new_sector_(sectors_.data()) {}
 
 Status KeyValueStore::Init() {
   INF("Initializing key value store");
-  if (kMaxUsableSectors < partition_.sector_count()) {
+  if (partition_.sector_count() > sectors_.max_size()) {
     ERR("KVS init failed: kMaxUsableSectors (=%zu) must be at least as "
         "large as the number of sectors in the flash partition (=%zu)",
-        kMaxUsableSectors,
+        sectors_.max_size(),
         partition_.sector_count());
     return Status::FAILED_PRECONDITION;
   }
 
-  if (kMaxUsableSectors > sectors_.size()) {
-    DBG("KeyValueStore::kMaxUsableSectors is %zu sectors larger than needed",
-        kMaxUsableSectors - sectors_.size());
-  }
-
-  // Reset the number of occupied key descriptors; we will fill them later.
+  // Reset descriptor lists. Key descriptors will be filled later.
+  sectors_.resize(partition_.sector_count());
   key_descriptors_.clear();
 
   // TODO: init last_new_sector_ to a random sector. Since the on-flash stored
@@ -755,7 +754,7 @@ void KeyValueStore::LogDebugInfo() {
   DBG(" ");
   DBG("Flash partition:");
   DBG("  Sector count     = %zu", partition_.sector_count());
-  DBG("  Sector max count = %zu", kMaxUsableSectors);
+  DBG("  Sector max count = %zu", sectors_.max_size());
   DBG("  Sectors in use   = %zu", sectors_.size());
   DBG("  Sector size      = %zu", sector_size_bytes);
   DBG("  Total size       = %zu", partition_.size_bytes());
@@ -763,7 +762,7 @@ void KeyValueStore::LogDebugInfo() {
   DBG(" ");
   DBG("Key descriptors:");
   DBG("  Entry count     = %zu", key_descriptors_.size());
-  DBG("  Max entry count = %zu", kMaxEntries);
+  DBG("  Max entry count = %zu", key_descriptors_.max_size());
   DBG(" ");
   DBG("      #     hash        version    address   address (hex)");
   for (size_t i = 0; i < key_descriptors_.size(); ++i) {

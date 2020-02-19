@@ -47,11 +47,14 @@ namespace {
 
 using std::byte;
 
+constexpr size_t kMaxEntries = 256;
+constexpr size_t kMaxUsableSectors = 256;
+
 // Test the functions in byte_utils.h. Create a byte array with AsBytes and
 // ByteStr and check that its contents are correct.
-inline constexpr std::array<char, 2> kTestArray = {'a', 'b'};
+constexpr std::array<char, 2> kTestArray = {'a', 'b'};
 
-inline constexpr auto kAsBytesTest = AsBytes(
+constexpr auto kAsBytesTest = AsBytes(
     'a', uint16_t(1), uint8_t(23), kTestArray, ByteStr("c"), uint64_t(-1));
 
 static_assert(kAsBytesTest.size() == 15);
@@ -233,7 +236,7 @@ class EmptyInitializedKvs : public ::testing::Test {
     ASSERT_EQ(Status::OK, kvs_.Delete(key));
   }
 
-  KeyValueStore kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
 
 uint16_t CalcKvsCrc(const char* key, const void* data, size_t data_len) {
@@ -356,7 +359,8 @@ TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
   EXPECT_STREQ(data, "45678");
 
   // Ensure that the re-added key is still present after reinitialization.
-  KeyValueStore new_kvs(&test_partition, format);
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> new_kvs(&test_partition,
+                                                              format);
   ASSERT_EQ(Status::OK, new_kvs.Init());
 
   EXPECT_EQ(Status::OK, new_kvs.Put("kEy", as_bytes(span("45678"))));
@@ -568,7 +572,8 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     // Create and initialize the KVS.
     constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3,
                                        .checksum = nullptr};
-    KeyValueStore kvs(&flash.partition, format);
+    KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
+                                                            format);
     ASSERT_OK(kvs.Init());
 
     // Write the same entry many times.
@@ -608,7 +613,8 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
 
   // Create and initialize the KVS.
   constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
-  KeyValueStore kvs(&flash.partition, format);
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
+                                                          format);
   ASSERT_OK(kvs.Init());
 
   // Write the same entry many times.
@@ -634,7 +640,8 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
 
   // Create and initialize the KVS.
   constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
-  KeyValueStore kvs(&flash.partition, format);
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
+                                                          format);
   ASSERT_OK(kvs.Init());
 
   // Add two entries with different keys and values.
@@ -662,7 +669,8 @@ TEST(InMemoryKvs, Basic) {
 
   // Create and initialize the KVS.
   constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
-  KeyValueStore kvs(&flash.partition, format);
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
+                                                          format);
   ASSERT_OK(kvs.Init());
 
   // Add two entries with different keys and values.
@@ -783,7 +791,8 @@ TEST_F(EmptyInitializedKvs, Enable) {
 
   // Enable different KVS which should be able to properly setup the same map
   // from what is stored in flash.
-  static KeyValueStore kvs_local(&test_partition, format);
+  static KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_local(
+      &test_partition, format);
   ASSERT_EQ(Status::OK, kvs_local.Init());
   EXPECT_EQ(kvs_local.size(), keys.size());
 
@@ -1169,7 +1178,7 @@ class LargeEmptyInitializedKvs : public ::testing::Test {
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
 
-  KeyValueStore kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
 
 TEST_F(LargeEmptyInitializedKvs, Basic) {

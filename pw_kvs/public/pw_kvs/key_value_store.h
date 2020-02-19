@@ -82,20 +82,16 @@ struct Options {
 };
 
 class KeyValueStore {
- private:
+ protected:
   struct KeyDescriptor;
 
  public:
-  // TODO: Make these configurable
-  static constexpr size_t kMaxEntries = 256;
-  static constexpr size_t kMaxUsableSectors = 256;
+  // TODO: Make this configurable.
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
-  // In the future, will be able to provide additional EntryHeaderFormats for
-  // backwards compatibility.
-  KeyValueStore(FlashPartition* partition,
-                const EntryHeaderFormat& format,
-                const Options& options = {});
+  // KeyValueStores are declared as instances of
+  // KeyValueStoreBuffer<MAX_ENTRIES, MAX_SECTORS>, which allocates buffers for
+  // tracking entries and flash sectors.
 
   Status Init();
 
@@ -234,7 +230,7 @@ class KeyValueStore {
 
   size_t empty() const { return size() == 0u; }
 
- private:
+ protected:
   using Address = FlashPartition::Address;
   using SectorDescriptor = internal::SectorDescriptor;
 
@@ -260,6 +256,15 @@ class KeyValueStore {
     State state;
   };
 
+  // In the future, will be able to provide additional EntryHeaderFormats for
+  // backwards compatibility.
+  KeyValueStore(FlashPartition* partition,
+                Vector<KeyDescriptor>& key_descriptor_list,
+                Vector<SectorDescriptor>& sector_descriptor_list,
+                const EntryHeaderFormat& format,
+                const Options& options);
+
+ private:
   static uint32_t HashKey(std::string_view string);
 
   Status FixedSizeGet(std::string_view key,
@@ -359,10 +364,10 @@ class KeyValueStore {
 
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
-  Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
+  Vector<KeyDescriptor>& key_descriptors_;
 
   // List of sectors used by this KVS.
-  Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
+  Vector<SectorDescriptor>& sectors_;
 
   // The last sector that was selected as the "new empty sector" to write to.
   // This last new sector is used as the starting point for the next "find a new
@@ -381,6 +386,22 @@ class KeyValueStore {
   // relocate) to use for working space to remove the need to allocate temporary
   // space.
   std::array<std::byte, kWorkingBufferSizeBytes> working_buffer_;
+};
+
+template <size_t kMaxEntries, size_t kMaxUsableSectors>
+class KeyValueStoreBuffer : public KeyValueStore {
+ public:
+  KeyValueStoreBuffer(FlashPartition* partition,
+                      const EntryHeaderFormat& format,
+                      const Options& options = {})
+      : KeyValueStore(partition, key_descriptors_, sectors_, format, options) {}
+
+ private:
+  static_assert(kMaxEntries > 0u);
+  static_assert(kMaxUsableSectors > 0u);
+
+  Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
+  Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
 };
 
 }  // namespace pw::kvs

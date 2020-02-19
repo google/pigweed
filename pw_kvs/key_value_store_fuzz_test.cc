@@ -22,6 +22,9 @@ namespace {
 
 using std::byte;
 
+constexpr size_t kMaxEntries = 256;
+constexpr size_t kMaxUsableSectors = 256;
+
 // 4 x 4k sectors, 16 byte alignment
 FakeFlashBuffer<4 * 1024, 4> test_flash(16);
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
@@ -36,7 +39,7 @@ class EmptyInitializedKvs : public ::testing::Test {
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
 
-  KeyValueStore kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
 
 TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
