@@ -17,7 +17,14 @@
 
 :: Calls a Powershell script that determines the correct PW_ROOT directory and
 :: exports it as an environment variable.
+:: LUCI DELETE BEGIN
+:: The ~dp0 magic doesn't work when this batch script is launched from another
+:: batch script. So when testing on Windows we write a copy of this batch
+:: script that assumes PW_ROOT is already set. Then the batch script we run
+:: directly sets PW_ROOT, calls the copy of this batch script and runs
+:: 'pw presubmit'.
 for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\pw_env_setup\env_setup.ps1`) do set PW_ROOT=%%i
+:: LUCI DELETE END
 
 set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
