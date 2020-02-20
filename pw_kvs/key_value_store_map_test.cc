@@ -118,7 +118,8 @@ class KvsTester {
 
         // Either add a new key or replace an existing one.
         if (empty() || random_int() % 2 == 0) {
-          key = random_string(random_int() % (Entry::kMaxKeyLength + 1));
+          key = random_string(random_int() %
+                              (internal::Entry::kMaxKeyLength + 1));
         } else {
           key = RandomPresentKey();
         }
@@ -221,7 +222,7 @@ class KvsTester {
 
     Status result = kvs_.Put(key, as_bytes(span(value)));
 
-    if (key.empty() || key.size() > Entry::kMaxKeyLength) {
+    if (key.empty() || key.size() > internal::Entry::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
     } else if (map_.size() == kvs_.max_size()) {
       EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result);
@@ -251,7 +252,7 @@ class KvsTester {
 
     Status result = kvs_.Delete(key);
 
-    if (key.empty() || key.size() > Entry::kMaxKeyLength) {
+    if (key.empty() || key.size() > internal::Entry::kMaxKeyLength) {
       EXPECT_EQ(Status::INVALID_ARGUMENT, result);
     } else if (map_.count(key) == 0) {
       EXPECT_EQ(Status::NOT_FOUND, result);

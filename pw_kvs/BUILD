@@ -30,6 +30,8 @@ pw_cc_library(
         "entry.cc",
         "flash_memory.cc",
         "key_value_store.cc",
+        "public/pw_kvs/internal/hash.h",
+        "public/pw_kvs/internal/key_descriptor.h",
         "public/pw_kvs/internal/sector_descriptor.h",
         "pw_kvs_private/entry.h",
         "pw_kvs_private/macros.h",

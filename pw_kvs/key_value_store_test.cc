@@ -45,6 +45,7 @@
 namespace pw::kvs {
 namespace {
 
+using internal::EntryHeader;
 using std::byte;
 
 constexpr size_t kMaxEntries = 256;

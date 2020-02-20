@@ -22,6 +22,7 @@
 #include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sector_descriptor.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -29,6 +30,8 @@
 
 namespace pw::kvs {
 namespace internal {
+
+class Entry;
 
 template <typename T, typename = decltype(span(std::declval<T>()))>
 constexpr bool ConvertsToSpan(int) {
@@ -48,9 +51,6 @@ constexpr bool ConvertsToSpan(...) {
 template <typename T>
 using ConvertsToSpan =
     std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
-
-// Internal-only persistent storage header format.
-class Entry;
 
 struct EntryHeaderFormat {
   // Magic is a unique constant identifier for entries.
@@ -82,9 +82,6 @@ struct Options {
 };
 
 class KeyValueStore {
- protected:
-  struct KeyDescriptor;
-
  public:
   // TODO: Make this configurable.
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
@@ -210,7 +207,7 @@ class KeyValueStore {
     constexpr iterator(const KeyValueStore& kvs, size_t index)
         : item_(kvs), index_(index) {}
 
-    const KeyDescriptor& descriptor() const {
+    const internal::KeyDescriptor& descriptor() const {
       return item_.kvs_.key_descriptors_[index_];
     }
 
@@ -232,29 +229,8 @@ class KeyValueStore {
 
  protected:
   using Address = FlashPartition::Address;
+  using KeyDescriptor = internal::KeyDescriptor;
   using SectorDescriptor = internal::SectorDescriptor;
-
-  struct KeyDescriptor {
-    enum State { kValid, kDeleted };
-
-    KeyDescriptor(std::string_view key,
-                  uint32_t version,
-                  Address addr,
-                  State initial_state = kValid)
-        : key_hash(HashKey(key)),
-          key_version(version),
-          address(addr),
-          state(initial_state) {}
-
-    bool deleted() const { return state == kDeleted; }
-
-    uint32_t key_hash;
-    uint32_t key_version;
-    Address address;  // In partition address.
-
-    // TODO: This information should be packed into the above fields to save RAM
-    State state;
-  };
 
   // In the future, will be able to provide additional EntryHeaderFormats for
   // backwards compatibility.
@@ -265,8 +241,6 @@ class KeyValueStore {
                 const Options& options);
 
  private:
-  static uint32_t HashKey(std::string_view string);
-
   Status FixedSizeGet(std::string_view key,
                       std::byte* value,
                       size_t size_bytes) const;
@@ -339,17 +313,26 @@ class KeyValueStore {
     return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
-  SectorDescriptor* SectorFromAddress(Address address) {
-    const size_t index = address / partition_.sector_size_bytes();
+  SectorDescriptor* SectorFromKey(const KeyDescriptor& descriptor) {
+    const size_t index = descriptor.address() / partition_.sector_size_bytes();
     // TODO: Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);
     return &sectors_[index];
+  }
+
+  SectorDescriptor* SectorFromKey(const KeyDescriptor* descriptor) {
+    return SectorFromKey(*descriptor);
   }
 
   Address NextWritableAddress(const SectorDescriptor* sector) const {
     return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
            sector->writable_bytes();
   }
+
+  internal::Entry CreateEntry(Address address,
+                              std::string_view key,
+                              span<const std::byte> value,
+                              KeyDescriptor::State state);
 
   void LogSectors() const;
   void LogKeyDescriptor() const;
@@ -379,6 +362,7 @@ class KeyValueStore {
   // Use SectorDescriptor* for the persistent storage rather than sector index
   // because SectorDescriptor* is the standard way to identify a sector.
   SectorDescriptor* last_new_sector_;
+  uint32_t last_transaction_id_;
 
   bool initialized_ = false;
 

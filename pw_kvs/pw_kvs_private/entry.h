@@ -24,9 +24,10 @@
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/internal/key_descriptor.h"
 #include "pw_span/span.h"
 
-namespace pw::kvs {
+namespace pw::kvs::internal {
 
 // Disk format of the header used for each key-value entry.
 struct EntryHeader {
@@ -50,8 +51,8 @@ struct EntryHeader {
   // or 0xFFFF) is reserved to indicate this is a tombstone (deleted) entry.
   uint16_t value_size_bytes;
 
-  // The version of the key. Monotonically increasing.
-  uint32_t key_version;
+  // The transaction ID for this key. Monotonically increasing.
+  uint32_t transaction_id;
 };
 
 static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
@@ -90,7 +91,7 @@ class Entry {
                      std::string_view key,
                      span<const std::byte> value,
                      size_t alignment_bytes,
-                     uint32_t key_version) {
+                     uint32_t transaction_id) {
     return Entry(partition,
                  address,
                  magic,
@@ -99,7 +100,7 @@ class Entry {
                  value,
                  value.size(),
                  alignment_bytes,
-                 key_version);
+                 transaction_id);
   }
 
   // Creates a new Entry for a tombstone entry, which marks a deleted key.
@@ -109,7 +110,7 @@ class Entry {
                          ChecksumAlgorithm* algorithm,
                          std::string_view key,
                          size_t alignment_bytes,
-                         uint32_t key_version) {
+                         uint32_t transaction_id) {
     return Entry(partition,
                  address,
                  magic,
@@ -118,10 +119,24 @@ class Entry {
                  {},
                  kDeletedValueLength,
                  alignment_bytes,
-                 key_version);
+                 transaction_id);
   }
 
   Entry() = default;
+
+  KeyDescriptor descriptor(std::string_view key) const {
+    return KeyDescriptor(
+        key,
+        transaction_id(),
+        address_,
+        deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
+  }
+
+  void UpdateDescriptor(KeyDescriptor* kd) {
+    kd->transaction_id_ = transaction_id();
+    kd->address_ = address_;
+    kd->state_ = deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid;
+  }
 
   StatusWithSize Write(std::string_view key, span<const std::byte> value) const;
 
@@ -169,7 +184,7 @@ class Entry {
 
   uint32_t magic() const { return header_.magic; }
 
-  uint32_t key_version() const { return header_.key_version; }
+  uint32_t transaction_id() const { return header_.transaction_id; }
 
   // True if this is a tombstone entry.
   bool deleted() const {
@@ -200,7 +215,7 @@ class Entry {
         span<const std::byte> value,
         uint16_t value_size_bytes,
         size_t alignment_bytes,
-        uint32_t key_version);
+        uint32_t transaction_id);
 
   constexpr Entry(FlashPartition* partition,
                   Address address,
@@ -224,4 +239,4 @@ class Entry {
   EntryHeader header_;
 };
 
-}  // namespace pw::kvs
+}  // namespace pw::kvs::internal

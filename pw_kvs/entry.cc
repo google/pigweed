@@ -20,7 +20,7 @@
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
-namespace pw::kvs {
+namespace pw::kvs::internal {
 
 using std::byte;
 using std::string_view;
@@ -60,7 +60,7 @@ Entry::Entry(FlashPartition& partition,
              span<const byte> value,
              uint16_t value_size_bytes,
              size_t alignment_bytes,
-             uint32_t key_version)
+             uint32_t transaction_id)
     : Entry(&partition,
             address,
             {.magic = magic,
@@ -68,7 +68,7 @@ Entry::Entry(FlashPartition& partition,
              .alignment_units = alignment_bytes_to_units(alignment_bytes),
              .key_length_bytes = static_cast<uint8_t>(key.size()),
              .value_size_bytes = value_size_bytes,
-             .key_version = key_version}) {
+             .transaction_id = transaction_id}) {
   if (algorithm != nullptr) {
     span<const byte> checksum = CalculateChecksum(algorithm, key, value);
     std::memcpy(&header_.checksum,
@@ -207,4 +207,4 @@ span<const byte> Entry::CalculateChecksum(ChecksumAlgorithm* algorithm,
   return algorithm->Finish();
 }
 
-}  // namespace pw::kvs
+}  // namespace pw::kvs::internal

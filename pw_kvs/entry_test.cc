@@ -24,7 +24,7 @@
 #include "pw_kvs_private/byte_utils.h"
 #include "pw_span/span.h"
 
-namespace pw::kvs {
+namespace pw::kvs::internal {
 namespace {
 
 using std::byte;
@@ -60,7 +60,7 @@ TEST(Entry, Construct_ValidEntry) {
   EXPECT_FALSE(entry.deleted());
   EXPECT_EQ(entry.magic(), 9u);
   EXPECT_EQ(entry.value_size(), sizeof("123"));
-  EXPECT_EQ(entry.key_version(), 9876u);
+  EXPECT_EQ(entry.transaction_id(), 9876u);
 }
 
 TEST(Entry, Construct_Tombstone) {
@@ -72,7 +72,7 @@ TEST(Entry, Construct_Tombstone) {
   EXPECT_TRUE(entry.deleted());
   EXPECT_EQ(entry.magic(), 99u);
   EXPECT_EQ(entry.value_size(), 0u);
-  EXPECT_EQ(entry.key_version(), 123u);
+  EXPECT_EQ(entry.transaction_id(), 123u);
 }
 
 constexpr auto kHeader1 = ByteStr(
@@ -111,7 +111,7 @@ TEST_F(ValidEntryInFlash, HeaderContents) {
   EXPECT_EQ(entry_.magic(), 0x600DF00Du);
   EXPECT_EQ(entry_.key_length(), 5u);
   EXPECT_EQ(entry_.value_size(), 6u);
-  EXPECT_EQ(entry_.key_version(), 0x96979899u);
+  EXPECT_EQ(entry_.transaction_id(), 0x96979899u);
   EXPECT_FALSE(entry_.deleted());
 }
 
@@ -229,7 +229,7 @@ TEST_F(TombstoneEntryInFlash, HeaderContents) {
   EXPECT_EQ(entry_.magic(), 0x600DF00Du);
   EXPECT_EQ(entry_.key_length(), 1u);
   EXPECT_EQ(entry_.value_size(), 0u);
-  EXPECT_EQ(entry_.key_version(), 0x03020100u);
+  EXPECT_EQ(entry_.transaction_id(), 0x03020100u);
   EXPECT_TRUE(entry_.deleted());
 }
 
@@ -300,4 +300,4 @@ TEST(Entry, Checksum_ChecksPadding) {
   EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash(&checksum));
 }
 }  // namespace
-}  // namespace pw::kvs
+}  // namespace pw::kvs::internal
