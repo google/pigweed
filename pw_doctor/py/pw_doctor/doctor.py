@@ -111,7 +111,7 @@ def cipd(ctx: DoctorContext):
 
     cipd_exe = shutil.which('cipd')
     if not cipd_exe:
-        ctx.fatal('cipd not in PATH')
+        ctx.fatal('cipd not in PATH (%s)', os.environ['PATH'])
 
     temp = tempfile.NamedTemporaryFile(prefix='cipd', delete=False)
     subprocess.run(['cipd', 'acl-check', '-json-output', temp.name, cipd_path],
@@ -133,8 +133,12 @@ def cipd(ctx: DoctorContext):
 
     for command in commands_expected_from_cipd:
         path = shutil.which(command)
-        if 'cipd' not in path:
-            ctx.warning('not using %s from cipd, got %s', command, path)
+        if path is None:
+            ctx.error('could not find %s in PATH (%s)', command,
+                      os.environ['PATH'])
+        elif 'cipd' not in path:
+            ctx.warning('not using %s from cipd, got %s (path is %s)', command,
+                        path, os.environ['PATH'])
 
 
 def main(strict=False, checks=None):
