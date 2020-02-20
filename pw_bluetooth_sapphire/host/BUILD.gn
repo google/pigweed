@@ -150,6 +150,9 @@ executable("tests") {
     "//src/devices/lib/driver",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(46537): Fix the leaks and remove this.
+  deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
 }
 
 fuzzers_package("bluetooth_fuzzers") {
