@@ -148,11 +148,11 @@ directly to the ``pw_doc_gen`` template are copied in at the root of the tree.
   ├── conf.py
   ├── index.rst
   ├── pw_bloat
-  │   ├── bloat.rst
-  │   └── examples
-  │       └── simple_bloat.rst
+  │   ├── bloat.rst
+  │   └── examples
+  │       └── simple_bloat.rst
   ├── pw_docgen
-  │   └── docgen.rst
+  │   └── docgen.rst
   └── pw_preprocessor
       └── docs.rst
 

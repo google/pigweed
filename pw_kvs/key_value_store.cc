@@ -143,7 +143,7 @@ Status KeyValueStore::Init() {
   }
   initialized_ = true;
 
-  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
+  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
       "%zu, logical sector size %zu bytes",
       size(),
       (key_descriptors_.size() - size()),

@@ -46,7 +46,7 @@ class Encoder {
   Encoder(const Encoder& other) = delete;
   Encoder& operator=(const Encoder& other) = delete;
 
-  // Per the protobuf specification, valid field numbers range between 1 and
+  // Per the protobuf specification, valid field numbers range between 1 and
   // 2**29 - 1, inclusive. The numbers 19000-19999 are reserved for internal
   // use.
   constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
