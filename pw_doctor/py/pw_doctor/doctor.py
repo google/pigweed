@@ -123,13 +123,18 @@ def cipd(ctx: DoctorContext):
 
     commands_expected_from_cipd = [
         'arm-none-eabi-gcc',
-        'bazel',
-        'bloaty',
-        'clang++',
         'gn',
         'ninja',
         'protoc',
     ]
+
+    # TODO(mohrr) get these tools in CIPD for Windows.
+    if os.name == 'posix':
+        commands_expected_from_cipd += [
+            'bazel',
+            'bloaty',
+            'clang++',
+        ]
 
     for command in commands_expected_from_cipd:
         path = shutil.which(command)
