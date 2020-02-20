@@ -28,6 +28,19 @@ using std::byte;
 ChecksumCrc16 checksum;
 constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
+constexpr char kHelpText[] = R"(
+pw_kvs debug CLI
+
+Commands:
+
+  init            Initializes the KVS
+  put KEY VALUE   Sets a key to a specified value
+  get KEY         Looks up the value for a key
+  delete KEY      Deletes a key from the KVS
+  contents        Prints the contents of the KVS
+  quit            Exits the CLI
+)";
+
 void Run() {
   // 4 x 4k sectors, 16 byte alignment
   FakeFlashBuffer<4 * 1024, 4> test_flash(16);
@@ -38,22 +51,30 @@ void Run() {
   KeyValueStore kvs(&test_partition, format);
   kvs.Init();
 
-  std::string line;
-  while (std::getline(std::cin, line)) {
+  while (true) {
+    printf("\n> ");
+    fflush(stdout);
+
+    std::string line;
+    if (!std::getline(std::cin, line)) {
+      putchar('\n');
+      break;
+    }
+
     std::istringstream data(line);
     std::string cmd, key, value;
     data >> cmd >> key >> value;
 
     if (cmd == "init") {
       printf("Init() -> %s\n", kvs.Init().str());
-    } else if (cmd == "delete") {
+    } else if (cmd == "delete" || cmd == "d") {
       printf("Delete(\"%s\") -> %s\n", key.c_str(), kvs.Delete(key).str());
-    } else if (cmd == "put") {
+    } else if (cmd == "put" || cmd == "p") {
       printf("Put(\"%s\", \"%s\") -> %s\n",
              key.c_str(),
              value.c_str(),
              kvs.Put(key, as_bytes(span(value))).str());
-    } else if (cmd == "get") {
+    } else if (cmd == "get" || cmd == "g") {
       byte buffer[128] = {};
       Status status = kvs.Get(key, buffer).status();
       printf("Get(\"%s\") -> %s\n", key.c_str(), status.str());
@@ -61,7 +82,7 @@ void Run() {
         printf("  Key: \"%s\"\n", key.c_str());
         printf("Value: \"%s\"\n", reinterpret_cast<const char*>(buffer));
       }
-    } else {
+    } else if (cmd == "contents" || cmd == "c") {
       int i = 0;
       printf("KVS CONTENTS ----------------------------------------------\n");
       for (auto& entry : kvs) {
@@ -75,6 +96,13 @@ void Run() {
         }
       }
       printf("---------------------------------------------- END CONTENTS\n");
+    } else if (cmd == "help" || cmd == "h") {
+      printf("%s", kHelpText);
+    } else if (cmd == "quit" || cmd == "q") {
+      break;
+    } else {
+      printf("Unrecognized command: %s\n", cmd.c_str());
+      printf("Type 'help' for options\n");
     }
   }
 }
