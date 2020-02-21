@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_kvs_private/entry.h"
+#include "pw_kvs/internal/entry.h"
 
 #include <cinttypes>
 #include <cstring>

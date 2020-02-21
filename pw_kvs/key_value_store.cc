@@ -20,19 +20,18 @@
 #include <type_traits>
 
 #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
-#include "pw_kvs_private/entry.h"
+#include "pw_kvs/internal/entry.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs {
 namespace {
 
-using internal::Entry;
 using std::byte;
 using std::string_view;
 
 constexpr bool InvalidKey(std::string_view key) {
-  return key.empty() || (key.size() > Entry::kMaxKeyLength);
+  return key.empty() || (key.size() > internal::Entry::kMaxKeyLength);
 }
 
 }  // namespace
@@ -732,10 +731,10 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   return Status::OK;
 }
 
-Entry KeyValueStore::CreateEntry(Address address,
-                                 std::string_view key,
-                                 span<const byte> value,
-                                 KeyDescriptor::State state) {
+KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
+                                                std::string_view key,
+                                                span<const byte> value,
+                                                KeyDescriptor::State state) {
   last_transaction_id_ += 1;
 
   if (state == KeyDescriptor::kDeleted) {

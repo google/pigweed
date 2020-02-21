@@ -22,6 +22,7 @@
 #include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sector_descriptor.h"
 #include "pw_span/span.h"
@@ -30,8 +31,6 @@
 
 namespace pw::kvs {
 namespace internal {
-
-class Entry;
 
 template <typename T, typename = decltype(span(std::declval<T>()))>
 constexpr bool ConvertsToSpan(int) {
@@ -171,12 +170,8 @@ class KeyValueStore {
 
     const KeyValueStore& kvs_;
 
-    // TODO: Remove the duplicate kMaxKeyLength definition. This should be
-    // provided by the Entry class.
-    static constexpr size_t kMaxKeyLength = 0b111111;
-
     // Buffer large enough for a null-terminated version of any valid key.
-    std::array<char, kMaxKeyLength + 1> key_buffer_;
+    std::array<char, internal::Entry::kMaxKeyLength + 1> key_buffer_;
   };
 
   class iterator {
@@ -234,6 +229,7 @@ class KeyValueStore {
 
  protected:
   using Address = FlashPartition::Address;
+  using Entry = internal::Entry;
   using KeyDescriptor = internal::KeyDescriptor;
   using SectorDescriptor = internal::SectorDescriptor;
 

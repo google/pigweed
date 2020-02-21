@@ -29,8 +29,8 @@
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/in_memory_fake_flash.h"
+#include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
-#include "pw_kvs_private/entry.h"
 #include "pw_log/log.h"
 #include "pw_span/span.h"
 
