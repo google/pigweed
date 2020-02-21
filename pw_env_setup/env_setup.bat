@@ -15,16 +15,20 @@
 
 :: Pigweed Windows environment setup.
 
-:: Calls a Powershell script that determines the correct PW_ROOT directory and
-:: exports it as an environment variable.
-:: LUCI DELETE BEGIN
-:: The ~dp0 magic doesn't work when this batch script is launched from another
-:: batch script. So when testing on Windows we write a copy of this batch
-:: script that assumes PW_ROOT is already set. Then the batch script we run
-:: directly sets PW_ROOT, calls the copy of this batch script and runs
-:: 'pw presubmit'.
-for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\pw_env_setup\env_setup.ps1`) do set PW_ROOT=%%i
-:: LUCI DELETE END
+:: If PW_CHECKOUT_ROOT is set, use it. Users should not set this variable.
+:: It's used because when one batch script invokes another the Powershell magic
+:: below doesn't work. To reinforce that users should not be using
+:: PW_CHECKOUT_ROOT, it is cleared here after it is used, and other pw tools
+:: will complain if they see that variable set.
+:: TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
+if "%PW_CHECKOUT_ROOT%"=="" (
+  :: Calls a Powershell script that determines the correct PW_ROOT directory and
+  :: exports it as an environment variable.
+  for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\pw_env_setup\env_setup.ps1`) do set PW_ROOT=%%i
+) ELSE (
+  set PW_ROOT=%PW_CHECKOUT_ROOT%
+  set PW_CHECKOUT_ROOT=
+)
 
 set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
