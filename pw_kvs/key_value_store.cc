@@ -725,11 +725,10 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
     TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
   }
 
-  // Entry was written successfully, update the key descriptor and the sector
-  // descriptor to reflect the new entry, and bump the transaction ID.
+  // Entry was written successfully; update the key descriptor and the sector
+  // descriptor to reflect the new entry.
   entry.UpdateDescriptor(key_descriptor);
   sector->AddValidBytes(result.size());
-  last_transaction_id_ += 1;
   return Status::OK;
 }
 
@@ -737,13 +736,27 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                                                 std::string_view key,
                                                 span<const byte> value,
                                                 KeyDescriptor::State state) {
+  // Always bump the transaction ID when creating a new entry.
+  //
+  // Burning transaction IDs prevents inconsistencies between flash and memory
+  // that which could happen if a write succeeds, but for some reason the read
+  // and verify step fails. Here's how this would happen:
+  //
+  //   1. The entry is written but for some reason the flash reports failure OR
+  //      The write succeeds, but the read / verify operation fails.
+  //   2. The transaction ID is NOT incremented, because of the failure
+  //   3. (later) A new entry is written, re-using the transaction ID (oops)
+  //
+  // By always burning transaction IDs, the above problem can't happen.
+  last_transaction_id_ += 1;
+
   if (state == KeyDescriptor::kDeleted) {
     return Entry::Tombstone(partition_,
                             address,
                             entry_header_format_,
                             key,
                             partition_.alignment_bytes(),
-                            last_transaction_id_ + 1);
+                            last_transaction_id_);
   }
   return Entry::Valid(partition_,
                       address,
@@ -751,7 +764,7 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                       key,
                       value,
                       partition_.alignment_bytes(),
-                      last_transaction_id_ + 1);
+                      last_transaction_id_);
 }
 
 void KeyValueStore::Reset() {
