@@ -167,7 +167,7 @@ std::array<byte, 512> buffer;
 constexpr std::array<const char*, 3> keys{"TestKey1", "Key2", "TestKey3"};
 
 ChecksumCrc16 checksum;
-constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
+constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 size_t RoundUpForAlignment(size_t size) {
   return AlignUp(size, test_partition.alignment_bytes());
@@ -571,8 +571,7 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 
     // Create and initialize the KVS.
-    constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3,
-                                       .checksum = nullptr};
+    constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
     KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                             format);
     ASSERT_OK(kvs.Init());
@@ -613,7 +612,7 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());
@@ -640,7 +639,7 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
   ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());
@@ -669,7 +668,7 @@ TEST(InMemoryKvs, Basic) {
   ASSERT_EQ(Status::OK, flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());

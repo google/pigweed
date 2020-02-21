@@ -30,7 +30,7 @@ FakeFlashBuffer<4 * 1024, 4> test_flash(16);
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
 ChecksumCrc16 checksum;
-constexpr EntryHeaderFormat kFormat{.magic = 0xBAD'C0D3, .checksum = &checksum};
+constexpr EntryFormat kFormat{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 class EmptyInitializedKvs : public ::testing::Test {
  protected:

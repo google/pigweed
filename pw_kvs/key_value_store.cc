@@ -39,7 +39,7 @@ constexpr bool InvalidKey(std::string_view key) {
 KeyValueStore::KeyValueStore(FlashPartition* partition,
                              Vector<KeyDescriptor>& key_descriptor_list,
                              Vector<SectorDescriptor>& sector_descriptor_list,
-                             const EntryHeaderFormat& format,
+                             const EntryFormat& format,
                              const Options& options)
     : partition_(*partition),
       entry_header_format_(format),
@@ -740,16 +740,14 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
   if (state == KeyDescriptor::kDeleted) {
     return Entry::Tombstone(partition_,
                             address,
-                            entry_header_format_.magic,
-                            entry_header_format_.checksum,
+                            entry_header_format_,
                             key,
                             partition_.alignment_bytes(),
                             last_transaction_id_ + 1);
   }
   return Entry::Valid(partition_,
                       address,
-                      entry_header_format_.magic,
-                      entry_header_format_.checksum,
+                      entry_header_format_,
                       key,
                       value,
                       partition_.alignment_bytes(),

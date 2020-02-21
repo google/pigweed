@@ -24,38 +24,11 @@
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/format.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_span/span.h"
 
 namespace pw::kvs::internal {
-
-// Disk format of the header used for each key-value entry.
-struct EntryHeader {
-  uint32_t magic;
-
-  // The checksum of the entire entry, including the header, key, value, and
-  // zero-value padding bytes. The checksum is calculated as if the checksum
-  // field value was zero.
-  uint32_t checksum;
-
-  // Stores the alignment in 16-byte units, starting from 16. To calculate the
-  // number of bytes, add one to this number and multiply by 16.
-  uint8_t alignment_units;
-
-  // The length of the key in bytes. The key is not null terminated.
-  //  6 bits, 0:5 - key length - maximum 64 characters
-  //  2 bits, 6:7 - reserved
-  uint8_t key_length_bytes;
-
-  // Byte length of the value; maximum of 65534. The max uint16_t value (65535
-  // or 0xFFFF) is reserved to indicate this is a tombstone (deleted) entry.
-  uint16_t value_size_bytes;
-
-  // The transaction ID for this key. Monotonically increasing.
-  uint32_t transaction_id;
-};
-
-static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
 
 // Entry represents a key-value entry in a flash partition.
 class Entry {
@@ -85,17 +58,14 @@ class Entry {
   // Creates a new Entry for a valid (non-deleted) entry.
   static Entry Valid(FlashPartition& partition,
                      Address address,
-                     // TODO: Use EntryHeaderFormat here?
-                     uint32_t magic,
-                     ChecksumAlgorithm* algorithm,
+                     const EntryFormat& format,
                      std::string_view key,
                      span<const std::byte> value,
                      size_t alignment_bytes,
                      uint32_t transaction_id) {
     return Entry(partition,
                  address,
-                 magic,
-                 algorithm,
+                 format,
                  key,
                  value,
                  value.size(),
@@ -106,15 +76,13 @@ class Entry {
   // Creates a new Entry for a tombstone entry, which marks a deleted key.
   static Entry Tombstone(FlashPartition& partition,
                          Address address,
-                         uint32_t magic,
-                         ChecksumAlgorithm* algorithm,
+                         const EntryFormat& format,
                          std::string_view key,
                          size_t alignment_bytes,
                          uint32_t transaction_id) {
     return Entry(partition,
                  address,
-                 magic,
-                 algorithm,
+                 format,
                  key,
                  {},
                  kDeletedValueLength,
@@ -209,8 +177,7 @@ class Entry {
 
   Entry(FlashPartition& partition,
         Address address,
-        uint32_t magic,
-        ChecksumAlgorithm* algorithm,
+        const EntryFormat& format,
         std::string_view key,
         span<const std::byte> value,
         uint16_t value_size_bytes,

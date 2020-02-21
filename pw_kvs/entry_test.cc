@@ -20,6 +20,7 @@
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/format.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs_private/byte_utils.h"
 #include "pw_span/span.h"
@@ -30,6 +31,8 @@ namespace {
 using std::byte;
 using std::string_view;
 
+constexpr EntryFormat kFormat{0xbeef, nullptr};
+
 TEST(Entry, Size_RoundsUpToAlignment) {
   FakeFlashBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
@@ -39,13 +42,13 @@ TEST(Entry, Size_RoundsUpToAlignment) {
 
     for (size_t value : {size_t(0), align - 1, align, align + 1, 2 * align}) {
       Entry entry = Entry::Valid(
-          partition, 0, 9, nullptr, "k", {nullptr, value}, alignment_bytes, 0);
+          partition, 0, kFormat, "k", {nullptr, value}, alignment_bytes, 0);
       ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */ + value, align),
                 entry.size());
     }
 
     Entry entry =
-        Entry::Tombstone(partition, 0, 9, nullptr, "k", alignment_bytes, 0);
+        Entry::Tombstone(partition, 0, kFormat, "k", alignment_bytes, 0);
     ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */, align), entry.size());
   }
 }
@@ -54,11 +57,11 @@ TEST(Entry, Construct_ValidEntry) {
   FakeFlashBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
-  auto entry = Entry::Valid(
-      partition, 1, 9, nullptr, "k", as_bytes(span("123")), 1, 9876);
+  auto entry =
+      Entry::Valid(partition, 1, kFormat, "k", as_bytes(span("123")), 1, 9876);
 
   EXPECT_FALSE(entry.deleted());
-  EXPECT_EQ(entry.magic(), 9u);
+  EXPECT_EQ(entry.magic(), kFormat.magic);
   EXPECT_EQ(entry.value_size(), sizeof("123"));
   EXPECT_EQ(entry.transaction_id(), 9876u);
 }
@@ -67,10 +70,10 @@ TEST(Entry, Construct_Tombstone) {
   FakeFlashBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
-  auto entry = Entry::Tombstone(partition, 1, 99, nullptr, "key", 1, 123);
+  auto entry = Entry::Tombstone(partition, 1, kFormat, "key", 1, 123);
 
   EXPECT_TRUE(entry.deleted());
-  EXPECT_EQ(entry.magic(), 99u);
+  EXPECT_EQ(entry.magic(), kFormat.magic);
   EXPECT_EQ(entry.value_size(), 0u);
   EXPECT_EQ(entry.transaction_id(), 123u);
 }
@@ -185,9 +188,10 @@ TEST(ValidEntry, Write) {
   FakeFlashBuffer<1024, 4> flash;
   FlashPartition partition(&flash);
   ChecksumCrc16 checksum;
+  const EntryFormat format{0x600DF00Du, &checksum};
 
-  Entry entry = Entry::Valid(
-      partition, 53, 0x600DF00Du, &checksum, "key45", kValue1, 32, 0x96979899u);
+  Entry entry =
+      Entry::Valid(partition, 53, format, "key45", kValue1, 32, 0x96979899u);
 
   auto result = entry.Write("key45", kValue1);
   EXPECT_EQ(Status::OK, result.status());
@@ -254,9 +258,9 @@ TEST(TombstoneEntry, Write) {
   FakeFlashBuffer<1024, 4> flash;
   FlashPartition partition(&flash);
   ChecksumCrc16 checksum;
+  const EntryFormat format{0x600DF00Du, &checksum};
 
-  Entry entry = Entry::Tombstone(
-      partition, 16, 0x600DF00Du, &checksum, "K", 16, 0x03020100);
+  Entry entry = Entry::Tombstone(partition, 16, format, "K", 16, 0x03020100);
 
   auto result = entry.Write("K", {});
   EXPECT_EQ(Status::OK, result.status());

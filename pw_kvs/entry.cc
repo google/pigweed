@@ -54,8 +54,7 @@ Status Entry::ReadKey(FlashPartition& partition,
 
 Entry::Entry(FlashPartition& partition,
              Address address,
-             uint32_t magic,
-             ChecksumAlgorithm* algorithm,
+             const EntryFormat& format,
              string_view key,
              span<const byte> value,
              uint16_t value_size_bytes,
@@ -63,14 +62,14 @@ Entry::Entry(FlashPartition& partition,
              uint32_t transaction_id)
     : Entry(&partition,
             address,
-            {.magic = magic,
+            {.magic = format.magic,
              .checksum = 0,
              .alignment_units = alignment_bytes_to_units(alignment_bytes),
              .key_length_bytes = static_cast<uint8_t>(key.size()),
              .value_size_bytes = value_size_bytes,
              .transaction_id = transaction_id}) {
-  if (algorithm != nullptr) {
-    span<const byte> checksum = CalculateChecksum(algorithm, key, value);
+  if (format.checksum != nullptr) {
+    span<const byte> checksum = CalculateChecksum(format.checksum, key, value);
     std::memcpy(&header_.checksum,
                 checksum.data(),
                 std::min(checksum.size(), sizeof(header_.checksum)));

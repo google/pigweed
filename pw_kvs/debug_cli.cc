@@ -26,7 +26,7 @@ namespace {
 using std::byte;
 
 ChecksumCrc16 checksum;
-constexpr EntryHeaderFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
+constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 constexpr char kHelpText[] = R"(
 pw_kvs debug CLI

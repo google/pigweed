@@ -71,8 +71,8 @@ std::set<T> difference(const std::set<T> lhs, const std::set<T> rhs) {
 template <const TestParameters& kParams>
 class KvsTester {
  public:
-  static constexpr EntryHeaderFormat kFormat{.magic = 0xBAD'C0D3,
-                                             .checksum = nullptr};
+  static constexpr EntryFormat kFormat{.magic = 0xBAD'C0D3,
+                                       .checksum = nullptr};
 
   KvsTester()
       : partition_(&flash_,

@@ -22,6 +22,7 @@
 #include "pw_containers/vector.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/format.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sector_descriptor.h"
@@ -50,28 +51,6 @@ constexpr bool ConvertsToSpan(...) {
 template <typename T>
 using ConvertsToSpan =
     std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
-
-struct EntryHeaderFormat {
-  // Magic is a unique constant identifier for entries.
-  //
-  // Upon reading from an address in flash, the magic number facilitiates
-  // quickly differentiating between:
-  //
-  // - Reading erased data - typically 0xFF - from flash.
-  // - Reading corrupted data
-  // - Reading a valid entry
-  //
-  // When selecting a magic for your particular KVS, pick a random 32 bit
-  // integer rather than a human readable 4 bytes. This decreases the
-  // probability of a collision with a real string when scanning in the case of
-  // corruption. To generate such a number:
-  /*
-       $ python3 -c 'import random; print(hex(random.randint(0,2**32)))'
-       0xaf741757
-  */
-  uint32_t magic;
-  ChecksumAlgorithm* checksum;
-};
 
 // TODO: Select the appropriate defaults, add descriptions.
 struct Options {
@@ -238,7 +217,7 @@ class KeyValueStore {
   KeyValueStore(FlashPartition* partition,
                 Vector<KeyDescriptor>& key_descriptor_list,
                 Vector<SectorDescriptor>& sector_descriptor_list,
-                const EntryHeaderFormat& format,
+                const EntryFormat& format,
                 const Options& options);
 
  private:
@@ -341,7 +320,7 @@ class KeyValueStore {
   void LogKeyDescriptor() const;
 
   FlashPartition& partition_;
-  const EntryHeaderFormat entry_header_format_;
+  const EntryFormat entry_header_format_;
 
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
@@ -376,7 +355,7 @@ template <size_t kMaxEntries, size_t kMaxUsableSectors>
 class KeyValueStoreBuffer : public KeyValueStore {
  public:
   KeyValueStoreBuffer(FlashPartition* partition,
-                      const EntryHeaderFormat& format,
+                      const EntryFormat& format,
                       const Options& options = {})
       : KeyValueStore(partition, key_descriptors_, sectors_, format, options) {}
 
