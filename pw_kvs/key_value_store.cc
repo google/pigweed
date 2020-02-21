@@ -709,13 +709,14 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
 
   StatusWithSize result = entry.Write(key, value);
   // Remove any bytes that were written, even if the write was not successful.
+  // This is important to retain the writable space invariant on the sectors.
   sector->RemoveWritableBytes(result.size());
 
   if (!result.ok()) {
-    // TODO: add testing coverage for this once flash errors are supported in
-    // tests.
-    ERR("Failed to write %zu bytes. %zu actually written",
+    // TODO: Once fake flash errors are supported in tests, test this branch.
+    ERR("Failed to write %zu bytes at %" PRIx32 ". %zu actually written",
         entry.size(),
+        address,
         result.size());
     return result.status();
   }
@@ -725,9 +726,10 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   }
 
   // Entry was written successfully, update the key descriptor and the sector
-  // descriptor to reflect the new entry.
+  // descriptor to reflect the new entry, and bump the transaction ID.
   entry.UpdateDescriptor(key_descriptor);
   sector->AddValidBytes(result.size());
+  last_transaction_id_ += 1;
   return Status::OK;
 }
 
@@ -735,8 +737,6 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                                                 std::string_view key,
                                                 span<const byte> value,
                                                 KeyDescriptor::State state) {
-  last_transaction_id_ += 1;
-
   if (state == KeyDescriptor::kDeleted) {
     return Entry::Tombstone(partition_,
                             address,
@@ -744,7 +744,7 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                             entry_header_format_.checksum,
                             key,
                             partition_.alignment_bytes(),
-                            last_transaction_id_);
+                            last_transaction_id_ + 1);
   }
   return Entry::Valid(partition_,
                       address,
@@ -753,7 +753,7 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                       key,
                       value,
                       partition_.alignment_bytes(),
-                      last_transaction_id_);
+                      last_transaction_id_ + 1);
 }
 
 void KeyValueStore::Reset() {
