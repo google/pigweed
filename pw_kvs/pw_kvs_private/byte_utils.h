@@ -43,10 +43,20 @@ constexpr void CopyBytes(std::byte* array, T value, Args... args) {
   }
 }
 
-// Converts a series of integers to a std::byte array at compile time.
+template <typename T>
+constexpr size_t SizeOfBytes(const T& arg) {
+  if constexpr (std::is_integral_v<T>) {
+    return sizeof(arg);
+  } else {
+    return arg.size();
+  }
+}
+
+// Converts a series of integers or byte arrays to a std::byte array at compile
+// time.
 template <typename... Args>
 constexpr auto AsBytes(Args... args) {
-  std::array<std::byte, (sizeof(args) + ...)> bytes{};
+  std::array<std::byte, (SizeOfBytes(args) + ...)> bytes{};
 
   auto iterator = bytes.begin();
   CopyBytes(iterator, args...);

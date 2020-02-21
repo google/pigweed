@@ -55,6 +55,7 @@ source_set("pw_kvs") {
   friend = [
     ":entry_test",
     ":key_value_store_test",
+    ":key_value_store_error_handling_test",
     ":key_value_store_map_test",
   ]
 }
@@ -101,6 +102,7 @@ pw_test_group("tests") {
     ":checksum_test",
     ":entry_test",
     ":key_value_store_test",
+    ":key_value_store_error_handling_test",
     ":key_value_store_fuzz_test",
     ":key_value_store_map_test",
   ]
@@ -147,6 +149,18 @@ pw_test("key_value_store_test") {
   ]
   sources = [
     "key_value_store_test.cc",
+  ]
+}
+
+pw_test("key_value_store_error_handling_test") {
+  deps = [
+    ":crc16",
+    ":pw_kvs",
+    ":test_utils",
+    dir_pw_log,
+  ]
+  sources = [
+    "key_value_store_error_handling_test.cc",
   ]
 }
 

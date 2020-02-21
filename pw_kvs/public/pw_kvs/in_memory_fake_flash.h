@@ -18,16 +18,86 @@
 #include <cstddef>
 #include <cstring>
 
+#include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::kvs {
 
+class FlashError {
+ public:
+  enum Mode {
+    kAbort,
+    kContinueButReportError,
+  };
+
+  static constexpr FlashMemory::Address kAnyAddress = FlashMemory::Address(-1);
+  static constexpr size_t kAlways = size_t(-1);
+
+  // Creates a FlashError that always triggers on the next operation.
+  static constexpr FlashError Unconditional(Status status,
+                                            Mode mode = kAbort,
+                                            size_t times = kAlways,
+                                            size_t delay = 0) {
+    return FlashError(status, kAnyAddress, 0, mode, times, delay);
+  }
+
+  // Creates a FlashError that triggers for particular addresses.
+  static constexpr FlashError InRange(Status status,
+                                      FlashMemory::Address address,
+                                      size_t size = 1,
+                                      Mode mode = kAbort,
+                                      size_t times = kAlways,
+                                      size_t delay = 0) {
+    return FlashError(status, address, size, mode, times, delay);
+  }
+
+  struct Result {
+    Status status;          // what to return from the operation
+    bool finish_operation;  // whether to complete the operation
+  };
+
+  // Determines if this FlashError applies to the operation.
+  Result Check(FlashMemory::Address start_address, size_t size);
+
+  // Determines if any of a series of FlashErrors applies to the operation.
+  static Result Check(span<FlashError> errors,
+                      FlashMemory::Address address,
+                      size_t size);
+
+ private:
+  constexpr FlashError(Status status,
+                       FlashMemory::Address address,
+                       size_t size,  // not used if address is kAnyAddress
+                       Mode mode,
+                       size_t times,
+                       size_t delay)
+      : status_(status),
+        begin_(address),
+        end_(address + size),  // not used if address is kAnyAddress
+        mode_(mode),
+        delay_(delay),
+        remaining_(times) {}
+
+  const Status status_;
+
+  const FlashMemory::Address begin_;
+  const FlashMemory::Address end_;  // exclusive
+
+  const Mode mode_;
+
+  size_t delay_;
+  size_t remaining_;
+};
+
 // This uses a buffer to mimic the behaviour of flash (requires erase before
 // write, checks alignments, and is addressed in sectors). The underlying buffer
 // is not initialized.
 class InMemoryFakeFlash : public FlashMemory {
+ private:
+  static Vector<FlashError, 0> no_errors_;
+
  public:
   // Default to 8-bit alignment.
   static constexpr size_t kDefaultAlignmentBytes = 1;
@@ -37,9 +107,13 @@ class InMemoryFakeFlash : public FlashMemory {
   InMemoryFakeFlash(span<std::byte> buffer,
                     size_t sector_size,
                     size_t sector_count,
-                    size_t alignment_bytes = kDefaultAlignmentBytes)
+                    size_t alignment_bytes = kDefaultAlignmentBytes,
+                    Vector<FlashError>& read_errors = no_errors_,
+                    Vector<FlashError>& write_errors = no_errors_)
       : FlashMemory(sector_size, sector_count, alignment_bytes),
-        buffer_(buffer) {}
+        buffer_(buffer),
+        read_errors_(read_errors),
+        write_errors_(write_errors) {}
 
   // The fake flash is always enabled.
   Status Enable() override { return Status::OK; }
@@ -57,18 +131,38 @@ class InMemoryFakeFlash : public FlashMemory {
   // Writes bytes to flash.
   StatusWithSize Write(Address address, span<const std::byte> data) override;
 
+  // Testing API
+
   // Access the underlying buffer for testing purposes. Not part of the
   // FlashMemory API.
   span<std::byte> buffer() const { return buffer_; }
 
+  bool InjectReadError(const FlashError& error) {
+    if (read_errors_.full()) {
+      return false;
+    }
+    read_errors_.push_back(error);
+    return true;
+  }
+
+  bool InjectWriteError(const FlashError& error) {
+    if (write_errors_.full()) {
+      return false;
+    }
+    write_errors_.push_back(error);
+    return true;
+  }
+
  private:
   const span<std::byte> buffer_;
+  Vector<FlashError>& read_errors_;
+  Vector<FlashError>& write_errors_;
 };
 
 // Creates an InMemoryFakeFlash backed by a std::array. The array is initialized
 // to the erased value. A byte array to which to initialize the memory may be
 // provided.
-template <size_t kSectorSize, size_t kSectorCount>
+template <size_t kSectorSize, size_t kSectorCount, size_t kInjectedErrors = 8>
 class FakeFlashBuffer : public InMemoryFakeFlash {
  public:
   // Creates a flash memory with no data written.
@@ -78,7 +172,12 @@ class FakeFlashBuffer : public InMemoryFakeFlash {
   // Creates a flash memory initialized to the provided contents.
   FakeFlashBuffer(span<const std::byte> contents,
                   size_t alignment_bytes = kDefaultAlignmentBytes)
-      : InMemoryFakeFlash(buffer_, kSectorSize, kSectorCount, alignment_bytes) {
+      : InMemoryFakeFlash(buffer_,
+                          kSectorSize,
+                          kSectorCount,
+                          alignment_bytes,
+                          read_errors_,
+                          write_errors_) {
     std::memset(buffer_.data(), int(kErasedValue), buffer_.size());
     std::memcpy(buffer_.data(),
                 contents.data(),
@@ -87,6 +186,8 @@ class FakeFlashBuffer : public InMemoryFakeFlash {
 
  private:
   std::array<std::byte, kSectorCount * kSectorSize> buffer_;
+  Vector<FlashError, kInjectedErrors> read_errors_;
+  Vector<FlashError, kInjectedErrors> write_errors_;
 };
 
 }  // namespace pw::kvs

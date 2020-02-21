@@ -18,6 +18,42 @@
 
 namespace pw::kvs {
 
+FlashError::Result FlashError::Check(span<FlashError> errors,
+                                     FlashMemory::Address address,
+                                     size_t size) {
+  for (auto& error : errors) {
+    if (Result result = error.Check(address, size); !result.status.ok()) {
+      return result;
+    }
+  }
+
+  return {Status::OK, true};
+}
+
+FlashError::Result FlashError::Check(FlashMemory::Address start_address,
+                                     size_t size) {
+  // Check if the event overlaps with this address range.
+  if (begin_ != kAnyAddress &&
+      (start_address >= end_ || (start_address + size) < begin_)) {
+    return {Status::OK, true};
+  }
+
+  if (delay_ > 0u) {
+    delay_ -= 1;
+    return {Status::OK, true};
+  }
+
+  if (remaining_ == 0u) {
+    return {Status::OK, true};
+  }
+
+  if (remaining_ != kAlways) {
+    remaining_ -= 1;
+  }
+
+  return {status_, mode_ != kAbort};
+}
+
 Status InMemoryFakeFlash::Erase(Address address, size_t num_sectors) {
   if (address % sector_size_bytes() != 0) {
     PW_LOG_ERROR(
@@ -45,8 +81,14 @@ StatusWithSize InMemoryFakeFlash::Read(Address address,
   if (address + output.size() >= sector_count() * size_bytes()) {
     return StatusWithSize(Status::OUT_OF_RANGE);
   }
-  std::memcpy(output.data(), &buffer_[address], output.size());
-  return StatusWithSize(output.size());
+
+  // Check for injected read errors
+  auto [status, finish_operation] =
+      FlashError::Check(read_errors_, address, output.size());
+  if (finish_operation) {
+    std::memcpy(output.data(), &buffer_[address], output.size());
+  }
+  return StatusWithSize(status, output.size());
 }
 
 StatusWithSize InMemoryFakeFlash::Write(Address address,
@@ -84,7 +126,14 @@ StatusWithSize InMemoryFakeFlash::Write(Address address,
       return StatusWithSize(Status::UNKNOWN);
     }
   }
-  std::memcpy(&buffer_[address], data.data(), data.size());
-  return StatusWithSize(data.size());
+
+  // Check for any injected write errors
+  auto [status, finish_operation] =
+      FlashError::Check(write_errors_, address, data.size());
+  if (finish_operation) {
+    std::memcpy(&buffer_[address], data.data(), data.size());
+  }
+  return StatusWithSize(status, data.size());
 }
+
 }  // namespace pw::kvs

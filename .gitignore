@@ -11,6 +11,7 @@ bazel-*
 .vscode
 .clangd/
 *.swp
+*.swo
 
 # Python
 python*-env/

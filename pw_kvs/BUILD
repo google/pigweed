@@ -123,7 +123,19 @@ pw_cc_test(
         ":crc16",
         ":pw_kvs",
         ":test_utils",
-        "//pw_checksum",
+        "//pw_log",
+    ],
+)
+
+pw_cc_test(
+    name = "key_value_store_error_handling_test",
+    srcs = [
+        "key_value_store_error_handling_test.cc",
+    ],
+    deps = [
+        ":crc16",
+        ":pw_kvs",
+        ":test_utils",
         "//pw_log",
     ],
 )
