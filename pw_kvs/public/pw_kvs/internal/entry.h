@@ -61,16 +61,9 @@ class Entry {
                      const EntryFormat& format,
                      std::string_view key,
                      span<const std::byte> value,
-                     size_t alignment_bytes,
                      uint32_t transaction_id) {
-    return Entry(partition,
-                 address,
-                 format,
-                 key,
-                 value,
-                 value.size(),
-                 alignment_bytes,
-                 transaction_id);
+    return Entry(
+        partition, address, format, key, value, value.size(), transaction_id);
   }
 
   // Creates a new Entry for a tombstone entry, which marks a deleted key.
@@ -78,7 +71,6 @@ class Entry {
                          Address address,
                          const EntryFormat& format,
                          std::string_view key,
-                         size_t alignment_bytes,
                          uint32_t transaction_id) {
     return Entry(partition,
                  address,
@@ -86,7 +78,6 @@ class Entry {
                  key,
                  {},
                  kDeletedValueLength,
-                 alignment_bytes,
                  transaction_id);
   }
 
@@ -181,7 +172,6 @@ class Entry {
         std::string_view key,
         span<const std::byte> value,
         uint16_t value_size_bytes,
-        size_t alignment_bytes,
         uint32_t transaction_id);
 
   constexpr Entry(FlashPartition* partition,

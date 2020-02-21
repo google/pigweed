@@ -816,19 +816,14 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
   last_transaction_id_ += 1;
 
   if (state == KeyDescriptor::kDeleted) {
-    return Entry::Tombstone(partition_,
-                            address,
-                            entry_header_format_,
-                            key,
-                            partition_.alignment_bytes(),
-                            last_transaction_id_);
+    return Entry::Tombstone(
+        partition_, address, entry_header_format_, key, last_transaction_id_);
   }
   return Entry::Valid(partition_,
                       address,
                       entry_header_format_,
                       key,
                       value,
-                      partition_.alignment_bytes(),
                       last_transaction_id_);
 }
 

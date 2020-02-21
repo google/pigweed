@@ -35,20 +35,19 @@ constexpr EntryFormat kFormat{0xbeef, nullptr};
 
 TEST(Entry, Size_RoundsUpToAlignment) {
   FakeFlashBuffer<64, 2> flash(16);
-  FlashPartition partition(&flash, 0, flash.sector_count());
 
   for (size_t alignment_bytes = 1; alignment_bytes <= 4096; ++alignment_bytes) {
+    FlashPartition partition(&flash, 0, flash.sector_count(), alignment_bytes);
     const size_t align = AlignUp(alignment_bytes, Entry::kMinAlignmentBytes);
 
     for (size_t value : {size_t(0), align - 1, align, align + 1, 2 * align}) {
-      Entry entry = Entry::Valid(
-          partition, 0, kFormat, "k", {nullptr, value}, alignment_bytes, 0);
+      Entry entry =
+          Entry::Valid(partition, 0, kFormat, "k", {nullptr, value}, 0);
       ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */ + value, align),
                 entry.size());
     }
 
-    Entry entry =
-        Entry::Tombstone(partition, 0, kFormat, "k", alignment_bytes, 0);
+    Entry entry = Entry::Tombstone(partition, 0, kFormat, "k", 0);
     ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */, align), entry.size());
   }
 }
@@ -58,7 +57,7 @@ TEST(Entry, Construct_ValidEntry) {
   FlashPartition partition(&flash, 0, flash.sector_count());
 
   auto entry =
-      Entry::Valid(partition, 1, kFormat, "k", as_bytes(span("123")), 1, 9876);
+      Entry::Valid(partition, 1, kFormat, "k", as_bytes(span("123")), 9876);
 
   EXPECT_FALSE(entry.deleted());
   EXPECT_EQ(entry.magic(), kFormat.magic);
@@ -70,7 +69,7 @@ TEST(Entry, Construct_Tombstone) {
   FakeFlashBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
-  auto entry = Entry::Tombstone(partition, 1, kFormat, "key", 1, 123);
+  auto entry = Entry::Tombstone(partition, 1, kFormat, "key", 123);
 
   EXPECT_TRUE(entry.deleted());
   EXPECT_EQ(entry.magic(), kFormat.magic);
@@ -92,6 +91,7 @@ constexpr auto kValue1 = ByteStr("VALUE!");
 constexpr auto kPadding1 = ByteStr("\0\0\0\0\0");
 
 constexpr auto kEntry1 = AsBytes(kHeader1, kKey1, kValue1, kPadding1);
+static_assert(kEntry1.size() == 32);
 
 class ValidEntryInFlash : public ::testing::Test {
  protected:
@@ -186,12 +186,12 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_PastEnd) {
 
 TEST(ValidEntry, Write) {
   FakeFlashBuffer<1024, 4> flash;
-  FlashPartition partition(&flash);
+  FlashPartition partition(&flash, 0, flash.sector_count(), 32);
   ChecksumCrc16 checksum;
   const EntryFormat format{0x600DF00Du, &checksum};
 
   Entry entry =
-      Entry::Valid(partition, 53, format, "key45", kValue1, 32, 0x96979899u);
+      Entry::Valid(partition, 53, format, "key45", kValue1, 0x96979899u);
 
   auto result = entry.Write("key45", kValue1);
   EXPECT_EQ(Status::OK, result.status());
@@ -260,7 +260,7 @@ TEST(TombstoneEntry, Write) {
   ChecksumCrc16 checksum;
   const EntryFormat format{0x600DF00Du, &checksum};
 
-  Entry entry = Entry::Tombstone(partition, 16, format, "K", 16, 0x03020100);
+  Entry entry = Entry::Tombstone(partition, 16, format, "K", 0x03020100);
 
   auto result = entry.Write("K", {});
   EXPECT_EQ(Status::OK, result.status());

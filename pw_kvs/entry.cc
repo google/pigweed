@@ -58,13 +58,13 @@ Entry::Entry(FlashPartition& partition,
              string_view key,
              span<const byte> value,
              uint16_t value_size_bytes,
-             size_t alignment_bytes,
              uint32_t transaction_id)
     : Entry(&partition,
             address,
             {.magic = format.magic,
              .checksum = 0,
-             .alignment_units = alignment_bytes_to_units(alignment_bytes),
+             .alignment_units =
+                 alignment_bytes_to_units(partition.alignment_bytes()),
              .key_length_bytes = static_cast<uint8_t>(key.size()),
              .value_size_bytes = value_size_bytes,
              .transaction_id = transaction_id}) {
@@ -74,9 +74,6 @@ Entry::Entry(FlashPartition& partition,
                 checksum.data(),
                 std::min(checksum.size(), sizeof(header_.checksum)));
   }
-
-  // TODO: 0 is an invalid alignment value. There should be an assert for this.
-  // DCHECK_NE(alignment_bytes, 0);
 }
 
 StatusWithSize Entry::Write(const string_view key,
