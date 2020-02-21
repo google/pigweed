@@ -51,6 +51,13 @@ class KeyValueStore {
 
   // Initializes the key-value store. Must be called before calling other
   // functions.
+  //
+  // Return values:
+  //
+  //          OK: KVS successfully initialized.
+  //   DATA_LOSS: KVS initialized and is usable, but contains corrupt data.
+  //     UNKNOWN: Unknown error. KVS is not initialized.
+  //
   Status Init();
 
   bool initialized() const { return initialized_; }
@@ -245,6 +252,9 @@ class KeyValueStore {
   }
 
   Status LoadEntry(Address entry_address, Address* next_entry_address);
+  Status ScanForEntry(const SectorDescriptor& sector,
+                      Address start_address,
+                      Address* next_entry_address);
   Status AppendNewOrOverwriteStaleExistingDescriptor(
       const KeyDescriptor& key_descriptor);
   Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);

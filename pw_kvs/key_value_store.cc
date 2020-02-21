@@ -77,10 +77,13 @@ Status KeyValueStore::Init() {
   sectors_.assign(partition_.sector_count(),
                   SectorDescriptor(sector_size_bytes));
 
+  size_t total_corrupt_bytes = 0;
+  int corrupt_entries = 0;
+
   for (SectorDescriptor& sector : sectors_) {
-    // Reset the sector's valid and writable byte counts. These will be updated
-    // after reading each entry.
     Address entry_address = sector_address;
+
+    size_t sector_corrupt_bytes = 0;
 
     for (int num_entries_in_sector = 0; true; num_entries_in_sector++) {
       DBG("Load entry: sector=%" PRIx32 ", entry#=%d, address=%" PRIx32,
@@ -100,22 +103,36 @@ Status KeyValueStore::Init() {
         break;
       }
       if (status == Status::DATA_LOSS) {
-        // It's not clear KVS can make a unilateral decision about what to do
-        // in corruption cases. It's an application decision, for which we
-        // should offer some configurability. For now, entirely bail out of
-        // loading and give up.
-        //
-        // Later, scan for remaining valid keys; since it's entirely possible
-        // that there is a duplicate of the key elsewhere and everything is
-        // fine. Later, we can wipe and maybe recover the sector.
-        //
-        // TODO: Implement rest-of-sector scanning for valid entries.
-        ERR("KVS init failed: data loss detected in sector %u at address %zu",
+        // The entry could not be read, indicating data corruption within the
+        // sector. Try to scan the remainder of the sector for other entries.
+        ERR("KVS init: data loss detected in sector %u at address %zu",
             SectorIndex(&sector),
             size_t(entry_address));
-        return Status::DATA_LOSS;
+
+        corrupt_entries++;
+
+        status = ScanForEntry(sector,
+                              entry_address + Entry::kMinAlignmentBytes,
+                              &next_entry_address);
+        if (status == Status::NOT_FOUND) {
+          // No further entries in this sector. Mark the remaining bytes in the
+          // sector as corrupt (since we can't reliably know the size of the
+          // corrupt entry).
+          sector_corrupt_bytes +=
+              sector_size_bytes - (entry_address - sector_address);
+          break;
+        }
+
+        if (!status.ok()) {
+          ERR("Unexpected error in KVS initialization: %s", status.str());
+          return Status::UNKNOWN;
+        }
+
+        sector_corrupt_bytes += next_entry_address - entry_address;
+      } else if (!status.ok()) {
+        ERR("Unexpected error in KVS initialization: %s", status.str());
+        return Status::UNKNOWN;
       }
-      TRY(status);
 
       // Entry loaded successfully; so get ready to load the next one.
       entry_address = next_entry_address;
@@ -125,7 +142,20 @@ Status KeyValueStore::Init() {
                                 (entry_address - sector_address));
     }
 
+    if (sector_corrupt_bytes > 0) {
+      // If the sector contains corrupt data, prevent any further entries from
+      // being written to it by indicating that it has no space. This should
+      // also make it a decent GC candidate. Valid keys in the sector are still
+      // readable as normal.
+      sector.set_writable_bytes(0);
+
+      WRN("Sector %u contains %zuB of corrupt data",
+          SectorIndex(&sector),
+          sector_corrupt_bytes);
+    }
+
     sector_address += sector_size_bytes;
+    total_corrupt_bytes += sector_corrupt_bytes;
   }
 
   DBG("Second pass: Count valid bytes in each sector");
@@ -158,6 +188,14 @@ Status KeyValueStore::Init() {
       sectors_.size(),
       partition_.sector_size_bytes());
 
+  if (total_corrupt_bytes > 0) {
+    WRN("Found %zu corrupt bytes and %d corrupt entries during init process; "
+        "some keys may be missing",
+        total_corrupt_bytes,
+        corrupt_entries);
+    return Status::DATA_LOSS;
+  }
+
   return Status::OK;
 }
 
@@ -186,6 +224,35 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 
   *next_entry_address = entry.next_address();
   return Status::OK;
+}
+
+// Scans flash memory within a sector to find a KVS entry magic.
+// TODO(frolv): This needs to be unit tested!
+Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
+                                   Address start_address,
+                                   Address* next_entry_address) {
+  DBG("Scanning sector %u for entries starting from address %zx",
+      SectorIndex(&sector),
+      size_t(start_address));
+
+  // Entries must start at addresses which are aligned on a multiple of
+  // Entry::kMinAlignmentBytes. However, that multiple can vary between entries.
+  // When scanning, we don't have an entry to tell us what the current alignment
+  // is, so the minimum alignment is used to be exhaustive.
+  for (Address address = AlignUp(start_address, Entry::kMinAlignmentBytes);
+       AddressInSector(sector, address);
+       address += Entry::kMinAlignmentBytes) {
+    // TODO: Handle multiple magics for formats that have changed.
+    uint32_t magic;
+    TRY(partition_.Read(address, as_writable_bytes(span(&magic, 1))));
+    if (magic == entry_header_format_.magic) {
+      DBG("Found entry magic at address %zx", size_t(address));
+      *next_entry_address = address;
+      return Status::OK;
+    }
+  }
+
+  return Status::NOT_FOUND;
 }
 
 // TODO: This method is the trigger of the O(valid_entries * all_entries) time
