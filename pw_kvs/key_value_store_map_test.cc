@@ -91,8 +91,10 @@ class KvsTester {
 
   ~KvsTester() { CompareContents(); }
 
-  void Test_RandomValidInputs(int iterations) {
-    std::mt19937 random(6006411);
+  void Test_RandomValidInputs(int iterations,
+                              uint_fast32_t seed,
+                              bool reinit = false) {
+    std::mt19937 random(seed);
     std::uniform_int_distribution<unsigned> distro;
     auto random_int = [&] { return distro(random); };
 
@@ -105,6 +107,10 @@ class KvsTester {
     };
 
     for (int i = 0; i < iterations; ++i) {
+      if (reinit && random_int() % 10 == 0) {
+        Init();
+      }
+
       // One out of 4 times, delete a key.
       if (random_int() % 4 == 0) {
         // Either delete a non-existent key or delete an existing one.
@@ -265,11 +271,21 @@ class KvsTester {
       }
 
       deleted_.insert(key);
+    } else if (result == Status::RESOURCE_EXHAUSTED) {
+      PW_LOG_WARN("Delete: RESOURCE_EXHAUSTED could not delete key %s",
+                  key.c_str());
     } else {
-      PW_LOG_CRITICAL("Delete: unhandled result %s", result.str());
+      PW_LOG_CRITICAL("Delete: unhandled result \"%s\"", result.str());
       std::abort();
     }
     FinishOperation("Delete", result, key);
+  }
+
+  void Init() {
+    StartOperation("Init", "");
+    Status status = kvs_.Init();
+    EXPECT_EQ(Status::OK, status);
+    FinishOperation("Init", status, "");
   }
 
   void StartOperation(const std::string& operation, const std::string& key) {
@@ -312,7 +328,10 @@ FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
             kParams.sector_alignment);
 
 #define _TEST(fixture, test, ...) \
-  TEST_F(fixture, test) { tester_.Test_##test(__VA_ARGS__); }
+  _TEST_VARIANT(fixture, test, test, __VA_ARGS__)
+
+#define _TEST_VARIANT(fixture, test, variant, ...) \
+  TEST_F(fixture, test##variant) { tester_.Test_##test(__VA_ARGS__); }
 
 // Defines a test fixture that runs all tests against a flash with the specified
 // parameters.
@@ -327,7 +346,10 @@ FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
   /* Run each test defined in the KvsTester class with these parameters. */ \
   _TEST(name, Put);                                                         \
   _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);        \
-  _TEST(name, RandomValidInputs, 1000)                                      \
+  _TEST_VARIANT(name, RandomValidInputs, 1, 1000, 6006411, false);          \
+  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 1000, 6006411, true); \
+  _TEST_VARIANT(name, RandomValidInputs, 2, 1000, 123, false);              \
+  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 1000, 123, true);     \
   static_assert(true, "Don't forget a semicolon!")
 
 RUN_TESTS_WITH_PARAMETERS(Basic,
@@ -338,23 +360,21 @@ RUN_TESTS_WITH_PARAMETERS(Basic,
                           .partition_sector_count = 4,
                           .partition_alignment = 16);
 
-// TODO: This test suite causes an infinite loop.
-RUN_TESTS_WITH_PARAMETERS(DISABLED_NonPowerOf2Alignment,
-                          .sector_size = 1000,
-                          .sector_count = 4,
-                          .sector_alignment = 10,
-                          .partition_start_sector = 0,
-                          .partition_sector_count = 4,
-                          .partition_alignment = 100);
+RUN_TESTS_WITH_PARAMETERS(LotsOfSmallSectors,
+                          .sector_size = 160,
+                          .sector_count = 100,
+                          .sector_alignment = 32,
+                          .partition_start_sector = 5,
+                          .partition_sector_count = 95,
+                          .partition_alignment = 32);
 
-// TODO: This test suite fails to initialize.
-RUN_TESTS_WITH_PARAMETERS(DISABLED_Unaligned,
-                          .sector_size = 1026,
-                          .sector_count = 3,
-                          .sector_alignment = 10,
-                          .partition_start_sector = 1,
+RUN_TESTS_WITH_PARAMETERS(OnlyTwoSectors,
+                          .sector_size = 4 * 1024,
+                          .sector_count = 20,
+                          .sector_alignment = 16,
+                          .partition_start_sector = 18,
                           .partition_sector_count = 2,
-                          .partition_alignment = 9);
+                          .partition_alignment = 64);
 
 }  // namespace
 }  // namespace pw::kvs
