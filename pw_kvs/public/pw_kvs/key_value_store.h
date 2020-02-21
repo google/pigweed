@@ -68,10 +68,27 @@ class KeyValueStore {
   // KeyValueStoreBuffer<MAX_ENTRIES, MAX_SECTORS>, which allocates buffers for
   // tracking entries and flash sectors.
 
+  // Initializes the key-value store. Must be called before calling other
+  // functions.
   Status Init();
 
   bool initialized() const { return initialized_; }
 
+  // Reads the value of an entry in the KVS. The value is read into the provided
+  // buffer and the number of bytes read is returned. If desired, the read can
+  // be started at an offset.
+  //
+  // If the output buffer is too small for the value, Get returns
+  // RESOURCE_EXHAUSTED with the number of bytes read. The remainder of the
+  // value can be read by calling get with an offset.
+  //
+  //                    OK: the entry was successfully read
+  //             DATA_LOSS: found the entry, but the data was corrupted
+  //    RESOURCE_EXHAUSTED: the buffer could not fit the entire value, but as
+  //                        many bytes as possible were written to it
+  //   FAILED_PRECONDITION: the KVS is not initialized
+  //      INVALID_ARGUMENT: key is empty or too long or value is too large
+  //
   StatusWithSize Get(std::string_view key,
                      span<std::byte> value,
                      size_t offset_bytes = 0) const;
@@ -99,11 +116,12 @@ class KeyValueStore {
   // is added and ALREADY_EXISTS is returned.
   //
   //                    OK: the entry was successfully added or updated
-  //   FAILED_PRECONDITION: the KVS is not initialized
+  //             DATA_LOSS: checksum validation failed after writing the data
   //    RESOURCE_EXHAUSTED: there is not enough space to add the entry
-  //      INVALID_ARGUMENT: key is empty or too long or value is too large
   //        ALREADY_EXISTS: the entry could not be added because a different key
   //                        with the same hash is already in the KVS
+  //   FAILED_PRECONDITION: the KVS is not initialized
+  //      INVALID_ARGUMENT: key is empty or too long or value is too large
   //
   Status Put(std::string_view key, span<const std::byte> value);
 

@@ -64,8 +64,8 @@ Status KeyValueStore::Init() {
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
   if (working_buffer_.size() < sector_size_bytes) {
-    ERR("KVS init failed: working_buffer_ (%zu bytes) is smaller than sector "
-        "size (%zu bytes)",
+    ERR("KVS init failed: working_buffer_ (%zu B) is smaller than sector size "
+        "(%zu B)",
         working_buffer_.size(),
         sector_size_bytes);
     return Status::INVALID_ARGUMENT;
@@ -245,13 +245,10 @@ StatusWithSize KeyValueStore::Get(string_view key,
 
   StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
   if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
-    Status verify_result =
-        entry.VerifyChecksum(entry_header_format_.checksum,
-                             key,
-                             value_buffer.subspan(0, result.size()));
+    Status verify_result = entry.VerifyChecksum(
+        entry_header_format_.checksum, key, value_buffer.first(result.size()));
     if (!verify_result.ok()) {
-      std::memset(
-          value_buffer.subspan(0, result.size()).data(), 0, result.size());
+      std::memset(value_buffer.data(), 0, result.size());
       return StatusWithSize(verify_result);
     }
 
@@ -493,38 +490,39 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
 Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   struct TempEntry {
     Entry::KeyBuffer key;
-    std::array<char, sizeof(working_buffer_) - sizeof(key)> value;
+    std::array<byte, sizeof(working_buffer_) - sizeof(key)> value;
   };
-  TempEntry* temp_entry = reinterpret_cast<TempEntry*>(working_buffer_.data());
+  auto [key_buffer, value_buffer] =
+      *std::launder(reinterpret_cast<TempEntry*>(working_buffer_.data()));
 
-  DBG("Relocating entry");  // TODO: add entry info to the log statement.
+  DBG("Relocating entry at %zx for key %" PRIx32,
+      size_t(key_descriptor.address()),
+      key_descriptor.hash());
 
   // Read the entry to be relocated. Store the entry in a local variable and
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
   Entry entry;
   TRY(Entry::Read(partition_, key_descriptor.address(), &entry));
-  TRY_ASSIGN(size_t key_length, entry.ReadKey(temp_entry->key));
-  string_view key = string_view(temp_entry->key.data(), key_length);
-  auto result = entry.ReadValue(as_writable_bytes(span(temp_entry->value)));
-  if (!result.status().ok()) {
+
+  TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
+  string_view key = string_view(key_buffer.data(), key_length);
+
+  StatusWithSize result = entry.ReadValue(value_buffer);
+  if (!result.ok()) {
     return Status::INTERNAL;
   }
 
-  auto value = span(temp_entry->value.data(), result.size());
-  TRY(entry.VerifyChecksum(
-      entry_header_format_.checksum, key, as_bytes(value)));
+  const span value = span(value_buffer.data(), result.size());
+  TRY(entry.VerifyChecksum(entry_header_format_.checksum, key, value));
 
   SectorDescriptor* old_sector = SectorFromKey(key_descriptor);
 
   // Find a new sector for the entry and write it to the new location.
   SectorDescriptor* new_sector;
   TRY(FindSectorWithSpace(&new_sector, entry.size(), old_sector, true));
-  TRY(AppendEntry(new_sector,
-                  &key_descriptor,
-                  key,
-                  as_bytes(value),
-                  key_descriptor.state()));
+  TRY(AppendEntry(
+      new_sector, &key_descriptor, key, value, key_descriptor.state()));
 
   // Do the valid bytes accounting for the sector the entry was relocated from.
   old_sector->RemoveValidBytes(entry.size());
