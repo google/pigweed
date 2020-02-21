@@ -227,6 +227,11 @@ class KeyValueStore {
 
   size_t empty() const { return size() == 0u; }
 
+  // Returns the number of transactions that have occurred since the KVS was
+  // first used. This value is retained across initializations, but is reset if
+  // the underlying flash is erased.
+  uint32_t transaction_count() const { return last_transaction_id_; }
+
  protected:
   using Address = FlashPartition::Address;
   using KeyDescriptor = internal::KeyDescriptor;
@@ -334,16 +339,13 @@ class KeyValueStore {
                               span<const std::byte> value,
                               KeyDescriptor::State state);
 
+  void Reset();
+
   void LogSectors() const;
   void LogKeyDescriptor() const;
 
   FlashPartition& partition_;
-  EntryHeaderFormat entry_header_format_;
-  Options options_;
-
-  // TODO: To allow setting kMaxEntries and kMaxUsableSectors, these vectors
-  // should instead be Vector<KeyDescriptor>& and Vector<SectorDescriptor>& that
-  // refer to vectors in a templated derived class.
+  const EntryHeaderFormat entry_header_format_;
 
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
@@ -351,6 +353,10 @@ class KeyValueStore {
 
   // List of sectors used by this KVS.
   Vector<SectorDescriptor>& sectors_;
+
+  Options options_;
+
+  bool initialized_;
 
   // The last sector that was selected as the "new empty sector" to write to.
   // This last new sector is used as the starting point for the next "find a new
@@ -363,8 +369,6 @@ class KeyValueStore {
   // because SectorDescriptor* is the standard way to identify a sector.
   SectorDescriptor* last_new_sector_;
   uint32_t last_transaction_id_;
-
-  bool initialized_ = false;
 
   // Working buffer is a general purpose buffer for operations (such as init or
   // relocate) to use for working space to remove the need to allocate temporary

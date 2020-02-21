@@ -44,11 +44,15 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
                              const Options& options)
     : partition_(*partition),
       entry_header_format_(format),
-      options_(options),
       key_descriptors_(key_descriptor_list),
-      sectors_(sector_descriptor_list) {}
+      sectors_(sector_descriptor_list),
+      options_(options) {
+  Reset();
+}
 
 Status KeyValueStore::Init() {
+  Reset();
+
   INF("Initializing key value store");
   if (partition_.sector_count() > sectors_.max_size()) {
     ERR("KVS init failed: kMaxUsableSectors (=%zu) must be at least as "
@@ -57,10 +61,6 @@ Status KeyValueStore::Init() {
         partition_.sector_count());
     return Status::FAILED_PRECONDITION;
   }
-
-  // Reset descriptor lists. Key descriptors will be filled later.
-  sectors_.resize(partition_.sector_count());
-  key_descriptors_.clear();
 
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
@@ -75,10 +75,12 @@ Status KeyValueStore::Init() {
   DBG("First pass: Read all entries from all sectors");
   Address sector_address = 0;
 
+  sectors_.assign(partition_.sector_count(),
+                  SectorDescriptor(sector_size_bytes));
+
   for (SectorDescriptor& sector : sectors_) {
     // Reset the sector's valid and writable byte counts. These will be updated
     // after reading each entry.
-    sector.Reset(sector_size_bytes);
     Address entry_address = sector_address;
 
     for (int num_entries_in_sector = 0; true; num_entries_in_sector++) {
@@ -129,7 +131,6 @@ Status KeyValueStore::Init() {
 
   DBG("Second pass: Count valid bytes in each sector");
   const KeyDescriptor* newest_key = nullptr;
-  last_transaction_id_ = 0;
 
   // For every valid key, increment the valid bytes for that sector.
   for (KeyDescriptor& key_descriptor : key_descriptors_) {
@@ -379,7 +380,7 @@ Status KeyValueStore::CheckOperation(string_view key) const {
   if (InvalidKey(key)) {
     return Status::INVALID_ARGUMENT;
   }
-  if (!initialized_) {
+  if (!initialized()) {
     return Status::FAILED_PRECONDITION;
   }
   return Status::OK;
@@ -526,8 +527,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
                   as_bytes(value),
                   key_descriptor.state()));
 
-  // Do the valid bytes accounting for the sector the entry was relocated out
-  // of.
+  // Do the valid bytes accounting for the sector the entry was relocated from.
   old_sector->RemoveValidBytes(entry.size());
 
   return Status::OK;
@@ -736,7 +736,7 @@ Entry KeyValueStore::CreateEntry(Address address,
                                  std::string_view key,
                                  span<const byte> value,
                                  KeyDescriptor::State state) {
-  const uint32_t transaction_id = ++last_transaction_id_;
+  last_transaction_id_ += 1;
 
   if (state == KeyDescriptor::kDeleted) {
     return Entry::Tombstone(partition_,
@@ -745,7 +745,7 @@ Entry KeyValueStore::CreateEntry(Address address,
                             entry_header_format_.checksum,
                             key,
                             partition_.alignment_bytes(),
-                            transaction_id);
+                            last_transaction_id_);
   }
   return Entry::Valid(partition_,
                       address,
@@ -754,7 +754,14 @@ Entry KeyValueStore::CreateEntry(Address address,
                       key,
                       value,
                       partition_.alignment_bytes(),
-                      transaction_id);
+                      last_transaction_id_);
+}
+
+void KeyValueStore::Reset() {
+  initialized_ = false;
+  key_descriptors_.clear();
+  last_new_sector_ = nullptr;
+  last_transaction_id_ = 0;
 }
 
 void KeyValueStore::LogDebugInfo() {

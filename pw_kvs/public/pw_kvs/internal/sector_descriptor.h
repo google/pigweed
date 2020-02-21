@@ -21,11 +21,11 @@ namespace pw::kvs::internal {
 // Tracks the available and used space in each sector used by the KVS.
 class SectorDescriptor {
  public:
-  // Resets the sector by marking all bytes as writable with zero valid bytes.
-  void Reset(uint16_t sector_size_bytes) {
-    tail_free_bytes_ = sector_size_bytes;
-    valid_bytes_ = 0;
-  }
+  explicit constexpr SectorDescriptor(uint16_t sector_size_bytes)
+      : tail_free_bytes_(sector_size_bytes), valid_bytes_(0) {}
+
+  SectorDescriptor(const SectorDescriptor&) = default;
+  SectorDescriptor& operator=(const SectorDescriptor&) = default;
 
   // The number of bytes available to be written in this sector.
   size_t writable_bytes() const { return tail_free_bytes_; }
