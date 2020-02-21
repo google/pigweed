@@ -400,7 +400,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   // Variables used for
   // HCI_BREDR_Create_Connection/HCI_BREDR_Create_Connection_Cancel.
-  bool bredr_connect_pending_;
+  bool bredr_connect_pending_ = false;
   DeviceAddress pending_bredr_connect_addr_;
   fxl::CancelableClosure pending_bredr_connect_rsp_;
 
