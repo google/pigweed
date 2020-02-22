@@ -26,31 +26,12 @@
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sector_descriptor.h"
+#include "pw_kvs/internal/span_traits.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::kvs {
-namespace internal {
-
-template <typename T, typename = decltype(span(std::declval<T>()))>
-constexpr bool ConvertsToSpan(int) {
-  return true;
-}
-
-// If the expression span(T) fails, then the type can't be converted to a span.
-template <typename T>
-constexpr bool ConvertsToSpan(...) {
-  return false;
-}
-
-}  // namespace internal
-
-// Traits class to detect if the type is a span. This is used to ensure that the
-// correct overload of the Put function is selected.
-template <typename T>
-using ConvertsToSpan =
-    std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
 
 // TODO: Select the appropriate defaults, add descriptions.
 struct Options {
