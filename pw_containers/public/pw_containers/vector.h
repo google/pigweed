@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
+#include <limits>
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -46,17 +47,17 @@ inline constexpr size_t kGeneric = size_t(-1);
 template <typename T, size_t kMaxSize = vector_impl::kGeneric>
 class Vector : public Vector<T, vector_impl::kGeneric> {
  public:
-  using value_type = T;
-  using size_type = size_t;
-  using difference_type = ptrdiff_t;
-  using reference = value_type&;
-  using const_reference = const value_type&;
-  using pointer = T*;
-  using const_pointer = const T*;
-  using iterator = T*;
-  using const_iterator = const T*;
-  using reverse_iterator = std::reverse_iterator<iterator>;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using typename Vector<T, vector_impl::kGeneric>::value_type;
+  using typename Vector<T, vector_impl::kGeneric>::size_type;
+  using typename Vector<T, vector_impl::kGeneric>::difference_type;
+  using typename Vector<T, vector_impl::kGeneric>::reference;
+  using typename Vector<T, vector_impl::kGeneric>::const_reference;
+  using typename Vector<T, vector_impl::kGeneric>::pointer;
+  using typename Vector<T, vector_impl::kGeneric>::const_pointer;
+  using typename Vector<T, vector_impl::kGeneric>::iterator;
+  using typename Vector<T, vector_impl::kGeneric>::const_iterator;
+  using typename Vector<T, vector_impl::kGeneric>::reverse_iterator;
+  using typename Vector<T, vector_impl::kGeneric>::const_reverse_iterator;
 
   // Construct
   Vector() noexcept : Vector<T, vector_impl::kGeneric>(kMaxSize) {}
@@ -117,6 +118,8 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
  private:
   friend class Vector<T, vector_impl::kGeneric>;
 
+  static_assert(kMaxSize <= std::numeric_limits<size_type>::max());
+
   // Provides access to the underlying array as an array of T.
   pointer array() { return std::launder(reinterpret_cast<T*>(&array_)); }
   const_pointer array() const {
@@ -135,7 +138,12 @@ template <typename T>
 class Vector<T, vector_impl::kGeneric> {
  public:
   using value_type = T;
-  using size_type = size_t;
+
+  // Use unsigned short instead of size_t. Since Vectors are statically
+  // allocated, 65535 entries is a reasonable upper limit. This reduces Vector's
+  // overhead by packing the size and capacity into 32 bits.
+  using size_type = unsigned short;
+
   using difference_type = ptrdiff_t;
   using reference = value_type&;
   using const_reference = const value_type&;
@@ -243,11 +251,14 @@ class Vector<T, vector_impl::kGeneric> {
   // (push_back, insert, etc.) will fail if full() is true.
   [[nodiscard]] bool full() const noexcept { return size() == max_size(); }
 
-  size_type size() const noexcept { return size_; }
+  // Returns the number of elements in the Vector. Uses size_t instead of
+  // size_type for consistency with other containers.
+  size_t size() const noexcept { return size_; }
 
-  size_type max_size() const noexcept { return max_size_; }
+  // Returns the maximum number of elements in this Vector.
+  size_t max_size() const noexcept { return max_size_; }
 
-  size_type capacity() const noexcept { return max_size(); }
+  size_t capacity() const noexcept { return max_size(); }
 
   // Modify
 
@@ -398,7 +409,7 @@ template <typename T>
 void Vector<T, vector_impl::kGeneric>::resize(size_type new_size,
                                               const T& value) {
   if (size() < new_size) {
-    Append(std::min(max_size(), new_size) - size(), value);
+    Append(std::min(max_size(), size_t(new_size)) - size(), value);
   } else {
     while (size() > new_size) {
       pop_back();
