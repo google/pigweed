@@ -212,6 +212,14 @@ class KeyValueStore {
   // the underlying flash is erased.
   uint32_t transaction_count() const { return last_transaction_id_; }
 
+  struct StorageStats {
+    size_t writable_bytes;
+    size_t in_use_bytes;
+    size_t reclaimable_bytes;
+  };
+
+  StorageStats GetStorageStats() const;
+
  protected:
   using Address = FlashPartition::Address;
   using Entry = internal::Entry;

@@ -199,6 +199,31 @@ Status KeyValueStore::Init() {
   return Status::OK;
 }
 
+KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
+  StorageStats stats{0, 0, 0};
+  const size_t sector_size = partition_.sector_size_bytes();
+  bool found_empty_sector = false;
+
+  for (const SectorDescriptor& sector : sectors_) {
+    stats.in_use_bytes += sector.valid_bytes();
+    stats.reclaimable_bytes += sector.RecoverableBytes(sector_size);
+
+    if (!found_empty_sector && sector.Empty(sector_size)) {
+      // The KVS tries to always keep an empty sector for GC, so don't count
+      // the first empty sector seen as writable space. However, a free sector
+      // cannot always be assumed to exist; if a GC operation fails, all sectors
+      // may be partially written, in which case the space reported might be
+      // inaccurate.
+      found_empty_sector = true;
+      continue;
+    }
+
+    stats.writable_bytes += sector.writable_bytes();
+  }
+
+  return stats;
+}
+
 Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
   Entry entry;
