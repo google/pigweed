@@ -56,15 +56,20 @@ void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap:
   link_data.expected_outbound_conns[psm].push(chan_data);
 }
 
-void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
+bool FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                             l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                             uint16_t max_tx_sdu_size) {
-  ZX_DEBUG_ASSERT(initialized_);
+  if (!initialized_) {
+    return false;
+  }
 
   LinkData& link_data = ConnectedLinkData(handle);
   auto cb_iter = registered_services_.find(psm);
-  ZX_DEBUG_ASSERT_MSG(cb_iter != registered_services_.end(), "no service registered for PSM %#.4x",
-                      psm);
+
+  // No service registered for the PSM.
+  if (cb_iter == registered_services_.end()) {
+    return false;
+  }
 
   l2cap::ChannelCallback& cb = cb_iter->second.channel_cb;
   auto chan_params = cb_iter->second.channel_params;
@@ -80,6 +85,8 @@ void FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 
   auto chan = OpenFakeChannel(&link_data, id, remote_id, channel_info);
   cb(std::move(chan));
+
+  return true;
 }
 
 void FakeDomain::TriggerLinkError(hci::ConnectionHandle handle) {

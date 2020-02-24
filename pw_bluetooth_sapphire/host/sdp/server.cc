@@ -155,6 +155,54 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   return true;
 }
 
+l2cap::PSM Server::PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list) {
+  const auto* primary_protocol = protocol_list->At(0);
+  if (!primary_protocol) {
+    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not a sequence");
+    return l2cap::kInvalidPSM;
+  }
+
+  const auto* prot_uuid = primary_protocol->At(0);
+  if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid) {
+    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid");
+    return l2cap::kInvalidPSM;
+  }
+
+  // We do nothing for primary protocols that are not L2CAP
+  if (*prot_uuid->Get<UUID>() != protocol::kL2CAP) {
+    return l2cap::kInvalidPSM;
+  }
+
+  l2cap::PSM psm = FindProtocolListPSM(*protocol_list);
+  if (psm == l2cap::kInvalidPSM) {
+    bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
+    return l2cap::kInvalidPSM;
+  }
+
+  if (psm == l2cap::kRFCOMM) {
+    const auto* rfcomm_protocol = protocol_list->At(1);
+    if (!rfcomm_protocol) {
+      bt_log(SPEW, "sdp", "ProtocolDesciptorList missing RFCOMM protocol");
+      return l2cap::kInvalidPSM;
+    }
+    const auto* rfcomm_uuid = rfcomm_protocol->At(0);
+    if (!rfcomm_uuid || rfcomm_uuid->type() != DataElement::Type::kUuid ||
+        *rfcomm_uuid->Get<UUID>() != protocol::kRFCOMM) {
+      bt_log(SPEW, "sdp", "L2CAP is RFCOMM, but RFCOMM is not specified");
+      return l2cap::kInvalidPSM;
+    }
+    // TODO(NET-1015): allocate an actual RFCOMM channel with RFCOMM
+    rfcomm::ServerChannel rfcomm_channel = 0;
+    record->SetAttribute(kProtocolDescriptorList,
+                         WriteRFCOMMChannel(*protocol_list, rfcomm_channel));
+  } else if (psm_to_service_.count(psm)) {
+    bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+    return l2cap::kInvalidPSM;
+  }
+
+  return psm;
+}
+
 ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
                                       ConnectCallback conn_cb) {
   ServiceHandle next = GetNextHandle();
@@ -195,71 +243,70 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
   browse_list.emplace_back(DataElement(kPublicBrowseRootUuid));
   record.SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
 
+  // The PSMs and their protocol_lists to register.
+  std::vector<std::pair<l2cap::PSM, DataElement>> psm_to_register;
+
   // ProtocolDescriptorList handling:
   if (record.HasAttribute(kProtocolDescriptorList)) {
     const auto& primary_list = record.GetAttribute(kProtocolDescriptorList);
-    const auto* primary_protocol = primary_list.At(0);
-    if (!primary_protocol) {
-      bt_log(SPEW, "sdp", "ProtocolDescriptorList is not a sequence");
+    auto psm = PSMFromProtocolList(&record, &primary_list);
+
+    // TODO(NET-1015): Remove RFCOMM exception when it's implemented.
+    if (psm == l2cap::kInvalidPSM) {
       return 0;
-    }
-
-    const auto* prot_uuid = primary_protocol->At(0);
-    if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid) {
-      bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid");
-      return 0;
-    }
-
-    // We do nothing for primary protocols that are not L2CAP
-    if (*prot_uuid->Get<UUID>() == protocol::kL2CAP) {
-      l2cap::PSM psm = FindProtocolListPSM(primary_list);
-      if (psm == l2cap::kInvalidPSM) {
-        bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
-        return 0;
-      }
-
-      if (!conn_cb) {
-        bt_log(SPEW, "sdp", "Connection expected but no conn_cb provided");
-        return 0;
-      }
-
-      if (psm == l2cap::kRFCOMM) {
-        const auto* rfcomm_protocol = primary_list.At(1);
-        if (!rfcomm_protocol) {
-          bt_log(SPEW, "sdp", "ProtocolDesciptorList missing RFCOMM protocol");
-          return 0;
-        }
-        const auto* rfcomm_uuid = rfcomm_protocol->At(0);
-        if (!rfcomm_uuid || rfcomm_uuid->type() != DataElement::Type::kUuid ||
-            *rfcomm_uuid->Get<UUID>() != protocol::kRFCOMM) {
-          bt_log(SPEW, "sdp", "L2CAP is RFCOMM, but RFCOMM is not specified");
-          return 0;
-        }
-        // TODO(NET-1015): allocate an actual RFCOMM channel with RFCOMM
-        rfcomm::ServerChannel rfcomm_channel = 0;
-        record.SetAttribute(kProtocolDescriptorList,
-                            WriteRFCOMMChannel(primary_list, rfcomm_channel));
-      } else if (psm_to_service_.count(psm)) {
-        bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
-        return 0;
-      } else {
-        bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
-        psm_to_service_.emplace(psm, next);
-        data_domain_->RegisterService(
-            psm, chan_params,
-            [psm, protocol = primary_list.Clone(), conn_cb = std::move(conn_cb)](
-                auto chan_sock, auto handle) mutable {
-              bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
-              conn_cb(std::move(chan_sock), handle, std::move(protocol));
-            },
-            async_get_default_dispatcher());
-        auto psm_place = service_to_psms_.emplace(next, std::unordered_set<l2cap::PSM>{psm});
-        if (!psm_place.second) {
-          psm_place.first->second.insert(psm);
-        }
-      }
+    } else if (psm != l2cap::kRFCOMM) {
+      auto data = std::make_pair(std::move(psm), primary_list.Clone());
+      psm_to_register.emplace_back(std::move(data));
     }
   }
+
+  // AdditionalProtocolDescriptorList handling:
+  if (record.HasAttribute(kAdditionalProtocolDescriptorList)) {
+    // |additional_list| is a list of ProtocolDescriptorLists.
+    const auto& additional_list = record.GetAttribute(kAdditionalProtocolDescriptorList);
+    size_t attribute_id = 0;
+    const auto* additional = additional_list.At(attribute_id);
+
+    // If `kAdditionalProtocolDescriptorList` exists, there should be at least one
+    // protocol provided.
+    if (!additional) {
+      bt_log(SPEW, "sdp", "AdditionalProtocolDescriptorList provided but empty");
+      return 0;
+    }
+
+    // Add valid additional PSMs to the register queue.
+    while (additional) {
+      auto psm = PSMFromProtocolList(&record, additional);
+      if (psm == l2cap::kInvalidPSM) {
+        return 0;
+      } else if (psm != l2cap::kRFCOMM) {
+        auto data = std::make_pair(std::move(psm), additional->Clone());
+        psm_to_register.emplace_back(std::move(data));
+      }
+
+      attribute_id++;
+      additional = additional_list.At(attribute_id);
+    }
+  }
+
+  auto psm_set = std::unordered_set<l2cap::PSM>{};
+
+  // All PSMs in |psm_to_register| are valid and ready to be registered.
+  for (const auto& [psm, protocol_list] : psm_to_register) {
+    bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
+    psm_to_service_.emplace(psm, next);
+    data_domain_->RegisterService(
+        psm, chan_params,
+        [psm = psm, protocol = protocol_list.Clone(), conn_cb = conn_cb.share()](
+            auto chan_sock, auto handle) mutable {
+          bt_log(SPEW, "sdp", "Channel connected to %#.4x with protocol: %s", psm,
+                 protocol.ToString().c_str());
+          conn_cb(std::move(chan_sock), handle, std::move(protocol));
+        },
+        async_get_default_dispatcher());
+    psm_set.insert(psm);
+  }
+  service_to_psms_.emplace(next, std::move(psm_set));
 
   auto placement = records_.emplace(next, std::move(record));
   ZX_DEBUG_ASSERT(placement.second);

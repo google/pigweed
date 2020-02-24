@@ -78,6 +78,10 @@ class Server final {
       const std::unordered_set<UUID>& search_pattern,
       const std::list<AttributeRange>& attribute_ranges) const;
 
+  // Attempts to extract the PSM from the protocol list.
+  // Returns the PSM if successful, otherwise |kInvalidPSM|.
+  l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list);
+
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
   void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t max_tx_sdu_size);

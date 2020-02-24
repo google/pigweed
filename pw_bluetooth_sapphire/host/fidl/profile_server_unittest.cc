@@ -222,8 +222,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   RunLoopUntilIdle();
   EXPECT_TRUE(service_cb_called);
 
-  data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
-                                            kTxMtu);
+  EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
+                                                        0x41, kTxMtu));
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, sock_cb_count);
