@@ -92,16 +92,23 @@ constexpr auto MakeValidEntry(uint32_t magic,
 
 constexpr uint32_t kMagic = 0xc001beef;
 constexpr EntryFormat kFormat{.magic = kMagic, .checksum = &checksum};
+constexpr Options kNoGcOptions{
+    .partial_gc_on_write = false,
+    .verify_on_read = true,
+    .verify_on_write = true,
+};
 
 constexpr auto kEntry1 = MakeValidEntry(kMagic, 1, "key1", ByteStr("value1"));
 constexpr auto kEntry2 = MakeValidEntry(kMagic, 3, "k2", ByteStr("value2"));
+constexpr auto kEntry3 = MakeValidEntry(kMagic, 4, "k3y", ByteStr("value3"));
+constexpr auto kEntry4 = MakeValidEntry(kMagic, 5, "4k", ByteStr("value4"));
 
 class KvsErrorHandling : public ::testing::Test {
  protected:
   KvsErrorHandling()
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
-        kvs_(&partition_, kFormat) {}
+        kvs_(&partition_, kFormat, kNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
     partition_.Erase();
@@ -141,7 +148,36 @@ TEST_F(KvsErrorHandling, Init_CorruptEntry_FindsSubsequentValidEntry) {
     byte buffer[64];
     ASSERT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
     ASSERT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+    auto stats = kvs_.GetStorageStats();
+    // One valid entry.
+    ASSERT_EQ(32u, stats.in_use_bytes);
+    // Rest of space is reclaimable as the sector is corrupt.
+    ASSERT_EQ(480u, stats.reclaimable_bytes);
   }
+}
+
+TEST_F(KvsErrorHandling, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2, kEntry3, kEntry4));
+
+  // Corrupt the first and third entries.
+  flash_.buffer()[9] = byte(0xef);
+  flash_.buffer()[67] = byte(0xef);
+
+  ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
+
+  EXPECT_EQ(2u, kvs_.size());
+
+  byte buffer[64];
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("k3y", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("4k", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  ASSERT_EQ(64u, stats.in_use_bytes);
+  ASSERT_EQ(448u, stats.reclaimable_bytes);
+  ASSERT_EQ(1024u, stats.writable_bytes);
 }
 
 TEST_F(KvsErrorHandling, Init_ReadError_IsNotInitialized) {
@@ -152,6 +188,58 @@ TEST_F(KvsErrorHandling, Init_ReadError_IsNotInitialized) {
 
   EXPECT_EQ(Status::UNKNOWN, kvs_.Init());
   EXPECT_FALSE(kvs_.initialized());
+}
+
+TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  // Corrupt 3 of the 4 512-byte flash sectors. Corrupt sectors should be
+  // unwritable, and the KVS must maintain one empty sector at all times.
+  // As GC on write is disabled through KVS options, writes should no longer be
+  // possible due to lack of space.
+  flash_.buffer()[1] = byte(0xef);
+  flash_.buffer()[513] = byte(0xef);
+  flash_.buffer()[1025] = byte(0xef);
+
+  ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
+  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, kvs_.Put("hello", ByteStr("world")));
+  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, kvs_.Put("a", ByteStr("b")));
+
+  // Existing valid entries should still be readable.
+  EXPECT_EQ(1u, kvs_.size());
+  byte buffer[64];
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(32u, stats.in_use_bytes);
+  EXPECT_EQ(480u + 2 * 512u, stats.reclaimable_bytes);
+  EXPECT_EQ(0u, stats.writable_bytes);
+}
+
+TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
+  constexpr auto kVersion7 =
+      MakeValidEntry(kMagic, 7, "my_key", ByteStr("version 7"));
+  constexpr auto kVersion8 =
+      MakeValidEntry(kMagic, 8, "my_key", ByteStr("version 8"));
+
+  InitFlashTo(AsBytes(kVersion7, kVersion8));
+
+  // Corrupt a byte of entry version 8 (addresses 32-63).
+  flash_.buffer()[34] = byte(0xef);
+
+  ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
+
+  char buffer[64] = {};
+
+  EXPECT_EQ(1u, kvs_.size());
+
+  auto result = kvs_.Get("my_key", as_writable_bytes(span(buffer)));
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(sizeof("version 7") - 1, result.size());
+  EXPECT_STREQ("version 7", buffer);
+
+  EXPECT_EQ(32u, kvs_.GetStorageStats().in_use_bytes);
 }
 
 TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAdded) {
