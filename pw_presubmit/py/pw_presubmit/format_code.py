@@ -254,7 +254,8 @@ def presubmit_check(code_format: CodeFormat) -> Callable:
         if errors:
             raise pw_presubmit.PresubmitFailure
 
-    check_code_format.__name__ = f'{code_format.language} format'
+    language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
+    check_code_format.__name__ = f'{language}_format'
 
     return check_code_format
 
