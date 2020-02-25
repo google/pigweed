@@ -38,7 +38,8 @@ def _check_next_bytes(fd: BinaryIO, expected: bytes, what: str) -> None:
     actual = fd.read(len(expected))
     if expected != actual:
         raise FileDecodeError(
-            f'Invalid {what}: expected {expected!r}, found {actual!r}')
+            f'Invalid {what}: expected {expected!r}, found {actual!r} in file '
+            f'{getattr(fd, "name", "(unknown")}')
 
 
 def files_in_archive(fd: BinaryIO) -> Iterable[int]:
@@ -47,6 +48,11 @@ def files_in_archive(fd: BinaryIO) -> Iterable[int]:
     _check_next_bytes(fd, ARCHIVE_MAGIC, 'archive magic number')
 
     while True:
+        # In some archives, the first file ends with an additional \n. If that
+        # is present, skip it.
+        if fd.read(1) != b'\n':
+            fd.seek(-1, 1)
+
         # Each file in an archive is prefixed with an ASCII header:
         #
         #   16 B - file identifier (text)

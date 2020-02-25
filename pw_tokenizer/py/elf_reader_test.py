@@ -214,6 +214,23 @@ class ArchiveTest(unittest.TestCase):
                     io.BytesIO(b'!<arch>blah blahblah')):
                 pass
 
+    def test_extra_newline_after_entry_is_ignored(self):
+        archive = io.BytesIO(elf_reader.ARCHIVE_MAGIC +
+                             _archive_file(self._elf_data) + b'\n' +
+                             _archive_file(self._elf_data))
+
+        for size in elf_reader.files_in_archive(archive):
+            self.assertEqual(self._elf_data, archive.read(size))
+
+    def test_two_extra_newlines_parsing_fails(self):
+        archive = io.BytesIO(elf_reader.ARCHIVE_MAGIC +
+                             _archive_file(self._elf_data) + b'\n\n' +
+                             _archive_file(self._elf_data))
+
+        with self.assertRaises(elf_reader.FileDecodeError):
+            for size in elf_reader.files_in_archive(archive):
+                self.assertEqual(self._elf_data, archive.read(size))
+
     def test_iterate_over_archive_with_invalid_size(self):
         data = elf_reader.ARCHIVE_MAGIC + _archive_file(b'$' * 3210)
         file = io.BytesIO(data)
