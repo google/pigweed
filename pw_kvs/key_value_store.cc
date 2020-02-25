@@ -341,7 +341,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
         entry_header_format_.checksum, key, value_buffer.first(result.size()));
     if (!verify_result.ok()) {
       std::memset(value_buffer.data(), 0, result.size());
-      return StatusWithSize(verify_result);
+      return StatusWithSize(verify_result, 0);
     }
 
     return StatusWithSize(verify_result, result.size());

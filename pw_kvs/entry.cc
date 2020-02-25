@@ -87,7 +87,7 @@ StatusWithSize Entry::Write(const string_view key,
 
 StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
   if (offset_bytes > value_size()) {
-    return StatusWithSize(Status::OUT_OF_RANGE);
+    return StatusWithSize::OUT_OF_RANGE;
   }
 
   const size_t remaining_bytes = value_size() - offset_bytes;

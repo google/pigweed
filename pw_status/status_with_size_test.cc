@@ -51,25 +51,16 @@ TEST(StatusWithSize, ConstructWithOkAndSize) {
   EXPECT_EQ(99u, result.size());
 }
 
-TEST(StatusWithSize, ConstructWithStatusCodeAndDefaultSize) {
-  StatusWithSize result(Status::ALREADY_EXISTS);
+TEST(StatusWithSize, ConstructFromConstant) {
+  StatusWithSize result(StatusWithSize::ALREADY_EXISTS);
+
   EXPECT_EQ(Status::ALREADY_EXISTS, result.status());
   EXPECT_EQ(0u, result.size());
-}
 
-TEST(StatusWithSize, ConstructWithStatusAndDefaultSize) {
-  StatusWithSize result(Status{Status::ALREADY_EXISTS});
-  EXPECT_EQ(Status::ALREADY_EXISTS, result.status());
+  result = StatusWithSize::NOT_FOUND;
+
+  EXPECT_EQ(Status::NOT_FOUND, result.status());
   EXPECT_EQ(0u, result.size());
-}
-
-TEST(StatusWithSize, AllStatusValues_DefaultSize) {
-  for (int i = 0; i < 32; ++i) {
-    StatusWithSize result(static_cast<Status::Code>(i));
-    EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status()));
-    EXPECT_EQ(0u, result.size());
-  }
 }
 
 TEST(StatusWithSize, AllStatusValues_ZeroSize) {

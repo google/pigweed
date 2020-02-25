@@ -79,7 +79,7 @@ Status InMemoryFakeFlash::Erase(Address address, size_t num_sectors) {
 StatusWithSize InMemoryFakeFlash::Read(Address address,
                                        span<std::byte> output) {
   if (address + output.size() >= sector_count() * size_bytes()) {
-    return StatusWithSize(Status::OUT_OF_RANGE);
+    return StatusWithSize::OUT_OF_RANGE;
   }
 
   // Check for injected read errors
@@ -99,14 +99,14 @@ StatusWithSize InMemoryFakeFlash::Write(Address address,
                  size_t(address),
                  data.size(),
                  alignment_bytes());
-    return StatusWithSize(Status::INVALID_ARGUMENT);
+    return StatusWithSize::INVALID_ARGUMENT;
   }
 
   if (data.size() > sector_size_bytes() - (address % sector_size_bytes())) {
     PW_LOG_ERROR("Write crosses sector boundary; address %zx, size %zu B",
                  size_t(address),
                  data.size());
-    return StatusWithSize(Status::INVALID_ARGUMENT);
+    return StatusWithSize::INVALID_ARGUMENT;
   }
 
   if (address + data.size() > sector_count() * sector_size_bytes()) {
@@ -115,7 +115,7 @@ StatusWithSize InMemoryFakeFlash::Write(Address address,
         size_t(address),
         data.size(),
         sector_count() * sector_size_bytes());
-    return StatusWithSize(Status::OUT_OF_RANGE);
+    return StatusWithSize::OUT_OF_RANGE;
   }
 
   // Check in erased state
@@ -123,7 +123,7 @@ StatusWithSize InMemoryFakeFlash::Write(Address address,
     if (buffer_[address + i] != kErasedValue) {
       PW_LOG_ERROR("Writing to previously written address: %zx",
                    size_t(address));
-      return StatusWithSize(Status::UNKNOWN);
+      return StatusWithSize::UNKNOWN;
     }
   }
 

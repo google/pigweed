@@ -61,7 +61,7 @@ inline Status ConvertToStatus(StatusWithSize status_with_size) {
 }
 
 inline StatusWithSize ConvertToStatusWithSize(Status status) {
-  return StatusWithSize(status);
+  return StatusWithSize(status, 0);
 }
 
 inline StatusWithSize ConvertToStatusWithSize(StatusWithSize status_with_size) {

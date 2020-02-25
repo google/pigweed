@@ -48,7 +48,7 @@ StatusWithSize FlashPartition::Read(Address address, span<byte> output) {
 
 StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
   if (permission_ == PartitionPermission::kReadOnly) {
-    return StatusWithSize(Status::PERMISSION_DENIED);
+    return StatusWithSize::PERMISSION_DENIED;
   }
   TRY_WITH_SIZE(CheckBounds(address, data.size()));
   return flash_.Write(PartitionToFlashAddress(address), data);

@@ -101,7 +101,7 @@ StatusWithSize AlignedWrite(Output& output,
   // TODO: This should convert to PW_CHECK once that is available for use in
   // host tests.
   if (alignment_bytes > kBufferSize) {
-    return StatusWithSize(Status::INTERNAL);
+    return StatusWithSize::INTERNAL;
   }
 
   AlignedWriterBuffer<kBufferSize> buffer(alignment_bytes, output);
