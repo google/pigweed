@@ -17,10 +17,12 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::kvs {
 namespace {
 
+using namespace std::string_view_literals;
 using std::byte;
 
 TEST(AlignUp, Zero) {
@@ -163,7 +165,6 @@ TEST(AlignedWriter, VaryingLengthWriteCalls) {
 
 TEST(AlignedWriter, DestructorFlushes) {
   static size_t called_with_bytes;
-
   called_with_bytes = 0;
 
   OutputToFunction output([](span<const byte> data) {
@@ -178,6 +179,88 @@ TEST(AlignedWriter, DestructorFlushes) {
   }
 
   EXPECT_EQ(called_with_bytes, AlignUp(sizeof("What is this?"), 3));
+}
+
+TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
+  struct BreakableOutput final : public Output {
+   public:
+    enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;
+
+    StatusWithSize Write(span<const byte> data) override {
+      switch (state) {
+        case kKeepGoing:
+          return StatusWithSize(data.size());
+        case kBreakOnNext:
+          state = kBroken;
+          break;
+        case kBroken:
+          ADD_FAILURE();
+          break;
+      }
+      return StatusWithSize(Status::UNKNOWN, data.size());
+    }
+  } output;
+
+  {
+    AlignedWriterBuffer<4> writer(3, output);
+    writer.Write(as_bytes(span("Everything is fine.")));
+    output.state = BreakableOutput::kBreakOnNext;
+    EXPECT_EQ(Status::UNKNOWN,
+              writer.Write(as_bytes(span("No more writes, okay?"))).status());
+    writer.Flush();
+  }
+}
+
+TEST(AlignedWriter, Write_ReturnsTotalBytesWritten) {
+  static Status return_status;
+  return_status = Status::OK;
+
+  OutputToFunction output([](span<const byte> data) {
+    return StatusWithSize(return_status, data.size());
+  });
+
+  AlignedWriterBuffer<22> writer(10, output);
+
+  StatusWithSize result = writer.Write(as_bytes(span("12345678901"sv)));
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(0u, result.size());  // No writes; haven't filled buffer.
+
+  result = writer.Write(as_bytes(span("2345678901"sv)));
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(20u, result.size());
+
+  return_status = Status::PERMISSION_DENIED;
+
+  result = writer.Write(as_bytes(span("2345678901234567890"sv)));
+  EXPECT_EQ(Status::PERMISSION_DENIED, result.status());
+  EXPECT_EQ(40u, result.size());
+}
+
+TEST(AlignedWriter, Flush_Ok_ReturnsTotalBytesWritten) {
+  OutputToFunction output(
+      [](span<const byte> data) { return StatusWithSize(data.size()); });
+
+  AlignedWriterBuffer<4> writer(2, output);
+
+  EXPECT_EQ(Status::OK, writer.Write(as_bytes(span("12345678901"sv))).status());
+
+  StatusWithSize result = writer.Flush();
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(12u, result.size());
+}
+
+TEST(AlignedWriter, Flush_Error_ReturnsTotalBytesWritten) {
+  OutputToFunction output([](span<const byte> data) {
+    return StatusWithSize(Status::ABORTED, data.size());
+  });
+
+  AlignedWriterBuffer<20> writer(10, output);
+
+  EXPECT_EQ(0u, writer.Write(as_bytes(span("12345678901"sv))).size());
+
+  StatusWithSize result = writer.Flush();
+  EXPECT_EQ(Status::ABORTED, result.status());
+  EXPECT_EQ(20u, result.size());
 }
 
 }  // namespace

@@ -33,16 +33,23 @@
 
 namespace pw::kvs {
 
-// TODO: Select the appropriate defaults, add descriptions.
 struct Options {
+  // Perform garbage collection if necessary when writing. If true, garbage
+  // collection is attempted if space for an entry cannot be found. This is a
+  // relatively lengthy operation. If false, Put calls that would require
+  // garbage collection fail with RESOURCE_EXHAUSTED.
   bool partial_gc_on_write = true;
+
+  // Verify an entry's checksum after reading it from flash.
   bool verify_on_read = true;
+
+  // Verify an in-flash entry's checksum after writing it.
   bool verify_on_write = true;
 };
 
 class KeyValueStore {
  public:
-  // TODO: Make this configurable.
+  // TODO: Rework entry relocation to not need a large buffer.
   static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
 
   // KeyValueStores are declared as instances of
@@ -226,7 +233,7 @@ class KeyValueStore {
   using KeyDescriptor = internal::KeyDescriptor;
   using SectorDescriptor = internal::SectorDescriptor;
 
-  // In the future, will be able to provide additional EntryHeaderFormats for
+  // In the future, will be able to provide additional EntryFormats for
   // backwards compatibility.
   KeyValueStore(FlashPartition* partition,
                 Vector<KeyDescriptor>& key_descriptor_list,

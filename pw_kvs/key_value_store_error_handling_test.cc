@@ -242,15 +242,28 @@ TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
   EXPECT_EQ(32u, kvs_.GetStorageStats().in_use_bytes);
 }
 
-TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAdded) {
+TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   ASSERT_EQ(Status::OK, kvs_.Init());
-  flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE));
+  flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
 
   EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
 
-  byte buffer[64];
-  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", span<byte>()).status());
   ASSERT_TRUE(kvs_.empty());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, 0u);
+  EXPECT_EQ(stats.reclaimable_bytes, 32u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - 32);
+
+  // The bytes were marked used, so a new key should not overlap with the bytes
+  // from the failed Put.
+  EXPECT_EQ(Status::OK, kvs_.Put("key1", ByteStr("value1")));
+
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, 32u);
+  EXPECT_EQ(stats.reclaimable_bytes, 32u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - 32 * 2);
 }
 
 }  // namespace

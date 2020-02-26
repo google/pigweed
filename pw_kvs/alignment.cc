@@ -31,11 +31,11 @@ StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
       // Always use write_size_ for the bytes written. If there was an error
       // assume the space was written or at least disturbed.
       bytes_written_ += write_size_;
+      bytes_in_buffer_ = 0;
+
       if (!result.ok()) {
         return StatusWithSize(result.status(), bytes_written_);
       }
-
-      bytes_in_buffer_ = 0;
     }
   }
 
@@ -45,6 +45,8 @@ StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
 StatusWithSize AlignedWriter::Flush() {
   static constexpr std::byte kPadByte = std::byte{0};
 
+  Status status;
+
   // If data remains in the buffer, pad it to the alignment size and flush the
   // remaining data.
   if (bytes_in_buffer_ != 0u) {
@@ -52,17 +54,14 @@ StatusWithSize AlignedWriter::Flush() {
     std::memset(&buffer_[bytes_in_buffer_],
                 int(kPadByte),
                 remaining_bytes - bytes_in_buffer_);
-
-    if (auto result = output_.Write(buffer_, remaining_bytes); !result.ok()) {
-      return StatusWithSize(result.status(), bytes_written_);
-    }
+    status = output_.Write(buffer_, remaining_bytes).status();
 
     bytes_written_ += remaining_bytes;  // Include padding in the total.
+    bytes_in_buffer_ = 0;
   }
 
-  const StatusWithSize result(bytes_written_);
+  const StatusWithSize result(status, bytes_written_);
   bytes_written_ = 0;
-  bytes_in_buffer_ = 0;
   return result;
 }
 

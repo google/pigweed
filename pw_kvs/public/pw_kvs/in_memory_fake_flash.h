@@ -27,42 +27,30 @@ namespace pw::kvs {
 
 class FlashError {
  public:
-  enum Mode {
-    kAbort,
-    kContinueButReportError,
-  };
-
   static constexpr FlashMemory::Address kAnyAddress = FlashMemory::Address(-1);
   static constexpr size_t kAlways = size_t(-1);
 
   // Creates a FlashError that always triggers on the next operation.
   static constexpr FlashError Unconditional(Status status,
-                                            Mode mode = kAbort,
                                             size_t times = kAlways,
                                             size_t delay = 0) {
-    return FlashError(status, kAnyAddress, 0, mode, times, delay);
+    return FlashError(status, kAnyAddress, 0, times, delay);
   }
 
   // Creates a FlashError that triggers for particular addresses.
   static constexpr FlashError InRange(Status status,
                                       FlashMemory::Address address,
                                       size_t size = 1,
-                                      Mode mode = kAbort,
                                       size_t times = kAlways,
                                       size_t delay = 0) {
-    return FlashError(status, address, size, mode, times, delay);
+    return FlashError(status, address, size, times, delay);
   }
 
-  struct Result {
-    Status status;          // what to return from the operation
-    bool finish_operation;  // whether to complete the operation
-  };
-
   // Determines if this FlashError applies to the operation.
-  Result Check(FlashMemory::Address start_address, size_t size);
+  Status Check(FlashMemory::Address start_address, size_t size);
 
   // Determines if any of a series of FlashErrors applies to the operation.
-  static Result Check(span<FlashError> errors,
+  static Status Check(span<FlashError> errors,
                       FlashMemory::Address address,
                       size_t size);
 
@@ -70,13 +58,11 @@ class FlashError {
   constexpr FlashError(Status status,
                        FlashMemory::Address address,
                        size_t size,  // not used if address is kAnyAddress
-                       Mode mode,
                        size_t times,
                        size_t delay)
       : status_(status),
         begin_(address),
         end_(address + size),  // not used if address is kAnyAddress
-        mode_(mode),
         delay_(delay),
         remaining_(times) {}
 
@@ -84,8 +70,6 @@ class FlashError {
 
   const FlashMemory::Address begin_;
   const FlashMemory::Address end_;  // exclusive
-
-  const Mode mode_;
 
   size_t delay_;
   size_t remaining_;
