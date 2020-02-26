@@ -27,7 +27,8 @@ TEST(SlabAllocatorTest, NewSlabBuffer) {
   EXPECT_EQ(kLargeBufferSize / 2, buffer->size());
 
   buffer = NewSlabBuffer(kLargeBufferSize + 1);
-  EXPECT_FALSE(buffer);
+  EXPECT_TRUE(buffer);
+  EXPECT_EQ(kLargeBufferSize + 1, buffer->size());
 
   buffer = NewSlabBuffer(0);
   EXPECT_TRUE(buffer);

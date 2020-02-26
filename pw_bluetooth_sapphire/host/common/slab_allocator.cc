@@ -33,7 +33,10 @@ MutableByteBufferPtr NewSlabBuffer(size_t size) {
   }
 
   if (size > kLargeBufferSize) {
-    return nullptr;
+    // Fall back to using the system allocator to avoid panicking when allocating very large
+    // buffers. This can still return nullptr if allocating the DynamicByteBuffer fails.
+    // NOTE: DynamicByteBuffer construction panics if allocating the underlying buffer fails.
+    return std::make_unique<DynamicByteBuffer>(size);
   }
 
   return LargeAllocator::New(size);
