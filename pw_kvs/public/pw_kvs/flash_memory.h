@@ -203,7 +203,7 @@ class FlashPartition {
   //          TIMEOUT, on timeout.
   //          INVALID_ARGUMENT, if address or length is invalid.
   //          UNKNOWN, on HAL error
-  // TODO: StatusWithBool
+  // TODO: Result<bool>
   virtual Status IsRegionErased(Address source_flash_address,
                                 size_t len,
                                 bool* is_erased);

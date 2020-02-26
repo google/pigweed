@@ -252,7 +252,6 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 }
 
 // Scans flash memory within a sector to find a KVS entry magic.
-// TODO(frolv): This needs to be unit tested!
 Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
                                    Address start_address,
                                    Address* next_entry_address) {
@@ -803,7 +802,6 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   sector->RemoveWritableBytes(result.size());
 
   if (!result.ok()) {
-    // TODO: Once fake flash errors are supported in tests, test this branch.
     ERR("Failed to write %zu bytes at %" PRIx32 ". %zu actually written",
         entry.size(),
         address,

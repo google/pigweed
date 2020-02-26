@@ -240,24 +240,6 @@ class EmptyInitializedKvs : public ::testing::Test {
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
 
-uint16_t CalcKvsCrc(const char* key, const void* data, size_t data_len) {
-  uint16_t crc = checksum::CcittCrc16(as_bytes(span(key, std::strlen(key))));
-  return checksum::CcittCrc16(span(static_cast<const byte*>(data), data_len),
-                              crc);
-}
-
-uint16_t CalcTestPartitionCrc() {
-  byte buf[16];  // Read as 16 byte chunks
-  EXPECT_EQ(sizeof(buf) % test_partition.alignment_bytes(), 0u);
-  EXPECT_EQ(test_partition.size_bytes() % sizeof(buf), 0u);
-  uint16_t crc = checksum::kCcittCrc16DefaultInitialValue;
-  for (size_t i = 0; i < test_partition.size_bytes(); i += sizeof(buf)) {
-    test_partition.Read(i, buf);
-    crc = checksum::CcittCrc16(as_bytes(span(buf)), crc);
-  }
-  return crc;
-}
-
 }  // namespace
 
 TEST_F(EmptyInitializedKvs, Put_SameKeySameValueRepeatedly_AlignedEntries) {
@@ -578,11 +560,11 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
 
     // Write the same entry many times.
     const char* key = "abcd";
-    const size_t num_writes = 1;  // TODO: Make this > 1 when things work.
+    const size_t num_writes = 99;
     uint32_t written_value;
     EXPECT_EQ(kvs.size(), (reload == 0) ? 0 : 1u);
     for (uint32_t i = 0; i < num_writes; ++i) {
-      INF("PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
+      DBG("PUT #%zu for key %s with value %zu", size_t(i), key, size_t(i));
 
       written_value = i + 0xfc;  // Prevent accidental pass with zero.
       EXPECT_OK(kvs.Put(key, written_value));
@@ -590,12 +572,10 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     }
 
     // Verify that we can read the value back.
-    INF("GET final value for key: %s", key);
+    DBG("GET final value for key: %s", key);
     uint32_t actual_value;
     EXPECT_OK(kvs.Get(key, &actual_value));
     EXPECT_EQ(actual_value, written_value);
-
-    kvs.LogDebugInfo();
 
     char fname_buf[64] = {'\0'};
     snprintf(&fname_buf[0],
@@ -623,13 +603,12 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   for (size_t i = 0; i < num_writes; ++i) {
     StringBuffer<150> key;
     key << "key_" << i;
-    INF("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
+    DBG("PUT #%zu for key %s with value %zu", i, key.c_str(), i);
 
     size_t value = i + 77;  // Prevent accidental pass with zero.
     EXPECT_OK(kvs.Put(key.view(), value));
     EXPECT_EQ(kvs.size(), i + 1);
   }
-  kvs.LogDebugInfo();
   flash.Dump("WritingMultipleKeysIncreasesSize.bin");
 }
 
@@ -646,12 +625,12 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
 
   // Add two entries with different keys and values.
   const char* key = "Key1";
-  INF("PUT value for key: %s", key);
+  DBG("PUT value for key: %s", key);
   uint8_t written_value = 0xDA;
   ASSERT_OK(kvs.Put(key, written_value));
   EXPECT_EQ(kvs.size(), 1u);
 
-  INF("GET value for key: %s", key);
+  DBG("GET value for key: %s", key);
   uint8_t actual_value;
   ASSERT_OK(kvs.Get(key, &actual_value));
   EXPECT_EQ(actual_value, written_value);
@@ -674,23 +653,18 @@ TEST(InMemoryKvs, Basic) {
   ASSERT_OK(kvs.Init());
 
   // Add two entries with different keys and values.
-  INF("PUT first value");
   uint8_t value1 = 0xDA;
   ASSERT_OK(kvs.Put(key1, as_bytes(span(&value1, sizeof(value1)))));
   EXPECT_EQ(kvs.size(), 1u);
 
-  INF("PUT second value");
   uint32_t value2 = 0xBAD0301f;
   ASSERT_OK(kvs.Put(key2, value2));
   EXPECT_EQ(kvs.size(), 2u);
 
-  INF("--------------------------------");
-  INF("GET second value");
   // Verify data
   uint32_t test2;
   EXPECT_OK(kvs.Get(key2, &test2));
 
-  INF("GET first value");
   uint8_t test1;
   ASSERT_OK(kvs.Get(key1, &test1));
 
@@ -937,14 +911,12 @@ TEST_F(EmptyInitializedKvs, RepeatingValueWithOtherData) {
   }
 }
 
-#if 0  // Offset reads are not yet supported
-
 TEST_F(EmptyInitializedKvs, OffsetRead) {
   const char* key = "the_key";
   constexpr size_t kReadSize = 16;  // needs to be a multiple of alignment
   constexpr size_t kTestBufferSize = kReadSize * 10;
   ASSERT_GT(buffer.size(), kTestBufferSize);
-  ASSERT_LE(kTestBufferSize, 0xFF);
+  ASSERT_LE(kTestBufferSize, 0xFFu);
 
   // Write the entire buffer
   for (size_t i = 0; i < kTestBufferSize; i++) {
@@ -956,15 +928,23 @@ TEST_F(EmptyInitializedKvs, OffsetRead) {
   // Read in small chunks and verify
   for (unsigned i = 0; i < kTestBufferSize / kReadSize; i++) {
     std::memset(buffer.data(), 0, buffer.size());
-    ASSERT_EQ(
-        Status::OK,
-        kvs_.Get(key, span(buffer.data(), kReadSize), i * kReadSize).status());
+    StatusWithSize result =
+        kvs_.Get(key, span(buffer.data(), kReadSize), i * kReadSize);
+
+    ASSERT_EQ(kReadSize, result.size());
+
+    // Only last iteration is OK since all remaining data was read.
+    if (i == kTestBufferSize / kReadSize - 1) {
+      ASSERT_EQ(Status::OK, result.status());
+    } else {  // RESOURCE_EXHAUSTED, since there is still data to read.
+      ASSERT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+    }
+
     for (unsigned j = 0; j < kReadSize; j++) {
       ASSERT_EQ(static_cast<unsigned>(buffer[j]), j + i * kReadSize);
     }
   }
 }
-#endif
 
 TEST_F(EmptyInitializedKvs, MultipleRewrite) {
   // Calculate number of elements to ensure multiple sectors are required.
@@ -1200,377 +1180,17 @@ TEST_F(LargeEmptyInitializedKvs, Basic) {
 
 #endif  // USE_MEMORY_BUFFER
 
-TEST_F(EmptyInitializedKvs, DifferentValueSameCrc16) {
-  const char kKey[] = "k";
-  // With the key and our CRC16 algorithm these both have CRC of 0x82AE
-  // Given they are the same size and same key, the KVS will need to check
-  // the actual bits to know they are different.
-  const char kValue1[] = {'d', 'a', 't'};
-  const char kValue2[] = {'u', 'c', 'd'};
-
-  // Verify the CRC matches
-  ASSERT_EQ(CalcKvsCrc(kKey, kValue1, sizeof(kValue1)),
-            CalcKvsCrc(kKey, kValue2, sizeof(kValue2)));
-
-  ASSERT_EQ(Status::OK, kvs_.Put(kKey, kValue1));
-
-  // Now try to rewrite with the similar value.
-  ASSERT_EQ(Status::OK, kvs_.Put(kKey, kValue2));
-
-  // Read it back and check it is correct
-  char value[3] = {};
-  ASSERT_EQ(Status::OK, kvs_.Get(kKey, &value));
-  ASSERT_EQ(std::memcmp(value, kValue2, sizeof(value)), 0);
-}
-
-TEST_F(EmptyInitializedKvs, CallingEraseTwice) {
+TEST_F(EmptyInitializedKvs, CallingEraseTwice_NothingWrittenToFlash) {
   const uint8_t kValue = 0xDA;
   ASSERT_EQ(Status::OK, kvs_.Put(keys[0], kValue));
   ASSERT_EQ(Status::OK, kvs_.Delete(keys[0]));
-  uint16_t crc = CalcTestPartitionCrc();
+
+  // Compare before / after checksums to verify that nothing was written.
+  const uint16_t crc = checksum::CcittCrc16(test_flash.buffer());
+
   EXPECT_EQ(kvs_.Delete(keys[0]), Status::NOT_FOUND);
-  // Verify the flash has not changed
-  EXPECT_EQ(crc, CalcTestPartitionCrc());
-}
 
-#if 0  // TODO: not CanFitEntry function yet
-TEST_F(EmptyInitializedKvs, DISABLED_CanFitEntryTests) {
-  // Get exactly the number of bytes that can fit in the space remaining for
-  // a large value, accounting for alignment.
-  constexpr uint16_t kTestKeySize = 2;
-  size_t space_remaining =
-      test_partition.sector_size_bytes()          //
-      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Sector Header
-      - RoundUpForAlignment(sizeof(EntryHeader))  // Cleaning Header
-      - RoundUpForAlignment(sizeof(EntryHeader))  // TODO: Chunk Header
-      - RoundUpForAlignment(kTestKeySize);
-  space_remaining -= test_partition.alignment_bytes() / 2;
-  space_remaining = RoundUpForAlignment(space_remaining);
-
-  EXPECT_TRUE(kvs_.CanFitEntry(kTestKeySize, space_remaining));
-  EXPECT_FALSE(kvs_.CanFitEntry(kTestKeySize, space_remaining + 1));
-}
-#endif
-
-void __attribute__((noinline)) StackHeavyPartialClean() {
-#if 0  // TODO: No FlashSubPartition
-
-  ASSERT_GE(test_partition.sector_count(), 2);
-  FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-  FlashSubPartition test_partition_sector2(&test_partition, 1, 1);
-
-  KeyValueStore kvs1(&test_partition_sector1);
-  KeyValueStore kvs2(&test_partition_sector2);
-
-  test_partition.Erase(0, test_partition.sector_count());
-
-  ASSERT_EQ(Status::OK, kvs1.Enable());
-  ASSERT_EQ(Status::OK, kvs2.Enable());
-
-  int values1[3] = {100, 101, 102};
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[0], values1[0]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[1], values1[1]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[2], values1[2]));
-
-  int values2[3] = {200, 201, 202};
-  ASSERT_EQ(Status::OK, kvs2.Put(keys[0], values2[0]));
-  ASSERT_EQ(Status::OK, kvs2.Put(keys[1], values2[1]));
-  ASSERT_EQ(Status::OK, kvs2.Delete(keys[1]));
-
-  kvs1.Disable();
-  kvs2.Disable();
-
-  // Key 0 is value1 in first sector, value 2 in second
-  // Key 1 is value1 in first sector, erased in second
-  // key 2 is only in first sector
-
-  uint64_t mark_clean_count = 5;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector1,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-
-  // Reset KVS
-  kvs_.Disable();
-  ASSERT_EQ(Status::OK, kvs_.Init());
-  int value;
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values2[0], value);
-  ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values1[2], value);
-
-  if (test_partition.sector_count() == 2) {
-    EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
-    // Has forced a clean, mark again for next test
-    return;  // Not enough sectors to test 2 partial cleans.
-  } else {
-    EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
-  }
-
-  mark_clean_count--;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector2,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-  // Reset KVS
-  kvs_.Disable();
-  ASSERT_EQ(Status::OK, kvs_.Init());
-  EXPECT_EQ(kvs_.PendingCleanCount(), 2u);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
-  ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values1[2], value);
-#endif
-}
-
-// TODO: This doesn't do anything, and would be unreliable anyway.
-size_t CurrentTaskStackFree() { return -1; }
-
-TEST_F(EmptyInitializedKvs, DISABLED_PartialClean) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 2) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  StackHeavyPartialClean();
-}
-
-void __attribute__((noinline)) StackHeavyCleanAll() {
-#if 0  // TODO: no FlashSubPartition
-  ASSERT_GE(test_partition.sector_count(), 2);
-  FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-
-  KeyValueStore kvs1(&test_partition_sector1);
-  test_partition.Erase(0, test_partition.sector_count());
-
-  ASSERT_EQ(Status::OK, kvs1.Enable());
-
-  int values1[3] = {100, 101, 102};
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[0], values1[0]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[1], values1[1]));
-  ASSERT_EQ(Status::OK,
-            kvs1.Put(keys[2], values1[2] - 100));  //  force a rewrite
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[2], values1[2]));
-
-  kvs1.Disable();
-
-  uint64_t mark_clean_count = 5;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector1,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-
-  // Reset KVS
-  kvs_.Disable();
-  ASSERT_EQ(Status::OK, kvs_.Init());
-  int value;
-  EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
-  ASSERT_EQ(Status::OK, kvs_.CleanAll());
-  EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
-  ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values1[2], value);
-#endif
-}
-
-TEST_F(EmptyInitializedKvs, DISABLED_CleanAll) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 1) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  StackHeavyCleanAll();
-}
-
-void __attribute__((noinline)) StackHeavyPartialCleanLargeCounts() {
-#if 0
-  ASSERT_GE(test_partition.sector_count(), 2);
-  FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-  FlashSubPartition test_partition_sector2(&test_partition, 1, 1);
-
-  KeyValueStore kvs1(&test_partition_sector1);
-  KeyValueStore kvs2(&test_partition_sector2);
-
-  test_partition.Erase(0, test_partition.sector_count());
-
-  ASSERT_EQ(Status::OK, kvs1.Enable());
-  ASSERT_EQ(Status::OK, kvs2.Enable());
-
-  int values1[3] = {100, 101, 102};
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[0], values1[0]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[1], values1[1]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[2], values1[2]));
-
-  int values2[3] = {200, 201, 202};
-  ASSERT_EQ(Status::OK, kvs2.Put(keys[0], values2[0]));
-  ASSERT_EQ(Status::OK, kvs2.Put(keys[1], values2[1]));
-  ASSERT_EQ(Status::OK, kvs2.Delete(keys[1]));
-
-  kvs1.Disable();
-  kvs2.Disable();
-  kvs_.Disable();
-
-  // Key 0 is value1 in first sector, value 2 in second
-  // Key 1 is value1 in first sector, erased in second
-  // key 2 is only in first sector
-
-  uint64_t mark_clean_count = 4569877515;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector1,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs_.Init());
-  int value;
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values2[0], value);
-  ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NOT_FOUND);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values1[2], value);
-
-  if (test_partition.sector_count() == 2) {
-    EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
-    // Has forced a clean, mark again for next test
-    // Has forced a clean, mark again for next test
-    return;  // Not enough sectors to test 2 partial cleans.
-  } else {
-    EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
-  }
-  kvs_.Disable();
-
-  mark_clean_count--;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector2,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs_.Init());
-  EXPECT_EQ(kvs_.PendingCleanCount(), 2u);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values1[0], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
-  ASSERT_EQ(values1[1], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values1[2], value);
-#endif
-}
-
-TEST_F(EmptyInitializedKvs, DISABLED_PartialCleanLargeCounts) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 2) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  StackHeavyPartialCleanLargeCounts();
-}
-
-void __attribute__((noinline)) StackHeavyRecoverNoFreeSectors() {
-#if 0  // TODO: no FlashSubPartition
-  ASSERT_GE(test_partition.sector_count(), 2);
-  FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-  FlashSubPartition test_partition_sector2(&test_partition, 1, 1);
-  FlashSubPartition test_partition_both(&test_partition, 0, 2);
-
-  KeyValueStore kvs1(&test_partition_sector1);
-  KeyValueStore kvs2(&test_partition_sector2);
-  KeyValueStore kvs_both(&test_partition_both);
-
-  test_partition.Erase(0, test_partition.sector_count());
-
-  ASSERT_EQ(Status::OK, kvs1.Enable());
-  ASSERT_EQ(Status::OK, kvs2.Enable());
-
-  int values[3] = {100, 101};
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[0], values[0]));
-  ASSERT_FALSE(kvs1.HasEmptySector());
-  ASSERT_EQ(Status::OK, kvs2.Put(keys[1], values[1]));
-  ASSERT_FALSE(kvs2.HasEmptySector());
-
-  kvs1.Disable();
-  kvs2.Disable();
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs_both.Enable());
-  ASSERT_TRUE(kvs_both.HasEmptySector());
-  int value;
-  ASSERT_EQ(Status::OK, kvs_both.Get(keys[0], &value));
-  ASSERT_EQ(values[0], value);
-  ASSERT_EQ(Status::OK, kvs_both.Get(keys[1], &value));
-  ASSERT_EQ(values[1], value);
-#endif
-}
-
-TEST_F(EmptyInitializedKvs, RecoverNoFreeSectors) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore) * 3) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  StackHeavyRecoverNoFreeSectors();
-}
-
-void __attribute__((noinline)) StackHeavyCleanOneSector() {
-#if 0  // TODO: no FlashSubPartition
-  ASSERT_GE(test_partition.sector_count(), 2);
-  FlashSubPartition test_partition_sector1(&test_partition, 0, 1);
-  FlashSubPartition test_partition_sector2(&test_partition, 1, 1);
-
-  KeyValueStore kvs1(&test_partition_sector1);
-
-  test_partition.Erase(0, test_partition.sector_count());
-
-  ASSERT_EQ(Status::OK, kvs1.Enable());
-
-  int values[3] = {100, 101, 102};
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[0], values[0]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[1], values[1]));
-  ASSERT_EQ(Status::OK, kvs1.Put(keys[2], values[2]));
-
-  kvs1.Disable();
-  kvs_.Disable();
-
-  uint64_t mark_clean_count = 1;
-  ASSERT_EQ(Status::OK,
-            PaddedWrite(&test_partition_sector1,
-                        RoundUpForAlignment(KeyValueStore::kHeaderSize),
-                        reinterpret_cast<uint8_t*>(&mark_clean_count),
-                        sizeof(uint64_t)));
-
-  // Reset KVS
-  ASSERT_EQ(Status::OK, kvs_.Init());
-
-  EXPECT_EQ(kvs_.PendingCleanCount(), 1u);
-
-  bool all_sectors_have_been_cleaned = false;
-  ASSERT_EQ(Status::OK, kvs_.CleanOneSector(&all_sectors_have_been_cleaned));
-  EXPECT_EQ(all_sectors_have_been_cleaned, true);
-  EXPECT_EQ(kvs_.PendingCleanCount(), 0u);
-  ASSERT_EQ(Status::OK, kvs_.CleanOneSector(&all_sectors_have_been_cleaned));
-  EXPECT_EQ(all_sectors_have_been_cleaned, true);
-  int value;
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[0], &value));
-  ASSERT_EQ(values[0], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[1], &value));
-  ASSERT_EQ(values[1], value);
-  ASSERT_EQ(Status::OK, kvs_.Get(keys[2], &value));
-  ASSERT_EQ(values[2], value);
-#endif
-}
-
-TEST_F(EmptyInitializedKvs, DISABLED_CleanOneSector) {
-  if (CurrentTaskStackFree() < sizeof(KeyValueStore)) {
-    PW_LOG_ERROR("Not enough stack for test, skipping");
-    return;
-  }
-  StackHeavyCleanOneSector();
+  EXPECT_EQ(crc, checksum::CcittCrc16(test_flash.buffer()));
 }
 
 }  // namespace pw::kvs

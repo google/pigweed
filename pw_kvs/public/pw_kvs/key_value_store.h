@@ -78,6 +78,7 @@ class KeyValueStore {
   // value can be read by calling get with an offset.
   //
   //                    OK: the entry was successfully read
+  //             NOT_FOUND: the key is not present in the KVS
   //             DATA_LOSS: found the entry, but the data was corrupted
   //    RESOURCE_EXHAUSTED: the buffer could not fit the entire value, but as
   //                        many bytes as possible were written to it
@@ -120,6 +121,7 @@ class KeyValueStore {
   //
   Status Put(std::string_view key, span<const std::byte> value);
 
+  // Adds a key-value entry to the KVS, using an object as the value.
   template <typename T,
             typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
                                         !std::is_pointer_v<T> &&
@@ -128,8 +130,25 @@ class KeyValueStore {
     return Put(key, as_bytes(span(&value, 1)));
   }
 
+  // Removes a key-value entry from the KVS.
+  //
+  //                    OK: the entry was successfully added or updated
+  //             NOT_FOUND: the key is not present in the KVS
+  //             DATA_LOSS: checksum validation failed after recording the erase
+  //    RESOURCE_EXHAUSTED: insufficient space to mark the entry as deleted
+  //   FAILED_PRECONDITION: the KVS is not initialized
+  //      INVALID_ARGUMENT: key is empty or too long
+  //
   Status Delete(std::string_view key);
 
+  // Returns the size of the value corresponding to the key.
+  //
+  //                    OK: the size was returned successfully
+  //             NOT_FOUND: the key is not present in the KVS
+  //             DATA_LOSS: checksum validation failed after reading the entry
+  //   FAILED_PRECONDITION: the KVS is not initialized
+  //      INVALID_ARGUMENT: key is empty or too long
+  //
   StatusWithSize ValueSize(std::string_view key) const;
 
   void LogDebugInfo();
