@@ -605,6 +605,7 @@ void BrEdrDynamicChannel::UpdateLocalConfigForErtm() {
     ZX_ASSERT(peer_supports_ertm_.has_value());
     // Fall back to basic mode if peer doesn't support ERTM
     if (!peer_supports_ertm_.value()) {
+      bt_log(SPEW, "l2cap", "Peer does not support ERTM, falling back to basic mode");
       local_config_.set_retransmission_flow_control_option(
           ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
     }
@@ -739,14 +740,14 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
     const ChannelConfiguration& rsp_config) {
   // Check if channel mode was unacceptable.
   if (rsp_config.retransmission_flow_control_option()) {
-    // Check if peer rejected basic mode, in which case local device should disconnect.
+    // Check if peer rejected basic mode. Do not disconnect, in case peer will accept resending
+    // basic mode (as is the case with PTS test L2CAP/COS/CFD/BV-02-C).
     if (local_config_.retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
-      bt_log(ERROR, "l2cap-bredr",
-             "Channel %#.4x: Unsuccessful config: peer rejected basic mode with unacceptable "
+      bt_log(WARN, "l2cap-bredr",
+             "Channel %#.4x: Peer rejected basic mode with unacceptable "
              "parameters result (rsp mode: %#.2x)",
              local_cid(),
              static_cast<uint8_t>(rsp_config.retransmission_flow_control_option()->mode()));
-      return false;
     }
 
     // Core Spec v5.1, Vol 3, Part A, Sec 5.4:
@@ -772,6 +773,7 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
            local_cid());
 
     // Fall back to basic mode and try sending config again.
+    // TODO(46992): limit the number of retries
     local_config_.set_retransmission_flow_control_option(
         ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
     SendLocalConfig();
