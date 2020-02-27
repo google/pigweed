@@ -607,9 +607,19 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
 
   SectorDescriptor* old_sector = SectorFromKey(key_descriptor);
 
-  // Find a new sector for the entry and write it to the new location.
+  // Find a new sector for the entry and write it to the new location. For
+  // relocation the find should not not be a sector already containing the key
+  // but can be the always empty sector, since this is part of the GC process
+  // that will result in a new empty sector. Also find a sector that does not
+  // have reclaimable space (mostly for the full GC, where that would result in
+  // an immediate extra relocation).
   SectorDescriptor* new_sector;
-  TRY(FindSectorWithSpace(&new_sector, entry.size(), old_sector, true));
+
+  // TODO: For redundancy work, replace old_sector_const with a span of sectors
+  // to avoid.
+  const SectorDescriptor* old_sector_const = old_sector;
+  TRY(FindSectorWithSpace(
+      &new_sector, entry.size(), span(&old_sector_const, 1), true, false));
   TRY(AppendEntry(
       new_sector, &key_descriptor, key, value, key_descriptor.state()));
 
@@ -621,20 +631,22 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
 
 // Find either an existing sector with enough space that is not the sector to
 // skip, or an empty sector. Maintains the invariant that there is always at
-// least 1 empty sector unless set to bypass the rule.
+// least 1 empty sector unless set to bypass the rule. Optionally skip sectors
+// that have reclaimable bytes.
 Status KeyValueStore::FindSectorWithSpace(
     SectorDescriptor** found_sector,
     size_t size,
-    const SectorDescriptor* sector_to_skip,
-    bool bypass_empty_sector_rule) {
+    span<const SectorDescriptor*> sectors_to_skip,
+    bool bypass_empty_sector_rule,
+    bool allow_reclaimable) {
   SectorDescriptor* first_empty_sector = nullptr;
   bool at_least_two_empty_sectors = bypass_empty_sector_rule;
 
   DBG("Find sector with %zu bytes available, starting with sector %u",
       size,
       SectorIndex(last_new_sector_));
-  if (sector_to_skip != nullptr) {
-    DBG("  Skip sector %u", SectorIndex(sector_to_skip));
+  for (auto& skip_sector : sectors_to_skip) {
+    DBG("  Skip sector %u", SectorIndex(skip_sector));
   }
   if (bypass_empty_sector_rule) {
     DBG("  Bypassing empty sector rule");
@@ -649,21 +661,32 @@ Status KeyValueStore::FindSectorWithSpace(
   // sectors.
   SectorDescriptor* sector = last_new_sector_;
 
-  // Look for a partial sector to use with enough space. Immediately use the
-  // first one of those that is found. While scanning for a partial sector, keep
-  // track of the first empty sector and if a second sector was seen.
+  // Look for a sector to use with enough space. The search uses a 2 priority
+  // tier process.
+  //
+  // Tier 1 is sector that already has valid data. Optionally also only select
+  // sector that has no reclaimable bytes. Immediately use the first one of
+  // those that is found.
+  //
+  // Tier 2 is sectors that are empty. While scanning for a partial sector, keep
+  // track of the first empty sector and if a second empty sector was seen. If
+  // bypass_empty_sector_rule is true then count the second empty sector as
+  // always seen.
   for (size_t j = 0; j < sectors_.size(); j++) {
     sector += 1;
     if (sector == sectors_.end()) {
       sector = sectors_.begin();
     }
 
-    if (sector_to_skip == sector) {
+    if (std::find(sectors_to_skip.begin(), sectors_to_skip.end(), sector) !=
+        sectors_to_skip.end()) {
       continue;
     }
 
     const size_t sector_size_bytes = partition_.sector_size_bytes();
-    if (!sector->Empty(sector_size_bytes) && sector->HasSpace(size)) {
+    if (!sector->Empty(sector_size_bytes) && sector->HasSpace(size) &&
+        (allow_reclaimable ||
+         (sector->RecoverableBytes(sector_size_bytes) == 0))) {
       *found_sector = sector;
       return Status::OK;
     }
@@ -700,7 +723,7 @@ Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
   Status result = FindSectorWithSpace(sector, size);
   if (result == Status::RESOURCE_EXHAUSTED && options_.partial_gc_on_write) {
     // Garbage collect and then try again to find the best sector.
-    TRY(GarbageCollectOneSector());
+    TRY(GarbageCollectPartial());
     return FindSectorWithSpace(sector, size);
   }
   return result;
@@ -743,7 +766,30 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
   return sector_candidate;
 }
 
-Status KeyValueStore::GarbageCollectOneSector() {
+Status KeyValueStore::GarbageCollectFull() {
+  DBG("Garbage Collect all sectors");
+  LogSectors();
+  SectorDescriptor* sector = last_new_sector_;
+
+  // TODO: look in to making an iterator method for cycling through sectors
+  // starting from last_new_sector_.
+  for (size_t j = 0; j < sectors_.size(); j++) {
+    sector += 1;
+    if (sector == sectors_.end()) {
+      sector = sectors_.begin();
+    }
+
+    if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0) {
+      TRY(GarbageCollectSector(sector));
+    }
+  }
+
+  DBG("Garbage Collect all complete");
+  LogSectors();
+  return Status::OK;
+}
+
+Status KeyValueStore::GarbageCollectPartial() {
   DBG("Garbage Collect a single sector");
 
   // Step 1: Find the sector to garbage collect
@@ -751,10 +797,17 @@ Status KeyValueStore::GarbageCollectOneSector() {
   LogSectors();
 
   if (sector_to_gc == nullptr) {
-    return Status::RESOURCE_EXHAUSTED;
+    // Nothing to GC, all done.
+    return Status::OK;
   }
 
-  // Step 2: Move any valid entries in the GC sector to other sectors
+  TRY(GarbageCollectSector(sector_to_gc));
+  LogSectors();
+  return Status::OK;
+}
+
+Status KeyValueStore::GarbageCollectSector(SectorDescriptor* sector_to_gc) {
+  // Step 1: Move any valid entries in the GC sector to other sectors
   if (sector_to_gc->valid_bytes() != 0) {
     for (auto& descriptor : key_descriptors_) {
       if (AddressInSector(*sector_to_gc, descriptor.address())) {
@@ -771,13 +824,12 @@ Status KeyValueStore::GarbageCollectOneSector() {
     return Status::INTERNAL;
   }
 
-  // Step 3: Reinitialize the sector
+  // Step 2: Reinitialize the sector
   sector_to_gc->set_writable_bytes(0);
   TRY(partition_.Erase(SectorBaseAddress(sector_to_gc), 1));
   sector_to_gc->set_writable_bytes(partition_.sector_size_bytes());
 
-  DBG("  Garbage Collect complete");
-  LogSectors();
+  DBG("  Garbage Collect sector %u complete", SectorIndex(sector_to_gc));
   return Status::OK;
 }
 

@@ -151,6 +151,13 @@ class KeyValueStore {
   //
   StatusWithSize ValueSize(std::string_view key) const;
 
+  // Perform garbage collection of all reclaimable space in the KVS.
+  Status GarbageCollectFull();
+
+  // Perform garbage collection of part of the KVS, typically a single sector or
+  // similar unit that makes sense for the KVS implementation.
+  Status GarbageCollectPartial();
+
   void LogDebugInfo();
 
   // Classes and functions to support STL-style iteration.
@@ -308,12 +315,14 @@ class KeyValueStore {
 
   Status FindSectorWithSpace(SectorDescriptor** found_sector,
                              size_t size,
-                             const SectorDescriptor* sector_to_skip = nullptr,
-                             bool bypass_empty_sector_rule = false);
+                             span<const SectorDescriptor*> sector_to_skip =
+                                 span<const SectorDescriptor*>(),
+                             bool bypass_empty_sector_rule = false,
+                             bool allow_reclaimable = true);
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 
-  Status GarbageCollectOneSector();
+  Status GarbageCollectSector(SectorDescriptor* sector_to_gc);
 
   SectorDescriptor* FindSectorToGarbageCollect();
 

@@ -93,7 +93,9 @@ class KvsTester {
 
   void Test_RandomValidInputs(int iterations,
                               uint_fast32_t seed,
-                              bool reinit = false) {
+                              bool reinit = false,
+                              bool full_gc = false,
+                              bool partial_gc = false) {
     std::mt19937 random(seed);
     std::uniform_int_distribution<unsigned> distro;
     auto random_int = [&] { return distro(random); };
@@ -131,6 +133,12 @@ class KvsTester {
         }
 
         Put(key, random_string(random_int() % kMaxValueLength));
+      }
+
+      if (full_gc && random_int() % 25 == 0) {
+        GCFull();
+      } else if (partial_gc && random_int() % 25 == 0) {
+        GCPartial();
       }
     }
   }
@@ -288,6 +296,29 @@ class KvsTester {
     FinishOperation("Init", status, "");
   }
 
+  void GCFull() {
+    StartOperation("GCFull", "");
+    Status status = kvs_.GarbageCollectFull();
+    EXPECT_EQ(Status::OK, status);
+    KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
+    EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
+    FinishOperation("GCFull", status, "");
+  }
+
+  void GCPartial() {
+    StartOperation("GCPartial", "");
+    KeyValueStore::StorageStats pre_stats = kvs_.GetStorageStats();
+    Status status = kvs_.GarbageCollectPartial();
+    EXPECT_EQ(Status::OK, status);
+    KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
+    if (pre_stats.reclaimable_bytes != 0) {
+      EXPECT_LT(post_stats.reclaimable_bytes, pre_stats.reclaimable_bytes);
+    } else {
+      EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
+    }
+    FinishOperation("GCPartial", status, "");
+  }
+
   void StartOperation(const std::string& operation, const std::string& key) {
     count_ += 1;
     PW_LOG_DEBUG(
@@ -335,21 +366,47 @@ FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
 
 // Defines a test fixture that runs all tests against a flash with the specified
 // parameters.
-#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                \
-  class name : public ::testing::Test {                                     \
-   protected:                                                               \
-    static constexpr TestParameters kParams = {__VA_ARGS__};                \
-                                                                            \
-    KvsTester<kParams> tester_;                                             \
-  };                                                                        \
-                                                                            \
-  /* Run each test defined in the KvsTester class with these parameters. */ \
-  _TEST(name, Put);                                                         \
-  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);        \
-  _TEST_VARIANT(name, RandomValidInputs, 1, 1000, 6006411, false);          \
-  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 1000, 6006411, true); \
-  _TEST_VARIANT(name, RandomValidInputs, 2, 1000, 123, false);              \
-  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 1000, 123, true);     \
+#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                  \
+  class name : public ::testing::Test {                                       \
+   protected:                                                                 \
+    static constexpr TestParameters kParams = {__VA_ARGS__};                  \
+                                                                              \
+    KvsTester<kParams> tester_;                                               \
+  };                                                                          \
+                                                                              \
+  /* Run each test defined in the KvsTester class with these parameters. */   \
+  _TEST(name, Put);                                                           \
+  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);          \
+  _TEST_VARIANT(name, RandomValidInputs, 1, 100, 6006411, false);             \
+  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 100, 6006411, true);    \
+  _TEST_VARIANT(name, RandomValidInputs, 2, 100, 123, false);                 \
+  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 100, 123, true);        \
+  _TEST_VARIANT(name, RandomValidInputs, 1FullGC, 100, 6006411, false, true); \
+  _TEST_VARIANT(                                                              \
+      name, RandomValidInputs, 1WithReinitFullGC, 100, 6006411, true, true);  \
+  _TEST_VARIANT(name, RandomValidInputs, 2FullGC, 100, 123, false);           \
+  _TEST_VARIANT(                                                              \
+      name, RandomValidInputs, 2WithReinitFullGC, 100, 123, true, true);      \
+  _TEST_VARIANT(                                                              \
+      name, RandomValidInputs, 1PartialGC, 100, 6006411, false, false, true); \
+  _TEST_VARIANT(name,                                                         \
+                RandomValidInputs,                                            \
+                1WithReinitPartialGC,                                         \
+                1000,                                                         \
+                6006411,                                                      \
+                true,                                                         \
+                false,                                                        \
+                true);                                                        \
+  _TEST_VARIANT(                                                              \
+      name, RandomValidInputs, 2PartialGC, 100, 123, false, false, true);     \
+  _TEST_VARIANT(name,                                                         \
+                RandomValidInputs,                                            \
+                2WithReinitFullPartialGC,                                     \
+                1000,                                                         \
+                123,                                                          \
+                true,                                                         \
+                true,                                                         \
+                true);                                                        \
   static_assert(true, "Don't forget a semicolon!")
 
 RUN_TESTS_WITH_PARAMETERS(Basic,
