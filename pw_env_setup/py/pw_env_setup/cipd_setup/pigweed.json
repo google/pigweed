@@ -14,7 +14,7 @@
     {
         "path": "infra/cmake/${platform}",
         "tags": [
-            "version:3.14.6"
+            "version:3.16.1"
         ]
     },
     {
