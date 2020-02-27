@@ -25,6 +25,9 @@ def install(pw_root, env):
     # being in PATH.
     env.prepend('PATH', os.path.join(prefix, 'bin'))
 
+    if 'CARGO_TARGET_DIR' not in os.environ:
+        env.set('CARGO_TARGET_DIR', os.path.expanduser('~/.cargo-cache'))
+
     # packages.txt contains packages one per line with two fields: package
     # name and version.
     package_path = os.path.join(pw_root, 'pw_env_setup', 'py', 'pw_env_setup',
@@ -49,10 +52,4 @@ def install(pw_root, env):
 
             print(' '.join(cmd))
 
-            subenv = None
-            if 'CARGO_TARGET_DIR' not in os.environ:
-                subenv = os.environ.copy()
-                subenv['CARGO_TARGET_DIR'] = os.path.expanduser(
-                    '~/.cargo-cache')
-
-            subprocess.check_call(cmd, env=subenv)
+            subprocess.check_call(cmd)
