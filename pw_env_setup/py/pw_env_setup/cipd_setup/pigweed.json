@@ -52,7 +52,7 @@
     {
         "path": "infra/3pp/tools/cpython3/${platform}",
         "tags": [
-            "version:3.8.0.chromium.7"
+            "version:3.8.2.chromium.10"
         ],
         "_comment": "When bumping the minor version (e.g., to 3.9.x) also update env_setup/virtualenv/init.py to check for the new version."
     },
