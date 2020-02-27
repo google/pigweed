@@ -472,6 +472,20 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
 
   // The peer should NOT have been auto-connected.
   ASSERT_FALSE(conn);
+
+  // The peer should still not auto-connect after a subsequent scan period.
+  RunLoopFor(kTestScanPeriod);
+  ASSERT_FALSE(conn);
+
+  // Fake a manual connection to reset auto-connect behavior.
+  adapter()->peer_cache()->SetAutoConnectBehaviorForSuccessfulConnection(kPeerId);
+
+  // Advance the scan period.
+  RunLoopFor(kTestScanPeriod);
+
+  // The peer SHOULD have been auto-connected.
+  ASSERT_TRUE(conn);
+  EXPECT_EQ(kPeerId, conn->peer_identifier());
 }
 
 // Tests the interactions between the advertising manager and the local address

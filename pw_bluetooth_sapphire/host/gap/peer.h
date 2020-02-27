@@ -78,6 +78,9 @@ class Peer final {
     // Updates auto-connect behavior appropriately for an intentional (eg. manual) disconnect.
     void SetAutoConnectBehaviorForIntentionalDisconnect();
 
+    // Updates auto-connect behavior appropriately for a successful connection.
+    void SetAutoConnectBehaviorForSuccessfulConnection(void);
+
     // Advertising (and optionally scan response) data obtained during
     // discovery.
     const ByteBuffer& advertising_data() const { return adv_data_buffer_; }

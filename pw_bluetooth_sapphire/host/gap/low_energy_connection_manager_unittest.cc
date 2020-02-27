@@ -778,6 +778,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConn
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
   RunLoopUntilIdle();
   EXPECT_FALSE(peer->le()->should_auto_connect());
+
+  // Intentional re-connection should re-enable the auto-connection property.
+  EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), success_cb));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->le()->should_auto_connect());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConnectBehavior) {

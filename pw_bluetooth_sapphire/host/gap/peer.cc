@@ -43,6 +43,10 @@ void Peer::LowEnergyData::SetAutoConnectBehaviorForIntentionalDisconnect(void) {
   auto_conn_behavior_ = AutoConnectBehavior::kSkipUntilNextConnection;
 }
 
+void Peer::LowEnergyData::SetAutoConnectBehaviorForSuccessfulConnection(void) {
+  auto_conn_behavior_ = AutoConnectBehavior::kAlways;
+}
+
 void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv) {
   adv_data_buffer_ = DynamicByteBuffer(adv.size());
   adv.Copy(&adv_data_buffer_);

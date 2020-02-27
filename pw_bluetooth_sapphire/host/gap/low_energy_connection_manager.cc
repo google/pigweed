@@ -803,6 +803,8 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link
     peer = peer_cache_->NewPeer(link.peer_address(), true /* connectable */);
   }
   peer->MutLe().SetConnectionParameters(link.low_energy_parameters());
+  peer_cache_->SetAutoConnectBehaviorForSuccessfulConnection(peer->identifier());
+
   return peer;
 }
 

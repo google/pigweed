@@ -96,6 +96,10 @@ class PeerCache final {
   // of a known peer.
   bool SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id);
 
+  // Update a peer's auto-connect behavior appropriately after a successful
+  // connection. Returns false if the address does not match that of a known peer.
+  bool SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id);
+
   // If a peer identified by |peer_id| exists and is not connected on either
   // transport, remove it from the cache immediately. Returns true after no peer
   // with |peer_id| exists in the cache, false otherwise.

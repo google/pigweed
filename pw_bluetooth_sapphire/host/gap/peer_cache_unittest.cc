@@ -405,6 +405,22 @@ TEST_F(GAP_PeerCacheTest, AutoConnectDisabledAfterIntentionalDisconnect) {
   EXPECT_FALSE(peer()->le()->should_auto_connect());
 }
 
+TEST_F(GAP_PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
+  ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
+
+  // Only bonded peers are eligible for autoconnect.
+  sm::PairingData data;
+  data.ltk = sm::LTK();
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+
+  cache()->SetAutoConnectBehaviorForIntentionalDisconnect(peer()->identifier());
+  EXPECT_FALSE(peer()->le()->should_auto_connect());
+
+  cache()->SetAutoConnectBehaviorForSuccessfulConnection(peer()->identifier());
+  EXPECT_TRUE(peer()->le()->should_auto_connect());
+}
+
 class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
  public:
   void SetUp() override {
