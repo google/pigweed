@@ -177,9 +177,14 @@ class KeyValueStore {
    private:
     friend class iterator;
 
-    constexpr Item(const KeyValueStore& kvs) : kvs_(kvs), key_buffer_{} {}
+    constexpr Item(const KeyValueStore& kvs,
+                   const internal::KeyDescriptor* descriptor)
+        : kvs_(kvs), descriptor_(descriptor), key_buffer_{} {}
+
+    void ReadKey();
 
     const KeyValueStore& kvs_;
+    const internal::KeyDescriptor* descriptor_;
 
     // Buffer large enough for a null-terminated version of any valid key.
     std::array<char, internal::Entry::kMaxKeyLength + 1> key_buffer_;
@@ -192,7 +197,10 @@ class KeyValueStore {
     iterator& operator++(int) { return operator++(); }
 
     // Reads the entry's key from flash.
-    const Item& operator*();
+    const Item& operator*() {
+      item_.ReadKey();
+      return item_;
+    }
 
     const Item* operator->() {
       operator*();  // Read the key into the Item object.
@@ -200,31 +208,27 @@ class KeyValueStore {
     }
 
     constexpr bool operator==(const iterator& rhs) const {
-      return index_ == rhs.index_;
+      return item_.descriptor_ == rhs.item_.descriptor_;
     }
 
     constexpr bool operator!=(const iterator& rhs) const {
-      return index_ != rhs.index_;
+      return item_.descriptor_ != rhs.item_.descriptor_;
     }
 
    private:
     friend class KeyValueStore;
 
-    constexpr iterator(const KeyValueStore& kvs, size_t index)
-        : item_(kvs), index_(index) {}
-
-    const internal::KeyDescriptor& descriptor() const {
-      return item_.kvs_.key_descriptors_[index_];
-    }
+    constexpr iterator(const KeyValueStore& kvs,
+                       const internal::KeyDescriptor* descriptor)
+        : item_(kvs, descriptor) {}
 
     Item item_;
-    size_t index_;
   };
 
   using const_iterator = iterator;  // Standard alias for iterable types.
 
   iterator begin() const;
-  iterator end() const { return iterator(*this, key_descriptors_.size()); }
+  iterator end() const { return iterator(*this, key_descriptors_.end()); }
 
   // Returns the number of valid entries in the KeyValueStore.
   size_t size() const;

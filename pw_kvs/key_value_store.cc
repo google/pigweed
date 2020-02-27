@@ -393,32 +393,30 @@ Status KeyValueStore::Delete(string_view key) {
       key_descriptor, KeyDescriptor::kDeleted, key, {});
 }
 
+void KeyValueStore::Item::ReadKey() {
+  key_buffer_.fill('\0');
+
+  Entry entry;
+  if (Entry::Read(kvs_.partition_, descriptor_->address(), &entry).ok()) {
+    entry.ReadKey(key_buffer_);
+  }
+}
+
 KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
   // Skip to the next entry that is valid (not deleted).
-  while (++index_ < item_.kvs_.key_descriptors_.size() &&
-         descriptor().deleted()) {
+  while (++item_.descriptor_ != item_.kvs_.key_descriptors_.end() &&
+         item_.descriptor_->deleted()) {
   }
   return *this;
 }
 
-const KeyValueStore::Item& KeyValueStore::iterator::operator*() {
-  std::memset(item_.key_buffer_.data(), 0, item_.key_buffer_.size());
-
-  Entry entry;
-  if (Entry::Read(item_.kvs_.partition_, descriptor().address(), &entry).ok()) {
-    entry.ReadKey(item_.key_buffer_);
-  }
-
-  return item_;
-}
-
 KeyValueStore::iterator KeyValueStore::begin() const {
-  size_t i = 0;
+  const KeyDescriptor* descriptor = key_descriptors_.begin();
   // Skip over any deleted entries at the start of the descriptor list.
-  while (i < key_descriptors_.size() && key_descriptors_[i].deleted()) {
-    i += 1;
+  while (descriptor != key_descriptors_.end() && descriptor->deleted()) {
+    ++descriptor;
   }
-  return iterator(*this, i);
+  return iterator(*this, descriptor);
 }
 
 // TODO(hepler): The valid entry count could be tracked in the KVS to avoid the
