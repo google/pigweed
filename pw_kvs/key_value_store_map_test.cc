@@ -56,6 +56,13 @@ struct TestParameters {
   size_t partition_alignment;
 };
 
+enum Options {
+  kNone,
+  kReinit,
+  kReinitWithFullGC,
+  kReinitWithPartialGC,
+};
+
 template <typename T>
 std::set<T> difference(const std::set<T> lhs, const std::set<T> rhs) {
   std::set<T> diff;
@@ -93,9 +100,7 @@ class KvsTester {
 
   void Test_RandomValidInputs(int iterations,
                               uint_fast32_t seed,
-                              bool reinit = false,
-                              bool full_gc = false,
-                              bool partial_gc = false) {
+                              Options options) {
     std::mt19937 random(seed);
     std::uniform_int_distribution<unsigned> distro;
     auto random_int = [&] { return distro(random); };
@@ -109,7 +114,7 @@ class KvsTester {
     };
 
     for (int i = 0; i < iterations; ++i) {
-      if (reinit && random_int() % 10 == 0) {
+      if (options != kNone && random_int() % 10 == 0) {
         Init();
       }
 
@@ -135,9 +140,9 @@ class KvsTester {
         Put(key, random_string(random_int() % kMaxValueLength));
       }
 
-      if (full_gc && random_int() % 25 == 0) {
+      if (options == kReinitWithFullGC && random_int() % 250 == 0) {
         GCFull();
-      } else if (partial_gc && random_int() % 25 == 0) {
+      } else if (options == kReinitWithPartialGC && random_int() % 40 == 0) {
         GCPartial();
       }
     }
@@ -366,47 +371,40 @@ FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
 
 // Defines a test fixture that runs all tests against a flash with the specified
 // parameters.
-#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                  \
-  class name : public ::testing::Test {                                       \
-   protected:                                                                 \
-    static constexpr TestParameters kParams = {__VA_ARGS__};                  \
-                                                                              \
-    KvsTester<kParams> tester_;                                               \
-  };                                                                          \
-                                                                              \
-  /* Run each test defined in the KvsTester class with these parameters. */   \
-  _TEST(name, Put);                                                           \
-  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);          \
-  _TEST_VARIANT(name, RandomValidInputs, 1, 100, 6006411, false);             \
-  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 100, 6006411, true);    \
-  _TEST_VARIANT(name, RandomValidInputs, 2, 100, 123, false);                 \
-  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 100, 123, true);        \
-  _TEST_VARIANT(name, RandomValidInputs, 1FullGC, 100, 6006411, false, true); \
-  _TEST_VARIANT(                                                              \
-      name, RandomValidInputs, 1WithReinitFullGC, 100, 6006411, true, true);  \
-  _TEST_VARIANT(name, RandomValidInputs, 2FullGC, 100, 123, false);           \
-  _TEST_VARIANT(                                                              \
-      name, RandomValidInputs, 2WithReinitFullGC, 100, 123, true, true);      \
-  _TEST_VARIANT(                                                              \
-      name, RandomValidInputs, 1PartialGC, 100, 6006411, false, false, true); \
-  _TEST_VARIANT(name,                                                         \
-                RandomValidInputs,                                            \
-                1WithReinitPartialGC,                                         \
-                1000,                                                         \
-                6006411,                                                      \
-                true,                                                         \
-                false,                                                        \
-                true);                                                        \
-  _TEST_VARIANT(                                                              \
-      name, RandomValidInputs, 2PartialGC, 100, 123, false, false, true);     \
-  _TEST_VARIANT(name,                                                         \
-                RandomValidInputs,                                            \
-                2WithReinitFullPartialGC,                                     \
-                1000,                                                         \
-                123,                                                          \
-                true,                                                         \
-                true,                                                         \
-                true);                                                        \
+#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                   \
+  class name : public ::testing::Test {                                        \
+   protected:                                                                  \
+    static constexpr TestParameters kParams = {__VA_ARGS__};                   \
+                                                                               \
+    KvsTester<kParams> tester_;                                                \
+  };                                                                           \
+  /* Run each test defined in the KvsTester class with these parameters. */    \
+  _TEST(name, Put);                                                            \
+  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);           \
+  _TEST_VARIANT(name, RandomValidInputs, 1, 1000, 6006411, kNone);             \
+  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 1000, 6006411, kReinit); \
+  _TEST_VARIANT(name, RandomValidInputs, 2, 100, 123, kNone);                  \
+  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 100, 123, kReinit);      \
+  _TEST_VARIANT(name,                                                          \
+                RandomValidInputs,                                             \
+                1ReinitFullGC,                                                 \
+                1000,                                                          \
+                6006411,                                                       \
+                kReinitWithFullGC);                                            \
+  _TEST_VARIANT(                                                               \
+      name, RandomValidInputs, 2ReinitFullGC, 1000, 123, kReinitWithFullGC);   \
+  _TEST_VARIANT(name,                                                          \
+                RandomValidInputs,                                             \
+                1ReinitPartialGC,                                              \
+                100,                                                           \
+                6006411,                                                       \
+                kReinitWithPartialGC);                                         \
+  _TEST_VARIANT(name,                                                          \
+                RandomValidInputs,                                             \
+                2ReinitPartialGC,                                              \
+                200,                                                           \
+                123,                                                           \
+                kReinitWithPartialGC);                                         \
   static_assert(true, "Don't forget a semicolon!")
 
 RUN_TESTS_WITH_PARAMETERS(Basic,

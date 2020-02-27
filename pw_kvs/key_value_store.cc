@@ -629,11 +629,11 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
   // an immediate extra relocation).
   SectorDescriptor* new_sector;
 
-  // TODO: For redundancy work, replace old_sector_const with a span of sectors
-  // to avoid.
+  // TODO: For redundancy work, replace old_sector_const with a vector of
+  // sectors to avoid.
   const SectorDescriptor* old_sector_const = old_sector;
   TRY(FindSectorWithSpace(
-      &new_sector, entry.size(), span(&old_sector_const, 1), true, false));
+      &new_sector, entry.size(), kGarbageCollect, span(&old_sector_const, 1)));
   TRY(AppendEntry(
       new_sector, &key_descriptor, key, value, key_descriptor.state()));
 
@@ -645,25 +645,21 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor) {
 
 // Find either an existing sector with enough space that is not the sector to
 // skip, or an empty sector. Maintains the invariant that there is always at
-// least 1 empty sector unless set to bypass the rule. Optionally skip sectors
-// that have reclaimable bytes.
+// least 1 empty sector except during GC. On GC, skip sectors that have
+// reclaimable bytes.
 Status KeyValueStore::FindSectorWithSpace(
     SectorDescriptor** found_sector,
     size_t size,
-    span<const SectorDescriptor*> sectors_to_skip,
-    bool bypass_empty_sector_rule,
-    bool allow_reclaimable) {
+    FindSectorMode find_mode,
+    span<const SectorDescriptor*> sectors_to_skip) {
   SectorDescriptor* first_empty_sector = nullptr;
-  bool at_least_two_empty_sectors = bypass_empty_sector_rule;
+  bool at_least_two_empty_sectors = (find_mode == kGarbageCollect);
 
   DBG("Find sector with %zu bytes available, starting with sector %u",
       size,
       SectorIndex(last_new_sector_));
   for (auto& skip_sector : sectors_to_skip) {
     DBG("  Skip sector %u", SectorIndex(skip_sector));
-  }
-  if (bypass_empty_sector_rule) {
-    DBG("  Bypassing empty sector rule");
   }
 
   // The last_new_sector_ is the sector that was last selected as the "new empty
@@ -678,14 +674,13 @@ Status KeyValueStore::FindSectorWithSpace(
   // Look for a sector to use with enough space. The search uses a 2 priority
   // tier process.
   //
-  // Tier 1 is sector that already has valid data. Optionally also only select
-  // sector that has no reclaimable bytes. Immediately use the first one of
-  // those that is found.
+  // Tier 1 is sector that already has valid data. During GC only select a
+  // sector that has no reclaimable bytes. Immediately use the first matching
+  // sector that is found.
   //
-  // Tier 2 is sectors that are empty. While scanning for a partial sector, keep
-  // track of the first empty sector and if a second empty sector was seen. If
-  // bypass_empty_sector_rule is true then count the second empty sector as
-  // always seen.
+  // Tier 2 is find sectors that are empty/erased. While scanning for a partial
+  // sector, keep track of the first empty sector and if a second empty sector
+  // was seen. If during GC then count the second empty sector as always seen.
   for (size_t j = 0; j < sectors_.size(); j++) {
     sector += 1;
     if (sector == sectors_.end()) {
@@ -699,7 +694,7 @@ Status KeyValueStore::FindSectorWithSpace(
 
     const size_t sector_size_bytes = partition_.sector_size_bytes();
     if (!sector->Empty(sector_size_bytes) && sector->HasSpace(size) &&
-        (allow_reclaimable ||
+        ((find_mode == kAppendEntry) ||
          (sector->RecoverableBytes(sector_size_bytes) == 0))) {
       *found_sector = sector;
       return Status::OK;
@@ -716,8 +711,7 @@ Status KeyValueStore::FindSectorWithSpace(
 
   // If the scan for a partial sector does not find a suitable sector, use the
   // first empty sector that was found. Normally it is required to keep 1 empty
-  // sector after the sector found here, but that rule can be bypassed in
-  // special circumstances (such as during garbage collection).
+  // sector after the sector found here, but that rule does not apply during GC.
   if (at_least_two_empty_sectors) {
     DBG("  Found a usable empty sector; returning the first found (%u)",
         SectorIndex(first_empty_sector));
@@ -734,11 +728,11 @@ Status KeyValueStore::FindSectorWithSpace(
 
 Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
                                                    size_t size) {
-  Status result = FindSectorWithSpace(sector, size);
+  Status result = FindSectorWithSpace(sector, size, kAppendEntry);
   if (result == Status::RESOURCE_EXHAUSTED && options_.partial_gc_on_write) {
     // Garbage collect and then try again to find the best sector.
     TRY(GarbageCollectPartial());
-    return FindSectorWithSpace(sector, size);
+    return FindSectorWithSpace(sector, size, kAppendEntry);
   }
   return result;
 }
@@ -782,7 +776,6 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect() {
 
 Status KeyValueStore::GarbageCollectFull() {
   DBG("Garbage Collect all sectors");
-  LogSectors();
   SectorDescriptor* sector = last_new_sector_;
 
   // TODO: look in to making an iterator method for cycling through sectors
@@ -799,7 +792,6 @@ Status KeyValueStore::GarbageCollectFull() {
   }
 
   DBG("Garbage Collect all complete");
-  LogSectors();
   return Status::OK;
 }
 
@@ -808,7 +800,6 @@ Status KeyValueStore::GarbageCollectPartial() {
 
   // Step 1: Find the sector to garbage collect
   SectorDescriptor* sector_to_gc = FindSectorToGarbageCollect();
-  LogSectors();
 
   if (sector_to_gc == nullptr) {
     // Nothing to GC, all done.
@@ -816,7 +807,6 @@ Status KeyValueStore::GarbageCollectPartial() {
   }
 
   TRY(GarbageCollectSector(sector_to_gc));
-  LogSectors();
   return Status::OK;
 }
 

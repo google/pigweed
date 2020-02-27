@@ -313,12 +313,13 @@ class KeyValueStore {
 
   Status RelocateEntry(KeyDescriptor& key_descriptor);
 
+  enum FindSectorMode { kAppendEntry, kGarbageCollect };
+
   Status FindSectorWithSpace(SectorDescriptor** found_sector,
                              size_t size,
+                             FindSectorMode find_mode,
                              span<const SectorDescriptor*> sector_to_skip =
-                                 span<const SectorDescriptor*>(),
-                             bool bypass_empty_sector_rule = false,
-                             bool allow_reclaimable = true);
+                                 span<const SectorDescriptor*>());
 
   Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
 
