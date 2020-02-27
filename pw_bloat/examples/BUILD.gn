@@ -16,26 +16,18 @@ import("../bloat.gni")
 
 pw_toolchain_size_report("simple_bloat_loop") {
   base_executable = {
-    sources = [
-      "simple_base.cc",
-    ]
+    sources = [ "simple_base.cc" ]
   }
   diff_executable = {
-    sources = [
-      "simple_loop.cc",
-    ]
+    sources = [ "simple_loop.cc" ]
   }
 }
 
 pw_toolchain_size_report("simple_bloat_function") {
   base_executable = {
-    sources = [
-      "simple_base.cc",
-    ]
+    sources = [ "simple_base.cc" ]
   }
   diff_executable = {
-    sources = [
-      "simple_function.cc",
-    ]
+    sources = [ "simple_function.cc" ]
   }
 }

@@ -23,12 +23,8 @@ config("default_config") {
 pw_facade("pw_assert") {
   backend = dir_pw_assert_backend
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_assert/assert.h",
-  ]
-  public_deps = [
-    dir_pw_preprocessor,
-  ]
+  public = [ "public/pw_assert/assert.h" ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_test_group("tests") {
@@ -53,7 +49,5 @@ if (dir_pw_assert_backend != "") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

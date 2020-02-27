@@ -26,22 +26,14 @@ pw_facade("pw_dumb_io") {
     "$dir_pw_span",
     "$dir_pw_status",
   ]
-  public = [
-    "public/pw_dumb_io/dumb_io.h",
-  ]
+  public = [ "public/pw_dumb_io/dumb_io.h" ]
 }
 
 source_set("default_putget_bytes") {
-  deps = [
-    ":facade",
-  ]
-  sources = [
-    "dumb_io.cc",
-  ]
+  deps = [ ":facade" ]
+  sources = [ "dumb_io.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

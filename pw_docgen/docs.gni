@@ -71,9 +71,7 @@ template("pw_doc_gen") {
   # Collects all dependency metadata into a single JSON file.
   _metadata_file_target = "${target_name}_metadata"
   generated_file(_metadata_file_target) {
-    outputs = [
-      "$target_gen_dir/$target_name.json",
-    ]
+    outputs = [ "$target_gen_dir/$target_name.json" ]
     data_keys = [
       "pw_doc_sources",
       "pw_doc_inputs",
@@ -107,12 +105,8 @@ template("pw_doc_gen") {
   pw_python_script(target_name) {
     script = "$dir_pw_docgen/py/docgen.py"
     args = _script_args
-    deps = [
-      ":$_metadata_file_target",
-    ]
-    inputs = [
-      invoker.conf,
-    ]
+    deps = [ ":$_metadata_file_target" ]
+    inputs = [ invoker.conf ]
     inputs += invoker.sources
     stamp = true
   }

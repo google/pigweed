@@ -55,12 +55,8 @@ template("pw_test") {
     _run_action_name = _test_target_name + "_run"
 
     pw_python_script(_run_action_name) {
-      deps = [
-        ":$_test_target_name",
-      ]
-      inputs = [
-        pw_automatic_test_runner,
-      ]
+      deps = [ ":$_test_target_name" ]
+      inputs = [ pw_automatic_test_runner ]
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
       args = [
         "--runner",
@@ -130,9 +126,7 @@ template("pw_test_group") {
   _test_group_deps = [ ":$_metadata_group_target" ]
 
   generated_file(_group_target) {
-    outputs = [
-      "$target_out_dir/$target_name.testinfo.json",
-    ]
+    outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
     data_keys = [
       "group_deps",
       "self",
@@ -147,9 +141,7 @@ template("pw_test_group") {
   # of the individual *_run targets and groups.
   if (pw_automatic_test_runner != "") {
     group(_group_target + "_run") {
-      deps = [
-        ":$_group_target",
-      ]
+      deps = [ ":$_group_target" ]
       foreach(_target, _deps) {
         deps += [ "${_target}_run" ]
       }

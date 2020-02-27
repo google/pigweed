@@ -36,9 +36,7 @@ pw_test_group("tests") {
 }
 
 pw_test("status_test") {
-  deps = [
-    ":pw_status",
-  ]
+  deps = [ ":pw_status" ]
   sources = [
     "status_test.c",
     "status_test.cc",
@@ -46,16 +44,10 @@ pw_test("status_test") {
 }
 
 pw_test("status_with_size_test") {
-  deps = [
-    ":pw_status",
-  ]
-  sources = [
-    "status_with_size_test.cc",
-  ]
+  deps = [ ":pw_status" ]
+  sources = [ "status_with_size_test.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

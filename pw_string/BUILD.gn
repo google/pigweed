@@ -58,54 +58,32 @@ pw_test_group("tests") {
 }
 
 pw_test("format_test") {
-  deps = [
-    ":pw_string",
-  ]
-  sources = [
-    "format_test.cc",
-  ]
+  deps = [ ":pw_string" ]
+  sources = [ "format_test.cc" ]
 }
 
 pw_test("string_builder_test") {
-  deps = [
-    ":pw_string",
-  ]
-  sources = [
-    "string_builder_test.cc",
-  ]
+  deps = [ ":pw_string" ]
+  sources = [ "string_builder_test.cc" ]
 }
 
 pw_test("to_string_test") {
-  deps = [
-    ":pw_string",
-  ]
-  sources = [
-    "to_string_test.cc",
-  ]
+  deps = [ ":pw_string" ]
+  sources = [ "to_string_test.cc" ]
 }
 
 pw_test("type_to_string_test") {
-  deps = [
-    ":pw_string",
-  ]
-  sources = [
-    "type_to_string_test.cc",
-  ]
+  deps = [ ":pw_string" ]
+  sources = [ "type_to_string_test.cc" ]
 }
 
 pw_test("util_test") {
-  deps = [
-    ":pw_string",
-  ]
-  sources = [
-    "util_test.cc",
-  ]
+  deps = [ ":pw_string" ]
+  sources = [ "util_test.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
   report_deps = [
     ":format_size_report",
     ":string_builder_size_report",

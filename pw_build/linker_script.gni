@@ -64,9 +64,7 @@ template("pw_linker_script") {
   # linker script.
   pw_exec("${target_name}_preprocess") {
     program = pw_cc_command
-    inputs = [
-      invoker.linker_script,
-    ]
+    inputs = [ invoker.linker_script ]
     args = [
       # Run compiler in preprocessor-only mode.
       "-E",
@@ -98,17 +96,13 @@ template("pw_linker_script") {
       "-o",
       _final_linker_script,
     ]
-    outputs = [
-      _final_linker_script,
-    ]
+    outputs = [ _final_linker_script ]
   }
 
   # This config adds a the linker script produced by the preprocess action to
   # the linker flags.
   config("${target_name}_config") {
-    inputs = [
-      invoker.linker_script,
-    ]
+    inputs = [ invoker.linker_script ]
     if (!defined(invoker.ldflags)) {
       ldflags = []
     }
@@ -118,15 +112,11 @@ template("pw_linker_script") {
   # The target that adds the linker script config to this library and everything
   # that depends on it.
   source_set(target_name) {
-    inputs = [
-      _final_linker_script,
-    ]
+    inputs = [ _final_linker_script ]
     if (defined(invoker.inputs)) {
       inputs += invoker.inputs
     }
     all_dependent_configs = [ ":${target_name}_config" ]
-    deps = [
-      ":${target_name}_preprocess",
-    ]
+    deps = [ ":${target_name}_preprocess" ]
   }
 }

@@ -24,9 +24,7 @@ config("default_config") {
 # from showing up within bloat diff reports.
 source_set("bloat_this_binary") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_bloat/bloat_this_binary.h",
-  ]
+  public = [ "public/pw_bloat/bloat_this_binary.h" ]
   sources = [ "bloat_this_binary.cc" ] + public
 }
 
@@ -36,11 +34,9 @@ pw_executable("bloat_base") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
   report_deps = [
-    "examples:simple_bloat_loop",
     "examples:simple_bloat_function",
+    "examples:simple_bloat_loop",
   ]
 }

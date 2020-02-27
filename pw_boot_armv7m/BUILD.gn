@@ -34,15 +34,11 @@ if (dir_pw_boot_backend == dir_pw_boot_armv7m) {
       ":armv7m_linker_script",
       "$dir_pw_preprocessor",
     ]
-    public = [
-      "public/pw_boot_armv7m/boot.h",
-    ]
+    public = [ "public/pw_boot_armv7m/boot.h" ]
     sources = [ "core_init.c" ] + public
   }
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

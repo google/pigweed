@@ -20,16 +20,10 @@ config("default_config") {
 
 source_set("pw_base64") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_base64/base64.h",
-  ]
-  sources = [
-    "base64.cc",
-  ]
+  public = [ "public/pw_base64/base64.h" ]
+  sources = [ "base64.cc" ]
   sources += public
-  public_deps = [
-    "$dir_pw_span",
-  ]
+  public_deps = [ "$dir_pw_span" ]
 }
 
 pw_test_group("tests") {
@@ -38,9 +32,7 @@ pw_test_group("tests") {
 }
 
 pw_test("base64_test") {
-  deps = [
-    ":pw_base64",
-  ]
+  deps = [ ":pw_base64" ]
   sources = [
     "base64_test.c",
     "base64_test.cc",

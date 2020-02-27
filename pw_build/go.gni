@@ -100,9 +100,7 @@ template("pw_go_executable") {
   generated_file(_metadata_target_name) {
     deps = invoker.deps
     data_keys = [ "gopath" ]
-    outputs = [
-      _metadata_file,
-    ]
+    outputs = [ _metadata_file ]
   }
 
   # Collect all of the external dependencies of the executable and its packages.
@@ -111,9 +109,7 @@ template("pw_go_executable") {
   generated_file(_deps_metadata_target_name) {
     deps = invoker.deps
     data_keys = [ "external_deps" ]
-    outputs = [
-      _deps_metadata_file,
-    ]
+    outputs = [ _deps_metadata_file ]
   }
 
   _default_gopath = rebase_path("$root_gen_dir/go")

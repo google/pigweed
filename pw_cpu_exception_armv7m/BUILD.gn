@@ -30,9 +30,7 @@ if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
       "$dir_pw_dumb_io:default_putget_bytes",
       "$dir_pw_preprocessor",
     ]
-    public = [
-      "public/pw_cpu_exception_armv7m/cpu_state.h",
-    ]
+    public = [ "public/pw_cpu_exception_armv7m/cpu_state.h" ]
     sources = [
       "cpu_exception_entry.cc",
       "cpu_state.cc",
@@ -49,14 +47,10 @@ if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
       ":pw_cpu_exception_armv7m",
       "$dir_pw_cpu_exception",
     ]
-    sources = [
-      "exception_entry_test.cc",
-    ]
+    sources = [ "exception_entry_test.cc" ]
   }
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

@@ -101,9 +101,8 @@ template("arm_gcc_toolchain") {
                             ])
       depsformat = "gcc"
       description = "cc {{output}}"
-      outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
-      ]
+      outputs =
+          [ "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o" ]
     }
 
     tool("cxx") {
@@ -123,17 +122,15 @@ template("arm_gcc_toolchain") {
                             ])
       depsformat = "gcc"
       description = "c++ {{output}}"
-      outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
-      ]
+      outputs =
+          [ "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o" ]
     }
 
     tool("alink") {
       command = "rm -f {{output}} && $_ar rcs {{output}} {{inputs}}"
       description = "ar {{target_output_name}}{{output_extension}}"
-      outputs = [
-        "{{target_out_dir}}/{{target_output_name}}{{output_extension}}",
-      ]
+      outputs =
+          [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
       default_output_extension = ".a"
     }
 
@@ -177,9 +174,7 @@ template("arm_gcc_toolchain") {
     tool("link") {
       command = _link_command
       description = "ld $_link_outfile"
-      outputs = [
-        _link_outfile,
-      ]
+      outputs = [ _link_outfile ]
       default_output_dir = "{{target_out_dir}}"
       default_output_extension = ".elf"
     }
@@ -187,9 +182,7 @@ template("arm_gcc_toolchain") {
     tool("solink") {
       command = _link_command + " -shared"
       description = "ld -shared $_link_outfile"
-      outputs = [
-        _link_outfile,
-      ]
+      outputs = [ _link_outfile ]
       default_output_dir = "{{target_out_dir}}"
       default_output_extension = ".so"
     }

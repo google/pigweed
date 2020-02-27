@@ -21,12 +21,8 @@ config("default_config") {
 
 source_set("pw_span") {
   public_configs = [ ":default_config" ]
-  public_deps = [
-    "$dir_pw_polyfill",
-  ]
-  public = [
-    "public/pw_span/span.h",
-  ]
+  public_deps = [ "$dir_pw_polyfill" ]
+  public = [ "public/pw_span/span.h" ]
   sources = public
 }
 
@@ -35,16 +31,10 @@ pw_test_group("tests") {
 }
 
 pw_test("test") {
-  deps = [
-    ":pw_span",
-  ]
-  sources = [
-    "span_test.cc",
-  ]
+  deps = [ ":pw_span" ]
+  sources = [ "span_test.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

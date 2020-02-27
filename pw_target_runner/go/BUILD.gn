@@ -17,33 +17,23 @@ import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }
 
 pw_go_executable("pw_target_runner_client") {
-  deps = [
-    "src/pigweed.dev/pw_target_runner_client",
-  ]
+  deps = [ "src/pigweed.dev/pw_target_runner_client" ]
   package = "pigweed.dev/pw_target_runner_client"
 }
 
 pw_go_executable("pw_target_runner_server") {
-  deps = [
-    "src/pigweed.dev/pw_target_runner_server",
-  ]
+  deps = [ "src/pigweed.dev/pw_target_runner_server" ]
   package = "pigweed.dev/pw_target_runner_server"
 }
 
 pw_host_tool("simple_client") {
-  deps = [
-    ":pw_target_runner_client",
-  ]
+  deps = [ ":pw_target_runner_client" ]
 }
 
 pw_host_tool("simple_server") {
-  deps = [
-    ":pw_target_runner_server",
-  ]
+  deps = [ ":pw_target_runner_server" ]
 }

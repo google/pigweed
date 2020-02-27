@@ -21,9 +21,7 @@ config("public") {
 
 source_set("pw_polyfill") {
   public_configs = [ ":public" ]
-  public_deps = [
-    ":standard_library",
-  ]
+  public_deps = [ ":standard_library" ]
   public = [
     "public/pw_polyfill/language_features.h",
     "public/pw_polyfill/standard.h",
@@ -37,9 +35,7 @@ config("overrides_config") {
 
 source_set("overrides") {
   public_configs = [ ":overrides_config" ]
-  public_deps = [
-    ":standard_library",
-  ]
+  public_deps = [ ":standard_library" ]
   inputs = [
     "public_overrides/assert.h",
     "public_overrides/cstddef",
@@ -76,36 +72,22 @@ pw_test_group("tests") {
 }
 
 pw_test("default_cpp_test") {
-  deps = [
-    ":pw_polyfill",
-  ]
-  sources = [
-    "test.cc",
-  ]
+  deps = [ ":pw_polyfill" ]
+  sources = [ "test.cc" ]
 }
 
 pw_test("cpp11_test") {
   configs = [ "$dir_pw_build:cpp11" ]
-  sources = [
-    "test.cc",
-  ]
-  deps = [
-    ":pw_polyfill",
-  ]
+  sources = [ "test.cc" ]
+  deps = [ ":pw_polyfill" ]
 }
 
 pw_test("cpp14_test") {
   configs = [ "$dir_pw_build:cpp14" ]
-  sources = [
-    "test.cc",
-  ]
-  deps = [
-    ":pw_polyfill",
-  ]
+  sources = [ "test.cc" ]
+  deps = [ ":pw_polyfill" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

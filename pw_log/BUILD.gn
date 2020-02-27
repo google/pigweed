@@ -27,9 +27,7 @@ pw_facade("pw_log") {
     "public/pw_log/levels.h",
     "public/pw_log/log.h",
   ]
-  public_deps = [
-    dir_pw_preprocessor,
-  ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_test_group("tests") {
@@ -54,7 +52,5 @@ if (dir_pw_log_backend != "") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

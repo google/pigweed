@@ -61,9 +61,7 @@ source_set("pw_kvs") {
 }
 
 source_set("crc16") {
-  public = [
-    "public/pw_kvs/crc16_checksum.h",
-  ]
+  public = [ "public/pw_kvs/crc16_checksum.h" ]
   sources = public
   public_deps = [
     ":pw_kvs",
@@ -86,9 +84,7 @@ source_set("test_utils") {
 }
 
 executable("debug_cli") {
-  sources = [
-    "debug_cli.cc",
-  ]
+  sources = [ "debug_cli.cc" ]
   deps = [
     ":crc16",
     ":pw_kvs",
@@ -109,12 +105,8 @@ pw_test_group("tests") {
 }
 
 pw_test("alignment_test") {
-  deps = [
-    ":pw_kvs",
-  ]
-  sources = [
-    "alignment_test.cc",
-  ]
+  deps = [ ":pw_kvs" ]
+  sources = [ "alignment_test.cc" ]
 }
 
 pw_test("checksum_test") {
@@ -123,9 +115,7 @@ pw_test("checksum_test") {
     ":pw_kvs",
     dir_pw_log,
   ]
-  sources = [
-    "checksum_test.cc",
-  ]
+  sources = [ "checksum_test.cc" ]
 }
 
 pw_test("entry_test") {
@@ -134,9 +124,7 @@ pw_test("entry_test") {
     ":pw_kvs",
     ":test_utils",
   ]
-  sources = [
-    "entry_test.cc",
-  ]
+  sources = [ "entry_test.cc" ]
 }
 
 pw_test("key_value_store_test") {
@@ -147,9 +135,7 @@ pw_test("key_value_store_test") {
     dir_pw_checksum,
     dir_pw_log,
   ]
-  sources = [
-    "key_value_store_test.cc",
-  ]
+  sources = [ "key_value_store_test.cc" ]
 }
 
 pw_test("key_value_store_error_handling_test") {
@@ -159,9 +145,7 @@ pw_test("key_value_store_error_handling_test") {
     ":test_utils",
     dir_pw_log,
   ]
-  sources = [
-    "key_value_store_error_handling_test.cc",
-  ]
+  sources = [ "key_value_store_error_handling_test.cc" ]
 }
 
 pw_test("key_value_store_fuzz_test") {
@@ -170,9 +154,7 @@ pw_test("key_value_store_fuzz_test") {
     ":pw_kvs",
     ":test_utils",
   ]
-  sources = [
-    "key_value_store_fuzz_test.cc",
-  ]
+  sources = [ "key_value_store_fuzz_test.cc" ]
 }
 
 pw_test("key_value_store_map_test") {
@@ -182,13 +164,9 @@ pw_test("key_value_store_map_test") {
     ":test_utils",
     dir_pw_checksum,
   ]
-  sources = [
-    "key_value_store_map_test.cc",
-  ]
+  sources = [ "key_value_store_map_test.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

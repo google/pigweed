@@ -20,9 +20,7 @@ pw_go_package("pw_target_runner") {
     "server.go",
     "worker_pool.go",
   ]
-  deps = [
-    "$dir_pw_target_runner:target_runner_proto_go",
-  ]
+  deps = [ "$dir_pw_target_runner:target_runner_proto_go" ]
   external_deps = [ "google.golang.org/grpc" ]
   gopath = "$dir_pw_target_runner/go"
 }

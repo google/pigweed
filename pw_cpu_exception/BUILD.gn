@@ -27,13 +27,9 @@ pw_facade("pw_cpu_exception") {
     "$dir_pw_span",
     "$dir_pw_string",
   ]
-  public = [
-    "public/pw_cpu_exception/cpu_exception.h",
-  ]
+  public = [ "public/pw_cpu_exception/cpu_exception.h" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

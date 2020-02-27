@@ -70,21 +70,13 @@ pw_test_group("tests") {
 }
 
 pw_test("decoder_test") {
-  deps = [
-    ":pw_protobuf",
-  ]
-  sources = [
-    "decoder_test.cc",
-  ]
+  deps = [ ":pw_protobuf" ]
+  sources = [ "decoder_test.cc" ]
 }
 
 pw_test("encoder_test") {
-  deps = [
-    ":pw_protobuf",
-  ]
-  sources = [
-    "encoder_test.cc",
-  ]
+  deps = [ ":pw_protobuf" ]
+  sources = [ "encoder_test.cc" ]
 }
 
 pw_test("codegen_test") {
@@ -92,9 +84,7 @@ pw_test("codegen_test") {
     ":codegen_test_protos_cc",
     ":pw_protobuf",
   ]
-  sources = [
-    "codegen_test.cc",
-  ]
+  sources = [ "codegen_test.cc" ]
 }
 
 pw_proto_library("codegen_test_protos") {

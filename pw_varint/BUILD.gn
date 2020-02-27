@@ -20,16 +20,12 @@ config("default_config") {
 
 source_set("pw_varint") {
   public_configs = [ ":default_config" ]
-  public_deps = [
-    "$dir_pw_span",
-  ]
+  public_deps = [ "$dir_pw_span" ]
   sources = [
     "public/pw_varint/varint.h",
     "varint.cc",
   ]
-  public = [
-    "public/pw_varint/varint.h",
-  ]
+  public = [ "public/pw_varint/varint.h" ]
 }
 
 pw_test_group("tests") {
@@ -37,9 +33,7 @@ pw_test_group("tests") {
 }
 
 pw_test("varint_test") {
-  deps = [
-    ":pw_varint",
-  ]
+  deps = [ ":pw_varint" ]
   sources = [
     "varint_test.c",
     "varint_test.cc",

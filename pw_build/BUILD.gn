@@ -70,9 +70,7 @@ config("cpp17") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }
 
 # Pool to limit a single thread to download external Go packages at a time.

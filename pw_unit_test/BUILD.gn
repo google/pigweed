@@ -44,9 +44,7 @@ source_set("simple_printing_event_handler") {
     ":pw_unit_test",
     "$dir_pw_preprocessor",
   ]
-  public = [
-    "public/pw_unit_test/simple_printing_event_handler.h",
-  ]
+  public = [ "public/pw_unit_test/simple_printing_event_handler.h" ]
   sources = [ "simple_printing_event_handler.cc" ] + public
 }
 
@@ -54,16 +52,12 @@ source_set("simple_printing_event_handler") {
 # framework. Unit test files can link against this library to build runnable
 # unit test executables.
 source_set("simple_printing_main") {
-  public_deps = [
-    ":pw_unit_test",
-  ]
+  public_deps = [ ":pw_unit_test" ]
   deps = [
     ":simple_printing_event_handler",
     "$dir_pw_dumb_io",
   ]
-  sources = [
-    "simple_printing_main.cc",
-  ]
+  sources = [ "simple_printing_main.cc" ]
 }
 
 # Library providing an event handler which logs using pw_log.
@@ -74,30 +68,22 @@ if (dir_pw_log_backend != "") {
       "$dir_pw_log",
       "$dir_pw_preprocessor",
     ]
-    public = [
-      "public/pw_unit_test/logging_event_handler.h",
-    ]
+    public = [ "public/pw_unit_test/logging_event_handler.h" ]
     sources = [ "logging_event_handler.cc" ] + public
   }
 
   source_set("logging_main") {
-    public_deps = [
-      ":pw_unit_test",
-    ]
+    public_deps = [ ":pw_unit_test" ]
     deps = [
       ":logging_event_handler",
       "$dir_pw_dumb_io",
     ]
-    sources = [
-      "logging_main.cc",
-    ]
+    sources = [ "logging_main.cc" ]
   }
 }
 
 pw_test("framework_test") {
-  sources = [
-    "framework_test.cc",
-  ]
+  sources = [ "framework_test.cc" ]
 }
 
 pw_test_group("tests") {

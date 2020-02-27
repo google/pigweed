@@ -20,9 +20,7 @@ config("default_config") {
 
 source_set("pw_containers") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_containers/vector.h",
-  ]
+  public = [ "public/pw_containers/vector.h" ]
   sources = public
 }
 
@@ -31,10 +29,6 @@ pw_test_group("tests") {
 }
 
 pw_test("vector_test") {
-  deps = [
-    ":pw_containers",
-  ]
-  sources = [
-    "vector_test.cc",
-  ]
+  deps = [ ":pw_containers" ]
+  sources = [ "vector_test.cc" ]
 }

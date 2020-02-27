@@ -25,9 +25,7 @@ source_set("pw_tokenizer") {
     "$dir_pw_preprocessor",
     "$dir_pw_span",
   ]
-  deps = [
-    "$dir_pw_varint",
-  ]
+  deps = [ "$dir_pw_varint" ]
   public = [
     "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
     "public/pw_tokenizer/tokenize.h",
@@ -52,27 +50,19 @@ source_set("pw_tokenizer") {
 
 source_set("base64") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_tokenizer/base64.h",
-  ]
+  public = [ "public/pw_tokenizer/base64.h" ]
   sources = [ "base64.cc" ] + public
   public_deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_span",
   ]
-  deps = [
-    "$dir_pw_base64",
-  ]
+  deps = [ "$dir_pw_base64" ]
 }
 
 source_set("decoder") {
   public_configs = [ ":default_config" ]
-  public_deps = [
-    "$dir_pw_span",
-  ]
-  deps = [
-    "$dir_pw_varint",
-  ]
+  public_deps = [ "$dir_pw_span" ]
+  deps = [ "$dir_pw_varint" ]
   public = [
     "public/pw_tokenizer/detokenize.h",
     "public/pw_tokenizer/token_database.h",
@@ -98,9 +88,7 @@ executable("generate_decoding_test_data") {
     ":pw_tokenizer",
     "$dir_pw_varint",
   ]
-  sources = [
-    "generate_decoding_test_data.cc",
-  ]
+  sources = [ "generate_decoding_test_data.cc" ]
 }
 
 # Executable for generating a test ELF file for elf_reader_test.py. A host
@@ -110,9 +98,7 @@ executable("elf_reader_test_binary") {
     ":pw_tokenizer",
     "$dir_pw_varint",
   ]
-  sources = [
-    "py/elf_reader_test_binary.c",
-  ]
+  sources = [ "py/elf_reader_test_binary.c" ]
   ldflags = [ "-Wl,--unresolved-symbols=ignore-all" ]  # main is not defined
 }
 
@@ -142,18 +128,12 @@ pw_test("argument_types_test") {
     "argument_types_test.cc",
     "pw_tokenizer_private/argument_types_test.h",
   ]
-  deps = [
-    ":pw_tokenizer",
-  ]
+  deps = [ ":pw_tokenizer" ]
 }
 
 pw_test("base64_test") {
-  sources = [
-    "base64_test.cc",
-  ]
-  deps = [
-    ":base64",
-  ]
+  sources = [ "base64_test.cc" ]
+  deps = [ ":base64" ]
 }
 
 pw_test("decode_test") {
@@ -169,12 +149,8 @@ pw_test("decode_test") {
 }
 
 pw_test("detokenize_test") {
-  sources = [
-    "detokenize_test.cc",
-  ]
-  deps = [
-    ":decoder",
-  ]
+  sources = [ "detokenize_test.cc" ]
+  deps = [ ":decoder" ]
 }
 
 pw_test("hash_test") {
@@ -182,16 +158,14 @@ pw_test("hash_test") {
     "hash_test.cc",
     "pw_tokenizer_private/generated_hash_test_cases.h",
   ]
-  deps = [
-    ":pw_tokenizer",
-  ]
+  deps = [ ":pw_tokenizer" ]
 }
 
 # Fully test C++11 and C++14 compatibility by compiling all sources as C++11 or
 # C++14.
 _simple_tokenize_test_sources = [
-  "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
-  "public/pw_tokenizer/tokenize.h",
+  "$dir_pw_varint/public/pw_varint/varint.h",
+  "$dir_pw_varint/varint.cc",
   "public/pw_tokenizer/config.h",
   "public/pw_tokenizer/internal/argument_types.h",
   "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
@@ -200,10 +174,10 @@ _simple_tokenize_test_sources = [
   "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
   "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
   "public/pw_tokenizer/internal/tokenize_string.h",
-  "tokenize.cc",
+  "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
+  "public/pw_tokenizer/tokenize.h",
   "simple_tokenize_test.cc",
-  "$dir_pw_varint/public/pw_varint/varint.h",
-  "$dir_pw_varint/varint.cc",
+  "tokenize.cc",
 ]
 _simple_tokenize_test_configs = [
   ":default_config",
@@ -213,34 +187,24 @@ _simple_tokenize_test_configs = [
 pw_test("simple_tokenize_test_cpp11") {
   configs = [ "$dir_pw_build:cpp11" ] + _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
-  deps = [
-    dir_pw_preprocessor,
-  ]
+  deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("simple_tokenize_test_cpp14") {
   configs = [ "$dir_pw_build:cpp14" ] + _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
-  deps = [
-    dir_pw_preprocessor,
-  ]
+  deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("simple_tokenize_test_cpp17") {
   configs = [ "$dir_pw_build:cpp17" ] + _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
-  deps = [
-    dir_pw_preprocessor,
-  ]
+  deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("token_database_test") {
-  sources = [
-    "token_database_test.cc",
-  ]
-  deps = [
-    ":decoder",
-  ]
+  sources = [ "token_database_test.cc" ]
+  deps = [ ":decoder" ]
 }
 
 pw_test("tokenize_test") {
@@ -276,9 +240,7 @@ declare_args() {
 shared_library("detokenizer_jni") {
   public_configs = [ ":default_config" ]
   include_dirs = pw_java_native_interface_include_dirs
-  sources = [
-    "java/dev/pigweed/tokenizer/detokenizer.cc",
-  ]
+  sources = [ "java/dev/pigweed/tokenizer/detokenizer.cc" ]
   public_deps = [
     ":decoder",
     "$dir_pw_preprocessor",
@@ -286,7 +248,5 @@ shared_library("detokenizer_jni") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

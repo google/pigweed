@@ -73,22 +73,14 @@ pw_test_group("tests") {
 
 pw_test("minimal_cpp_stdlib_test") {
   configs = [ ":no_cpp_includes" ]
-  deps = [
-    ":pw_minimal_cpp_stdlib",
-  ]
-  sources = [
-    "test.cc",
-  ]
+  deps = [ ":pw_minimal_cpp_stdlib" ]
+  sources = [ "test.cc" ]
 }
 
 pw_test("standard_library_test") {
-  sources = [
-    "test.cc",
-  ]
+  sources = [ "test.cc" ]
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

@@ -18,22 +18,16 @@ import("$dir_pw_docgen/docs.gni")
 # compatible with this backend.
 if (dir_pw_dumb_io_backend == dir_pw_dumb_io_baremetal_stm32f429) {
   source_set("pw_dumb_io_baremetal_stm32f429") {
-    public_deps = [
-      "$dir_pw_boot_armv7m",
-    ]
+    public_deps = [ "$dir_pw_boot_armv7m" ]
     deps = [
       "$dir_pw_dumb_io:default_putget_bytes",
       "$dir_pw_dumb_io:facade",
       "$dir_pw_preprocessor",
     ]
-    sources = [
-      "dumb_io_baremetal.cc",
-    ]
+    sources = [ "dumb_io_baremetal.cc" ]
   }
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

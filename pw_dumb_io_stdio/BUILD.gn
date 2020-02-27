@@ -22,14 +22,10 @@ if (dir_pw_dumb_io_backend == dir_pw_dumb_io_stdio) {
       "$dir_pw_dumb_io:default_putget_bytes",
       "$dir_pw_dumb_io:facade",
     ]
-    sources = [
-      "dumb_io.cc",
-    ]
+    sources = [ "dumb_io.cc" ]
   }
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }

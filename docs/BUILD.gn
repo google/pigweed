@@ -23,9 +23,7 @@ pw_doc_group("core_docs") {
 
 # Documentation for upstream Pigweed targets.
 group("target_docs") {
-  deps = [
-    "$dir_pigweed/targets/stm32f429i-disc1:target_docs",
-  ]
+  deps = [ "$dir_pigweed/targets/stm32f429i-disc1:target_docs" ]
 }
 
 pw_doc_gen("docs") {

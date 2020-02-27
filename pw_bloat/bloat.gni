@@ -280,9 +280,7 @@ template("pw_toolchain_size_report") {
       }
       script = "$dir_pw_bloat/py/no_toolchains.py"
       args = [ _doc_rst_output ]
-      outputs = [
-        _doc_rst_output,
-      ]
+      outputs = [ _doc_rst_output ]
     }
   }
 }
@@ -291,10 +289,6 @@ template("pw_toolchain_size_report") {
 # main() function that loads the bloat_this_binary library and does nothing
 # else.
 pw_bloat_empty_base = {
-  deps = [
-    "$dir_pw_bloat:bloat_this_binary",
-  ]
-  sources = [
-    "$dir_pw_bloat/base_main.cc",
-  ]
+  deps = [ "$dir_pw_bloat:bloat_this_binary" ]
+  sources = [ "$dir_pw_bloat/base_main.cc" ]
 }

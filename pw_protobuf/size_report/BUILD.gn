@@ -20,9 +20,7 @@ _decoder_full = {
     "$dir_pw_preprocessor",
     "$dir_pw_protobuf:pw_protobuf",
   ]
-  sources = [
-    "decoder_full.cc",
-  ]
+  sources = [ "decoder_full.cc" ]
 }
 
 pw_toolchain_size_report("decoder_full") {
@@ -39,9 +37,7 @@ pw_toolchain_size_report("decoder_incremental") {
       "$dir_pw_preprocessor",
       "$dir_pw_protobuf:pw_protobuf",
     ]
-    sources = [
-      "decoder_incremental.cc",
-    ]
+    sources = [ "decoder_incremental.cc" ]
   }
   title = "Adding more fields to decode callback"
 }

@@ -15,11 +15,7 @@
 import("$dir_pw_build/go.gni")
 
 pw_go_package("pw_target_runner_client") {
-  sources = [
-    "main.go",
-  ]
-  deps = [
-    "$dir_pw_target_runner:target_runner_proto_go",
-  ]
+  sources = [ "main.go" ]
+  deps = [ "$dir_pw_target_runner:target_runner_proto_go" ]
   gopath = "$dir_pw_target_runner/go"
 }

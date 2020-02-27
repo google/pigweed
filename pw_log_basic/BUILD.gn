@@ -26,12 +26,8 @@ if (dir_pw_log_backend == dir_pw_log_basic) {
       ":backend_config",
       ":default_config",
     ]
-    deps = [
-      ":pw_log_basic_core",
-    ]
-    public = [
-      "public_overrides/pw_log_backend/log_backend.h",
-    ]
+    deps = [ ":pw_log_basic_core" ]
+    public = [ "public_overrides/pw_log_backend/log_backend.h" ]
     sources = public
   }
 }
@@ -44,8 +40,6 @@ source_set("pw_log_basic_core") {
     "$dir_pw_preprocessor",
     "$dir_pw_string",
   ]
-  public = [
-    "public/pw_log_basic/log_basic.h",
-  ]
+  public = [ "public/pw_log_basic/log_basic.h" ]
   sources = public + [ "log_basic.cc" ]
 }

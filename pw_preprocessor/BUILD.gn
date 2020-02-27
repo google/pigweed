@@ -32,9 +32,7 @@ source_set("pw_preprocessor") {
 }
 
 pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-  ]
+  sources = [ "docs.rst" ]
 }
 
 # All pw_preprocessor test binaries.
@@ -50,12 +48,8 @@ pw_test_group("tests") {
 template("preprocessor_test") {
   not_needed([ "invoker" ])
   pw_test(target_name) {
-    deps = [
-      ":pw_preprocessor",
-    ]
-    sources = [
-      "$target_name.cc",
-    ]
+    deps = [ ":pw_preprocessor" ]
+    sources = [ "$target_name.cc" ]
   }
 }
 

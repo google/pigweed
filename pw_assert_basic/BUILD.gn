@@ -26,12 +26,8 @@ if (dir_pw_assert_backend == dir_pw_assert_basic) {
       ":backend_config",
       ":default_config",
     ]
-    deps = [
-      ":core",
-    ]
-    public = [
-      "public_overrides/pw_assert_backend/assert_backend.h",
-    ]
+    deps = [ ":core" ]
+    public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
     sources = public
   }
 }
@@ -44,8 +40,6 @@ source_set("core") {
     "$dir_pw_preprocessor",
     "$dir_pw_string",
   ]
-  public = [
-    "public/pw_assert_basic/assert_basic.h",
-  ]
+  public = [ "public/pw_assert_basic/assert_basic.h" ]
   sources = public + [ "assert_basic.cc" ]
 }
