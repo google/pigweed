@@ -12,6 +12,7 @@ source_set("common") {
     "device_class.h",
     "identifier.cc",
     "identifier.h",
+    "inspectable.h",
     "linked_list.h",
     "log.cc",
     "log.h",
@@ -38,6 +39,7 @@ source_set("common") {
   ]
 
   public_deps = [
+    "//sdk/lib/sys/inspect/cpp",
     "//src/devices/lib/driver",
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
@@ -63,6 +65,7 @@ source_set("tests") {
     "device_address_unittest.cc",
     "device_class_unittest.cc",
     "identifier_unittest.cc",
+    "inspectable_unittest.cc",
     "manufacturer_names_unittest.cc",
     "packet_view_unittest.cc",
     "run_or_post_unittest.cc",
@@ -77,6 +80,7 @@ source_set("tests") {
   deps = [
     ":common",
     "//garnet/public/lib/gtest",
+    "//sdk/lib/inspect/testing/cpp",
     "//third_party/googletest:gtest",
   ]
 }
