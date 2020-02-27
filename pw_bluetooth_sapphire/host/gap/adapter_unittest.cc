@@ -433,6 +433,47 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   EXPECT_EQ(kPeerId, conn->peer_identifier());
 }
 
+TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
+  constexpr zx::duration kTestScanPeriod = zx::sec(10);
+  constexpr PeerId kPeerId(1234);
+
+  FakeController::Settings settings;
+  settings.ApplyLEOnlyDefaults();
+  test_device()->set_settings(settings);
+
+  InitializeAdapter([](bool) {});
+  adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
+
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
+  fake_peer->enable_directed_advertising(true);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  adapter()->set_auto_connect_callback([&](auto conn_ref) { conn = std::move(conn_ref); });
+
+  // Enable background scanning. No auto-connect should take place since the
+  // device isn't yet bonded.
+  adapter()->le_discovery_manager()->EnableBackgroundScan(true);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(conn);
+  EXPECT_EQ(0u, adapter()->peer_cache()->count());
+
+  // Mark the peer as bonded.
+  sm::PairingData pdata;
+  pdata.ltk = sm::LTK();
+  adapter()->peer_cache()->AddBondedPeer(BondingData{kPeerId, kTestAddr, {}, pdata, {}});
+  EXPECT_EQ(1u, adapter()->peer_cache()->count());
+
+  // Fake a manual disconnect to skip auto-connect behavior.
+  adapter()->peer_cache()->SetAutoConnectBehaviorForIntentionalDisconnect(kPeerId);
+
+  // Advance the scan period.
+  RunLoopFor(kTestScanPeriod);
+
+  // The peer should NOT have been auto-connected.
+  ASSERT_FALSE(conn);
+}
+
 // Tests the interactions between the advertising manager and the local address
 // manager when the controller uses legacy advertising.
 TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {

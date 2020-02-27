@@ -541,6 +541,10 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   auto conn = std::move(iter->second);
   connections_.erase(iter);
 
+  // Since this was an intentional disconnect, update the auto-connection behavior
+  // appropriately.
+  peer_cache_->SetAutoConnectBehaviorForIntentionalDisconnect(peer_id);
+
   bt_log(INFO, "gap-le", "disconnecting link: %s", bt_str(*conn->link()));
   CleanUpConnection(std::move(conn));
   return true;

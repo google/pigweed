@@ -91,6 +91,11 @@ class PeerCache final {
   // false if the address does not match that of a known peer.
   bool StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link_key);
 
+  // Update a peer's auto-connect behavior appropriately for an intentional
+  // (eg. manual) disconnect. Returns false if the address does not match that
+  // of a known peer.
+  bool SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id);
+
   // If a peer identified by |peer_id| exists and is not connected on either
   // transport, remove it from the cache immediately. Returns true after no peer
   // with |peer_id| exists in the cache, false otherwise.

@@ -75,6 +75,9 @@ class Peer final {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
 
+    // Updates auto-connect behavior appropriately for an intentional (eg. manual) disconnect.
+    void SetAutoConnectBehaviorForIntentionalDisconnect();
+
     // Advertising (and optionally scan response) data obtained during
     // discovery.
     const ByteBuffer& advertising_data() const { return adv_data_buffer_; }

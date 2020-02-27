@@ -183,6 +183,24 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
   return true;
 }
 
+bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
+  Peer* const peer = FindById(peer_id);
+  if (!peer) {
+    bt_log(INFO, "gap-le", "failed to update auto-connect behavior for unknown peer: %s", bt_str(peer_id));
+    return false;
+  }
+
+  bt_log(TRACE, "gap-le", "updated auto-connect behavior for peer: %s", bt_str(peer_id));
+
+  peer->MutLe().SetAutoConnectBehaviorForIntentionalDisconnect();
+
+  // TODO(fxb/37584): When implementing auto-connect behavior tracking for classic bluetooth, consider tracking this
+  // policy for the peer as a whole unless we think this policy should be applied separately for each transport (per
+  // armansito@).
+
+  return true;
+}
+
 bool PeerCache::RemoveDisconnectedPeer(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {

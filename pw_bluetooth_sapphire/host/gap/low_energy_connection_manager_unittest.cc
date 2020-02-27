@@ -6,11 +6,13 @@
 
 #include <zircon/assert.h>
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
 #include <fbl/macros.h>
 
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -749,6 +751,61 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Disconnect) {
   EXPECT_EQ(2, closed_count);
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_TRUE(canceled_peers().empty());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConnectBehavior) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  std::vector<LowEnergyConnectionRefPtr> conn_refs;
+  auto success_cb = [&conn_refs](auto status, auto conn_ref) {
+    conn_refs.push_back(std::move(conn_ref));
+  };
+
+  sm::PairingData data;
+  data.ltk = sm::LTK();
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
+
+  // Issue connection ref.
+  EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), success_cb));
+  RunLoopUntilIdle();
+
+  // Bonded peer should have auto-connection enabled.
+  EXPECT_TRUE(peer->le()->should_auto_connect());
+
+  // Explicit disconnect should disable the auto-connection property.
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(peer->le()->should_auto_connect());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAutoConnectBehavior) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  std::vector<LowEnergyConnectionRefPtr> conn_refs;
+  auto success_cb = [&conn_refs](auto status, auto conn_ref) {
+    conn_refs.push_back(std::move(conn_ref));
+  };
+
+  sm::PairingData data;
+  data.ltk = sm::LTK();
+  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
+
+  // Issue connection ref.
+  EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), success_cb));
+  RunLoopUntilIdle();
+
+  // Bonded peer should have auto-connection enabled.
+  EXPECT_TRUE(peer->le()->should_auto_connect());
+
+  // Incidental disconnect should NOT disable the auto-connection property.
+  ASSERT_TRUE(conn_refs.size());
+  conn_refs[0] = nullptr;
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->le()->should_auto_connect());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectThrice) {

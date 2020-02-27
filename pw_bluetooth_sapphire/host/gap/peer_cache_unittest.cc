@@ -399,6 +399,12 @@ TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
   EXPECT_TRUE(peer()->le()->should_auto_connect());
 }
 
+TEST_F(GAP_PeerCacheTest, AutoConnectDisabledAfterIntentionalDisconnect) {
+  ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
+  cache()->SetAutoConnectBehaviorForIntentionalDisconnect(peer()->identifier());
+  EXPECT_FALSE(peer()->le()->should_auto_connect());
+}
+
 class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
  public:
   void SetUp() override {
