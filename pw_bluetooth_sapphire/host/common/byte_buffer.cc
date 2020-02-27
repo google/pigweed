@@ -13,6 +13,11 @@ size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) 
   size_t write_size = std::min(size, this->size() - pos);
   ZX_ASSERT_MSG(write_size <= out_buffer->size(), "|out_buffer| is not large enough for copy!");
 
+  // Data pointers for zero-length buffers are nullptr, over which memcpy has undefined behavior,
+  // even for count = 0. Skip the memcpy invocation in that case.
+  if (write_size == 0) {
+    return 0;
+  }
   std::memcpy(out_buffer->mutable_data(), data() + pos, write_size);
   return write_size;
 }
