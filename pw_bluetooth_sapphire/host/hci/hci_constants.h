@@ -732,6 +732,19 @@ enum class ReadTransmitPowerType : uint8_t {
   kMax = 0x01,
 };
 
+// Possible values for the Encryption_Enabled parameter in a HCI_Encryption_Change event
+// (see Vol 2, Part E, 7.7.8).
+enum class EncryptionStatus : uint8_t {
+  // Link Level Encryption is OFF.
+  kOff = 0x00,
+
+  // Link Level Encryption is ON with E0 for BR/EDR and AES-CCM for LE.
+  kOn = 0x01,
+
+  // Link Level Encryption is ON with AES-CCM for BR/EDR.
+  kBredrSecureConnections = 0x02,
+};
+
 // HCI command timeout interval (milliseconds)
 // TODO(BT-603/BT-604) This was increased to handle flaking integration tests.
 // We may want to reduce this to something lower again once we have a better 

@@ -26,9 +26,17 @@ DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
 
-DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer DisconnectPacket(
+    hci::ConnectionHandle conn,
+    hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection);
 DynamicByteBuffer DisconnectStatusResponsePacket();
-DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn);
+DynamicByteBuffer DisconnectionCompletePacket(
+    hci::ConnectionHandle conn,
+    hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection);
+
+DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
+                                              hci::ConnectionHandle conn,
+                                              hci::EncryptionStatus encryption_enabled);
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
 

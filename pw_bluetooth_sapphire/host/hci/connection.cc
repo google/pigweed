@@ -254,11 +254,10 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
     return CommandChannel::EventCallbackResult::kRemove;
   }
 
-  auto prev_state = self->state();
   self->set_state(State::kDisconnected);
 
   // Peer disconnect. Callback may destroy connection.
-  if (prev_state == State::kConnected && self->peer_disconnect_callback()) {
+  if (self->peer_disconnect_callback()) {
     self->peer_disconnect_callback()(self.get());
   }
 
@@ -464,7 +463,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
   }
 
   Status status(params.status);
-  bool enabled = params.encryption_enabled != 0;
+  bool enabled = params.encryption_enabled != EncryptionStatus::kOff;
 
   bt_log(TRACE, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          status.ToString().c_str());

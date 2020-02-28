@@ -617,15 +617,15 @@ void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection)
 
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    bt_log(WARN, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
+    bt_log(SPEW, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
     return;
   }
 
-  auto* peer = cache_->FindByAddress(connection->peer_address());
-  bt_log(INFO, "gap-bredr", "peer %s disconnected (handle: %#.4x)", bt_str(peer->identifier()),
-         handle);
+  auto conn = std::move(it->second);
+  connections_.erase(it);
 
-  CleanUpConnection(handle, std::move(connections_.extract(it).mapped()));
+  bt_log(INFO, "gap-bredr", "peer %s disconnected (handle: %#.4x)", bt_str(conn.peer_id()), handle);
+  CleanUpConnection(handle, std::move(conn));
 }
 
 void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrEdrConnection conn) {

@@ -152,7 +152,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
-  EXPECT_EQ(0u, disconn_cb_count);
+  EXPECT_EQ(1u, disconn_cb_count);
 }
 
 TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
@@ -603,6 +603,30 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   EXPECT_EQ(3, callback_count);
   EXPECT_FALSE(status);
   EXPECT_EQ(StatusCode::kPinOrKeyMissing, status.protocol_error());
+}
+
+TEST_F(HCI_ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
+  bool peer_disconnect_callback_received = false;
+  auto conn = NewLEConnection();
+  conn->set_peer_disconnect_callback([&](auto* self) {
+    EXPECT_EQ(conn.get(), self);
+    peer_disconnect_callback_received = true;
+  });
+
+  // Send the encryption change failure. The host should disconnect the link as a result.
+  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  test_device()->SendCommandChannelPacket(testing::EncryptionChangeEventPacket(
+      hci::StatusCode::kConnectionTerminatedMICFailure, kTestHandle, EncryptionStatus::kOff));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(peer_disconnect_callback_received);
+
+  // Send the disconnection complete resulting from the encryption failure (this usually does not
+  // correspond to the Disconnect command sent by hci::Connection, which will cause a later
+  // subsequent event).
+  test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
+      kTestHandle, StatusCode::kConnectionTerminatedMICFailure));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer_disconnect_callback_received);
 }
 
 TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {

@@ -75,13 +75,12 @@ DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::Connectio
       ));
 }
 
-DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn) {
+DynamicByteBuffer DisconnectPacket(hci::ConnectionHandle conn, hci::StatusCode reason) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kDisconnect), UpperBits(hci::kDisconnect),
-      0x03,             // parameter_total_size (3 bytes)
-      LowerBits(conn),  // Little-Endian Connection_handle
-      UpperBits(conn),  // "
-      0x13              // Reason (Remote User Terminated Connection)
+      0x03,                              // parameter_total_size (3 bytes)
+      LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
+      reason                             // Reason
       ));
 }
 
@@ -89,13 +88,25 @@ DynamicByteBuffer DisconnectStatusResponsePacket() {
   return DynamicByteBuffer(COMMAND_STATUS_RSP(hci::kDisconnect, hci::StatusCode::kSuccess));
 }
 
-DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn) {
+DynamicByteBuffer DisconnectionCompletePacket(hci::ConnectionHandle conn, hci::StatusCode reason) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kDisconnectionCompleteEventCode,
       0x04,                              // parameter_total_size (4 bytes)
       hci::StatusCode::kSuccess,         // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
-      0x13                               // Reason (Remote User Terminated Connection)
+      reason                             // Reason
+      ));
+}
+
+DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
+                                              hci::ConnectionHandle conn,
+                                              hci::EncryptionStatus encryption_enabled) {
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      hci::kEncryptionChangeEventCode,
+      0x04,                                     // parameter_total_size (4 bytes)
+      status_code,                              // status
+      LowerBits(conn), UpperBits(conn),         // Little-Endian Connection_Handle
+      static_cast<uint8_t>(encryption_enabled)  // Encryption_Enabled
       ));
 }
 

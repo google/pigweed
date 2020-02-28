@@ -126,7 +126,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,
                                 bool connected, bool canceled) {
     bt_log(TRACE, "gap-test",
-           "OnConnectionStateChanged: : %s (handle: %#.4x) (connected: %s) (canceled: %s):\n",
+           "OnConnectionStateChanged: %s (handle: %#.4x) (connected: %s) (canceled: %s):\n",
            address.ToString().c_str(), handle, (connected ? "true" : "false"),
            (canceled ? "true" : "false"));
     if (canceled) {
@@ -1422,6 +1422,75 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PassNonBondableThroughConnect) {
   ASSERT_TRUE(conn_ref);
   EXPECT_EQ(conn_ref->bondable_mode(), BondableMode::NonBondable);
 }
+
+// Tests that the connection manager cleans up its connection map correctly following a
+// disconnection due to encryption failure.
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) {
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  conn_mgr()->Connect(
+      peer->identifier(), [&](auto, auto c) { conn = std::move(c); }, BondableMode::Bondable);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn);
+
+  hci::ConnectionHandle handle = conn->handle();
+  bool ref_cleaned_up = false;
+  bool disconnected = false;
+  conn->set_closed_callback([&] { ref_cleaned_up = true; });
+  conn_mgr()->SetDisconnectCallbackForTesting([&](hci::ConnectionHandle cb_handle) {
+    EXPECT_EQ(handle, cb_handle);
+    disconnected = true;
+  });
+
+  test_device()->SendEncryptionChangeEvent(handle, hci::StatusCode::kConnectionTerminatedMICFailure,
+                                           hci::EncryptionStatus::kOff);
+  test_device()->SendDisconnectionCompleteEvent(handle);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(ref_cleaned_up);
+  EXPECT_TRUE(disconnected);
+}
+
+// Tests for assertions that enforce invariants.
+class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
+
+// Tests that a disconnection event that occurs after a peer gets removed is handled gracefully.
+TEST_F(GAP_LowEnergyConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  conn_mgr()->Connect(
+      peer->identifier(), [&](auto, auto c) { conn = std::move(c); }, BondableMode::Bondable);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn);
+
+  hci::ConnectionHandle handle = conn->handle();
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      {
+        // Remove the peer without removing it from the cache. Normally this is not recommended as
+        // implied by the name of the function but it is possible for this invariant to be broken
+        // due to programmer error. The connection manager should assert this invariant.
+        peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+        __UNUSED auto _ = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
+
+        test_device()->SendDisconnectionCompleteEvent(handle);
+        RunLoopUntilIdle();
+      },
+      ".*");
+}
+
 // Test fixture for tests that disconnect a connection in various ways and expect that
 // controller packet counts are not cleared on disconnecting, but are cleared on disconnection
 // complete. Tests should disconnect conn_ref0().

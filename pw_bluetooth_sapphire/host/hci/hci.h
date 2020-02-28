@@ -1129,12 +1129,8 @@ struct EncryptionChangeEventParams {
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
 
-  // TODO(1530): Define an enum in hci_constants.h for this.
-  // 0x00: Link Level Encryption is OFF.
-  // 0x01: Link Level Encryption is ON with E0 for BR/EDR.
-  //       Link Level Encryption is ON with AES-CCM for LE.
-  // 0x02: Link Level Encryption is ON with AES-CCM for BR/EDR.
-  uint8_t encryption_enabled;
+  // Current Link Level Encryption status.
+  EncryptionStatus encryption_enabled;
 } __PACKED;
 
 // =========================================================

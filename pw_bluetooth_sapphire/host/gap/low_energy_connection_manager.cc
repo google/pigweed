@@ -750,7 +750,8 @@ void LowEnergyConnectionManager::CleanUpConnection(
 
   // Mark the peer peer as no longer connected.
   Peer* peer = peer_cache_->FindById(conn->peer_id());
-  ZX_DEBUG_ASSERT(peer);
+  ZX_DEBUG_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
+                      bt_str(conn->peer_id()));
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
   conn.reset();
@@ -841,19 +842,15 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
 
 void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connection) {
   auto handle = connection->handle();
-
-  auto* peer = peer_cache_->FindByAddress(connection->peer_address());
-  bt_log(INFO, "gap-le", "peer %s disconnected (handle: %#.4x)", bt_str(peer->identifier()),
-         handle);
-
-  if (test_disconn_cb_)
+  if (test_disconn_cb_) {
     test_disconn_cb_(handle);
+  }
 
   // See if we can find a connection with a matching handle by walking the
   // connections list.
   auto iter = FindConnection(handle);
   if (iter == connections_.end()) {
-    bt_log(WARN, "gap-le", "disconnect from unknown connection handle: %#.4x", handle);
+    bt_log(SPEW, "gap-le", "disconnect from unknown connection handle: %#.4x", handle);
     return;
   }
 
@@ -862,6 +859,7 @@ void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connect
   auto conn = std::move(iter->second);
   connections_.erase(iter);
 
+  bt_log(INFO, "gap-le", "peer %s disconnected (handle: %#.4x)", bt_str(conn->peer_id()), handle);
   ZX_DEBUG_ASSERT(conn->ref_count());
 
   CleanUpConnection(std::move(conn));

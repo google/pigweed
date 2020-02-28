@@ -232,6 +232,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Send HCI Disconnection Complete event for |handle|.
   void SendDisconnectionCompleteEvent(hci::ConnectionHandle handle);
 
+  // Send HCI encryption change event for |handle| with the given parameters.
+  void SendEncryptionChangeEvent(hci::ConnectionHandle handle, hci::StatusCode status,
+                                 hci::EncryptionStatus encryption_enabled);
+
   // Callback to invoke when a packet is received over the data channel. Care
   // should be taken to ensure that a callback with a reference to test case
   // variables is not invoked when tearing down.

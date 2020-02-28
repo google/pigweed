@@ -645,10 +645,13 @@ class BrEdrConnectionManagerTest : public TestingBase {
         CommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp}));
   }
 
-  void QueueDisconnection(hci::ConnectionHandle conn) const {
-    const DynamicByteBuffer disconnect_complete = testing::DisconnectionCompletePacket(conn);
+  void QueueDisconnection(
+      hci::ConnectionHandle conn,
+      hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection) const {
+    const DynamicByteBuffer disconnect_complete =
+        testing::DisconnectionCompletePacket(conn, reason);
     test_device()->QueueCommandTransaction(CommandTransaction(
-        testing::DisconnectPacket(conn), {&kDisconnectRsp, &disconnect_complete}));
+        testing::DisconnectPacket(conn, reason), {&kDisconnectRsp, &disconnect_complete}));
   }
 
  private:
@@ -2805,6 +2808,84 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
   EXPECT_EQ(*params.max_rx_sdu_size, chan_info->max_rx_sdu_size);
 
   QueueDisconnection(kConnectionHandle);
+}
+
+// Tests that the connection manager cleans up its connection map correctly following a
+// disconnection due to encryption failure.
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
+
+  // Queue up the connection
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle, hci::StatusCode::kAuthenticationFailure);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status);
+
+  test_device()->SendCommandChannelPacket(
+      testing::EncryptionChangeEventPacket(hci::StatusCode::kConnectionTerminatedMICFailure,
+                                           kConnectionHandle, hci::EncryptionStatus::kOff));
+  test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
+      kConnectionHandle, hci::StatusCode::kConnectionTerminatedMICFailure));
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(NotConnected(peer));
+}
+
+// Tests for assertions that enforce invariants.
+class GAP_BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};
+
+// Tests that a disconnection event that occurs after a peer gets removed is handled gracefully.
+TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
+
+  // Queue up the connection
+  test_device()->QueueCommandTransaction(
+      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status);
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      {
+        // Remove the peer without removing it from the cache. Normally this is not recommended as
+        // implied by the name of the function but it is possible for this invariant to be broken
+        // due to programmer error. The connection manager should assert this invariant.
+        peer->MutBrEdr().SetConnectionState(Peer::ConnectionState::kNotConnected);
+        __UNUSED auto _ = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
+
+        test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+        RunLoopUntilIdle();
+      },
+      ".*");
 }
 
 // TODO(BT-819) Connecting a peer that's being interrogated

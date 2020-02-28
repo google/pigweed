@@ -427,6 +427,15 @@ void FakeController::SendDisconnectionCompleteEvent(hci::ConnectionHandle handle
   SendEvent(hci::kDisconnectionCompleteEventCode, BufferView(&params, sizeof(params)));
 }
 
+void FakeController::SendEncryptionChangeEvent(hci::ConnectionHandle handle, hci::StatusCode status,
+                                               hci::EncryptionStatus encryption_enabled) {
+  hci::EncryptionChangeEventParams params;
+  params.status = status;
+  params.connection_handle = htole16(handle);
+  params.encryption_enabled = encryption_enabled;
+  SendEvent(hci::kEncryptionChangeEventCode, BufferView(&params, sizeof(params)));
+}
+
 bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
   auto iter = default_status_map_.find(opcode);
   if (iter == default_status_map_.end())
@@ -989,7 +998,7 @@ void FakeController::OnSetConnectionEncryptionCommand(
   hci::EncryptionChangeEventParams response;
   response.connection_handle = params.connection_handle;
   response.status = hci::kSuccess;
-  response.encryption_enabled = 0x01;
+  response.encryption_enabled = hci::EncryptionStatus::kOn;
   SendEvent(hci::kEncryptionChangeEventCode, BufferView(&response, sizeof(response)));
 }
 
