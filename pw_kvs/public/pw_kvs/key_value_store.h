@@ -33,12 +33,38 @@
 
 namespace pw::kvs {
 
+enum class GargbageCollectOnWrite {
+  // Disable all automatic garbage collection on write.
+  kDisabled,
+
+  // Allow up to a single sector, if needed, to be garbage collected on write.
+  kOneSector,
+
+  // Allow as many sectors as needed be garbage collected on write.
+  kAsManySectorsNeeded,
+};
+
+enum class ErrorRecovery {
+  // Immediately do full recovery of any errors that are detected.
+  kImmediate,
+
+  // Recover from errors, but do some time consuming steps at a later time. Such
+  // as waiting to garbage collect sectors with corrupt entries until the next
+  // garbage collection.
+  kLazy,
+};
+
 struct Options {
-  // Perform garbage collection if necessary when writing. If true, garbage
-  // collection is attempted if space for an entry cannot be found. This is a
-  // relatively lengthy operation. If false, Put calls that would require
-  // garbage collection fail with RESOURCE_EXHAUSTED.
-  bool partial_gc_on_write = true;
+  // Perform garbage collection if necessary when writing. If not kDisabled,
+  // garbage collection is attempted if space for an entry cannot be found. This
+  // is a relatively lengthy operation. If kDisabled, Put calls that would
+  // require garbage collection fail with RESOURCE_EXHAUSTED.
+  GargbageCollectOnWrite gc_on_write =
+      GargbageCollectOnWrite::kAsManySectorsNeeded;
+
+  // When the KVS handles errors that are discovered, such as corrupt entries,
+  // not enough redundant copys of an entry, etc.
+  ErrorRecovery recovery = ErrorRecovery::kLazy;
 
   // Verify an entry's checksum after reading it from flash.
   bool verify_on_read = true;

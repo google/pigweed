@@ -93,7 +93,7 @@ constexpr auto MakeValidEntry(uint32_t magic,
 constexpr uint32_t kMagic = 0xc001beef;
 constexpr EntryFormat kFormat{.magic = kMagic, .checksum = &checksum};
 constexpr Options kNoGcOptions{
-    .partial_gc_on_write = false,
+    .gc_on_write = GargbageCollectOnWrite::kDisabled,
     .verify_on_read = true,
     .verify_on_write = true,
 };

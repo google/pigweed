@@ -754,7 +754,8 @@ Status KeyValueStore::FindSectorWithSpace(
 Status KeyValueStore::FindOrRecoverSectorWithSpace(SectorDescriptor** sector,
                                                    size_t size) {
   Status result = FindSectorWithSpace(sector, size, kAppendEntry);
-  if (result == Status::RESOURCE_EXHAUSTED && options_.partial_gc_on_write) {
+  if (result == Status::RESOURCE_EXHAUSTED &&
+      options_.gc_on_write != GargbageCollectOnWrite::kDisabled) {
     // Garbage collect and then try again to find the best sector.
     TRY(GarbageCollectPartial());
     return FindSectorWithSpace(sector, size, kAppendEntry);
