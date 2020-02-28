@@ -80,13 +80,14 @@ CHECKS = []
 @register_into(CHECKS)
 def pw_root(ctx: DoctorContext):
     """Check that environment variable PW_ROOT is set and makes sense."""
-    root = os.path.normpath(os.environ.get('PW_ROOT', None))
-
-    if root is None:
+    try:
+        root = pathlib.Path(os.environ['PW_ROOT']).resolve()
+    except KeyError:
         ctx.fatal('PW_ROOT not set')
 
-    git_root = os.path.normpath(
+    git_root = pathlib.Path(
         call_stdout(['git', 'rev-parse', '--show-toplevel'], cwd=root).strip())
+    git_root = git_root.resolve()
     if root != git_root:
         ctx.error('PW_ROOT (%s) != `git rev-parse --show-toplevel` (%s)', root,
                   git_root)
