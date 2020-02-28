@@ -93,6 +93,10 @@ static_assert(ConvertsToSpan<const std::string_view>());
 static_assert(ConvertsToSpan<const std::string_view&>());
 static_assert(ConvertsToSpan<const std::string_view&&>());
 
+static_assert(ConvertsToSpan<bool[1]>());
+static_assert(ConvertsToSpan<char[35]>());
+static_assert(ConvertsToSpan<const int[35]>());
+
 static_assert(ConvertsToSpan<span<int>>());
 static_assert(ConvertsToSpan<span<byte>>());
 static_assert(ConvertsToSpan<span<const int*>>());
@@ -284,6 +288,41 @@ TEST_F(EmptyInitializedKvs, Put_MaxValueSize) {
   EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.Put("K", big_data));
 }
 
+TEST_F(EmptyInitializedKvs, PutAndGetByValue_ConvertibleToSpan) {
+  constexpr float input[] = {1.0, -3.5};
+  ASSERT_EQ(Status::OK, kvs_.Put("key", input));
+
+  float output[2] = {};
+  ASSERT_EQ(Status::OK, kvs_.Get("key", &output));
+  EXPECT_EQ(input[0], output[0]);
+  EXPECT_EQ(input[1], output[1]);
+}
+
+TEST_F(EmptyInitializedKvs, PutAndGetByValue_Span) {
+  float input[] = {1.0, -3.5};
+  ASSERT_EQ(Status::OK, kvs_.Put("key", span(input)));
+
+  float output[2] = {};
+  ASSERT_EQ(Status::OK, kvs_.Get("key", &output));
+  EXPECT_EQ(input[0], output[0]);
+  EXPECT_EQ(input[1], output[1]);
+}
+
+TEST_F(EmptyInitializedKvs, PutAndGetByValue_NotConvertibleToSpan) {
+  struct TestStruct {
+    double a;
+    bool b;
+  };
+  const TestStruct input{-1234.5, true};
+
+  ASSERT_EQ(Status::OK, kvs_.Put("key", input));
+
+  TestStruct output;
+  ASSERT_EQ(Status::OK, kvs_.Get("key", &output));
+  EXPECT_EQ(input.a, output.a);
+  EXPECT_EQ(input.b, output.b);
+}
+
 TEST_F(EmptyInitializedKvs, Get_Simple) {
   ASSERT_EQ(Status::OK, kvs_.Put("Charles", as_bytes(span("Mingus"))));
 
@@ -322,6 +361,30 @@ TEST_F(EmptyInitializedKvs, Get_WithOffset_PastEnd) {
       kvs_.Get("Charles", as_writable_bytes(span(value)), sizeof("Mingus") + 1);
   EXPECT_EQ(Status::OUT_OF_RANGE, result.status());
   EXPECT_EQ(0u, result.size());
+}
+
+TEST_F(EmptyInitializedKvs, GetValue) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  uint32_t value = 0;
+  EXPECT_EQ(Status::OK, kvs_.Get("key", &value));
+  EXPECT_EQ(uint32_t(0xfeedbeef), value);
+}
+
+TEST_F(EmptyInitializedKvs, GetValue_TooSmall) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  uint8_t value = 0;
+  EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.Get("key", &value));
+  EXPECT_EQ(0u, value);
+}
+
+TEST_F(EmptyInitializedKvs, GetValue_TooLarge) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  uint64_t value = 0;
+  EXPECT_EQ(Status::INVALID_ARGUMENT, kvs_.Get("key", &value));
+  EXPECT_EQ(0u, value);
 }
 
 TEST_F(EmptyInitializedKvs, Delete_GetDeletedKey_ReturnsNotFound) {
@@ -432,6 +495,36 @@ TEST_F(EmptyInitializedKvs, Iteration_GetWithOffset) {
     EXPECT_EQ(Status::OK, result.status());
     EXPECT_EQ(5u, result.size());
     EXPECT_STREQ("bad!", buffer);
+  }
+}
+
+TEST_F(EmptyInitializedKvs, Iteration_GetValue) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    uint32_t value = 0;
+    EXPECT_EQ(Status::OK, entry.Get(&value));
+    EXPECT_EQ(uint32_t(0xfeedbeef), value);
+  }
+}
+
+TEST_F(EmptyInitializedKvs, Iteration_GetValue_TooSmall) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    uint8_t value = 0;
+    EXPECT_EQ(Status::INVALID_ARGUMENT, entry.Get(&value));
+    EXPECT_EQ(0u, value);
+  }
+}
+
+TEST_F(EmptyInitializedKvs, Iteration_GetValue_TooLarge) {
+  ASSERT_EQ(Status::OK, kvs_.Put("key", uint32_t(0xfeedbeef)));
+
+  for (KeyValueStore::Item entry : kvs_) {
+    uint64_t value = 0;
+    EXPECT_EQ(Status::INVALID_ARGUMENT, entry.Get(&value));
+    EXPECT_EQ(0u, value);
   }
 }
 

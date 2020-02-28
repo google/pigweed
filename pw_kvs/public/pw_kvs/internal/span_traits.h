@@ -31,9 +31,10 @@ constexpr bool ConvertsToSpan(...) {
 
 }  // namespace internal
 
-// Traits class to detect if the type is a span.
+// Traits class to detect if the type converts to a span.
 template <typename T>
-using ConvertsToSpan =
-    std::bool_constant<internal::ConvertsToSpan<std::remove_reference_t<T>>(0)>;
+struct ConvertsToSpan
+    : public std::bool_constant<
+          internal::ConvertsToSpan<std::remove_reference_t<T>>(0)> {};
 
 }  // namespace pw::kvs

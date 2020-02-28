@@ -345,24 +345,10 @@ StatusWithSize KeyValueStore::Get(string_view key,
   const KeyDescriptor* key_descriptor;
   TRY_WITH_SIZE(FindExistingKeyDescriptor(key, &key_descriptor));
 
-  Entry entry;
-  TRY_WITH_SIZE(Entry::Read(partition_, key_descriptor->address(), &entry));
-
-  StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
-  if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
-    Status verify_result = entry.VerifyChecksum(
-        entry_header_format_.checksum, key, value_buffer.first(result.size()));
-    if (!verify_result.ok()) {
-      std::memset(value_buffer.data(), 0, result.size());
-      return StatusWithSize(verify_result, 0);
-    }
-
-    return StatusWithSize(verify_result, result.size());
-  }
-  return result;
+  return Get(key, *key_descriptor, value_buffer, offset_bytes);
 }
 
-Status KeyValueStore::Put(string_view key, span<const byte> value) {
+Status KeyValueStore::PutBytes(string_view key, span<const byte> value) {
   DBG("Writing key/value; key length=%zu, value length=%zu",
       key.size(),
       value.size());
@@ -453,26 +439,65 @@ StatusWithSize KeyValueStore::ValueSize(std::string_view key) const {
   const KeyDescriptor* key_descriptor;
   TRY_WITH_SIZE(FindExistingKeyDescriptor(key, &key_descriptor));
 
-  Entry entry;
-  TRY_WITH_SIZE(Entry::Read(partition_, key_descriptor->address(), &entry));
+  return ValueSize(*key_descriptor);
+}
 
-  return StatusWithSize(entry.value_size());
+StatusWithSize KeyValueStore::Get(string_view key,
+                                  const KeyDescriptor& descriptor,
+                                  span<std::byte> value_buffer,
+                                  size_t offset_bytes) const {
+  Entry entry;
+  TRY_WITH_SIZE(Entry::Read(partition_, descriptor.address(), &entry));
+
+  StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
+  if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
+    Status verify_result = entry.VerifyChecksum(
+        entry_header_format_.checksum, key, value_buffer.first(result.size()));
+    if (!verify_result.ok()) {
+      std::memset(value_buffer.data(), 0, result.size());
+      return StatusWithSize(verify_result, 0);
+    }
+
+    return StatusWithSize(verify_result, result.size());
+  }
+  return result;
 }
 
 Status KeyValueStore::FixedSizeGet(std::string_view key,
-                                   byte* value,
+                                   void* value,
+                                   size_t size_bytes) const {
+  TRY(CheckOperation(key));
+
+  const KeyDescriptor* descriptor;
+  TRY(FindExistingKeyDescriptor(key, &descriptor));
+
+  return FixedSizeGet(key, *descriptor, value, size_bytes);
+}
+
+Status KeyValueStore::FixedSizeGet(std::string_view key,
+                                   const KeyDescriptor& descriptor,
+                                   void* value,
                                    size_t size_bytes) const {
   // Ensure that the size of the stored value matches the size of the type.
   // Otherwise, report error. This check avoids potential memory corruption.
-  StatusWithSize result = ValueSize(key);
-  if (!result.ok()) {
-    return result.status();
-  }
-  if (result.size() != size_bytes) {
-    DBG("Requested %zu B read, but value is %zu B", size_bytes, result.size());
+  TRY_ASSIGN(const size_t actual_size, ValueSize(descriptor));
+
+  if (actual_size != size_bytes) {
+    DBG("Requested %zu B read, but value is %zu B", size_bytes, actual_size);
     return Status::INVALID_ARGUMENT;
   }
-  return Get(key, span(value, size_bytes)).status();
+
+  StatusWithSize result =
+      Get(key, descriptor, span(static_cast<byte*>(value), size_bytes), 0);
+
+  return result.status();
+}
+
+StatusWithSize KeyValueStore::ValueSize(const KeyDescriptor& descriptor) const {
+  Entry entry;
+  TRY_WITH_SIZE(Entry::Read(partition_, descriptor.address(), &entry));
+
+  return StatusWithSize(entry.value_size());
 }
 
 Status KeyValueStore::CheckOperation(string_view key) const {

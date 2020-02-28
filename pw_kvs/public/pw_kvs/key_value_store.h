@@ -90,22 +90,20 @@ class KeyValueStore {
                      size_t offset_bytes = 0) const;
 
   // This overload of Get accepts a pointer to a trivially copyable object.
-  // const T& is used instead of T* to prevent arrays from satisfying this
-  // overload. To call Get with an array, pass as_writable_bytes(span(array)),
+  // If the value is an array, call Get with as_writable_bytes(span(array)),
   // or pass a pointer to the array instead of the array itself.
   template <typename Pointer,
             typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
   Status Get(const std::string_view& key, const Pointer& pointer) const {
     using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
-
-    static_assert(std::is_trivially_copyable<T>(), "Values must be copyable");
-    static_assert(!std::is_pointer<T>(), "Values cannot be pointers");
-
-    return FixedSizeGet(key, reinterpret_cast<std::byte*>(pointer), sizeof(T));
+    CheckThatObjectCanBePutOrGet<T>();
+    return FixedSizeGet(key, pointer, sizeof(T));
   }
 
   // Adds a key-value entry to the KVS. If the key was already present, its
   // value is overwritten.
+  //
+  // The value may be a span of bytes or a trivially copyable object.
   //
   // In the current implementation, all keys in the KVS must have a unique hash.
   // If Put is called with a key whose hash matches an existing key, nothing
@@ -119,15 +117,14 @@ class KeyValueStore {
   //   FAILED_PRECONDITION: the KVS is not initialized
   //      INVALID_ARGUMENT: key is empty or too long or value is too large
   //
-  Status Put(std::string_view key, span<const std::byte> value);
-
-  // Adds a key-value entry to the KVS, using an object as the value.
-  template <typename T,
-            typename = std::enable_if_t<std::is_trivially_copyable_v<T> &&
-                                        !std::is_pointer_v<T> &&
-                                        !ConvertsToSpan<T>::value>>
+  template <typename T>
   Status Put(const std::string_view& key, const T& value) {
-    return Put(key, as_bytes(span(&value, 1)));
+    if constexpr (ConvertsToSpan<T>::value) {
+      return PutBytes(key, as_bytes(span(value)));
+    } else {
+      CheckThatObjectCanBePutOrGet<T>();
+      return PutBytes(key, as_bytes(span(&value, 1)));
+    }
   }
 
   // Removes a key-value entry from the KVS.
@@ -168,18 +165,24 @@ class KeyValueStore {
     // The key as a null-terminated string.
     const char* key() const { return key_buffer_.data(); }
 
+    // Gets the value referred to by this iterator. Equivalent to
+    // KeyValueStore::Get.
     StatusWithSize Get(span<std::byte> value_buffer,
                        size_t offset_bytes = 0) const {
-      return kvs_.Get(key(), value_buffer, offset_bytes);
+      return kvs_.Get(key(), *descriptor_, value_buffer, offset_bytes);
     }
 
     template <typename Pointer,
               typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
     Status Get(const Pointer& pointer) const {
-      return kvs_.Get(key(), pointer);
+      using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
+      CheckThatObjectCanBePutOrGet<T>();
+      return kvs_.FixedSizeGet(key(), *descriptor_, pointer, sizeof(T));
     }
 
-    StatusWithSize ValueSize() const { return kvs_.ValueSize(key()); }
+    // Reads the size of the value referred to by this iterator. Equivalent to
+    // KeyValueStore::ValueSize.
+    StatusWithSize ValueSize() const { return kvs_.ValueSize(*descriptor_); }
 
    private:
     friend class iterator;
@@ -272,9 +275,32 @@ class KeyValueStore {
                 const Options& options);
 
  private:
+  template <typename T>
+  static constexpr void CheckThatObjectCanBePutOrGet() {
+    static_assert(
+        std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>,
+        "Only trivially copyable, non-pointer objects may be Put and Get by "
+        "value. Any value may be stored by converting it to a byte span with "
+        "as_bytes(span(&value, 1)) or as_writable_bytes(span(&value, 1)).");
+  }
+
+  Status PutBytes(std::string_view key, span<const std::byte> value);
+
+  StatusWithSize Get(std::string_view key,
+                     const KeyDescriptor& descriptor,
+                     span<std::byte> value_buffer,
+                     size_t offset_bytes) const;
+
   Status FixedSizeGet(std::string_view key,
-                      std::byte* value,
+                      void* value,
                       size_t size_bytes) const;
+
+  Status FixedSizeGet(std::string_view key,
+                      const KeyDescriptor& descriptor,
+                      void* value,
+                      size_t size_bytes) const;
+
+  StatusWithSize ValueSize(const KeyDescriptor& descriptor) const;
 
   Status CheckOperation(std::string_view key) const;
 
