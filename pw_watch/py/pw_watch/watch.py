@@ -267,6 +267,7 @@ _WATCH_PATTERNS = (
     '*.h',
     '*.hpp',
     '*.ld',
+    '*.md',
     '*.proto',
     '*.py',
     '*.rst',
