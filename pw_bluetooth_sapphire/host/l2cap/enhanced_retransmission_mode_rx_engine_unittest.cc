@@ -45,6 +45,29 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePa
   EXPECT_EQ(0u, sdu->size());
 }
 
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePdu) {
+  // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
+  const StaticByteBuffer payload{0, 0};
+
+  // FCS footer is entirely omitted.
+  const ByteBufferPtr sdu =
+      Engine(NopTxCallback)
+          .ProcessPdu(Fragmenter(kTestHandle)
+                          .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
+  EXPECT_FALSE(sdu);
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncompleteFcsFooter) {
+  // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
+  // No payload is present and only one byte of the FCS footer is present.
+  const StaticByteBuffer payload{0, 0, 0};
+  const ByteBufferPtr sdu =
+      Engine(NopTxCallback)
+          .ProcessPdu(Fragmenter(kTestHandle)
+                          .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
+  EXPECT_FALSE(sdu);
+}
+
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotGenerateSduForOutOfSequencePdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
