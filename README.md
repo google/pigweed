@@ -68,6 +68,13 @@ $ ninja -C out/disco
 $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
 ```
 
+**Build upstream Pigweed documentation**
+```bash
+$ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
+$ ninja -C out/docs
+$ google-chrome out/docs/gen/docs/html/index.html
+```
+
 The CMake and Bazel builds do not yet support building for hardware.
 
 To flash firmware to an STM32 Discovery development board (and run `pw test`)
