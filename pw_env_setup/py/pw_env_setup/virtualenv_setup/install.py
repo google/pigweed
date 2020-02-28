@@ -96,8 +96,17 @@ def install(
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
         print('Creating venv at', venv_path)
+
+        # On Mac sometimes the CIPD Python has __PYVENV_LAUNCHER__ set to
+        # point to the system Python, which causes CIPD Python to create
+        # virtualenvs that reference the system Python instead of the CIPD
+        # Python. Clearing __PYVENV_LAUNCHER__ fixes that. See also pwbug/59.
+        envcopy = os.environ.copy()
+        if '__PYVENV_LAUNCHER__' in envcopy:
+            del envcopy['__PYVENV_LAUNCHER__']
+
         cmd = (python, '-m', 'venv', '--clear', venv_path)
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, env=envcopy)
 
     # The bin/ directory is called Scripts/ on Windows. Don't ask.
     venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
