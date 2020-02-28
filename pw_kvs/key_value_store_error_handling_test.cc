@@ -217,6 +217,25 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
   EXPECT_EQ(0u, stats.writable_bytes);
 }
 
+TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  // Corrupt all of the 4 512-byte flash sectors. Leave the pre-init entries
+  // intact. A corrupt sector without entries should be GC'ed on init because
+  // the KVS must maintain one empty sector at all times.
+  flash_.buffer()[64] = byte(0xef);
+  flash_.buffer()[513] = byte(0xef);
+  flash_.buffer()[1025] = byte(0xef);
+  flash_.buffer()[1537] = byte(0xef);
+
+  ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(64u, stats.in_use_bytes);
+  EXPECT_EQ(3 * 512u - 64u, stats.reclaimable_bytes);
+  EXPECT_EQ(0u, stats.writable_bytes);
+}
+
 TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
   constexpr auto kVersion7 =
       MakeValidEntry(kMagic, 7, "my_key", ByteStr("version 7"));

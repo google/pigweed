@@ -79,6 +79,7 @@ Status KeyValueStore::Init() {
 
   size_t total_corrupt_bytes = 0;
   int corrupt_entries = 0;
+  bool empty_sector_found = false;
 
   for (SectorDescriptor& sector : sectors_) {
     Address entry_address = sector_address;
@@ -154,6 +155,9 @@ Status KeyValueStore::Init() {
           sector_corrupt_bytes);
     }
 
+    if (sector.Empty(sector_size_bytes)) {
+      empty_sector_found = true;
+    }
     sector_address += sector_size_bytes;
     total_corrupt_bytes += sector_corrupt_bytes;
   }
@@ -177,6 +181,16 @@ Status KeyValueStore::Init() {
     last_new_sector_ = sectors_.begin();
   } else {
     last_new_sector_ = SectorFromKey(newest_key);
+  }
+
+  if (!empty_sector_found) {
+    // TODO: Record/report the error condition and recovery result.
+    Status gc_result = GarbageCollectPartial();
+
+    if (!gc_result.ok()) {
+      ERR("KVS init failed: Unable to maintain required free sector");
+      return Status::INTERNAL;
+    }
   }
 
   initialized_ = true;
