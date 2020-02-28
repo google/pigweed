@@ -85,6 +85,14 @@ def install(
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
+    version = subprocess.check_output(
+        (python, '--version'), stderr=subprocess.STDOUT).strip().decode()
+    if '3.8' not in version:
+        print('=' * 60, file=sys.stderr)
+        print('Unexpected Python version:', version, file=sys.stderr)
+        print('=' * 60, file=sys.stderr)
+        return
+
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
         print('Creating venv at', venv_path)
