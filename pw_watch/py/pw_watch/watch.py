@@ -15,7 +15,6 @@
 
 import argparse
 from dataclasses import dataclass
-import enum
 import glob
 import logging
 import os
@@ -23,7 +22,7 @@ import pathlib
 import shlex
 import subprocess
 import sys
-import time
+import threading
 from typing import List, NamedTuple, Optional, Sequence, Tuple
 
 from watchdog.events import FileSystemEventHandler
@@ -34,6 +33,8 @@ from watchdog.utils import unicode_paths
 import pw_cli.color
 import pw_cli.env
 import pw_cli.plugins
+
+from pw_watch.debounce import DebouncedFunction, Debouncer, State
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
@@ -71,11 +72,6 @@ _FAIL_MESSAGE = """
 """
 
 
-class _State(enum.Enum):
-    WAITING_FOR_FILE_CHANGE_EVENT = 1
-    COOLDOWN_IGNORING_EVENTS = 2
-
-
 # TODO(keir): Figure out a better strategy for exiting. The problem with the
 # watcher is that doing a "clean exit" is slow. However, by directly exiting,
 # we remove the possibility of the wrapper script doing anything on exit.
@@ -108,7 +104,7 @@ class BuildCommand:
         return shlex.join(self.args())
 
 
-class PigweedBuildWatcher(FileSystemEventHandler):
+class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     """Process filesystem events and launch builds if necessary."""
     def __init__(
         self,
@@ -119,17 +115,36 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         ignore_dirs=Optional[List[str]],
         charset: WatchCharset = _ASCII_CHARSET,
     ):
-        super().__init__()
+        super(PigweedBuildWatcher, self).__init__()
 
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.case_sensitive = case_sensitive
-        self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
         self.build_commands = build_commands
         self.ignore_dirs = ignore_dirs or []
         self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
         self.cooldown_finish_time = None
         self.charset: WatchCharset = charset
+
+        self.debouncer = Debouncer(self)
+
+        # Track state of a build. These need to be members instead of locals
+        # due to the split between dispatch(), run(), and on_complete().
+        self.matching_path = None
+        self.builds_succeeded = []
+
+        self.wait_for_keypress_thread = threading.Thread(
+            None, self._wait_for_enter)
+        self.wait_for_keypress_thread.start()
+
+    def _wait_for_enter(self):
+        try:
+            while True:
+                _ = input()
+                if self.debouncer.state == State.IDLE:
+                    self.debouncer.press('Manual build triggered...')
+        except KeyboardInterrupt:
+            _exit_due_to_interrupt()
 
     def path_matches(self, raw_path):
         """Returns true if path matches according to the watcher patterns"""
@@ -181,15 +196,23 @@ class PigweedBuildWatcher(FileSystemEventHandler):
         if matching_path:
             self.handle_matched_event(matching_path)
 
-    def run_builds(self, matching_path):
+    def handle_matched_event(self, matching_path):
+        if self.matching_path is None:
+            self.matching_path = matching_path
+
+        self.debouncer.press('File change detected: %s; debouncing...' %
+                             matching_path)
+
+    # Implementation of DebouncedFunction.run()
+    def run(self):
         """Run all the builds in serial and capture pass/fail for each."""
 
         # Clear the screen and show a banner indicating the build is starting.
         print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
         print(_COLOR.magenta(_BUILD_MESSAGE))
-        _LOG.info('Change detected: %s', matching_path)
+        _LOG.info('Change detected: %s', self.matching_path)
 
-        builds_succeeded = []
+        self.builds_succeeded = []
         num_builds = len(self.build_commands)
         _LOG.info(f'Starting build with {num_builds} directories')
         for i, cmd in enumerate(self.build_commands, 1):
@@ -211,48 +234,59 @@ class PigweedBuildWatcher(FileSystemEventHandler):
                 level = logging.ERROR
                 tag = '(FAIL)'
             _LOG.log(level, f'[{i}/{num_builds}] Finished build: {cmd} {tag}')
-            builds_succeeded.append(build_ok)
+            self.builds_succeeded.append(build_ok)
 
-        if all(builds_succeeded):
-            _LOG.info('Finished; all successful.')
+    # Implementation of DebouncedFunction.cancel()
+    def cancel(self):
+        # TODO: Finish implementing this by supporting cancelling the currently
+        # running build. This will require some subprocess shenanigans and
+        # so will leave this for later.
+        return False
+
+    # Implementation of DebouncedFunction.run()
+    def on_complete(self, cancelled=False):
+        # First, use the standard logging facilities to report build status.
+        if cancelled:
+            _LOG.error('Finished; build was interrupted')
+        elif all(self.builds_succeeded):
+            _LOG.info('Finished; all successful')
         else:
-            _LOG.info('Finished; some builds failed.')
+            _LOG.info('Finished; some builds failed')
 
-        # Write out build summary table so you can tell which builds passed
-        # and which builds failed.
-        print()
-        print(' .------------------------------------')
-        print(' |')
-        for (succeeded, cmd) in zip(builds_succeeded, self.build_commands):
-            slug = self.charset.slug_ok if succeeded else self.charset.slug_fail
-            print(f' |   {slug}  {cmd}')
-        print(' |')
-        print(" '------------------------------------")
+        # Then, show a more distinct colored banner.
+        if not cancelled:
+            # Write out build summary table so you can tell which builds passed
+            # and which builds failed.
+            print()
+            print(' .------------------------------------')
+            print(' |')
+            for (succeeded, cmd) in zip(self.builds_succeeded,
+                                        self.build_commands):
+                slug = (self.charset.slug_ok
+                        if succeeded else self.charset.slug_fail)
+                print(f' |   {slug}  {cmd}')
+            print(' |')
+            print(" '------------------------------------")
+        else:
+            # Build was interrupted.
+            print()
+            print(' .------------------------------------')
+            print(' |')
+            print(' |  ', self.charset.slug_fail, '- interrupted')
+            print(' |')
+            print(" '------------------------------------")
 
         # Show a large color banner so it is obvious what the overall result is.
-        if all(builds_succeeded):
+        if all(self.builds_succeeded) and not cancelled:
             print(_COLOR.green(_PASS_MESSAGE))
         else:
             print(_COLOR.red(_FAIL_MESSAGE))
 
-    def handle_matched_event(self, matching_path):
-        if self.state == _State.WAITING_FOR_FILE_CHANGE_EVENT:
-            self.run_builds(matching_path)
+        self.matching_path = None
 
-            # Don't set the cooldown end time until after the build.
-            self.state = _State.COOLDOWN_IGNORING_EVENTS
-            _LOG.debug('State: WAITING -> COOLDOWN (file change trigger)')
-
-            # 500ms is enough to allow the spurious events to get ignored.
-            self.cooldown_finish_time = time.time() + 0.5
-
-        elif self.state == _State.COOLDOWN_IGNORING_EVENTS:
-            if time.time() < self.cooldown_finish_time:
-                _LOG.debug('Skipping event; cooling down...')
-            else:
-                _LOG.debug('State: COOLDOWN -> WAITING (cooldown expired)')
-                self.state = _State.WAITING_FOR_FILE_CHANGE_EVENT
-                self.handle_matched_event(matching_path)  # Retrigger.
+    # Implementation of DebouncedFunction.on_keyboard_interrupt()
+    def on_keyboard_interrupt(self):
+        _exit_due_to_interrupt()
 
 
 _WATCH_PATTERN_DELIMITER = ','
@@ -298,6 +332,22 @@ def add_parser_arguments(parser):
               'specified by appending #TARGET to the directory. For example, '
               'out/build_dir#pw_module#tests builds the pw_module and tests '
               'targets in out/build_dir.'))
+
+
+def _exit_due_to_interrupt():
+    # To keep the log lines aligned with each other in the presence of
+    # a '^C' from the keyboard interrupt, add a newline before the log.
+    print()
+    print()
+    _LOG.info('Got Ctrl-C; exiting...')
+
+    # Note: The "proper" way to exit is via observer.stop(), then
+    # running a join. However it's slower, so just exit immediately.
+    #
+    # Additionally, since there are several threads in the watcher, the usual
+    # sys.exit approach doesn't work. Instead, run the low level exit which
+    # kills all threads.
+    os._exit(0)  # pylint: disable=protected-access
 
 
 def watch(build_commands=None, patterns=None, ignore_patterns=None):
@@ -389,14 +439,7 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
         while observer.isAlive():
             observer.join(1)
     except KeyboardInterrupt:
-        # To keep the log lines aligned with each other in the presence of
-        # a '^C' from the keyboard interrupt, add a newline before the log.
-        print()
-        _LOG.info('Got Ctrl-C; exiting...')
-
-        # Note: The "proper" way to exit is via observer.stop(), then
-        # running a join. However it's slower, so just exit immediately.
-        sys.exit(0)
+        _exit_due_to_interrupt()
 
     observer.join()
 
