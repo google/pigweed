@@ -100,12 +100,27 @@ pw_test_group("pw_module_tests") {
 
   if (host_os != "win") {
     group_deps += [
-      # TODO(frolv): Remove these two when new KVS is ready.
-      "$dir_pw_kvs:tests",
       "$dir_pw_minimal_cpp_stdlib:tests",
 
       # TODO(pwbug/111): Remove this when building successfully on Windows.
       "$dir_pw_tokenizer:tests",
     ]
+
+    if (pw_build_host_tools) {
+      # TODO(frolv): There are two things happening here.
+      #
+      #   1. KVS does not currently compile on Windows. Should be simple enough
+      #      to fix.
+      #   2. KVS tests are not compatible with device builds as they use
+      #      features such as std::map and are computationally expensive.
+      #      Solving this requires a more complex capabilities-based build and
+      #      configuration system which allowing enabling specific tests for
+      #      targets that support them and modifying test parameters for
+      #      different targets.
+      #
+      # Checking for pw_build_host_tools (which is only set by the host) is a
+      # temporary fix until the problem can be properly solved.
+      group_deps += [ "$dir_pw_kvs:tests" ]
+    }
   }
 }
