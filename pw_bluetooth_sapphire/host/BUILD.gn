@@ -54,6 +54,7 @@ source_set("sources") {
 
   public_deps = [
     ":stack",
+    "//sdk/banjo/ddk.protocol.bt.gattsvc",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.control",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
@@ -66,7 +67,6 @@ source_set("sources") {
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
-    "//zircon/system/banjo/ddk.protocol.bt.gattsvc",
   ]
 }
 
