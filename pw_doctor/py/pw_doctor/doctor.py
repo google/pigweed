@@ -18,6 +18,7 @@ import argparse
 import logging
 import json
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -102,6 +103,27 @@ def python_version(ctx: DoctorContext):
     elif actual[0:2] > expected:
         ctx.warning('Python %d.%d.x required, got Python %d.%d.%d', *expected,
                     *actual[0:3])
+
+
+@register_into(CHECKS)
+def virtualenv(ctx: DoctorContext):
+    """Check that we're in the correct virtualenv."""
+    try:
+        venv_path = pathlib.Path(os.environ['VIRTUAL_ENV']).resolve()
+    except KeyError:
+        ctx.error('VIRTUAL_ENV not set')
+        return
+
+    # When running in LUCI we might not have gone through the normal environment
+    # setup process, so we need to skip the rest of this step.
+    if 'LUCI_CONTEXT' in os.environ:
+        return
+
+    root = pathlib.Path(os.environ['PW_ROOT']).resolve()
+
+    if root not in venv_path.parents:
+        ctx.error('VIRTUAL_ENV (%s) not inside PW_ROOT (%s)', venv_path, root)
+        ctx.error('\n'.join(os.environ.keys()))
 
 
 @register_into(CHECKS)
