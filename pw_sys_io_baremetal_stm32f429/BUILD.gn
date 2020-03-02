@@ -16,13 +16,15 @@ import("$dir_pw_docgen/docs.gni")
 
 # This if statement allows docs to always build even if the target isn't
 # compatible with this backend.
-if (dir_pw_dumb_io_backend == dir_pw_dumb_io_stdio) {
-  source_set("pw_dumb_io_stdio") {
+if (dir_pw_sys_io_backend == dir_pw_sys_io_baremetal_stm32f429) {
+  source_set("pw_sys_io_baremetal_stm32f429") {
+    public_deps = [ "$dir_pw_boot_armv7m" ]
     deps = [
-      "$dir_pw_dumb_io:default_putget_bytes",
-      "$dir_pw_dumb_io:facade",
+      "$dir_pw_preprocessor",
+      "$dir_pw_sys_io:default_putget_bytes",
+      "$dir_pw_sys_io:facade",
     ]
-    sources = [ "dumb_io.cc" ]
+    sources = [ "sys_io_baremetal.cc" ]
   }
 }
 

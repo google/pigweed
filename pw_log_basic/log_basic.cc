@@ -18,9 +18,9 @@
 
 #include <cstring>
 
-#include "pw_dumb_io/dumb_io.h"
 #include "pw_log/levels.h"
 #include "pw_string/string_builder.h"
+#include "pw_sys_io/sys_io.h"
 
 // ANSI color constants to control the terminal. Not Windows compatible.
 // clang-format off
@@ -148,5 +148,5 @@ extern "C" void pw_Log(int level,
   va_end(args);
 
   // All done; flush the log.
-  pw::dumb_io::WriteLine(buffer.view());
+  pw::sys_io::WriteLine(buffer.view());
 }

@@ -24,8 +24,8 @@ pw_unit_test_main = "$dir_pw_unit_test:logging_main"
 # Configure backend for assert facade.
 dir_pw_assert_backend = "$dir_pw_assert_basic"
 
-# Configure backend for pw_dumb_io facade.
-dir_pw_dumb_io_backend = "$dir_pw_dumb_io_stdio"
-
 # Configure backend for logging facade.
 dir_pw_log_backend = "$dir_pw_log_basic"
+
+# Configure backend for pw_sys_io facade.
+dir_pw_sys_io_backend = "$dir_pw_sys_io_stdio"

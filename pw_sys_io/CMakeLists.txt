@@ -12,28 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/facade.gni")
-import("$dir_pw_docgen/docs.gni")
-
-config("default_config") {
-  include_dirs = [ "public" ]
-}
-
-pw_facade("pw_dumb_io") {
-  backend = dir_pw_dumb_io_backend
-  public_configs = [ ":default_config" ]
-  public_deps = [
-    "$dir_pw_span",
-    "$dir_pw_status",
-  ]
-  public = [ "public/pw_dumb_io/dumb_io.h" ]
-}
-
-source_set("default_putget_bytes") {
-  deps = [ ":facade" ]
-  sources = [ "dumb_io.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
+pw_add_facade(pw_sys_io
+  SOURCES
+    sys_io.cc
+  PUBLIC_DEPS
+    pw_span
+    pw_status
+)

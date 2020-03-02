@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_dumb_io/dumb_io.h"
+#include "pw_sys_io/sys_io.h"
 
 #include <cstdio>
 
-namespace pw::dumb_io {
+namespace pw::sys_io {
 
 Status ReadByte(std::byte* dest) {
   if (dest == nullptr) {
@@ -55,4 +55,4 @@ StatusWithSize WriteLine(const std::string_view& s) {
   return StatusWithSize(result, chars_written);
 }
 
-}  // namespace pw::dumb_io
+}  // namespace pw::sys_io

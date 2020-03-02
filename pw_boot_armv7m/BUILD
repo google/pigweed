@@ -17,7 +17,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 filegroup(
-    name = "pw_dumb_io_baremetal_stm32f429",
+    name = "pw_boot_armv7m",
     srcs = [
         "core_init.c",
         "public/pw_boot_armv7m/boot.h",

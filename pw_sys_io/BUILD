@@ -23,7 +23,7 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "facade",
-    hdrs = ["public/pw_dumb_io/dumb_io.h"],
+    hdrs = ["public/pw_sys_io/sys_io.h"],
     includes = ["public"],
     deps = [
         "//pw_span",
@@ -33,7 +33,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "default_putget_bytes",
-    srcs = ["dumb_io.cc"],
+    srcs = ["sys_io.cc"],
     deps = [
         ":facade",
         "//pw_span",
@@ -42,14 +42,14 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "pw_dumb_io",
-    hdrs = ["public/pw_dumb_io/dumb_io.h"],
+    name = "pw_sys_io",
+    hdrs = ["public/pw_sys_io/sys_io.h"],
     deps = [
         ":facade",
-        # For now, hard-code to depend on stdio until bazel build is updated
-        # to support multiple target configurations.
-        "//pw_dumb_io_stdio",
         "//pw_span",
         "//pw_status",
+        # For now, hard-code to depend on stdio until bazel build is updated
+        # to support multiple target configurations.
+        "//pw_sys_io_stdio",
     ],
 )

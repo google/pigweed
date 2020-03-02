@@ -1,18 +1,18 @@
-.. _chapter-pw-dumb-io-baremetal-stm32f429:
+.. _chapter-pw-sys-io-baremetal-stm32f429:
 
 .. default-domain:: cpp
 
 .. highlight:: sh
 
-------------------------------
-pw_dumb_io_baremetal_stm32f429
-------------------------------
+-----------------------------
+pw_sys_io_baremetal_stm32f429
+-----------------------------
 
-``pw_dumb_io_baremetal_stm32f429`` implements the ``pw_dumb_io`` facade over
+``pw_sys_io_baremetal_stm32f429`` implements the ``pw_sys_io`` facade over
 UART.
 
-The STM32F429 baremetal dumb IO backend provides device startup code and a UART
-driver layer that allows applications built against the ``pw_dumb_io`` interface
+The STM32F429 baremetal sys IO backend provides device startup code and a UART
+driver layer that allows applications built against the ``pw_sys_io`` interface
 to run on a STM32F429 chip and do simple input/output via UART. The code is
 optimized for the STM32F429I-DISC1, using USART1 (which is connected to the
 virtual COM port on the embedded ST-LINKv2 chip). However, this should work with
@@ -25,8 +25,8 @@ Setup
 =====
 This module requires relatively minimal setup:
 
-  1. Write code against the ``pw_dumb_io`` facade.
-  2. Specify the ``dir_pw_dumb_io_backend`` GN global variable to point to this
+  1. Write code against the ``pw_sys_io`` facade.
+  2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
      backend.
   3. Build an executable with a main() function using a toolchain that
      supports Cortex-M4.
@@ -61,5 +61,5 @@ Sample connection diagram
 
 Dependencies
 ============
-  * pw_dumb_io facade
+  * pw_sys_io facade
   * pw_preprocessor module

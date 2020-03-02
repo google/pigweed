@@ -55,7 +55,7 @@ source_set("simple_printing_main") {
   public_deps = [ ":pw_unit_test" ]
   deps = [
     ":simple_printing_event_handler",
-    "$dir_pw_dumb_io",
+    "$dir_pw_sys_io",
   ]
   sources = [ "simple_printing_main.cc" ]
 }
@@ -76,7 +76,7 @@ if (dir_pw_log_backend != "") {
     public_deps = [ ":pw_unit_test" ]
     deps = [
       ":logging_event_handler",
-      "$dir_pw_dumb_io",
+      "$dir_pw_sys_io",
     ]
     sources = [ "logging_main.cc" ]
   }

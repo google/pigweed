@@ -21,9 +21,9 @@
 
 #include <cstring>
 
-#include "pw_dumb_io/dumb_io.h"
 #include "pw_preprocessor/util.h"
 #include "pw_string/string_builder.h"
+#include "pw_sys_io/sys_io.h"
 
 // TODO(pwbug/17): Expose these through the config system.
 #define PW_ASSERT_BASIC_SHOW_BANNER 1
@@ -73,7 +73,7 @@ static const char* kCrashBanner[] = {
     " ",
 };
 
-using pw::dumb_io::WriteLine;
+using pw::sys_io::WriteLine;
 
 typedef pw::StringBuffer<150> Buffer;
 
@@ -104,7 +104,7 @@ extern "C" void pw_Crash(const char* file_name,
     va_start(args, message);
     buffer.FormatVaList(message, args);
     va_end(args);
-    pw::dumb_io::WriteLine(buffer.view());
+    WriteLine(buffer.view());
   }
 
   WriteLine("");

@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-pw_auto_add_simple_module(pw_dumb_io_stdio
+pw_auto_add_simple_module(pw_sys_io_stdio
   IMPLEMENTS_FACADE
-    pw_dumb_io
+    pw_sys_io
 )
 
-# TODO(hepler): Declare pw_dumb_io_stdio as the pw_dumb_io backend for now.
-add_library(pw_dumb_io.backend INTERFACE)
-target_link_libraries(pw_dumb_io.backend INTERFACE pw_dumb_io_stdio)
+# TODO(hepler): Declare pw_sys_io_stdio as the pw_sys_io backend for now.
+add_library(pw_sys_io.backend INTERFACE)
+target_link_libraries(pw_sys_io.backend INTERFACE pw_sys_io_stdio)

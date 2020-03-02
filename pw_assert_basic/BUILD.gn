@@ -36,9 +36,9 @@ source_set("core") {
   public_configs = [ ":default_config" ]
   deps = [
     "$dir_pw_assert:facade",
-    "$dir_pw_dumb_io",
     "$dir_pw_preprocessor",
     "$dir_pw_string",
+    "$dir_pw_sys_io",
   ]
   public = [ "public/pw_assert_basic/assert_basic.h" ]
   sources = public + [ "assert_basic.cc" ]

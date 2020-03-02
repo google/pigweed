@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_dumb_io/dumb_io.h"
+#include "pw_sys_io/sys_io.h"
 
-namespace pw::dumb_io {
+namespace pw::sys_io {
 
 StatusWithSize ReadBytes(span<std::byte> dest) {
   for (size_t i = 0; i < dest.size_bytes(); ++i) {
@@ -36,4 +36,4 @@ StatusWithSize WriteBytes(span<const std::byte> src) {
   return StatusWithSize(src.size_bytes());
 }
 
-}  // namespace pw::dumb_io
+}  // namespace pw::sys_io

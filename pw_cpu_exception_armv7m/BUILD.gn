@@ -27,8 +27,8 @@ if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
     public_configs = [ ":default_config" ]
     deps = [
       "$dir_pw_cpu_exception:facade",
-      "$dir_pw_dumb_io:default_putget_bytes",
       "$dir_pw_preprocessor",
+      "$dir_pw_sys_io:default_putget_bytes",
     ]
     public = [ "public/pw_cpu_exception_armv7m/cpu_state.h" ]
     sources = [

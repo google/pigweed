@@ -35,10 +35,10 @@ if (dir_pw_log_backend == dir_pw_log_basic) {
 source_set("pw_log_basic_core") {
   public_configs = [ ":default_config" ]
   deps = [
-    "$dir_pw_dumb_io",
     "$dir_pw_log:facade",
     "$dir_pw_preprocessor",
     "$dir_pw_string",
+    "$dir_pw_sys_io",
   ]
   public = [ "public/pw_log_basic/log_basic.h" ]
   sources = public + [ "log_basic.cc" ]

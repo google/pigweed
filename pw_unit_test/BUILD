@@ -81,7 +81,7 @@ pw_cc_library(
     deps = [
         ":pw_unit_test",
         ":simple_printing_event_handler",
-        "//pw_dumb_io",
+        "//pw_sys_io",
     ],
 )
 

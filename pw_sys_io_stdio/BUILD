@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2019 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,10 +12,20 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-pw_add_facade(pw_dumb_io
-  SOURCES
-    dumb_io.cc
-  PUBLIC_DEPS
-    pw_span
-    pw_status
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "pw_sys_io_stdio",
+    srcs = ["sys_io.cc"],
+    deps = [
+        "//pw_sys_io:default_putget_bytes",
+        "//pw_sys_io:facade",
+    ],
 )

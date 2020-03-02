@@ -15,8 +15,8 @@
 #include <cinttypes>
 
 #include "pw_boot_armv7m/boot.h"
-#include "pw_dumb_io/dumb_io.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_sys_io/sys_io.h"
 
 namespace {
 
@@ -217,7 +217,7 @@ extern "C" void pw_PreMainInit() {
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 }
 
-namespace pw::dumb_io {
+namespace pw::sys_io {
 
 // Wait for a byte to read on USART1. This blocks until a byte is read. This is
 // extremely inefficient as it requires the target to burn CPU cycles polling to
@@ -244,7 +244,7 @@ Status WriteByte(std::byte b) {
   return Status::OK;
 }
 
-// Writes a string using pw::dumb_io, and add newline characters at the end.
+// Writes a string using pw::sys_io, and add newline characters at the end.
 StatusWithSize WriteLine(const std::string_view& s) {
   size_t chars_written = 0;
   StatusWithSize result = WriteBytes(as_bytes(span(s)));
@@ -260,4 +260,4 @@ StatusWithSize WriteLine(const std::string_view& s) {
   return StatusWithSize(result.status(), chars_written);
 }
 
-}  // namespace pw::dumb_io
+}  // namespace pw::sys_io

@@ -1,12 +1,12 @@
-.. _chapter-pw-dumb-io:
+.. _chapter-pw-sys-io:
 
 .. default-domain:: cpp
 
 .. highlight:: sh
 
-----------
-pw_dumb_io
-----------
+---------
+pw_sys_io
+---------
 This module defines a simple and unoptimized interface for byte-by-byte
 input/output. This can be done over a logging system, stdio, UART, via a
 photodiode and modulated kazoo, or basically any way to get data in and out
@@ -34,16 +34,17 @@ Setup
 =====
 This module requires relatively minimal setup:
 
-  1. Chose a ``pw_dumb_io`` backend, or write one yourself.
-  2. If using GN build, Specify the ``dir_pw_dumb_io_backend`` GN global
-     variable to point to your ``pw_dumb_io`` backend.
+  1. Chose a ``pw_sys_io`` backend, or write one yourself.
+  2. If using GN build, Specify the ``dir_pw_sys_io_backend`` GN global
+     variable to point to your ``pw_sys_io`` backend.
 
 Module usage
 ============
-See backend docs for how to interact with the underlying dumb io implementation.
+See backend docs for how to interact with the underlying system I/O
+implementation.
 
 Dependencies
 ============
-  * pw_dumb_io_backend
+  * pw_sys_io_backend
   * pw_span
   * pw_status

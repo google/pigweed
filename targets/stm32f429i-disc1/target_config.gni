@@ -15,7 +15,7 @@
 # Target configuration for the STM32f429I-DISC1 development board.
 #
 # TODO(amontanez): This target configuration treats
-# pw_dumb_io_baremetal_stm32f429 as if it were a platform. This is for
+# pw_sys_io_baremetal_stm32f429 as if it were a platform. This is for
 # testing/development and should eventually point to something more
 # sophisticated.
 
@@ -44,7 +44,7 @@ template("stm32f429i_executable") {
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ dir_pw_dumb_io_baremetal_stm32f429 ]
+    deps += [ dir_pw_sys_io_baremetal_stm32f429 ]
   }
 }
 
@@ -64,8 +64,8 @@ if (pw_use_test_server) {
 dir_pw_assert_backend = dir_pw_assert_basic
 dir_pw_boot_backend = dir_pw_boot_armv7m
 dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
-dir_pw_dumb_io_backend = dir_pw_dumb_io_baremetal_stm32f429
 dir_pw_log_backend = dir_pw_log_basic
+dir_pw_sys_io_backend = dir_pw_sys_io_baremetal_stm32f429
 
 pw_boot_armv7m_config.defines += [
   "PW_BOOT_FLASH_BEGIN=0x08000200",

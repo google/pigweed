@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,20 +12,28 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
+import("$dir_pw_build/facade.gni")
+import("$dir_pw_docgen/docs.gni")
 
-package(default_visibility = ["//visibility:public"])
+config("default_config") {
+  include_dirs = [ "public" ]
+}
 
-licenses(["notice"])  # Apache License 2.0
+pw_facade("pw_sys_io") {
+  backend = dir_pw_sys_io_backend
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    "$dir_pw_span",
+    "$dir_pw_status",
+  ]
+  public = [ "public/pw_sys_io/sys_io.h" ]
+}
 
-pw_cc_library(
-    name = "pw_dumb_io_stdio",
-    srcs = ["dumb_io.cc"],
-    deps = [
-        "//pw_dumb_io:default_putget_bytes",
-        "//pw_dumb_io:facade",
-    ],
-)
+source_set("default_putget_bytes") {
+  deps = [ ":facade" ]
+  sources = [ "sys_io.cc" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

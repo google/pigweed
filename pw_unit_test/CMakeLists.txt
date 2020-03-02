@@ -32,6 +32,6 @@ pw_add_module_library(pw_unit_test.main
     pw_unit_test
   PRIVATE_DEPS
     pw_preprocessor
-    pw_dumb_io
     pw_string
+    pw_sys_io
 )

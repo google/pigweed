@@ -17,8 +17,8 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 filegroup(
-    name = "pw_dumb_io_baremetal_stm32f429",
+    name = "pw_sys_io_baremetal_stm32f429",
     srcs = [
-        "dumb_io_baremetal.cc",
+        "sys_io_baremetal.cc",
     ],
 )

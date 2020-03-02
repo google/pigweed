@@ -35,8 +35,8 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_dumb_io",
         "//pw_log:facade",
         "//pw_string",
+        "//pw_sys_io",
     ],
 )

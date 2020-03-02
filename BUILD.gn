@@ -43,7 +43,7 @@ group("host_tools") {
 group("pw_facades") {
   deps = [
     "$dir_pw_cpu_exception",
-    "$dir_pw_dumb_io",
+    "$dir_pw_sys_io",
   ]
 }
 

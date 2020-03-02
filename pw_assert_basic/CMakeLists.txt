@@ -16,9 +16,9 @@ pw_auto_add_simple_module(pw_assert_basic
   IMPLEMENTS_FACADE
     pw_assert
   PRIVATE_DEPS
-    pw_dumb_io
     pw_preprocessor
     pw_string
+    pw_sys_io
 )
 
 target_include_directories(pw_assert_basic PUBLIC public_overrides)

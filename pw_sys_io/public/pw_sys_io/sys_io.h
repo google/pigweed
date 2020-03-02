@@ -43,30 +43,30 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-namespace pw::dumb_io {
+namespace pw::sys_io {
 
-// Read a single byte from the dumb io backend.
+// Read a single byte from the sys io backend.
 // Implemented by: Backend
 //
 // This function will block until it either succeeds or fails to read a byte
-// from the pw_dumb_io backend.
+// from the pw_sys_io backend.
 //
 // Returns Status::OK if a byte was successfully read.
 Status ReadByte(std::byte* dest);
 
-// Write a single byte out the dumb io backend.
+// Write a single byte out the sys io backend.
 // Implemented by: Backend
 //
 // This function will block until it either succeeds or fails to write a byte
-// out the pw_dumb_io backend.
+// out the pw_sys_io backend.
 //
 // Returns Status::OK if a byte was successfully read.
 Status WriteByte(std::byte b);
 
-// Write a string out the dumb io backend.
+// Write a string out the sys io backend.
 // Implemented by: Backend
 //
-// This function takes a null-terminated string and writes it out the dumb io
+// This function takes a null-terminated string and writes it out the sys io
 // backend, adding any platform-specific newline character(s) (these are
 // accounted for in the returned StatusWithSize).
 //
@@ -75,7 +75,7 @@ Status WriteByte(std::byte b);
 // are returned as part of the StatusWithSize.
 StatusWithSize WriteLine(const std::string_view& s);
 
-// Fill a byte span from the dumb io backend using ReadByte().
+// Fill a byte span from the sys io backend using ReadByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply uses ReadByte() to
@@ -89,7 +89,7 @@ StatusWithSize WriteLine(const std::string_view& s);
 // are returned as part of the StatusWithSize.
 StatusWithSize ReadBytes(span<std::byte> dest);
 
-// Write span of bytes out the dumb io backend using WriteByte().
+// Write span of bytes out the sys io backend using WriteByte().
 // Implemented by: Facade
 //
 // This function is implemented by this facade and simply writes the source
@@ -103,4 +103,4 @@ StatusWithSize ReadBytes(span<std::byte> dest);
 // are returned as part of the StatusWithSize.
 StatusWithSize WriteBytes(span<const std::byte> src);
 
-}  // namespace pw::dumb_io
+}  // namespace pw::sys_io

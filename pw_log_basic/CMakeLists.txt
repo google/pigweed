@@ -16,8 +16,8 @@ pw_auto_add_simple_module(pw_log_basic
   IMPLEMENTS_FACADE
     pw_log
   PRIVATE_DEPS
-    pw_dumb_io
     pw_string
+    pw_sys_io
 )
 
 target_include_directories(pw_log_basic PUBLIC public_overrides)
