@@ -106,9 +106,9 @@ class EnvSetup(object):
             steps.append(('cargo', self.cargo))
 
         for name, step in steps:
-            print('Setting up {}...\n'.format(name), file=sys.stdout)
+            print('Setting up {}...'.format(name), file=sys.stderr)
             step()
-            print('\nSetting up {}...done.'.format(name), file=sys.stdout)
+            print('done.', file=sys.stderr)
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
@@ -120,6 +120,7 @@ class EnvSetup(object):
 
         package_files = glob.glob(
             os.path.join(self._setup_root, 'cipd_setup', '*.json'))
+        self._env.echo('Setting CIPD environment variables...')
         cipd_update.update(
             cipd=cipd_client,
             root_install_dir=install_dir,
@@ -127,8 +128,7 @@ class EnvSetup(object):
             cache_dir=self._cipd_cache_dir,
             env_vars=self._env,
         )
-
-        self._env.echo('Setting CIPD environment variables...done.')
+        self._env.echo('done.')
 
     def virtualenv(self):
         """Setup virtualenv."""
@@ -159,27 +159,28 @@ class EnvSetup(object):
 
         python = os.path.join(cipd_bin, py_executable)
 
+        self._env.echo('Setting virtualenv environment variables...')
         virtualenv_setup.install(
             venv_path=venv_path,
             requirements=[requirements],
             python=python,
             env=self._env,
         )
-
-        self._env.echo('Setting virtualenv environment variables...done.')
+        self._env.echo('done.')
 
     def host_build(self):
+        self._env.echo('Setting host_build environment variables...')
         host_build_setup.install(pw_root=self._pw_root, env=self._env)
-        self._env.echo('Setting host_build environment variables...done.')
+        self._env.echo('done.')
 
     def cargo(self):
+        self._env.echo('Setting cargo environment variables...')
         if os.environ.get('PW_CARGO_SETUP', ''):
             cargo_setup.install(pw_root=self._pw_root, env=self._env)
-            self._env.echo('Setting cargo environment variables...done.')
         else:
-            msg = 'cargo setup skipped, set PW_CARGO_SETUP to include it'
-            print(msg)
-            self._env.echo(msg)
+            self._env.echo(
+                '  cargo setup skipped, set PW_CARGO_SETUP to include it')
+        self._env.echo('done.')
 
 
 def parse(argv=None):

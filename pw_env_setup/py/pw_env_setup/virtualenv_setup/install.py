@@ -19,6 +19,7 @@ import glob
 import os
 import subprocess
 import sys
+import tempfile
 
 
 def git_stdout(*args, **kwargs):
@@ -76,6 +77,22 @@ def _pw_package_names(setup_py_files):
     ))
 
 
+# TODO(pwbug/135) Move to common utility module.
+def _check_call(args, **kwargs):
+    stdout = kwargs.get('stdout', sys.stdout)
+
+    with tempfile.TemporaryFile(mode='w+') as temp:
+        try:
+            kwargs['stdout'] = temp
+            kwargs['stderr'] = subprocess.STDOUT
+            print(args, kwargs, file=temp)
+            subprocess.check_call(args, **kwargs)
+        except subprocess.CalledProcessError:
+            temp.seek(0)
+            stdout.write(temp.read())
+            raise
+
+
 def install(
     venv_path,
     full_envsetup=True,
@@ -95,8 +112,6 @@ def install(
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
-        print('Creating venv at', venv_path)
-
         # On Mac sometimes the CIPD Python has __PYVENV_LAUNCHER__ set to
         # point to the system Python, which causes CIPD Python to create
         # virtualenvs that reference the system Python instead of the CIPD
@@ -106,7 +121,7 @@ def install(
             del envcopy['__PYVENV_LAUNCHER__']
 
         cmd = (python, '-m', 'venv', '--clear', venv_path)
-        subprocess.check_call(cmd, env=envcopy)
+        _check_call(cmd, env=envcopy)
 
     # The bin/ directory is called Scripts/ on Windows. Don't ask.
     venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
@@ -120,30 +135,17 @@ def install(
 
     setup_py_files = git_list_files('setup.py', '*/setup.py', cwd=pw_root)
 
-    # If not forcing full setup, check if all expected packages are installed,
-    # ignoring versions. If they are, skip reinstalling.
-    if not full_envsetup:
-        installed = _installed_packages(venv_python)
-        required = _required_packages(requirements)
-        pw_pkgs = _pw_package_names(setup_py_files)
-
-        if required.issubset(installed) and pw_pkgs.issubset(installed):
-            print('Python packages already installed, exiting')
-            return
-
-        # Sometimes we get an error saying "Egg-link ... does not match
-        # installed location". This gets around that. The egg-link files
-        # all come from 'pw'-prefixed packages we installed with --editable.
-        # Source: https://stackoverflow.com/a/48972085
-        for egg_link in glob.glob(
-                os.path.join(venv_path,
-                             'lib/python*/site-packages/*.egg-link')):
-            os.unlink(egg_link)
+    # Sometimes we get an error saying "Egg-link ... does not match
+    # installed location". This gets around that. The egg-link files
+    # all come from 'pw'-prefixed packages we installed with --editable.
+    # Source: https://stackoverflow.com/a/48972085
+    for egg_link in glob.glob(
+            os.path.join(venv_path, 'lib/python*/site-packages/*.egg-link')):
+        os.unlink(egg_link)
 
     def pip_install(*args):
         cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
-        print(' '.join(cmd))
-        return subprocess.check_call(cmd)
+        return _check_call(cmd)
 
     pip_install('--upgrade', 'pip')
 

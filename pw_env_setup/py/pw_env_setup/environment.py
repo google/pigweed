@@ -155,7 +155,7 @@ class _Echo(_Action):
         # POSIX shells parse arguments and pass to echo, but Windows seems to
         # pass the command line as is without parsing, so quoting is wrong.
         if windows:
-            outs.write('echo {}\n'.format(self.value))
+            outs.write('echo "{}"\n'.format(self.value))
         else:
             # TODO(mohrr) use shlex.quote().
             outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n')

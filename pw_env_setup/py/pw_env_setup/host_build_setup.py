@@ -13,9 +13,29 @@
 # the License.
 """Builds and sets up environment to use host build."""
 
+from __future__ import print_function
+
 import os
 import platform
 import subprocess
+import sys
+import tempfile
+
+
+# TODO(pwbug/135) Move to common utility module.
+def _check_call(args, **kwargs):
+    stdout = kwargs.get('stdout', sys.stdout)
+
+    with tempfile.TemporaryFile(mode='w+') as temp:
+        try:
+            kwargs['stdout'] = temp
+            kwargs['stderr'] = subprocess.STDOUT
+            print(args, kwargs, file=temp)
+            subprocess.check_call(args, **kwargs)
+        except subprocess.CalledProcessError:
+            temp.seek(0)
+            stdout.write(temp.read())
+            raise
 
 
 def install(pw_root, env):
@@ -23,9 +43,7 @@ def install(pw_root, env):
     env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
 
     if platform.system() == 'Linux':
-        msg = 'skipping host tools setup--got from CIPD'
-        print(msg)
-        env.echo(msg)
+        env.echo('  skipping host tools setup--got from CIPD')
         return
 
     with env():
@@ -36,9 +54,9 @@ def install(pw_root, env):
                 '--args=pw_target_toolchain="//pw_toolchain:host_clang_og"',
                 host_dir,
             ]
-            subprocess.check_call(gn_gen, cwd=pw_root)
+            _check_call(gn_gen, cwd=pw_root)
 
-            subprocess.check_call(['ninja', '-C', host_dir], cwd=pw_root)
+            _check_call(['ninja', '-C', host_dir], cwd=pw_root)
 
         except subprocess.CalledProcessError:
-            env.echo('warning: host tools failed to build')
+            env.echo('  warning: host tools failed to build')

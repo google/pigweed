@@ -50,6 +50,4 @@ def install(pw_root, env):
                 package,
             ]  # yapf: disable
 
-            print(' '.join(cmd))
-
             subprocess.check_call(cmd)

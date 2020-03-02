@@ -28,6 +28,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 
 def parse(argv=None):
@@ -141,8 +142,15 @@ def update(
             '-max-threads', '0',  # 0 means use CPU count.
         ]  # yapf: disable
 
-        print(*cmd, file=sys.stderr)
-        subprocess.check_call(cmd, stdout=sys.stderr)
+        # TODO(pwbug/135) Use function from common utility module.
+        with tempfile.TemporaryFile(mode='w+') as temp:
+            print(*cmd, file=temp)
+            try:
+                subprocess.check_call(cmd, stdout=temp)
+            except subprocess.CalledProcessError:
+                temp.seek(0)
+                sys.stderr.write(temp.read())
+                raise
 
         # Set environment variables so tools can later find things under, for
         # example, 'share'.
