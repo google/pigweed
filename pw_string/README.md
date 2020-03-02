@@ -1,1 +1,1 @@
-# pw\_string: Utilities for building strings
+# pw\_string: Utilities for safely building strings
