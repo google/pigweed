@@ -4,9 +4,9 @@
 
 .. _chapter-protobuf-decoder:
 
--------
-Decoder
--------
+--------
+Decoding
+--------
 
 Size report
 ===========

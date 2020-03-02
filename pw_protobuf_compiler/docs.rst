@@ -1,8 +1,7 @@
-.. _chapter-pw-protobuf-compiler:
-
 .. default-domain:: py
-
 .. highlight:: py
+
+.. _chapter-pw-protobuf-compiler:
 
 --------------------
 pw_protobuf_compiler

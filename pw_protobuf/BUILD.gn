@@ -43,7 +43,7 @@ source_set("pw_protobuf") {
 
 pw_doc_group("docs") {
   sources = [
-    "decoder.rst",
+    "decoding.rst",
     "docs.rst",
   ]
   report_deps = [
