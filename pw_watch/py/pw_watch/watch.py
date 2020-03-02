@@ -204,6 +204,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                              matching_path)
 
     # Implementation of DebouncedFunction.run()
+    #
+    # Note: This will run on the timer thread created by the Debouncer, rather
+    # than on the main thread that's watching file events. This enables the
+    # watcher to continue receiving file change events during a build.
     def run(self):
         """Run all the builds in serial and capture pass/fail for each."""
 
