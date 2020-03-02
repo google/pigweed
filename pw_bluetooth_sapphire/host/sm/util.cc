@@ -4,9 +4,11 @@
 
 #include "util.h"
 
-#include <openssl/aes.h>
 #include <zircon/assert.h>
 
+#include <openssl/aes.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
 namespace bt {
@@ -103,6 +105,15 @@ std::string PairingMethodToString(PairingMethod method) {
       break;
   }
   return "(unknown)";
+}
+
+MutableByteBufferPtr NewPdu(size_t param_size) {
+  auto pdu = NewSlabBuffer(sizeof(Header) + param_size);
+  if (!pdu) {
+    bt_log(ERROR, "sm", "out of memory");
+  }
+
+  return pdu;
 }
 
 PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, bool mitm_required,

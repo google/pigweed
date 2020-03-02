@@ -24,6 +24,9 @@ std::string IOCapabilityToString(IOCapability capability);
 // hci::IOCapability::kNoInputNoOutput for values not in sm::IOCapability.
 hci::IOCapability IOCapabilityForHci(IOCapability capability);
 
+// Utility function to heap allocate a new PDU.
+MutableByteBufferPtr NewPdu(size_t param_size);
+
 // Used to select the key generation method as described in Vol 3, Part H,
 // 2.3.5.1 based on local and peer authentication parameters:
 //   - |secure_connections|: True if Secure Connections pairing is used. False
