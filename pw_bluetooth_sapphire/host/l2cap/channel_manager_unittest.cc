@@ -1830,6 +1830,19 @@ TEST_F(L2CAP_ChannelManagerTest, OutboundChannelConfigurationUsesChannelParamete
   EXPECT_TRUE(channel);
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
+
+  // Receiver Ready poll request should elicit a response if ERTM has been set up.
+  EXPECT_ACL_PACKET_OUT(
+      testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId, /*receive_seq_num=*/0,
+                                      /*is_poll_request=*/false, /*is_poll_response=*/true),
+      kLowPriority);
+  ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1, kLocalId,
+                                                       /*receive_seq_num=*/0,
+                                                       /*is_poll_request=*/true,
+                                                       /*is_poll_response=*/false));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
 TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
@@ -1871,6 +1884,19 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_TRUE(channel);
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
+
+  // Receiver Ready poll request should elicit a response if ERTM has been set up.
+  EXPECT_ACL_PACKET_OUT(
+      testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId, /*receive_seq_num=*/0,
+                                      /*is_poll_request=*/false, /*is_poll_response=*/true),
+      kLowPriority);
+  ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1, kLocalId,
+                                                       /*receive_seq_num=*/0,
+                                                       /*is_poll_request=*/true,
+                                                       /*is_poll_response=*/false));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
 TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {

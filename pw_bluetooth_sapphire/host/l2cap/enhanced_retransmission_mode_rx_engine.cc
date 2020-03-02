@@ -153,10 +153,10 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
 ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu) {
   if (sframe.function() == SupervisoryFunction::ReceiverReady && sframe.is_poll_request()) {
     // TODO(quiche): Propagate ReqSeq to the transmit engine.
-    // See Core Spec, v5, Vol 3, Part A, Table 8.6, "Recv RR(P=1)".
+    // See Core Spec, v5, Vol 3, Part A, Section 8.6.5.9, Table 8.6, "Recv RR(P=1)".
     //
     // Note, however, that there may be additional work to do if we're in the
-    // REJ_SENT state. See Core Spec, v5, Vol 3, Part A, Table 8.7, "Recv
+    // REJ_SENT state. See Core Spec, v5, Vol 3, Part A, Section 8.6.5.10, Table 8.7, "Recv
     // RR(P=1)".
     SimpleReceiverReadyFrame poll_response;
     poll_response.set_is_poll_response();

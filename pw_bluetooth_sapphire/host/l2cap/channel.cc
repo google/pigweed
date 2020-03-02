@@ -6,11 +6,15 @@
 
 #include <zircon/assert.h>
 
+#include <functional>
+#include <memory>
+
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -49,18 +53,32 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       dispatcher_(nullptr),
-      link_(link),
-      rx_engine_(std::make_unique<BasicModeRxEngine>()),
-      tx_engine_(std::make_unique<BasicModeTxEngine>(
-          id, max_tx_sdu_size(), [rid = remote_id, link = link_](auto pdu) {
-            async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
-              // |link| is expected to ignore this call and drop the packet if it has been closed.
-              // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A,
-              // Sec 3.1)
-              link->SendFrame(rid, *pdu, FrameCheckSequenceOption::kNoFcs);
-            });
-          })) {
-  ZX_DEBUG_ASSERT(link_);
+      link_(link) {
+  ZX_ASSERT(link_);
+  ZX_ASSERT_MSG(
+      info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
+      "Channel constructed with unsupported mode: %hhu\n", info.mode);
+
+  FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
+                                            ? FrameCheckSequenceOption::kIncludeFcs
+                                            : FrameCheckSequenceOption::kNoFcs;
+  auto send_cb = [rid = remote_id, link = link_, fcs_option](auto pdu) {
+    async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
+      // |link| is expected to ignore this call and drop the packet if it has been closed.
+      // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A,
+      // Sec 3.1)
+      link->SendFrame(rid, *pdu, fcs_option);
+    });
+  };
+
+  if (info_.mode == ChannelMode::kBasic) {
+    rx_engine_ = std::make_unique<BasicModeRxEngine>();
+    tx_engine_ = std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), send_cb);
+  } else {
+    std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
+        id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window, send_cb,
+        /*connection_failure_callback=*/std::bind(&Channel::Deactivate, this));
+  }
 }
 
 const sm::SecurityProperties ChannelImpl::security() {

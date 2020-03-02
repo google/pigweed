@@ -1,6 +1,8 @@
 #include "test_packets.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 
 namespace bt::l2cap::testing {
 
@@ -99,8 +101,9 @@ DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle
       0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
       // option: [type: MTU, length: 2, MTU: 1024])
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
-      // option: [type: Retransmission and Flow Control, length: 9, mode, parameters]
-      0x04, 0x09, static_cast<uint8_t>(mode), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+      // option: [type: Retransmission and Flow Control, length: 9, mode, tx_window: 63,
+      // max_retransmit: 2, retransmit timeout: 0 ms, monitor timeout: 0 ms, mps: 32768]
+      0x04, 0x09, static_cast<uint8_t>(mode), 63, 2, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00));
 }
 
 DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
@@ -145,6 +148,31 @@ DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle li
       LowerBits(src_id), UpperBits(src_id),
       // Result (success), status
       0x00, 0x00, 0x00, 0x00));
+}
+
+DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,
+                                         l2cap::ChannelId channel_id, uint8_t receive_seq_num,
+                                         bool is_poll_request, bool is_poll_response) {
+  StaticByteBuffer acl_packet{
+      // ACL data header (handle: |link handle|, length: 8 bytes)
+      LowerBits(link_handle), UpperBits(link_handle), 0x08, 0x00,
+
+      // L2CAP B-frame header: length 4, channel-id
+      0x04, 0x00, LowerBits(channel_id), UpperBits(channel_id),
+
+      // Enhanced Control Field: F is_poll_response, P is_poll_request, Supervisory function 0 (RR),
+      // Type S-Frame, ReqSeq receive_seq_num
+      (is_poll_response ? 0b1000'0000 : 0) | (is_poll_request ? 0b1'0000 : 0) | 0b1,
+      receive_seq_num & 0b11'1111,
+
+      // Frame Check Sequence
+      0x00, 0x00};
+  const FrameCheckSequence fcs = ComputeFcs(
+      acl_packet.view(sizeof(hci::ACLDataHeader),
+                      acl_packet.size() - sizeof(hci::ACLDataHeader) - sizeof(FrameCheckSequence)));
+  acl_packet[acl_packet.size() - 2] = LowerBits(fcs.fcs);
+  acl_packet[acl_packet.size() - 1] = UpperBits(fcs.fcs);
+  return DynamicByteBuffer(acl_packet);
 }
 
 }  // namespace bt::l2cap::testing
