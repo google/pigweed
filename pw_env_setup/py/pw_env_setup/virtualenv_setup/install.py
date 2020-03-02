@@ -112,7 +112,9 @@ def install(
     venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
     venv_python = os.path.join(venv_bin, 'python')
 
-    pw_root = os.environ.get('PW_ROOT', git_repo_root())
+    pw_root = os.environ.get('PW_ROOT')
+    if not pw_root:
+        pw_root = git_repo_root()
     if not pw_root:
         raise GitRepoNotFound()
 
