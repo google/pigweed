@@ -39,6 +39,7 @@ pw_doc_gen("docs") {
     ":core_docs",
     ":target_docs",
     "$dir_pw_assert:docs",
+    "$dir_pw_assert_basic:docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_boot_armv7m:docs",
     "$dir_pw_build:docs",
