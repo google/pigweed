@@ -42,7 +42,7 @@ def install(pw_root, env):
     host_dir = os.path.join(pw_root, 'out', 'host')
     env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
 
-    if platform.system() == 'Linux':
+    if platform.system() in ('Linux', 'Windows'):
         env.echo('  skipping host tools setup--got from CIPD')
         return
 
