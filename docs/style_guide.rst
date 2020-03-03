@@ -8,6 +8,12 @@
 Style Guide and Conventions
 ===========================
 
+.. tip::
+  Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
+  formatting checks. To speed up the review process, consider adding ``pw
+  presubmit`` as a git push hook using the following command:
+  ``pw presubmit --install``
+
 ---------
 C++ style
 ---------
