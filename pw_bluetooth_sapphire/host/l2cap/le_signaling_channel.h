@@ -5,8 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LE_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LE_SIGNALING_CHANNEL_H_
 
-#include <fbl/macros.h>
 #include <zircon/assert.h>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
@@ -45,10 +46,10 @@ class LESignalingChannel final : public SignalingChannel {
  private:
   void OnConnParamUpdateReceived(const SignalingPacket& packet);
 
-  // SignalingChannel override
+  // SignalingChannel overrides
   void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override;
-
   bool HandlePacket(const SignalingPacket& packet) override;
+  bool IsSupportedResponse(CommandCode code) const override;
 
   ConnectionParameterUpdateCallback conn_param_update_cb_;
   async_dispatcher_t* dispatcher_;

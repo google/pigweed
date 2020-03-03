@@ -41,6 +41,56 @@ SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::R
 
 SignalingChannel::~SignalingChannel() { ZX_DEBUG_ASSERT(IsCreationThreadCurrent()); }
 
+bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
+                                   ResponseHandler cb) {
+  ZX_ASSERT(cb);
+  const CommandId id = EnqueueResponse(req_code + 1, std::move(cb));
+  if (id == kInvalidCommandId) {
+    return false;
+  }
+
+  return SendPacket(req_code, id, payload);
+}
+
+void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
+  ZX_ASSERT(!IsSupportedResponse(req_code));
+  ZX_ASSERT(cb);
+  inbound_handlers_[req_code] = std::move(cb);
+}
+
+CommandId SignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseHandler cb) {
+  ZX_ASSERT(IsSupportedResponse(expected_code));
+
+  // Command identifiers for pending requests are assumed to be unique across
+  // all types of requests and reused by order of least recent use. See v5.0
+  // Vol 3, Part A Section 4.
+  //
+  // Uniqueness across different command types: "Within each signaling channel a
+  // different Identifier shall be used for each successive command"
+  // Reuse order: "the Identifier may be recycled if all other Identifiers have
+  // subsequently been used"
+  const CommandId initial_id = GetNextCommandId();
+  CommandId id;
+  for (id = initial_id; IsCommandPending(id);) {
+    id = GetNextCommandId();
+
+    if (id == initial_id) {
+      bt_log(WARN, "l2cap",
+             "sig: all valid command IDs in use for "
+             "pending requests; can't queue expected response command %#.2x",
+             expected_code);
+      return kInvalidCommandId;
+    }
+  }
+
+  pending_commands_[id] = std::make_pair(expected_code, std::move(cb));
+  return id;
+}
+
+bool SignalingChannel::IsCommandPending(CommandId id) const {
+  return pending_commands_.find(id) != pending_commands_.end();
+}
+
 SignalingChannel::ResponderImpl::ResponderImpl(SignalingChannel* sig, CommandCode code,
                                                CommandId id)
     : sig_(sig), code_(code), id_(id) {
@@ -66,6 +116,52 @@ void SignalingChannel::ResponderImpl::RejectInvalidChannelId(ChannelId local_cid
 bool SignalingChannel::SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
   return Send(BuildPacket(code, identifier, data));
+}
+
+bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
+  if (IsSupportedResponse(packet.header().code)) {
+    OnRxResponse(packet);
+    return true;
+  }
+
+  // Handle request commands from remote.
+  const auto iter = inbound_handlers_.find(packet.header().code);
+  if (iter != inbound_handlers_.end()) {
+    ResponderImpl responder(this, packet.header().code + 1, packet.header().id);
+    iter->second(packet.payload_data(), &responder);
+    return true;
+  }
+
+  bt_log(TRACE, "l2cap", "sig: ignoring unsupported code %#.2x", packet.header().code);
+
+  return false;
+}
+
+void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
+  auto iter = pending_commands_.find(packet.header().id);
+  if (iter == pending_commands_.end()) {
+    bt_log(SPEW, "l2cap", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    return;
+  }
+
+  Status status;
+  if (packet.header().code == iter->second.first) {
+    status = Status::kSuccess;
+  } else if (packet.header().code == kCommandRejectCode) {
+    status = Status::kReject;
+  } else {
+    bt_log(WARN, "l2cap", "sig: response (id %#.2x) has unexpected code %#.2x", packet.header().id,
+           packet.header().code);
+    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    return;
+  }
+
+  ResponseHandler& handler = iter->second.second;
+  if (handler(status, packet.payload_data()) ==
+      ResponseHandlerAction::kCompleteOutboundTransaction) {
+    pending_commands_.erase(iter);
+  }
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {

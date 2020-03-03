@@ -5,6 +5,7 @@
 #include "signaling_channel.h"
 
 #include "fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
@@ -12,10 +13,17 @@ namespace l2cap {
 namespace internal {
 namespace {
 
+using Status = SignalingChannelInterface::Status;
+
 constexpr CommandCode kUnknownCommandCode = 0x00;
 constexpr CommandCode kCommandCode = 0xFF;
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint16_t kTestMTU = 100;
+constexpr CommandId kMaxCommandId = std::numeric_limits<CommandId>::max();
+
+const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payload) {
+  return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+};
 
 class TestSignalingChannel : public SignalingChannel {
  public:
@@ -36,15 +44,9 @@ class TestSignalingChannel : public SignalingChannel {
   using SignalingChannel::ResponderImpl;
 
  private:
-  // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override {
-    return false;
-  }
-  void ServeRequest(CommandCode req_code, RequestDelegate cb) override {}
-
   // SignalingChannel overrides
   void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override {
-    ZX_DEBUG_ASSERT(sdu);
+    ZX_ASSERT(sdu);
     if (sdu->size()) {
       cb(SignalingPacket(sdu.get(), sdu->size() - sizeof(CommandHeader)));
     } else {
@@ -52,12 +54,21 @@ class TestSignalingChannel : public SignalingChannel {
     }
   }
 
+  bool IsSupportedResponse(CommandCode code) const override {
+    switch (code) {
+      case kCommandRejectCode:
+      case kEchoResponse:
+        return true;
+    }
+
+    return false;
+  }
+
   bool HandlePacket(const SignalingPacket& packet) override {
-    if (packet.header().code == kUnknownCommandCode)
-      return false;
     if (packet_cb_)
       packet_cb_(packet);
-    return true;
+
+    return SignalingChannel::HandlePacket(packet);
   }
 
   PacketCallback packet_cb_;
@@ -276,9 +287,240 @@ TEST_F(L2CAP_SignalingChannelTest, UseChannelAfterSignalFree) {
 
 TEST_F(L2CAP_SignalingChannelTest, ValidRequestCommandIds) {
   EXPECT_EQ(0x01, sig()->GetNextCommandId());
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < kMaxCommandId + 1; i++) {
     EXPECT_NE(0x00, sig()->GetNextCommandId());
   }
+}
+
+TEST_F(L2CAP_SignalingChannelTest, RejectUnsolicitedResponse) {
+  constexpr CommandId kTestCmdId = 97;
+  auto cmd = CreateStaticByteBuffer(
+      // Command header (Echo Response, length 1)
+      0x09, kTestCmdId, 0x01, 0x00,
+
+      // Payload
+      0x23);
+
+  auto expected = CreateStaticByteBuffer(
+      // Command header (Command rejected, length 2)
+      0x01, kTestCmdId, 0x02, 0x00,
+
+      // Reason (Command not understood)
+      0x00, 0x00);
+
+  EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
+}
+
+TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseWithWrongType) {
+  constexpr CommandId kReqId = 1;
+
+  // Remote's response with the correct ID but wrong type of response.
+  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
+      // Disconnection Response with plausible 4-byte payload.
+      0x07, kReqId, 0x04, 0x00,
+
+      // Payload
+      0x0A, 0x00, 0x08, 0x00);
+  const ByteBuffer& req_data = CreateStaticByteBuffer('P', 'W', 'N');
+
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  bool echo_cb_called = false;
+  EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, [&echo_cb_called](auto, auto&) {
+    echo_cb_called = true;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+  }));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+
+  const ByteBuffer& reject_rsp = CreateStaticByteBuffer(
+      // Command header (Command Rejected)
+      0x01, kReqId, 0x02, 0x00,
+
+      // Reason (Command not understood)
+      0x00, 0x00);
+  bool reject_sent = false;
+  fake_chan()->SetSendCallback(
+      [&reject_rsp, &reject_sent](auto cb_packet) {
+        reject_sent = ContainersEqual(reject_rsp, *cb_packet);
+      },
+      dispatcher());
+
+  fake_chan()->Receive(rsp_invalid_id);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(echo_cb_called);
+  EXPECT_TRUE(reject_sent);
+}
+
+// Ensure that the signaling channel can reuse outgoing command IDs. In the case
+// that it's expecting a response on every single valid command ID, requests
+// should fail.
+TEST_F(L2CAP_SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
+  int req_count = 0;
+  constexpr CommandId kRspId = 0x0c;
+
+  auto check_header_id = [&req_count, kRspId](auto cb_packet) {
+    req_count++;
+    SignalingPacket sent_sig_pkt(cb_packet.get());
+    if (req_count == kMaxCommandId + 1) {
+      EXPECT_EQ(kRspId, sent_sig_pkt.header().id);
+    } else {
+      EXPECT_EQ(req_count, sent_sig_pkt.header().id);
+    }
+  };
+  fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
+
+  const ByteBuffer& req_data = CreateStaticByteBuffer('y', 'o', 'o', 'o', 'o', '\0');
+
+  for (int i = 0; i < kMaxCommandId; i++) {
+    EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
+  }
+
+  // All command IDs should be exhausted at this point, so no commands of this
+  // type should be allowed to be sent.
+  EXPECT_FALSE(sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(kMaxCommandId, req_count);
+
+  // Remote finally responds to a request, but not in order requests were sent.
+  // This will free a command ID.
+  const ByteBuffer& echo_rsp = CreateStaticByteBuffer(
+      // Echo response with no payload.
+      0x09, kRspId, 0x00, 0x00);
+  fake_chan()->Receive(echo_rsp);
+
+  RunLoopUntilIdle();
+
+  // Request should use freed command ID.
+  EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(kMaxCommandId + 1, req_count);
+}
+
+// Ensure that the signaling channel plumbs a rejection command from remote to
+// the appropriate response handler.
+TEST_F(L2CAP_SignalingChannelTest, RemoteRejectionPassedToHandler) {
+  const ByteBuffer& reject_rsp = StaticByteBuffer(
+      // Command header (Command Rejected)
+      0x01, 0x01, 0x02, 0x00,
+
+      // Reason (Command not understood)
+      0x00, 0x00);
+
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  const ByteBuffer& req_data = StaticByteBuffer('h', 'e', 'l', 'l', 'o');
+  bool rx_success = false;
+  EXPECT_TRUE(sig()->SendRequest(
+      kEchoRequest, req_data,
+      [&rx_success, &reject_rsp](Status status, const ByteBuffer& rsp_payload) {
+        rx_success = true;
+        EXPECT_EQ(Status::kReject, status);
+        EXPECT_TRUE(ContainersEqual(reject_rsp.view(sizeof(CommandHeader)), rsp_payload));
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+      }));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+
+  // Remote sends back a rejection.
+  fake_chan()->Receive(reject_rsp);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(rx_success);
+}
+
+TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {
+  const ByteBuffer& remote_req = StaticByteBuffer(
+      // Disconnection Request.
+      0x06, 0x01, 0x04, 0x00,
+
+      // Payload
+      0x0A, 0x00, 0x08, 0x00);
+  const BufferView& expected_payload = remote_req.view(sizeof(CommandHeader));
+
+  auto expected_rej = StaticByteBuffer(
+      // Command header (Command rejected, length 2)
+      0x01, 0x01, 0x02, 0x00,
+
+      // Reason (Command not understood)
+      0x00, 0x00);
+
+  // Receive remote's request before a handler is assigned, expecting an
+  // outbound rejection.
+  ReceiveAndExpect(remote_req, expected_rej);
+
+  // Register the handler.
+  bool cb_called = false;
+  sig()->ServeRequest(kDisconnectionRequest,
+                      [&cb_called, &expected_payload](const ByteBuffer& req_payload,
+                                                      SignalingChannel::Responder* responder) {
+                        cb_called = true;
+                        EXPECT_TRUE(ContainersEqual(expected_payload, req_payload));
+                        responder->Send(req_payload);
+                      });
+
+  const ByteBuffer& local_rsp = StaticByteBuffer(
+      // Disconnection Response.
+      0x07, 0x01, 0x04, 0x00,
+
+      // Payload
+      0x0A, 0x00, 0x08, 0x00);
+
+  // Receive the same command again.
+  ReceiveAndExpect(remote_req, local_rsp);
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseInvalidId) {
+  // Request will use ID = 1.
+  constexpr CommandId kIncorrectId = 2;
+  // Remote's echo response that has a different ID to what will be in the
+  // request header.
+  const ByteBuffer& rsp_invalid_id = CreateStaticByteBuffer(
+      // Echo response with 4-byte payload.
+      0x09, kIncorrectId, 0x04, 0x00,
+
+      // Payload
+      'L', '3', '3', 'T');
+  const BufferView req_data = rsp_invalid_id.view(sizeof(CommandHeader));
+
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  bool echo_cb_called = false;
+  EXPECT_TRUE(sig()->SendRequest(kEchoRequest, req_data, [&echo_cb_called](auto, auto&) {
+    echo_cb_called = true;
+    return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+  }));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+
+  const ByteBuffer& reject_rsp = StaticByteBuffer(
+      // Command header (Command Rejected)
+      0x01, kIncorrectId, 0x02, 0x00,
+
+      // Reason (Command not understood)
+      0x00, 0x00);
+  bool reject_sent = false;
+  fake_chan()->SetSendCallback(
+      [&reject_rsp, &reject_sent](auto cb_packet) {
+        reject_sent = ContainersEqual(reject_rsp, *cb_packet);
+      },
+      dispatcher());
+
+  fake_chan()->Receive(rsp_invalid_id);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(echo_cb_called);
+  EXPECT_TRUE(reject_sent);
 }
 
 }  // namespace

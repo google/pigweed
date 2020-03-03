@@ -121,6 +121,19 @@ bool LESignalingChannel::HandlePacket(const SignalingPacket& packet) {
   return false;
 }
 
+bool LESignalingChannel::IsSupportedResponse(CommandCode code) const {
+  switch (code) {
+    case kCommandRejectCode:
+    case kConnectionParameterUpdateResponse:
+    case kDisconnectionResponse:
+    case kLECreditBasedConnectionResponse:
+      return true;
+  }
+
+  // Other response-type commands are for AMP/BREDR and are not supported.
+  return false;
+}
+
 }  // namespace internal
 }  // namespace l2cap
 }  // namespace bt

@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 
 #include <memory>
+#include <unordered_map>
 
 #include <fbl/macros.h>
 
@@ -104,6 +105,10 @@ class SignalingChannel : public SignalingChannelInterface {
   SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role);
   ~SignalingChannel() override;
 
+  // SignalingChannelInterface overrides
+  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override;
+  void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
+
   bool is_open() const { return is_open_; }
 
   // Local signaling MTU (i.e. MTU_sig, per spec)
@@ -132,6 +137,9 @@ class SignalingChannel : public SignalingChannelInterface {
   // Sends out a single signaling packet using the given parameters.
   bool SendPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data);
 
+  // True if the code is for a supported response-type signaling command.
+  virtual bool IsSupportedResponse(CommandCode code) const = 0;
+
   // Called when a frame is received to decode into L2CAP signaling command
   // packets. The derived implementation should invoke |cb| for each packet with
   // a valid payload length, send a Command Reject packet for each packet with
@@ -144,7 +152,8 @@ class SignalingChannel : public SignalingChannelInterface {
   //
   // This method is thread-safe in that a SignalingChannel cannot be deleted
   // while this is running. SendPacket() can be called safely from this method.
-  virtual bool HandlePacket(const SignalingPacket& packet) = 0;
+  // TODO(1049): make non-virtual & private after removing le signaling channel override
+  virtual bool HandlePacket(const SignalingPacket& packet);
 
   // Sends out a command reject packet with the given parameters.
   bool SendCommandReject(uint8_t identifier, RejectReason reason, const ByteBuffer& data);
@@ -162,6 +171,26 @@ class SignalingChannel : public SignalingChannelInterface {
   CommandId GetNextCommandId();
 
  private:
+  // Register a callback that will be invoked when a response-type command
+  // packet (specified by |expected_code|) is received. Returns the identifier
+  // to be included in the header of the outgoing request packet (or
+  // kInvalidCommandId if all valid command identifiers are pending responses).
+  // If the signaling channel receives a Command Reject that matches the same
+  // identifier, the rejection packet will be forwarded to the callback instead.
+  // |handler| will be run on the L2CAP thread.
+  //
+  // TODO(xow): Add function to cancel a queued response.
+  CommandId EnqueueResponse(CommandCode expected_code, ResponseHandler cb);
+
+  // Called when a response-type command packet is received. Sends a Command
+  // Reject if no ResponseHandler was registered for inbound packet's command
+  // code and identifier.
+  void OnRxResponse(const SignalingPacket& packet);
+
+  // True if an outbound request-type command has registered a callback for its
+  // response matching a particular |id|.
+  bool IsCommandPending(CommandId id) const;
+
   // Sends out the given signaling packet directly via |chan_| after running
   // debug-mode assertions for validity. Packet must correspond to exactly one
   // C-frame payload.
@@ -193,6 +222,12 @@ class SignalingChannel : public SignalingChannelInterface {
   hci::Connection::Role role_;
   uint16_t mtu_;
   uint8_t next_cmd_id_;
+
+  // Stores response handlers for requests that have been sent.
+  std::unordered_map<CommandId, std::pair<CommandCode, ResponseHandler>> pending_commands_;
+
+  // Stores handlers for incoming request packets.
+  std::unordered_map<CommandCode, RequestDelegate> inbound_handlers_;
 
   fxl::WeakPtrFactory<SignalingChannel> weak_ptr_factory_;
 
