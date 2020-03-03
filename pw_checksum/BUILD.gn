@@ -37,3 +37,7 @@ pw_test("ccitt_crc16_test") {
     "ccitt_crc16_test.cc",
   ]
 }
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

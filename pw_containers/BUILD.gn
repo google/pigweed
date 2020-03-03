@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -31,4 +32,8 @@ pw_test_group("tests") {
 pw_test("vector_test") {
   deps = [ ":pw_containers" ]
   sources = [ "vector_test.cc" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

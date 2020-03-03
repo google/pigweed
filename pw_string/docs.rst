@@ -7,9 +7,16 @@
 ---------
 pw_string
 ---------
-The string module provides efficient utilities for safely working with strings.
-The pw_string functions and classes always null-terminate strings and never
-overrun buffers. They do not allocate their own memory.
+String manipulation is a very common operation, but the standard C and C++
+string libraries have drawbacks. The C++ functions are easy-to-use and powerful,
+but require too much flash and memory for many embedded projects. The C string
+functions are lighter weight, but can be difficult to use correctly. Mishandling
+of null terminators or buffer sizes can result in serious bugs.
+
+The pw_string module provides the flexibility, ease-of-use, and safety of
+C++-style string manipulation, but with no dynamic memory allocation and a much
+smaller binary size impact. Using pw_string in place of the standard C functions
+eliminates issues related to buffer overflow or missing null terminators.
 
 Compatibility
 =============

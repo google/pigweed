@@ -1,1 +1,1 @@
-# pw\_string: Utilities for safely building strings
+# pw\_string: Embedded-friendly C++ string manipulation primitives

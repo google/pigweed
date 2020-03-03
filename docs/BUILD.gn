@@ -43,6 +43,8 @@ pw_doc_gen("docs") {
     "$dir_pw_bloat:docs",
     "$dir_pw_boot_armv7m:docs",
     "$dir_pw_build:docs",
+    "$dir_pw_checksum:docs",
+    "$dir_pw_containers:docs",
     "$dir_pw_cpu_exception:docs",
     "$dir_pw_cpu_exception_armv7m:docs",
     "$dir_pw_docgen:docs",
@@ -64,5 +66,6 @@ pw_doc_gen("docs") {
     "$dir_pw_sys_io_stdio:docs",
     "$dir_pw_target_runner:docs",
     "$dir_pw_tokenizer:docs",
+    "$dir_pw_varint:docs",
   ]
 }
