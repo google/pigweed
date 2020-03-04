@@ -170,17 +170,17 @@ def _make_box(section_alignments: Sequence[str]) -> str:
                     '{7}', *bot_sections, '{10}'])  # yapf: disable
 
 
-_DOUBLE = '╔═╦╗║║║╚═╩╝'
-_TOP = '┏━┯┓┃│┃┃ │┃'
-_BOTTOM = '┃ │┃┃│┃┗━┷┛'
+_SUMMARY_BOX = '══╦╗ ║║══╩╝'
+_CHECK_UPPER = '━━━┓       '
+_CHECK_LOWER = '       ━━━┛'
 
 WIDTH = 80
 
-_LEFT = 8
+_LEFT = 7
 _RIGHT = 11
 
 
-def _title(msg, style=_DOUBLE) -> str:
+def _title(msg, style=_SUMMARY_BOX) -> str:
     msg = f' {msg} '.center(WIDTH - 2)
     return _make_box('^').format(*style, section1=msg, width1=len(msg))
 
@@ -365,7 +365,7 @@ def _log_summary(time_s: float, passed: int, failed: int,
         result_text = _Result.PASS.colorized(_LEFT, invert=True)
 
     print(
-        _box(_DOUBLE, result_text,
+        _box(_SUMMARY_BOX, result_text,
              f'{passed + failed + skipped} checks: {summary_str}',
              _format_time(time_s)))
 
@@ -527,9 +527,9 @@ class _Check:
     def run(self, ctx: PresubmitContext, count: int, total: int) -> _Result:
         """Runs the presubmit check on the provided paths."""
 
-        print('\n'.join(
-            _box(_TOP, f'{count}/{total}', self.name,
-                 plural(ctx.paths, "file")).splitlines()[:-1]))
+        print(
+            _box(_CHECK_UPPER, f'{count}/{total}', self.name,
+                 plural(ctx.paths, "file")))
 
         _LOG.debug('[%d/%d] Running %s on %s', count, total, self.name,
                    plural(ctx.paths, "file"))
@@ -539,7 +539,7 @@ class _Check:
         time_str = _format_time(time.time() - start_time_s)
         _LOG.debug('%s %s', self.name, result.value)
 
-        print(_box(_BOTTOM, result.colorized(_LEFT), self.name, time_str))
+        print(_box(_CHECK_LOWER, result.colorized(_LEFT), self.name, time_str))
         _LOG.debug('%s duration:%s', self.name, time_str)
 
         return result
