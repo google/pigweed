@@ -47,11 +47,12 @@ class DebouncedFunction(ABC):
 
 
 class State(enum.Enum):
-    IDLE = 1
-    DEBOUNCING = 2
-    RUNNING = 3
-    INTERRUPTED = 4
-    COOLDOWN = 5
+    IDLE = 1  # ------- Transistions to: DEBOUNCING
+    DEBOUNCING = 2  # - Transistions to: RUNNING
+    RUNNING = 3  # ---- Transistions to: INTERRUPTED or COOLDOWN
+    INTERRUPTED = 4  #- Transistions to: RERUN
+    COOLDOWN = 5  #---- Transistions to: IDLE
+    RERUN = 6  #------- Transistions to: IDLE (but triggers a press)
 
 
 class Debouncer:
@@ -68,45 +69,54 @@ class Debouncer:
         self.cooldown_seconds = 1
         self.cooldown_timer = None
 
+        self.rerun_event_description = None
+
         self.lock = threading.Lock()
 
-    def press(self, idle_message=None):
+    def press(self, event_description=None):
         """Try to run the function for the class. If the function is recently
         started, this may push out the deadline for actually starting. If the
         function is already running, will interrupt the function"""
-        _LOG.debug('Press - state = %s', str(self.state))
         with self.lock:
-            if self.state == State.IDLE:
-                if idle_message:
-                    _LOG.info(idle_message)
-                self._start_debounce_timer()
-                self._transition(State.DEBOUNCING)
+            self._press_unlocked(event_description)
 
-            elif self.state == State.DEBOUNCING:
-                self._start_debounce_timer()
+    def _press_unlocked(self, event_description=None):
+        _LOG.debug('Press - state = %s', str(self.state))
+        if self.state == State.IDLE:
+            if event_description:
+                _LOG.info(event_description)
+            self._start_debounce_timer()
+            self._transition(State.DEBOUNCING)
 
-            elif self.state == State.RUNNING:
-                # Function is already running, so do nothing.
-                # TODO: It may make sense to queue an automatic re-build
-                # when an interruption is detected. Follow up on this after
-                # using the interruptable watcher in practice for awhile.
+        elif self.state == State.DEBOUNCING:
+            self._start_debounce_timer()
 
-                # Push an empty line to flush ongoing I/O in subprocess.
-                print()
-                print()
-                _LOG.error('File change detected while running')
-                _LOG.error('Build may be inconsistent or broken')
-                print()
-                self.function.cancel()
-                self._transition(State.INTERRUPTED)
+        elif self.state == State.RUNNING:
+            # When the function is already running but we get an incoming
+            # event, go into the INTERRUPTED state to signal that we should
+            # re-try running afterwards.
 
-            elif self.state == State.INTERRUPTED:
-                # Function is running but was already interrupted. Do nothing.
-                _LOG.debug('Ignoring press - interrupted')
+            # Push an empty line to flush ongoing I/O in subprocess.
+            print()
 
-            elif self.state == State.COOLDOWN:
-                # Function just finished and we are cooling down, so do nothing.
-                _LOG.debug('Ignoring press - cooldown')
+            # Surround the error message with newlines to make it stand out.
+            print()
+            _LOG.error('Event while running: %s', event_description)
+            print()
+
+            self.function.cancel()
+            self._transition(State.INTERRUPTED)
+            self.rerun_event_description = event_description
+
+        elif self.state == State.INTERRUPTED:
+            # Function is running but was already interrupted. Do nothing.
+            _LOG.debug('Ignoring press - interrupted')
+
+        elif self.state == State.COOLDOWN:
+            # Function just finished and we are cooling down; so trigger rerun.
+            _LOG.debug('Got event in cooldown; scheduling rerun')
+            self._transition(State.RERUN)
+            self.rerun_event_description = event_description
 
     def _transition(self, new_state):
         _LOG.debug('State: %s -> %s', str(self.state), str(new_state))
@@ -135,8 +145,12 @@ class Debouncer:
 
             _LOG.debug('Finished running debounced function')
             with self.lock:
-                self.function.on_complete(self.state == State.INTERRUPTED)
-                self._transition(State.COOLDOWN)
+                if self.state == State.RUNNING:
+                    self.function.on_complete(cancelled=False)
+                    self._transition(State.COOLDOWN)
+                elif self.state == State.INTERRUPTED:
+                    self.function.on_complete(cancelled=True)
+                    self._transition(State.RERUN)
                 self._start_cooldown_timer()
         except KeyboardInterrupt:
             self.function.on_keyboard_interrupt()
@@ -152,6 +166,13 @@ class Debouncer:
         try:
             with self.lock:
                 self.cooldown_timer = None
+                rerun = (self.state == State.RERUN)
                 self._transition(State.IDLE)
+
+                # If we were in the RERUN state, then re-trigger the event.
+                if rerun:
+                    self._press_unlocked('Rerunning: %s' %
+                                         self.rerun_event_description)
+
         except KeyboardInterrupt:
             self.function.on_keyboard_interrupt()

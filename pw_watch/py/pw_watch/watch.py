@@ -34,7 +34,7 @@ import pw_cli.color
 import pw_cli.env
 import pw_cli.plugins
 
-from pw_watch.debounce import DebouncedFunction, Debouncer, State
+from pw_watch.debounce import DebouncedFunction, Debouncer
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
@@ -141,8 +141,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         try:
             while True:
                 _ = input()
-                if self.debouncer.state == State.IDLE:
-                    self.debouncer.press('Manual build triggered...')
+                self.debouncer.press('Manual build requested...')
         except KeyboardInterrupt:
             _exit_due_to_interrupt()
 
@@ -200,8 +199,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         if self.matching_path is None:
             self.matching_path = matching_path
 
-        self.debouncer.press('File change detected: %s; debouncing...' %
-                             matching_path)
+        self.debouncer.press('File change detected')
 
     # Implementation of DebouncedFunction.run()
     #
@@ -434,10 +432,7 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
     _LOG.info('Directory to watch: %s', path_to_log)
     _LOG.info('Watching for file changes. Ctrl-C exits.')
 
-    # Make a nice non-logging banner to motivate the user.
-    print()
-    print(_COLOR.green('  WATCHER IS READY: GO WRITE SOME CODE!'))
-    print()
+    event_handler.debouncer.press('Triggering initial build...')
 
     try:
         while observer.isAlive():
