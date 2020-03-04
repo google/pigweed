@@ -69,7 +69,6 @@ from pw_env_setup.cipd_setup import update as cipd_update
 from pw_env_setup.cipd_setup import wrapper as cipd_wrapper
 from pw_env_setup import cargo_setup
 from pw_env_setup import environment
-from pw_env_setup import host_build_setup
 from pw_env_setup import virtualenv_setup
 
 
@@ -98,7 +97,7 @@ class EnvSetup(object):
         steps = [
             ('cipd', self.cipd),
             ('python', self.virtualenv),
-            ('host_tools', self.host_build),
+            ('host_tools', self.host_tools),
         ]
 
         if os.name != 'nt':
@@ -168,9 +167,12 @@ class EnvSetup(object):
         )
         self._env.echo('done.')
 
-    def host_build(self):
-        self._env.echo('Setting host_build environment variables...')
-        host_build_setup.install(pw_root=self._pw_root, env=self._env)
+    def host_tools(self):
+        # The host tools are grabbed from CIPD, at least initially. If the
+        # user has a current host build, that build will be used instead.
+        self._env.echo('Setting host_tools environment variables...')
+        host_dir = os.path.join(self._pw_root, 'out', 'host')
+        self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
         self._env.echo('done.')
 
     def cargo(self):

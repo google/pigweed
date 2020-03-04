@@ -89,10 +89,9 @@
         ]
     },
     {
-        "path": "pigweed/host_tools/${os=linux,windows}-${arch=amd64}",
+        "path": "pigweed/host_tools/${platform}",
         "tags": [
-            "git_revision:4a257c1bc592f355c4a9bb712c322d1a45cacfb8"
-        ],
-        "_comment": "TODO(pwbug/118) Put Windows and Mac host tools in CIPD."
+            "git_revision:fd0c14004432103b3048d2a47d3cc756d2dd8338"
+        ]
     }
 ]
