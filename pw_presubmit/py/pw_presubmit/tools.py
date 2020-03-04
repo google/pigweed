@@ -42,7 +42,7 @@ pragma_once function for an example.
 """
 
 import argparse
-from collections import Counter, defaultdict
+from collections import defaultdict
 import contextlib
 import dataclasses
 import enum
@@ -200,20 +200,6 @@ def _box(style, left, middle, right, box=_make_box('><>')) -> str:
                       width3=_RIGHT)
 
 
-def file_summary(paths: Sequence[Path]) -> str:
-    files = Counter(path.suffix or path.name for path in paths)
-
-    if not files:
-        return ''
-
-    width = max(len(f) for f in files) + 2
-    max_count_width = len(str(max(files.values())))
-
-    return '\n'.join(
-        f'{ext:>{width}}: {plural(count, "file", max_count_width)}'
-        for ext, count in sorted(files.items()))
-
-
 class PresubmitFailure(Exception):
     """Optional exception to use for presubmit failures."""
     def __init__(self, description: str = '', path=None):
@@ -267,9 +253,8 @@ class Presubmit:
                   self._repository_root)
 
         _LOG.debug('Paths:\n%s', '\n'.join(str(path) for path in self._paths))
-        print(
-            file_summary(self._paths)
-            or color_yellow('No files are being checked!'))
+        if not self._paths:
+            print(color_yellow('No files are being checked!'))
 
         _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in program))
 
