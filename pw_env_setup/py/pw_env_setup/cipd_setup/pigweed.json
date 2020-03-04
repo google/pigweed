@@ -2,7 +2,7 @@
     {
         "path": "gn/gn/${platform}",
         "tags": [
-            "git_revision:239533d2d91a04b3317ca9101cf7189f4e651e4d"
+            "git_revision:5e43d016589db2c613c98f9916afd729a36e781a"
         ]
     },
     {
