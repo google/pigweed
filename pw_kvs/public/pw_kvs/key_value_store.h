@@ -363,7 +363,8 @@ class KeyValueStore {
 
   Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
-  Status RelocateEntry(KeyDescriptor& key_descriptor);
+  Status RelocateEntry(KeyDescriptor& key_descriptor,
+                       KeyValueStore::Address address);
 
   enum FindSectorMode { kAppendEntry, kGarbageCollect };
 
@@ -402,15 +403,11 @@ class KeyValueStore {
     return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
-  SectorDescriptor* SectorFromKey(const KeyDescriptor& descriptor) {
-    const size_t index = descriptor.address() / partition_.sector_size_bytes();
+  SectorDescriptor* SectorFromAddress(const FlashPartition::Address address) {
+    const size_t index = address / partition_.sector_size_bytes();
     // TODO: Add boundary checking once asserts are supported.
-    // DCHECK_LT(index, sector_map_size_);
+    // DCHECK_LT(index, sector_map_size_);`
     return &sectors_[index];
-  }
-
-  SectorDescriptor* SectorFromKey(const KeyDescriptor* descriptor) {
-    return SectorFromKey(*descriptor);
   }
 
   Address NextWritableAddress(const SectorDescriptor* sector) const {

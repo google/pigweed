@@ -93,7 +93,7 @@ class Entry {
 
   void UpdateDescriptor(KeyDescriptor* kd) {
     kd->transaction_id_ = transaction_id();
-    kd->address_ = address_;
+    kd->addresses_.assign(1, address_);
     kd->state_ = deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid;
   }
 
