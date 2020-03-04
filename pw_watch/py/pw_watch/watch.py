@@ -40,12 +40,11 @@ _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 
 _BUILD_MESSAGE = """
-  ██████╗ ██╗   ██╗██╗██╗     ██████╗
-  ██╔══██╗██║   ██║██║██║     ██╔══██╗
-  ██████╔╝██║   ██║██║██║     ██║  ██║
-  ██╔══██╗██║   ██║██║██║     ██║  ██║
-  ██████╔╝╚██████╔╝██║███████╗██████╔╝
-  ╚═════╝  ╚═════╝ ╚═╝╚══════╝╚═════╝
+ ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 """
 
 _PASS_MESSAGE = """
@@ -212,6 +211,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Clear the screen and show a banner indicating the build is starting.
         print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
         print(_COLOR.magenta(_BUILD_MESSAGE))
+        print(
+            _COLOR.green(
+                '  Watching for changes. Ctrl-C to exit; enter to rebuild'))
+        print()
         _LOG.info('Change detected: %s', self.matching_path)
 
         self.builds_succeeded = []
