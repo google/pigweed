@@ -220,10 +220,7 @@ class Environment(object):
         for action in self._actions:
             action.write(outs, windows=self._windows)
 
-        if self._windows:
-            outs.write('pw --loglevel info doctor\n')
-
-        else:
+        if not self._windows:
             outs.write(
                 '# This should detect bash and zsh, which have a hash \n'
                 '# command that must be called to get it to forget past \n'
@@ -232,12 +229,6 @@ class Environment(object):
                 'if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n'
                 '    hash -r\n'
                 'fi\n')
-
-            outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n'
-                       '  pw --loglevel info doctor\n'
-                       'else\n'
-                       '  pw --loglevel warn doctor\n'
-                       'fi\n')
 
     @contextlib.contextmanager
     def __call__(self, export=True):

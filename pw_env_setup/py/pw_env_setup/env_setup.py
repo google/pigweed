@@ -107,10 +107,15 @@ class EnvSetup(object):
         for name, step in steps:
             print('Setting up {}...'.format(name), file=sys.stderr)
             step()
-            print('done.', file=sys.stderr)
+            print('  done.', file=sys.stderr)
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
+            if 'PW_ENVSETUP_QUIET' in os.environ:
+                outs.write('pw --loglevel warn doctor\n')
+            else:
+                outs.write('pw --loglevel info doctor\n')
+            outs.write('echo Pigweed environment setup complete')
 
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
@@ -127,7 +132,7 @@ class EnvSetup(object):
             cache_dir=self._cipd_cache_dir,
             env_vars=self._env,
         )
-        self._env.echo('done.')
+        self._env.echo('  done.')
 
     def virtualenv(self):
         """Setup virtualenv."""
@@ -165,7 +170,7 @@ class EnvSetup(object):
             python=python,
             env=self._env,
         )
-        self._env.echo('done.')
+        self._env.echo('  done.')
 
     def host_tools(self):
         # The host tools are grabbed from CIPD, at least initially. If the
@@ -173,7 +178,7 @@ class EnvSetup(object):
         self._env.echo('Setting host_tools environment variables...')
         host_dir = os.path.join(self._pw_root, 'out', 'host')
         self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
-        self._env.echo('done.')
+        self._env.echo('  done.')
 
     def cargo(self):
         self._env.echo('Setting cargo environment variables...')
@@ -182,7 +187,7 @@ class EnvSetup(object):
         else:
             self._env.echo(
                 '  cargo setup skipped, set PW_CARGO_SETUP to include it')
-        self._env.echo('done.')
+        self._env.echo('  done.')
 
 
 def parse(argv=None):
