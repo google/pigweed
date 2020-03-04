@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-source_filter: "^SEG .+$"
+source_filter: "^(FLASH|RAM)$"
 
 custom_data_source: {
   name: "segment_names"
@@ -20,10 +20,10 @@ custom_data_source: {
 
   rewrite: {
     pattern: "LOAD #1"
-    replacement: "SEG FLASH"
+    replacement: "FLASH"
   }
   rewrite: {
     pattern: "LOAD #2"
-    replacement: "SEG RAM"
+    replacement: "RAM"
   }
 }

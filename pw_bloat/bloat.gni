@@ -206,6 +206,7 @@ template("pw_toolchain_size_report") {
     config(_linker_script_target_name) {
       if (defined(_toolchain.linker_script)) {
         ldflags = [ "-T" + rebase_path(_toolchain.linker_script) ]
+        inputs = [ _toolchain.linker_script ]
       } else {
         ldflags = []
       }

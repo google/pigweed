@@ -14,52 +14,32 @@
 
 import("$dir_pigweed/pw_vars_default.gni")
 
-pw_executable_config.bloaty_config_file =
-    get_path_info("empty.bloaty", "abspath")
+_arm_bloaty_config = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
 
-# Targets are required to set a default toolchain. Choose something random.
-pw_target_toolchain = "$dir_pw_toolchain:host_gcc_og"
+# Targets are required to set a default toolchain. Use the Cortex M4 ARM
+# toolchain for old pw_size_report targets.
+pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m4_og"
+
+pw_executable_config.bloaty_config_file = _arm_bloaty_config
 
 # Special upstream build variable to indicate that this is a docs-only target.
 pw_is_docs_target = true
 
 # Toolchains to compare in documentation size reports.
-# TODO(frolv): Add bloaty configs and linker scripts to all of these.
 pw_size_report_toolchains = [
   {
-    name = "x86_64-gcc -Og"
-    target = "$dir_pw_toolchain:host_gcc_og"
-  },
-  {
-    name = "x86_64-gcc -Os"
-    target = "$dir_pw_toolchain:host_gcc_os"
-  },
-  {
-    name = "x86_64-gcc -O2"
-    target = "$dir_pw_toolchain:host_gcc_o2"
-  },
-  {
-    name = "x86_64-clang -Og"
-    target = "$dir_pw_toolchain:host_clang_og"
-  },
-  {
-    name = "x86_64-clang -Os"
-    target = "$dir_pw_toolchain:host_clang_os"
-  },
-  {
-    name = "x86_64-clang -O2"
-    target = "$dir_pw_toolchain:host_clang_o2"
-  },
-  {
-    name = "arm-none-eabi-gcc -Og"
+    name = "arm-none-eabi-gcc -Og -mcpu=cortex-m4"
     target = "$dir_pw_toolchain:arm_gcc_cortex_m4_og"
+    bloaty_config = _arm_bloaty_config
   },
   {
-    name = "arm-none-eabi-gcc -Os"
+    name = "arm-none-eabi-gcc -Os -mcpu=cortex-m4"
     target = "$dir_pw_toolchain:arm_gcc_cortex_m4_os"
+    bloaty_config = _arm_bloaty_config
   },
   {
-    name = "arm-none-eabi-gcc -O2"
+    name = "arm-none-eabi-gcc -O2 -mcpu=cortex-m4"
     target = "$dir_pw_toolchain:arm_gcc_cortex_m4_o2"
+    bloaty_config = _arm_bloaty_config
   },
 ]
