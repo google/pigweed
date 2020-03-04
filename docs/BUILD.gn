@@ -15,8 +15,15 @@
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("core_docs") {
+  inputs = [
+    "images/pw_watch_build_demo.gif",
+    "images/pw_watch_test_demo.gif",
+    "images/stm32f429i-disc1_connected.jpg",
+  ]
   sources = [
+    "developer_guide.md",
     "embedded_cpp_guide.rst",
+    "setup.md",
     "style_guide.rst",
   ]
 }
@@ -29,6 +36,7 @@ group("target_docs") {
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
+    "../CODE_OF_CONDUCT.md",
     "../README.md",
     "index.rst",
     "modules.rst",

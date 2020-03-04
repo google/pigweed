@@ -39,6 +39,9 @@ pygm = 'sphinx'
 
 extensions = ['sphinx.ext.autodoc', 'm2r']
 
+# Tell m2r to parse links to .md files and add them to the build.
+m2r_parse_relative_links = True
+
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'sphinx_rtd_theme'
@@ -90,4 +93,4 @@ texinfo_documents = [
 
 # Markdown files imported using m2r aren't marked as "referenced," so exclude
 # them from the error reference checking.
-exclude_patterns = ['*.md']
+exclude_patterns = ['README.md']
