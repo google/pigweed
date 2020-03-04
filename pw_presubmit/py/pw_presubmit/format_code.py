@@ -40,7 +40,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import list_git_files, log_run, plural
+from pw_presubmit import file_summary, list_git_files, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ def _diff_formatted(path, formatter: Formatter) -> Optional[str]:
     return None if formatted == original else _diff(path, original, formatted)
 
 
-def _check_files(files, formatter: Formatter) -> Dict[str, str]:
+def _check_files(files, formatter: Formatter) -> Dict[Path, str]:
     errors = {}
 
     for path in files:
@@ -106,7 +106,7 @@ def _clang_format(*args: str, **kwargs) -> bytes:
                    **kwargs).stdout
 
 
-def check_c_format(files: Iterable) -> Dict[str, str]:
+def check_c_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(files, lambda path, _: _clang_format(path))
 
@@ -116,7 +116,7 @@ def fix_c_format(files: Iterable) -> None:
     _clang_format('-i', *files)
 
 
-def check_gn_format(files: Iterable) -> Dict[str, str]:
+def check_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         files, lambda _, data: log_run('gn',
@@ -127,24 +127,24 @@ def check_gn_format(files: Iterable) -> Dict[str, str]:
                                        check=True).stdout)
 
 
-def fix_gn_format(files: Iterable) -> None:
+def fix_gn_format(files: Iterable[Path]) -> None:
     """Fixes formatting for the provided files in place."""
     log_run('gn', 'format', *files, check=True)
 
 
-def check_go_format(files: Iterable) -> Dict[str, str]:
+def check_go_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         files, lambda path, _: log_run(
             'gofmt', path, stdout=subprocess.PIPE, check=True).stdout)
 
 
-def fix_go_format(files: Iterable) -> None:
+def fix_go_format(files: Iterable[Path]) -> None:
     """Fixes formatting for the provided files in place."""
     log_run('gofmt', '-w', *files, check=True)
 
 
-def _yapf(*args: str, **kwargs) -> subprocess.CompletedProcess:
+def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
     return log_run('python',
                    '-m',
                    'yapf',
@@ -157,18 +157,18 @@ def _yapf(*args: str, **kwargs) -> subprocess.CompletedProcess:
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
 
 
-def check_py_format(files: Iterable) -> Dict[str, str]:
+def check_py_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     process = _yapf('--diff', *files)
 
-    errors = {}
+    errors: Dict[Path, str] = {}
 
     if process.stdout:
         raw_diff = process.stdout.decode(errors='replace')
 
         matches = tuple(_DIFF_START.finditer(raw_diff))
         for start, end in zip(matches, (*matches[1:], None)):
-            errors[start.group(1)] = colorize_diff(
+            errors[Path(start.group(1))] = colorize_diff(
                 raw_diff[start.start():end.start() if end else None])
 
     if process.stderr:
@@ -185,7 +185,7 @@ def fix_py_format(files: Iterable):
 
 
 def print_format_check(
-        errors: Dict[str, str],
+        errors: Dict[Path, str],
         show_fix_commands: bool,
 ) -> None:
     """Prints and returns the result of a check_*_format function."""
@@ -216,7 +216,7 @@ def print_format_check(
 class CodeFormat(NamedTuple):
     language: str
     extensions: Collection[str]
-    check: Callable[[Iterable], Dict[str, str]]
+    check: Callable[[Iterable], Dict[Path, str]]
     fix: Callable[[Iterable], None]
 
 
@@ -266,21 +266,21 @@ PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self, files: Sequence[str]):
+    def __init__(self, files: Sequence[Path]):
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
         for path in files:
             for code_format in CODE_FORMATS:
-                if any(path.endswith(e) for e in code_format.extensions):
+                if any(str(path).endswith(e) for e in code_format.extensions):
                     self._formats[code_format].append(path)
 
-    def check(self) -> Dict[str, str]:
+    def check(self) -> Dict[Path, str]:
         """Returns {path: diff} for files with incorrect formatting."""
-        errors = {}
+        errors: Dict[Path, str] = {}
 
         for code_format, files in self._formats.items():
-            _LOG.debug('Checking %s', ', '.join(files))
+            _LOG.debug('Checking %s', ', '.join(str(f) for f in files))
             errors.update(code_format.check(files))
 
         return collections.OrderedDict(sorted(errors.items()))
@@ -293,9 +293,17 @@ class CodeFormatter:
                       plural(files, code_format.language + ' file'))
 
 
+def _file_summary(files: Iterable[Path], base: Path) -> List[str]:
+    try:
+        return file_summary(f.resolve().relative_to(base.resolve())
+                            for f in files)
+    except ValueError:
+        return []
+
+
 def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
     """Checks or fixes formatting for files in a Git repo."""
-    files = [str(path.resolve()) for path in paths if path.is_file()]
+    files = [path.resolve() for path in paths if path.is_file()]
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if pw_presubmit.is_git_repo():
@@ -308,8 +316,7 @@ def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
                 Path.cwd().relative_to(repo), repo)
 
         # Add files from Git and remove duplicates.
-        file_set = set(str(p) for p in list_git_files(base, paths, exclude))
-        files = sorted(file_set | set(files))
+        files = sorted(set(list_git_files(base, paths, exclude)) | set(files))
     elif base:
         _LOG.critical(
             'A base commit may only be provided if running from a Git repo')
@@ -317,8 +324,12 @@ def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
 
     formatter = CodeFormatter(files)
 
-    _LOG.debug('Found %s files:\n%s', len(files), '\n'.join(f for f in files))
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
+    _LOG.debug('Files to format:\n%s', '\n'.join(str(f) for f in files))
+
+    for line in _file_summary(
+            files, repo if pw_presubmit.is_git_repo() else Path.cwd()):
+        print(line, file=sys.stderr)
 
     errors = formatter.check()
     print_format_check(errors, show_fix_commands=(not fix))

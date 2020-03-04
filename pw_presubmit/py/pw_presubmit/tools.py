@@ -42,7 +42,7 @@ pragma_once function for an example.
 """
 
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import contextlib
 import dataclasses
 import enum
@@ -54,7 +54,7 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Callable, Dict, Iterable, List, NamedTuple, Optional
+from typing import Any, Callable, Dict, Iterable, List, NamedTuple, Optional
 from typing import Sequence, Tuple, Union
 from inspect import signature
 
@@ -234,6 +234,57 @@ class PresubmitContext:
     paths: Sequence[Path]
 
 
+def file_summary(paths: Iterable[Path],
+                 levels: int = 2,
+                 max_lines: int = 12,
+                 max_types: int = 3,
+                 pad: str = ' ',
+                 pad_start: str = ' ',
+                 pad_end: str = ' ') -> List[str]:
+    """Summarizes a list of files by the file types in each directory."""
+
+    # Count the file types in each directory.
+    all_counts: Dict[Any, Counter] = defaultdict(Counter)
+
+    for path in paths:
+        parent = path.parents[max(len(path.parents) - levels, 0)]
+        all_counts[parent][path.suffix] += 1
+
+    # If there are too many lines, condense directories with the fewest files.
+    if len(all_counts) > max_lines:
+        counts = sorted(all_counts.items(),
+                        key=lambda item: -sum(item[1].values()))
+        counts, others = sorted(counts[:max_lines - 1]), counts[max_lines - 1:]
+        counts.append((f'({plural(others, "other")})',
+                       sum((c for _, c in others), Counter())))
+    else:
+        counts = sorted(all_counts.items())
+
+    width = max(len(str(d)) + len(os.sep) for d, _ in counts) if counts else 0
+    width += len(pad_start)
+
+    # Prepare the output.
+    output = []
+    for path, files in counts:
+        total = sum(files.values())
+        del files['']  # Never display no-extension files individually.
+
+        if files:
+            extensions = files.most_common(max_types)
+            other_extensions = total - sum(count for _, count in extensions)
+            if other_extensions:
+                extensions.append(('other', other_extensions))
+
+            types = ' (' + ', '.join(f'{c} {e}' for e, c in extensions) + ')'
+        else:
+            types = ''
+
+        root = f'{path}{os.sep}{pad_start}'.ljust(width, pad)
+        output.append(f'{root}{pad_end}{plural(total, "file")}{types}')
+
+    return output
+
+
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
     def __init__(self, repository_root: Path, output_directory: Path,
@@ -252,6 +303,11 @@ class Presubmit:
                   plural(full_program, 'check'), plural(self._paths, 'file'),
                   self._repository_root)
 
+        print()
+        for line in file_summary(self._paths):
+            print(line)
+        print()
+
         _LOG.debug('Paths:\n%s', '\n'.join(str(path) for path in self._paths))
         if not self._paths:
             print(color_yellow('No files are being checked!'))
@@ -260,9 +316,33 @@ class Presubmit:
 
         start_time: float = time.time()
         passed, failed, skipped = self._execute_checks(program, keep_going)
-        _log_summary(time.time() - start_time, passed, failed, skipped)
+        self._log_summary(time.time() - start_time, passed, failed, skipped)
 
         return not failed and not skipped
+
+    def _log_summary(self, time_s: float, passed: int, failed: int,
+                     skipped: int) -> None:
+        summary_items = []
+        if passed:
+            summary_items.append(f'{passed} passed')
+        if failed:
+            summary_items.append(f'{failed} failed')
+        if skipped:
+            summary_items.append(f'{skipped} not run')
+        summary = ', '.join(summary_items) or 'nothing was done'
+
+        result = _Result.FAIL if failed or skipped else _Result.PASS
+        total = passed + failed + skipped
+
+        _LOG.debug('Finished running %d checks on %s in %.1f s', total,
+                   plural(self._paths, 'file'), time_s)
+        _LOG.debug('Presubmit checks %s: %s', result.value, summary)
+
+        print(
+            _box(
+                _SUMMARY_BOX, result.colorized(_LEFT, invert=True),
+                f'{total} checks on {plural(self._paths, "file")}: {summary}',
+                _format_time(time_s)))
 
     @contextlib.contextmanager
     def _context(self, name: str, paths: Sequence[Path]):
@@ -346,28 +426,6 @@ def _map_checks_to_paths(
                 _LOG.debug('Skipping "%s": no relevant files', check.name)
 
     return checks_to_paths
-
-
-def _log_summary(time_s: float, passed: int, failed: int,
-                 skipped: int) -> None:
-    summary = []
-    if passed:
-        summary.append(f'{passed} passed')
-    if failed:
-        summary.append(f'{failed} failed')
-    if skipped:
-        summary.append(f'{skipped} did not run')
-    summary_str = ', '.join(summary) or 'nothing was done'
-
-    if failed or skipped:
-        result_text = _Result.FAIL.colorized(_LEFT, invert=True)
-    else:
-        result_text = _Result.PASS.colorized(_LEFT, invert=True)
-
-    print(
-        _box(_SUMMARY_BOX, result_text,
-             f'{passed + failed + skipped} checks: {summary_str}',
-             _format_time(time_s)))
 
 
 def add_path_arguments(parser) -> None:

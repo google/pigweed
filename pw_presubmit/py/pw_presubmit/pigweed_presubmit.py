@@ -24,7 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Dict, Sequence
+from typing import Callable, Dict, Sequence, Tuple
 
 try:
     import pw_presubmit
@@ -157,7 +157,7 @@ def gn_docs_build(ctx: PresubmitContext):
     ninja('docs:docs', ctx=ctx)
 
 
-GN = (
+GN: Tuple[Callable, ...] = (
     gn_clang_build,
     gn_arm_build,
     gn_docs_build,
@@ -278,7 +278,7 @@ def cmake_tests(ctx: PresubmitContext):
     call('ninja', '-C', output, 'pw_run_tests.modules', env=env)
 
 
-CMAKE = tuple()
+CMAKE: Tuple[Callable, ...] = ()
 
 # TODO(pwbug/141): Re-enable this after we have fixed the CMake toolchain issue
 # on Mac. The problem is that all clang++ invocations need the two extra
@@ -309,7 +309,7 @@ def bazel_test(ctx: PresubmitContext):
         raise
 
 
-BAZEL = tuple()
+BAZEL: Tuple[Callable, ...] = ()
 
 # TODO(pwbug/141): Re-enable this after we have fixed the Bazel toolchain issue
 # on Mac. The problem is that all clang++ invocations need the two extra flags:
