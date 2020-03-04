@@ -93,5 +93,11 @@
         "tags": [
             "git_revision:fd0c14004432103b3048d2a47d3cc756d2dd8338"
         ]
+    },
+    {
+        "path": "infra/goma/client/${platform}",
+        "tags": [
+            "git_revision:108fb36e5538b3749016ec19ef1268fc43681e33"
+        ]
     }
 ]
