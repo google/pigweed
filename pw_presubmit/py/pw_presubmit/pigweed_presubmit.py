@@ -280,9 +280,9 @@ def cmake_tests(ctx: PresubmitContext):
 
 CMAKE = tuple()
 
-# TODO: Re-enable this after we have fixed the CMake toolchain issue on Mac.
-# The problem is that all clang++ invocations need the two extra flags:
-# "-nostdc++" and "${clang_prefix}../lib/libc++.a".
+# TODO(pwbug/141): Re-enable this after we have fixed the CMake toolchain issue
+# on Mac. The problem is that all clang++ invocations need the two extra
+# flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
 if sys.platform != 'darwin':
     CMAKE = (cmake_tests, )
 
@@ -311,8 +311,8 @@ def bazel_test(ctx: PresubmitContext):
 
 BAZEL = tuple()
 
-# TODO: Re-enable this after we have fixed the CMake toolchain issue on Mac.
-# The problem is that all clang++ invocations need the two extra flags:
+# TODO(pwbug/141): Re-enable this after we have fixed the Bazel toolchain issue
+# on Mac. The problem is that all clang++ invocations need the two extra flags:
 # "-nostdc++" and "${clang_prefix}../lib/libc++.a".
 if sys.platform != 'darwin':
     BAZEL = (bazel_test, )
