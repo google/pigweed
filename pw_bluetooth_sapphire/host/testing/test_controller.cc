@@ -13,34 +13,52 @@
 namespace bt {
 namespace testing {
 
-CommandTransaction::CommandTransaction(const ByteBuffer& expected,
-                                       const std::vector<const ByteBuffer*>& replies)
-    : prefix_(false), expected_(expected) {
+Transaction::Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
+    : expected_({DynamicByteBuffer(expected)}) {
   for (const auto* buffer : replies) {
     replies_.push(DynamicByteBuffer(*buffer));
   }
+}
+
+bool Transaction::Match(const ByteBuffer& packet) {
+  return ContainersEqual(expected_.data, packet);
 }
 
 CommandTransaction::CommandTransaction(hci::OpCode expected_opcode,
                                        const std::vector<const ByteBuffer*>& replies)
-    : prefix_(true) {
+    : Transaction({DynamicByteBuffer()}, replies), prefix_(true) {
   hci::OpCode le_opcode = htole16(expected_opcode);
   const BufferView expected(&le_opcode, sizeof(expected_opcode));
-  expected_ = DynamicByteBuffer(expected);
-  for (const auto* buffer : replies) {
-    replies_.push(DynamicByteBuffer(*buffer));
-  }
+  set_expected({DynamicByteBuffer(expected)});
 }
 
-bool CommandTransaction::Match(const BufferView& cmd) {
-  return ContainersEqual(expected_, (prefix_ ? cmd.view(0, expected_.size()) : cmd));
+bool CommandTransaction::Match(const ByteBuffer& cmd) {
+  return ContainersEqual(expected().data,
+                         (prefix_ ? cmd.view(0, expected().data.size()) : cmd.view()));
 }
 
 TestController::TestController()
-    : FakeControllerBase(), data_dispatcher_(nullptr), transaction_dispatcher_(nullptr) {}
+    : FakeControllerBase(),
+      data_expectations_enabled_(false),
+      data_dispatcher_(nullptr),
+      transaction_dispatcher_(nullptr) {}
 
 TestController::~TestController() {
-  EXPECT_EQ(0u, cmd_transactions_.size()) << "Not all transactions resolved!";
+  while (!cmd_transactions_.empty()) {
+    auto& transaction = cmd_transactions_.front();
+    // TODO(46656): add file & line number to failure
+    ADD_FAILURE() << "Didn't receive expected outbound command packet {"
+                  << ByteContainerToString(transaction.expected().data) << "}";
+    cmd_transactions_.pop();
+  }
+
+  while (!data_transactions_.empty()) {
+    auto& transaction = data_transactions_.front();
+    // TODO(46656): add file & line number to failure
+    ADD_FAILURE() << "Didn't receive expected outbound data packet {"
+                  << ByteContainerToString(transaction.expected().data) << "}";
+    data_transactions_.pop();
+  }
   Stop();
 }
 
@@ -50,8 +68,20 @@ void TestController::QueueCommandTransaction(CommandTransaction transaction) {
 
 void TestController::QueueCommandTransaction(const ByteBuffer& expected,
                                              const std::vector<const ByteBuffer*>& replies) {
-  QueueCommandTransaction(CommandTransaction(expected, replies));
+  QueueCommandTransaction(CommandTransaction({DynamicByteBuffer(expected)}, replies));
 }
+
+void TestController::QueueDataTransaction(DataTransaction transaction) {
+  ZX_ASSERT(data_expectations_enabled_);
+  data_transactions_.push(std::move(transaction));
+}
+
+void TestController::QueueDataTransaction(const ByteBuffer& expected,
+                                          const std::vector<const ByteBuffer*>& replies) {
+  QueueDataTransaction(DataTransaction({DynamicByteBuffer(expected)}, replies));
+}
+
+bool TestController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
 
 void TestController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
@@ -102,11 +132,11 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
   auto& current = cmd_transactions_.front();
   ASSERT_TRUE(current.Match(command_packet.data()));
 
-  while (!current.replies_.empty()) {
-    auto& reply = current.replies_.front();
+  while (!current.replies().empty()) {
+    auto& reply = current.replies().front();
     auto status = SendCommandChannelPacket(reply);
     ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
-    current.replies_.pop();
+    current.replies().pop();
   }
   cmd_transactions_.pop();
 
@@ -118,12 +148,27 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
 }
 
 void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
-  if (!data_callback_)
-    return;
+  if (data_expectations_enabled_) {
+    ASSERT_FALSE(data_transactions_.empty()) << "Received unexpected acl data packet: { "
+                                             << ByteContainerToString(acl_data_packet) << "}";
 
-  DynamicByteBuffer packet_copy(acl_data_packet);
-  async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
-                                     cb = data_callback_.share()]() mutable { cb(packet_copy); });
+    auto& current = data_transactions_.front();
+    ASSERT_TRUE(current.Match(acl_data_packet.view()));
+
+    while (!current.replies().empty()) {
+      auto& reply = current.replies().front();
+      auto status = SendACLDataChannelPacket(reply);
+      ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
+      current.replies().pop();
+    }
+    data_transactions_.pop();
+  }
+
+  if (data_callback_) {
+    DynamicByteBuffer packet_copy(acl_data_packet);
+    async::PostTask(data_dispatcher_, [packet_copy = std::move(packet_copy),
+                                       cb = data_callback_.share()]() mutable { cb(packet_copy); });
+  }
 }
 
 }  // namespace testing

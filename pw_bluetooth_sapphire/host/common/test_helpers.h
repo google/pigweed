@@ -42,10 +42,22 @@
 namespace bt {
 
 template <class InputIt>
-void PrintByteContainer(InputIt begin, InputIt end) {
+std::string ByteContainerToString(InputIt begin, InputIt end) {
+  std::string bytes_string;
   for (InputIt iter = begin; iter != end; ++iter) {
-    std::cout << fxl::StringPrintf("0x%.2x ", *iter);
+    bytes_string += fxl::StringPrintf("0x%.2x ", *iter);
   }
+  return bytes_string;
+}
+
+template <class Container>
+std::string ByteContainerToString(const Container& c) {
+  return ByteContainerToString(c.begin(), c.end());
+}
+
+template <class InputIt>
+void PrintByteContainer(InputIt begin, InputIt end) {
+  std::cout << ByteContainerToString(begin, end);
 }
 
 // Prints the contents of a container as a string.
