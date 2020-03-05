@@ -234,6 +234,8 @@ def init(install_dir=DEFAULT_INSTALL_DIR):
     os.environ['CIPD_HTTP_USER_AGENT_PREFIX'] = user_agent()
 
     client = os.path.join(install_dir, 'cipd')
+    if os.name == 'nt':
+        client += '.exe'
 
     try:
         if not os.path.isfile(client):
