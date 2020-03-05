@@ -177,25 +177,40 @@ class Environment(object):
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', os.pathsep)
         windows = kwargs.pop('windows', os.name == 'nt')
+        allcaps = kwargs.pop('allcaps', windows)
         super(Environment, self).__init__(*args, **kwargs)
         self._actions = []
         self._pathsep = pathsep
         self._windows = windows
+        self._allcaps = allcaps
 
     def _join(self, *args):
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
         return self._pathsep.join(args)
 
+    def normalize_key(self, name):
+        if self._allcaps:
+            try:
+                return name.upper()
+            except AttributeError:
+                # The _Action class has code to handle incorrect types, so
+                # we just ignore this error here.
+                pass
+        return name
+
     def set(self, name, value):
+        name = self.normalize_key(name)
         self._actions.append(_Set(name, value))
 
     def clear(self, name):
+        name = self.normalize_key(name)
         self._actions.append(_Clear(name))
 
     def append(self, name, value):
         """Add a value to the end of a variable. Rarely used, see prepend()."""
 
+        name = self.normalize_key(name)
         if self.get(name, None):
             self._actions.append(_Append(name, value, self._join))
         else:
@@ -204,6 +219,7 @@ class Environment(object):
     def prepend(self, name, value):
         """Add a value to the beginning of a variable."""
 
+        name = self.normalize_key(name)
         if self.get(name, None):
             self._actions.append(_Prepend(name, value, self._join))
         else:
@@ -269,10 +285,12 @@ class Environment(object):
 
     def get(self, key, default=None):
         """Get the value of a variable within context of this object."""
+        key = self.normalize_key(key)
         with self(export=False) as env:
             return env.get(key, default)
 
     def __getitem__(self, key):
         """Get the value of a variable within context of this object."""
+        key = self.normalize_key(key)
         with self(export=False) as env:
             return env[key]

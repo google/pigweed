@@ -62,7 +62,7 @@ def _evaluate_env_in_shell(env):
     if os.name == 'nt':
         # On Windows you just run batch files and they modify your
         # environment, no need to call 'source' or '.'.
-        cmd = '{} && env'.format(temp_name)
+        cmd = '{} && set'.format(temp_name)
     else:
         # Using '.' instead of 'source' because 'source' is not POSIX.
         cmd = '. {} && env'.format(temp_name)
@@ -93,11 +93,11 @@ class EnvironmentTest(unittest.TestCase):
     def setUp(self):
         self.env = environment.Environment()
 
-        self.var_already_set = 'var_already_set'
+        self.var_already_set = self.env.normalize_key('var_already_set')
         os.environ[self.var_already_set] = 'orig value'
         self.assertIn(self.var_already_set, os.environ)
 
-        self.var_not_set = 'var_not_set'
+        self.var_not_set = self.env.normalize_key('var_not_set')
         if self.var_not_set in os.environ:
             del os.environ[self.var_not_set]
         self.assertNotIn(self.var_not_set, os.environ)
@@ -221,9 +221,11 @@ class _PrependAppendEnvironmentTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         windows = kwargs.pop('windows', False)
         pathsep = kwargs.pop('pathsep', os.pathsep)
+        allcaps = kwargs.pop('allcaps', False)
         super(_PrependAppendEnvironmentTest, self).__init__(*args, **kwargs)
         self.windows = windows
         self.pathsep = pathsep
+        self.allcaps = allcaps
 
         # If we're testing Windows behavior and actually running on Windows,
         # actually launch a subprocess to evaluate the shell init script.
@@ -235,14 +237,15 @@ class _PrependAppendEnvironmentTest(unittest.TestCase):
 
     def setUp(self):
         self.env = environment.Environment(windows=self.windows,
-                                           pathsep=self.pathsep)
+                                           pathsep=self.pathsep,
+                                           allcaps=self.allcaps)
 
-        self.var_already_set = 'var_already_set'
+        self.var_already_set = self.env.normalize_key('VAR_ALREADY_SET')
         os.environ[self.var_already_set] = self.pathsep.join(
             'one two three'.split())
         self.assertIn(self.var_already_set, os.environ)
 
-        self.var_not_set = 'var_not_set'
+        self.var_not_set = self.env.normalize_key('VAR_NOT_SET')
         if self.var_not_set in os.environ:
             del os.environ[self.var_not_set]
         self.assertNotIn(self.var_not_set, os.environ)
@@ -325,6 +328,7 @@ class WindowsEnvironmentTest(_PrependAppendEnvironmentTest,
     def __init__(self, *args, **kwargs):
         kwargs['pathsep'] = ';'
         kwargs['windows'] = True
+        kwargs['allcaps'] = True
         super(WindowsEnvironmentTest, self).__init__(*args, **kwargs)
 
 
@@ -333,8 +337,33 @@ class PosixEnvironmentTest(_PrependAppendEnvironmentTest,
     def __init__(self, *args, **kwargs):
         kwargs['pathsep'] = ':'
         kwargs['windows'] = False
+        kwargs['allcaps'] = False
         super(PosixEnvironmentTest, self).__init__(*args, **kwargs)
         self.real_windows = (os.name == 'nt')
+
+
+class WindowsCaseInsensitiveTest(unittest.TestCase):
+    def test_lower_handling(self):
+        # This is only for testing case-handling on Windows. It doesn't make
+        # sense to run it on other systems.
+        if os.name != 'nt':
+            return
+
+        lower_var = 'lower_var'
+        upper_var = lower_var.upper()
+
+        if upper_var in os.environ:
+            del os.environ[upper_var]
+
+        self.assertNotIn(lower_var, os.environ)
+
+        env = environment.Environment()
+        env.append(lower_var, 'foo')
+        env.append(upper_var, 'bar')
+        with env(export=False) as env_:
+            self.assertNotIn(lower_var, env_)
+            self.assertIn(upper_var, env_)
+            self.assertEqual(env_[upper_var], 'foo;bar')
 
 
 if __name__ == '__main__':
