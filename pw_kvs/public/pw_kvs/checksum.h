@@ -71,6 +71,16 @@ class ChecksumAlgorithm {
   span<const std::byte> state_;
 };
 
+// A checksum algorithm for which Verify always passes. This can be used to
+// disable checksum verification for a particular entry format.
+class IgnoreChecksum final : public ChecksumAlgorithm {
+ public:
+  constexpr IgnoreChecksum() : ChecksumAlgorithm({}) {}
+
+  void Reset() override {}
+  void Update(span<const std::byte>) override {}
+};
+
 // Calculates a checksum in kAlignmentBytes chunks. Checksum classes can inherit
 // from this and implement UpdateAligned and FinalizeAligned instead of Update
 // and Finalize.

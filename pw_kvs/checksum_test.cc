@@ -67,6 +67,25 @@ TEST(Checksum, Reset) {
   EXPECT_EQ(state[1], byte{0xFF});
 }
 
+TEST(IgnoreChecksum, NeverUpdate_VerifyWithoutData) {
+  IgnoreChecksum checksum;
+
+  EXPECT_EQ(Status::OK, checksum.Verify({}));
+}
+
+TEST(IgnoreChecksum, NeverUpdate_VerifyWithData) {
+  IgnoreChecksum checksum;
+
+  EXPECT_EQ(Status::OK, checksum.Verify(as_bytes(span(kString))));
+}
+
+TEST(IgnoreChecksum, AfterUpdate_Verify) {
+  IgnoreChecksum checksum;
+
+  checksum.Update(as_bytes(span(kString)));
+  EXPECT_EQ(Status::OK, checksum.Verify({}));
+}
+
 constexpr size_t kAlignment = 10;
 
 constexpr std::string_view kData =
