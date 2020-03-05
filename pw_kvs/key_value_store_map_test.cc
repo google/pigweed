@@ -311,11 +311,12 @@ class KvsTester {
     StartOperation("GCPartial", "");
     KeyValueStore::StorageStats pre_stats = kvs_.GetStorageStats();
     Status status = kvs_.GarbageCollectPartial();
-    EXPECT_EQ(Status::OK, status);
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (pre_stats.reclaimable_bytes != 0) {
+      EXPECT_EQ(Status::OK, status);
       EXPECT_LT(post_stats.reclaimable_bytes, pre_stats.reclaimable_bytes);
     } else {
+      EXPECT_EQ(Status::NOT_FOUND, status);
       EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
     }
     FinishOperation("GCPartial", status, "");

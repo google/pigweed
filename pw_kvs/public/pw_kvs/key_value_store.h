@@ -310,7 +310,18 @@ class KeyValueStore {
         "as_bytes(span(&value, 1)) or as_writable_bytes(span(&value, 1)).");
   }
 
+  Status LoadEntry(Address entry_address, Address* next_entry_address);
+  Status ScanForEntry(const SectorDescriptor& sector,
+                      Address start_address,
+                      Address* next_entry_address);
+  Status AppendNewOrOverwriteStaleExistingDescriptor(
+      const KeyDescriptor& key_descriptor);
+
+  KeyDescriptor* FindDescriptor(uint32_t hash);
+
   Status PutBytes(std::string_view key, span<const std::byte> value);
+
+  StatusWithSize ValueSize(const KeyDescriptor& descriptor) const;
 
   StatusWithSize Get(std::string_view key,
                      const KeyDescriptor& descriptor,
@@ -325,8 +336,6 @@ class KeyValueStore {
                       const KeyDescriptor& descriptor,
                       void* value,
                       size_t size_bytes) const;
-
-  StatusWithSize ValueSize(const KeyDescriptor& descriptor) const;
 
   Status CheckOperation(std::string_view key) const;
 
@@ -348,14 +357,6 @@ class KeyValueStore {
         key, const_cast<const KeyDescriptor**>(result));
   }
 
-  Status LoadEntry(Address entry_address, Address* next_entry_address);
-  Status ScanForEntry(const SectorDescriptor& sector,
-                      Address start_address,
-                      Address* next_entry_address);
-  Status AppendNewOrOverwriteStaleExistingDescriptor(
-      const KeyDescriptor& key_descriptor);
-  Status AppendEmptyDescriptor(KeyDescriptor** new_descriptor);
-
   Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                   KeyDescriptor::State new_state,
                                   std::string_view key,
@@ -363,30 +364,35 @@ class KeyValueStore {
 
   Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
+  Status WriteEntry(KeyDescriptor* key_descriptor,
+                    std::string_view key,
+                    span<const std::byte> value,
+                    KeyDescriptor::State new_state);
+
+  Status GetSectorForWrite(SectorDescriptor** sector,
+                           size_t entry_size,
+                           KeyDescriptor* key_descriptor);
+
+  Status AppendEntry(Address write_address,
+                     Entry& entry,
+                     std::string_view key,
+                     span<const std::byte> value);
+
   Status RelocateEntry(KeyDescriptor& key_descriptor,
                        KeyValueStore::Address address);
+
+  Status MoveEntry(Address new_address, Entry& entry);
 
   enum FindSectorMode { kAppendEntry, kGarbageCollect };
 
   Status FindSectorWithSpace(SectorDescriptor** found_sector,
                              size_t size,
                              FindSectorMode find_mode,
-                             span<const SectorDescriptor*> sector_to_skip =
-                                 span<const SectorDescriptor*>());
-
-  Status FindOrRecoverSectorWithSpace(SectorDescriptor** sector, size_t size);
-
-  Status GarbageCollectSector(SectorDescriptor* sector_to_gc);
+                             span<const Address> addresses_to_skip);
 
   SectorDescriptor* FindSectorToGarbageCollect();
 
-  KeyDescriptor* FindDescriptor(uint32_t hash);
-
-  Status AppendEntry(SectorDescriptor* sector,
-                     KeyDescriptor* key_descriptor,
-                     std::string_view key,
-                     span<const std::byte> value,
-                     KeyDescriptor::State new_state);
+  Status GarbageCollectSector(SectorDescriptor* sector_to_gc);
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);

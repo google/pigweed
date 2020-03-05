@@ -94,13 +94,9 @@ class Entry {
         deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
   }
 
-  void UpdateDescriptor(KeyDescriptor* kd) {
-    kd->transaction_id_ = transaction_id();
-    kd->addresses_.assign(1, address_);
-    kd->state_ = deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid;
-  }
-
   StatusWithSize Write(std::string_view key, span<const std::byte> value) const;
+
+  void UpdateAddress(Address address) { address_ = address; }
 
   // Reads a key into a buffer, which must be large enough for a max-length key.
   // If successful, the size is returned in the StatusWithSize. The key is not

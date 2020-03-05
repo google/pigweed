@@ -46,6 +46,19 @@ class KeyDescriptor {
   // TODO: remove address() once all the use of it is gone.
   uint32_t address() const { return addresses_[0]; }
 
+  Status UpdateAddress(FlashPartition::Address old_address,
+                       FlashPartition::Address new_address) {
+    for (auto& address : addresses()) {
+      if (address == old_address) {
+        address = new_address;
+        return Status::OK;
+      }
+    }
+
+    // Unable to find the address to update.
+    return Status::INVALID_ARGUMENT;
+  }
+
   Vector<FlashPartition::Address, kEntryRedundancy>& addresses() {
     return addresses_;
   }
