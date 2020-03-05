@@ -11,30 +11,48 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-# TODO(keir) add docstring
-# pylint: disable=missing-module-docstring
+"""Checks a Pigweed module's format and structure."""
 
 import logging
 import pathlib
 import glob
 from enum import Enum
-from typing import Callable
-from typing import NamedTuple
+from typing import Callable, NamedTuple
+
 _LOG = logging.getLogger(__name__)
 
 CheckerFunction = Callable[[str], None]
 
 
 def register_arguments(parser):
-    parser.add_argument('module', help='The module to check')
+    parser.add_argument('modules', nargs='+', help='The module to check')
 
 
-def main(module):  # pylint: disable=missing-function-docstring
-    # TODO(keir) add function docstring
+def main(modules):
+    if len(modules) > 1:
+        _LOG.info('Checking %d modules', len(modules))
+
+    passed = 0
+
+    for path in modules:
+        if len(modules) > 1:
+            print()
+            print(f' {path} '.center(80, '='))
+
+        passed += check_module(path)
+
+    if len(modules) > 1:
+        _LOG.info('%d of %d modules passed', passed, len(modules))
+
+    return 0 if passed == len(modules) else 1
+
+
+def check_module(module) -> bool:
+    """Runs module checks on one module; returns True if the module passes."""
 
     if not pathlib.Path(module).is_dir():
         _LOG.error('No directory found: %s', module)
-        return 1
+        return False
 
     found_any_warnings = False
     found_any_errors = False
@@ -86,9 +104,9 @@ def main(module):  # pylint: disable=missing-function-docstring
                   module)
     if found_any_errors:
         _LOG.error('FAIL: Found errors when checking module %s', module)
-        return 1
+        return False
 
-    return 0
+    return True
 
 
 class Checker(NamedTuple):
@@ -132,7 +150,7 @@ def check_python_proper_module(directory):
 @checker('PWCK002', 'If there are C++ files, there are C++ tests')
 def check_have_cc_tests(directory):
     module_cc_files = glob.glob(f'{directory}/**/*.cc', recursive=True)
-    module_cc_test_files = glob.glob(f'{directory}/**/*_test.cc',
+    module_cc_test_files = glob.glob(f'{directory}/**/*test.cc',
                                      recursive=True)
     if module_cc_files and not module_cc_test_files:
         yield Issue('C++ code present but no tests at all (you monster).')
