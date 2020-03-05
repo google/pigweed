@@ -47,7 +47,10 @@ class Entry {
   //   NOT_FOUND: read the header, but the data appears to be erased
   //   DATA_LOSS: read the header, but it contained invalid data
   //
-  static Status Read(FlashPartition& partition, Address address, Entry* entry);
+  static Status Read(FlashPartition& partition,
+                     Address address,
+                     const internal::EntryFormats& formats,
+                     Entry* entry);
 
   // Reads a key into a buffer, which must be at least key_length bytes.
   static Status ReadKey(FlashPartition& partition,
@@ -112,11 +115,10 @@ class Entry {
   StatusWithSize ReadValue(span<std::byte> buffer,
                            size_t offset_bytes = 0) const;
 
-  Status VerifyChecksum(ChecksumAlgorithm* algorithm,
-                        std::string_view key,
+  Status VerifyChecksum(std::string_view key,
                         span<const std::byte> value) const;
 
-  Status VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const;
+  Status VerifyChecksumInFlash() const;
 
   // Calculates the total size of an entry, including padding.
   static size_t size(const FlashPartition& partition,
@@ -176,15 +178,18 @@ class Entry {
 
   constexpr Entry(FlashPartition* partition,
                   Address address,
+                  const EntryFormat& format,
                   EntryHeader header)
-      : partition_(partition), address_(address), header_(header) {}
+      : partition_(partition),
+        address_(address),
+        checksum_(format.checksum),
+        header_(header) {}
 
   span<const std::byte> checksum_bytes() const {
     return as_bytes(span(&header_.checksum, 1));
   }
 
-  span<const std::byte> CalculateChecksum(ChecksumAlgorithm* algorithm,
-                                          std::string_view key,
+  span<const std::byte> CalculateChecksum(std::string_view key,
                                           span<const std::byte> value) const;
 
   static constexpr uint8_t alignment_bytes_to_units(size_t alignment_bytes) {
@@ -193,6 +198,7 @@ class Entry {
 
   FlashPartition* partition_;
   Address address_;
+  ChecksumAlgorithm* checksum_;
   EntryHeader header_;
 };
 

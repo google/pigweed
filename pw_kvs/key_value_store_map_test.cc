@@ -78,15 +78,12 @@ std::set<T> difference(const std::set<T> lhs, const std::set<T> rhs) {
 template <const TestParameters& kParams>
 class KvsTester {
  public:
-  static constexpr EntryFormat kFormat{.magic = 0xBAD'C0D3,
-                                       .checksum = nullptr};
-
   KvsTester()
       : partition_(&flash_,
                    kParams.partition_start_sector,
                    kParams.partition_sector_count,
                    kParams.partition_alignment),
-        kvs_(&partition_, kFormat) {
+        kvs_(&partition_, {.magic = 0xBAD'C0D3, .checksum = nullptr}) {
     EXPECT_EQ(Status::OK, partition_.Erase());
     Status result = kvs_.Init();
     EXPECT_EQ(Status::OK, result);

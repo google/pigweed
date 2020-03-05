@@ -30,11 +30,11 @@ FakeFlashBuffer<4 * 1024, 4> test_flash(16);
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
 ChecksumCrc16 checksum;
-constexpr EntryFormat kFormat{.magic = 0xBAD'C0D3, .checksum = &checksum};
 
 class EmptyInitializedKvs : public ::testing::Test {
  protected:
-  EmptyInitializedKvs() : kvs_(&test_partition, kFormat) {
+  EmptyInitializedKvs()
+      : kvs_(&test_partition, {.magic = 0xBAD'C0D3, .checksum = &checksum}) {
     test_partition.Erase(0, test_partition.sector_count());
     ASSERT_EQ(Status::OK, kvs_.Init());
   }

@@ -25,7 +25,10 @@ namespace pw::kvs::internal {
 using std::byte;
 using std::string_view;
 
-Status Entry::Read(FlashPartition& partition, Address address, Entry* entry) {
+Status Entry::Read(FlashPartition& partition,
+                   Address address,
+                   const internal::EntryFormats& formats,
+                   Entry* entry) {
   EntryHeader header;
   TRY(partition.Read(address, sizeof(header), &header));
 
@@ -36,7 +39,15 @@ Status Entry::Read(FlashPartition& partition, Address address, Entry* entry) {
     return Status::DATA_LOSS;
   }
 
-  *entry = Entry(&partition, address, header);
+  const EntryFormat* format = formats.Find(header.magic);
+  if (format == nullptr) {
+    PW_LOG_ERROR("Found corrupt magic: %" PRIx32 " at address %zx",
+                 header.magic,
+                 size_t(address));
+    return Status::DATA_LOSS;
+  }
+
+  *entry = Entry(&partition, address, *format, header);
   return Status::OK;
 }
 
@@ -61,6 +72,7 @@ Entry::Entry(FlashPartition& partition,
              uint32_t transaction_id)
     : Entry(&partition,
             address,
+            format,
             {.magic = format.magic,
              .checksum = 0,
              .alignment_units =
@@ -68,8 +80,8 @@ Entry::Entry(FlashPartition& partition,
              .key_length_bytes = static_cast<uint8_t>(key.size()),
              .value_size_bytes = value_size_bytes,
              .transaction_id = transaction_id}) {
-  if (format.checksum != nullptr) {
-    span<const byte> checksum = CalculateChecksum(format.checksum, key, value);
+  if (checksum_ != nullptr) {
+    span<const byte> checksum = CalculateChecksum(key, value);
     std::memcpy(&header_.checksum,
                 checksum.data(),
                 std::min(checksum.size(), sizeof(header_.checksum)));
@@ -104,17 +116,15 @@ StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
   return StatusWithSize(read_size);
 }
 
-Status Entry::VerifyChecksum(ChecksumAlgorithm* algorithm,
-                             string_view key,
-                             span<const byte> value) const {
-  if (algorithm == nullptr) {
+Status Entry::VerifyChecksum(string_view key, span<const byte> value) const {
+  if (checksum_ == nullptr) {
     return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
   }
-  CalculateChecksum(algorithm, key, value);
-  return algorithm->Verify(checksum_bytes());
+  CalculateChecksum(key, value);
+  return checksum_->Verify(checksum_bytes());
 }
 
-Status Entry::VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const {
+Status Entry::VerifyChecksumInFlash() const {
   // Read the entire entry piece-by-piece into a small buffer. If the entry is
   // 32 B or less, only one read is required.
   union {
@@ -137,18 +147,18 @@ Status Entry::VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const {
     return Status::DATA_LOSS;
   }
 
-  if (algorithm == nullptr) {
+  if (checksum_ == nullptr) {
     return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
   }
 
   // The checksum is calculated as if the header's checksum field were 0.
   header_to_verify.checksum = 0;
 
-  algorithm->Reset();
+  checksum_->Reset();
 
   while (true) {
     // Add the chunk in the buffer to the checksum.
-    algorithm->Update(buffer, read_size);
+    checksum_->Update(buffer, read_size);
 
     bytes_to_read -= read_size;
     if (bytes_to_read == 0u) {
@@ -161,8 +171,8 @@ Status Entry::VerifyChecksumInFlash(ChecksumAlgorithm* algorithm) const {
     TRY(partition().Read(read_address, read_size, buffer));
   }
 
-  algorithm->Finish();
-  return algorithm->Verify(checksum_bytes());
+  checksum_->Finish();
+  return checksum_->Verify(checksum_bytes());
 }
 
 void Entry::DebugLog() {
@@ -176,18 +186,17 @@ void Entry::DebugLog() {
   PW_LOG_DEBUG("   Alignment    = 0x%zx", size_t(alignment_bytes()));
 }
 
-span<const byte> Entry::CalculateChecksum(ChecksumAlgorithm* algorithm,
-                                          const string_view key,
+span<const byte> Entry::CalculateChecksum(const string_view key,
                                           span<const byte> value) const {
-  algorithm->Reset();
+  checksum_->Reset();
 
   {
     EntryHeader header_for_checksum = header_;
     header_for_checksum.checksum = 0;
 
-    algorithm->Update(&header_for_checksum, sizeof(header_for_checksum));
-    algorithm->Update(as_bytes(span(key)));
-    algorithm->Update(value);
+    checksum_->Update(&header_for_checksum, sizeof(header_for_checksum));
+    checksum_->Update(as_bytes(span(key)));
+    checksum_->Update(value);
   }
 
   // Update the checksum with 0s to pad the entry to its alignment boundary.
@@ -196,11 +205,11 @@ span<const byte> Entry::CalculateChecksum(ChecksumAlgorithm* algorithm,
 
   while (padding_to_add > 0u) {
     const size_t chunk_size = std::min(padding_to_add, sizeof(padding));
-    algorithm->Update(padding, chunk_size);
+    checksum_->Update(padding, chunk_size);
     padding_to_add -= chunk_size;
   }
 
-  return algorithm->Finish();
+  return checksum_->Finish();
 }
 
 }  // namespace pw::kvs::internal

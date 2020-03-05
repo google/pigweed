@@ -43,6 +43,7 @@ TEST(Entry, Size_RoundsUpToAlignment) {
     for (size_t value : {size_t(0), align - 1, align, align + 1, 2 * align}) {
       Entry entry =
           Entry::Valid(partition, 0, kFormat, "k", {nullptr, value}, 0);
+
       ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */ + value, align),
                 entry.size());
     }
@@ -77,8 +78,10 @@ TEST(Entry, Construct_Tombstone) {
   EXPECT_EQ(entry.transaction_id(), 123u);
 }
 
+constexpr uint32_t kMagicWithChecksum = 0x600df00d;
+
 constexpr auto kHeader1 = ByteStr(
-    "\x0d\xf0\x0d\x60"  // magic
+    "\x0d\xf0\x0d\x60"  // magic (600df00d)
     "\xC5\x65\x00\x00"  // checksum (CRC16)
     "\x01"              // alignment
     "\x05"              // key length
@@ -93,10 +96,14 @@ constexpr auto kPadding1 = ByteStr("\0\0\0\0\0");
 constexpr auto kEntry1 = AsBytes(kHeader1, kKey1, kValue1, kPadding1);
 static_assert(kEntry1.size() == 32);
 
+ChecksumCrc16 checksum;
+constexpr EntryFormat kFormatWithChecksum{kMagicWithChecksum, &checksum};
+constexpr internal::EntryFormats kFormats(kFormatWithChecksum);
+
 class ValidEntryInFlash : public ::testing::Test {
  protected:
   ValidEntryInFlash() : flash_(kEntry1), partition_(&flash_) {
-    EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, &entry_));
+    EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
   FakeFlashBuffer<1024, 4> flash_;
@@ -105,13 +112,12 @@ class ValidEntryInFlash : public ::testing::Test {
 };
 
 TEST_F(ValidEntryInFlash, PassesChecksumVerification) {
-  ChecksumCrc16 checksum;
-  EXPECT_EQ(Status::OK, entry_.VerifyChecksumInFlash(&checksum));
-  EXPECT_EQ(Status::OK, entry_.VerifyChecksum(&checksum, "key45", kValue1));
+  EXPECT_EQ(Status::OK, entry_.VerifyChecksumInFlash());
+  EXPECT_EQ(Status::OK, entry_.VerifyChecksum("key45", kValue1));
 }
 
 TEST_F(ValidEntryInFlash, HeaderContents) {
-  EXPECT_EQ(entry_.magic(), 0x600DF00Du);
+  EXPECT_EQ(entry_.magic(), kMagicWithChecksum);
   EXPECT_EQ(entry_.key_length(), 5u);
   EXPECT_EQ(entry_.value_size(), 6u);
   EXPECT_EQ(entry_.transaction_id(), 0x96979899u);
@@ -187,11 +193,9 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_PastEnd) {
 TEST(ValidEntry, Write) {
   FakeFlashBuffer<1024, 4> flash;
   FlashPartition partition(&flash, 0, flash.sector_count(), 32);
-  ChecksumCrc16 checksum;
-  const EntryFormat format{0x600DF00Du, &checksum};
 
-  Entry entry =
-      Entry::Valid(partition, 53, format, "key45", kValue1, 0x96979899u);
+  Entry entry = Entry::Valid(
+      partition, 53, kFormatWithChecksum, "key45", kValue1, 0x96979899u);
 
   auto result = entry.Write("key45", kValue1);
   EXPECT_EQ(Status::OK, result.status());
@@ -215,7 +219,7 @@ class TombstoneEntryInFlash : public ::testing::Test {
  protected:
   TombstoneEntryInFlash()
       : flash_(AsBytes(kHeader2, kKeyAndPadding2)), partition_(&flash_) {
-    EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, &entry_));
+    EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
   FakeFlashBuffer<1024, 4> flash_;
@@ -224,13 +228,12 @@ class TombstoneEntryInFlash : public ::testing::Test {
 };
 
 TEST_F(TombstoneEntryInFlash, PassesChecksumVerification) {
-  ChecksumCrc16 checksum;
-  EXPECT_EQ(Status::OK, entry_.VerifyChecksumInFlash(&checksum));
-  EXPECT_EQ(Status::OK, entry_.VerifyChecksum(&checksum, "K", {}));
+  EXPECT_EQ(Status::OK, entry_.VerifyChecksumInFlash());
+  EXPECT_EQ(Status::OK, entry_.VerifyChecksum("K", {}));
 }
 
 TEST_F(TombstoneEntryInFlash, HeaderContents) {
-  EXPECT_EQ(entry_.magic(), 0x600DF00Du);
+  EXPECT_EQ(entry_.magic(), kMagicWithChecksum);
   EXPECT_EQ(entry_.key_length(), 1u);
   EXPECT_EQ(entry_.value_size(), 0u);
   EXPECT_EQ(entry_.transaction_id(), 0x03020100u);
@@ -258,9 +261,9 @@ TEST(TombstoneEntry, Write) {
   FakeFlashBuffer<1024, 4> flash;
   FlashPartition partition(&flash);
   ChecksumCrc16 checksum;
-  const EntryFormat format{0x600DF00Du, &checksum};
 
-  Entry entry = Entry::Tombstone(partition, 16, format, "K", 0x03020100);
+  Entry entry =
+      Entry::Tombstone(partition, 16, kFormatWithChecksum, "K", 0x03020100);
 
   auto result = entry.Write("K", {});
   EXPECT_EQ(Status::OK, result.status());
@@ -275,15 +278,19 @@ TEST(Entry, Checksum_NoChecksumRequiresZero) {
   FakeFlashBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash);
   Entry entry;
-  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, &entry));
 
-  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksumInFlash(nullptr));
-  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksum(nullptr, {}, {}));
+  const EntryFormat format{kMagicWithChecksum, nullptr};
+  const internal::EntryFormats formats(format);
+
+  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, formats, &entry));
+
+  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksumInFlash());
+  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksum({}, {}));
 
   std::memset(&flash.buffer()[4], 0, 4);  // set the checksum field to 0
-  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, &entry));
-  EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash(nullptr));
-  EXPECT_EQ(Status::OK, entry.VerifyChecksum(nullptr, {}, {}));
+  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, formats, &entry));
+  EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash());
+  EXPECT_EQ(Status::OK, entry.VerifyChecksum({}, {}));
 }
 
 TEST(Entry, Checksum_ChecksPadding) {
@@ -291,17 +298,16 @@ TEST(Entry, Checksum_ChecksPadding) {
       AsBytes(kHeader1, kKey1, kValue1, ByteStr("\0\0\0\0\1")));
   FlashPartition partition(&flash);
   Entry entry;
-  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, &entry));
+  ASSERT_EQ(Status::OK, Entry::Read(partition, 0, kFormats, &entry));
 
   // Last byte in padding is a 1; should fail.
-  ChecksumCrc16 checksum;
-  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksumInFlash(&checksum));
+  EXPECT_EQ(Status::DATA_LOSS, entry.VerifyChecksumInFlash());
 
   // The in-memory verification fills in 0s for the padding.
-  EXPECT_EQ(Status::OK, entry.VerifyChecksum(&checksum, "key45", kValue1));
+  EXPECT_EQ(Status::OK, entry.VerifyChecksum("key45", kValue1));
 
   flash.buffer()[kEntry1.size() - 1] = byte{0};
-  EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash(&checksum));
+  EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash());
 }
 }  // namespace
 }  // namespace pw::kvs::internal

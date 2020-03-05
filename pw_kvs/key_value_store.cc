@@ -19,6 +19,8 @@
 #include <cstring>
 #include <type_traits>
 
+#include "pw_kvs/format.h"
+
 #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs_private/macros.h"
@@ -39,10 +41,10 @@ constexpr bool InvalidKey(std::string_view key) {
 KeyValueStore::KeyValueStore(FlashPartition* partition,
                              Vector<KeyDescriptor>& key_descriptor_list,
                              Vector<SectorDescriptor>& sector_descriptor_list,
-                             const EntryFormat& format,
+                             span<const EntryFormat> formats,
                              const Options& options)
     : partition_(*partition),
-      entry_header_format_(format),
+      formats_(formats),
       key_descriptors_(key_descriptor_list),
       sectors_(sector_descriptor_list),
       options_(options) {
@@ -169,7 +171,7 @@ Status KeyValueStore::Init() {
   for (KeyDescriptor& key_descriptor : key_descriptors_) {
     for (auto& address : key_descriptor.addresses()) {
       Entry entry;
-      TRY(Entry::Read(partition_, address, &entry));
+      TRY(Entry::Read(partition_, key_descriptor.address(), formats_, &entry));
       SectorFromAddress(address)->AddValidBytes(entry.size());
     }
     if (key_descriptor.IsNewerThan(last_transaction_id_)) {
@@ -242,24 +244,14 @@ KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
 Status KeyValueStore::LoadEntry(Address entry_address,
                                 Address* next_entry_address) {
   Entry entry;
-  TRY(Entry::Read(partition_, entry_address, &entry));
-
-  // TODO: Handle multiple magics for formats that have changed.
-  if (entry.magic() != entry_header_format_.magic) {
-    // TODO: It may be cleaner to have some logging helpers for these cases.
-    ERR("Found corrupt magic: %zx; expecting %zx; at address %zx",
-        size_t(entry.magic()),
-        size_t(entry_header_format_.magic),
-        size_t(entry_address));
-    return Status::DATA_LOSS;
-  }
+  TRY(Entry::Read(partition_, entry_address, formats_, &entry));
 
   // Read the key from flash & validate the entry (which reads the value).
   Entry::KeyBuffer key_buffer;
   TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
   const string_view key(key_buffer.data(), key_length);
 
-  TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
+  TRY(entry.VerifyChecksumInFlash());
 
   // A valid entry was found, so update the next entry address before doing any
   // of the checks that happen in AppendNewOrOverwriteStaleExistingDescriptor().
@@ -284,10 +276,9 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
   for (Address address = AlignUp(start_address, Entry::kMinAlignmentBytes);
        AddressInSector(sector, address);
        address += Entry::kMinAlignmentBytes) {
-    // TODO: Handle multiple magics for formats that have changed.
     uint32_t magic;
     TRY(partition_.Read(address, as_writable_bytes(span(&magic, 1))));
-    if (magic == entry_header_format_.magic) {
+    if (formats_.KnownMagic(magic)) {
       DBG("Found entry magic at address %zx", size_t(address));
       *next_entry_address = address;
       return Status::OK;
@@ -419,7 +410,9 @@ void KeyValueStore::Item::ReadKey() {
   key_buffer_.fill('\0');
 
   Entry entry;
-  if (Entry::Read(kvs_.partition_, descriptor_->address(), &entry).ok()) {
+  if (Entry::Read(
+          kvs_.partition_, descriptor_->address(), kvs_.formats_, &entry)
+          .ok()) {
     entry.ReadKey(key_buffer_);
   }
 }
@@ -469,12 +462,13 @@ StatusWithSize KeyValueStore::Get(string_view key,
                                   span<std::byte> value_buffer,
                                   size_t offset_bytes) const {
   Entry entry;
-  TRY_WITH_SIZE(Entry::Read(partition_, descriptor.address(), &entry));
+  TRY_WITH_SIZE(
+      Entry::Read(partition_, descriptor.address(), formats_, &entry));
 
   StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
   if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
-    Status verify_result = entry.VerifyChecksum(
-        entry_header_format_.checksum, key, value_buffer.first(result.size()));
+    Status verify_result =
+        entry.VerifyChecksum(key, value_buffer.first(result.size()));
     if (!verify_result.ok()) {
       std::memset(value_buffer.data(), 0, result.size());
       return StatusWithSize(verify_result, 0);
@@ -517,7 +511,8 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
 
 StatusWithSize KeyValueStore::ValueSize(const KeyDescriptor& descriptor) const {
   Entry entry;
-  TRY_WITH_SIZE(Entry::Read(partition_, descriptor.address(), &entry));
+  TRY_WITH_SIZE(
+      Entry::Read(partition_, descriptor.address(), formats_, &entry));
 
   return StatusWithSize(entry.value_size());
 }
@@ -589,7 +584,8 @@ Status KeyValueStore::WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
                                                span<const byte> value) {
   // Find the original entry and sector to update the sector's valid_bytes.
   Entry original_entry;
-  TRY(Entry::Read(partition_, key_descriptor->address(), &original_entry));
+  TRY(Entry::Read(
+      partition_, key_descriptor->address(), formats_, &original_entry));
 
   SectorDescriptor* sector;
   TRY(FindOrRecoverSectorWithSpace(&sector,
@@ -650,7 +646,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor,
   // store the key and value in the TempEntry stored in the static allocated
   // working_buffer_.
   Entry entry;
-  TRY(Entry::Read(partition_, key_descriptor.address(), &entry));
+  TRY(Entry::Read(partition_, key_descriptor.address(), formats_, &entry));
 
   TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
   string_view key = string_view(key_buffer.data(), key_length);
@@ -661,7 +657,7 @@ Status KeyValueStore::RelocateEntry(KeyDescriptor& key_descriptor,
   }
 
   const span value = span(value_buffer.data(), result.size());
-  TRY(entry.VerifyChecksum(entry_header_format_.checksum, key, value));
+  TRY(entry.VerifyChecksum(key, value));
 
   // Find a new sector for the entry and write it to the new location. For
   // relocation the find should not not be a sector already containing the key
@@ -927,7 +923,7 @@ Status KeyValueStore::AppendEntry(SectorDescriptor* sector,
   }
 
   if (options_.verify_on_write) {
-    TRY(entry.VerifyChecksumInFlash(entry_header_format_.checksum));
+    TRY(entry.VerifyChecksumInFlash());
   }
 
   // Entry was written successfully; update the key descriptor and the sector
@@ -957,11 +953,11 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
 
   if (state == KeyDescriptor::kDeleted) {
     return Entry::Tombstone(
-        partition_, address, entry_header_format_, key, last_transaction_id_);
+        partition_, address, formats_.primary(), key, last_transaction_id_);
   }
   return Entry::Valid(partition_,
                       address,
-                      entry_header_format_,
+                      formats_.primary(),
                       key,
                       value,
                       last_transaction_id_);

@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/format.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/key_value_store.h"
@@ -32,27 +33,31 @@ using std::string_view;
 constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
-constexpr uint32_t SimpleChecksum(span<const byte> data, uint32_t state = 0) {
+constexpr uint32_t SimpleChecksum(span<const byte> data, uint32_t state) {
   for (byte b : data) {
     state += uint32_t(b);
   }
   return state;
 }
 
-class SimpleChecksumAlgorithm final : public ChecksumAlgorithm {
+template <typename State>
+class ChecksumFunction final : public ChecksumAlgorithm {
  public:
-  SimpleChecksumAlgorithm()
-      : ChecksumAlgorithm(as_bytes(span(&checksum_, 1))) {}
+  ChecksumFunction(State (&algorithm)(span<const byte>, State))
+      : ChecksumAlgorithm(as_bytes(span(&state_, 1))), algorithm_(algorithm) {}
 
-  void Reset() override { checksum_ = 0; }
+  void Reset() override { state_ = {}; }
 
   void Update(span<const byte> data) override {
-    checksum_ = SimpleChecksum(data, checksum_);
+    state_ = algorithm_(data, state_);
   }
 
  private:
-  uint32_t checksum_;
-} checksum;
+  State state_;
+  State (&algorithm_)(span<const byte>, State);
+};
+
+ChecksumFunction<uint32_t> checksum(SimpleChecksum);
 
 // Returns a buffer containing the necessary padding for an entry.
 template <size_t kAlignmentBytes, size_t kKeyLength, size_t kValueSize>
@@ -63,7 +68,8 @@ constexpr auto EntryPadding() {
 }
 
 // Creates a buffer containing a valid entry at compile time.
-template <size_t kAlignmentBytes = sizeof(internal::EntryHeader),
+template <uint32_t (*kChecksum)(span<const byte>, uint32_t) = &SimpleChecksum,
+          size_t kAlignmentBytes = sizeof(internal::EntryHeader),
           size_t kKeyLengthWithNull,
           size_t kValueSize>
 constexpr auto MakeValidEntry(uint32_t magic,
@@ -83,7 +89,7 @@ constexpr auto MakeValidEntry(uint32_t magic,
                       EntryPadding<kAlignmentBytes, kKeyLength, kValueSize>());
 
   // Calculate the checksum
-  uint32_t checksum = SimpleChecksum(data);
+  uint32_t checksum = kChecksum(data, 0);
   for (size_t i = 0; i < sizeof(checksum); ++i) {
     data[4 + i] = byte(checksum & 0xff);
     checksum >>= 8;
@@ -93,7 +99,6 @@ constexpr auto MakeValidEntry(uint32_t magic,
 }
 
 constexpr uint32_t kMagic = 0xc001beef;
-constexpr EntryFormat kFormat{.magic = kMagic, .checksum = &checksum};
 constexpr Options kNoGcOptions{
     .gc_on_write = GargbageCollectOnWrite::kDisabled,
     .verify_on_read = true,
@@ -110,7 +115,9 @@ class KvsErrorHandling : public ::testing::Test {
   KvsErrorHandling()
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
-        kvs_(&partition_, kFormat, kNoGcOptions) {}
+        kvs_(&partition_,
+             {.magic = kMagic, .checksum = &checksum},
+             kNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
     partition_.Erase();
@@ -285,6 +292,95 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   EXPECT_EQ(stats.in_use_bytes, 32u);
   EXPECT_EQ(stats.reclaimable_bytes, 32u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - 32 * 2);
+}
+
+constexpr uint32_t kAltMagic = 0xbadD00D;
+
+constexpr uint32_t AltChecksum(span<const byte> data, uint32_t state) {
+  for (byte b : data) {
+    state = (state << 8) | uint32_t(byte(state >> 24) ^ b);
+  }
+  return state;
+}
+
+ChecksumFunction<uint32_t> alt_checksum(AltChecksum);
+
+constexpr auto kAltEntry =
+    MakeValidEntry<AltChecksum>(kAltMagic, 32, "A Key", ByteStr("XD"));
+
+constexpr uint32_t NoChecksum(span<const byte>, uint32_t) { return 0; }
+constexpr uint32_t kNoChecksumMagic = 0x6000061e;
+
+constexpr auto kNoChecksumEntry =
+    MakeValidEntry<NoChecksum>(kNoChecksumMagic, 64, "kee", ByteStr("O_o"));
+
+class InitializedMultiMagicKvs : public ::testing::Test {
+ protected:
+  static constexpr auto kInitialContents =
+      AsBytes(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
+
+  InitializedMultiMagicKvs()
+      : flash_(internal::Entry::kMinAlignmentBytes),
+        partition_(&flash_),
+        kvs_(&partition_,
+             {{
+                 {.magic = kMagic, .checksum = &checksum},
+                 {.magic = kAltMagic, .checksum = &alt_checksum},
+                 {.magic = kNoChecksumMagic, .checksum = nullptr},
+             }},
+             kNoGcOptions) {
+    partition_.Erase();
+    std::memcpy(flash_.buffer().data(),
+                kInitialContents.data(),
+                kInitialContents.size());
+
+    EXPECT_EQ(Status::OK, kvs_.Init());
+  }
+
+  FakeFlashBuffer<512, 4, 3> flash_;
+  FlashPartition partition_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 3> kvs_;
+};
+
+#define ASSERT_CONTAINS_ENTRY(key, str_value)                          \
+  do {                                                                 \
+    char val[sizeof(str_value)] = {};                                  \
+    StatusWithSize stat = kvs_.Get(key, as_writable_bytes(span(val))); \
+    ASSERT_EQ(Status::OK, stat.status());                              \
+    ASSERT_EQ(sizeof(str_value) - 1, stat.size());                     \
+    ASSERT_STREQ(str_value, val);                                      \
+  } while (0)
+
+TEST_F(InitializedMultiMagicKvs, AllEntriesArePresent) {
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("A Key", "XD");
+  ASSERT_CONTAINS_ENTRY("kee", "O_o");
+}
+
+TEST_F(InitializedMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
+  EXPECT_EQ(Status::OK, kvs_.Put("new key", ByteStr("abcd?")));
+
+  constexpr auto kNewEntry =
+      MakeValidEntry(kMagic, 65, "new key", ByteStr("abcd?"));
+  EXPECT_EQ(0,
+            std::memcmp(kNewEntry.data(),
+                        flash_.buffer().data() + kInitialContents.size(),
+                        kNewEntry.size()));
+  ASSERT_CONTAINS_ENTRY("new key", "abcd?");
+}
+
+TEST_F(InitializedMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
+  EXPECT_EQ(Status::OK, kvs_.Put("A Key", ByteStr("New value!")));
+
+  constexpr auto kNewEntry =
+      MakeValidEntry(kMagic, 65, "A Key", ByteStr("New value!"));
+  EXPECT_EQ(0,
+            std::memcmp(kNewEntry.data(),
+                        flash_.buffer().data() + kInitialContents.size(),
+                        kNewEntry.size()));
+  ASSERT_CONTAINS_ENTRY("A Key", "New value!");
 }
 
 }  // namespace

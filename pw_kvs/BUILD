@@ -29,6 +29,7 @@ pw_cc_library(
         "checksum.cc",
         "entry.cc",
         "flash_memory.cc",
+        "format.cc",
         "key_value_store.cc",
         "public/pw_kvs/internal/entry.h",
         "public/pw_kvs/internal/hash.h",

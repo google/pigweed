@@ -297,7 +297,7 @@ class KeyValueStore {
   KeyValueStore(FlashPartition* partition,
                 Vector<KeyDescriptor>& key_descriptor_list,
                 Vector<SectorDescriptor>& sector_descriptor_list,
-                const EntryFormat& format,
+                span<const EntryFormat> format,
                 const Options& options);
 
  private:
@@ -426,7 +426,7 @@ class KeyValueStore {
   void LogKeyDescriptor() const;
 
   FlashPartition& partition_;
-  const EntryFormat entry_header_format_;
+  const internal::EntryFormats formats_;
 
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
@@ -457,20 +457,42 @@ class KeyValueStore {
   std::array<std::byte, kWorkingBufferSizeBytes> working_buffer_;
 };
 
-template <size_t kMaxEntries, size_t kMaxUsableSectors>
+template <size_t kMaxEntries,
+          size_t kMaxUsableSectors,
+          size_t kEntryFormats = 1>
 class KeyValueStoreBuffer : public KeyValueStore {
  public:
+  // Constructs a KeyValueStore on the partition, with support for one
+  // EntryFormat (kEntryFormats must be 1).
   KeyValueStoreBuffer(FlashPartition* partition,
                       const EntryFormat& format,
                       const Options& options = {})
-      : KeyValueStore(partition, key_descriptors_, sectors_, format, options) {}
+      : KeyValueStoreBuffer(
+            partition,
+            span(reinterpret_cast<const EntryFormat (&)[1]>(format)),
+            options) {
+    static_assert(kEntryFormats == 1,
+                  "kEntryFormats EntryFormats must be specified");
+  }
+
+  // Constructs a KeyValueStore on the partition. Supports multiple entry
+  // formats. The first EntryFormat is used for new entries.
+  KeyValueStoreBuffer(FlashPartition* partition,
+                      span<const EntryFormat, kEntryFormats> formats,
+                      const Options& options = {})
+      : KeyValueStore(
+            partition, key_descriptors_, sectors_, formats_, options) {
+    std::copy(formats.begin(), formats.end(), formats_.begin());
+  }
 
  private:
   static_assert(kMaxEntries > 0u);
   static_assert(kMaxUsableSectors > 0u);
+  static_assert(kEntryFormats > 0u);
 
   Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
   Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
+  std::array<EntryFormat, kEntryFormats> formats_;
 };
 
 }  // namespace pw::kvs

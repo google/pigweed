@@ -13,7 +13,15 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+
+#include "pw_kvs/checksum.h"
+#include "pw_span/span.h"
+
 namespace pw::kvs {
+
+struct EntryFormat;
+
 namespace internal {
 
 // Disk format of the header used for each key-value entry.
@@ -43,6 +51,26 @@ struct EntryHeader {
 };
 
 static_assert(sizeof(EntryHeader) == 16, "EntryHeader must not have padding");
+
+// This class wraps EntryFormat instances to support having multiple
+// simultaneously supported formats.
+class EntryFormats {
+ public:
+  explicit constexpr EntryFormats(span<const EntryFormat> formats)
+      : formats_(formats) {}
+
+  explicit constexpr EntryFormats(const EntryFormat& format)
+      : formats_(&format, 1) {}
+
+  const EntryFormat& primary() const { return formats_.front(); }
+
+  bool KnownMagic(uint32_t magic) const { return Find(magic) != nullptr; }
+
+  const EntryFormat* Find(uint32_t magic) const;
+
+ private:
+  const span<const EntryFormat> formats_;
+};
 
 }  // namespace internal
 
