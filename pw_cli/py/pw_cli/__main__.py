@@ -40,6 +40,13 @@ _PIGWEED_BANNER = '''
 '''
 
 
+class ArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        print(colors().magenta(_PIGWEED_BANNER), file=sys.stderr)
+        self.print_usage(sys.stderr)
+        self.exit(2, '%s: error: %s\n' % (self.prog, message))
+
+
 def main(raw_args=None):
     """Entry point for pw command."""
 
@@ -49,15 +56,15 @@ def main(raw_args=None):
     # TODO(keir): Add support for configurable logging levels.
     pw_cli.log.install()
 
-    # Start with the most critical part of the Pigweed command line tool.
-    print(colors().magenta(_PIGWEED_BANNER))
-
     # Add commands and their parsers.
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--loglevel', default='INFO')
+    parser.add_argument('--no-banner',
+                        action='store_true',
+                        help="Don't print the Pigweed banner")
 
     # Default command is 'help'
     pw_cli.plugins.register(
@@ -96,6 +103,10 @@ def main(raw_args=None):
 
     args = parser.parse_args(raw_args)
 
+    # Start with the most critical part of the Pigweed command line tool.
+    if not args.no_banner:
+        print(colors().magenta(_PIGWEED_BANNER))
+
     args_as_dict = dict(vars(args))
     del args_as_dict['_command']
     del args_as_dict['_run_async']
@@ -105,6 +116,9 @@ def main(raw_args=None):
         pw_cli.log.set_level(getattr(logging,
                                      args_as_dict['loglevel'].upper()))
         del args_as_dict['loglevel']
+
+    if 'no_banner' in args_as_dict:
+        del args_as_dict['no_banner']
 
     # Run the command and exit with the appropriate status.
     # pylint: disable=protected-access
