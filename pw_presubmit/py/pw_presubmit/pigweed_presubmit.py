@@ -159,10 +159,13 @@ def gn_docs_build(ctx: PresubmitContext):
 
 GN = (
     gn_clang_build,
-    gn_gcc_build,
     gn_arm_build,
     gn_docs_build,
 )
+
+# On Mac OS, 'gcc' is a symlink to 'clang', so skip GCC host builds on Mac.
+if sys.platform != 'darwin':
+    GN = GN + (gn_gcc_build, )
 
 #
 # C++ presubmit checks
@@ -275,7 +278,13 @@ def cmake_tests(ctx: PresubmitContext):
     call('ninja', '-C', output, 'pw_run_tests.modules', env=env)
 
 
-CMAKE = (cmake_tests, )
+CMAKE = tuple()
+
+# TODO: Re-enable this after we have fixed the CMake toolchain issue on Mac.
+# The problem is that all clang++ invocations need the two extra flags:
+# "-nostdc++" and "${clang_prefix}../lib/libc++.a".
+if sys.platform != 'darwin':
+    CMAKE = (cmake_tests, )
 
 
 #
@@ -300,7 +309,13 @@ def bazel_test(ctx: PresubmitContext):
         raise
 
 
-BAZEL = (bazel_test, )
+BAZEL = tuple()
+
+# TODO: Re-enable this after we have fixed the CMake toolchain issue on Mac.
+# The problem is that all clang++ invocations need the two extra flags:
+# "-nostdc++" and "${clang_prefix}../lib/libc++.a".
+if sys.platform != 'darwin':
+    BAZEL = (bazel_test, )
 
 #
 # Code format presubmit checks

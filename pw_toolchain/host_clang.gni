@@ -48,6 +48,24 @@ template("host_clang") {
   if (defined(invoker.toolchain_ldflags)) {
     _toolchain_ldflags = string_join(" ", invoker.toolchain_ldflags)
   }
+  if (host_os == "mac") {
+    # The CIPD provided Clang/LLVM toolchain must link against the matched
+    # libc++ which is also from CIPD. However, by default, Clang on Mac (but
+    # not on Linux) will fall back to the system libc++, which is
+    # incompatible due to an ABI change.
+    #
+    # Pull the appropriate path from our Pigweed env setup.
+    assert(getenv("PW_PIGWEED_CIPD_INSTALL_DIR") != "",
+           "You forgot to activate the Pigweed environment; " +
+               "did you source pw_env_setup/setup.sh?")
+
+    # Force dropping the system libc++
+    _toolchain_ldflags += "-nostdlib++ "
+
+    # Use the libc++ from CIPD.
+    _toolchain_ldflags += getenv("PW_PIGWEED_CIPD_INSTALL_DIR")
+    _toolchain_ldflags += "/lib/libc++.a"
+  }
 
   # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
   # ar. This should get updated for linux systems.
