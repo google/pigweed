@@ -146,7 +146,9 @@ def update(
         with tempfile.TemporaryFile(mode='w+') as temp:
             print(*cmd, file=temp)
             try:
-                subprocess.check_call(cmd, stdout=temp)
+                subprocess.check_call(cmd,
+                                      stdout=temp,
+                                      stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 temp.seek(0)
                 sys.stderr.write(temp.read())
