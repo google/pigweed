@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Callable, List
 
 
 def call_stdout(*args, **kwargs):
@@ -74,7 +75,7 @@ def register_into(dest):
     return decorate
 
 
-CHECKS = []
+CHECKS: List[Callable] = []
 
 
 @register_into(CHECKS)

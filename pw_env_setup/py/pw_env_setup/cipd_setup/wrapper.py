@@ -31,12 +31,12 @@ import sys
 try:
     import httplib
 except ImportError:
-    import http.client as httplib
+    import http.client as httplib  # type: ignore
 
 try:
     import urlparse  # Python 2.
 except ImportError:
-    import urllib.parse as urlparse
+    import urllib.parse as urlparse  # type: ignore
 
 SCRIPT_DIR = os.path.dirname(__file__)
 VERSION_FILE = os.path.join(SCRIPT_DIR, '.cipd_version')
@@ -54,7 +54,7 @@ except KeyError:
                 stderr=outs,
             ).strip().decode('utf-8')
     except subprocess.CalledProcessError:
-        PW_ROOT = None
+        PW_ROOT = ''
 
 # Get default install dir from environment since args cannot always be passed
 # through this script (args are passed as-is to cipd).
@@ -63,7 +63,7 @@ if 'CIPD_PY_INSTALL_DIR' in os.environ:
 elif PW_ROOT:
     DEFAULT_INSTALL_DIR = os.path.join(PW_ROOT, '.cipd')
 else:
-    DEFAULT_INSTALL_DIR = None
+    DEFAULT_INSTALL_DIR = ''
 
 
 def platform_normalized():

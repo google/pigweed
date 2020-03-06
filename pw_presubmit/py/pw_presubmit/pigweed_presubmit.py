@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -244,14 +244,26 @@ def pylint(ctx: PresubmitContext):
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
 def mypy(ctx: PresubmitContext):
-    run_python_module('mypy', *ctx.paths)
+    env = os.environ.copy()
+    # Use this environment variable to force mypy to colorize output.
+    # See https://github.com/python/mypy/issues/7771
+    env['MYPY_FORCE_COLOR'] = '1'
+
+    run_python_module(
+        'mypy',
+        *ctx.paths,
+        '--pretty',
+        '--color-output',
+        # TODO(pwbug/146): Some imports from installed packages fail. These
+        # imports should be fixed and this option removed.
+        '--ignore-missing-imports',
+        env=env)
 
 
 PYTHON = (
     test_python_packages,
     pylint,
-    # TODO(hepler): Enable mypy when it passes.
-    # mypy,
+    mypy,
 )
 
 
@@ -269,13 +281,12 @@ def _env_with_clang_cc_vars():
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
     env = _env_with_clang_cc_vars()
-    output = ctx.output_directory.joinpath('cmake-host')
     call('cmake',
-         '-B', output,
+         '-B', ctx.output_directory,
          '-S', ctx.repository_root,
          '-G', 'Ninja',
          env=env)  # yapf: disable
-    call('ninja', '-C', output, 'pw_run_tests.modules', env=env)
+    ninja('pw_run_tests.modules', ctx=ctx)
 
 
 CMAKE: Tuple[Callable, ...] = ()
@@ -492,7 +503,7 @@ PROGRAMS: Dict[str, Sequence] = {
     'quick': QUICK_PRESUBMIT,
 }
 
-ALL_STEPS = frozenset(itertools.chain(*PROGRAMS.values()))
+ALL_STEPS = {c.__name__: c for c in itertools.chain(*PROGRAMS.values())}
 
 
 def argument_parser(parser=None) -> argparse.ArgumentParser:
@@ -534,7 +545,8 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
 
     exclusive.add_argument(
         '--step',
-        choices=sorted(x.__name__ for x in itertools.chain(ALL_STEPS)),
+        dest='steps',
+        choices=sorted(ALL_STEPS),
         action='append',
         help='Provide explicit steps instead of running a predefined program.',
     )
@@ -551,7 +563,7 @@ def main(
         install: bool,
         repository: Path,
         output_directory: Path,
-        step: Sequence[str],
+        steps: Sequence[str],
         **presubmit_args,
 ) -> int:
     """Entry point for presubmit."""
@@ -577,8 +589,8 @@ def main(
         return 0
 
     program = PROGRAMS[program_name]
-    if step:
-        program = [x for x in ALL_STEPS if x.__name__ in step]
+    if steps:
+        program = [ALL_STEPS[name] for name in steps]
 
     if pw_presubmit.run_presubmit(program,
                                   repository=repository,

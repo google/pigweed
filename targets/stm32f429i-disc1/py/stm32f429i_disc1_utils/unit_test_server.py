@@ -18,7 +18,7 @@ import argparse
 import logging
 import sys
 import tempfile
-from typing import List, Optional, TextIO
+from typing import IO, List, Optional
 
 import pw_cli.process
 import pw_cli.log
@@ -63,7 +63,7 @@ def generate_runner(command: str, arguments: List[str]) -> str:
     return '\n'.join(runner)
 
 
-def generate_server_config() -> TextIO:
+def generate_server_config() -> IO[bytes]:
     """Returns a temporary generated file for use as the server config."""
     boards = stm32f429i_detector.detect_boards()
     if not boards:
@@ -83,7 +83,7 @@ def generate_server_config() -> TextIO:
     return config_file
 
 
-def launch_server(server_config: Optional[TextIO],
+def launch_server(server_config: Optional[IO[bytes]],
                   server_port: Optional[int]) -> int:
     """Launch a device test server with the provided arguments."""
     if server_config is None:

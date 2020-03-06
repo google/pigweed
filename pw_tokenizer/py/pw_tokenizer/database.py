@@ -29,7 +29,7 @@ import sys
 from typing import Dict, Iterable
 
 try:
-    from pw_presubmit import elf_reader, tokens
+    from pw_tokenizer import elf_reader, tokens
 except ImportError:
     # Append this path to the module search path to allow running this module
     # without installing the pw_tokenizer package.

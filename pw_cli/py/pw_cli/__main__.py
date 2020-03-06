@@ -25,6 +25,7 @@ import sys
 import logging
 import importlib
 import pkgutil
+from typing import NoReturn
 
 from pw_cli.color import colors
 import pw_cli.log
@@ -41,7 +42,7 @@ _PIGWEED_BANNER = '''
 
 
 class ArgumentParser(argparse.ArgumentParser):
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> NoReturn:
         print(colors().magenta(_PIGWEED_BANNER), file=sys.stderr)
         self.print_usage(sys.stderr)
         self.exit(2, '%s: error: %s\n' % (self.prog, message))

@@ -130,7 +130,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Track state of a build. These need to be members instead of locals
         # due to the split between dispatch(), run(), and on_complete().
         self.matching_path = None
-        self.builds_succeeded = []
+        self.builds_succeeded: List[bool] = []
 
         self.wait_for_keypress_thread = threading.Thread(
             None, self._wait_for_enter)

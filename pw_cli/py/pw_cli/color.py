@@ -66,7 +66,7 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
 
     if enabled and os.name == 'nt':
         # Enable ANSI color codes in Windows cmd.exe.
-        kernel32 = ctypes.windll.kernel32
+        kernel32 = ctypes.windll.kernel32  # type: ignore
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
     return _Color() if enabled else _NoColor()

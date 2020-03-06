@@ -54,7 +54,9 @@ if not getattr(sys, 'oxidized', False):
             filename = __file__
         else:
             # Try introspection in environments where __file__ is not populated.
-            filename = inspect.getfile(inspect.currentframe())
+            frame = inspect.currentframe()
+            if frame is not None:
+                filename = inspect.getfile(frame)
         # If none of our strategies worked, the imports are going to fail.
         if filename is None:
             raise

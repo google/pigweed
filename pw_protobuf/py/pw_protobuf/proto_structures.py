@@ -49,7 +49,7 @@ class ProtoNode(abc.ABC):
         """The type of the node."""
 
     def children(self) -> List['ProtoNode']:
-        return self._children.values()
+        return list(self._children.values())
 
     def name(self) -> str:
         return self._name
@@ -81,6 +81,7 @@ class ProtoNode(abc.ABC):
             second = self
 
         while diff > 0:
+            assert second is not None
             second = second.parent()
             diff -= 1
 
@@ -116,7 +117,7 @@ class ProtoNode(abc.ABC):
                              (child.type(), self.type()))
 
         # pylint: disable=protected-access
-        if child.parent() is not None:
+        if child._parent is not None:
             del child._parent._children[child.name()]
 
         child._parent = self
@@ -129,7 +130,7 @@ class ProtoNode(abc.ABC):
 
         # pylint: disable=protected-access
         for section in path.split('.'):
-            node = node._children.get(section)
+            node = node._children[section]
             if node is None:
                 return None
         # pylint: enable=protected-access

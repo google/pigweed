@@ -138,7 +138,7 @@ class TestRunner:
             _LOG.info('%s: [ RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
             try:
-                status = await pw_cli.process.run_async(command)
+                status = await pw_cli.process.run_async(*command)
                 if status == 0:
                     test.status = TestResult.SUCCESS
                     test_result = 'PASS'

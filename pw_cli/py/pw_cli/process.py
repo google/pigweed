@@ -29,21 +29,24 @@ _LOG = logging.getLogger(__name__)
 PW_SUBPROCESS_ENV = 'PW_SUBPROCESS'
 
 
-async def run_async(*args: str, silent: bool = False) -> int:
+async def run_async(program: str, *args: str, silent: bool = False) -> int:
     """Runs a command, capturing and logging its output.
 
     Returns the exit status of the command.
     """
 
-    command = args[0]
-    _LOG.debug('Running `%s`', shlex.join(command))
+    _LOG.debug('Running `%s`', shlex.join([program, *args]))
 
     env = os.environ.copy()
     env[PW_SUBPROCESS_ENV] = '1'
 
     stdout = asyncio.subprocess.DEVNULL if silent else asyncio.subprocess.PIPE
     process = await asyncio.create_subprocess_exec(
-        *command, stdout=stdout, stderr=asyncio.subprocess.STDOUT, env=env)
+        program,
+        *args,
+        stdout=stdout,
+        stderr=asyncio.subprocess.STDOUT,
+        env=env)
 
     if process.stdout is not None:
         while True:
@@ -57,13 +60,13 @@ async def run_async(*args: str, silent: bool = False) -> int:
 
     status = await process.wait()
     if status == 0:
-        _LOG.info('%s exited successfully', command[0])
+        _LOG.info('%s exited successfully', program)
     else:
-        _LOG.error('%s exited with status %d', command[0], status)
+        _LOG.error('%s exited with status %d', program, status)
 
     return status
 
 
-def run(*args: str, silent: bool = False) -> int:
+def run(program: str, *args: str, silent: bool = False) -> int:
     """Synchronous wrapper for run_async."""
-    return asyncio.run(run_async(args, silent))
+    return asyncio.run(run_async(program, *args, silent=silent))

@@ -40,7 +40,7 @@ _LOG = logging.getLogger(__name__)
 # have unintended consequences. This script shouldn't have to exist--GN should
 # standardize a way of finding a compiled binary for a build target.
 def _resembles_internal_gn_windows_path(path: str) -> bool:
-    return os.name == 'nt' and re.match(r'^/[a-zA-Z]:[/\\]', path)
+    return os.name == 'nt' and bool(re.match(r'^/[a-zA-Z]:[/\\]', path))
 
 
 def _fix_windows_absolute_path(path: str) -> str:

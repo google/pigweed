@@ -77,7 +77,9 @@ class EnvironmentParser:
     def add_var(
         self,
         name: str,
-        type: TypeConversion[T] = str,  # pylint: disable=redefined-builtin
+        # pylint: disable=redefined-builtin
+        type: TypeConversion[T] = str,  # type: ignore
+        # pylint: enable=redefined-builtin
         default: Optional[T] = None,
     ) -> None:
         """Registers an environment variable.
@@ -95,7 +97,10 @@ class EnvironmentParser:
             raise ValueError(
                 f'Variable {name} does not have prefix {self._prefix}')
 
-        self._variables[name] = VariableDescriptor(name, type, default)
+        self._variables[name] = VariableDescriptor(
+            name,
+            type,  # type: ignore
+            default)  # type: ignore
 
     def parse_env(self,
                   env: Optional[Mapping[str, str]] = None) -> EnvNamespace:

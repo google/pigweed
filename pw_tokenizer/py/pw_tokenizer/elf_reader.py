@@ -364,11 +364,12 @@ def _parse_args() -> argparse.Namespace:
 
     section_parser = subparsers.add_parser('section')
     section_parser.set_defaults(handler=_dump_sections)
-    section_parser.add_argument('sections',
-                                metavar='section_regex',
-                                nargs='*',
-                                type=re.compile,
-                                help='section name regular expression')
+    section_parser.add_argument(
+        'sections',
+        metavar='section_regex',
+        nargs='*',
+        type=re.compile,  # type: ignore
+        help='section name regular expression')
 
     address_parser = subparsers.add_parser('address')
     address_parser.set_defaults(handler=_read_addresses)

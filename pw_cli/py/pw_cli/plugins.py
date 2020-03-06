@@ -15,11 +15,10 @@
 
 import argparse
 import logging
-from typing import Callable
-from typing import NamedTuple
+from typing import Any, Callable, NamedTuple
 _LOG = logging.getLogger(__name__)
 
-DefineArgsFunction = Callable[[argparse.ArgumentParser], None]
+DefineArgsFunction = Callable[[argparse.ArgumentParser], Any]
 
 
 class Plugin(NamedTuple):

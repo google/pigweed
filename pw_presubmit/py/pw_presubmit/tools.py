@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -668,7 +668,7 @@ def call(*args, **kwargs) -> None:
                              **kwargs)
     logfunc = _LOG.warning if process.returncode else _LOG.debug
 
-    logfunc('[FINISHED] %s\n%s', attributes, command)
+    logfunc('[FINISHED]\n%s', command)
     logfunc('[RESULT] %s with return code %d',
             'Failed' if process.returncode else 'Passed', process.returncode)
 

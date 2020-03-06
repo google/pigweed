@@ -132,7 +132,7 @@ def main() -> int:
     else:
         output_args = {}
 
-    process = subprocess.run(command, env=env, **output_args)
+    process = subprocess.run(command, env=env, **output_args)  # type: ignore
 
     if process.returncode != 0 and args.capture_output:
         _LOG.error('')
