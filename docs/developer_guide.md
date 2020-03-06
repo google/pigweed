@@ -25,7 +25,7 @@ $ . pw_env_setup/env_setup.sh
 
 **Windows**
 ```batch
-> call pw_env_setup\env_setup.bat
+> pw_env_setup\env_setup.bat
 ```
 
 This will provide you with GN, Ninja, a host and Cortex-M compiler,

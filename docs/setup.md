@@ -49,10 +49,10 @@ $ . pw_env_setup/bootstrap.sh
 **Windows**
 ```batch
 :: Run git commands from the shell you set up to use with Git during install.
-> git clone sso://pigweed.googlesource.com/pigweed/pigweed %HOME%\pigweed
-> cd %HOME%\pigweed
+> git clone sso://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
+> cd %HOMEPATH%\pigweed
 > python pw_env_setup\py\pw_env_setup\cipd_setup\wrapper.py auth-login
-> call pw_env_setup\env_setup.bat
+> pw_env_setup\env_setup.bat
 ```
 
 ## Contributors
@@ -60,10 +60,17 @@ $ . pw_env_setup/bootstrap.sh
 If you plan to contribute to Pigweed, you'll need to set up a commit hook for
 Gerrit.
 
+**Linux/macOS**<br/>
 ```bash
 $ f=`git rev-parse --git-dir`/hooks/commit-msg ; mkdir -p $(dirname $f) ; curl -Lo $f https://gerrit-review.googlesource.com/tools/hooks/commit-msg ; chmod +x $f
 ```
 
+**Windows**<br/>
+Download [the Gerrit commit hook](https://gerrit-review.googlesource.com/tools/hooks/commit-msg)
+and then copy it to the `.git\hooks` directory in the Pigweed repository.
+```batch
+copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
+```
 
 ## Congratulations!
 You should now be set up to start using Pigweed. If you are interested in seeing
