@@ -44,10 +44,12 @@ class UnexpectedAction(ValueError):
 
 class _Action(object):  # pylint: disable=useless-object-inheritance
     # pylint: disable=redefined-builtin,too-few-public-methods
-    def __init__(self, name, value, *args, **kwargs):
+    # pylint: disable=keyword-arg-before-vararg
+    def __init__(self, name, value, allow_empty_values=False, *args, **kwargs):
         super(_Action, self).__init__(*args, **kwargs)
         self.name = name
         self.value = value
+        self.allow_empty_values = allow_empty_values
 
         self._check()
 
@@ -61,7 +63,7 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
 
         # Empty strings as environment variable values have different behavior
         # on different operating systems. Just don't allow them.
-        if self.value == '':
+        if not self.allow_empty_values and self.value == '':
             raise EmptyValue('{!r} value {!r} is the empty string'.format(
                 self.name, self.value))
 
@@ -144,22 +146,34 @@ class BadEchoValue(ValueError):
 
 
 class _Echo(_Action):
-    def __init__(self, value, *args, **kwargs):
+    def __init__(self, value, newline, *args, **kwargs):
+        self._newline = newline
+
         name = 'unused_non_empty_string_to_make_check_simpler'
         # These values act funny on Windows.
         if value.lower() in ('off', 'on'):
             raise BadEchoValue(value)
-        super(_Echo, self).__init__(name, value, *args, **kwargs)
+        super(_Echo, self).__init__(name,
+                                    value,
+                                    allow_empty_values=True,
+                                    *args,
+                                    **kwargs)
 
     def write(self, outs, windows=(os.name == 'nt')):
         # POSIX shells parse arguments and pass to echo, but Windows seems to
         # pass the command line as is without parsing, so quoting is wrong.
         if windows:
-            outs.write('echo {}\n'.format(self.value))
+            if self._newline:
+                outs.write('echo {}\n'.format(self.value))
+            else:
+                outs.write('<nul set /p="{}"\n'.format(self.value))
         else:
             # TODO(mohrr) use shlex.quote().
             outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n')
-            outs.write('  echo "{}"\n'.format(self.value))
+            if self._newline:
+                outs.write('  echo "{}"\n'.format(self.value))
+            else:
+                outs.write('  echo -n "{}"\n'.format(self.value))
             outs.write('fi\n')
 
     def apply(self, env):  # pylint: disable=no-self-use
@@ -225,8 +239,8 @@ class Environment(object):
         else:
             self._actions.append(_Set(name, value))
 
-    def echo(self, value):
-        self._actions.append(_Echo(value))
+    def echo(self, value, newline=True):
+        self._actions.append(_Echo(value, newline))
 
     def write(self, outs):
         """Writes a shell init script to outs."""

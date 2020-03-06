@@ -192,15 +192,17 @@ brew uninstall python && brew install python
     raise Exception('failed to download client')
 
 
-def bootstrap(client):
+def bootstrap(client, silent=('PW_ENVSETUP_QUIET' in os.environ)):
     """Bootstrap cipd client installation."""
 
     client_dir = os.path.dirname(client)
     if not os.path.isdir(client_dir):
         os.makedirs(client_dir)
 
-    print('Bootstrapping cipd client for {}-{}'.format(platform_normalized(),
-                                                       arch_normalized()))
+    if not silent:
+        print('Bootstrapping cipd client for {}-{}'.format(
+            platform_normalized(), arch_normalized()))
+
     tmp_path = client + '.tmp'
     with open(tmp_path, 'wb') as tmp:
         tmp.write(client_bytes())
@@ -228,7 +230,7 @@ def selfupdate(client):
     subprocess.check_call(cmd)
 
 
-def init(install_dir=DEFAULT_INSTALL_DIR):
+def init(install_dir=DEFAULT_INSTALL_DIR, silent=False):
     """Install/update cipd client."""
 
     os.environ['CIPD_HTTP_USER_AGENT_PREFIX'] = user_agent()
@@ -239,7 +241,7 @@ def init(install_dir=DEFAULT_INSTALL_DIR):
 
     try:
         if not os.path.isfile(client):
-            bootstrap(client)
+            bootstrap(client, silent)
 
         try:
             selfupdate(client)

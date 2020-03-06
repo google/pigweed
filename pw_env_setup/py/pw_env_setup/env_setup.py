@@ -74,6 +74,36 @@ from pw_env_setup import environment
 from pw_env_setup import virtualenv_setup
 
 
+def _make_color(*codes):
+    # Apply all the requested ANSI color codes. Note that this is unbalanced
+    # with respect to the reset, which only requires a '0' to erase all codes.
+    start = ''.join('\033[{}m'.format(code) for code in codes)
+    reset = '\033[0m'
+
+    return staticmethod(lambda msg: '{}{}{}'.format(start, msg, reset))
+
+
+class _Color:  # pylint: disable=too-few-public-methods
+    """Helpers to surround text with ASCII color escapes"""
+    bold = _make_color(1)
+
+
+class _Result:
+    class Status:  # pylint: disable=too-few-public-methods
+        DONE = 'done'
+        SKIPPED = 'skipped'
+
+    def __init__(self, status, *messages):
+        self._status = status
+        self._messages = list(messages)
+
+    def status_str(self):
+        return self._status
+
+    def messages(self):
+        return self._messages
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 class EnvSetup(object):
@@ -86,6 +116,7 @@ class EnvSetup(object):
                                         'pw_env_setup')
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
+        self._is_windows = os.name == 'nt'
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -96,37 +127,67 @@ class EnvSetup(object):
         self._env.set('PW_ROOT', self._pw_root)
 
     def setup(self):
+        """Runs each of the env_setup steps."""
+
         steps = [
-            ('cipd', self.cipd),
-            ('python', self.virtualenv),
-            ('host_tools', self.host_tools),
+            ('CIPD package manager', self.cipd),
+            ('Python environment', self.virtualenv),
+            ('Pigweed host tools', self.host_tools),
         ]
 
-        if os.name != 'nt':
-            # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
-            steps.append(('cargo', self.cargo))
+        # TODO(pwbug/67): Rust isn't currently used anywhere, so this is
+        # commented out to avoid cluttering the bootstrap output. It should be
+        # re-enabled once we have a use for Rust.
+        #
+        # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
+        #
+        # if not self._is_windows:
+        #   steps.append(("Rust's cargo", self.cargo))
+
+        print(
+            _Color.bold('Downloading and installing packages into local '
+                        'source directory:\n'))
+
+        max_name_len = max(len(name) for name, _ in steps)
+
+        self._env.echo(
+            _Color.bold(
+                'Activating environment (setting environment variables):'))
+        self._env.echo('')
 
         for name, step in steps:
-            print('Setting up {}...'.format(name), file=sys.stderr)
-            step()
-            print('  done.', file=sys.stderr)
+            print('  Setting up {name:.<{width}}...'.format(
+                name=name, width=max_name_len),
+                  end='')
+            sys.stdout.flush()
+            self._env.echo(
+                '  Setting environment variables for {name:.<{width}}...'.
+                format(name=name, width=max_name_len),
+                newline=False,
+            )
+
+            result = step()
+
+            self._env.echo(result.status_str())
+            for message in result.messages():
+                self._env.echo(message)
+
+            print('done')
+
+        print('')
+        self._env.echo('')
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
-            if 'PW_ENVSETUP_QUIET' in os.environ:
-                outs.write('pw --loglevel warn doctor\n')
-            else:
-                outs.write('pw --loglevel info doctor\n')
-            outs.write('echo Pigweed environment setup complete')
+            self.write_sanity_check(outs)
 
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
 
-        cipd_client = cipd_wrapper.init(install_dir)
+        cipd_client = cipd_wrapper.init(install_dir, silent=True)
 
         package_files = glob.glob(
             os.path.join(self._setup_root, 'cipd_setup', '*.json'))
-        self._env.echo('Setting CIPD environment variables...')
         cipd_update.update(
             cipd=cipd_client,
             root_install_dir=install_dir,
@@ -134,7 +195,8 @@ class EnvSetup(object):
             cache_dir=self._cipd_cache_dir,
             env_vars=self._env,
         )
-        self._env.echo('  done.')
+
+        return _Result(_Result.Status.DONE)
 
     def virtualenv(self):
         """Setup virtualenv."""
@@ -150,7 +212,7 @@ class EnvSetup(object):
             'pigweed',
             'bin',
         )
-        if os.name == 'nt':
+        if self._is_windows:
             # There is an issue with the virtualenv module on Windows where it
             # expects sys.executable to be called "python.exe" or it fails to
             # properly execute. Create a copy of python3.exe called python.exe
@@ -165,31 +227,57 @@ class EnvSetup(object):
 
         python = os.path.join(cipd_bin, py_executable)
 
-        self._env.echo('Setting virtualenv environment variables...')
         virtualenv_setup.install(
             venv_path=venv_path,
             requirements=[requirements],
             python=python,
             env=self._env,
         )
-        self._env.echo('  done.')
+
+        return _Result(_Result.Status.DONE)
 
     def host_tools(self):
         # The host tools are grabbed from CIPD, at least initially. If the
         # user has a current host build, that build will be used instead.
-        self._env.echo('Setting host_tools environment variables...')
         host_dir = os.path.join(self._pw_root, 'out', 'host')
         self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
-        self._env.echo('  done.')
+        return _Result(_Result.Status.DONE)
 
     def cargo(self):
-        self._env.echo('Setting cargo environment variables...')
-        if os.environ.get('PW_CARGO_SETUP', ''):
-            cargo_setup.install(pw_root=self._pw_root, env=self._env)
+        if not os.environ.get('PW_CARGO_SETUP', ''):
+            return _Result(
+                _Result.Status.SKIPPED,
+                '    Note: Re-run bootstrap with PW_CARGO_SETUP=1 set '
+                'in your environment',
+                '          to enable Rust.',
+            )
+
+        cargo_setup.install(pw_root=self._pw_root, env=self._env)
+        return _Result(_Result.Status.DONE)
+
+    def write_sanity_check(self, fd):
+        fd.write('echo {}\n'.format(
+            _Color.bold('Sanity checking the environment:')))
+        fd.write('echo\n')
+
+        log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
+        doctor = ' '.join(
+            ['pw', '--no-banner', '--loglevel', log_level, 'doctor'])
+
+        if self._is_windows:
+            fd.write('{}\n'.format(doctor))
+            fd.write('if %ERRORLEVEL% == 0 (\n')
         else:
-            self._env.echo(
-                '  cargo setup skipped, set PW_CARGO_SETUP to include it')
-        self._env.echo('  done.')
+            fd.write('if {}; then\n'.format(doctor))
+
+        fd.write('  echo\n')
+        fd.write('  echo "{}"\n'.format(
+            _Color.bold('Environment looks good; you are ready to go!')))
+
+        if self._is_windows:
+            fd.write(')\n')
+        else:
+            fd.write('fi\n')
 
 
 def parse(argv=None):

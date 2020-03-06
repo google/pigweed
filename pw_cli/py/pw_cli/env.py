@@ -22,6 +22,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     """Defines Pigweed's environment variables on an EnvironmentParser."""
     parser = envparse.EnvironmentParser(prefix='PW_')
 
+    parser.add_var('PW_BOOTSTRAP_PY27',
+                   type=envparse.strict_bool,
+                   default=False)
     parser.add_var('PW_CARGO_SETUP', type=envparse.strict_bool, default=False)
     parser.add_var('PW_EMOJI', type=envparse.strict_bool, default=False)
     parser.add_var('PW_ENVSETUP')

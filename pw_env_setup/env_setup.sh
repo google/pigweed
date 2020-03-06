@@ -14,9 +14,34 @@
 
 # This script must be tested on bash, zsh, and dash.
 
-_abspath () {
+_pw_abspath () {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
+
+_pw_red() {
+  echo -e "\e[0;31m$*\e[0m"
+}
+
+_pw_bold_red() {
+  echo -e "\e[1;31m$*\e[0m"
+}
+
+_pw_green() {
+  echo -e "\e[0;32m$*\e[0m"
+}
+
+_pw_bright_magenta() {
+  echo -e "\e[0;35m$*\e[0m"
+}
+
+_PIGWEED_BANNER=$(cat <<EOF
+ ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+EOF
+)
 
 # Users are not expected to set PW_CHECKOUT_ROOT, it's only used because it
 # seems to be impossible to reliably determine the path to a sourced file in
@@ -26,21 +51,21 @@ _abspath () {
 # variable set.
 # TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if test -n "$PW_CHECKOUT_ROOT"; then
-  PW_SETUP_SCRIPT_PATH=$(_abspath "$PW_CHECKOUT_ROOT/pw_env_setup/bootstrap.sh")
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath "$PW_CHECKOUT_ROOT/pw_env_setup/bootstrap.sh")
   unset PW_CHECKOUT_ROOT
 # Shell: bash.
 elif test -n "$BASH"; then
-  PW_SETUP_SCRIPT_PATH=$(_abspath $BASH_SOURCE)
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath $BASH_SOURCE)
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
-  PW_SETUP_SCRIPT_PATH=$(_abspath ${(%):-%N})
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath ${(%):-%N})
 # Shell: dash.
 elif test ${0##*/} = dash; then
-  PW_SETUP_SCRIPT_PATH=$(_abspath \
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath \
     $(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;'))
 # If everything else fails, try $0. It could work.
 else
-  PW_SETUP_SCRIPT_PATH=$(_abspath $0)
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath $0)
 fi
 
 PW_ROOT=$(dirname $(dirname $PW_SETUP_SCRIPT_PATH))
@@ -48,19 +73,49 @@ export PW_ROOT
 
 SETUP_SH="$PW_ROOT/pw_env_setup/.setup.sh"
 
-# Try to use Python 3 if possible by default, before Python 2.
-if which python3 &> /dev/null; then
-  PYTHON=python3
-else
-  PYTHON=python
-fi
+_pw_green "\n  WELCOME TO...\n"
+_pw_bright_magenta "$_PIGWEED_BANNER\n"
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
-if \
-  [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
+[ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
   [ ! -f $SETUP_SH ] || \
-  [ ! -s $SETUP_SH ]; then
+  [ ! -s $SETUP_SH ]
+_PW_IS_BOOTSTRAP=$?
+
+if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
+  _pw_green "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
+
+  # Try to use Python 3 if possible by default, before Python 2.
+  if [ -z "$PW_BOOTSTRAP_PY27" ] && which python3 &> /dev/null; then
+    PYTHON=python3
+  elif which python &> /dev/null; then
+    PYTHON=python
+  else
+    _pw_bold_red "Error: No system Python present\n"
+    _pw_red "  Pigweed's bootstrap process requires a local system Python."
+    _pw_red "  Please install Python on your system, add it to your PATH"
+    _pw_red "  and re-try running bootstrap."
+    return
+  fi
+
   $PYTHON $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py --shell-file $SETUP_SH
+else
+  _pw_green "  ACTIVATOR! This sets your shell environment variables.\n"
 fi
 
 . $SETUP_SH
+
+if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
+  echo
+  echo "To activate this environment in the future, run this in your terminal:"
+  echo
+  _pw_green "  . pw_env_setup/env_setup.sh\n"
+fi
+
+unset _PW_IS_BOOTSTRAP
+unset _PIGWEED_BANNER
+unset _pw_abspath
+unset _pw_red
+unset _pw_bold_red
+unset _pw_green
+unset _pw_bright_magenta
