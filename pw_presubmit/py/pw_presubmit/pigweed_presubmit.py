@@ -35,15 +35,12 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
+from pw_presubmit import python_checks
 from pw_presubmit import format_code, PresubmitContext
 from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
 
 _LOG = logging.getLogger(__name__)
-
-
-def run_python_module(*args, **kwargs):
-    return call('python', '-m', *args, **kwargs)
 
 
 #
@@ -207,66 +204,8 @@ CC = (
 
 
 #
-# Python presubmit checks
+# CMake presubmit checks
 #
-@filter_paths(endswith='.py')
-def test_python_packages(ctx: PresubmitContext):
-    packages = pw_presubmit.find_python_packages(ctx.paths,
-                                                 repo=ctx.repository_root)
-
-    if not packages:
-        _LOG.info('No Python packages were found.')
-        return
-
-    for package in packages:
-        call('python', os.path.join(package, 'setup.py'), 'test', cwd=package)
-
-
-@filter_paths(endswith='.py')
-def pylint(ctx: PresubmitContext):
-    disable_checkers = [
-        # BUG(pwbug/22): Hanging indent check conflicts with YAPF 0.29. For
-        # now, use YAPF's version even if Pylint is doing the correct thing
-        # just to keep operations simpler. When YAPF upstream fixes the issue,
-        # delete this code.
-        #
-        # See also: https://github.com/google/yapf/issues/781
-        'bad-continuation',
-    ]
-    run_python_module(
-        'pylint',
-        '--jobs=0',
-        f'--disable={",".join(disable_checkers)}',
-        *ctx.paths,
-        cwd=ctx.repository_root,
-    )
-
-
-@filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
-def mypy(ctx: PresubmitContext):
-    env = os.environ.copy()
-    # Use this environment variable to force mypy to colorize output.
-    # See https://github.com/python/mypy/issues/7771
-    env['MYPY_FORCE_COLOR'] = '1'
-
-    run_python_module(
-        'mypy',
-        *ctx.paths,
-        '--pretty',
-        '--color-output',
-        # TODO(pwbug/146): Some imports from installed packages fail. These
-        # imports should be fixed and this option removed.
-        '--ignore-missing-imports',
-        env=env)
-
-
-PYTHON = (
-    test_python_packages,
-    pylint,
-    mypy,
-)
-
-
 def _env_with_clang_cc_vars():
     env = os.environ.copy()
     env['CC'] = env['LD'] = env['AS'] = 'clang'
@@ -274,9 +213,6 @@ def _env_with_clang_cc_vars():
     return env
 
 
-#
-# CMake presubmit checks
-#
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
@@ -479,7 +415,7 @@ def source_is_in_build_files(ctx: PresubmitContext):
 
 GENERAL = (source_is_in_build_files, )
 
-BROKEN: Sequence = (
+BROKEN: Tuple = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
 )  # yapf: disable
@@ -487,19 +423,22 @@ BROKEN: Sequence = (
 #
 # Presubmit check programs
 #
-QUICK_PRESUBMIT: Sequence = (
+QUICK_PRESUBMIT: Tuple = (
     *INIT,
     *CODE_FORMAT,
     *GENERAL,
     *CC,
     gn_clang_build,
     gn_arm_build,
-    *PYTHON,
+    *python_checks.ALL,
 )
 
-PROGRAMS: Dict[str, Sequence] = {
+FULL_PRESUBMIT: Tuple = (INIT + CODE_FORMAT + GENERAL + CC + GN +
+                         python_checks.ALL + CMAKE + BAZEL)
+
+PROGRAMS: Dict[str, Tuple] = {
     'broken': BROKEN,
-    'full': INIT + CODE_FORMAT + GENERAL + CC + GN + PYTHON + CMAKE + BAZEL,
+    'full': FULL_PRESUBMIT,
     'quick': QUICK_PRESUBMIT,
 }
 
@@ -588,7 +527,7 @@ def main(
                      repository)
         return 0
 
-    program = PROGRAMS[program_name]
+    program: Sequence = PROGRAMS[program_name]
     if steps:
         program = [ALL_STEPS[name] for name in steps]
 
