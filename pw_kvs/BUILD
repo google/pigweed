@@ -128,9 +128,9 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "key_value_store_error_handling_test",
+    name = "key_value_store_binary_format_test",
     srcs = [
-        "key_value_store_error_handling_test.cc",
+        "key_value_store_binary_format_test.cc",
     ],
     deps = [
         ":crc16",

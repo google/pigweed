@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Tests that directly work with the KVS's binary format and flash layer.
+
 #include <string_view>
 
 #include "gtest/gtest.h"
