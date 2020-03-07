@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 import("//build/config/fuchsia/rules.gni")
+import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
-import("//build/package.gni")
 
 driver_module("driver") {
   output_name = "bt-host"
@@ -88,9 +88,7 @@ group("stack") {
 
 # TODO(armansito): Enable debug assertions by default from here for all package
 # dependencies when there is a way for it.
-package("bt-host") {
-  deprecated_system_image = true
-
+driver_package("bt-host") {
   deps = [ ":driver" ]
 
   drivers = [
