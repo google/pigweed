@@ -256,9 +256,11 @@ class EnvSetup(object):
         return _Result(_Result.Status.DONE)
 
     def write_sanity_check(self, fd):
-        fd.write('echo {}\n'.format(
+        echo_empty = 'echo.' if self._is_windows else 'echo'
+
+        fd.write('echo "{}"\n'.format(
             _Color.bold('Sanity checking the environment:')))
-        fd.write('echo\n')
+        fd.write('{}\n'.format(echo_empty))
 
         log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
         doctor = ' '.join(
@@ -270,7 +272,7 @@ class EnvSetup(object):
         else:
             fd.write('if {}; then\n'.format(doctor))
 
-        fd.write('  echo\n')
+        fd.write('  {}\n'.format(echo_empty))
         fd.write('  echo "{}"\n'.format(
             _Color.bold('Environment looks good; you are ready to go!')))
 
