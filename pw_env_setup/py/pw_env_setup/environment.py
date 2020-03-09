@@ -105,6 +105,37 @@ class _Clear(_Action):
             del env[self.name]
 
 
+class _Remove(_Action):
+    def __init__(self, name, value, pathsep, *args, **kwargs):
+        super(_Remove, self).__init__(name, value, *args, **kwargs)
+        self._pathsep = pathsep
+
+    def write(self, outs, windows=(os.name == 'nt')):
+        if windows:
+            # TODO(pwbug/148) Also do this for Windows.
+            pass
+        else:
+            outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
+                       'adding it back.\n'
+                       '{name}=$(echo "${name}"'
+                       ' | sed "s/{pathsep}{value}{pathsep}/{pathsep}/;"'
+                       ' | sed "s/^{value}{pathsep}//;"'
+                       ' | sed "s/{pathsep}{value}$//;"'
+                       ')\nexport {name}\n'.format(name=self.name,
+                                                   value=self.value.replace(
+                                                       '/', '\\/'),
+                                                   pathsep=self._pathsep))
+
+    def apply(self, env):
+        env[self.name] = env[self.name].replace(
+            '{pathsep}{value}{pathsep}'.format(pathsep=self._pathsep,
+                                               value=self.value),
+            self._pathsep)
+        env[self.name] = re.sub(
+            r'^{value}{pathsep}|{pathsep}{value}$'.format(
+                pathsep=self._pathsep, value=self.value), '', env[self.name])
+
+
 class _Prepend(_Action):
     def __init__(self, name, value, join, *args, **kwargs):
         super(_Prepend, self).__init__(name, value, *args, **kwargs)
@@ -221,11 +252,19 @@ class Environment(object):
         name = self.normalize_key(name)
         self._actions.append(_Clear(name))
 
+    def remove(self, name, value):
+        """Remove a value from a variable."""
+
+        name = self.normalize_key(name)
+        if self.get(name, None):
+            self._actions.append(_Remove(name, value, self._pathsep))
+
     def append(self, name, value):
         """Add a value to the end of a variable. Rarely used, see prepend()."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
+            self.remove(name, value)
             self._actions.append(_Append(name, value, self._join))
         else:
             self._actions.append(_Set(name, value))
@@ -235,6 +274,7 @@ class Environment(object):
 
         name = self.normalize_key(name)
         if self.get(name, None):
+            self.remove(name, value)
             self._actions.append(_Prepend(name, value, self._join))
         else:
             self._actions.append(_Set(name, value))

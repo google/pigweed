@@ -322,6 +322,29 @@ class _AppendPrependTestMixin(object):
         env = _evaluate_env_in_shell(self.env)
         self.assertEqual(env[self.var_not_set], 'path')
 
+    def test_remove_ctx(self):
+        self.env.set(self.var_not_set,
+                     self.pathsep.join(('path', 'one', 'path', 'two', 'path')))
+
+        self.env.append(self.var_not_set, 'path')
+        with self.env(export=False) as env:
+            self.assertEqual(env[self.var_not_set],
+                             self.pathsep.join(('one', 'two', 'path')))
+
+    def test_remove_written(self):
+        if self.windows:  # TODO(pwbug/148) Support removing paths on Windows.
+            return
+        if not self.run_shell_tests:
+            return
+
+        self.env.set(self.var_not_set,
+                     self.pathsep.join(('path', 'one', 'path', 'two', 'path')))
+
+        self.env.append(self.var_not_set, 'path')
+        env = _evaluate_env_in_shell(self.env)
+        self.assertEqual(env[self.var_not_set],
+                         self.pathsep.join(('one', 'two', 'path')))
+
 
 class WindowsEnvironmentTest(_PrependAppendEnvironmentTest,
                              _AppendPrependTestMixin):
