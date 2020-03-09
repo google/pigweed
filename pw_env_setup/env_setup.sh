@@ -85,9 +85,9 @@ _PW_IS_BOOTSTRAP=$?
 if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
   _pw_green "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
 
-  # Try to use Python 3 if possible by default, before Python 2.
-  if [ -z "$PW_BOOTSTRAP_PY27" ] && which python3 &> /dev/null; then
-    PYTHON=python3
+  # Allow forcing a specific version of Python for testing pursposes.
+  if [ -n "$PW_BOOTSTRAP_PYTHON" ]; then
+    PYTHON="$PW_BOOTSTRAP_PYTHON"
   elif which python &> /dev/null; then
     PYTHON=python
   else
