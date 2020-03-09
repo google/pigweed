@@ -1,0 +1,67 @@
+# -*- coding: utf-8 -*-
+
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+"""Prints the env_setup banner for cmd.exe.
+
+This is done from Python as activating colors and printing ASCII art are not
+easy to do in cmd.exe. Activated colors also don't persist in the parent
+process.
+"""
+
+from __future__ import print_function
+
+import os
+import sys
+
+from colors import Color, enable_colors
+
+_PIGWEED_BANNER = u'''
+ ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+'''
+
+
+def main():
+    if os.name != 'nt':
+        return 1
+
+    enable_colors()
+
+    print(Color.green('\n  WELCOME TO...'))
+    print(Color.magenta(_PIGWEED_BANNER))
+
+    bootstrap = True
+
+    if bootstrap:
+        print(
+            Color.green('\n  BOOTSTRAP! Bootstrap may take a few minutes; '
+                        'please be patient'))
+        print(
+            Color.green(
+                '  On Windows, this stage is extremely slow (~10 minutes).\n'))
+    else:
+        print(
+            Color.green(
+                '\n  ACTIVATOR! This sets your console environment variables.')
+        )
+
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

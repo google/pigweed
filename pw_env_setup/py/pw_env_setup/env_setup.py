@@ -69,23 +69,10 @@ if not getattr(sys, 'oxidized', False):
 # pylint: disable=wrong-import-position
 from pw_env_setup.cipd_setup import update as cipd_update
 from pw_env_setup.cipd_setup import wrapper as cipd_wrapper
+from pw_env_setup.colors import Color, enable_colors
 from pw_env_setup import cargo_setup
 from pw_env_setup import environment
 from pw_env_setup import virtualenv_setup
-
-
-def _make_color(*codes):
-    # Apply all the requested ANSI color codes. Note that this is unbalanced
-    # with respect to the reset, which only requires a '0' to erase all codes.
-    start = ''.join('\033[{}m'.format(code) for code in codes)
-    reset = '\033[0m'
-
-    return staticmethod(lambda msg: '{}{}{}'.format(start, msg, reset))
-
-
-class _Color:  # pylint: disable=too-few-public-methods
-    """Helpers to surround text with ASCII color escapes"""
-    bold = _make_color(1)
 
 
 class _Result:
@@ -140,6 +127,8 @@ class EnvSetup(object):
     def setup(self):
         """Runs each of the env_setup steps."""
 
+        enable_colors()
+
         steps = [
             ('CIPD package manager', self.cipd),
             ('Python environment', self.virtualenv),
@@ -156,13 +145,13 @@ class EnvSetup(object):
         #   steps.append(("Rust's cargo", self.cargo))
 
         self._log(
-            _Color.bold('Downloading and installing packages into local '
-                        'source directory:\n'))
+            Color.bold('Downloading and installing packages into local '
+                       'source directory:\n'))
 
         max_name_len = max(len(name) for name, _ in steps)
 
         self._env.echo(
-            _Color.bold(
+            Color.bold(
                 'Activating environment (setting environment variables):'))
         self._env.echo('')
 
@@ -271,7 +260,7 @@ class EnvSetup(object):
 
         if not self._quiet:
             fd.write('echo "{}"\n'.format(
-                _Color.bold('Sanity checking the environment:')))
+                Color.bold('Sanity checking the environment:')))
             fd.write('{}\n'.format(echo_empty))
 
         log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
@@ -280,14 +269,14 @@ class EnvSetup(object):
 
         if self._is_windows:
             fd.write('{}\n'.format(doctor))
-            fd.write('if %ERRORLEVEL% == 0 (\n')
+            fd.write('if %ERRORLEVEL% EQU 0 (\n')
         else:
             fd.write('if {}; then\n'.format(doctor))
 
         if not self._quiet:
             fd.write('  {}\n'.format(echo_empty))
             fd.write('  echo "{}"\n'.format(
-                _Color.bold('Environment looks good; you are ready to go!')))
+                Color.bold('Environment looks good; you are ready to go!')))
 
         if self._is_windows:
             fd.write(')\n')

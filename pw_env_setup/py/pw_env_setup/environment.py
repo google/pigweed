@@ -54,10 +54,16 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
         self._check()
 
     def _check(self):
-        if not isinstance(self.name, str):
+        try:
+            # In python2, unicode is a distinct type.
+            valid_types = (str, unicode)  # pylint: disable=undefined-variable
+        except NameError:
+            valid_types = (str, )
+
+        if not isinstance(self.name, valid_types):
             raise BadNameType('variable name {!r} not of type str'.format(
                 self.name))
-        if not isinstance(self.value, str):
+        if not isinstance(self.value, valid_types):
             raise BadValueType('{!r} value {!r} not of type str'.format(
                 self.name, self.value))
 

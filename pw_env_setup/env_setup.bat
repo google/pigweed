@@ -30,10 +30,35 @@ if "%PW_CHECKOUT_ROOT%"=="" (
   set PW_CHECKOUT_ROOT=
 )
 
+:: Allow forcing a specifc Python version through the environment variable
+:: PW_BOOTSTRAP_PYTHON. Otherwise, use the system Python if one exists.
+if not "%PW_BOOTSTRAP_PYTHON%" == "" (
+  set python="%PW_BOOTSTRAP_PYTHON%"
+) else (
+  where python >NUL 2>&1
+  if %ERRORLEVEL% EQU 0 (
+    set python=python
+  ) else (
+    echo.
+    echo Error: no system Python present
+    echo.
+    echo   Pigweed's bootstrap process requires a local system Python.
+    echo   Please install Python on your system, add it to your PATH
+    echo   and re-try running bootstrap.
+    goto finish
+  )
+)
+
+call %python% %PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py
+
 set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
 if not exist %shell_file% (
-  call python %PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py --pw-root %PW_ROOT% --shell-file %shell_file%
+  call %python% %PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py^
+    --pw-root %PW_ROOT%^
+    --shell-file %shell_file%
 )
 
 call %shell_file%
+
+:finish

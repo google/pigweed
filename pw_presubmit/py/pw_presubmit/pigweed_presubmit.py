@@ -313,7 +313,7 @@ def copyright_notice(ctx: PresubmitContext):
             # Skip shebang and blank lines
             line = file.readline()
             while line and (line.startswith(
-                ('#!', '/*', '@echo off')) or not line.strip()):
+                ('#!', '/*', '@echo off', '# -*-')) or not line.strip()):
                 line = file.readline()
 
             first_line = COPYRIGHT_FIRST_LINE.match(line)
