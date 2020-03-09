@@ -18,7 +18,7 @@
 #include <initializer_list>
 #include <utility>
 
-#include "pw_kvs/output.h"
+#include "pw_kvs/io.h"
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 

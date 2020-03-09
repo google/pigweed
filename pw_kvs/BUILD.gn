@@ -26,8 +26,8 @@ source_set("pw_kvs") {
     "public/pw_kvs/checksum.h",
     "public/pw_kvs/flash_memory.h",
     "public/pw_kvs/format.h",
+    "public/pw_kvs/io.h",
     "public/pw_kvs/key_value_store.h",
-    "public/pw_kvs/output.h",
   ]
   sources = [
     "alignment.cc",

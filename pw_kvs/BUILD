@@ -44,8 +44,8 @@ pw_cc_library(
         "public/pw_kvs/crc16_checksum.h",
         "public/pw_kvs/flash_memory.h",
         "public/pw_kvs/format.h",
+        "public/pw_kvs/io.h",
         "public/pw_kvs/key_value_store.h",
-        "public/pw_kvs/output.h",
     ],
     includes = ["public"],
     deps = [
