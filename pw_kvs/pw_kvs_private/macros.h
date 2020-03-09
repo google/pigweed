@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include "pw_status/status.h"
+
 // Macros for cleanly working with Status or StatusWithSize objects in functions
 // that return Status.
 #define PW_TRY(expr) _PW_TRY(_PW_TRY_UNIQUE(__LINE__), expr)

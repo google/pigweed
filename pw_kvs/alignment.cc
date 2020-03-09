@@ -14,6 +14,8 @@
 
 #include "pw_kvs/alignment.h"
 
+#include "pw_kvs_private/macros.h"
+
 namespace pw {
 
 StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
@@ -21,30 +23,14 @@ StatusWithSize AlignedWriter::Write(span<const std::byte> data) {
     size_t to_copy = std::min(write_size_ - bytes_in_buffer_, data.size());
 
     std::memcpy(&buffer_[bytes_in_buffer_], data.data(), to_copy);
+    TRY_WITH_SIZE(AddBytesToBuffer(to_copy));
     data = data.subspan(to_copy);
-    bytes_in_buffer_ += to_copy;
-
-    // If the buffer is full, write it out.
-    if (bytes_in_buffer_ == write_size_) {
-      StatusWithSize result = output_.Write(buffer_, write_size_);
-
-      // Always use write_size_ for the bytes written. If there was an error
-      // assume the space was written or at least disturbed.
-      bytes_written_ += write_size_;
-      bytes_in_buffer_ = 0;
-
-      if (!result.ok()) {
-        return StatusWithSize(result.status(), bytes_written_);
-      }
-    }
   }
 
   return StatusWithSize(bytes_written_);
 }
 
 StatusWithSize AlignedWriter::Flush() {
-  static constexpr std::byte kPadByte = std::byte{0};
-
   Status status;
 
   // If data remains in the buffer, pad it to the alignment size and flush the
@@ -63,6 +49,40 @@ StatusWithSize AlignedWriter::Flush() {
   const StatusWithSize result(status, bytes_written_);
   bytes_written_ = 0;
   return result;
+}
+
+StatusWithSize AlignedWriter::Write(Input& input, size_t size) {
+  while (size > 0u) {
+    const size_t to_read = std::min(write_size_ - bytes_in_buffer_, size);
+    StatusWithSize result = input.Read(buffer_ + bytes_in_buffer_, to_read);
+    if (!result.ok()) {
+      return StatusWithSize(result.status(), bytes_written_);
+    }
+    TRY_WITH_SIZE(AddBytesToBuffer(to_read));
+    size -= result.size();
+  }
+
+  return StatusWithSize(bytes_written_);
+}
+
+StatusWithSize AlignedWriter::AddBytesToBuffer(size_t bytes_added) {
+  bytes_in_buffer_ += bytes_added;
+
+  // If the buffer is full, write it out.
+  if (bytes_in_buffer_ == write_size_) {
+    StatusWithSize result = output_.Write(buffer_, write_size_);
+
+    // Always use write_size_ for the bytes written. If there was an error
+    // assume the space was written or at least disturbed.
+    bytes_written_ += write_size_;
+    bytes_in_buffer_ = 0;
+
+    if (!result.ok()) {
+      return StatusWithSize(result.status(), bytes_written_);
+    }
+  }
+
+  return StatusWithSize(bytes_written_);
 }
 
 }  // namespace pw

@@ -14,6 +14,7 @@
 
 #include "pw_kvs/alignment.h"
 
+#include <cstring>
 #include <string_view>
 
 #include "gtest/gtest.h"
@@ -118,26 +119,26 @@ TEST(Padding, NonAligned_NonPowerOf2) {
   EXPECT_EQ(14u, Padding(16, 15));
 }
 
+constexpr size_t kAlignment = 10;
+
 constexpr std::string_view kData =
     "123456789_123456789_123456789_123456789_123456789_"   //  50
     "123456789_123456789_123456789_123456789_123456789_";  // 100
 
 const span<const byte> kBytes = as_bytes(span(kData));
 
-TEST(AlignedWriter, VaryingLengthWriteCalls) {
-  static constexpr size_t kAlignment = 10;
+// The output function checks that the data is properly aligned and matches
+// the expected value (should always be 123456789_...).
+OutputToFunction check_against_data([](span<const byte> data) {
+  EXPECT_EQ(data.size() % kAlignment, 0u);
+  EXPECT_EQ(kData.substr(0, data.size()),
+            std::string_view(reinterpret_cast<const char*>(data.data()),
+                             data.size()));
+  return StatusWithSize(data.size());
+});
 
-  // The output function checks that the data is properly aligned and matches
-  // the expected value (should always be 123456789_...).
-  OutputToFunction output([](span<const byte> data) {
-    EXPECT_EQ(data.size() % kAlignment, 0u);
-    EXPECT_EQ(kData.substr(0, data.size()),
-              std::string_view(reinterpret_cast<const char*>(data.data()),
-                               data.size()));
-    return StatusWithSize(data.size());
-  });
-
-  AlignedWriterBuffer<32> writer(kAlignment, output);
+TEST(AlignedWriter, Write_VaryingLengths) {
+  AlignedWriterBuffer<32> writer(kAlignment, check_against_data);
 
   // Write values smaller than the alignment.
   EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(0, 1)).status());
@@ -181,31 +182,37 @@ TEST(AlignedWriter, DestructorFlushes) {
   EXPECT_EQ(called_with_bytes, AlignUp(sizeof("What is this?"), 3));
 }
 
-TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
-  struct BreakableOutput final : public Output {
-   public:
-    enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;
+// Output class that can be programmed to fail for testing purposes.
+// TODO(hepler): If we create a general pw_io / pw_stream module, this and
+// InputWithErrorInjection should be made into generic test utility classes,
+// similar to InMemoryFakeFlash.
+struct OutputWithErrorInjection final : public Output {
+ public:
+  enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;
 
-   private:
-    StatusWithSize DoWrite(span<const byte> data) override {
-      switch (state) {
-        case kKeepGoing:
-          return StatusWithSize(data.size());
-        case kBreakOnNext:
-          state = kBroken;
-          break;
-        case kBroken:
-          ADD_FAILURE();
-          break;
-      }
-      return StatusWithSize(Status::UNKNOWN, data.size());
+ private:
+  StatusWithSize DoWrite(span<const byte> data) override {
+    switch (state) {
+      case kKeepGoing:
+        return StatusWithSize(data.size());
+      case kBreakOnNext:
+        state = kBroken;
+        break;
+      case kBroken:
+        ADD_FAILURE();
+        break;
     }
-  } output;
+    return StatusWithSize(Status::UNKNOWN, data.size());
+  }
+};
+
+TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
+  OutputWithErrorInjection output;
 
   {
     AlignedWriterBuffer<4> writer(3, output);
     writer.Write(as_bytes(span("Everything is fine.")));
-    output.state = BreakableOutput::kBreakOnNext;
+    output.state = OutputWithErrorInjection::kBreakOnNext;
     EXPECT_EQ(Status::UNKNOWN,
               writer.Write(as_bytes(span("No more writes, okay?"))).status());
     writer.Flush();
@@ -262,6 +269,69 @@ TEST(AlignedWriter, Flush_Error_ReturnsTotalBytesWritten) {
   StatusWithSize result = writer.Flush();
   EXPECT_EQ(Status::ABORTED, result.status());
   EXPECT_EQ(20u, result.size());
+}
+
+// Input class that can be programmed to fail for testing purposes.
+class InputWithErrorInjection final : public Input {
+ public:
+  void BreakOnIndex(size_t index) { break_on_index_ = index; }
+
+ private:
+  StatusWithSize DoRead(span<byte> data) override {
+    EXPECT_LE(index_ + data.size(), kBytes.size());
+
+    if (index_ + data.size() > kBytes.size()) {
+      return StatusWithSize::INTERNAL;
+    }
+
+    // Check if reading from the index that was programmed to cause an error.
+    if (index_ <= break_on_index_ && break_on_index_ <= index_ + data.size()) {
+      return StatusWithSize::ABORTED;
+    }
+
+    std::memcpy(data.data(), kBytes.data(), data.size());
+    index_ += data.size();
+    return StatusWithSize(data.size());
+  }
+
+  size_t index_ = 0;
+  size_t break_on_index_ = size_t(-1);
+};
+
+TEST(AlignedWriter, WriteFromInput_Successful) {
+  AlignedWriterBuffer<32> writer(kAlignment, check_against_data);
+
+  InputWithErrorInjection input;
+  StatusWithSize result = writer.Write(input, kData.size());
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_LE(result.size(), kData.size());  // May not have written it all yet.
+
+  result = writer.Flush();
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(kData.size(), result.size());
+}
+
+TEST(AlignedWriter, WriteFromInput_InputError) {
+  AlignedWriterBuffer<kAlignment> writer(kAlignment, check_against_data);
+
+  InputWithErrorInjection input;
+  input.BreakOnIndex(kAlignment + 2);
+
+  StatusWithSize result = writer.Write(input, kData.size());
+  EXPECT_EQ(Status::ABORTED, result.status());
+  EXPECT_LE(result.size(), kAlignment);  // Wrote the first chunk, nothing more.
+}
+
+TEST(AlignedWriter, WriteFromInput_OutputError) {
+  InputWithErrorInjection input;
+  OutputWithErrorInjection output;
+
+  AlignedWriterBuffer<4> writer(3, output);
+  output.state = OutputWithErrorInjection::kBreakOnNext;
+
+  StatusWithSize result = writer.Write(input, kData.size());
+  EXPECT_EQ(Status::UNKNOWN, result.status());
+  EXPECT_EQ(3u, result.size());  // Attempted to write 3 bytes.
 }
 
 }  // namespace

@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <initializer_list>
@@ -58,13 +59,21 @@ class AlignedWriter {
   ~AlignedWriter() { Flush(); }
 
   // Writes bytes to the AlignedWriter. The output may be called if the internal
-  // buffer is filled. The size in the return value represents the total number
-  // of bytes written since flush/reset.
+  // buffer is filled.
+  //
+  // The size in the return value is the total number of bytes for which a write
+  // has been attempted since Flush or Reset. The size is set for both
+  // successful and failed Write calls. On a failed write call, knowing the
+  // bytes attempted may be important when working with flash memory, since it
+  // can only be written once between erases.
   StatusWithSize Write(span<const std::byte> data);
 
   StatusWithSize Write(const void* data, size_t size) {
     return Write(span(static_cast<const std::byte*>(data), size));
   }
+
+  // Reads size bytes from the input and writes them to the output.
+  StatusWithSize Write(Input& input, size_t size);
 
   // Flush and reset the AlignedWriter. Any remaining bytes in the buffer are
   // zero-padded to an alignment boundary and written to the output. Flush is
@@ -72,6 +81,10 @@ class AlignedWriter {
   StatusWithSize Flush();
 
  private:
+  static constexpr std::byte kPadByte = std::byte{0};
+
+  StatusWithSize AddBytesToBuffer(size_t bytes_added);
+
   std::byte* const buffer_;
   const size_t write_size_;
   const size_t alignment_bytes_;
