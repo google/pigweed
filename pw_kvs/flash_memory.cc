@@ -26,10 +26,16 @@ namespace pw::kvs {
 
 using std::byte;
 
-StatusWithSize FlashPartition::Output::Write(span<const byte> data) {
+StatusWithSize FlashPartition::Output::DoWrite(span<const byte> data) {
   TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();
   return StatusWithSize(data.size());
+}
+
+StatusWithSize FlashPartition::Input::DoRead(span<byte> data) {
+  StatusWithSize result = flash_.Read(address_, data);
+  address_ += result.size();
+  return result;
 }
 
 Status FlashPartition::Erase(Address address, size_t num_sectors) {

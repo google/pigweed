@@ -134,9 +134,22 @@ class FlashPartition {
     constexpr Output(FlashPartition& flash, FlashPartition::Address address)
         : flash_(flash), address_(address) {}
 
-    StatusWithSize Write(span<const std::byte> data) override;
+   private:
+    StatusWithSize DoWrite(span<const std::byte> data) override;
+
+    FlashPartition& flash_;
+    FlashPartition::Address address_;
+  };
+
+  // Implement Input for the Read method.
+  class Input final : public pw::Input {
+   public:
+    constexpr Input(FlashPartition& flash, FlashPartition::Address address)
+        : flash_(flash), address_(address) {}
 
    private:
+    StatusWithSize DoRead(span<std::byte> data) override;
+
     FlashPartition& flash_;
     FlashPartition::Address address_;
   };

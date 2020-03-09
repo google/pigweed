@@ -186,7 +186,8 @@ TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
    public:
     enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;
 
-    StatusWithSize Write(span<const byte> data) override {
+   private:
+    StatusWithSize DoWrite(span<const byte> data) override {
       switch (state) {
         case kKeepGoing:
           return StatusWithSize(data.size());
