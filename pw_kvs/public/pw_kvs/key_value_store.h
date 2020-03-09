@@ -179,7 +179,7 @@ class KeyValueStore {
 
   // Perform garbage collection of part of the KVS, typically a single sector or
   // similar unit that makes sense for the KVS implementation.
-  Status GarbageCollectPartial();
+  Status GarbageCollectPartial() { return GarbageCollectPartial(nullptr); }
 
   void LogDebugInfo();
 
@@ -286,6 +286,8 @@ class KeyValueStore {
 
   StorageStats GetStorageStats() const;
 
+  size_t redundancy() { return redundancy_; }
+
  protected:
   using Address = FlashPartition::Address;
   using Entry = internal::Entry;
@@ -297,6 +299,7 @@ class KeyValueStore {
   KeyValueStore(FlashPartition* partition,
                 Vector<KeyDescriptor>& key_descriptor_list,
                 Vector<SectorDescriptor>& sector_descriptor_list,
+                size_t redundancy,
                 span<const EntryFormat> format,
                 const Options& options);
 
@@ -378,7 +381,7 @@ class KeyValueStore {
                      std::string_view key,
                      span<const std::byte> value);
 
-  Status RelocateEntry(KeyDescriptor& key_descriptor,
+  Status RelocateEntry(KeyDescriptor* key_descriptor,
                        KeyValueStore::Address address);
 
   Status MoveEntry(Address new_address, Entry& entry);
@@ -390,9 +393,16 @@ class KeyValueStore {
                              FindSectorMode find_mode,
                              span<const Address> addresses_to_skip);
 
-  SectorDescriptor* FindSectorToGarbageCollect();
+  SectorDescriptor* FindSectorToGarbageCollect(
+      span<const Address> addresses_to_avoid);
 
-  Status GarbageCollectSector(SectorDescriptor* sector_to_gc);
+  Status GarbageCollectPartial(KeyDescriptor* key_in_progress);
+
+  Status RelocateKeyAddressesInSector(internal::SectorDescriptor* sector_to_gc,
+                                      internal::KeyDescriptor* descriptor);
+
+  Status GarbageCollectSector(SectorDescriptor* sector_to_gc,
+                              KeyDescriptor* key_in_progress = nullptr);
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
@@ -441,6 +451,9 @@ class KeyValueStore {
   // List of sectors used by this KVS.
   Vector<SectorDescriptor>& sectors_;
 
+  // Level of redundancy to use for writing entries.
+  const size_t redundancy_;
+
   Options options_;
 
   bool initialized_;
@@ -465,6 +478,7 @@ class KeyValueStore {
 
 template <size_t kMaxEntries,
           size_t kMaxUsableSectors,
+          size_t kRedundancy = 1,
           size_t kEntryFormats = 1>
 class KeyValueStoreBuffer : public KeyValueStore {
  public:
@@ -486,14 +500,20 @@ class KeyValueStoreBuffer : public KeyValueStore {
   KeyValueStoreBuffer(FlashPartition* partition,
                       span<const EntryFormat, kEntryFormats> formats,
                       const Options& options = {})
-      : KeyValueStore(
-            partition, key_descriptors_, sectors_, formats_, options) {
+      : KeyValueStore(partition,
+                      key_descriptors_,
+                      sectors_,
+                      kRedundancy,
+                      formats_,
+                      options) {
     std::copy(formats.begin(), formats.end(), formats_.begin());
   }
 
  private:
   static_assert(kMaxEntries > 0u);
   static_assert(kMaxUsableSectors > 0u);
+  static_assert(kRedundancy > 0u);
+  static_assert(kRedundancy <= internal::kEntryRedundancy);
   static_assert(kEntryFormats > 0u);
 
   Vector<KeyDescriptor, kMaxEntries> key_descriptors_;

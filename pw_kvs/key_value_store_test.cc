@@ -156,7 +156,7 @@ typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
 #if USE_MEMORY_BUFFER
 // Although it might be useful to test other configurations, some tests require
 // at least 3 sectors; therfore it should have this when checked in.
-FakeFlashBuffer<4 * 1024, 4> test_flash(
+FakeFlashBuffer<4 * 1024, 6> test_flash(
     16);  // 4 x 4k sectors, 16 byte alignment
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 FakeFlashBuffer<1024, 60> large_test_flash(8);

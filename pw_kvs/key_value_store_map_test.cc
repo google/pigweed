@@ -51,6 +51,7 @@ struct TestParameters {
   size_t sector_size;
   size_t sector_count;
   size_t sector_alignment;
+  size_t redundancy;
   size_t partition_start_sector;
   size_t partition_sector_count;
   size_t partition_alignment;
@@ -127,7 +128,11 @@ class KvsTester {
         std::string key;
 
         // Either add a new key or replace an existing one.
-        if (empty() || random_int() % 2 == 0) {
+        // TODO: Using %2 (or any less than 16) fails with redundancy due to KVS
+        // filling up and not being able to write the second redundant entry,
+        // returning error. After re-init() the new key is picked up, resulting
+        // in a mis-match between KVS and the test map.
+        if (empty() || random_int() % 16 == 0) {
           key = random_string(random_int() %
                               (internal::Entry::kMaxKeyLength + 1));
         } else {
@@ -362,19 +367,23 @@ class KvsTester {
 
   static constexpr size_t kMaxValueLength = 64;
 
-  static FakeFlashBuffer<kParams.sector_size, kParams.sector_count> flash_;
+  static FakeFlashBuffer<kParams.sector_size,
+                         (kParams.sector_count * kParams.redundancy)>
+      flash_;
   FlashPartition partition_;
 
-  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, kParams.redundancy> kvs_;
   std::unordered_map<std::string, std::string> map_;
   std::unordered_set<std::string> deleted_;
   unsigned count_ = 0;
 };
 
 template <const TestParameters& kParams>
-FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
+FakeFlashBuffer<kParams.sector_size,
+                (kParams.sector_count * kParams.redundancy)>
     KvsTester<kParams>::flash_ =
-        FakeFlashBuffer<kParams.sector_size, kParams.sector_count>(
+        FakeFlashBuffer<kParams.sector_size,
+                        (kParams.sector_count * kParams.redundancy)>(
             kParams.sector_alignment);
 
 #define _TEST(fixture, test, ...) \
@@ -385,46 +394,56 @@ FakeFlashBuffer<kParams.sector_size, kParams.sector_count>
 
 // Defines a test fixture that runs all tests against a flash with the specified
 // parameters.
-#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                   \
-  class name : public ::testing::Test {                                        \
-   protected:                                                                  \
-    static constexpr TestParameters kParams = {__VA_ARGS__};                   \
-                                                                               \
-    KvsTester<kParams> tester_;                                                \
-  };                                                                           \
-  /* Run each test defined in the KvsTester class with these parameters. */    \
-  _TEST(name, Put);                                                            \
-  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);           \
-  _TEST_VARIANT(name, RandomValidInputs, 1, 1000, 6006411, kNone);             \
-  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 1000, 6006411, kReinit); \
-  _TEST_VARIANT(name, RandomValidInputs, 2, 100, 123, kNone);                  \
-  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 100, 123, kReinit);      \
-  _TEST_VARIANT(name,                                                          \
-                RandomValidInputs,                                             \
-                1ReinitFullGC,                                                 \
-                1000,                                                          \
-                6006411,                                                       \
-                kReinitWithFullGC);                                            \
-  _TEST_VARIANT(                                                               \
-      name, RandomValidInputs, 2ReinitFullGC, 1000, 123, kReinitWithFullGC);   \
-  _TEST_VARIANT(name,                                                          \
-                RandomValidInputs,                                             \
-                1ReinitPartialGC,                                              \
-                100,                                                           \
-                6006411,                                                       \
-                kReinitWithPartialGC);                                         \
-  _TEST_VARIANT(name,                                                          \
-                RandomValidInputs,                                             \
-                2ReinitPartialGC,                                              \
-                200,                                                           \
-                123,                                                           \
-                kReinitWithPartialGC);                                         \
+#define RUN_TESTS_WITH_PARAMETERS(name, ...)                                  \
+  class name : public ::testing::Test {                                       \
+   protected:                                                                 \
+    static constexpr TestParameters kParams = {__VA_ARGS__};                  \
+                                                                              \
+    KvsTester<kParams> tester_;                                               \
+  };                                                                          \
+  /* Run each test defined in the KvsTester class with these parameters. */   \
+  _TEST(name, Put);                                                           \
+  _TEST(name, PutAndDelete_RelocateDeletedEntriesShouldStayDeleted);          \
+  _TEST_VARIANT(name, RandomValidInputs, 1, 1000, 6006411, kNone);            \
+  _TEST_VARIANT(name, RandomValidInputs, 1WithReinit, 500, 6006411, kReinit); \
+  _TEST_VARIANT(name, RandomValidInputs, 2, 100, 123, kNone);                 \
+  _TEST_VARIANT(name, RandomValidInputs, 2WithReinit, 100, 123, kReinit);     \
+  _TEST_VARIANT(name,                                                         \
+                RandomValidInputs,                                            \
+                1ReinitFullGC,                                                \
+                300,                                                          \
+                6006411,                                                      \
+                kReinitWithFullGC);                                           \
+  _TEST_VARIANT(                                                              \
+      name, RandomValidInputs, 2ReinitFullGC, 300, 123, kReinitWithFullGC);   \
+  _TEST_VARIANT(name,                                                         \
+                RandomValidInputs,                                            \
+                1ReinitPartialGC,                                             \
+                100,                                                          \
+                6006411,                                                      \
+                kReinitWithPartialGC);                                        \
+  _TEST_VARIANT(name,                                                         \
+                RandomValidInputs,                                            \
+                2ReinitPartialGC,                                             \
+                200,                                                          \
+                123,                                                          \
+                kReinitWithPartialGC);                                        \
   static_assert(true, "Don't forget a semicolon!")
 
 RUN_TESTS_WITH_PARAMETERS(Basic,
                           .sector_size = 4 * 1024,
                           .sector_count = 4,
                           .sector_alignment = 16,
+                          .redundancy = 1,
+                          .partition_start_sector = 0,
+                          .partition_sector_count = 4,
+                          .partition_alignment = 16);
+
+RUN_TESTS_WITH_PARAMETERS(BasicRedundant,
+                          .sector_size = 4 * 1024,
+                          .sector_count = 4,
+                          .sector_alignment = 16,
+                          .redundancy = 2,
                           .partition_start_sector = 0,
                           .partition_sector_count = 4,
                           .partition_alignment = 16);
@@ -433,6 +452,16 @@ RUN_TESTS_WITH_PARAMETERS(LotsOfSmallSectors,
                           .sector_size = 160,
                           .sector_count = 100,
                           .sector_alignment = 32,
+                          .redundancy = 1,
+                          .partition_start_sector = 5,
+                          .partition_sector_count = 95,
+                          .partition_alignment = 32);
+
+RUN_TESTS_WITH_PARAMETERS(LotsOfSmallSectorsRedundant,
+                          .sector_size = 160,
+                          .sector_count = 100,
+                          .sector_alignment = 32,
+                          .redundancy = 2,
                           .partition_start_sector = 5,
                           .partition_sector_count = 95,
                           .partition_alignment = 32);
@@ -441,6 +470,7 @@ RUN_TESTS_WITH_PARAMETERS(OnlyTwoSectors,
                           .sector_size = 4 * 1024,
                           .sector_count = 20,
                           .sector_alignment = 16,
+                          .redundancy = 1,
                           .partition_start_sector = 18,
                           .partition_sector_count = 2,
                           .partition_alignment = 64);

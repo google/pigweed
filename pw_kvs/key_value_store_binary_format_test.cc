@@ -289,9 +289,9 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   EXPECT_EQ(Status::OK, kvs_.Put("key1", ByteStr("value1")));
 
   stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, 32u);
+  EXPECT_EQ(stats.in_use_bytes, (32u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 32u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - 32 * 2);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (32 + (32 * kvs_.redundancy())));
 }
 
 constexpr uint32_t kAltMagic = 0xbadD00D;
@@ -339,7 +339,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
 
   FakeFlashBuffer<512, 4, 3> flash_;
   FlashPartition partition_;
-  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 3> kvs_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2, 3> kvs_;
 };
 
 #define ASSERT_CONTAINS_ENTRY(key, str_value)                          \

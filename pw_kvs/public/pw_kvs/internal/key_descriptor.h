@@ -23,7 +23,7 @@
 
 namespace pw::kvs::internal {
 
-constexpr size_t kEntryRedundancy = 1;
+constexpr size_t kEntryRedundancy = 2;
 
 // Caches information about a key-value entry. Facilitates quickly finding
 // entries without having to read flash.
