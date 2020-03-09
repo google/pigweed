@@ -514,79 +514,6 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundConfigReqRspTimeOut) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_EQ(1u, failed_requests());
 }
-
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRspOk) {
-  // Disconnect Request payload
-  auto expected_discon_req = CreateStaticByteBuffer(
-      // Destination CID
-      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
-
-      // Source CID
-      LowerBits(kLocalCId), UpperBits(kLocalCId));
-
-  // Disconnect Response payload
-  // Channel endpoint roles (source, destination) are relative to requester so
-  // the response's payload should be the same as the request's
-  const ByteBuffer& ok_discon_rsp = expected_discon_req;
-
-  EXPECT_OUTBOUND_REQ(*fake_sig(), kDisconnectionRequest, expected_discon_req.view(),
-                      {SignalingChannel::Status::kSuccess, ok_discon_rsp.view()});
-
-  bool cb_called = false;
-  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_rsp =
-      [&cb_called](const BrEdrCommandHandler::DisconnectionResponse& rsp) {
-        cb_called = true;
-        EXPECT_EQ(SignalingChannel::Status::kSuccess, rsp.status());
-        EXPECT_EQ(kLocalCId, rsp.local_cid());
-        EXPECT_EQ(kRemoteCId, rsp.remote_cid());
-      };
-
-  EXPECT_TRUE(
-      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
-  EXPECT_TRUE(cb_called);
-}
-
-TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundDisconReqRej) {
-  // Disconnect Request payload
-  auto expected_discon_req = CreateStaticByteBuffer(
-      // Destination CID (relative to requester)
-      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
-
-      // Source CID (relative to requester)
-      LowerBits(kLocalCId), UpperBits(kLocalCId));
-
-  // Command Reject payload
-  auto rej_cid = CreateStaticByteBuffer(
-      // Reject Reason (invalid channel ID)
-      LowerBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
-      UpperBits(static_cast<uint16_t>(RejectReason::kInvalidCID)),
-
-      // Source CID (relative to rejecter)
-      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
-
-      // Destination CID (relative to rejecter)
-      LowerBits(kLocalCId), UpperBits(kLocalCId));
-
-  EXPECT_OUTBOUND_REQ(*fake_sig(), kDisconnectionRequest, expected_discon_req.view(),
-                      {SignalingChannel::Status::kReject, rej_cid.view()});
-
-  bool cb_called = false;
-  BrEdrCommandHandler::DisconnectionResponseCallback on_discon_rsp =
-      [&cb_called](const BrEdrCommandHandler::DisconnectionResponse& rsp) {
-        cb_called = true;
-        EXPECT_EQ(SignalingChannel::Status::kReject, rsp.status());
-        EXPECT_EQ(RejectReason::kInvalidCID, rsp.reject_reason());
-        EXPECT_EQ(kLocalCId, rsp.local_cid());
-        EXPECT_EQ(kRemoteCId, rsp.remote_cid());
-      };
-
-  EXPECT_TRUE(
-      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kLocalCId, std::move(on_discon_rsp)));
-  RunLoopUntilIdle();
-  EXPECT_TRUE(cb_called);
-}
-
 TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqRspOk) {
   // Information Request payload
   auto expected_info_req = CreateStaticByteBuffer(
@@ -795,53 +722,6 @@ TEST_F(L2CAP_BrEdrCommandHandlerTest, OutboundInfoReqUnknownType) {
                                                     std::move(on_info_cb)));
   RunLoopUntilIdle();
   EXPECT_TRUE(cb_called);
-}
-
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundDisconReqRspOk) {
-  BrEdrCommandHandler::DisconnectionRequestCallback cb = [](ChannelId local_cid,
-                                                            ChannelId remote_cid, auto responder) {
-    EXPECT_EQ(kLocalCId, local_cid);
-    EXPECT_EQ(kRemoteCId, remote_cid);
-    responder->Send();
-  };
-  cmd_handler()->ServeDisconnectionRequest(std::move(cb));
-
-  // Disconnection Request payload
-  auto discon_req = CreateStaticByteBuffer(
-      // Destination CID (relative to requester)
-      LowerBits(kLocalCId), UpperBits(kLocalCId),
-
-      // Source CID (relative to requester)
-      LowerBits(kRemoteCId), UpperBits(kRemoteCId));
-
-  // Disconnection Response payload
-  auto expected_rsp = discon_req;
-
-  RETURN_IF_FATAL(fake_sig()->ReceiveExpect(kDisconnectionRequest, discon_req, expected_rsp));
-}
-
-TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundDisconReqRej) {
-  BrEdrCommandHandler::DisconnectionRequestCallback cb = [](ChannelId local_cid,
-                                                            ChannelId remote_cid, auto responder) {
-    EXPECT_EQ(kLocalCId, local_cid);
-    EXPECT_EQ(kRemoteCId, remote_cid);
-    responder->RejectInvalidChannelId();
-  };
-  cmd_handler()->ServeDisconnectionRequest(std::move(cb));
-
-  // Disconnection Request payload
-  auto discon_req = CreateStaticByteBuffer(
-      // Destination CID (relative to requester)
-      LowerBits(kLocalCId), UpperBits(kLocalCId),
-
-      // Source CID (relative to requester)
-      LowerBits(kRemoteCId), UpperBits(kRemoteCId));
-
-  // Disconnection Response payload
-  auto expected_rsp = discon_req;
-
-  RETURN_IF_FATAL(fake_sig()->ReceiveExpectRejectInvalidChannelId(kDisconnectionRequest, discon_req,
-                                                                  kLocalCId, kRemoteCId));
 }
 
 TEST_F(L2CAP_BrEdrCommandHandlerTest, InboundConnReqRspPending) {

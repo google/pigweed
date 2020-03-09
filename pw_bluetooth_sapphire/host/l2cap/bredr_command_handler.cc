@@ -18,23 +18,6 @@ namespace bt {
 namespace l2cap {
 namespace internal {
 
-bool BrEdrCommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
-  auto& rej_payload = rej_payload_buf.As<CommandRejectPayload>();
-  reject_reason_ = static_cast<RejectReason>(letoh16(rej_payload.reason));
-  if (reject_reason() == RejectReason::kInvalidCID) {
-    if (rej_payload_buf.size() - sizeof(CommandRejectPayload) < 4) {
-      bt_log(TRACE, "l2cap-bredr",
-             "cmd: ignoring malformed Command Reject Invalid Channel ID, size %zu (expected %zu)",
-             rej_payload_buf.size(), sizeof(CommandRejectPayload) + 4);
-      return false;
-    }
-
-    remote_cid_ = (rej_payload.data[1] << 8) + rej_payload.data[0];
-    local_cid_ = (rej_payload.data[3] << 8) + rej_payload.data[2];
-  }
-  return true;
-}
-
 bool BrEdrCommandHandler::ConnectionResponse::Decode(const ByteBuffer& payload_buf) {
   auto& conn_rsp_payload = payload_buf.As<PayloadT>();
   remote_cid_ = letoh16(conn_rsp_payload.dst_cid);
@@ -54,13 +37,6 @@ bool BrEdrCommandHandler::ConfigurationResponse::Decode(const ByteBuffer& payloa
     bt_log(WARN, "l2cap", "could not decode channel configuration response option");
     return false;
   }
-  return true;
-}
-
-bool BrEdrCommandHandler::DisconnectionResponse::Decode(const ByteBuffer& payload_buf) {
-  auto& disconn_rsp_payload = payload_buf.As<PayloadT>();
-  local_cid_ = letoh16(disconn_rsp_payload.src_cid);
-  remote_cid_ = letoh16(disconn_rsp_payload.dst_cid);
   return true;
 }
 
@@ -97,18 +73,6 @@ bool BrEdrCommandHandler::InformationResponse::Decode(const ByteBuffer& payload_
   }
   data_ = info_rsp.payload_data();
   return true;
-}
-
-BrEdrCommandHandler::Responder::Responder(SignalingChannel::Responder* sig_responder,
-                                          ChannelId local_cid, ChannelId remote_cid)
-    : sig_responder_(sig_responder), local_cid_(local_cid), remote_cid_(remote_cid) {}
-
-void BrEdrCommandHandler::Responder::RejectNotUnderstood() {
-  sig_responder_->RejectNotUnderstood();
-}
-
-void BrEdrCommandHandler::Responder::RejectInvalidChannelId() {
-  sig_responder_->RejectInvalidChannelId(local_cid(), remote_cid());
 }
 
 BrEdrCommandHandler::ConnectionResponder::ConnectionResponder(
@@ -199,17 +163,15 @@ void BrEdrCommandHandler::InformationResponder::Send(InformationResult result,
 
 BrEdrCommandHandler::BrEdrCommandHandler(SignalingChannelInterface* sig,
                                          fit::closure request_fail_callback)
-    : sig_(sig), request_fail_callback_(std::move(request_fail_callback)) {
-  ZX_DEBUG_ASSERT(sig_);
-}
+    : CommandHandler(sig, std::move(request_fail_callback)) {}
 
 bool BrEdrCommandHandler::SendConnectionRequest(uint16_t psm, ChannelId local_cid,
                                                 ConnectionResponseCallback cb) {
   auto on_conn_rsp = BuildResponseHandler<ConnectionResponse>(std::move(cb));
 
   ConnectionRequestPayload payload = {htole16(psm), htole16(local_cid)};
-  return sig_->SendRequest(kConnectionRequest, BufferView(&payload, sizeof(payload)),
-                           std::move(on_conn_rsp));
+  return sig()->SendRequest(kConnectionRequest, BufferView(&payload, sizeof(payload)),
+                            std::move(on_conn_rsp));
 }
 
 bool BrEdrCommandHandler::SendConfigurationRequest(
@@ -234,16 +196,7 @@ bool BrEdrCommandHandler::SendConfigurationRequest(
     payload_view = payload_view.mutable_view(encoded.size());
   }
 
-  return sig_->SendRequest(kConfigurationRequest, config_req_buf, std::move(on_config_rsp));
-}
-
-bool BrEdrCommandHandler::SendDisconnectionRequest(ChannelId remote_cid, ChannelId local_cid,
-                                                   DisconnectionResponseCallback cb) {
-  auto on_discon_rsp = BuildResponseHandler<DisconnectionResponse>(std::move(cb));
-
-  DisconnectionRequestPayload payload = {htole16(remote_cid), htole16(local_cid)};
-  return sig_->SendRequest(kDisconnectionRequest, BufferView(&payload, sizeof(payload)),
-                           std::move(on_discon_rsp));
+  return sig()->SendRequest(kConfigurationRequest, config_req_buf, std::move(on_config_rsp));
 }
 
 bool BrEdrCommandHandler::SendInformationRequest(InformationType type,
@@ -251,8 +204,8 @@ bool BrEdrCommandHandler::SendInformationRequest(InformationType type,
   auto on_info_rsp = BuildResponseHandler<InformationResponse>(std::move(cb));
 
   InformationRequestPayload payload = {InformationType{htole16(type)}};
-  return sig_->SendRequest(kInformationRequest, BufferView(&payload, sizeof(payload)),
-                           std::move(on_info_rsp));
+  return sig()->SendRequest(kInformationRequest, BufferView(&payload, sizeof(payload)),
+                            std::move(on_info_rsp));
 }
 
 void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
@@ -293,7 +246,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
     cb(psm, remote_cid, &responder);
   };
 
-  sig_->ServeRequest(kConnectionRequest, std::move(on_conn_req));
+  sig()->ServeRequest(kConnectionRequest, std::move(on_conn_req));
 }
 
 void BrEdrCommandHandler::ServeConfigurationRequest(ConfigurationRequestCallback cb) {
@@ -320,27 +273,7 @@ void BrEdrCommandHandler::ServeConfigurationRequest(ConfigurationRequestCallback
     cb(local_cid, flags, std::move(config), &responder);
   };
 
-  sig_->ServeRequest(kConfigurationRequest, std::move(on_config_req));
-}
-
-void BrEdrCommandHandler::ServeDisconnectionRequest(DisconnectionRequestCallback cb) {
-  auto on_discon_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
-                                            SignalingChannel::Responder* sig_responder) {
-    if (request_payload.size() != sizeof(DisconnectionRequestPayload)) {
-      bt_log(TRACE, "l2cap-bredr", "cmd: rejecting malformed Disconnection Request, size %zu",
-             request_payload.size());
-      sig_responder->RejectNotUnderstood();
-      return;
-    }
-
-    const auto& discon_req = request_payload.As<DisconnectionRequestPayload>();
-    const ChannelId local_cid = letoh16(discon_req.dst_cid);
-    const ChannelId remote_cid = letoh16(discon_req.src_cid);
-    DisconnectionResponder responder(sig_responder, local_cid, remote_cid);
-    cb(local_cid, remote_cid, &responder);
-  };
-
-  sig_->ServeRequest(kDisconnectionRequest, std::move(on_discon_req));
+  sig()->ServeRequest(kConfigurationRequest, std::move(on_config_req));
 }
 
 void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb) {
@@ -359,54 +292,7 @@ void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb)
     cb(type, &responder);
   };
 
-  sig_->ServeRequest(kInformationRequest, std::move(on_info_req));
-}
-
-template <class ResponseT, typename CallbackT>
-SignalingChannel::ResponseHandler BrEdrCommandHandler::BuildResponseHandler(CallbackT rsp_cb) {
-  return [rsp_cb = std::move(rsp_cb), fail_cb = request_fail_callback_.share()](
-             Status status, const ByteBuffer& rsp_payload) {
-    if (status == Status::kTimeOut) {
-      bt_log(INFO, "l2cap-bredr", "cmd: timed out waiting for \"%s\"", ResponseT::kName);
-      if (fail_cb) {
-        fail_cb();
-      }
-      return ResponseHandlerAction::kCompleteOutboundTransaction;
-    }
-
-    ResponseT rsp(status);
-    if (status == Status::kReject) {
-      if (!rsp.ParseReject(rsp_payload)) {
-        bt_log(TRACE, "l2cap-bredr", "cmd: ignoring malformed Command Reject, size %zu",
-               rsp_payload.size());
-        return ResponseHandlerAction::kCompleteOutboundTransaction;
-      }
-      return InvokeResponseCallback(&rsp_cb, std::move(rsp));
-    }
-
-    if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
-      bt_log(TRACE, "l2cap-bredr", "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
-             ResponseT::kName, rsp_payload.size(), sizeof(typename ResponseT::PayloadT));
-      return ResponseHandlerAction::kCompleteOutboundTransaction;
-    }
-
-    if (!rsp.Decode(rsp_payload)) {
-      return ResponseHandlerAction::kCompleteOutboundTransaction;
-    }
-
-    return InvokeResponseCallback(&rsp_cb, std::move(rsp));
-  };
-}
-
-template <typename CallbackT, class ResponseT>
-BrEdrCommandHandler::ResponseHandlerAction BrEdrCommandHandler::InvokeResponseCallback(
-    CallbackT* const rsp_cb, ResponseT rsp) {
-  if constexpr (std::is_void_v<std::invoke_result_t<CallbackT, ResponseT>>) {
-    (*rsp_cb)(rsp);
-    return ResponseHandlerAction::kCompleteOutboundTransaction;
-  } else {
-    return (*rsp_cb)(rsp);
-  }
+  sig()->ServeRequest(kInformationRequest, std::move(on_info_req));
 }
 
 }  // namespace internal
