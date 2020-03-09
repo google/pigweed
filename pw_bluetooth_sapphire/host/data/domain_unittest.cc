@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -43,9 +44,6 @@ constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
-constexpr size_t kACLSigPacketTotalHeaderSize =
-    sizeof(hci::ACLDataHeader) + sizeof(l2cap::BasicHeader) + sizeof(l2cap::CommandHeader);
-
 class DATA_DomainTest : public TestingBase {
  public:
   DATA_DomainTest() = default;
@@ -62,120 +60,105 @@ class DATA_DomainTest : public TestingBase {
 
     StartTestDevice();
 
-    test_device()->SetDataCallback(
-        [this](const ByteBuffer& packet) {
-          data_cb_count_++;
-          if (data_cb_)
-            data_cb_(packet);
-        },
-        dispatcher());
+    test_device()->set_data_expectations_enabled(true);
+
+    next_command_id_ = 1;
   }
 
   void TearDown() override {
     domain_->ShutDown();
     domain_ = nullptr;
-    data_cb_ = nullptr;
     TestingBase::TearDown();
   }
 
-  // TODO(armansito): Move this to the testing library. This should set up
-  // expectations on the TestController and not just transmit.
-  auto ChannelCreationDataCallback(hci::ConnectionHandle link_handle, l2cap::ChannelId remote_id,
-                                   l2cap::ChannelId expected_local_cid, l2cap::PSM psm,
-                                   l2cap::ChannelMode peer_mode = l2cap::ChannelMode::kBasic) {
-    auto response_cb = [=](const ByteBuffer& bytes) {
-      ASSERT_LE(kACLSigPacketTotalHeaderSize, bytes.size());
-      EXPECT_EQ(LowerBits(link_handle), bytes[0]);
-      EXPECT_EQ(UpperBits(link_handle), bytes[1]);
-      l2cap::CommandCode code = bytes[sizeof(hci::ACLDataHeader) + sizeof(l2cap::BasicHeader)];
-      auto id = bytes[sizeof(hci::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
-                      sizeof(l2cap::CommandCode)];
-      const auto payload = bytes.view(kACLSigPacketTotalHeaderSize);
-      switch (code) {
-        case l2cap::kInformationRequest: {
-          const auto info_type = static_cast<l2cap::InformationType>(
-              letoh16(payload.view(0, sizeof(uint16_t)).As<uint16_t>()));
-          switch (info_type) {
-            case l2cap::InformationType::kExtendedFeaturesSupported: {
-              test_device()->SendACLDataChannelPacket(
-                  l2cap::testing::AclExtFeaturesInfoRsp(id, link_handle, kExtendedFeatures));
-              return;
-            }
-            case l2cap::InformationType::kFixedChannelsSupported: {
-              test_device()->SendACLDataChannelPacket(
-                  l2cap::testing::AclFixedChannelsSupportedInfoRsp(
-                      id, link_handle, l2cap::kFixedChannelsSupportedBitSignaling));
-              return;
-            }
-            default:
-              ASSERT_TRUE(false);
-          }
-        }
-        case l2cap::kConnectionRequest: {
-          ASSERT_EQ(16u, bytes.size());
-          EXPECT_EQ(LowerBits(psm), bytes[12]);
-          EXPECT_EQ(UpperBits(psm), bytes[13]);
-          EXPECT_EQ(LowerBits(expected_local_cid), bytes[14]);
-          EXPECT_EQ(UpperBits(expected_local_cid), bytes[15]);
-          test_device()->SendACLDataChannelPacket(
-              l2cap::testing::AclConnectionRsp(id, link_handle, expected_local_cid, remote_id));
-          return;
-        }
-        case l2cap::kConfigurationRequest: {
-          ASSERT_LE(16u, bytes.size());
-          // Just blindly accept any configuration request as long as it for our
-          // cid
-          EXPECT_EQ(LowerBits(remote_id), bytes[12]);
-          EXPECT_EQ(UpperBits(remote_id), bytes[13]);
+  l2cap::CommandId NextCommandId() { return next_command_id_++; }
 
-          // Respond to the given request, and make your own request.
-          test_device()->SendACLDataChannelPacket(
-              l2cap::testing::AclConfigRsp(id, link_handle, expected_local_cid));
+  void QueueConfigNegotiation(hci::ConnectionHandle handle, l2cap::ChannelParameters local_params,
+                              l2cap::ChannelParameters peer_params, l2cap::ChannelId local_cid,
+                              l2cap::ChannelId remote_cid, l2cap::CommandId local_config_req_id,
+                              l2cap::CommandId peer_config_req_id) {
+    const auto kPeerConfigRsp =
+        l2cap::testing::AclConfigRsp(local_config_req_id, handle, local_cid, local_params);
+    const auto kPeerConfigReq =
+        l2cap::testing::AclConfigReq(peer_config_req_id, handle, local_cid, peer_params);
+    EXPECT_ACL_PACKET_OUT(
+        test_device(),
+        l2cap::testing::AclConfigReq(local_config_req_id, handle, remote_cid, local_params),
+        &kPeerConfigRsp, &kPeerConfigReq);
+    EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigRsp(peer_config_req_id, handle,
+                                                                      remote_cid, peer_params));
+  }
 
-          constexpr l2cap::CommandId kConfigReqId = 6;
-          test_device()->SendACLDataChannelPacket(l2cap::testing::AclConfigReq(
-              kConfigReqId, link_handle, expected_local_cid, l2cap::kDefaultMTU, peer_mode));
-          return;
-        }
-        case l2cap::kConfigurationResponse: {
-          ASSERT_LE(16u, bytes.size());
-          // Should indicate our cid
-          EXPECT_EQ(LowerBits(remote_id), bytes[12]);
-          EXPECT_EQ(UpperBits(remote_id), bytes[13]);
-          return;
-        }
-        default:
-          return;
-      };
-    };
+  void QueueInboundL2capConnection(hci::ConnectionHandle handle, l2cap::PSM psm,
+                                   l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
+                                   l2cap::ChannelParameters local_params = kChannelParameters,
+                                   l2cap::ChannelParameters peer_params = kChannelParameters) {
+    const l2cap::CommandId kPeerConnReqId = 1;
+    const l2cap::CommandId kPeerConfigReqId = kPeerConnReqId + 1;
+    const auto kConfigReqId = NextCommandId();
+    EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionRsp(kPeerConnReqId, handle,
+                                                                          remote_cid, local_cid));
+    QueueConfigNegotiation(handle, local_params, peer_params, local_cid, remote_cid, kConfigReqId,
+                           kPeerConfigReqId);
 
-    return response_cb;
+    test_device()->SendACLDataChannelPacket(
+        l2cap::testing::AclConnectionReq(kPeerConnReqId, handle, remote_cid, psm));
+  }
+
+  template <typename CallbackT>
+  void QueueOutboundL2capConnection(hci::ConnectionHandle handle, l2cap::PSM psm,
+                                    l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid,
+                                    CallbackT open_cb,
+                                    l2cap::ChannelParameters local_params = kChannelParameters,
+                                    l2cap::ChannelParameters peer_params = kChannelParameters) {
+    const l2cap::CommandId kPeerConfigReqId = 1;
+    const auto kConnReqId = NextCommandId();
+    const auto kConfigReqId = NextCommandId();
+    const auto kConnRsp =
+        l2cap::testing::AclConnectionRsp(kConnReqId, handle, local_cid, remote_cid);
+    EXPECT_ACL_PACKET_OUT(test_device(),
+                          l2cap::testing::AclConnectionReq(kConnReqId, handle, local_cid, psm),
+                          &kConnRsp);
+    QueueConfigNegotiation(handle, local_params, peer_params, local_cid, remote_cid, kConfigReqId,
+                           kPeerConfigReqId);
+
+    domain()->OpenL2capChannel(handle, psm, local_params, std::move(open_cb), dispatcher());
+  }
+
+  struct QueueAclConnectionRetVal {
+    l2cap::CommandId extended_features_id;
+    l2cap::CommandId fixed_channels_supported_id;
+  };
+
+  QueueAclConnectionRetVal QueueAclConnection(
+      hci::ConnectionHandle handle, hci::Connection::Role role = hci::Connection::Role::kMaster) {
+    QueueAclConnectionRetVal cmd_ids;
+    cmd_ids.extended_features_id = NextCommandId();
+    cmd_ids.fixed_channels_supported_id = NextCommandId();
+
+    const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id,
+                                                                       handle, kExtendedFeatures);
+    EXPECT_ACL_PACKET_OUT(
+        test_device(), l2cap::testing::AclExtFeaturesInfoReq(cmd_ids.extended_features_id, handle),
+        &kExtFeaturesRsp);
+    EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
+                                             cmd_ids.fixed_channels_supported_id, handle));
+
+    acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kACL);
+    domain()->AddACLConnection(
+        handle, role, /*link_error_callback=*/[]() {},
+        /*security_upgrade_callback=*/[](auto, auto, auto) {}, dispatcher());
+    return cmd_ids;
   }
 
   Domain* domain() const { return domain_.get(); }
 
-  void set_data_cb(TestController::DataCallback cb) {
-    data_cb_ = std::move(cb);
-    data_cb_count_ = 0;
-  }
-  void clear_data_cb() {
-    data_cb_ = nullptr;
-    data_cb_count_ = 0;
-  }
-
-  size_t data_cb_count() const { return data_cb_count_; }
-
  private:
   fbl::RefPtr<Domain> domain_;
-
-  TestController::DataCallback data_cb_;
-  size_t data_cb_count_;
+  l2cap::CommandId next_command_id_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
 };
-
-void DoNothing() {}
-void NopSecurityCallback(hci::ConnectionHandle, sm::SecurityLevel, sm::StatusCallback) {}
 
 TEST_F(DATA_DomainTest, InboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
@@ -183,10 +166,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
+  QueueAclConnection(kLinkHandle);
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -198,13 +178,10 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
   RunLoopUntilIdle();
 
-  set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM));
-  test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(1, kLinkHandle, kRemoteId, kPSM));
+  QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
 
   RunLoopUntilIdle();
   ASSERT_TRUE(sock);
-  clear_data_cb();
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
   // gets routed to the socket.
@@ -227,53 +204,50 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
 
+  const char write_data[81] =
+      u8"🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
+
   // Test outbound data fragments using |kMaxDataPacketLength|.
-  const auto kFirstFragment = CreateStaticByteBuffer(
-      // ACL data header (handle: 1, length 64)
-      0x01, 0x00, 0x40, 0x00,
+  constexpr size_t kFirstFragmentPayloadSize = kMaxDataPacketLength - sizeof(l2cap::BasicHeader);
+  const auto kFirstFragment =
+      StaticByteBuffer<sizeof(hci::ACLDataHeader) + sizeof(l2cap::BasicHeader) +
+                       kFirstFragmentPayloadSize>(
+          // ACL data header (handle: 1, length 64)
+          0x01, 0x00, 0x40, 0x00,
 
-      // L2CAP B-frame: (length: 80, channel-id: 0x9042 (kRemoteId))
-      0x50, 0x00, 0x42, 0x90,
+          // L2CAP B-frame: (length: 80, channel-id: 0x9042 (kRemoteId))
+          0x50, 0x00, 0x42, 0x90,
 
-      // L2CAP payload (fragmented)
-      0xf0, 0x9f, 0x9a, 0x82, 0xf0, 0x9f, 0x9a, 0x83, 0xf0, 0x9f, 0x9a, 0x84, 0xf0, 0x9f, 0x9a,
-      0x85, 0xf0, 0x9f, 0x9a, 0x86, 0xf0, 0x9f, 0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x87, 0xf0, 0x9f,
-      0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x89, 0xf0, 0x9f, 0x9a, 0x8a, 0xf0, 0x9f, 0x9a, 0x8b, 0xf0,
-      0x9f, 0x9a, 0x8c, 0xf0, 0x9f, 0x9a, 0x8e, 0xf0, 0x9f, 0x9a, 0x9d, 0xf0, 0x9f, 0x9a, 0x9e);
+          // L2CAP payload (fragmented)
+          0xf0, 0x9f, 0x9a, 0x82, 0xf0, 0x9f, 0x9a, 0x83, 0xf0, 0x9f, 0x9a, 0x84, 0xf0, 0x9f, 0x9a,
+          0x85, 0xf0, 0x9f, 0x9a, 0x86, 0xf0, 0x9f, 0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x87, 0xf0, 0x9f,
+          0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x89, 0xf0, 0x9f, 0x9a, 0x8a, 0xf0, 0x9f, 0x9a, 0x8b, 0xf0,
+          0x9f, 0x9a, 0x8c, 0xf0, 0x9f, 0x9a, 0x8e, 0xf0, 0x9f, 0x9a, 0x9d, 0xf0, 0x9f, 0x9a, 0x9e);
 
-  const auto kSecondFragment = CreateStaticByteBuffer(
-      // ACL data header (handle: 1, pbf: continuing fr., length: 20)
-      0x01, 0x10, 0x14, 0x00,
+  constexpr size_t kSecondFragmentPayloadSize = sizeof(write_data) - 1 - kFirstFragmentPayloadSize;
+  const auto kSecondFragment =
+      StaticByteBuffer<sizeof(hci::ACLDataHeader) + kSecondFragmentPayloadSize>(
+          // ACL data header (handle: 1, pbf: continuing fr., length: 20)
+          0x01, 0x10, 0x14, 0x00,
 
-      // L2CAP payload (final fragment)
-      0xf0, 0x9f, 0x9a, 0x9f, 0xf0, 0x9f, 0x9a, 0xa0, 0xf0, 0x9f, 0x9a, 0xa1, 0xf0, 0x9f, 0x9b,
-      0xa4, 0xf0, 0x9f, 0x9b, 0xb2);
+          // L2CAP payload (final fragment)
+          0xf0, 0x9f, 0x9a, 0x9f, 0xf0, 0x9f, 0x9a, 0xa0, 0xf0, 0x9f, 0x9a, 0xa1, 0xf0, 0x9f, 0x9b,
+          0xa4, 0xf0, 0x9f, 0x9b, 0xb2);
 
-  auto rx_cb = [this, &kFirstFragment, &kSecondFragment](const ByteBuffer& packet) {
-    if (data_cb_count() == 1) {
-      EXPECT_TRUE(ContainersEqual(kFirstFragment, packet));
-    } else if (data_cb_count() == 2) {
-      EXPECT_TRUE(ContainersEqual(kSecondFragment, packet));
-    }
-  };
-  set_data_cb(rx_cb);
+  // The 80-byte write should be fragmented over 64- and 20-byte HCI payloads in order to send it
+  // to the controller.
+  EXPECT_ACL_PACKET_OUT(test_device(), kFirstFragment);
+  EXPECT_ACL_PACKET_OUT(test_device(), kSecondFragment);
 
-  // Write some outbound bytes to the socket buffer.
-  // clang-format off
-  const char write_data[] = u8"🚂🚃🚄🚅🚆🚈🚇🚈🚉🚊🚋🚌🚎🚝🚞🚟🚠🚡🛤🛲";
-  // clang-format on
   size_t bytes_written = 0;
+  // Write 80 outbound bytes to the socket buffer.
   status = sock.write(0, write_data, sizeof(write_data) - 1, &bytes_written);
   EXPECT_EQ(ZX_OK, status);
   EXPECT_EQ(80u, bytes_written);
 
   // Run until the data is flushed out to the TestController.
   RunLoopUntilIdle();
-
-  // The 80-byte write should be fragmented over 64- and 20-byte HCI payloads in order to send it
-  // to the controller.
-  EXPECT_EQ(2u, data_cb_count());
-  clear_data_cb();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   domain()->RemoveConnection(kLinkHandle);
   acl_data_channel()->UnregisterLink(kLinkHandle);
@@ -286,60 +260,31 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_EQ(ZX_OK, status);
   EXPECT_EQ(80u, bytes_written);
 
+  // no packets should be sent
   RunLoopUntilIdle();
-
-  // no packets should have been received
-  EXPECT_EQ(0u, data_cb_count());
 }
 
 TEST_F(DATA_DomainTest, InboundRfcommSocketFails) {
   constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
-  // constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
+  QueueAclConnection(kLinkHandle);
 
   RunLoopUntilIdle();
 
-  bool responded = false;
-  auto response_cb = [=, &responded](const auto& bytes) {
-    responded = true;
-    auto kConnectionRejectedResponse = CreateStaticByteBuffer(
-        // ACL Data header (handle, length = 16)
-        LowerBits(kLinkHandle), UpperBits(kLinkHandle), 0x10, 0x00,
-        // L2CAP b-frame header (length = 12, cid)
-        0x0c, 0x00, 0x01, 0x00,
-        // Connnection Response, ID: 1, length: 8,
-        0x03, 0x01, 0x08, 0x00,
-        // |dest cid|, |source cid|
-        0x00, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId),
-        // Result: refused|, |status|
-        0x02, 0x00, 0x00, 0x00);
-    ASSERT_TRUE(ContainersEqual(kConnectionRejectedResponse, bytes));
-  };
+  const l2cap::CommandId kPeerConnReqId = 1;
 
-  set_data_cb(response_cb);
-
-  // clang-format off
-  test_device()->SendACLDataChannelPacket(CreateStaticByteBuffer(
-      // ACL data header (handle: |link_handle|, length: 12 bytes)
-      LowerBits(kLinkHandle), UpperBits(kLinkHandle), 0x0c, 0x00,
-
-      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
-      0x08, 0x00, 0x01, 0x00,
-
-      // Connection Request (ID: 1, length: 4, |psm|, |src_id|)
-      0x02, 0x01, 0x04, 0x00,
-      LowerBits(kPSM), UpperBits(kPSM), LowerBits(kRemoteId), UpperBits(kRemoteId)));
-  // clang-format on
-
-  RunLoopUntilIdle();
   // Incoming connection refused, RFCOMM is not routed.
-  ASSERT_TRUE(responded);
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
+      l2cap::testing::AclConnectionRsp(kPeerConnReqId, kLinkHandle, kRemoteId, 0x0000 /*dest id*/,
+                                       l2cap::ConnectionResult::kPSMNotSupported));
+
+  test_device()->SendACLDataChannelPacket(
+      l2cap::testing::AclConnectionReq(kPeerConnReqId, kLinkHandle, kRemoteId, kPSM));
+
+  RunLoopUntilIdle();
 }
 
 TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
@@ -348,10 +293,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
+  QueueAclConnection(kLinkHandle);
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -364,15 +306,25 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   RunLoopUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
-  constexpr l2cap::CommandId kConfigReqId = 6;
-  constexpr l2cap::CommandId kConfigRspId = 3;
+  constexpr l2cap::CommandId kPeerConfigReqId = 6;
+  const l2cap::CommandId kConfigReqId = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionRsp(
+                                           kConnectionReqId, kLinkHandle, kRemoteId, kLocalId));
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigReq(kConfigReqId, kLinkHandle,
+                                                                    kRemoteId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
       l2cap::testing::AclConnectionReq(kConnectionReqId, kLinkHandle, kRemoteId, kPSM));
+
+  // Config negotiation will not complete yet.
   RunLoopUntilIdle();
-  test_device()->SendACLDataChannelPacket(l2cap::testing::AclConfigReq(
-      kConfigReqId, kLinkHandle, kLocalId, l2cap::kDefaultMTU, l2cap::ChannelMode::kBasic));
+
+  // Remaining config negotiation will be added to dispatch loop.
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigRsp(kPeerConfigReqId, kLinkHandle,
+                                                                    kRemoteId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConfigRsp(kConfigRspId, kLinkHandle, kLocalId));
+      l2cap::testing::AclConfigReq(kPeerConfigReqId, kLinkHandle, kLocalId, kChannelParameters));
+  test_device()->SendACLDataChannelPacket(
+      l2cap::testing::AclConfigRsp(kConfigReqId, kLinkHandle, kLocalId, kChannelParameters));
 
   // Queue up a data packet for the new channel before the channel configuration has been
   // processed.
@@ -403,11 +355,10 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
+  QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   zx::socket sock;
   ASSERT_FALSE(sock);
@@ -416,13 +367,10 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
     sock = std::move(chan_sock.socket);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb),
-                             dispatcher());
-
-  // Expect the CHANNEL opening stuff here
-  set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM));
+  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(sock_cb));
 
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // We should have opened a channel successfully.
   ASSERT_TRUE(sock);
 
@@ -481,13 +429,10 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   constexpr l2cap::ChannelId kLocalId1 = 0x0041;
   constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
 
-  // info req x2, connection request/response, config request, config response
+  // l2cap connection request (or response), config request, config response
   constexpr size_t kChannelCreationPacketCount = 3;
 
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
+  QueueAclConnection(kLinkHandle);
 
   zx::socket sock0;
   ASSERT_FALSE(sock0);
@@ -497,15 +442,12 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   };
   domain()->RegisterService(kPSM0, kChannelParameters, sock_cb0, dispatcher());
 
-  set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId0, kLocalId0, kPSM0));
-  test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(1, kLinkHandle, kRemoteId0, kPSM0));
+  QueueInboundL2capConnection(kLinkHandle, kPSM0, kLocalId0, kRemoteId0);
 
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   ASSERT_TRUE(sock0);
 
-  // Channel creation packet count
-  EXPECT_EQ(kConnectionCreationPacketCount + kChannelCreationPacketCount, data_cb_count());
   test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(
       kLinkHandle, kConnectionCreationPacketCount + kChannelCreationPacketCount));
 
@@ -520,22 +462,23 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
       // L2CAP payload
       0x01);
 
-  set_data_cb(
-      [&kPacket0](const ByteBuffer& packet) { EXPECT_TRUE(ContainersEqual(kPacket0, packet)); });
-
   // |kMaxPacketCount| packets should be sent to the controller,
   // and 1 packet should be left in the queue
   const char write_data[] = {0x01};
   for (size_t i = 0; i < kMaxPacketCount + 1; i++) {
+    if (i != kMaxPacketCount) {
+      EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
+    }
     size_t bytes_written = 0;
     zx_status_t status = sock0.write(0, write_data, sizeof(write_data), &bytes_written);
     EXPECT_EQ(ZX_OK, status);
     EXPECT_EQ(sizeof(write_data), bytes_written);
   }
 
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
   // Run until the data is flushed out to the TestController.
   RunLoopUntilIdle();
-  EXPECT_EQ(kMaxPacketCount, data_cb_count());
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   zx::socket sock1;
   ASSERT_FALSE(sock1);
@@ -544,9 +487,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     sock1 = std::move(chan_sock.socket);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM1, kChannelParameters, std::move(sock_cb1),
-                             dispatcher());
-  set_data_cb(ChannelCreationDataCallback(kLinkHandle, kRemoteId1, kLocalId1, kPSM1));
+  QueueOutboundL2capConnection(kLinkHandle, kPSM1, kLocalId1, kRemoteId1, std::move(sock_cb1));
 
   for (size_t i = 0; i < kChannelCreationPacketCount; i++) {
     test_device()->SendCommandChannelPacket(
@@ -555,18 +496,16 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     RunLoopUntilIdle();
   }
 
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(sock1);
-  EXPECT_EQ(kChannelCreationPacketCount, data_cb_count());
-
-  set_data_cb(
-      [&kPacket0](const ByteBuffer& packet) { EXPECT_TRUE(ContainersEqual(kPacket0, packet)); });
 
   // Make room in buffer for queued dynamic channel packet.
   test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kLinkHandle, 1));
 
+  EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
   RunLoopUntilIdle();
   // 1 Queued dynamic channel data packet should have been sent.
-  EXPECT_EQ(1u, data_cb_count());
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
 using DATA_DomainLifecycleTest = TestingBase;
@@ -591,24 +530,19 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = kMtu;
 
-  set_data_cb(
-      ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
-
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
-
+  QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
-  EXPECT_EQ(kConnectionCreationPacketCount, data_cb_count());
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   fbl::RefPtr<l2cap::Channel> chan;
   auto chan_cb = [&](fbl::RefPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, chan_params, chan_cb, dispatcher());
+  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
+                               chan_params);
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(chan);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(chan);
   EXPECT_EQ(kLinkHandle, chan->link_handle());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, chan->mode());
@@ -624,32 +558,21 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
-  set_data_cb(
-      ChannelCreationDataCallback(kLinkHandle, kRemoteId, kLocalId, kPSM, *chan_params.mode));
-
-  // Register a fake link.
-  acl_data_channel()->RegisterLink(kLinkHandle, hci::Connection::LinkType::kACL);
-  domain()->AddACLConnection(kLinkHandle, hci::Connection::Role::kMaster, DoNothing,
-                             NopSecurityCallback, dispatcher());
-
+  QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
-  EXPECT_EQ(kConnectionCreationPacketCount, data_cb_count());
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  std::optional<l2cap::ChannelInfo> chan_info;
-  auto sock_cb = [&](auto chan_sock, auto /*handle*/) {
-    EXPECT_TRUE(chan_sock);
-    chan_info = chan_sock.params;
-  };
+  std::optional<l2cap::ChannelSocket> chan;
+  auto sock_cb = [&](auto cb_chan, auto /*handle*/) { chan.emplace(std::move(cb_chan)); };
   domain()->RegisterService(kPSM, chan_params, sock_cb, dispatcher());
 
-  constexpr l2cap::CommandId kConnReqId = 1;
-  test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(kConnReqId, kLinkHandle, kRemoteId, kPSM));
+  QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan_info);
-  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan_info->max_rx_sdu_size);
-  EXPECT_EQ(*chan_params.mode, chan_info->mode);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(chan);
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->params->max_rx_sdu_size);
+  EXPECT_EQ(*chan_params.mode, chan->params->mode);
 }
 
 }  // namespace

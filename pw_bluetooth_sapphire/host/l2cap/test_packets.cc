@@ -6,6 +6,21 @@
 
 namespace bt::l2cap::testing {
 
+DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHandle handle) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle, length: 10)
+      LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
+
+      // L2CAP B-frame header (length: 6, chanel-id: 0x0001 (ACL sig))
+      0x06, 0x00, 0x01, 0x00,
+
+      // Extended Features Information Request
+      // (ID, length: 2, type)
+      0x0a, id, 0x02, 0x00,
+      LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported))));
+}
+
 DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
                                                    hci::ConnectionHandle handle) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -91,33 +106,81 @@ DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
 }
 
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,
-                               l2cap::ChannelId dst_id, uint16_t mtu, l2cap::ChannelMode mode) {
-  return DynamicByteBuffer(StaticByteBuffer(
-      // ACL data header (handle, length: 27 bytes)
-      LowerBits(handle), UpperBits(handle), 0x1b, 0x00,
-      // L2CAP B-frame header (length: 23, channel-id: 0x0001 (ACL sig))
-      0x17, 0x00, 0x01, 0x00,
-      // Configuration Request (ID, length: 19, |dst_id|, flags: 0,
-      0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
-      // option: [type: MTU, length: 2, MTU: 1024])
-      0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
-      // option: [type: Retransmission and Flow Control, length: 9, mode, tx_window: 63,
-      // max_retransmit: 2, retransmit timeout: 0 ms, monitor timeout: 0 ms, mps: 32768]
-      0x04, 0x09, static_cast<uint8_t>(mode), 63, 2, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00));
+                               l2cap::ChannelId dst_id, l2cap::ChannelParameters params) {
+  const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
+
+  switch (mode) {
+    case l2cap::ChannelMode::kBasic:
+      return DynamicByteBuffer(StaticByteBuffer(
+          // ACL data header (handle, length: 16 bytes)
+          LowerBits(handle), UpperBits(handle), 0x10, 0x00,
+          // L2CAP B-frame header (length: 12, channel-id: 0x0001 (ACL sig))
+          0x0c, 0x00, 0x01, 0x00,
+          // Configuration Request (ID, length: 8, |dst_id|, flags: 0,
+          0x04, id, 0x08, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
+          // MTU option: (ID: 1, length: 2, mtu)
+          0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
+    case l2cap::ChannelMode::kEnhancedRetransmission:
+      return DynamicByteBuffer(StaticByteBuffer(
+          // ACL data header (handle, length: 27 bytes)
+          LowerBits(handle), UpperBits(handle), 0x1b, 0x00,
+          // L2CAP B-frame header (length: 23, channel-id: 0x0001 (ACL sig))
+          0x17, 0x00, 0x01, 0x00,
+          // Configuration Request (ID, length: 19, |dst_id|, flags: 0,
+          0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
+          // MTU option: (ID: 1, length: 2, mtu)
+          0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+          // Retransmission & Flow Control option (Type, Length = 9, mode, fields)
+          0x04, 0x09, static_cast<uint8_t>(mode), l2cap::kErtmMaxUnackedInboundFrames,
+          l2cap::kErtmMaxInboundRetransmissions, 0x00, 0x00, 0x00, 0x00,
+          LowerBits(l2cap::kMaxInboundPduPayloadSize),
+          UpperBits(l2cap::kMaxInboundPduPayloadSize)));
+    default:
+      ZX_ASSERT_MSG(false, "unsupported mode");
+  }
 }
 
 DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
-                               l2cap::ChannelId src_id) {
-  return DynamicByteBuffer(StaticByteBuffer(
-      // ACL data header (handle: |link_handle|, length: 14 bytes)
-      LowerBits(link_handle), UpperBits(link_handle), 0x0e, 0x00,
+                               l2cap::ChannelId src_id, l2cap::ChannelParameters params) {
+  const auto mode = params.mode.value_or(l2cap::ChannelMode::kBasic);
+  const auto mtu = params.max_rx_sdu_size.value_or(l2cap::kMaxMTU);
 
-      // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
-      0x0a, 0x00, 0x01, 0x00,
-
-      // Configuration Response (ID, length: 6, src cid, flags: 0,
-      // result: success)
-      0x05, id, 0x06, 0x00, LowerBits(src_id), UpperBits(src_id), 0x00, 0x00, 0x00, 0x00));
+  switch (mode) {
+    case l2cap::ChannelMode::kBasic:
+      return DynamicByteBuffer(StaticByteBuffer(
+          // ACL data header (handle: |link_handle|, length: 18 bytes)
+          LowerBits(link_handle), UpperBits(link_handle), 0x12, 0x00,
+          // L2CAP B-frame header (length: 14 bytes, channel-id: 0x0001 (ACL sig))
+          0x0e, 0x00, 0x01, 0x00,
+          // Configuration Response (ID, length: 10, src cid, flags: 0,
+          // result: success)
+          0x05, id, 0x0a, 0x00, LowerBits(src_id), UpperBits(src_id), 0x00, 0x00, 0x00, 0x00,
+          // MTU option: (ID: 1, length: 2, mtu)
+          0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
+    case l2cap::ChannelMode::kEnhancedRetransmission: {
+      const auto rtx_timeout = kErtmReceiverReadyPollTimerDuration.to_msecs();
+      const auto monitor_timeout = kErtmMonitorTimerDuration.to_msecs();
+      return DynamicByteBuffer(StaticByteBuffer(
+          // ACL data header (handle: |link_handle|, length: 29 bytes)
+          LowerBits(link_handle), UpperBits(link_handle), 0x1d, 0x00,
+          // L2CAP B-frame header (length: 25 bytes, channel-id: 0x0001 (ACL sig))
+          0x19, 0x00, 0x01, 0x00,
+          // Configuration Response (ID, length: 21, src cid, flags: 0,
+          // result: success)
+          0x05, id, 0x15, 0x00, LowerBits(src_id), UpperBits(src_id), 0x00, 0x00, 0x00, 0x00,
+          // MTU option: (ID: 1, length: 2, mtu)
+          0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
+          // Retransmission & Flow Control option (Type, Length = 9, mode, fields)
+          0x04, 0x09, static_cast<uint8_t>(mode), l2cap::kErtmMaxUnackedInboundFrames,
+          l2cap::kErtmMaxInboundRetransmissions, LowerBits(rtx_timeout), UpperBits(rtx_timeout),
+          LowerBits(monitor_timeout), UpperBits(monitor_timeout),
+          LowerBits(l2cap::kMaxInboundPduPayloadSize),
+          UpperBits(l2cap::kMaxInboundPduPayloadSize)));
+    }
+    default:
+      ZX_ASSERT_MSG(false, "unsupported mode");
+  }
 }
 
 DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
@@ -134,7 +197,8 @@ DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci::ConnectionHandle li
 }
 
 DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
-                                   l2cap::ChannelId src_id, l2cap::ChannelId dst_id) {
+                                   l2cap::ChannelId src_id, l2cap::ChannelId dst_id,
+                                   l2cap::ConnectionResult result) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link handle|, length: 16 bytes)
       LowerBits(link_handle), UpperBits(link_handle), 0x10, 0x00,
@@ -146,8 +210,25 @@ DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle li
       LowerBits(dst_id), UpperBits(dst_id),
       // source cid
       LowerBits(src_id), UpperBits(src_id),
-      // Result (success), status
-      0x00, 0x00, 0x00, 0x00));
+      // Result
+      LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result)),
+      // Status (no further information available)
+      0x00, 0x00));
+}
+
+DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+                                      l2cap::ChannelId src_id, l2cap::ChannelId dst_id) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link handle|, length: 12 bytes)
+      LowerBits(link_handle), UpperBits(link_handle), 0x0c, 0x00,
+      // L2CAP B-frame header: length 8, channel-id 1 (signaling)
+      0x08, 0x00, 0x01, 0x00,
+      // Disconnection Request, id, length 4
+      l2cap::kDisconnectionRequest, id, 0x04, 0x00,
+      // Destination CID
+      LowerBits(dst_id), UpperBits(dst_id),
+      // Source CID
+      LowerBits(src_id), UpperBits(src_id)));
 }
 
 DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,

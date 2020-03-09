@@ -196,10 +196,14 @@ struct ChannelSocket {
     ZX_ASSERT(this->socket.is_valid() && this->params.has_value() ||
               !this->socket.is_valid() && !this->params.has_value());
   }
+  ChannelSocket(ChannelSocket&&) = default;
+
   bool is_valid() const { return socket.is_valid(); }
   explicit operator bool() const { return is_valid(); }
   zx::socket socket;
   std::optional<const ChannelInfo> params;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelSocket);
 };
 
 namespace internal {

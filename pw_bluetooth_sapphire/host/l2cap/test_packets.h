@@ -4,6 +4,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt::l2cap::testing {
 
@@ -11,6 +12,7 @@ namespace bt::l2cap::testing {
 
 DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
                                                    hci::ConnectionHandle handle);
+DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHandle handle);
 DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHandle handle,
                                         l2cap::ExtendedFeatures features);
 DynamicByteBuffer AclFixedChannelsSupportedInfoReq(l2cap::CommandId id,
@@ -21,14 +23,16 @@ DynamicByteBuffer AclFixedChannelsSupportedInfoRsp(l2cap::CommandId id,
 DynamicByteBuffer AclNotSupportedInformationResponse(l2cap::CommandId id,
                                                      hci::ConnectionHandle handle);
 DynamicByteBuffer AclConfigReq(l2cap::CommandId id, hci::ConnectionHandle handle,
-                               l2cap::ChannelId dst_id, uint16_t mtu = l2cap::kDefaultMTU,
-                               l2cap::ChannelMode mode = l2cap::ChannelMode::kBasic);
+                               l2cap::ChannelId dst_id, l2cap::ChannelParameters params);
 DynamicByteBuffer AclConfigRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
-                               l2cap::ChannelId src_id);
+                               l2cap::ChannelId src_id, l2cap::ChannelParameters params);
 DynamicByteBuffer AclConnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
                                    l2cap::ChannelId src_id, l2cap::PSM psm);
-DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
-                                   l2cap::ChannelId src_id, l2cap::ChannelId dst_id);
+DynamicByteBuffer AclConnectionRsp(
+    l2cap::CommandId id, hci::ConnectionHandle link_handle, l2cap::ChannelId src_id,
+    l2cap::ChannelId dst_id, l2cap::ConnectionResult result = l2cap::ConnectionResult::kSuccess);
+DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+                                      l2cap::ChannelId src_id, l2cap::ChannelId dst_id);
 
 // S-Frame Packets
 
