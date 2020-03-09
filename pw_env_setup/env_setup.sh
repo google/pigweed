@@ -19,19 +19,23 @@ _pw_abspath () {
 }
 
 _pw_red() {
-  echo -e "\e[0;31m$*\e[0m"
+  # echo -e "\e[0;31m$*\e[0m"
+  echo -e "$*"
 }
 
 _pw_bold_red() {
-  echo -e "\e[1;31m$*\e[0m"
+  # echo -e "\e[1;31m$*\e[0m"
+  echo -e "$*"
 }
 
 _pw_green() {
-  echo -e "\e[0;32m$*\e[0m"
+  #echo -e "\e[0;32m$*\e[0m"
+  echo -e "$*"
 }
 
 _pw_bright_magenta() {
-  echo -e "\e[0;35m$*\e[0m"
+  # echo -e "\e[0;35m$*\e[0m"
+  echo -e "$*"
 }
 
 _PIGWEED_BANNER=$(cat <<EOF
