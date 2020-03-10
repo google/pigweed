@@ -37,16 +37,18 @@ constexpr uint32_t kUsageFaultIsrNum = 0x6u;
 constexpr uint32_t kForcedHardfaultMask = 0x1u << 30;
 
 // Masks for individual bits of CFSR. (ARMv7-M Section B3.2.15)
-constexpr uint32_t kUseageFaultStart = 0x1u << 16;
-constexpr uint32_t kDivByZeroFaultMask = kUseageFaultStart << 9;
+constexpr uint32_t kUsageFaultStart = 0x1u << 16;
+constexpr uint32_t kUnalignedFaultMask = kUsageFaultStart << 8;
+constexpr uint32_t kDivByZeroFaultMask = kUsageFaultStart << 9;
 
 // CCR flags. (ARMv7-M Section B3.2.8)
+constexpr uint32_t kUnalignedTrapEnableMask = 0x1u << 3;
 constexpr uint32_t kDivByZeroTrapEnableMask = 0x1u << 4;
 
 // Masks for individual bits of SHCSR. (ARMv7-M Section B3.2.13)
 constexpr uint32_t kMemFaultEnableMask = 0x1 << 16;
 constexpr uint32_t kBusFaultEnableMask = 0x1 << 17;
-constexpr uint32_t kUseageFaultEnableMask = 0x1 << 18;
+constexpr uint32_t kUsageFaultEnableMask = 0x1 << 18;
 
 // Bit masks for an exception return value. (ARMv7-M Section B1.5.8)
 constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
@@ -63,6 +65,8 @@ volatile uint32_t& arm_v7m_shcsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
 volatile uint32_t& arm_v7m_cfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
+volatile uint32_t& arm_v7m_hfsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
 volatile uint32_t& arm_v7m_cpacr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
 
@@ -114,16 +118,27 @@ void DisableFpu() {
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 }
 
-// Simple boolean that is set to true if the test's exception handler correctly
-// handles a triggered exception.
-bool exception_handled = false;
+// Counter that is incremented if the test's exception handler correctly handles
+// a triggered exception.
+size_t exceptions_handled = 0;
 
-// Flag used to check if the contents of span matches the captured state.
-bool span_matches = false;
+// Global variable that triggers a single nested fault on a fault.
+bool trigger_nested_fault = false;
+
+// Allow up to kMaxFaultDepth faults before determining the device is
+// unrecoverable.
+constexpr size_t kMaxFaultDepth = 2;
+
+// Variable to prevent more than kMaxFaultDepth nested crashes.
+size_t current_fault_depth = 0;
 
 // Faulting CpuState is copied here so values can be validated after exiting
 // exception handler.
-CpuState captured_state = {};
+CpuState captured_states[kMaxFaultDepth] = {};
+CpuState& captured_state = captured_states[0];
+
+// Flag used to check if the contents of span matches the captured state.
+bool span_matches = false;
 
 // Variable to be manipulated by function that uses floating
 // point to test that exceptions push Fpu state correctly.
@@ -147,6 +162,11 @@ volatile float fpu_rhs_val = 67.89f;
 // Magic pattern to help identify if the exception handler's CpuState pointer
 // was pointing to captured CPU state that was pushed onto the stack.
 constexpr uint32_t kMagicPattern = 0xDEADBEEF;
+
+// This pattern serves a purpose similar to kMagicPattern, but is used for
+// testing a nested fault to ensure both CpuState objects are correctly
+// captured.
+constexpr uint32_t kNestedMagicPattern = 0x900DF00D;
 
 // The manually captured PC won't be the exact same as the faulting PC. This is
 // the maximum tolerated distance between the two to allow the test to pass.
@@ -177,6 +197,26 @@ void BeginBaseFaultTest() {
 
   // Check that the stack align bit was not set.
   EXPECT_EQ(captured_state.base.psr & kPsrExtraStackAlignBit, 0u);
+}
+
+// Populate the device's registers with testable values, then trigger exception.
+void BeginNestedFaultTest() {
+  // Make sure divide by zero causes a fault.
+  arm_v7m_ccr |= kUnalignedTrapEnableMask;
+  volatile uint32_t magic = kNestedMagicPattern;
+  asm volatile(
+      " mov r0, %[magic]                                      \n"
+      " mov r1, #0                                            \n"
+      " mov r2, pc                                            \n"
+      " mov r3, lr                                            \n"
+      // This instruction does an unaligned read.
+      " ldrh r1, [%[magic_addr], 1]                           \n"
+      // clang-format off
+      : /*output=*/
+      : /*input=*/[magic]"r"(magic), [magic_addr]"r"(&magic)
+      : /*clobbers=*/"r0", "r1", "r2", "r3"
+      // clang-format on
+  );
 }
 
 // Populate the device's registers with testable values, then trigger exception.
@@ -315,7 +355,7 @@ void InstallVectorTableEntries() {
 
 void EnableAllFaultHandlers() {
   arm_v7m_shcsr |=
-      kMemFaultEnableMask | kBusFaultEnableMask | kUseageFaultEnableMask;
+      kMemFaultEnableMask | kBusFaultEnableMask | kUsageFaultEnableMask;
 }
 
 void Setup(bool use_fpu) {
@@ -326,15 +366,17 @@ void Setup(bool use_fpu) {
   }
   EnableAllFaultHandlers();
   InstallVectorTableEntries();
-  exception_handled = false;
+  exceptions_handled = 0;
+  current_fault_depth = 0;
   captured_state = {};
   float_test_value = 0.0f;
+  trigger_nested_fault = false;
 }
 
 TEST(FaultEntry, BasicFault) {
   Setup(/*use_fpu=*/false);
   BeginBaseFaultTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r0), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r1), 0u);
@@ -350,7 +392,7 @@ TEST(FaultEntry, BasicFault) {
 TEST(FaultEntry, BasicUnalignedStackFault) {
   Setup(/*use_fpu=*/false);
   BeginBaseFaultUnalignedStackTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r0), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(captured_state.base.r1), 0u);
@@ -366,7 +408,7 @@ TEST(FaultEntry, BasicUnalignedStackFault) {
 TEST(FaultEntry, ExtendedFault) {
   Setup(/*use_fpu=*/false);
   BeginExtendedFaultTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
   const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
@@ -383,7 +425,7 @@ TEST(FaultEntry, ExtendedFault) {
 TEST(FaultEntry, ExtendedUnalignedStackFault) {
   Setup(/*use_fpu=*/false);
   BeginExtendedFaultUnalignedStackTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
   const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
@@ -395,6 +437,42 @@ TEST(FaultEntry, ExtendedUnalignedStackFault) {
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.cfsr),
             static_cast<uint32_t>(kDivByZeroFaultMask));
   EXPECT_EQ((extended_registers.icsr & 0x1FFu), kUsageFaultIsrNum);
+}
+
+TEST(FaultEntry, NestedFault) {
+  // Due to the way nesting is handled, captured_states[0] is the nested fault
+  // since that fault must be handled *FIRST*. After that fault is handled, the
+  // original fault can be correctly handled afterwards (captured into
+  // captured_states[1]).
+
+  Setup(/*use_fpu=*/false);
+  trigger_nested_fault = true;
+  BeginBaseFaultTest();
+  ASSERT_EQ(exceptions_handled, 2u);
+
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[1].base.r0), kMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[1].base.r1), 0u);
+  // PC is manually saved in r2 before the exception occurs (where PC is also
+  // stored). Ensure these numbers are within a reasonable distance.
+  int32_t captured_pc_distance =
+      captured_states[1].base.pc - captured_states[1].base.r2;
+  EXPECT_LT(captured_pc_distance, kMaxPcDistance);
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[1].base.r3),
+            static_cast<uint32_t>(captured_states[1].base.lr));
+
+  // NESTED STATE
+  // captured_state values must be cast since they're in a packed struct.
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[0].base.r0),
+            kNestedMagicPattern);
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[0].base.r1), 0u);
+  // PC is manually saved in r2 before the exception occurs (where PC is also
+  // stored). Ensure these numbers are within a reasonable distance.
+  captured_pc_distance =
+      captured_states[0].base.pc - captured_states[0].base.r2;
+  EXPECT_LT(captured_pc_distance, kMaxPcDistance);
+  EXPECT_EQ(static_cast<uint32_t>(captured_states[0].base.r3),
+            static_cast<uint32_t>(captured_states[0].base.lr));
 }
 
 // TODO(pwbug/17): Replace when Pigweed config system is added.
@@ -424,7 +502,7 @@ void BeginExtendedFaultUnalignedStackFloatTest() {
 TEST(FaultEntry, FloatFault) {
   Setup(/*use_fpu=*/true);
   BeginExtendedFaultFloatTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
@@ -446,7 +524,7 @@ TEST(FaultEntry, FloatFault) {
 TEST(FaultEntry, FloatUnalignedStackFault) {
   Setup(/*use_fpu=*/true);
   BeginExtendedFaultUnalignedStackFloatTest();
-  ASSERT_TRUE(exception_handled);
+  ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
   const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
@@ -471,12 +549,38 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
 }  // namespace
 
 void HandleCpuException(CpuState* state) {
-  if (arm_v7m_cfsr & kDivByZeroFaultMask) {
-    // Disable divide-by-zero trapping to "handle" exception.
-    arm_v7m_ccr &= ~kDivByZeroTrapEnableMask;
+  if (++current_fault_depth > kMaxFaultDepth) {
+    volatile bool loop = true;
+    while (loop) {
+      // Hit unexpected nested crash, prevent further nesting.
+    }
+  }
+
+  if (trigger_nested_fault) {
+    // Disable nesting before triggering the nested fault to prevent infinite
+    // recursive crashes.
+    trigger_nested_fault = false;
+    BeginNestedFaultTest();
+  }
+
+  // Clear HFSR forced (nested) hard fault mask if set. This will only be
+  // set by the nested fault test.
+  if (arm_v7m_hfsr & kForcedHardfaultMask) {
+    arm_v7m_hfsr = kForcedHardfaultMask;
+  }
+
+  if (arm_v7m_cfsr & kUnalignedFaultMask) {
     // Copy captured state to check later.
-    std::memcpy(&captured_state, state, sizeof(CpuState));
-    exception_handled = true;
+    std::memcpy(&captured_states[exceptions_handled], state, sizeof(CpuState));
+
+    // Disable unaligned read/write trapping to "handle" exception.
+    arm_v7m_ccr &= ~kUnalignedTrapEnableMask;
+    arm_v7m_cfsr = kUnalignedFaultMask;
+    exceptions_handled++;
+    return;
+  } else if (arm_v7m_cfsr & kDivByZeroFaultMask) {
+    // Copy captured state to check later.
+    std::memcpy(&captured_states[exceptions_handled], state, sizeof(CpuState));
 
     // Ensure span compares to be the same.
     span<const uint8_t> state_span = RawFaultingCpuState(*state);
@@ -487,6 +591,10 @@ void HandleCpuException(CpuState* state) {
       span_matches = false;
     }
 
+    // Disable divide-by-zero trapping to "handle" exception.
+    arm_v7m_ccr &= ~kDivByZeroTrapEnableMask;
+    arm_v7m_cfsr = kDivByZeroFaultMask;
+    exceptions_handled++;
     return;
   }
 
