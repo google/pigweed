@@ -79,8 +79,10 @@ fi
 
 SETUP_SH="$PW_ROOT/pw_env_setup/.setup.sh"
 
-_pw_green "\n  WELCOME TO...\n"
-_pw_bright_magenta "$_PIGWEED_BANNER\n"
+if [ -z "$PW_ENVSETUP_QUIET" ]; then
+  _pw_green "\n  WELCOME TO...\n"
+  _pw_bright_magenta "$_PIGWEED_BANNER\n"
+fi
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
 [ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
@@ -89,7 +91,9 @@ _pw_bright_magenta "$_PIGWEED_BANNER\n"
 _PW_IS_BOOTSTRAP=$?
 
 if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
-  _pw_green "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
+  if [ -z "$PW_ENVSETUP_QUIET" ]; then
+    _pw_green "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
+  fi
 
   # Allow forcing a specific version of Python for testing pursposes.
   if [ -n "$PW_BOOTSTRAP_PYTHON" ]; then
@@ -106,12 +110,14 @@ if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
 
   $PYTHON $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py --shell-file $SETUP_SH
 else
-  _pw_green "  ACTIVATOR! This sets your shell environment variables.\n"
+  if [ -z "$PW_ENVSETUP_QUIET" ]; then
+    _pw_green "  ACTIVATOR! This sets your shell environment variables.\n"
+  fi
 fi
 
 . $SETUP_SH
 
-if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
+if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
   echo
   echo "To activate this environment in the future, run this in your terminal:"
   echo

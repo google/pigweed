@@ -108,7 +108,8 @@ class _Result:
 # pylint: disable=useless-object-inheritance
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
-    def __init__(self, pw_root, cipd_cache_dir, shell_file, *args, **kwargs):
+    def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, *args,
+                 **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
         self._env = environment.Environment()
         self._pw_root = pw_root
@@ -117,6 +118,7 @@ class EnvSetup(object):
         self._cipd_cache_dir = cipd_cache_dir
         self._shell_file = shell_file
         self._is_windows = os.name == 'nt'
+        self._quiet = quiet
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -125,6 +127,15 @@ class EnvSetup(object):
             self._pw_root = self._pw_root.decode()
 
         self._env.set('PW_ROOT', self._pw_root)
+
+    def _log(self, *args, **kwargs):
+        # Not using logging module because it's awkward to flush a log handler.
+        if self._quiet:
+            return
+        flush = kwargs.pop('flush', False)
+        print(*args, **kwargs)
+        if flush:
+            sys.stdout.flush()
 
     def setup(self):
         """Runs each of the env_setup steps."""
@@ -144,7 +155,7 @@ class EnvSetup(object):
         # if not self._is_windows:
         #   steps.append(("Rust's cargo", self.cargo))
 
-        print(
+        self._log(
             _Color.bold('Downloading and installing packages into local '
                         'source directory:\n'))
 
@@ -156,10 +167,10 @@ class EnvSetup(object):
         self._env.echo('')
 
         for name, step in steps:
-            print('  Setting up {name:.<{width}}...'.format(
+            self._log('  Setting up {name:.<{width}}...'.format(
                 name=name, width=max_name_len),
-                  end='')
-            sys.stdout.flush()
+                      end='',
+                      flush=True)
             self._env.echo(
                 '  Setting environment variables for {name:.<{width}}...'.
                 format(name=name, width=max_name_len),
@@ -172,9 +183,9 @@ class EnvSetup(object):
             for message in result.messages():
                 self._env.echo(message)
 
-            print('done')
+            self._log('done')
 
-        print('')
+        self._log('')
         self._env.echo('')
 
         with open(self._shell_file, 'w') as outs:
@@ -258,9 +269,10 @@ class EnvSetup(object):
     def write_sanity_check(self, fd):
         echo_empty = 'echo.' if self._is_windows else 'echo'
 
-        fd.write('echo "{}"\n'.format(
-            _Color.bold('Sanity checking the environment:')))
-        fd.write('{}\n'.format(echo_empty))
+        if not self._quiet:
+            fd.write('echo "{}"\n'.format(
+                _Color.bold('Sanity checking the environment:')))
+            fd.write('{}\n'.format(echo_empty))
 
         log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
         doctor = ' '.join(
@@ -272,13 +284,17 @@ class EnvSetup(object):
         else:
             fd.write('if {}; then\n'.format(doctor))
 
-        fd.write('  {}\n'.format(echo_empty))
-        fd.write('  echo "{}"\n'.format(
-            _Color.bold('Environment looks good; you are ready to go!')))
+        if not self._quiet:
+            fd.write('  {}\n'.format(echo_empty))
+            fd.write('  echo "{}"\n'.format(
+                _Color.bold('Environment looks good; you are ready to go!')))
 
         if self._is_windows:
             fd.write(')\n')
         else:
+            # If PW_ENVSETUP_QUIET is set, there might not be anything inside
+            # the if which is an error. Always echo nothing at the end.
+            fd.write('  echo -n\n')
             fd.write('fi\n')
 
 
@@ -311,6 +327,13 @@ def parse(argv=None):
         '--shell-file',
         help='Where to write the file for shells to source.',
         required=True,
+    )
+
+    parser.add_argument(
+        '--quiet',
+        help='Reduce output.',
+        action='store_true',
+        default='PW_ENVSETUP_QUIET' in os.environ,
     )
 
     return parser.parse_args(argv)
