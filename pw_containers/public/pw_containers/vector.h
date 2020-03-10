@@ -75,9 +75,15 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   Vector(Iterator first, Iterator last)
       : Vector<T, vector_impl::kGeneric>(kMaxSize, first, last) {}
 
+  Vector(const Vector& other)
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, other) {}
+
   template <size_t kOtherMaxSize>
   Vector(const Vector<T, kOtherMaxSize>& other)
       : Vector<T, vector_impl::kGeneric>(kMaxSize, other) {}
+
+  Vector(Vector&& other) noexcept
+      : Vector<T, vector_impl::kGeneric>(kMaxSize, std::move(other)) {}
 
   template <size_t kOtherMaxSize>
   Vector(Vector<T, kOtherMaxSize>&& other) noexcept
