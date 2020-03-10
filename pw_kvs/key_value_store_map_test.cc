@@ -217,7 +217,10 @@ class KvsTester {
 
       auto map_entry = map_.find(std::string(item.key()));
       if (map_entry == map_.end()) {
-        PW_LOG_CRITICAL("Entry %s missing from map", item.key());
+        PW_LOG_CRITICAL(
+            "Entry %s missing from map%s",
+            item.key(),
+            deleted_.count(item.key()) > 0u ? " [was deleted previously]" : "");
       } else if (map_entry != map_.end()) {
         EXPECT_EQ(map_entry->first, item.key());
 
@@ -253,13 +256,6 @@ class KvsTester {
     }
 
     FinishOperation("Put", result, key);
-
-    if (kvs_.size() != map_.size()) {
-      PW_LOG_CRITICAL("Put: size mismatch; expected %zu, actual %zu",
-                      map_.size(),
-                      kvs_.size());
-      std::abort();
-    }
   }
 
   // Deletes a key from the KVS if it is present.
@@ -292,23 +288,23 @@ class KvsTester {
   }
 
   void Init() {
-    StartOperation("Init", "");
+    StartOperation("Init");
     Status status = kvs_.Init();
     EXPECT_EQ(Status::OK, status);
-    FinishOperation("Init", status, "");
+    FinishOperation("Init", status);
   }
 
   void GCFull() {
-    StartOperation("GCFull", "");
+    StartOperation("GCFull");
     Status status = kvs_.GarbageCollectFull();
     EXPECT_EQ(Status::OK, status);
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
-    FinishOperation("GCFull", status, "");
+    FinishOperation("GCFull", status);
   }
 
   void GCPartial() {
-    StartOperation("GCPartial", "");
+    StartOperation("GCPartial");
     KeyValueStore::StorageStats pre_stats = kvs_.GetStorageStats();
     Status status = kvs_.GarbageCollectPartial();
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
@@ -319,29 +315,49 @@ class KvsTester {
       EXPECT_EQ(Status::NOT_FOUND, status);
       EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
     }
-    FinishOperation("GCPartial", status, "");
+    FinishOperation("GCPartial", status);
   }
 
-  void StartOperation(const std::string& operation, const std::string& key) {
+  void StartOperation(const std::string& operation,
+                      const std::string& key = "") {
     count_ += 1;
-    PW_LOG_DEBUG(
-        "[%3u] START %s for '%s'", count_, operation.c_str(), key.c_str());
+    if (key.empty()) {
+      PW_LOG_DEBUG("[%3u] START %s", count_, operation.c_str());
+    } else {
+      PW_LOG_DEBUG(
+          "[%3u] START %s for '%s'", count_, operation.c_str(), key.c_str());
+    }
+    AbortIfMismatched("Pre-" + operation);
   }
 
   void FinishOperation(const std::string& operation,
                        Status result,
-                       const std::string& key) {
-    PW_LOG_DEBUG("[%3u] FINISH %s <%s> for '%s'",
-                 count_,
-                 operation.c_str(),
-                 result.str(),
-                 key.c_str());
+                       const std::string& key = "") {
+    if (key.empty()) {
+      PW_LOG_DEBUG(
+          "[%3u] FINISH %s <%s>", count_, operation.c_str(), result.str());
+    } else {
+      PW_LOG_DEBUG("[%3u] FINISH %s <%s> for '%s'",
+                   count_,
+                   operation.c_str(),
+                   result.str(),
+                   key.c_str());
+    }
+    AbortIfMismatched(operation);
   }
 
   bool empty() const { return map_.empty(); }
 
   std::string RandomPresentKey() const {
     return map_.empty() ? "" : map_.begin()->second;
+  }
+
+  void AbortIfMismatched(const std::string& stage) {
+    if (kvs_.size() != map_.size()) {
+      PW_LOG_CRITICAL("%s: size mismatch", stage.c_str());
+      CompareContents();
+      std::abort();
+    }
   }
 
   static constexpr size_t kMaxValueLength = 64;

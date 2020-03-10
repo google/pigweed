@@ -150,12 +150,12 @@ template <size_t kSectorSize, size_t kSectorCount, size_t kInjectedErrors = 8>
 class FakeFlashBuffer : public InMemoryFakeFlash {
  public:
   // Creates a flash memory with no data written.
-  FakeFlashBuffer(size_t alignment_bytes = kDefaultAlignmentBytes)
+  explicit FakeFlashBuffer(size_t alignment_bytes = kDefaultAlignmentBytes)
       : FakeFlashBuffer(std::array<std::byte, 0>{}, alignment_bytes) {}
 
   // Creates a flash memory initialized to the provided contents.
-  FakeFlashBuffer(span<const std::byte> contents,
-                  size_t alignment_bytes = kDefaultAlignmentBytes)
+  explicit FakeFlashBuffer(span<const std::byte> contents,
+                           size_t alignment_bytes = kDefaultAlignmentBytes)
       : InMemoryFakeFlash(buffer_,
                           kSectorSize,
                           kSectorCount,
