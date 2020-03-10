@@ -22,15 +22,14 @@
 :: will complain if they see that variable set.
 :: TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if "%PW_CHECKOUT_ROOT%"=="" (
-  :: Calls a Powershell script that determines the correct PW_ROOT directory and
-  :: exports it as an environment variable.
-  for /F "usebackq tokens=1" %%i in (`powershell %%~dp0..\..\pw_env_setup\env_setup.ps1`) do set PW_ROOT=%%i
-) ELSE (
+  :: ~dp0 is the batchism for the directory in which a .bat file resides.
+  set PW_ROOT=%~dp0
+) else (
   set PW_ROOT=%PW_CHECKOUT_ROOT%
   set PW_CHECKOUT_ROOT=
 )
 
-:: Allow forcing a specifc Python version through the environment variable
+:: Allow forcing a specific Python version through the environment variable
 :: PW_BOOTSTRAP_PYTHON. Otherwise, use the system Python if one exists.
 if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   set python="%PW_BOOTSTRAP_PYTHON%"
@@ -49,14 +48,23 @@ if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   )
 )
 
-call %python% %PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py
-
+set _pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py
 set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
-if not exist %shell_file% (
+:: If PW_SKIP_BOOTSTRAP is set, only run the activation stage instead of the
+:: complete env_setup.
+if "%PW_SKIP_BOOTSTRAP%" == "" (
+  call %python% %_pw_start_script% --bootstrap
   call %python% %PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py^
     --pw-root %PW_ROOT%^
     --shell-file %shell_file%
+) else (
+  if exist %shell_file% (
+    call %python% %_pw_start_script%
+  ) else (
+    call %python% %_pw_start_script% --no-shell-file
+    goto finish
+  )
 )
 
 call %shell_file%

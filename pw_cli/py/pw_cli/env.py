@@ -31,6 +31,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
                    type=envparse.strict_bool,
                    default=False)
     parser.add_var('PW_ROOT')
+    parser.add_var('PW_SKIP_BOOTSTRAP')
     parser.add_var('PW_SUBPROCESS', type=envparse.strict_bool, default=False)
     parser.add_var('PW_USE_COLOR', type=envparse.strict_bool, default=False)
 

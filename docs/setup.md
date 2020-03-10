@@ -49,10 +49,10 @@ $ . bootstrap.sh
 **Windows**
 ```batch
 :: Run git commands from the shell you set up to use with Git during install.
-> git clone sso://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
 > cd %HOMEPATH%\pigweed
+> git clone sso://pigweed.googlesource.com/pigweed/pigweed
 > python pw_env_setup\py\pw_env_setup\cipd_setup\wrapper.py auth-login
-> pw_env_setup\env_setup.bat
+> bootstrap.bat
 ```
 
 ## Contributors

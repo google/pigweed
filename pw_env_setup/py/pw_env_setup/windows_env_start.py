@@ -22,6 +22,7 @@ process.
 
 from __future__ import print_function
 
+import argparse
 import os
 import sys
 
@@ -37,17 +38,21 @@ _PIGWEED_BANNER = u'''
 
 
 def main():
+    """Script entry point."""
     if os.name != 'nt':
         return 1
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bootstrap', action='store_true')
+    parser.add_argument('--no-shell-file', action='store_true')
+    args = parser.parse_args()
 
     enable_colors()
 
     print(Color.green('\n  WELCOME TO...'))
     print(Color.magenta(_PIGWEED_BANNER))
 
-    bootstrap = True
-
-    if bootstrap:
+    if args.bootstrap:
         print(
             Color.green('\n  BOOTSTRAP! Bootstrap may take a few minutes; '
                         'please be patient'))
@@ -57,8 +62,15 @@ def main():
     else:
         print(
             Color.green(
-                '\n  ACTIVATOR! This sets your console environment variables.')
-        )
+                '\n  ACTIVATOR! This sets your console environment variables.\n'
+            ))
+
+        if args.no_shell_file:
+            print(Color.bold_red('Error!\n'))
+            print(
+                Color.red('  Your Pigweed environment does not seem to be'
+                          ' configured.'))
+            print(Color.red('  Run bootstrap.bat to perform initial setup.'))
 
     return 0
 
