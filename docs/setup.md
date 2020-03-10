@@ -43,7 +43,7 @@ run the bootstrap that initializes the Pigweed virtual environment.
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
 $ pw_env_setup/py/pw_env_setup/cipd_setup/wrapper.py auth-login
-$ . pw_env_setup/bootstrap.sh
+$ . bootstrap.sh
 ```
 
 **Windows**

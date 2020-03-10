@@ -20,7 +20,7 @@ environment in a new session with the following command:
 
 **Linux/macOS**
 ```bash
-$ . pw_env_setup/env_setup.sh
+$ . activate.sh
 ```
 
 **Windows**

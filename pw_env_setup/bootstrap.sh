@@ -1,1 +1,1 @@
-env_setup.sh
+../bootstrap.sh
