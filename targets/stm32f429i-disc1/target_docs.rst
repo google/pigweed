@@ -76,13 +76,6 @@ Additionally, this method enables distributed testing. If multiple devices are
 connected, the tests will be run across all attached devices to further speed up
 testing.
 
-
-.. warning::
-
-  This requires that ``pw_target_runner_server`` and ``pw_target_runner_client``
-  have been built and are in your PATH. By default, you can find these binaries
-  in the `host_tools` directory of a host build (e.g. ``out/host/host_tools``).
-
 Step 1: Start test server
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 To allow Ninja to properly serialize tests to run on an arbitrary number of

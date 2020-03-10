@@ -16,7 +16,10 @@ import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("core_docs") {
   inputs = [
+    "images/pw_presubmit_demo.gif",
+    "images/pw_status_test.png",
     "images/pw_watch_build_demo.gif",
+    "images/pw_watch_on_device_demo.gif",
     "images/pw_watch_test_demo.gif",
     "images/stm32f429i-disc1_connected.jpg",
   ]
@@ -75,5 +78,6 @@ pw_doc_gen("docs") {
     "$dir_pw_target_runner:docs",
     "$dir_pw_tokenizer:docs",
     "$dir_pw_varint:docs",
+    "$dir_pw_watch:docs",
   ]
 }

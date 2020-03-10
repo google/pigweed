@@ -30,11 +30,16 @@ These are only supported in the GN build, so we recommend using it if possible.
 
 GN / Ninja
 ==========
-The common configuration for GN for all modules is in the ``BUILD.gn`` file.
-It contains ``config`` declarations referenced by ``BUILD.gn`` files in other
-modules.
+The GN / Ninja build system is the primary build system used for upstream
+Pigweed development, and is the most tested and feature-rich build system
+Pigweed offers.
 
-The module also provides some useful GN templates for build targets.
+This module's ``build.gn`` file contains a number of C/C++ ``config``
+declarations that are used by upstream Pigweed to set some architecture-agnostic
+compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
+
+pw_build also provides several useful GN templates that are used throughout
+Pigweed.
 
 Templates
 ---------
@@ -142,6 +147,11 @@ files are modified.
 
 CMake / Ninja
 =============
+
+Pigweed's CMake support is provided primarily for projects that have an existing
+CMake build and wish to integrate Pigweed without switching to a new build
+system.
+
 The following command generates Ninja build files in the out/cmake directory.
 
 .. code:: sh
@@ -190,6 +200,9 @@ If desired, modules can be included individually.
 
 Bazel
 =====
+
+Bazel is currently very experimental, and only builds for host.
+
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
 file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
 are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.

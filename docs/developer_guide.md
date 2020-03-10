@@ -146,7 +146,7 @@ USB port on the board (**not** the micro USB). Pigweed will automatically detect
 the boards and distribute the tests across the devices. More boards = faster
 tests!
 
-![](images/stm32f429i-disc1_connected.jpg)
+![development boards connected via USB](images/stm32f429i-disc1_connected.jpg)
 
 ### 2. Launch Test Server
 To allow Ninja to run tests on an arbitrary number of devices, Ninja will send

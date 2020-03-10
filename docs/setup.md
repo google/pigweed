@@ -2,7 +2,8 @@
 
 Pigweed uses a combination of CIPD and Python virtual environments to provide
 you with the tools necessary for Pigweed development without modifying your
-system's development environment.
+system's development environment. This guide will walk you through the steps
+needed to download and set up the Pigweed repository.
 
 We hope to make the setup process as smooth as possible. If any of this doesn't
 work, please [file a bug](https://bugs.chromium.org/p/pigweed/issues/entry).

@@ -7,11 +7,16 @@
 ------------
 pw_tokenizer
 ------------
-The tokenizer module provides facilities for converting strings to binary
-tokens. String literals are replaced with integer tokens in the firmware image,
-which can be decoded off-device to restore the original string. Strings may be
-printf-style format strings and include arguments, such as ``"My name is %s"``.
-Arguments are encoded into compact binary form at runtime.
+
+Logging is critical, but developers are often forced to choose between
+additional logging or saving crucial flash space. pw_tokenizer helps ameliorate
+this issue by providing facilities to convert strings to integer tokens that can
+be decoded off-device, enabling extensive logging and debugging with
+significantly less memory usage. Printf-style format strings such as ``"My name
+is %s"`` are also supported; pw_tokenizer encodes the arguments into compact
+binary form at runtime. We’ve seen over 50% optimization in log contents and
+substantial savings in flash size, with additional benefits such as minimizing
+communication bandwidth and reducing CPU usage.
 
 .. note::
   This usage of the term "tokenizer" is not related to parsing! The
@@ -29,6 +34,60 @@ tokenizer is general purpose and can be used to tokenize any strings.
   * Reduce I/O traffic, RAM, and flash usage by sending and storing compact
     tokens instead of strings.
   * Remove potentially sensitive log, assert, and other strings from binaries.
+
+Example
+=======
+
+Before: With plain text logging
+
++------------------+-------------------------------------------+---------------+
+| Location         | Logging Content                           | Size in bytes |
++==================+===========================================+===============+
+| Source contains  | LOG_INFO("Battery state: %s; battery      |               |
+|                  | voltage: %d mV", state, voltage);         |               |
++------------------+-------------------------------------------+---------------+
+| Binary contains  | "Battery state: %s; battery               | 41            |
+|                  | voltage: %d mV"                           |               |
++------------------+-------------------------------------------+---------------+
+|                  | (log statement is called with "CHARGING"  |               |
+|                  | and 3989 as arguments)                    |               |
++------------------+-------------------------------------------+---------------+
+| Device transmits | "Battery state: CHARGING; battery         | 49            |
+|                  | voltage: 3989 mV"                         |               |
++------------------+-------------------------------------------+---------------+
+| When viewed      | "Battery state: CHARGING; battery         |               |
+|                  | voltage: 3989 mV"                         |               |
++------------------+-------------------------------------------+---------------+
+
+After: With tokenized logging
+
++------------------+-------------------------------------------------+---------+
+| Location         | Logging Content                                 | Size in |
+|                  |                                                 | bytes   |
++==================+=================================================+=========+
+| Source contains  | LOG_INFO("Battery state: %s; battery            |         |
+|                  | voltage: %d mV", state, voltage);               |         |
++------------------+-------------------------------------------------+---------+
+| Binary contains  | 0x8e4728d9                                      | 4       |
++------------------+-------------------------------------------------+---------+
+|                  | (log statement is called with "CHARGING"        |         |
+|                  | and 3989 as arguments)                          |         |
++------------------+-------------------------------------------------+---------+
+| Device transmits | =========== ========================== ======   | 15      |
+|                  | d9 28 47 8e 08 43 48 41 52 47 49 4E 47 aa 3e    |         |
+|                  | ----------- -------------------------- ------   |         |
+|                  | Token       "CHARGING" argument        3989,    |         |
+|                  |                                        as       |         |
+|                  |                                        varint   |         |
+|                  | =========== ========================== ======   |         |
++------------------+-------------------------------------------------+---------+
+| When viewed      | "Battery state: CHARGING; battery               |         |
+|                  | voltage: 3989 mV"                               |         |
++------------------+-------------------------------------------------+---------+
+
+In the above logging example, we achieve a savings of ~90% in binary size  (41 →
+4 bytes)  and 70% in bandwidth (49 → 15 bytes). pw_bloat - Generate "bloat
+reports"
 
 Basic operation
 ===============
@@ -68,7 +127,7 @@ token.
 
 .. admonition:: When to use this macro
 
-  Use ``PW_TOKENIZE_STRING`` to tokenize string literals that do not have 
+  Use ``PW_TOKENIZE_STRING`` to tokenize string literals that do not have
   %-style arguments.
 
 Tokenize to a handler function

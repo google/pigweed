@@ -1,3 +1,5 @@
+.. _chapter-targets:
+
 =======
 Targets
 =======
