@@ -16,33 +16,6 @@ namespace sdp {
 
 namespace {
 
-// The VersionNumberList value. (5.0, Vol 3, Part B, 5.2.3)
-constexpr uint16_t kVersion = 0x0100;  // Version 1.0
-
-// The initial ServiceDatabaseState
-constexpr uint32_t kInitialDbState = 0;
-
-// Populates the ServiceDiscoveryService record.
-ServiceRecord MakeServiceDiscoveryService() {
-  ServiceRecord sdp;
-  sdp.SetHandle(kSDPHandle);
-
-  // ServiceClassIDList attribute should have the
-  // ServiceDiscoveryServerServiceClassID
-  // See v5.0, Vol 3, Part B, Sec 5.2.2
-  sdp.SetServiceClassUUIDs({profile::kServiceDiscoveryClass});
-
-  // The VersionNumberList attribute. See v5.0, Vol 3, Part B, Sec 5.2.3
-  // Version 1.0
-  sdp.SetAttribute(kSDP_VersionNumberList, DataElement(std::vector<DataElement>{kVersion}));
-
-  // ServiceDatabaseState attribute. Changes when a service gets added or
-  // removed.
-  sdp.SetAttribute(kSDP_ServiceDatabaseState, DataElement(kInitialDbState));
-
-  return sdp;
-}
-
 void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_sdu_size,
                        ErrorCode code) {
   ErrorResponse response(code);
@@ -97,6 +70,35 @@ DataElement WriteRFCOMMChannel(const DataElement& protocol_list, rfcomm::ServerC
 
 }  // namespace
 
+// The VersionNumberList value. (5.0, Vol 3, Part B, 5.2.3)
+constexpr uint16_t kVersion = 0x0100;  // Version 1.0
+
+// The initial ServiceDatabaseState
+constexpr uint32_t kInitialDbState = 0;
+
+// Populates the ServiceDiscoveryService record.
+ServiceRecord Server::MakeServiceDiscoveryService() {
+  ServiceRecord sdp;
+  sdp.SetHandle(kSDPHandle);
+
+  // ServiceClassIDList attribute should have the
+  // ServiceDiscoveryServerServiceClassID
+  // See v5.0, Vol 3, Part B, Sec 5.2.2
+  sdp.SetServiceClassUUIDs({profile::kServiceDiscoveryClass});
+
+  // The VersionNumberList attribute. See v5.0, Vol 3, Part B, Sec 5.2.3
+  // Version 1.0
+  std::vector<DataElement> version_attribute;
+  version_attribute.emplace_back(DataElement(kVersion));
+  sdp.SetAttribute(kSDP_VersionNumberList, DataElement(std::move(version_attribute)));
+
+  // ServiceDatabaseState attribute. Changes when a service gets added or
+  // removed.
+  sdp.SetAttribute(kSDP_ServiceDatabaseState, DataElement(kInitialDbState));
+
+  return sdp;
+}
+
 Server::Server(fbl::RefPtr<data::Domain> data_domain)
     : data_domain_(data_domain),
       next_handle_(kFirstUnreservedHandle),
@@ -104,7 +106,7 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(data_domain_);
 
-  records_.emplace(kSDPHandle, MakeServiceDiscoveryService());
+  records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
 
   // Register SDP
   l2cap::ChannelParameters sdp_chan_params;

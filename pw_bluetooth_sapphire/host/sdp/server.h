@@ -59,6 +59,10 @@ class Server final {
   // Returns |true| if a record was removed.
   bool UnregisterService(ServiceHandle handle);
 
+  // Define the ServiceDiscoveryService record for the SDP server object.
+  // This method is public for testing purposes.
+  ServiceRecord MakeServiceDiscoveryService();
+
  private:
   // Returns the next unused Service Handle, or 0 if none are available.
   ServiceHandle GetNextHandle();

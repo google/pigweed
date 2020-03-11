@@ -1001,6 +1001,19 @@ TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
   EXPECT_EQ(*preferred_params.max_rx_sdu_size, params->max_rx_sdu_size);
 }
 
+// Test:
+// - Creation of ServiceDiscoveryService is valid.
+TEST_F(SDP_ServerTest, MakeServiceDiscoveryServiceIsValid) {
+  auto sdp_def = server()->MakeServiceDiscoveryService();
+
+  const DataElement& version_number_list = sdp_def.GetAttribute(kSDP_VersionNumberList);
+  EXPECT_EQ(DataElement::Type::kSequence, version_number_list.type());
+
+  auto* it = version_number_list.At(0);
+  EXPECT_EQ(DataElement::Type::kUnsignedInt, it->type());
+  EXPECT_EQ(0x0100u, it->Get<uint16_t>());
+}
+
 #undef SDP_ERROR_RSP
 #undef UINT32_AS_LE_BYTES
 
