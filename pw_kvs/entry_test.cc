@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/alignment.h"
+#include "pw_kvs/checksum.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
@@ -79,19 +80,19 @@ TEST(Entry, Construct_Tombstone) {
 }
 
 constexpr uint32_t kMagicWithChecksum = 0x600df00d;
-
-constexpr auto kHeader1 = ByteStr(
-    "\x0d\xf0\x0d\x60"  // magic (600df00d)
-    "\xC5\x65\x00\x00"  // checksum (CRC16)
-    "\x01"              // alignment
-    "\x05"              // key length
-    "\x06\x00"          // value size
-    "\x99\x98\x97\x96"  // version
-);
+constexpr uint32_t kTransactionId1 = 0x96979899;
 
 constexpr auto kKey1 = ByteStr("key45");
 constexpr auto kValue1 = ByteStr("VALUE!");
 constexpr auto kPadding1 = ByteStr("\0\0\0\0\0");
+
+constexpr auto kHeader1 = AsBytes(kMagicWithChecksum,
+                                  uint32_t(0x65c5),          // checksum (CRC16)
+                                  uint8_t(1),                // alignment (32 B)
+                                  uint8_t(kKey1.size()),     // key length
+                                  uint16_t(kValue1.size()),  // value size
+                                  kTransactionId1            // transaction ID
+);
 
 constexpr auto kEntry1 = AsBytes(kHeader1, kKey1, kValue1, kPadding1);
 static_assert(kEntry1.size() == 32);
@@ -120,7 +121,7 @@ TEST_F(ValidEntryInFlash, HeaderContents) {
   EXPECT_EQ(entry_.magic(), kMagicWithChecksum);
   EXPECT_EQ(entry_.key_length(), 5u);
   EXPECT_EQ(entry_.value_size(), 6u);
-  EXPECT_EQ(entry_.transaction_id(), 0x96979899u);
+  EXPECT_EQ(entry_.transaction_id(), kTransactionId1);
   EXPECT_FALSE(entry_.deleted());
 }
 
@@ -195,7 +196,7 @@ TEST(ValidEntry, Write) {
   FlashPartition partition(&flash, 0, flash.sector_count(), 32);
 
   Entry entry = Entry::Valid(
-      partition, 53, kFormatWithChecksum, "key45", kValue1, 0x96979899u);
+      partition, 53, kFormatWithChecksum, "key45", kValue1, kTransactionId1);
 
   auto result = entry.Write("key45", kValue1);
   EXPECT_EQ(Status::OK, result.status());
@@ -210,7 +211,7 @@ constexpr auto kHeader2 = ByteStr(
     "\x00"              // alignment
     "\x01"              // key length
     "\xff\xff"          // value size
-    "\x00\x01\x02\x03"  // key version
+    "\x00\x01\x02\x03"  // transaction ID
 );
 
 constexpr auto kKeyAndPadding2 = ByteStr("K\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
@@ -309,5 +310,143 @@ TEST(Entry, Checksum_ChecksPadding) {
   flash.buffer()[kEntry1.size() - 1] = byte{0};
   EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash());
 }
+
+class EntryInFlash : public ::testing::Test {
+ protected:
+  EntryInFlash() : flash_(AsBytes(kEntry1)), partition_(&flash_) {
+    ASSERT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
+  }
+
+  FakeFlashBuffer<1024, 4> flash_;
+  FlashPartition partition_;
+  Entry entry_;
+};
+
+TEST_F(EntryInFlash, Update_SameFormat) {
+  ASSERT_EQ(Status::OK,
+            entry_.Update(kFormatWithChecksum, kTransactionId1 + 3));
+
+  EXPECT_EQ(kFormatWithChecksum.magic, entry_.magic());
+  EXPECT_EQ(0u, entry_.address());
+  EXPECT_EQ(kTransactionId1 + 3, entry_.transaction_id());
+  EXPECT_FALSE(entry_.deleted());
+}
+
+TEST_F(EntryInFlash, Update_DifferentFormat) {
+  ASSERT_EQ(Status::OK, entry_.Update(kFormat, kTransactionId1 + 6));
+
+  EXPECT_EQ(kFormat.magic, entry_.magic());
+  EXPECT_EQ(0u, entry_.address());
+  EXPECT_EQ(kTransactionId1 + 6, entry_.transaction_id());
+  EXPECT_FALSE(entry_.deleted());
+}
+
+constexpr uint32_t ByteSum(span<const byte> bytes, uint32_t value = 0) {
+  for (byte b : bytes) {
+    value += unsigned(b);
+  }
+  return value;
+}
+
+TEST_F(EntryInFlash, UpdateAndCopy_DifferentChecksum_UpdatesToNewFormat) {
+  static class Sum final : public ChecksumAlgorithm {
+   public:
+    Sum() : ChecksumAlgorithm(as_bytes(span(&state_, 1))), state_(0) {}
+
+    void Update(span<const byte> data) override {
+      state_ = ByteSum(data, state_);
+    }
+
+    void Reset() override { state_ = 0; }
+
+   private:
+    uint32_t state_;
+  } sum_checksum;
+
+  constexpr EntryFormat sum_format{.magic = 0x12345678,
+                                   .checksum = &sum_checksum};
+
+  ASSERT_EQ(Status::OK, entry_.Update(sum_format, kTransactionId1 + 9));
+
+  auto result = entry_.Copy(kEntry1.size());
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(kEntry1.size(), result.size());
+
+  constexpr uint32_t checksum =
+      ByteSum(AsBytes(sum_format.magic)) + 0 /* checksum */ +
+      0 /* alignment */ + kKey1.size() + kValue1.size() +
+      ByteSum(AsBytes(kTransactionId1 + 9)) + ByteSum(kKey1) + ByteSum(kValue1);
+
+  constexpr auto kNewHeader1 =
+      AsBytes(sum_format.magic,          // magic
+              checksum,                  // checksum (byte sum)
+              uint8_t(0),                // alignment (changed to 16 B from 32)
+              uint8_t(kKey1.size()),     // key length
+              uint16_t(kValue1.size()),  // value size
+              kTransactionId1 + 9);      // transaction ID
+  constexpr auto kNewEntry1 = AsBytes(kNewHeader1, kKey1, kValue1, kPadding1);
+
+  EXPECT_EQ(0,
+            std::memcmp(&flash_.buffer()[kEntry1.size()],
+                        kNewEntry1.data(),
+                        kNewEntry1.size()));
+}
+
+TEST_F(EntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
+  constexpr EntryFormat no_checksum{.magic = 0xf000000d, .checksum = nullptr};
+
+  ASSERT_EQ(Status::OK, entry_.Update(no_checksum, kTransactionId1 + 1));
+
+  auto result = entry_.Copy(kEntry1.size());
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(kEntry1.size(), result.size());
+
+  constexpr auto kNewHeader1 =
+      AsBytes(no_checksum.magic,         // magic
+              uint32_t(0),               // checksum (none)
+              uint8_t(0),                // alignment (changed to 16 B from 32)
+              uint8_t(kKey1.size()),     // key length
+              uint16_t(kValue1.size()),  // value size
+              kTransactionId1 + 1);      // transaction ID
+  constexpr auto kNewEntry1 = AsBytes(kNewHeader1, kKey1, kValue1, kPadding1);
+
+  EXPECT_EQ(0,
+            std::memcmp(&flash_.buffer()[kEntry1.size()],
+                        kNewEntry1.data(),
+                        kNewEntry1.size()));
+}
+
+constexpr EntryFormat kNoChecksum{.magic = 0xf000000d, .checksum = nullptr};
+
+TEST_F(EntryInFlash, UpdateAndCopy_WriteError) {
+  flash_.InjectWriteError(FlashError::Unconditional(Status::CANCELLED));
+
+  ASSERT_EQ(Status::OK, entry_.Update(kNoChecksum, kTransactionId1 + 1));
+
+  auto result = entry_.Copy(kEntry1.size());
+  EXPECT_EQ(Status::CANCELLED, result.status());
+  EXPECT_EQ(kEntry1.size(), result.size());
+}
+
+TEST_F(EntryInFlash, Update_ReadError_NoChecksumIsOkay) {
+  flash_.InjectReadError(FlashError::Unconditional(Status::ABORTED));
+
+  EXPECT_EQ(Status::ABORTED,
+            entry_.Update(kFormatWithChecksum, kTransactionId1 + 1));
+}
+
+TEST_F(EntryInFlash, Update_ReadError_WithChecksumIsError) {
+  flash_.InjectReadError(FlashError::Unconditional(Status::ABORTED));
+
+  EXPECT_EQ(Status::OK, entry_.Update(kNoChecksum, kTransactionId1 + 1));
+}
+
+TEST_F(EntryInFlash, Copy_ReadError) {
+  flash_.InjectReadError(FlashError::Unconditional(Status::UNIMPLEMENTED));
+  auto result = entry_.Copy(kEntry1.size());
+  EXPECT_EQ(Status::UNIMPLEMENTED, result.status());
+  EXPECT_EQ(0u, result.size());
+}
+
 }  // namespace
 }  // namespace pw::kvs::internal

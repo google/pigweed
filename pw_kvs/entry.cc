@@ -80,7 +80,7 @@ Entry::Entry(FlashPartition& partition,
              .key_length_bytes = static_cast<uint8_t>(key.size()),
              .value_size_bytes = value_size_bytes,
              .transaction_id = transaction_id}) {
-  if (checksum_ != nullptr) {
+  if (checksum_algo_ != nullptr) {
     span<const byte> checksum = CalculateChecksum(key, value);
     std::memcpy(&header_.checksum,
                 checksum.data(),
@@ -88,13 +88,46 @@ Entry::Entry(FlashPartition& partition,
   }
 }
 
-StatusWithSize Entry::Write(const string_view key,
-                            span<const byte> value) const {
+StatusWithSize Entry::Write(string_view key, span<const byte> value) const {
   FlashPartition::Output flash(partition(), address_);
   return AlignedWrite<64>(
       flash,
       alignment_bytes(),
       {as_bytes(span(&header_, 1)), as_bytes(span(key)), value});
+}
+
+Status Entry::Update(const EntryFormat& new_format,
+                     uint32_t new_transaction_id) {
+  checksum_algo_ = new_format.checksum;
+  header_.magic = new_format.magic;
+  header_.alignment_units =
+      alignment_bytes_to_units(partition_->alignment_bytes());
+  header_.transaction_id = new_transaction_id;
+
+  // If we could write the header last, we could avoid reading the entry twice
+  // when moving an entry. However, to support alignments greater than the
+  // header size, we first read the entire value to calculate the new checksum,
+  // then write the full entry in WriteFrom.
+  return CalculateChecksumFromFlash();
+}
+
+StatusWithSize Entry::Copy(Address new_address) const {
+  PW_LOG_DEBUG("Coying entry from 0x%x to 0x%x as ID %" PRIu32,
+               unsigned(address()),
+               unsigned(new_address),
+               transaction_id());
+
+  FlashPartition::Output output(partition(), new_address);
+  AlignedWriterBuffer<4 * kMinAlignmentBytes> writer(alignment_bytes(), output);
+
+  // Use this object's header rather than the header in flash of flash, since
+  // this Entry may have been updated.
+  TRY_WITH_SIZE(writer.Write(&header_, sizeof(header_)));
+
+  // Write only the key and value from the original entry.
+  FlashPartition::Input input(partition(), address() + sizeof(EntryHeader));
+  TRY_WITH_SIZE(writer.Write(input, key_length() + value_size()));
+  return writer.Flush();
 }
 
 StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
@@ -117,11 +150,11 @@ StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
 }
 
 Status Entry::VerifyChecksum(string_view key, span<const byte> value) const {
-  if (checksum_ == nullptr) {
-    return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
+  if (checksum_algo_ == nullptr) {
+    return header_.checksum == 0 ? Status::OK : Status::DATA_LOSS;
   }
   CalculateChecksum(key, value);
-  return checksum_->Verify(checksum_bytes());
+  return checksum_algo_->Verify(checksum_bytes());
 }
 
 Status Entry::VerifyChecksumInFlash() const {
@@ -140,25 +173,25 @@ Status Entry::VerifyChecksumInFlash() const {
   // Read the first chunk, which includes the header, and compare the checksum.
   TRY(partition().Read(read_address, read_size, buffer));
 
-  if (header_to_verify.checksum != checksum()) {
+  if (header_to_verify.checksum != header_.checksum) {
     PW_LOG_ERROR("Expected checksum %08" PRIx32 ", found %08" PRIx32,
-                 checksum(),
+                 header_.checksum,
                  header_to_verify.checksum);
     return Status::DATA_LOSS;
   }
 
-  if (checksum_ == nullptr) {
-    return checksum() == 0 ? Status::OK : Status::DATA_LOSS;
+  if (checksum_algo_ == nullptr) {
+    return header_.checksum == 0 ? Status::OK : Status::DATA_LOSS;
   }
 
   // The checksum is calculated as if the header's checksum field were 0.
   header_to_verify.checksum = 0;
 
-  checksum_->Reset();
+  checksum_algo_->Reset();
 
   while (true) {
     // Add the chunk in the buffer to the checksum.
-    checksum_->Update(buffer, read_size);
+    checksum_algo_->Update(buffer, read_size);
 
     bytes_to_read -= read_size;
     if (bytes_to_read == 0u) {
@@ -171,15 +204,16 @@ Status Entry::VerifyChecksumInFlash() const {
     TRY(partition().Read(read_address, read_size, buffer));
   }
 
-  checksum_->Finish();
-  return checksum_->Verify(checksum_bytes());
+  checksum_algo_->Finish();
+  return checksum_algo_->Verify(checksum_bytes());
 }
 
-void Entry::DebugLog() {
-  PW_LOG_DEBUG("Header: ");
+void Entry::DebugLog() const {
+  PW_LOG_DEBUG("Entry [%s]: ", deleted() ? "tombstone" : "present");
   PW_LOG_DEBUG("   Address      = 0x%zx", size_t(address_));
+  PW_LOG_DEBUG("   Transaction  = %zu", size_t(transaction_id()));
   PW_LOG_DEBUG("   Magic        = 0x%zx", size_t(magic()));
-  PW_LOG_DEBUG("   Checksum     = 0x%zx", size_t(checksum()));
+  PW_LOG_DEBUG("   Checksum     = 0x%zx", size_t(header_.checksum));
   PW_LOG_DEBUG("   Key length   = 0x%zx", size_t(key_length()));
   PW_LOG_DEBUG("   Value length = 0x%zx", size_t(value_size()));
   PW_LOG_DEBUG("   Entry size   = 0x%zx", size_t(size()));
@@ -188,15 +222,15 @@ void Entry::DebugLog() {
 
 span<const byte> Entry::CalculateChecksum(const string_view key,
                                           span<const byte> value) const {
-  checksum_->Reset();
+  checksum_algo_->Reset();
 
   {
     EntryHeader header_for_checksum = header_;
     header_for_checksum.checksum = 0;
 
-    checksum_->Update(&header_for_checksum, sizeof(header_for_checksum));
-    checksum_->Update(as_bytes(span(key)));
-    checksum_->Update(value);
+    checksum_algo_->Update(&header_for_checksum, sizeof(header_for_checksum));
+    checksum_algo_->Update(as_bytes(span(key)));
+    checksum_algo_->Update(value);
   }
 
   // Update the checksum with 0s to pad the entry to its alignment boundary.
@@ -205,11 +239,40 @@ span<const byte> Entry::CalculateChecksum(const string_view key,
 
   while (padding_to_add > 0u) {
     const size_t chunk_size = std::min(padding_to_add, sizeof(padding));
-    checksum_->Update(padding, chunk_size);
+    checksum_algo_->Update(padding, chunk_size);
     padding_to_add -= chunk_size;
   }
 
-  return checksum_->Finish();
+  return checksum_algo_->Finish();
+}
+
+Status Entry::CalculateChecksumFromFlash() {
+  header_.checksum = 0;
+
+  if (checksum_algo_ == nullptr) {
+    return Status::OK;
+  }
+
+  checksum_algo_->Reset();
+  checksum_algo_->Update(&header_, sizeof(header_));
+
+  Address address = address_ + sizeof(EntryHeader);
+  const Address end = address_ + content_size();
+
+  std::array<std::byte, 2 * kMinAlignmentBytes> buffer;
+  while (address < end) {
+    const size_t read_size = std::min(size_t(end - address), buffer.size());
+    TRY(partition_->Read(address, span(buffer).first(read_size)));
+
+    checksum_algo_->Update(buffer.data(), read_size);
+    address += read_size;
+  }
+
+  span checksum = checksum_algo_->Finish();
+  std::memcpy(&header_.checksum,
+              checksum.data(),
+              std::min(checksum.size(), sizeof(header_.checksum)));
+  return Status::OK;
 }
 
 }  // namespace pw::kvs::internal

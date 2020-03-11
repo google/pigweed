@@ -96,7 +96,15 @@ class Entry {
 
   StatusWithSize Write(std::string_view key, span<const std::byte> value) const;
 
-  void UpdateAddress(Address address) { address_ = address; }
+  // Changes the format and transcation ID for this entry. In order to calculate
+  // the new checksum, the entire entry is read into a small stack-allocated
+  // buffer. The updated entry may be written to flash using the Copy function.
+  Status Update(const EntryFormat& new_format, uint32_t new_transaction_id);
+
+  // Writes this entry at a new address. The key and value are read from the
+  // entry's current address. The Entry object's header, which may be newer than
+  // what is in flash, is used.
+  StatusWithSize Copy(Address new_address) const;
 
   // Reads a key into a buffer, which must be large enough for a max-length key.
   // If successful, the size is returned in the StatusWithSize. The key is not
@@ -124,8 +132,12 @@ class Entry {
                    std::max(partition.alignment_bytes(), kMinAlignmentBytes));
   }
 
+  Address address() const { return address_; }
+
+  void set_address(Address address) { address_ = address; }
+
   // The address at which the next possible entry could be located.
-  Address next_address() const { return address_ + size(); }
+  Address next_address() const { return address() + size(); }
 
   // Total size of this entry, including padding.
   size_t size() const { return AlignUp(content_size(), alignment_bytes()); }
@@ -148,21 +160,10 @@ class Entry {
     return header_.value_size_bytes == kDeletedValueLength;
   }
 
-  void DebugLog();
+  void DebugLog() const;
 
  private:
   static constexpr uint16_t kDeletedValueLength = 0xFFFF;
-
-  FlashPartition& partition() const { return *partition_; }
-
-  uint32_t checksum() const { return header_.checksum; }
-
-  size_t alignment_bytes() const { return (header_.alignment_units + 1) * 16; }
-
-  // The total size of the entry, excluding padding.
-  size_t content_size() const {
-    return sizeof(EntryHeader) + key_length() + value_size();
-  }
 
   Entry(FlashPartition& partition,
         Address address,
@@ -178,8 +179,17 @@ class Entry {
                   EntryHeader header)
       : partition_(partition),
         address_(address),
-        checksum_(format.checksum),
+        checksum_algo_(format.checksum),
         header_(header) {}
+
+  FlashPartition& partition() const { return *partition_; }
+
+  size_t alignment_bytes() const { return (header_.alignment_units + 1) * 16; }
+
+  // The total size of the entry, excluding padding.
+  size_t content_size() const {
+    return sizeof(EntryHeader) + key_length() + value_size();
+  }
 
   span<const std::byte> checksum_bytes() const {
     return as_bytes(span(&header_.checksum, 1));
@@ -188,13 +198,15 @@ class Entry {
   span<const std::byte> CalculateChecksum(std::string_view key,
                                           span<const std::byte> value) const;
 
+  Status CalculateChecksumFromFlash();
+
   static constexpr uint8_t alignment_bytes_to_units(size_t alignment_bytes) {
     return (alignment_bytes + 15) / 16 - 1;  // An alignment of 0 is invalid.
   }
 
   FlashPartition* partition_;
   Address address_;
-  ChecksumAlgorithm* checksum_;
+  ChecksumAlgorithm* checksum_algo_;
   EntryHeader header_;
 };
 

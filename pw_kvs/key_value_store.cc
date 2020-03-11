@@ -726,7 +726,7 @@ Status KeyValueStore::AppendEntry(Address write_address,
                                   Entry& entry,
                                   string_view key,
                                   span<const byte> value) {
-  entry.UpdateAddress(write_address);
+  entry.set_address(write_address);
 
   StatusWithSize result = entry.Write(key, value);
   // Remove any bytes that were written, even if the write was not successful.
@@ -815,7 +815,7 @@ Status KeyValueStore::MoveEntry(Address new_address, Entry& entry) {
       size_t(new_address));
 
   // Step 2: Write the entry to the new location.
-  entry.UpdateAddress(new_address);
+  entry.set_address(new_address);
   result = entry.Write(key, value);
 
   // Remove any bytes that were written, even if the write was not successful.
