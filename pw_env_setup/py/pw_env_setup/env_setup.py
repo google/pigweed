@@ -256,10 +256,14 @@ class EnvSetup(object):
         return _Result(_Result.Status.DONE)
 
     def write_sanity_check(self, fd):
+        """Call pw doctor after setting environment variables."""
+
         echo_empty = 'echo.' if self._is_windows else 'echo'
 
         if not self._quiet:
-            fd.write('echo "{}"\n'.format(
+            # Not quoting args to echo because Windows will treat them as if
+            # they're already quoted and Linux will just space-separate them.
+            fd.write('echo {}\n'.format(
                 Color.bold('Sanity checking the environment:')))
             fd.write('{}\n'.format(echo_empty))
 
@@ -275,8 +279,9 @@ class EnvSetup(object):
 
         if not self._quiet:
             fd.write('  {}\n'.format(echo_empty))
-            fd.write('  echo "{}"\n'.format(
-                Color.bold('Environment looks good; you are ready to go!')))
+            # Again, not quoting args to echo.
+            fd.write('  echo {}\n'.format(
+                Color.bold('Environment looks good, you are ready to go!')))
 
         if self._is_windows:
             fd.write(')\n')
