@@ -71,7 +71,7 @@ fi
 PW_ROOT=$(dirname $PW_SETUP_SCRIPT_PATH)
 export PW_ROOT
 
-SETUP_SH="$PW_ROOT/pw_env_setup/.setup.sh"
+SETUP_SH="$PW_ROOT/pw_env_setup/.env_setup.sh"
 
 if [ -z "$PW_ENVSETUP_QUIET" ]; then
   _pw_green "\n  WELCOME TO...\n"
