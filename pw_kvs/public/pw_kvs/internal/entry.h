@@ -90,7 +90,15 @@ class Entry {
     return KeyDescriptor(
         key,
         transaction_id(),
-        address_,
+        address(),
+        deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
+  }
+
+  KeyDescriptor descriptor(uint32_t key_hash) const {
+    return KeyDescriptor(
+        key_hash,
+        transaction_id(),
+        address(),
         deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
   }
 

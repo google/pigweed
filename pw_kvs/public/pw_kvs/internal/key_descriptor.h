@@ -31,15 +31,6 @@ class KeyDescriptor {
  public:
   enum State { kValid, kDeleted };
 
-  KeyDescriptor(std::string_view key) : KeyDescriptor(key, 0, 0, kValid) {}
-  KeyDescriptor(const KeyDescriptor& kd)
-      : key_hash_(kd.key_hash_),
-        transaction_id_(kd.transaction_id_),
-        addresses_(kd.addresses_.begin(), kd.addresses_.end()),
-        state_(kd.state_) {}
-
-  KeyDescriptor& operator=(const KeyDescriptor& other) = default;
-
   uint32_t hash() const { return key_hash_; }
   uint32_t transaction_id() const { return transaction_id_; }
 
@@ -79,13 +70,19 @@ class KeyDescriptor {
  private:
   friend class Entry;
 
+  KeyDescriptor(uint32_t key_hash,
+                uint32_t version,
+                FlashPartition::Address address,
+                State initial_state)
+      : key_hash_(key_hash), transaction_id_(version), state_(initial_state) {
+    addresses_.assign(1, address);
+  }
+
   KeyDescriptor(std::string_view key,
                 uint32_t version,
                 FlashPartition::Address address,
                 State initial_state)
-      : key_hash_(Hash(key)), transaction_id_(version), state_(initial_state) {
-    addresses_.assign(1, address);
-  }
+      : KeyDescriptor(Hash(key), version, address, initial_state) {}
 
   uint32_t key_hash_;
   uint32_t transaction_id_;

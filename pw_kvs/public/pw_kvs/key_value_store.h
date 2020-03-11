@@ -369,22 +369,28 @@ class KeyValueStore {
 
   Status WriteEntryForNewKey(std::string_view key, span<const std::byte> value);
 
-  Status WriteEntry(KeyDescriptor* key_descriptor,
-                    std::string_view key,
+  Status WriteEntry(std::string_view key,
                     span<const std::byte> value,
-                    KeyDescriptor::State new_state);
+                    KeyDescriptor::State new_state,
+                    KeyDescriptor* prior_descriptor = nullptr,
+                    size_t prior_size = 0);
+
+  KeyDescriptor& UpdateKeyDescriptor(const Entry& new_entry,
+                                     std::string_view key,
+                                     KeyDescriptor* prior_descriptor,
+                                     size_t prior_size);
 
   Status GetSectorForWrite(SectorDescriptor** sector,
                            size_t entry_size,
                            span<const Address> addresses_to_skip);
 
-  Status AppendEntry(Address write_address,
-                     Entry& entry,
+  Status AppendEntry(const Entry& entry,
                      std::string_view key,
                      span<const std::byte> value);
 
-  Status RelocateEntry(KeyDescriptor* key_descriptor,
-                       KeyValueStore::Address address);
+  Status RelocateEntry(KeyDescriptor& key_descriptor,
+                       KeyValueStore::Address& address,
+                       span<const Address> addresses_to_skip);
 
   Status MoveEntry(Address new_address, Entry& entry);
 
@@ -400,11 +406,12 @@ class KeyValueStore {
 
   Status GarbageCollectPartial(span<const Address> addresses_to_skip);
 
-  Status RelocateKeyAddressesInSector(internal::SectorDescriptor* sector_to_gc,
-                                      internal::KeyDescriptor* descriptor);
+  Status RelocateKeyAddressesInSector(internal::SectorDescriptor& sector_to_gc,
+                                      internal::KeyDescriptor& descriptor,
+                                      span<const Address> addresses_to_skip);
 
   Status GarbageCollectSector(SectorDescriptor* sector_to_gc,
-                              KeyDescriptor* key_in_progress = nullptr);
+                              span<const Address> addresses_to_skip);
 
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
@@ -469,11 +476,6 @@ class KeyValueStore {
   // because SectorDescriptor* is the standard way to identify a sector.
   SectorDescriptor* last_new_sector_;
   uint32_t last_transaction_id_;
-
-  // Working buffer is a general purpose buffer for operations (such as init or
-  // relocate) to use for working space to remove the need to allocate temporary
-  // space.
-  std::array<std::byte, kWorkingBufferSizeBytes> working_buffer_;
 };
 
 template <size_t kMaxEntries,
