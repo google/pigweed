@@ -49,6 +49,10 @@ class TestingFailure(Exception):
     """A simple exception to be raised when a testing step fails."""
 
 
+class DeviceNotFound(Exception):
+    """A simple exception to be raised when unable to connect to a device."""
+
+
 def parse_args():
     """Parses command-line arguments."""
 
@@ -233,7 +237,9 @@ def run_device_test(binary,
         _LOG.debug('Attempting to automatically detect dev board')
         boards = stm32f429i_detector.detect_boards()
         if not boards:
-            _LOG.fatal('Could not find an attached device')
+            error = 'Could not find an attached device'
+            _LOG.error(error)
+            raise DeviceNotFound(error)
         stlink_serial = boards[0].serial_number
         port = boards[0].dev_name
 
