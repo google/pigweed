@@ -51,7 +51,7 @@ EOF
 # variable set.
 # TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if test -n "$PW_CHECKOUT_ROOT"; then
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath "$PW_CHECKOUT_ROOT/pw_env_setup/bootstrap.sh")
+  PW_SETUP_SCRIPT_PATH=$(_pw_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")
   unset PW_CHECKOUT_ROOT
 # Shell: bash.
 elif test -n "$BASH"; then
@@ -70,12 +70,6 @@ fi
 
 PW_ROOT=$(dirname $PW_SETUP_SCRIPT_PATH)
 export PW_ROOT
-
-# TODO(mohrr) remove once recipes are updated.
-if [ $(basename $PW_ROOT) = "pw_env_setup" ]; then
-  PW_ROOT=$(dirname $PW_ROOT)
-  export PW_ROOT
-fi
 
 SETUP_SH="$PW_ROOT/pw_env_setup/.setup.sh"
 
