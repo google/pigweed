@@ -32,11 +32,13 @@ source_set("pw_protobuf") {
     "public/pw_protobuf/codegen.h",
     "public/pw_protobuf/decoder.h",
     "public/pw_protobuf/encoder.h",
+    "public/pw_protobuf/find.h",
     "public/pw_protobuf/wire_format.h",
   ]
   sources = [
     "decoder.cc",
     "encoder.cc",
+    "find.cc",
   ]
   sources += public
 }
@@ -66,6 +68,7 @@ pw_test_group("tests") {
     ":codegen_test",
     ":decoder_test",
     ":encoder_test",
+    ":find_test",
   ]
 }
 
@@ -77,6 +80,11 @@ pw_test("decoder_test") {
 pw_test("encoder_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "encoder_test.cc" ]
+}
+
+pw_test("find_test") {
+  deps = [ ":pw_protobuf" ]
+  sources = [ "find_test.cc" ]
 }
 
 pw_test("codegen_test") {

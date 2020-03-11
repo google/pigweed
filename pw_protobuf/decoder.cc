@@ -43,6 +43,7 @@ Status Decoder::Decode(span<const std::byte> proto) {
     uint32_t field_number = key >> kFieldNumberShift;
     Status status = handler_->ProcessField(this, field_number);
     if (!status.ok()) {
+      state_ = status == Status::CANCELLED ? kDecodeCancelled : kDecodeFailed;
       return status;
     }
 

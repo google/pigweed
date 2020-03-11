@@ -208,10 +208,13 @@ class Decoder {
     return ReadDelimited(field_number, out);
   }
 
+  bool cancelled() const { return state_ == kDecodeCancelled; };
+
  private:
   enum State {
     kReady,
     kDecodeInProgress,
+    kDecodeCancelled,
     kDecodeFailed,
   };
 

@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -27,11 +27,13 @@ pw_cc_library(
     srcs = [
         "decoder.cc",
         "encoder.cc",
+        "find.cc",
     ],
     hdrs = [
         "public/pw_protobuf/codegen.h",
         "public/pw_protobuf/decoder.h",
         "public/pw_protobuf/encoder.h",
+        "public/pw_protobuf/find.h",
         "public/pw_protobuf/wire_format.h",
     ],
     includes = ["public"],
@@ -51,6 +53,12 @@ pw_cc_test(
 pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
+    deps = ["//pw_protobuf"],
+)
+
+pw_cc_test(
+    name = "find_test",
+    srcs = ["find_test.cc"],
     deps = ["//pw_protobuf"],
 )
 
