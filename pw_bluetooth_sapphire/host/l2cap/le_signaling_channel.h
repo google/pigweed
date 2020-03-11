@@ -19,40 +19,13 @@ namespace internal {
 // Implements the L2CAP LE signaling fixed channel.
 class LESignalingChannel final : public SignalingChannel {
  public:
-  using ConnectionParameterUpdateCallback =
-      fit::function<void(const hci::LEPreferredConnectionParameters& params)>;
-
   LESignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role);
   ~LESignalingChannel() override = default;
 
-  // SignalingChannelInterface overrides
-  bool SendRequest(CommandCode req_code, const ByteBuffer& payload, ResponseHandler cb) override;
-  void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
-
-  // Sets a |callback| to be invoked when a Connection Parameter Update request
-  // is received with the given parameters. LESignalingChannel will
-  // automatically accept these parameters, however it is up to the
-  // implementation of |callback| to apply them to the controller.
-  //
-  // This task will be posted onto the given |dispatcher|.
-  void set_conn_param_update_callback(ConnectionParameterUpdateCallback callback,
-                                      async_dispatcher_t* dispatcher) {
-    ZX_DEBUG_ASSERT(IsCreationThreadCurrent());
-    ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
-    conn_param_update_cb_ = std::move(callback);
-    dispatcher_ = dispatcher;
-  }
-
  private:
-  void OnConnParamUpdateReceived(const SignalingPacket& packet);
-
   // SignalingChannel overrides
   void DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHandler& cb) override;
-  bool HandlePacket(const SignalingPacket& packet) override;
   bool IsSupportedResponse(CommandCode code) const override;
-
-  ConnectionParameterUpdateCallback conn_param_update_cb_;
-  async_dispatcher_t* dispatcher_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LESignalingChannel);
 };

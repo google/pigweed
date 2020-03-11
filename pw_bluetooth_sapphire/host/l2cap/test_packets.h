@@ -11,7 +11,8 @@ namespace bt::l2cap::testing {
 // Signaling Packets
 
 DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
-                                                   hci::ConnectionHandle handle);
+                                                   hci::ConnectionHandle handle,
+                                                   ChannelId chan_id = kSignalingChannelId);
 DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHandle handle);
 DynamicByteBuffer AclExtFeaturesInfoRsp(l2cap::CommandId id, hci::ConnectionHandle handle,
                                         l2cap::ExtendedFeatures features);
@@ -33,6 +34,14 @@ DynamicByteBuffer AclConnectionRsp(
     l2cap::ChannelId dst_id, l2cap::ConnectionResult result = l2cap::ConnectionResult::kSuccess);
 DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
                                       l2cap::ChannelId src_id, l2cap::ChannelId dst_id);
+DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
+                                                  hci::ConnectionHandle link_handle,
+                                                  uint16_t interval_min, uint16_t interval_max,
+                                                  uint16_t slave_latency,
+                                                  uint16_t timeout_multiplier);
+DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
+                                                  hci::ConnectionHandle link_handle,
+                                                  ConnectionParameterUpdateResult result);
 
 // S-Frame Packets
 

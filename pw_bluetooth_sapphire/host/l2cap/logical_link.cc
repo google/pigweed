@@ -93,6 +93,8 @@ void LogicalLink::Initialize() {
     signaling_channel_ =
         std::make_unique<LESignalingChannel>(OpenFixedChannel(kLESignalingChannelId), role_);
     // TODO(armansito): Initialize LE registry when it exists.
+
+    ServeConnectionParameterUpdateRequest();
   } else {
     signaling_channel_ =
         std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
@@ -297,6 +299,14 @@ void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback
   security_dispatcher_ = dispatcher;
 }
 
+void LogicalLink::set_connection_parameter_update_callback(
+    LEConnectionParameterUpdateCallback callback, async_dispatcher_t* dispatcher) {
+  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
+  connection_parameter_update_callback_ = std::move(callback);
+  connection_parameter_update_dispatcher_ = dispatcher;
+}
+
 LESignalingChannel* LogicalLink::le_signaling_channel() const {
   return (type_ == hci::Connection::LinkType::kLE)
              ? static_cast<LESignalingChannel*>(signaling_channel_.get())
@@ -477,6 +487,70 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
          rsp.fixed_channels());
 }
 
+void LogicalLink::ServeConnectionParameterUpdateRequest() {
+  ZX_ASSERT(signaling_channel_);
+  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);
+
+  LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
+  cmd_handler.ServeConnectionParameterUpdateRequest(
+      fit::bind_member(this, &LogicalLink::OnRxConnectionParameterUpdateRequest));
+}
+
+void LogicalLink::OnRxConnectionParameterUpdateRequest(
+    uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+    uint16_t timeout_multiplier,
+    LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder) {
+  // Only a LE slave can send this command. "If an LE slave Host receives a
+  // Connection Parameter Update Request packet it shall respond with a Command
+  // Reject Packet [...]" (v5.0, Vol 3, Part A, Section 4.20).
+  if (role_ == hci::Connection::Role::kSlave) {
+    bt_log(TRACE, "l2cap", "rejecting conn. param. update request from master");
+    responder->RejectNotUnderstood();
+    return;
+  }
+
+  // Reject the connection parameters if they are outside the ranges allowed by
+  // the HCI specification (see HCI_LE_Connection_Update command v5.0, Vol 2,
+  // Part E, Section 7.8.18).
+  bool reject = false;
+
+  hci::LEPreferredConnectionParameters params(interval_min, interval_max, slave_latency,
+                                              timeout_multiplier);
+
+  if (params.min_interval() > params.max_interval()) {
+    bt_log(TRACE, "l2cap", "conn. min interval larger than max");
+    reject = true;
+  } else if (params.min_interval() < hci::kLEConnectionIntervalMin) {
+    bt_log(TRACE, "l2cap", "conn. min interval outside allowed range: %#.4x",
+           params.min_interval());
+    reject = true;
+  } else if (params.max_interval() > hci::kLEConnectionIntervalMax) {
+    bt_log(TRACE, "l2cap", "conn. max interval outside allowed range: %#.4x",
+           params.max_interval());
+    reject = true;
+  } else if (params.max_latency() > hci::kLEConnectionLatencyMax) {
+    bt_log(TRACE, "l2cap", "conn. slave latency too large: %#.4x", params.max_latency());
+    reject = true;
+  } else if (params.supervision_timeout() < hci::kLEConnectionSupervisionTimeoutMin ||
+             params.supervision_timeout() > hci::kLEConnectionSupervisionTimeoutMax) {
+    bt_log(TRACE, "l2cap", "conn supv. timeout outside allowed range: %#.4x",
+           params.supervision_timeout());
+    reject = true;
+  }
+
+  ConnectionParameterUpdateResult result = reject ? ConnectionParameterUpdateResult::kRejected
+                                                  : ConnectionParameterUpdateResult::kAccepted;
+  responder->Send(result);
+
+  if (!reject) {
+    if (!connection_parameter_update_callback_) {
+      bt_log(TRACE, "l2cap", "no callback set for LE Connection Parameter Update Request");
+      return;
+    }
+    async::PostTask(connection_parameter_update_dispatcher_,
+                    [cb = connection_parameter_update_callback_.share(), params]() { cb(params); });
+  }
+}
 }  // namespace internal
 }  // namespace l2cap
 }  // namespace bt

@@ -22,12 +22,13 @@ DynamicByteBuffer AclExtFeaturesInfoReq(l2cap::CommandId id, hci::ConnectionHand
 }
 
 DynamicByteBuffer AclCommandRejectNotUnderstoodRsp(l2cap::CommandId id,
-                                                   hci::ConnectionHandle handle) {
+                                                   hci::ConnectionHandle handle,
+                                                   ChannelId chan_id) {
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: |link_handle|, length: 10 bytes)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
       // L2CAP B-frame header (length: 6 bytes, channel-id: 0x0001 (ACL sig))
-      0x06, 0x00, 0x01, 0x00,
+      0x06, 0x00, LowerBits(chan_id), UpperBits(chan_id),
       // Information Response (type, ID, length: 2)
       l2cap::kCommandRejectCode, id, 0x02, 0x00,
       // Reason = Not Understood
@@ -229,6 +230,42 @@ DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle
       LowerBits(dst_id), UpperBits(dst_id),
       // Source CID
       LowerBits(src_id), UpperBits(src_id)));
+}
+
+DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
+                                                  hci::ConnectionHandle link_handle,
+                                                  uint16_t interval_min, uint16_t interval_max,
+                                                  uint16_t slave_latency,
+                                                  uint16_t timeout_multiplier) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link handle|, length: 16 bytes)
+      LowerBits(link_handle), UpperBits(link_handle), 0x10, 0x00,
+      // L2CAP B-frame header: length 12, channel-id 5 (LE signaling)
+      0x0c, 0x00, 0x05, 0x00,
+      // Connection Parameter Update Request (0x12), id, length 8
+      l2cap::kConnectionParameterUpdateRequest, id, 0x08, 0x00,
+      // interval min
+      LowerBits(interval_min), UpperBits(interval_min),
+      // interval max
+      LowerBits(interval_max), UpperBits(interval_max),
+      // slave latency
+      LowerBits(slave_latency), UpperBits(slave_latency),
+      // timeout multiplier
+      LowerBits(timeout_multiplier), UpperBits(timeout_multiplier)));
+}
+
+DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
+                                                  hci::ConnectionHandle link_handle,
+                                                  ConnectionParameterUpdateResult result) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link handle|, length: 10 bytes)
+      LowerBits(link_handle), UpperBits(link_handle), 0x0a, 0x00,
+      // L2CAP B-frame header: length 6, channel-id 5 (LE signaling)
+      0x06, 0x00, 0x05, 0x00,
+      // Connection Parameter Update Response (0x13), id, length 2
+      l2cap::kConnectionParameterUpdateResponse, id, 0x02, 0x00,
+      // Result
+      LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result))));
 }
 
 DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,

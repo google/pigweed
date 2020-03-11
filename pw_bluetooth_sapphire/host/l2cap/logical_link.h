@@ -27,6 +27,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
@@ -128,6 +129,11 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   void set_security_upgrade_callback(SecurityUpgradeCallback callback,
                                      async_dispatcher_t* dispatcher);
 
+  // Assigns the callback to be invoked when a valid Connection Parameter Update Request is received
+  // on the signaling channel.
+  void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback,
+                                                async_dispatcher_t* dispatcher);
+
   // Returns the dispatcher that this LogicalLink operates on.
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
 
@@ -210,6 +216,16 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // TODO(43668): save fixed channels mask and use to verify opened fixed channel ids are supported
   void OnRxFixedChannelsSupportedInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
+  // Start serving Connection Parameter Update Requests on the LE signaling channel.
+  void ServeConnectionParameterUpdateRequest();
+
+  // Handler called when a Connection Parameter Update Request is received on the LE signaling
+  // channel.
+  void OnRxConnectionParameterUpdateRequest(
+      uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency,
+      uint16_t timeout_multiplier,
+      LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder);
+
   // Members that can be accessed from any thread.
   std::mutex mtx_;
   sm::SecurityProperties security_ __TA_GUARDED(mtx_);
@@ -227,6 +243,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   SecurityUpgradeCallback security_callback_;
   async_dispatcher_t* security_dispatcher_;
+
+  LEConnectionParameterUpdateCallback connection_parameter_update_callback_;
+  async_dispatcher_t* connection_parameter_update_dispatcher_;
 
   // No data packets are processed once this gets set to true.
   bool closed_;

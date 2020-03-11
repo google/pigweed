@@ -69,7 +69,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
   ll->set_error_callback(std::move(link_error_cb), dispatcher);
   ll->set_security_upgrade_callback(std::move(security_cb), dispatcher);
-  ll->le_signaling_channel()->set_conn_param_update_callback(std::move(conn_param_cb), dispatcher);
+  ll->set_connection_parameter_update_callback(std::move(conn_param_cb), dispatcher);
 }
 
 void ChannelManager::Unregister(hci::ConnectionHandle handle) {

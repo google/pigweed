@@ -125,8 +125,6 @@ class ChannelManager final {
   //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
-  using LEConnectionParameterUpdateCallback =
-      internal::LESignalingChannel::ConnectionParameterUpdateCallback;
   void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
                   LEConnectionParameterUpdateCallback conn_param_callback,
                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,

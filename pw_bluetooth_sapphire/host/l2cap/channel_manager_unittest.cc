@@ -1975,6 +1975,116 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithReje
   RunLoopUntilIdle();
 }
 
+TEST_F(L2CAP_ChannelManagerTest,
+       ReceiveValidConnectionParameterUpdateRequestAsMasterAndRespondWithAcceptedResult) {
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+
+  std::optional<hci::LEPreferredConnectionParameters> params;
+  LEConnectionParameterUpdateCallback param_cb =
+      [&params](const hci::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
+
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, /*LinkErrorCallback=*/DoNothing,
+             std::move(param_cb));
+
+  constexpr CommandId kParamReqId = 4;  // random
+
+  EXPECT_LE_PACKET_OUT(testing::AclConnectionParameterUpdateRsp(
+                           kParamReqId, kTestHandle1, ConnectionParameterUpdateResult::kAccepted),
+                       kHighPriority);
+
+  ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
+      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kSlaveLatency, kTimeoutMult));
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(params.has_value());
+  EXPECT_EQ(kIntervalMin, params->min_interval());
+  EXPECT_EQ(kIntervalMax, params->max_interval());
+  EXPECT_EQ(kSlaveLatency, params->max_latency());
+  EXPECT_EQ(kTimeoutMult, params->supervision_timeout());
+}
+
+// If an LE Slave host receives a Connection Parameter Update Request, it should reject it.
+TEST_F(L2CAP_ChannelManagerTest,
+       ReceiveValidConnectionParameterUpdateRequestAsSlaveAndRespondWithReject) {
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+
+  std::optional<hci::LEPreferredConnectionParameters> params;
+  LEConnectionParameterUpdateCallback param_cb =
+      [&params](const hci::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
+
+  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave, /*LinkErrorCallback=*/DoNothing,
+             std::move(param_cb));
+
+  constexpr CommandId kParamReqId = 4;  // random
+
+  EXPECT_LE_PACKET_OUT(
+      testing::AclCommandRejectNotUnderstoodRsp(kParamReqId, kTestHandle1, kLESignalingChannelId),
+      kHighPriority);
+
+  ReceiveAclDataPacket(testing::AclConnectionParameterUpdateReq(
+      kParamReqId, kTestHandle1, kIntervalMin, kIntervalMax, kSlaveLatency, kTimeoutMult));
+  RunLoopUntilIdle();
+
+  ASSERT_FALSE(params.has_value());
+}
+
+TEST_F(L2CAP_ChannelManagerTest,
+       ReceiveInvalidConnectionParameterUpdateRequestsAndRespondWithRejectedResult) {
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+
+  // Callback should not be called for request with invalid parameters.
+  LEConnectionParameterUpdateCallback param_cb = [](auto /*params*/) { ADD_FAILURE(); };
+  RegisterLE(kTestHandle1, hci::Connection::Role::kMaster, /*LinkErrorCallback=*/DoNothing,
+             std::move(param_cb));
+
+  constexpr CommandId kParamReqId = 4;  // random
+
+  std::array invalid_requests = {
+      // interval min > interval max
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, /*interval_min=*/7,
+                                               /*interval_max=*/6, kSlaveLatency, kTimeoutMult),
+      // interval_min too small
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1,
+                                               hci::kLEConnectionIntervalMin - 1, kIntervalMax,
+                                               kSlaveLatency, kTimeoutMult),
+      // interval max too large
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
+                                               hci::kLEConnectionIntervalMax + 1, kSlaveLatency,
+                                               kTimeoutMult),
+      // latency too large
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, hci::kLEConnectionLatencyMax + 1,
+                                               kTimeoutMult),
+      // timeout multiplier too small
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, kSlaveLatency,
+                                               hci::kLEConnectionSupervisionTimeoutMin - 1),
+      // timeout multiplier too large
+      testing::AclConnectionParameterUpdateReq(kParamReqId, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, kSlaveLatency,
+                                               hci::kLEConnectionSupervisionTimeoutMax + 1)};
+
+  for (auto& req : invalid_requests) {
+    EXPECT_LE_PACKET_OUT(testing::AclConnectionParameterUpdateRsp(
+                             kParamReqId, kTestHandle1, ConnectionParameterUpdateResult::kRejected),
+                         kHighPriority);
+    ReceiveAclDataPacket(req);
+  }
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt
