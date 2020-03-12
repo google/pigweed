@@ -436,8 +436,6 @@ class KeyValueStore {
                               span<const std::byte> value,
                               KeyDescriptor::State state);
 
-  void Reset();
-
   void LogSectors() const;
   void LogKeyDescriptor() const;
 

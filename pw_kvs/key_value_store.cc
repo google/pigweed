@@ -50,11 +50,16 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
       sectors_(sector_descriptor_list),
       redundancy_(redundancy),
       options_(options) {
-  Reset();
+  initialized_ = false;
+  last_new_sector_ = nullptr;
+  last_transaction_id_ = 0;
 }
 
 Status KeyValueStore::Init() {
-  Reset();
+  initialized_ = false;
+  last_new_sector_ = nullptr;
+  last_transaction_id_ = 0;
+  key_descriptors_.clear();
 
   INF("Initializing key value store");
   if (partition_.sector_count() > sectors_.max_size()) {
@@ -1164,13 +1169,6 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
                       key,
                       value,
                       last_transaction_id_);
-}
-
-void KeyValueStore::Reset() {
-  initialized_ = false;
-  key_descriptors_.clear();
-  last_new_sector_ = nullptr;
-  last_transaction_id_ = 0;
 }
 
 void KeyValueStore::LogDebugInfo() {
