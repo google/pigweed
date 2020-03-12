@@ -487,6 +487,32 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
          rsp.fixed_channels());
 }
 
+void LogicalLink::SendConnectionParameterUpdateRequest(
+    hci::LEPreferredConnectionParameters params,
+    ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
+  ZX_ASSERT(signaling_channel_);
+  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);
+  ZX_ASSERT(role_ == hci::Connection::Role::kSlave);
+
+  LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
+  cmd_handler.SendConnectionParameterUpdateRequest(
+      params.min_interval(), params.max_interval(), params.max_latency(),
+      params.supervision_timeout(),
+      [cb = std::move(request_cb),
+       dispatcher](const LowEnergyCommandHandler::ConnectionParameterUpdateResponse& rsp) mutable {
+        bool accepted = false;
+
+        if (rsp.status() != LowEnergyCommandHandler::Status::kSuccess) {
+          bt_log(SPEW, "l2cap", "LE Connection Parameter Update Request rejected (reason: %#.4hx)",
+                 rsp.reject_reason());
+        } else {
+          accepted = rsp.result() == ConnectionParameterUpdateResult::kAccepted;
+        }
+
+        RunOrPost(std::bind(std::move(cb), accepted), dispatcher);
+      });
+}
+
 void LogicalLink::ServeConnectionParameterUpdateRequest() {
   ZX_ASSERT(signaling_channel_);
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);

@@ -2085,6 +2085,95 @@ TEST_F(L2CAP_ChannelManagerTest,
   RunLoopUntilIdle();
 }
 
+TEST_F(L2CAP_ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
+  auto update_cb = [](auto) { ADD_FAILURE(); };
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, hci::LEPreferredConnectionParameters(),
+                                              std::move(update_cb), dispatcher());
+  RunLoopUntilIdle();
+}
+
+TEST_F(L2CAP_ChannelManagerTest,
+       RequestConnParamUpdateAsSlaveAndReceiveAcceptedAndRejectedResponses) {
+  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
+
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                     kTimeoutMult);
+
+  std::optional<bool> accepted;
+  auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
+
+  // Receive "Accepted" Response:
+
+  CommandId param_update_req_id = NextCommandId();
+  EXPECT_LE_PACKET_OUT(
+      testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+      kHighPriority);
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb, dispatcher());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(accepted.has_value());
+
+  ReceiveAclDataPacket(testing::AclConnectionParameterUpdateRsp(
+      param_update_req_id, kTestHandle1, ConnectionParameterUpdateResult::kAccepted));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(accepted.has_value());
+  EXPECT_TRUE(accepted.value());
+  accepted.reset();
+
+  // Receive "Rejected" Response:
+
+  param_update_req_id = NextCommandId();
+  EXPECT_LE_PACKET_OUT(
+      testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+      kHighPriority);
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, std::move(request_cb),
+                                              dispatcher());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(accepted.has_value());
+
+  ReceiveAclDataPacket(testing::AclConnectionParameterUpdateRsp(
+      param_update_req_id, kTestHandle1, ConnectionParameterUpdateResult::kRejected));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(accepted.has_value());
+  EXPECT_FALSE(accepted.value());
+}
+
+TEST_F(L2CAP_ChannelManagerTest, ConnParamUpdateRequestRejected) {
+  RegisterLE(kTestHandle1, hci::Connection::Role::kSlave);
+
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                     kTimeoutMult);
+
+  std::optional<bool> accepted;
+  auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
+
+  const CommandId kParamUpdateReqId = NextCommandId();
+  EXPECT_LE_PACKET_OUT(
+      testing::AclConnectionParameterUpdateReq(kParamUpdateReqId, kTestHandle1, kIntervalMin,
+                                               kIntervalMax, kSlaveLatency, kTimeoutMult),
+      kHighPriority);
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb, dispatcher());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(accepted.has_value());
+
+  ReceiveAclDataPacket(testing::AclCommandRejectNotUnderstoodRsp(kParamUpdateReqId, kTestHandle1,
+                                                                 kLESignalingChannelId));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(accepted.has_value());
+  EXPECT_FALSE(accepted.value());
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt

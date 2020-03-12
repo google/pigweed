@@ -33,6 +33,10 @@ using LinkErrorCallback = fit::closure;
 using LEConnectionParameterUpdateCallback =
     fit::function<void(const hci::LEPreferredConnectionParameters&)>;
 
+// Callback called when response received to LE signaling channel Connection Parameters Update
+// Request. |accepted| indicates whether the parameters were accepted by the peer.
+using ConnectionParameterUpdateRequestCallback = fit::function<void(bool accepted)>;
+
 // Callback used to deliver LE fixed channels that are created when a LE link is
 // registered with L2CAP.
 using LEFixedChannelsCallback =

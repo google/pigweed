@@ -121,6 +121,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // upgrade requests. Has no effect if the link is closed.
   void AssignSecurityProperties(const sm::SecurityProperties& security);
 
+  // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
+  // Parameter Update Response is received, |request_cb| will be called on |dispatcher| with the
+  // result, |accepted|.
+  // NOTE: the local Host must be an LE slave.
+  void SendConnectionParameterUpdateRequest(hci::LEPreferredConnectionParameters params,
+                                            ConnectionParameterUpdateRequestCallback request_cb,
+                                            async_dispatcher_t* dispatcher);
+
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
   void set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher);

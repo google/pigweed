@@ -168,6 +168,17 @@ class ChannelManager final {
   // Returns mapping of ChannelId -> PacketPriority for use with ACLDataChannel::SendPacket.
   static hci::ACLDataChannel::PacketPriority ChannelPriority(ChannelId id);
 
+  // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
+  // Parameter Update Response is received, |request_cb| will be called on |dispatcher| and passed
+  // the result, |accepted|.
+  // NOTE: The local Host must be an LE slave, and this request should only be sent if the slave or
+  // host does not support the Connection Parameters Request Link Layer Control Procedure (Core Spec
+  // v5.2, Vol 3, Part A, Sec 4.20).
+  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
+                                        hci::LEPreferredConnectionParameters params,
+                                        ConnectionParameterUpdateRequestCallback request_cb,
+                                        async_dispatcher_t* dispatcher);
+
  private:
   // Called when an ACL data packet is received from the controller. This method
   // is responsible for routing the packet to the corresponding LogicalLink.

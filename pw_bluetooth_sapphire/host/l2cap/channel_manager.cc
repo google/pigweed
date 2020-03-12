@@ -168,6 +168,20 @@ void ChannelManager::UnregisterService(PSM psm) {
   services_.erase(psm);
 }
 
+void ChannelManager::RequestConnectionParameterUpdate(
+    hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+    ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
+  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+
+  auto iter = ll_map_.find(handle);
+  if (iter == ll_map_.end()) {
+    bt_log(TRACE, "l2cap", "ignoring Connection Parameter Update request on unknown link");
+    return;
+  }
+
+  iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb), dispatcher);
+}
+
 // Called when an ACL data packet is received from the controller. This method
 // is responsible for routing the packet to the corresponding LogicalLink.
 void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
