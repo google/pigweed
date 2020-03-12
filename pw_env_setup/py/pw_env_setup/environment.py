@@ -118,15 +118,21 @@ class _Remove(_Action):
 
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
-            # TODO(pwbug/148) Also do this for Windows.
-            pass
+            outs.write(':: Remove\n::   {value}\n:: from\n::   {name}\n'
+                       ':: before adding it back.\n'
+                       'set {name}=%{name}:{pathsep}{value}=%\n'
+                       'set {name}=%{name}:{value}{pathsep}=%\n'.format(
+                           name=self.name,
+                           value=self.value,
+                           pathsep=self._pathsep))
+
         else:
             outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
                        'adding it back.\n'
                        '{name}=$(echo "${name}"'
-                       ' | sed "s/{pathsep}{escvalue}{pathsep}/{pathsep}/;"'
-                       ' | sed "s/^{escvalue}{pathsep}//;"'
-                       ' | sed "s/{pathsep}{escvalue}$//;"'
+                       ' | sed "s/{pathsep}{escvalue}{pathsep}/{pathsep}/g;"'
+                       ' | sed "s/^{escvalue}{pathsep}//g;"'
+                       ' | sed "s/{pathsep}{escvalue}$//g;"'
                        ')\nexport {name}\n'.format(name=self.name,
                                                    value=self.value,
                                                    escvalue=self.value.replace(
@@ -135,12 +141,18 @@ class _Remove(_Action):
 
     def apply(self, env):
         env[self.name] = env[self.name].replace(
-            '{pathsep}{value}{pathsep}'.format(pathsep=self._pathsep,
-                                               value=self.value),
-            self._pathsep)
-        env[self.name] = re.sub(
-            r'^{value}{pathsep}|{pathsep}{value}$'.format(
-                pathsep=self._pathsep, value=self.value), '', env[self.name])
+            '{}{}'.format(self.value, self._pathsep), '')
+        env[self.name] = env[self.name].replace(
+            '{}{}'.format(self._pathsep, self.value), '')
+
+
+class BadVariableValue(ValueError):
+    pass
+
+
+def _append_prepend_check(action):
+    if '=' in action.value:
+        raise BadVariableValue('"{}" contains "="'.format(action.value))
 
 
 class _Prepend(_Action):
@@ -160,6 +172,10 @@ class _Prepend(_Action):
     def apply(self, env):
         env[self.name] = self._join(self.value, env.get(self.name, ''))
 
+    def _check(self):
+        super(_Prepend, self)._check()
+        _append_prepend_check(self)
+
 
 class _Append(_Action):
     def __init__(self, name, value, join, *args, **kwargs):
@@ -177,6 +193,10 @@ class _Append(_Action):
 
     def apply(self, env):
         env[self.name] = self._join(env.get(self.name, ''), self.value)
+
+    def _check(self):
+        super(_Append, self)._check()
+        _append_prepend_check(self)
 
 
 class BadEchoValue(ValueError):

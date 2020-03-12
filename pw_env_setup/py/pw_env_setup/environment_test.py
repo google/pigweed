@@ -88,6 +88,7 @@ def _evaluate_env_in_shell(env):
     return env_ret
 
 
+# pylint: disable=too-many-public-methods
 class EnvironmentTest(unittest.TestCase):
     """Tests for env_setup.environment."""
     def setUp(self):
@@ -215,6 +216,10 @@ class EnvironmentTest(unittest.TestCase):
         with self.assertRaises(environment.NewlineInValue):
             self.env.set('var', '123\n456')
 
+    def test_equal_sign_in_value(self):
+        with self.assertRaises(environment.BadVariableValue):
+            self.env.append(self.var_already_set, 'pa=th')
+
 
 class _PrependAppendEnvironmentTest(unittest.TestCase):
     """Tests for env_setup.environment."""
@@ -332,8 +337,6 @@ class _AppendPrependTestMixin(object):
                              self.pathsep.join(('one', 'two', 'path')))
 
     def test_remove_written(self):
-        if self.windows:  # TODO(pwbug/148) Support removing paths on Windows.
-            return
         if not self.run_shell_tests:
             return
 
@@ -344,6 +347,40 @@ class _AppendPrependTestMixin(object):
         env = _evaluate_env_in_shell(self.env)
         self.assertEqual(env[self.var_not_set],
                          self.pathsep.join(('one', 'two', 'path')))
+
+    def test_remove_ctx_space(self):
+        self.env.set(self.var_not_set,
+                     self.pathsep.join(('pa th', 'one', 'pa th', 'two')))
+
+        self.env.append(self.var_not_set, 'pa th')
+        with self.env(export=False) as env:
+            self.assertEqual(env[self.var_not_set],
+                             self.pathsep.join(('one', 'two', 'pa th')))
+
+    def test_remove_written_space(self):
+        if not self.run_shell_tests:
+            return
+
+        self.env.set(self.var_not_set,
+                     self.pathsep.join(('pa th', 'one', 'pa th', 'two')))
+
+        self.env.append(self.var_not_set, 'pa th')
+        env = _evaluate_env_in_shell(self.env)
+        self.assertEqual(env[self.var_not_set],
+                         self.pathsep.join(('one', 'two', 'pa th')))
+
+    def test_remove_ctx_empty(self):
+        self.env.remove(self.var_not_set, 'path')
+        with self.env(export=False) as env:
+            self.assertNotIn(self.var_not_set, env)
+
+    def test_remove_written_empty(self):
+        if not self.run_shell_tests:
+            return
+
+        self.env.remove(self.var_not_set, 'path')
+        env = _evaluate_env_in_shell(self.env)
+        self.assertNotIn(self.var_not_set, env)
 
 
 class WindowsEnvironmentTest(_PrependAppendEnvironmentTest,
