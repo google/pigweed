@@ -323,6 +323,8 @@ class KvsTester {
     FinishOperation("GCPartial", status);
   }
 
+  // Logs that an operation started and checks that the KVS matches the map. If
+  // a key is provided, that is included in the logs.
   void StartOperation(const std::string& operation,
                       const std::string& key = "") {
     count_ += 1;
@@ -335,6 +337,8 @@ class KvsTester {
     AbortIfMismatched("Pre-" + operation);
   }
 
+  // Logs that an operation finished and checks that the KVS matches the map.
+  // If a key is provided, that is included in the logs.
   void FinishOperation(const std::string& operation,
                        Status result,
                        const std::string& key = "") {
