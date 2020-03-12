@@ -124,11 +124,12 @@ class _Remove(_Action):
             outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
                        'adding it back.\n'
                        '{name}=$(echo "${name}"'
-                       ' | sed "s/{pathsep}{value}{pathsep}/{pathsep}/;"'
-                       ' | sed "s/^{value}{pathsep}//;"'
-                       ' | sed "s/{pathsep}{value}$//;"'
+                       ' | sed "s/{pathsep}{escvalue}{pathsep}/{pathsep}/;"'
+                       ' | sed "s/^{escvalue}{pathsep}//;"'
+                       ' | sed "s/{pathsep}{escvalue}$//;"'
                        ')\nexport {name}\n'.format(name=self.name,
-                                                   value=self.value.replace(
+                                                   value=self.value,
+                                                   escvalue=self.value.replace(
                                                        '/', '\\/'),
                                                    pathsep=self._pathsep))
 
@@ -217,6 +218,23 @@ class _Echo(_Action):
         del env  # Unused.
 
 
+class _BlankLine(_Action):
+    def __init__(self, *args, **kwargs):
+        kwargs['name'] = 'unused_non_empty_string_to_make_check_simpler'
+        kwargs['value'] = 'foo'
+        super(_BlankLine, self).__init__(*args, **kwargs)
+
+    # pylint: disable=no-self-use
+    def write(self, outs, windows=(os.name == 'nt')):
+        del windows  # Unused.
+        outs.write('\n')
+
+    def apply(self, env):
+        del env  # Unused.
+
+    # pylint: enable=no-self-use
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 class Environment(object):
@@ -250,43 +268,58 @@ class Environment(object):
                 pass
         return name
 
+    # A newline is printed after each high-level operation. Top-level
+    # operations should not invoke each other (this is why _remove() exists).
+
     def set(self, name, value):
         name = self.normalize_key(name)
         self._actions.append(_Set(name, value))
+        self._blankline()
 
     def clear(self, name):
         name = self.normalize_key(name)
         self._actions.append(_Clear(name))
+        self._blankline()
 
-    def remove(self, name, value):
+    def _remove(self, name, value):
         """Remove a value from a variable."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
             self._actions.append(_Remove(name, value, self._pathsep))
 
+    def remove(self, name, value):
+        self._remove(name, value)
+        self._blankline()
+
     def append(self, name, value):
         """Add a value to the end of a variable. Rarely used, see prepend()."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
-            self.remove(name, value)
+            self._remove(name, value)
             self._actions.append(_Append(name, value, self._join))
         else:
             self._actions.append(_Set(name, value))
+        self._blankline()
 
     def prepend(self, name, value):
         """Add a value to the beginning of a variable."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
-            self.remove(name, value)
+            self._remove(name, value)
             self._actions.append(_Prepend(name, value, self._join))
         else:
             self._actions.append(_Set(name, value))
+        self._blankline()
 
     def echo(self, value, newline=True):
         self._actions.append(_Echo(value, newline))
+        self._blankline()
+
+    def _blankline(self):
+        self._actions.append(_BlankLine())
 
     def write(self, outs):
         """Writes a shell init script to outs."""
