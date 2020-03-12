@@ -33,10 +33,12 @@ source_set("pw_kvs") {
     "alignment.cc",
     "checksum.cc",
     "entry.cc",
+    "entry_cache.cc",
     "flash_memory.cc",
     "format.cc",
     "key_value_store.cc",
     "public/pw_kvs/internal/entry.h",
+    "public/pw_kvs/internal/entry_cache.h",
     "public/pw_kvs/internal/hash.h",
     "public/pw_kvs/internal/key_descriptor.h",
     "public/pw_kvs/internal/sector_descriptor.h",
@@ -55,6 +57,7 @@ source_set("pw_kvs") {
   ]
   friend = [
     ":entry_test",
+    ":entry_cache_test",
     ":key_value_store_test",
     ":key_value_store_binary_format_test",
     ":key_value_store_map_test",
@@ -98,6 +101,7 @@ pw_test_group("tests") {
     ":alignment_test",
     ":checksum_test",
     ":entry_test",
+    ":entry_cache_test",
     ":key_value_store_test",
     ":key_value_store_binary_format_test",
     ":key_value_store_fuzz_test",
@@ -126,6 +130,11 @@ pw_test("entry_test") {
     ":test_utils",
   ]
   sources = [ "entry_test.cc" ]
+}
+
+pw_test("entry_cache_test") {
+  deps = [ ":pw_kvs" ]
+  sources = [ "entry_cache_test.cc" ]
 }
 
 pw_test("key_value_store_test") {

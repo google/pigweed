@@ -24,6 +24,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
 #include "pw_kvs/internal/entry.h"
+#include "pw_kvs/internal/entry_cache.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sector_descriptor.h"
 #include "pw_kvs/internal/span_traits.h"
@@ -183,7 +184,7 @@ class KeyValueStore {
     return GarbageCollectPartial(span<const Address>());
   }
 
-  void LogDebugInfo();
+  void LogDebugInfo() const;
 
   // Classes and functions to support STL-style iteration.
   class iterator;
@@ -197,7 +198,7 @@ class KeyValueStore {
     // KeyValueStore::Get.
     StatusWithSize Get(span<std::byte> value_buffer,
                        size_t offset_bytes = 0) const {
-      return kvs_.Get(key(), *descriptor_, value_buffer, offset_bytes);
+      return kvs_.Get(key(), *iterator_, value_buffer, offset_bytes);
     }
 
     template <typename Pointer,
@@ -205,24 +206,24 @@ class KeyValueStore {
     Status Get(const Pointer& pointer) const {
       using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
       CheckThatObjectCanBePutOrGet<T>();
-      return kvs_.FixedSizeGet(key(), *descriptor_, pointer, sizeof(T));
+      return kvs_.FixedSizeGet(key(), *iterator_, pointer, sizeof(T));
     }
 
     // Reads the size of the value referred to by this iterator. Equivalent to
     // KeyValueStore::ValueSize.
-    StatusWithSize ValueSize() const { return kvs_.ValueSize(*descriptor_); }
+    StatusWithSize ValueSize() const { return kvs_.ValueSize(*iterator_); }
 
    private:
     friend class iterator;
 
     constexpr Item(const KeyValueStore& kvs,
-                   const internal::KeyDescriptor* descriptor)
-        : kvs_(kvs), descriptor_(descriptor), key_buffer_{} {}
+                   const internal::EntryCache::iterator& iterator)
+        : kvs_(kvs), iterator_(iterator), key_buffer_{} {}
 
     void ReadKey();
 
     const KeyValueStore& kvs_;
-    const internal::KeyDescriptor* descriptor_;
+    internal::EntryCache::iterator iterator_;
 
     // Buffer large enough for a null-terminated version of any valid key.
     std::array<char, internal::Entry::kMaxKeyLength + 1> key_buffer_;
@@ -241,24 +242,23 @@ class KeyValueStore {
     }
 
     const Item* operator->() {
-      operator*();  // Read the key into the Item object.
-      return &item_;
+      return &operator*();  // Read the key into the Item object.
     }
 
     constexpr bool operator==(const iterator& rhs) const {
-      return item_.descriptor_ == rhs.item_.descriptor_;
+      return item_.iterator_ == rhs.item_.iterator_;
     }
 
     constexpr bool operator!=(const iterator& rhs) const {
-      return item_.descriptor_ != rhs.item_.descriptor_;
+      return item_.iterator_ != rhs.item_.iterator_;
     }
 
    private:
     friend class KeyValueStore;
 
     constexpr iterator(const KeyValueStore& kvs,
-                       const internal::KeyDescriptor* descriptor)
-        : item_(kvs, descriptor) {}
+                       const internal::EntryCache::iterator& iterator)
+        : item_(kvs, iterator) {}
 
     Item item_;
   };
@@ -266,12 +266,12 @@ class KeyValueStore {
   using const_iterator = iterator;  // Standard alias for iterable types.
 
   iterator begin() const;
-  iterator end() const { return iterator(*this, key_descriptors_.end()); }
+  iterator end() const { return iterator(*this, entry_cache_.end()); }
 
   // Returns the number of valid entries in the KeyValueStore.
-  size_t size() const;
+  size_t size() const { return entry_cache_.present_entries(); }
 
-  size_t max_size() const { return key_descriptors_.max_size(); }
+  size_t max_size() const { return entry_cache_.max_entries(); }
 
   size_t empty() const { return size() == 0u; }
 
@@ -288,7 +288,8 @@ class KeyValueStore {
 
   StorageStats GetStorageStats() const;
 
-  size_t redundancy() { return redundancy_; }
+  // Level of redundancy to use for writing entries.
+  size_t redundancy() const { return entry_cache_.redundancy(); }
 
  protected:
   using Address = FlashPartition::Address;
@@ -299,13 +300,18 @@ class KeyValueStore {
   // In the future, will be able to provide additional EntryFormats for
   // backwards compatibility.
   KeyValueStore(FlashPartition* partition,
-                Vector<KeyDescriptor>& key_descriptor_list,
-                Vector<SectorDescriptor>& sector_descriptor_list,
+                span<const EntryFormat> formats,
+                const Options& options,
                 size_t redundancy,
-                span<const EntryFormat> format,
-                const Options& options);
+                Vector<SectorDescriptor>& sector_descriptor_list,
+                const SectorDescriptor** temp_sectors_to_skip,
+                Vector<KeyDescriptor>& key_descriptor_list,
+                Address* addresses);
 
  private:
+  using EntryMetadata = internal::EntryMetadata;
+  using EntryState = internal::EntryState;
+
   template <typename T>
   static constexpr void CheckThatObjectCanBePutOrGet() {
     static_assert(
@@ -319,17 +325,13 @@ class KeyValueStore {
   Status ScanForEntry(const SectorDescriptor& sector,
                       Address start_address,
                       Address* next_entry_address);
-  Status AppendNewOrOverwriteStaleExistingDescriptor(
-      const KeyDescriptor& key_descriptor);
-
-  KeyDescriptor* FindDescriptor(uint32_t hash);
 
   Status PutBytes(std::string_view key, span<const std::byte> value);
 
-  StatusWithSize ValueSize(const KeyDescriptor& descriptor) const;
+  StatusWithSize ValueSize(const EntryMetadata& metadata) const;
 
   StatusWithSize Get(std::string_view key,
-                     const KeyDescriptor& descriptor,
+                     const EntryMetadata& metadata,
                      span<std::byte> value_buffer,
                      size_t offset_bytes) const;
 
@@ -338,32 +340,14 @@ class KeyValueStore {
                       size_t size_bytes) const;
 
   Status FixedSizeGet(std::string_view key,
-                      const KeyDescriptor& descriptor,
+                      const EntryMetadata& descriptor,
                       void* value,
                       size_t size_bytes) const;
 
   Status CheckOperation(std::string_view key) const;
 
-  Status FindKeyDescriptor(std::string_view key,
-                           const KeyDescriptor** result) const;
-
-  // Non-const version of FindKeyDescriptor.
-  Status FindKeyDescriptor(std::string_view key, KeyDescriptor** result) {
-    return static_cast<const KeyValueStore&>(*this).FindKeyDescriptor(
-        key, const_cast<const KeyDescriptor**>(result));
-  }
-
-  Status FindExistingKeyDescriptor(std::string_view key,
-                                   const KeyDescriptor** result) const;
-
-  Status FindExistingKeyDescriptor(std::string_view key,
-                                   KeyDescriptor** result) {
-    return static_cast<const KeyValueStore&>(*this).FindExistingKeyDescriptor(
-        key, const_cast<const KeyDescriptor**>(result));
-  }
-
-  Status WriteEntryForExistingKey(KeyDescriptor* key_descriptor,
-                                  KeyDescriptor::State new_state,
+  Status WriteEntryForExistingKey(EntryMetadata& metadata,
+                                  EntryState new_state,
                                   std::string_view key,
                                   span<const std::byte> value);
 
@@ -371,14 +355,14 @@ class KeyValueStore {
 
   Status WriteEntry(std::string_view key,
                     span<const std::byte> value,
-                    KeyDescriptor::State new_state,
-                    KeyDescriptor* prior_descriptor = nullptr,
+                    EntryState new_state,
+                    EntryMetadata* prior_metadata = nullptr,
                     size_t prior_size = 0);
 
-  KeyDescriptor& UpdateKeyDescriptor(const Entry& new_entry,
-                                     std::string_view key,
-                                     KeyDescriptor* prior_descriptor,
-                                     size_t prior_size);
+  EntryMetadata UpdateKeyDescriptor(const Entry& new_entry,
+                                    std::string_view key,
+                                    EntryMetadata* prior_metadata,
+                                    size_t prior_size);
 
   Status GetSectorForWrite(SectorDescriptor** sector,
                            size_t entry_size,
@@ -388,26 +372,25 @@ class KeyValueStore {
                      std::string_view key,
                      span<const std::byte> value);
 
-  Status RelocateEntry(KeyDescriptor& key_descriptor,
+  Status RelocateEntry(const EntryMetadata& metadata,
                        KeyValueStore::Address& address,
                        span<const Address> addresses_to_skip);
-
-  Status MoveEntry(Address new_address, Entry& entry);
 
   enum FindSectorMode { kAppendEntry, kGarbageCollect };
 
   Status FindSectorWithSpace(SectorDescriptor** found_sector,
                              size_t size,
                              FindSectorMode find_mode,
-                             span<const Address> addresses_to_skip);
+                             span<const Address> addresses_to_skip,
+                             span<const Address> reserved_addresses);
 
   SectorDescriptor* FindSectorToGarbageCollect(
       span<const Address> addresses_to_avoid);
 
   Status GarbageCollectPartial(span<const Address> addresses_to_skip);
 
-  Status RelocateKeyAddressesInSector(internal::SectorDescriptor& sector_to_gc,
-                                      internal::KeyDescriptor& descriptor,
+  Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
+                                      const EntryMetadata& descriptor,
                                       span<const Address> addresses_to_skip);
 
   Status GarbageCollectSector(SectorDescriptor* sector_to_gc,
@@ -428,11 +411,15 @@ class KeyValueStore {
     return SectorIndex(sector) * partition_.sector_size_bytes();
   }
 
-  SectorDescriptor* SectorFromAddress(const FlashPartition::Address address) {
+  SectorDescriptor* SectorFromAddress(Address address) {
     const size_t index = address / partition_.sector_size_bytes();
     // TODO: Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);`
     return &sectors_[index];
+  }
+
+  const SectorDescriptor* SectorFromAddress(Address address) const {
+    return &sectors_[address / partition_.sector_size_bytes()];
   }
 
   Address NextWritableAddress(const SectorDescriptor* sector) const {
@@ -443,7 +430,7 @@ class KeyValueStore {
   internal::Entry CreateEntry(Address address,
                               std::string_view key,
                               span<const std::byte> value,
-                              KeyDescriptor::State state);
+                              EntryState state);
 
   void LogSectors() const;
   void LogKeyDescriptor() const;
@@ -453,13 +440,14 @@ class KeyValueStore {
 
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
-  Vector<KeyDescriptor>& key_descriptors_;
+  internal::EntryCache entry_cache_;
 
   // List of sectors used by this KVS.
   Vector<SectorDescriptor>& sectors_;
 
-  // Level of redundancy to use for writing entries.
-  const size_t redundancy_;
+  // Temp buffer with redundancy() * 2 - 1 entries for use in RelocateEntry.
+  // Used in FindSectorWithSpace and FindSectorToGarbageCollect.
+  const SectorDescriptor** const temp_sectors_to_skip_;
 
   Options options_;
 
@@ -503,11 +491,13 @@ class KeyValueStoreBuffer : public KeyValueStore {
                       span<const EntryFormat, kEntryFormats> formats,
                       const Options& options = {})
       : KeyValueStore(partition,
-                      key_descriptors_,
-                      sectors_,
-                      kRedundancy,
                       formats_,
-                      options) {
+                      options,
+                      kRedundancy,
+                      sectors_,
+                      temp_sectors_to_skip_,
+                      key_descriptors_,
+                      addresses_) {
     std::copy(formats.begin(), formats.end(), formats_.begin());
   }
 
@@ -515,11 +505,28 @@ class KeyValueStoreBuffer : public KeyValueStore {
   static_assert(kMaxEntries > 0u);
   static_assert(kMaxUsableSectors > 0u);
   static_assert(kRedundancy > 0u);
-  static_assert(kRedundancy <= internal::kEntryRedundancy);
   static_assert(kEntryFormats > 0u);
 
-  Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
   Vector<SectorDescriptor, kMaxUsableSectors> sectors_;
+
+  // Allocate space for an list of SectorDescriptors to avoid while searching
+  // for space to write entries. This is used to avoid changing sectors that are
+  // reserved for a new entry or marked as having other redundant copies of an
+  // entry. Up to kRedundancy sectors are reserved for a new entry, and up to
+  // kRedundancy - 1 sectors can have redundant copies of an entry, giving a
+  // maximum of 2 * kRedundancy - 1 sectors to avoid.
+  const SectorDescriptor* temp_sectors_to_skip_[2 * kRedundancy - 1];
+
+  // KeyDescriptors for use by the KVS's EntryCache.
+  Vector<KeyDescriptor, kMaxEntries> key_descriptors_;
+
+  // An array of addresses associated with the KeyDescriptors for use with the
+  // EntryCache. To support having KeyValueStores with different redundancies,
+  // the addresses are stored in a parallel array instead of inside
+  // KeyDescriptors.
+  internal::EntryCache::AddressList<kRedundancy, kMaxEntries> addresses_;
+
+  // EntryFormats that can be read by this KeyValueStore.
   std::array<EntryFormat, kEntryFormats> formats_;
 };
 

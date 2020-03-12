@@ -13,85 +13,19 @@
 // the License.
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
-#include <string_view>
-
-#include "pw_containers/vector.h"
-#include "pw_kvs/flash_memory.h"
-#include "pw_kvs/internal/hash.h"
 
 namespace pw::kvs::internal {
 
-constexpr size_t kEntryRedundancy = 2;
+// Whether an entry is present or deleted.
+enum class EntryState : bool { kValid, kDeleted };
 
-// Caches information about a key-value entry. Facilitates quickly finding
-// entries without having to read flash.
-class KeyDescriptor {
- public:
-  enum State { kValid, kDeleted };
+// Essential metadata for an entry that is stored in memory.
+struct KeyDescriptor {
+  uint32_t key_hash;
+  uint32_t transaction_id;
 
-  uint32_t hash() const { return key_hash_; }
-  uint32_t transaction_id() const { return transaction_id_; }
-
-  // TODO: remove address() once all the use of it is gone.
-  uint32_t address() const { return addresses_[0]; }
-
-  Status UpdateAddress(FlashPartition::Address old_address,
-                       FlashPartition::Address new_address) {
-    for (auto& address : addresses()) {
-      if (address == old_address) {
-        address = new_address;
-        return Status::OK;
-      }
-    }
-
-    // Unable to find the address to update.
-    return Status::INVALID_ARGUMENT;
-  }
-
-  Vector<FlashPartition::Address, kEntryRedundancy>& addresses() {
-    return addresses_;
-  }
-  const Vector<FlashPartition::Address, kEntryRedundancy>& addresses() const {
-    return addresses_;
-  }
-
-  State state() const { return state_; }
-
-  // True if the KeyDesctiptor's transaction ID is newer than the specified ID.
-  bool IsNewerThan(uint32_t other_transaction_id) const {
-    // TODO: Consider handling rollover.
-    return transaction_id() > other_transaction_id;
-  }
-
-  bool deleted() const { return state_ == kDeleted; }
-
- private:
-  friend class Entry;
-
-  KeyDescriptor(uint32_t key_hash,
-                uint32_t version,
-                FlashPartition::Address address,
-                State initial_state)
-      : key_hash_(key_hash), transaction_id_(version), state_(initial_state) {
-    addresses_.assign(1, address);
-  }
-
-  KeyDescriptor(std::string_view key,
-                uint32_t version,
-                FlashPartition::Address address,
-                State initial_state)
-      : KeyDescriptor(Hash(key), version, address, initial_state) {}
-
-  uint32_t key_hash_;
-  uint32_t transaction_id_;
-
-  static_assert(kEntryRedundancy > 0u);
-  Vector<FlashPartition::Address, kEntryRedundancy> addresses_;
-
-  // TODO: This information could be packed into the above fields to save RAM.
-  State state_;
+  EntryState state;  // TODO: Pack into transaction ID? or something?
 };
 
 }  // namespace pw::kvs::internal

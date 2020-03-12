@@ -25,6 +25,7 @@
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
+#include "pw_kvs/internal/hash.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_span/span.h"
 
@@ -87,19 +88,13 @@ class Entry {
   Entry() = default;
 
   KeyDescriptor descriptor(std::string_view key) const {
-    return KeyDescriptor(
-        key,
-        transaction_id(),
-        address(),
-        deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
+    return descriptor(Hash(key));
   }
 
   KeyDescriptor descriptor(uint32_t key_hash) const {
-    return KeyDescriptor(
-        key_hash,
-        transaction_id(),
-        address(),
-        deleted() ? KeyDescriptor::kDeleted : KeyDescriptor::kValid);
+    return KeyDescriptor{key_hash,
+                         transaction_id(),
+                         deleted() ? EntryState::kDeleted : EntryState::kValid};
   }
 
   StatusWithSize Write(std::string_view key, span<const std::byte> value) const;

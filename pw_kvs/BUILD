@@ -28,10 +28,12 @@ pw_cc_library(
         "alignment.cc",
         "checksum.cc",
         "entry.cc",
+        "entry_cache.cc",
         "flash_memory.cc",
         "format.cc",
         "key_value_store.cc",
         "public/pw_kvs/internal/entry.h",
+        "public/pw_kvs/internal/entry_cache.h",
         "public/pw_kvs/internal/hash.h",
         "public/pw_kvs/internal/key_descriptor.h",
         "public/pw_kvs/internal/sector_descriptor.h",
@@ -115,6 +117,12 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
     ],
+)
+
+pw_cc_test(
+    name = "entry_cache_test",
+    srcs = ["entry_cache_test.cc"],
+    deps = [":pw_kvs"],
 )
 
 pw_cc_test(
