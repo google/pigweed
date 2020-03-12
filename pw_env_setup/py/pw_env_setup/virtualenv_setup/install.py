@@ -64,19 +64,6 @@ def _required_packages(requirements):
     return packages
 
 
-def _pw_package_names(setup_py_files):
-    # TODO(pwbug/42) find a more reliable way to get this.
-    del setup_py_files  # Unused for now.
-    return set((
-        'pw-bloat',
-        'pw-cli',
-        'pw-module',
-        'pw-presubmit',
-        'pw-unit-test',
-        'stm32f429i-disc1-utils',
-    ))
-
-
 # TODO(pwbug/135) Move to common utility module.
 def _check_call(args, **kwargs):
     stdout = kwargs.get('stdout', sys.stdout)
