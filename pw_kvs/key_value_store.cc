@@ -656,7 +656,7 @@ Status KeyValueStore::WriteEntry(KeyDescriptor* key_descriptor,
   // - Repeat for redundancy number of total entries.
   for (size_t i = 0; i < redundancy_; i++) {
     SectorDescriptor* sector;
-    TRY(GetSectorForWrite(&sector, entry_size, key_descriptor));
+    TRY(GetSectorForWrite(&sector, entry_size, key_descriptor->addresses()));
 
     DBG("Writing entry %zu; found sector: %u", i, SectorIndex(sector));
     const Address write_address = NextWritableAddress(sector);
@@ -683,9 +683,9 @@ Status KeyValueStore::WriteEntry(KeyDescriptor* key_descriptor,
 // RESOURCE_EXHAUSTED: No sector available with the needed space.
 Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
                                         size_t entry_size,
-                                        KeyDescriptor* key_descriptor) {
-  Status result = FindSectorWithSpace(
-      sector, entry_size, kAppendEntry, key_descriptor->addresses());
+                                        span<const Address> addresses_to_skip) {
+  Status result =
+      FindSectorWithSpace(sector, entry_size, kAppendEntry, addresses_to_skip);
 
   size_t gc_sector_count = 0;
   bool do_auto_gc = options_.gc_on_write != GargbageCollectOnWrite::kDisabled;
@@ -698,7 +698,7 @@ Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
       do_auto_gc = false;
     }
     // Garbage collect and then try again to find the best sector.
-    Status gc_status = GarbageCollectPartial(key_descriptor);
+    Status gc_status = GarbageCollectPartial(addresses_to_skip);
     if (!gc_status.ok()) {
       if (gc_status == Status::NOT_FOUND) {
         // Not enough space, and no reclaimable bytes, this KVS is full!
@@ -708,7 +708,7 @@ Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
     }
 
     result = FindSectorWithSpace(
-        sector, entry_size, kAppendEntry, key_descriptor->addresses());
+        sector, entry_size, kAppendEntry, addresses_to_skip);
 
     gc_sector_count++;
     // Allow total sectors + 2 number of GC cycles so that once reclaimable
@@ -997,23 +997,12 @@ KeyValueStore::SectorDescriptor* KeyValueStore::FindSectorToGarbageCollect(
     }
   }
 
-  // Step 2a: If step 1 yields no sectors, just find the sector with the most
+  // Step 2: If step 1 yields no sectors, just find the sector with the most
   // reclaimable bytes but no addresses to avoid.
   if (sector_candidate == nullptr) {
     for (auto& sector : sectors_) {
       if ((sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) &&
           !Contains(sectors_to_skip, &sector)) {
-        sector_candidate = &sector;
-        candidate_bytes = sector.RecoverableBytes(sector_size_bytes);
-      }
-    }
-  }
-
-  // Step 2b: If step 1 yields no sectors, just find the sector with the most
-  // reclaimable bytes.
-  if (sector_candidate == nullptr) {
-    for (auto& sector : sectors_) {
-      if (sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) {
         sector_candidate = &sector;
         candidate_bytes = sector.RecoverableBytes(sector_size_bytes);
       }
@@ -1066,24 +1055,24 @@ Status KeyValueStore::GarbageCollectFull() {
   return Status::OK;
 }
 
-Status KeyValueStore::GarbageCollectPartial(KeyDescriptor* key_in_progress) {
-  DBG("Garbage Collect a single sector%s",
-      (key_in_progress == nullptr) ? "" : ", with key in progress");
+Status KeyValueStore::GarbageCollectPartial(
+    span<const Address> addresses_to_skip) {
+  DBG("Garbage Collect a single sector");
+  for (auto address : addresses_to_skip) {
+    DBG("   Avoid address %u", unsigned(address));
+  }
 
   // Step 1: Find the sector to garbage collect
-  auto addresses = span<const Address>();
-  if (key_in_progress != nullptr) {
-    DBG("  Use addresses to avoid");
-    addresses = key_in_progress->addresses();
-  }
-  SectorDescriptor* sector_to_gc = FindSectorToGarbageCollect(addresses);
+  SectorDescriptor* sector_to_gc =
+      FindSectorToGarbageCollect(addresses_to_skip);
 
   if (sector_to_gc == nullptr) {
     // Nothing to GC.
     return Status::NOT_FOUND;
   }
 
-  TRY(GarbageCollectSector(sector_to_gc, key_in_progress));
+  // Step 2: Garbage collect the selected sector.
+  TRY(GarbageCollectSector(sector_to_gc, nullptr));
   return Status::OK;
 }
 

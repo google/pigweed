@@ -179,7 +179,9 @@ class KeyValueStore {
 
   // Perform garbage collection of part of the KVS, typically a single sector or
   // similar unit that makes sense for the KVS implementation.
-  Status GarbageCollectPartial() { return GarbageCollectPartial(nullptr); }
+  Status GarbageCollectPartial() {
+    return GarbageCollectPartial(span<const Address>());
+  }
 
   void LogDebugInfo();
 
@@ -374,7 +376,7 @@ class KeyValueStore {
 
   Status GetSectorForWrite(SectorDescriptor** sector,
                            size_t entry_size,
-                           KeyDescriptor* key_descriptor);
+                           span<const Address> addresses_to_skip);
 
   Status AppendEntry(Address write_address,
                      Entry& entry,
@@ -396,7 +398,7 @@ class KeyValueStore {
   SectorDescriptor* FindSectorToGarbageCollect(
       span<const Address> addresses_to_avoid);
 
-  Status GarbageCollectPartial(KeyDescriptor* key_in_progress);
+  Status GarbageCollectPartial(span<const Address> addresses_to_skip);
 
   Status RelocateKeyAddressesInSector(internal::SectorDescriptor* sector_to_gc,
                                       internal::KeyDescriptor* descriptor);
