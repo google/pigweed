@@ -110,6 +110,19 @@ class Domain : public fbl::RefCounted<Domain> {
   virtual void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                             sm::SecurityProperties security) = 0;
 
+  // Send an LE Connection Parameter Update Request requesting |params| on the LE signaling channel
+  // of the LE connection represented by |handle|. This should only be used if the LE follower and
+  // LE leader do not support the Connection Parameters Request Link Layer Control Procedure
+  // (Core Spec v5.2  Vol 3, Part A, Sec 4.20). This should only be called when the local host is an
+  // LE follower.
+  //
+  // |request_cb| will be called on |dispatcher| when a response (indicating acceptance or
+  // rejection) is received.
+  virtual void RequestConnectionParameterUpdate(
+      hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+      l2cap::ConnectionParameterUpdateRequestCallback request_cb,
+      async_dispatcher_t* dispatcher) = 0;
+
   // Open an outbound dynamic channel against a peer's Protocol/Service
   // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
   // parameters |params|. If the peer requires different higher priority parameters, the local

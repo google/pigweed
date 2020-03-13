@@ -151,6 +151,14 @@ class DATA_DomainTest : public TestingBase {
     return cmd_ids;
   }
 
+  void QueueLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role) {
+    acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kLE);
+    domain()->AddLEConnection(
+        handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
+        /*channel_callback=*/[](auto, auto) {}, /*security_callback=*/[](auto, auto, auto) {},
+        dispatcher());
+  }
+
   Domain* domain() const { return domain_.get(); }
 
  private:
@@ -573,6 +581,39 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
   ASSERT_TRUE(chan);
   EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->params->max_rx_sdu_size);
   EXPECT_EQ(*chan_params.mode, chan->params->mode);
+}
+
+TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kSlaveLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+  const hci::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax, kSlaveLatency,
+                                                     kTimeoutMult);
+
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
+
+  std::optional<bool> accepted;
+  auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
+
+  // Receive "Accepted" Response:
+
+  l2cap::CommandId param_update_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
+                                           param_update_req_id, kLinkHandle, kIntervalMin,
+                                           kIntervalMax, kSlaveLatency, kTimeoutMult));
+  domain()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb, dispatcher());
+  RunLoopUntilIdle();
+  EXPECT_FALSE(accepted.has_value());
+
+  test_device()->SendACLDataChannelPacket(l2cap::testing::AclConnectionParameterUpdateRsp(
+      param_update_req_id, kLinkHandle, l2cap::ConnectionParameterUpdateResult::kAccepted));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(accepted.has_value());
+  EXPECT_TRUE(accepted.value());
+  accepted.reset();
 }
 
 }  // namespace

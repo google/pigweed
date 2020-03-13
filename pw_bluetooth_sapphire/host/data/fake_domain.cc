@@ -139,6 +139,12 @@ void FakeDomain::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
   // TODO(armansito): implement
 }
 
+void FakeDomain::RequestConnectionParameterUpdate(
+    hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+    l2cap::ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
+  async::PostTask(dispatcher, std::bind(std::move(request_cb), true));
+}
+
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                   l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                                   async_dispatcher_t* dispatcher) {

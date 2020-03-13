@@ -109,6 +109,17 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
     });
   }
 
+  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
+                                        hci::LEPreferredConnectionParameters params,
+                                        l2cap::ConnectionParameterUpdateRequestCallback request_cb,
+                                        async_dispatcher_t* dispatcher) override {
+    PostMessage([this, handle, params, cb = std::move(request_cb), dispatcher]() mutable {
+      if (l2cap_) {
+        l2cap_->RequestConnectionParameterUpdate(handle, params, std::move(cb), dispatcher);
+      }
+    });
+  }
+
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                         l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override {

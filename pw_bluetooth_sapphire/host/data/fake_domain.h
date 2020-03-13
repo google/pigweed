@@ -67,6 +67,12 @@ class FakeDomain final : public Domain {
   void RemoveConnection(hci::ConnectionHandle handle) override;
   void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
+
+  // Immediately posts accept on |dispatcher|.
+  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
+                                        hci::LEPreferredConnectionParameters params,
+                                        l2cap::ConnectionParameterUpdateRequestCallback request_cb,
+                                        async_dispatcher_t* dispatcher) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                         l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                         async_dispatcher_t* dispatcher) override;
