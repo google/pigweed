@@ -13,25 +13,25 @@ the Protocol Buffer wire format.
 Design
 ======
 Unlike other protobuf libraries, which typically provide in-memory data
-structures to represent protobuf messages, pw_protobuf operates directly on the
-wire format and leaves data storage to the user. This has a few benefits. The
-primary one is that it allows the library to be incredibly small, with the
+structures to represent protobuf messages, ``pw_protobuf`` operates directly on
+the wire format and leaves data storage to the user. This has a few benefits.
+The primary one is that it allows the library to be incredibly small, with the
 encoder and decoder each having a code size of around 1.5K and negligible RAM
 usage. Users can choose the tradeoffs most suitable for their product on top of
 this core implementation.
 
-pw_protobuf also provides zero-overhead C++ code generation which wraps its
+``pw_protobuf`` also provides zero-overhead C++ code generation which wraps its
 low-level wire format operations with a user-friendly API for processing
 specific protobuf messages. The code generation integrates with Pigweed's GN
 build system.
 
 Usage
 =====
-pw_protobuf splits wire format encoding and decoding operations. Links to the
-design and APIs of each are listed in below.
+``pw_protobuf`` splits wire format encoding and decoding operations. Links to
+the design and APIs of each are listed in below.
 
-See also :ref:`chapter-pw-protobuf-compiler` for details on pw_protobuf's build
-system integration.
+See also :ref:`chapter-pw-protobuf-compiler` for details on ``pw_protobuf``'s
+build system integration.
 
 **pw_protobuf functionality**
 
@@ -63,12 +63,12 @@ to the necessity of defining a struct capable of storing all configurations of
 the message, which can grow incredibly large. In one project, Pigweed developers
 encountered an 11K struct statically allocated for a single message---over twice
 the size of the final encoded output! (This was what prompted the development of
-pw_protobuf.)
+``pw_protobuf``.)
 
 To avoid this issue, it is possible to use nanopb's low-level encode/decode
 functions to process individual message fields directly, but this loses all of
-the useful semantics of code generation. pw_protobuf is designed to optimize for
-this use case; it allows for efficient operations on the wire format with an
+the useful semantics of code generation. ``pw_protobuf`` is designed to optimize
+for this use case; it allows for efficient operations on the wire format with an
 intuitive user interface.
 
 Depending on the requirements of a project, either of these libraries could be

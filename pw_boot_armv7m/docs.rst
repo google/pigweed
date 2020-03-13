@@ -52,10 +52,10 @@ regarding which configuration options are required.
 
 Vector Table
 ------------
-Targets using pw_boot_armv7m will need to provide an ARMv7-M interrupt vector
-table (ARMv7-M Architecture Reference Manual DDI 0403E.b section B1.5.2 and
-B1.5.3). This is done by storing an array into the ``.vector_table`` section,
-and properly configuring ``PW_BOOT_VECTOR_TABLE_*`` preprocessor
+Targets using ``pw_boot_armv7m`` will need to provide an ARMv7-M interrupt
+vector table (ARMv7-M Architecture Reference Manual DDI 0403E.b section B1.5.2
+and B1.5.3). This is done by storing an array into the ``.vector_table``
+section, and properly configuring ``PW_BOOT_VECTOR_TABLE_*`` preprocessor
 defines to cover the address region your SoC expects the vector table to be
 located at (often the beginning of the flash region). If using a bootloader,
 ensure VTOR (Vector Table Offset Register) is configured to point to the vector
@@ -113,36 +113,36 @@ Configuration
 These configuration options can be controlled by appending to
 ``pw_boot_armv7m_config.defines`` as part of a Pigweed target config file.
 
-**PW_BOOT_HEAP_SIZE** (required):
+``PW_BOOT_HEAP_SIZE`` (required):
 How much memory (in bytes) to reserve for the heap. This can be zero.
 
-**PW_BOOT_MIN_STACK_SIZE** (required):
+``PW_BOOT_MIN_STACK_SIZE`` (required):
 The minimum size reserved for the main stack. If statically allocated memory
 begins to cut into the minimum, a link error will be emitted.
 
-**PW_BOOT_FLASH_BEGIN** (required):
+``PW_BOOT_FLASH_BEGIN`` (required):
 The start address of the MCU's flash region. This region must NOT include the
 vector table. (i.e. if the VECTOR_TABLE is in flash, the flash region
 should begin *after* the vtable)
 
-**PW_BOOT_FLASH_SIZE** (required):
+``PW_BOOT_FLASH_SIZE`` (required):
 Size of the flash region in bytes.
 
-**PW_BOOT_RAM_BEGIN** (required):
+``PW_BOOT_RAM_BEGIN`` (required):
 The start address of the MCU's RAM region.
 
-**PW_BOOT_RAM_SIZE** (required):
+``PW_BOOT_RAM_SIZE`` (required):
 Size of the RAM region in bytes.
 
-**PW_BOOT_VECTOR_TABLE_BEGIN** (required):
+``PW_BOOT_VECTOR_TABLE_BEGIN`` (required):
 Address the target MCU expects the link-time vector table to be located at. This
 is typically the beginning of the flash region. While the vector table may be
 changed later in the boot process, a minimal vector table MUST be present for
 the MCU to operate as expected.
 
-**PW_BOOT_VECTOR_TABLE_SIZE** (required):
+``PW_BOOT_VECTOR_TABLE_SIZE`` (required):
 Number of bytes to reserve for the ARMv7-M vector table.
 
 Dependencies
 ============
-  * pw_preprocessor module
+  * ``pw_preprocessor`` module

@@ -7,7 +7,7 @@
 -----------
 pw_polyfill
 -----------
-The pw_polyfill module backports C++17 features to C++11 and C++14.
+The ``pw_polyfill`` module backports C++17 features to C++11 and C++14.
 
 Compatibility
 =============
@@ -18,8 +18,8 @@ Features
 
 Adapt code to compile with older versions of C++
 ------------------------------------------------
-The pw_polyfill module provides features for adapting C++17 code to work when
-compiled with older C++ standards.
+The ``pw_polyfill`` module provides features for adapting C++17 code to work
+when compiled with older C++ standards.
 
   - ``pw_polyfill/standard.h`` -- provides a macro for checking the C++ standard
   - ``pw_polyfill/language_features.h`` -- provides macros for adapting code to

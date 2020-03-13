@@ -61,5 +61,5 @@ Sample connection diagram
 
 Dependencies
 ============
-  * pw_sys_io facade
-  * pw_preprocessor module
+  * ``pw_sys_io`` facade
+  * ``pw_preprocessor`` module

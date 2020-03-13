@@ -21,7 +21,7 @@ however, in our experience container solutions are a mixed bag for embedded
 systems development where one frequently needs access to native system
 resources like USB devices, or must operate on Windows.
 
-pw_env_setup is our compromise solution for this problem that works on Mac,
+``pw_env_setup`` is our compromise solution for this problem that works on Mac,
 Windows, and Linux. It leverages the Chrome packaging system `CIPD`_ to
 bootstrap a Python installation, which in turn inflates a virtual
 environment. The tooling is installed into your workspace, and makes no
@@ -31,7 +31,7 @@ project.
 .. _CIPD: https://github.com/luci/luci-go/tree/master/cipd
 
 .. warning::
-  At this time pw_env_setup works for us, but isn’t well tested. We don’t
+  At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
   suggest relying on it just yet. However, we are interested in experience
   reports; if you give it a try, please `send us a note`_ about your
   experience.

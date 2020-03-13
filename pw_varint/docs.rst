@@ -5,7 +5,7 @@
 ---------
 pw_varint
 ---------
-The pw_varint module provides functions for encoding and decoding variable
+The ``pw_varint`` module provides functions for encoding and decoding variable
 length integers, or varints. For smaller values, varints require less memory
 than a fixed-size encoding. For example, a 32-bit (4-byte) integer requires 1--5
 bytes when varint-encoded.
@@ -20,4 +20,4 @@ Compatibility
 
 Dependencies
 ============
-* pw_span
+* ``pw_span``

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -42,4 +44,8 @@ source_set("pw_log_basic_core") {
   ]
   public = [ "public/pw_log_basic/log_basic.h" ]
   sources = public + [ "log_basic.cc" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

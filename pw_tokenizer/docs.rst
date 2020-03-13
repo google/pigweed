@@ -9,14 +9,14 @@ pw_tokenizer
 ------------
 
 Logging is critical, but developers are often forced to choose between
-additional logging or saving crucial flash space. pw_tokenizer helps ameliorate
-this issue by providing facilities to convert strings to integer tokens that can
-be decoded off-device, enabling extensive logging and debugging with
-significantly less memory usage. Printf-style format strings such as ``"My name
-is %s"`` are also supported; pw_tokenizer encodes the arguments into compact
-binary form at runtime. We’ve seen over 50% optimization in log contents and
-substantial savings in flash size, with additional benefits such as minimizing
-communication bandwidth and reducing CPU usage.
+additional logging or saving crucial flash space. ``pw_tokenizer`` helps
+ameliorate this issue by providing facilities to convert strings to integer
+tokens that can be decoded off-device, enabling extensive logging and debugging
+with significantly less memory usage. Printf-style format strings such as ``"My
+name is %s"`` are also supported; ``pw_tokenizer`` encodes the arguments into
+compact binary form at runtime. We’ve seen over 50% optimization in log contents
+and substantial savings in flash size, with additional benefits such as
+minimizing communication bandwidth and reducing CPU usage.
 
 .. note::
   This usage of the term "tokenizer" is not related to parsing! The
@@ -86,8 +86,7 @@ After: With tokenized logging
 +------------------+-------------------------------------------------+---------+
 
 In the above logging example, we achieve a savings of ~90% in binary size  (41 →
-4 bytes)  and 70% in bandwidth (49 → 15 bytes). pw_bloat - Generate "bloat
-reports"
+4 bytes)  and 70% in bandwidth (49 → 15 bytes).
 
 Basic operation
 ===============
@@ -756,6 +755,6 @@ Compatibility
 
 Dependencies
 ============
-  * pw_varint module
-  * pw_preprocessor module
-  * pw_span module
+  * ``pw_varint`` module
+  * ``pw_preprocessor`` module
+  * ``pw_span`` module

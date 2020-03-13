@@ -64,7 +64,7 @@ Members
 
 Presubmit checks
 ----------------
-The pw_presubmit package includes presubmit checks that can be used with any
+The ``pw_presubmit`` package includes presubmit checks that can be used with any
 project. These checks include:
 
 * Check code format of several languages including C, C++, and Python

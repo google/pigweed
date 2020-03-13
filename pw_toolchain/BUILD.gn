@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_docgen/docs.gni")
 import("arm_gcc.gni")
 import("host_clang.gni")
 import("host_gcc.gni")
@@ -182,4 +183,8 @@ generate_toolchains("host_clang_suite") {
       additional_cflags = [ "-Os" ]
     },
   ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }

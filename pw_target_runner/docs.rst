@@ -28,7 +28,7 @@ This library provides the core gRPC server and a mechanism through which worker
 routines can be registered. Code using the library instantiates a server with
 some custom workers for the desired target to run passed executables.
 
-The pw_target_runner module also provides a standalone
+The ``pw_target_runner`` module also provides a standalone
 ``pw_target_runner_server`` program which runs the server with configurable
 workers that launch external processes to execute passed binaries. This
 program should be sufficient to quickly get unit tests running in a simple

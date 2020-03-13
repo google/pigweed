@@ -5,7 +5,7 @@
 -----------
 pw_checksum
 -----------
-The pw_checksum module provides functions for calculating checksums.
+The ``pw_checksum`` module provides functions for calculating checksums.
 
 pw_checksum/ccitt_crc16.h
 =========================
@@ -37,4 +37,4 @@ Compatibility
 
 Dependencies
 ============
-* pw_span
+* ``pw_span``

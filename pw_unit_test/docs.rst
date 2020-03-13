@@ -1,8 +1,7 @@
+.. _chapter-pw-unit-test:
 .. default-domain:: cpp
 
 .. highlight:: sh
-
-.. _chapter-pw-unit-test:
 
 ------------
 pw_unit_test
@@ -125,5 +124,17 @@ section, and use the ``pw_test`` template to register your test code.
   pw_test("foo_test") {
     sources = [ "foo_test.cc" ]
   }
+
+``pw_unit_test`` module provides a few optional libraries to simplify setup:
+
+ - ``simple_printing_event_handler```: When running tests, output test results
+   as plain text over ``pw_sys_io``.
+ - ``simple_printing_main``: Implements a ``main()`` function that simply runs
+   tests using the ``simple_printing_event_handler``.
+ - ``logging_event_handler``: When running tests, log test results as
+   plain text using pw_log (ensure your target has set a ``pw_log`` backend).
+ - ``logging_main``: Implements a ``main()`` function that simply runs tests
+   using the ``logging_event_handler``.
+
 
 .. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md

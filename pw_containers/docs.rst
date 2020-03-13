@@ -5,7 +5,7 @@
 -------------
 pw_containers
 -------------
-The pw_containers module provides embedded-friendly container classes.
+The ``pw_containers`` module provides embedded-friendly container classes.
 
 pw_vector
 =========
@@ -27,4 +27,4 @@ Compatibility
 
 Dependencies
 ============
-* pw_span
+* ``pw_span``

@@ -1,4 +1,5 @@
-This directory contains the `pw` tool that facilitates working with
-Pigweed. Example starting functionality is the ability to watch the Pigweed source for changes and re-run tests.
+This directory contains the `pw`  command line interface (CLI) that facilitates
+working with Pigweed. One example tool exposed by pw_cli is pw_watch, a file
+system watcher that triggers builds on source file changes.
 
 This code is experimental and unfinished.

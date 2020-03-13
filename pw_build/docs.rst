@@ -22,7 +22,7 @@ project with minimal effort.
 Beyond just compiling code, Pigweed’s GN build system can also:
 
 * Generate HTML documentation, via our Sphinx integration (with ``pw_docgen``)
-* Display memory usage report cards (with pw_bloat)
+* Display memory usage report cards (with ``pw_bloat``)
 * Incrementally run unit tests after code changes (with ``pw_target_runner``)
 * And more!
 
@@ -38,7 +38,7 @@ This module's ``build.gn`` file contains a number of C/C++ ``config``
 declarations that are used by upstream Pigweed to set some architecture-agnostic
 compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
 
-pw_build also provides several useful GN templates that are used throughout
+``pw_build`` also provides several useful GN templates that are used throughout
 Pigweed.
 
 Templates

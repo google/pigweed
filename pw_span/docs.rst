@@ -7,7 +7,7 @@
 -------
 pw_span
 -------
-The pw_span module provides an implementation of C++20's
+The ``pw_span`` module provides an implementation of C++20's
 `std::span <https://en.cppreference.com/w/cpp/container/span>`_, which is a
 non-owning view of an array of values. The intent is for ``pw::span``'s
 interface to exactly match ``std::span``.

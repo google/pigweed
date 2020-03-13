@@ -55,8 +55,8 @@ handler will be tied to the backend implementation of the CPU exception module.
 
 Dependencies
 ============
-  * pw_span
-  * pw_preprocessor
+  * ``pw_span``
+  * ``pw_preprocessor``
 
 Backend Expectations
 ====================

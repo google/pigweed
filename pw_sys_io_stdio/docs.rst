@@ -36,4 +36,4 @@ to an application built directly against stdio.
 
 Dependencies
 ============
-  * pw_sys_io facade
+  * ``pw_sys_io`` facade

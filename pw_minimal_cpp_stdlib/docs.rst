@@ -5,11 +5,11 @@
 ---------------------
 pw_minimal_cpp_stdlib
 ---------------------
-The pw_minimal_cpp_stdlib module provides an extremely limited implementation of
-the C++ Standard Library. This module falls far, far short of providing a
-complete C++ Standard Library and should only be used in dire situations where
-you happen to be compiling with C++17 but don't have a C++ Standard Library
-available to you.
+The ``pw_minimal_cpp_stdlib`` module provides an extremely limited
+implementation of the C++ Standard Library. This module falls far, far short of
+providing a complete C++ Standard Library and should only be used in dire
+situations where you happen to be compiling with C++17 but don't have a C++
+Standard Library available to you.
 
 The C++ Standard Library headers (e.g. ``<cstdint>`` and ``<type_traits>``) are
 defined in ``public/``. These files are symlinks to their implementations in

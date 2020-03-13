@@ -13,10 +13,11 @@ but require too much flash and memory for many embedded projects. The C string
 functions are lighter weight, but can be difficult to use correctly. Mishandling
 of null terminators or buffer sizes can result in serious bugs.
 
-The pw_string module provides the flexibility, ease-of-use, and safety of
+The ``pw_string`` module provides the flexibility, ease-of-use, and safety of
 C++-style string manipulation, but with no dynamic memory allocation and a much
-smaller binary size impact. Using pw_string in place of the standard C functions
-eliminates issues related to buffer overflow or missing null terminators.
+smaller binary size impact. Using ``pw_string`` in place of the standard C
+functions eliminates issues related to buffer overflow or missing null
+terminators.
 
 Compatibility
 =============
@@ -24,9 +25,9 @@ C++17
 
 Dependencies
 ============
-* pw_preprocessor
-* pw_status
-* pw_span
+* ``pw_preprocessor``
+* ``pw_status``
+* ``pw_span``
 
 Features
 ========
@@ -48,21 +49,22 @@ using ``Format``.
 
 pw::StringBuilder
 -----------------
-StringBuilder facilitates building formatted strings in a fixed-size buffer.
-It is designed to give the flexibility of std::string and std::ostringstream,
-but with a small footprint. However, applications sensitive to code size should
-use StringBuilder with care.
+StringBuilder facilitates building formatted strings in a fixed-size buffer. It
+is designed to give the flexibility of ``std::string`` and
+``std::ostringstream``, but with a small footprint. However, applications
+sensitive to code size should use StringBuilder with care.
 
 Size report: replacing snprintf with pw::StringBuilder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The fixed code size cost of StringBuilder is significant, though smaller than
-std::snprintf. Using StringBuilder's << and append methods exclusively in
-place of snprintf reduces code size, but snprintf may be difficult to avoid.
+``std::snprintf``. Using StringBuilder's << and append methods exclusively in
+place of ``snprintf`` reduces code size, but ``snprintf`` may be difficult to
+avoid.
 
-The incremental code size cost of StringBuilder is comparable to snprintf if
+The incremental code size cost of StringBuilder is comparable to ``snprintf`` if
 errors are handled. Each argument to StringBuilder's << expands to a function
-call, but one or two StringBuilder appends may have a smaller code size
-impact than a single snprintf call.
+call, but one or two StringBuilder appends may have a smaller code size impact
+than a single ``snprintf`` call.
 
 .. include:: string_builder_size_report.rst
 
