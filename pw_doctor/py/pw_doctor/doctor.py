@@ -95,6 +95,23 @@ def pw_root(ctx: DoctorContext):
 
 
 @register_into(CHECKS)
+def git_hook(ctx: DoctorContext):
+    """Check that presubmit git hook is installed."""
+    if 'PW_DISABLE_PRESUBMIT_HOOK_WARNING' in os.environ:
+        return
+
+    try:
+        root = pathlib.Path(os.environ['PW_ROOT'])
+    except KeyError:
+        return  # This case is handled elsewhere.
+
+    hook = root / '.git' / 'hooks' / 'pre-push'
+    if not os.path.isfile(hook):
+        ctx.warning('Presubmit hook not installed, please run '
+                    "'pw presubmit --install'")
+
+
+@register_into(CHECKS)
 def python_version(ctx: DoctorContext):
     """Check the Python version is correct."""
     actual = sys.version_info
