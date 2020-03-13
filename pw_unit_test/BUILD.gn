@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -58,6 +59,10 @@ source_set("simple_printing_main") {
     "$dir_pw_sys_io",
   ]
   sources = [ "simple_printing_main.cc" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
 }
 
 # Library providing an event handler which logs using pw_log.
