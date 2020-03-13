@@ -19,7 +19,7 @@
 // a template parameter, so this class can be used to without stating its size.
 //
 // This file a modified version of base::span from Chromium:
-//   https://chromium.googlesource.com/chromium/src/+/ef71f9c29f0dc6eddae474879c4ca5232ca93a6c/base/containers/span.h
+//   https://chromium.googlesource.com/chromium/src/+/d93ae920e4309682deb9352a4637cfc2941c1d1f/base/containers/span.h
 //
 // In order to minimize changes from the original, this file does NOT fully
 // adhere to Pigweed's style guide.
@@ -246,9 +246,7 @@ class span : public span_internal::ExtentStorage<Extent> {
   using pointer = T*;
   using reference = T&;
   using iterator = T*;
-  using const_iterator = const T*;
   using reverse_iterator = std::reverse_iterator<iterator>;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
   static constexpr size_t extent = Extent;
 
   // [span.cons], span constructors, copy, assignment, and destructor
@@ -273,19 +271,18 @@ class span : public span_internal::ExtentStorage<Extent> {
                 span_internal::EnableIfSpanCompatibleArray<T (&)[N], T, Extent>>
   constexpr span(T (&array)[N]) noexcept : span(std::data(array), N) {}
 
-  template <
-      size_t N,
-      typename = span_internal::
-          EnableIfSpanCompatibleArray<std::array<value_type, N>&, T, Extent>>
-  constexpr span(std::array<value_type, N>& array) noexcept
+  template <typename U,
+            size_t N,
+            typename = span_internal::
+                EnableIfSpanCompatibleArray<std::array<U, N>&, T, Extent>>
+  constexpr span(std::array<U, N>& array) noexcept
       : span(std::data(array), N) {}
 
-  template <size_t N,
-            typename = span_internal::EnableIfSpanCompatibleArray<
-                const std::array<value_type, N>&,
-                T,
-                Extent>>
-  constexpr span(const std::array<value_type, N>& array) noexcept
+  template <typename U,
+            size_t N,
+            typename = span_internal::
+                EnableIfSpanCompatibleArray<const std::array<U, N>&, T, Extent>>
+  constexpr span(const std::array<U, N>& array) noexcept
       : span(std::data(array), N) {}
 
   // Conversion from a container that has compatible std::data() and integral
@@ -326,16 +323,14 @@ class span : public span_internal::ExtentStorage<Extent> {
   // [span.sub], span subviews
   template <size_t Count>
   constexpr span<T, Count> first() const noexcept {
-    static_assert(Extent == dynamic_extent || Count <= Extent,
-                  "Count must not exceed Extent");
+    static_assert(Count <= Extent, "Count must not exceed Extent");
     _PW_SPAN_ASSERT(Extent != dynamic_extent || Count <= size());
     return {data(), Count};
   }
 
   template <size_t Count>
   constexpr span<T, Count> last() const noexcept {
-    static_assert(Extent == dynamic_extent || Count <= Extent,
-                  "Count must not exceed Extent");
+    static_assert(Count <= Extent, "Count must not exceed Extent");
     _PW_SPAN_ASSERT(Extent != dynamic_extent || Count <= size());
     return {data() + (size() - Count), Count};
   }
@@ -347,10 +342,8 @@ class span : public span_internal::ExtentStorage<Extent> {
                       : (Extent != dynamic_extent ? Extent - Offset
                                                   : dynamic_extent))>
   subspan() const noexcept {
-    static_assert(Extent == dynamic_extent || Offset <= Extent,
-                  "Offset must not exceed Extent");
-    static_assert(Extent == dynamic_extent || Count == dynamic_extent ||
-                      Count <= Extent - Offset,
+    static_assert(Offset <= Extent, "Offset must not exceed Extent");
+    static_assert(Count == dynamic_extent || Count <= Extent - Offset,
                   "Count must not exceed Extent - Offset");
     _PW_SPAN_ASSERT(Extent != dynamic_extent || Offset <= size());
     _PW_SPAN_ASSERT(Extent != dynamic_extent || Count == dynamic_extent ||
@@ -410,21 +403,11 @@ class span : public span_internal::ExtentStorage<Extent> {
   constexpr iterator begin() const noexcept { return data_; }
   constexpr iterator end() const noexcept { return data_ + size(); }
 
-  constexpr const_iterator cbegin() const noexcept { return begin(); }
-  constexpr const_iterator cend() const noexcept { return end(); }
-
   constexpr reverse_iterator rbegin() const noexcept {
     return reverse_iterator(end());
   }
   constexpr reverse_iterator rend() const noexcept {
     return reverse_iterator(begin());
-  }
-
-  constexpr const_reverse_iterator crbegin() const noexcept {
-    return const_reverse_iterator(cend());
-  }
-  constexpr const_reverse_iterator crend() const noexcept {
-    return const_reverse_iterator(cbegin());
   }
 
  private:
@@ -485,50 +468,5 @@ span(const Container&) -> span<internal::ValueType<const Container>>;
 #endif  // __cpp_deduction_guides
 
 }  // namespace pw
-
-// Note: std::tuple_size, std::tuple_element and std::get are specialized for
-// static spans, so that they can be used in C++17's structured bindings.
-namespace std {
-
-// [span.tuple], tuple interface
-#if defined(__clang__)
-// Due to https://llvm.org/PR39871 and https://llvm.org/PR41331 and their
-// respective fixes different versions of libc++ declare std::tuple_size and
-// std::tuple_element either as classes or structs. In order to be able to
-// specialize std::tuple_size and std::tuple_element for custom pw types we
-// thus need to disable -Wmismatched-tags in order to support all build
-// configurations. Note that this is blessed by the standard in
-// https://timsong-cpp.github.io/cppwp/n4140/dcl.type.elab#3.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmismatched-tags"
-#endif
-template <typename T, size_t X>
-struct tuple_size<pw::span<T, X>> : public integral_constant<size_t, X> {};
-
-template <typename T>
-struct tuple_size<pw::span<T, pw::dynamic_extent>>;  // not defined
-
-template <size_t I, typename T, size_t X>
-struct tuple_element<I, pw::span<T, X>> {
-  static_assert(
-      pw::dynamic_extent != X,
-      "std::tuple_element<> not supported for pw::span<T, dynamic_extent>");
-  static_assert(I < X,
-                "Index out of bounds in std::tuple_element<> (pw::span)");
-  using type = T;
-};
-#if defined(__clang__)
-#pragma clang diagnostic pop  // -Wmismatched-tags
-#endif
-
-template <size_t I, typename T, size_t X>
-constexpr T& get(pw::span<T, X> s) noexcept {
-  static_assert(pw::dynamic_extent != X,
-                "std::get<> not supported for pw::span<T, dynamic_extent>");
-  static_assert(I < X, "Index out of bounds in std::get<> (pw::span)");
-  return s[I];
-}
-
-}  // namespace std
 
 #undef _PW_SPAN_ASSERT
