@@ -73,6 +73,16 @@ and then copy it to the `.git\hooks` directory in the Pigweed repository.
 copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
 ```
 
+All Pigweed CLs must adhere to Pigweed's style guide and pass automated builds,
+tests, and style checks to be merged upstream. Much of this checking is done
+using Pigweed's pw_presubmit module. To speed up the review process, consider
+adding `pw presubmit` as a git push hook using the following command:
+
+**Linux/macOS**<br/>
+```bash
+$ pw presubmit --install
+```
+
 ## Congratulations!
 You should now be set up to start using Pigweed. If you are interested in seeing
 some of what Pigweed can do, check out the [developer guide](developer_guide.md).
