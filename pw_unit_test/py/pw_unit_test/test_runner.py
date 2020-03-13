@@ -138,14 +138,20 @@ class TestRunner:
             _LOG.info('%s: [ RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
             try:
-                status = await pw_cli.process.run_async(*command)
-                if status == 0:
+                process = await pw_cli.process.run_async(*command)
+                if process.returncode == 0:
                     test.status = TestResult.SUCCESS
                     test_result = 'PASS'
                 else:
                     test.status = TestResult.FAILURE
                     test_result = 'FAIL'
-                _LOG.info('%s: [%s] %s', test_counter, test_result, test.name)
+
+                    _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[%s]\n%s',
+                             pw_cli.color.colors().bold_white(process.pid),
+                             process.output.decode(errors='ignore').rstrip())
+
+                    _LOG.info('%s: [%s] %s', test_counter, test_result,
+                              test.name)
             except subprocess.CalledProcessError as err:
                 _LOG.error(err)
                 return

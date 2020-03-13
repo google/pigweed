@@ -95,7 +95,7 @@ def launch_server(server_config: Optional[IO[bytes]],
     if server_port is not None:
         cmd.extend(['-port', str(server_port)])
 
-    return pw_cli.process.run(*cmd)
+    return pw_cli.process.run(*cmd, log_output=True).returncode
 
 
 def main():

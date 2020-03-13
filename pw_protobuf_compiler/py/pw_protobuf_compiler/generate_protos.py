@@ -87,7 +87,7 @@ def main() -> int:
         args.module_path,
         *lang_args,
         *args.protos,
-    )
+    ).returncode
 
 
 if __name__ == '__main__':
