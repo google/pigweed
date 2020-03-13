@@ -95,7 +95,7 @@ def install(
         print('=' * 60, file=sys.stderr)
         print('Unexpected Python version:', version, file=sys.stderr)
         print('=' * 60, file=sys.stderr)
-        return
+        return False
 
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
@@ -154,3 +154,5 @@ def install(
         env.set('VIRTUAL_ENV', venv_path)
         env.prepend('PATH', venv_bin)
         env.clear('PYTHONHOME')
+
+    return True

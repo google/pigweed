@@ -79,10 +79,14 @@ class _Result:
     class Status:  # pylint: disable=too-few-public-methods
         DONE = 'done'
         SKIPPED = 'skipped'
+        FAILED = 'failed'
 
     def __init__(self, status, *messages):
         self._status = status
         self._messages = list(messages)
+
+    def ok(self):
+        return self._status in {_Result.Status.DONE, _Result.Status.SKIPPED}
 
     def status_str(self):
         return self._status
@@ -172,6 +176,9 @@ class EnvSetup(object):
             for message in result.messages():
                 self._env.echo(message)
 
+            if not result.ok():
+                return -1
+
             self._log('done')
 
         self._log('')
@@ -182,6 +189,8 @@ class EnvSetup(object):
             self._env.write(outs)
             self.write_sanity_check(outs)
 
+        return 0
+
     def cipd(self):
         install_dir = os.path.join(self._pw_root, '.cipd')
 
@@ -189,13 +198,14 @@ class EnvSetup(object):
 
         package_files = glob.glob(
             os.path.join(self._setup_root, 'cipd_setup', '*.json'))
-        cipd_update.update(
-            cipd=cipd_client,
-            root_install_dir=install_dir,
-            package_files=package_files,
-            cache_dir=self._cipd_cache_dir,
-            env_vars=self._env,
-        )
+        if not cipd_update.update(
+                cipd=cipd_client,
+                root_install_dir=install_dir,
+                package_files=package_files,
+                cache_dir=self._cipd_cache_dir,
+                env_vars=self._env,
+        ):
+            return _Result(_Result.Status.FAILED)
 
         return _Result(_Result.Status.DONE)
 
@@ -228,12 +238,13 @@ class EnvSetup(object):
 
         python = os.path.join(cipd_bin, py_executable)
 
-        virtualenv_setup.install(
-            venv_path=venv_path,
-            requirements=[requirements],
-            python=python,
-            env=self._env,
-        )
+        if not virtualenv_setup.install(
+                venv_path=venv_path,
+                requirements=[requirements],
+                python=python,
+                env=self._env,
+        ):
+            return _Result(_Result.Status.FAILED)
 
         return _Result(_Result.Status.DONE)
 
@@ -253,7 +264,9 @@ class EnvSetup(object):
                 '          to enable Rust.',
             )
 
-        cargo_setup.install(pw_root=self._pw_root, env=self._env)
+        if not cargo_setup.install(pw_root=self._pw_root, env=self._env):
+            return _Result(_Result.Status.FAILED)
+
         return _Result(_Result.Status.DONE)
 
     def write_preamble(self, fd):

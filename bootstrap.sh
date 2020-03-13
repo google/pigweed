@@ -109,13 +109,18 @@ else
   fi
 fi
 
-. $SETUP_SH
+if [ -f $SETUP_SH ]; then
+  . $SETUP_SH
 
-if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
-  echo
-  echo "To activate this environment in the future, run this in your terminal:"
-  echo
-  _pw_green "  . activate.sh\n"
+  if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
+    echo
+    echo "To activate this environment in the future, run this in your "
+    echo "terminal:"
+    echo
+    _pw_green "  . activate.sh\n"
+  fi
+else
+  _pw_red "Error during bootstrap--see messages above."
 fi
 
 unset _PW_IS_BOOTSTRAP

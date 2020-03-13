@@ -60,20 +60,35 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
-def check_auth(cipd):
-    """Check logged into CIPD."""
+def check_auth(cipd, paths=('pigweed', )):
+    """Check have access to CIPD pigweed directory."""
+
     try:
         subprocess.check_output([cipd, 'auth-info'], stderr=subprocess.STDOUT)
-        return True
-
+        logged_in = True
     except subprocess.CalledProcessError:
-        print('=' * 60, file=sys.stderr)
-        print('ERROR: not logged into CIPD--please run this command:',
-              file=sys.stderr)
-        print(cipd, 'auth-login', file=sys.stderr)
-        print('=' * 60, file=sys.stderr)
+        logged_in = False
 
-        return False
+    for path in paths:
+        # Not catching CalledProcessError because 'cipd ls' seems to never
+        # return an error code.
+        output = subprocess.check_output([cipd, 'ls', path],
+                                         stderr=subprocess.STDOUT).decode()
+        if 'No matching packages' in output:
+            print()
+            print('=' * 60, file=sys.stderr)
+            if logged_in:
+                print('ERROR: no access to CIPD path "{}":'.format(path),
+                      file=sys.stderr)
+            else:
+                print('ERROR: no access to CIPD path "{}", try logging in '
+                      'with this command:'.format(path),
+                      file=sys.stderr)
+                print(cipd, 'auth-login', file=sys.stderr)
+            print('=' * 60, file=sys.stderr)
+            return False
+
+    return True
 
 
 def write_ensure_file(package_file, ensure_file):
@@ -104,7 +119,7 @@ def update(
     """Grab the tools listed in ensure_files."""
 
     if not check_auth(cipd):
-        return
+        return False
 
     # TODO(mohrr) use os.makedirs(..., exist_ok=True).
     if not os.path.isdir(root_install_dir):
@@ -170,6 +185,8 @@ def update(
             if os.name == 'nt':
                 env_vars.prepend('PATH',
                                  os.path.join(install_dir, 'mingw64', 'bin'))
+
+    return True
 
 
 if __name__ == '__main__':

@@ -51,3 +51,5 @@ def install(pw_root, env):
             ]  # yapf: disable
 
             subprocess.check_call(cmd)
+
+    return True
