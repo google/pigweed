@@ -14,6 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/flash_partition_with_stats.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/key_value_store.h"
 
@@ -22,12 +23,19 @@ namespace {
 
 using std::byte;
 
+#ifndef PW_KVS_FUZZ_ITERATIONS
+#define PW_KVS_FUZZ_ITERATIONS 2
+#endif  // PW_KVS_FUZZ_ITERATIONS
+constexpr int kFuzzIterations = PW_KVS_FUZZ_ITERATIONS;
+
 constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
 // 4 x 4k sectors, 16 byte alignment
 FakeFlashBuffer<4 * 1024, 6> test_flash(16);
-FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
+
+FlashPartitionWithStatsBuffer<kMaxEntries> test_partition(
+    &test_flash, 0, test_flash.sector_count());
 
 ChecksumCrc16 checksum;
 
@@ -48,7 +56,9 @@ TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
       "34567890123";  // 64 (with final \0);
   static_assert(sizeof(value) == 64);
 
-  for (int i = 0; i < 2; ++i) {
+  test_partition.ResetCounters();
+
+  for (int i = 0; i < kFuzzIterations; ++i) {
     for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
       for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
         ASSERT_EQ(Status::OK,
@@ -57,6 +67,8 @@ TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
       }
     }
   }
+
+  test_partition.SaveStorageStats(kvs_, "fuzz Put_VaryingKeysAndValues");
 }
 
 }  // namespace

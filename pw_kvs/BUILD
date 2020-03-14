@@ -88,6 +88,23 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_partition",
+    srcs = [
+        "flash_partition_with_stats.cc",
+    ],
+    hdrs = [
+        "public/pw_kvs/flash_partition_with_stats.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_kvs",
+        "//pw_log",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "alignment_test",
     srcs = [
@@ -159,6 +176,7 @@ pw_cc_test(
     deps = [
         ":crc16",
         ":pw_kvs",
+        ":test_partition",
         ":test_utils",
         "//pw_checksum",
     ],
@@ -170,6 +188,7 @@ pw_cc_test(
     deps = [
         ":crc16",
         ":pw_kvs",
+        ":test_partition",
         ":test_utils",
         "//pw_checksum",
     ],

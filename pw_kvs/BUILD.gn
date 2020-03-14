@@ -89,6 +89,18 @@ source_set("test_utils") {
   ]
 }
 
+source_set("test_partition") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_kvs/flash_partition_with_stats.h" ]
+  sources = [ "flash_partition_with_stats.cc" ] + public
+  visibility = [ ":*" ]
+  public_deps = [
+    dir_pw_kvs,
+    dir_pw_log,
+    dir_pw_status,
+  ]
+}
+
 executable("debug_cli") {
   sources = [ "debug_cli.cc" ]
   deps = [
@@ -168,6 +180,7 @@ pw_test("key_value_store_fuzz_test") {
   deps = [
     ":crc16",
     ":pw_kvs",
+    ":test_partition",
     ":test_utils",
   ]
   sources = [ "key_value_store_fuzz_test.cc" ]
@@ -177,6 +190,7 @@ pw_test("key_value_store_map_test") {
   deps = [
     ":crc16",
     ":pw_kvs",
+    ":test_partition",
     ":test_utils",
     dir_pw_checksum,
   ]

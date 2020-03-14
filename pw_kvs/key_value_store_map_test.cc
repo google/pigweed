@@ -28,6 +28,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/flash_partition_with_stats.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
@@ -111,6 +112,8 @@ class KvsTester {
       return value;
     };
 
+    partition_.ResetCounters();
+
     for (int i = 0; i < iterations; ++i) {
       if (options != kNone && random_int() % 10 == 0) {
         Init();
@@ -147,6 +150,21 @@ class KvsTester {
       } else if (options == kReinitWithPartialGC && random_int() % 40 == 0) {
         GCPartial();
       }
+    }
+
+    // Only save for tests that have enough data to be interesting.
+    if (partition_.sector_count() > 2 && partition_.total_erase_count() > 20) {
+      pw::StringBuffer<64> label;
+      label << "Random";
+      label << partition_.sector_count();
+      label << "Sector";
+      label << iterations;
+      label << ((options != kNone) ? "Reinit" : "");
+      label << ((options == kReinitWithFullGC) ? "FullGC" : "");
+      label << ((options == kReinitWithPartialGC) ? "PartialGC" : "");
+      label << ((kvs_.redundancy() > 1) ? "Redundant" : "");
+
+      partition_.SaveStorageStats(kvs_, label.data());
     }
   }
 
@@ -374,7 +392,8 @@ class KvsTester {
   static FakeFlashBuffer<kParams.sector_size,
                          (kParams.sector_count * kParams.redundancy)>
       flash_;
-  FlashPartition partition_;
+
+  FlashPartitionWithStatsBuffer<kMaxEntries> partition_;
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, kParams.redundancy> kvs_;
   std::unordered_map<std::string, std::string> map_;
