@@ -99,5 +99,11 @@
     "tags": [
       "git_revision:108fb36e5538b3749016ec19ef1268fc43681e33"
     ]
+  },
+  {
+    "path": "fuchsia/third_party/qemu/${os=linux,mac}-${arch=amd64}",
+    "tags": [
+      "git_revision:f3497771a70ba80987c80490aa688794ed971820"
+    ]
   }
 ]
