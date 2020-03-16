@@ -43,7 +43,6 @@ run the bootstrap that initializes the Pigweed virtual environment.
 ```bash
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
-$ pw_env_setup/py/pw_env_setup/cipd_setup/wrapper.py auth-login
 $ . bootstrap.sh
 ```
 
@@ -52,7 +51,6 @@ $ . bootstrap.sh
 :: Run git commands from the shell you set up to use with Git during install.
 > cd %HOMEPATH%\pigweed
 > git clone sso://pigweed.googlesource.com/pigweed/pigweed
-> python pw_env_setup\py\pw_env_setup\cipd_setup\wrapper.py auth-login
 > bootstrap.bat
 ```
 
