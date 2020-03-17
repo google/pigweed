@@ -45,7 +45,7 @@ run the bootstrap that initializes the Pigweed virtual environment.
 ```bash
 $ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
-$ . bootstrap.sh
+$ . ./bootstrap.sh
 ```
 
 **Windows**
@@ -99,7 +99,7 @@ environment in a new session with the following command:
 
 **Linux/macOS**
 ```bash
-$ . activate.sh
+$ . ./activate.sh
 ```
 
 **Windows**

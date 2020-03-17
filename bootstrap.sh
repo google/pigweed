@@ -117,7 +117,7 @@ if [ -f $SETUP_SH ]; then
     echo "To activate this environment in the future, run this in your "
     echo "terminal:"
     echo
-    _pw_green "  . activate.sh\n"
+    _pw_green "  . ./activate.sh\n"
   fi
 else
   _pw_red "Error during bootstrap--see messages above."
