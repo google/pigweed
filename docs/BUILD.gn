@@ -16,6 +16,7 @@ import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("core_docs") {
   inputs = [
+    "images/pw_env_setup_demo.gif",
     "images/pw_presubmit_demo.gif",
     "images/pw_status_test.png",
     "images/pw_watch_build_demo.gif",
@@ -24,9 +25,8 @@ pw_doc_group("core_docs") {
     "images/stm32f429i-disc1_connected.jpg",
   ]
   sources = [
-    "developer_guide.md",
     "embedded_cpp_guide.rst",
-    "setup.md",
+    "getting_started.md",
     "style_guide.rst",
   ]
 }

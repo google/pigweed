@@ -16,9 +16,7 @@ that we expect everyone who interacts with the project to respect.
 # Getting Started
 
 If you'd like to get set up with Pigweed, please visit the
-[setup guide](docs/setup.md), and then check out the
-[Pigweed developer's guide](docs/developer_guide.md) for more information on how
-to get the most out of Pigweed.
+[getting started guide](docs/getting_started.md).
 
 # What does Pigweed offer?
 
@@ -85,6 +83,7 @@ Python installation, which in turn inflates a virtual environment. The tooling
 is installed into your workspace, and makes no changes to your system. This
 tooling is designed to be reused by any project.
 
+![pw environment setup demo](docs/images/pw_env_setup_demo.gif)
 
 ## pw_unit_test
 
