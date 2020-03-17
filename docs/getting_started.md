@@ -51,8 +51,8 @@ $ . ./bootstrap.sh
 **Windows**
 ```batch
 :: Run git commands from the shell you set up to use with Git during install.
+> git clone sso://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
 > cd %HOMEPATH%\pigweed
-> git clone sso://pigweed.googlesource.com/pigweed/pigweed
 > bootstrap.bat
 ```
 
