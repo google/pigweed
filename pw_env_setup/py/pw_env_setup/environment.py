@@ -43,10 +43,15 @@ class UnexpectedAction(ValueError):
 
 
 class _Action(object):  # pylint: disable=useless-object-inheritance
+    def unapply(self, env, orig_env):  # pylint: disable=no-self-use
+        del env, orig_env  # Only used in _VariableAction and subclasses.
+
+
+class _VariableAction(_Action):
     # pylint: disable=redefined-builtin,too-few-public-methods
     # pylint: disable=keyword-arg-before-vararg
     def __init__(self, name, value, allow_empty_values=False, *args, **kwargs):
-        super(_Action, self).__init__(*args, **kwargs)
+        super(_VariableAction, self).__init__(*args, **kwargs)
         self.name = name
         self.value = value
         self.allow_empty_values = allow_empty_values
@@ -82,8 +87,14 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
         if not re.match(r'^[A-Z_][A-Z0-9_]*$', self.name, re.IGNORECASE):
             raise BadVariableName('bad variable name {!r}'.format(self.name))
 
+    def unapply(self, env, orig_env):
+        if self.name in orig_env:
+            env[self.name] = orig_env[self.name]
+        else:
+            env.pop(self.name, None)
 
-class _Set(_Action):
+
+class _Set(_VariableAction):
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
             outs.write('set {name}={value}\n'.format(**vars(self)))
@@ -95,9 +106,10 @@ class _Set(_Action):
         env[self.name] = self.value
 
 
-class _Clear(_Action):
+class _Clear(_VariableAction):
     def __init__(self, *args, **kwargs):
-        kwargs['value'] = 'unused non-empty string to make _check() simpler'
+        kwargs['value'] = ''
+        kwargs['allow_empty_values'] = True
         super(_Clear, self).__init__(*args, **kwargs)
 
     def write(self, outs, windows=(os.name == 'nt')):
@@ -111,7 +123,7 @@ class _Clear(_Action):
             del env[self.name]
 
 
-class _Remove(_Action):
+class _Remove(_VariableAction):
     def __init__(self, name, value, pathsep, *args, **kwargs):
         super(_Remove, self).__init__(name, value, *args, **kwargs)
         self._pathsep = pathsep
@@ -155,7 +167,7 @@ def _append_prepend_check(action):
         raise BadVariableValue('"{}" contains "="'.format(action.value))
 
 
-class _Prepend(_Action):
+class _Prepend(_VariableAction):
     def __init__(self, name, value, join, *args, **kwargs):
         super(_Prepend, self).__init__(name, value, *args, **kwargs)
         self._join = join
@@ -177,7 +189,7 @@ class _Prepend(_Action):
         _append_prepend_check(self)
 
 
-class _Append(_Action):
+class _Append(_VariableAction):
     def __init__(self, name, value, join, *args, **kwargs):
         super(_Append, self).__init__(name, value, *args, **kwargs)
         self._join = join
@@ -205,17 +217,12 @@ class BadEchoValue(ValueError):
 
 class _Echo(_Action):
     def __init__(self, value, newline, *args, **kwargs):
-        self._newline = newline
-
-        name = 'unused_non_empty_string_to_make_check_simpler'
         # These values act funny on Windows.
         if value.lower() in ('off', 'on'):
             raise BadEchoValue(value)
-        super(_Echo, self).__init__(name,
-                                    value,
-                                    allow_empty_values=True,
-                                    *args,
-                                    **kwargs)
+        super(_Echo, self).__init__(*args, **kwargs)
+        self.value = value
+        self._newline = newline
 
     def write(self, outs, windows=(os.name == 'nt')):
         # POSIX shells parse arguments and pass to echo, but Windows seems to
@@ -238,21 +245,28 @@ class _Echo(_Action):
         del env  # Unused.
 
 
-class _BlankLine(_Action):
-    def __init__(self, *args, **kwargs):
-        kwargs['name'] = 'unused_non_empty_string_to_make_check_simpler'
-        kwargs['value'] = 'foo'
-        super(_BlankLine, self).__init__(*args, **kwargs)
+class _Comment(_Action):
+    def __init__(self, value, *args, **kwargs):
+        super(_Comment, self).__init__(*args, **kwargs)
+        self.value = value
 
-    # pylint: disable=no-self-use
     def write(self, outs, windows=(os.name == 'nt')):
+        comment_char = '::' if windows else '#'
+        for line in self.value.splitlines():
+            outs.write('{} {}\n'.format(comment_char, line))
+
+    def apply(self, env):  # pylint: disable=no-self-use
+        del env  # Unused.
+
+
+class _BlankLine(_Action):
+    def write(  # pylint: disable=no-self-use
+        self, outs, windows=(os.name == 'nt')):
         del windows  # Unused.
         outs.write('\n')
 
-    def apply(self, env):
+    def apply(self, env):  # pylint: disable=no-self-use
         del env  # Unused.
-
-    # pylint: enable=no-self-use
 
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
@@ -338,6 +352,10 @@ class Environment(object):
         self._actions.append(_Echo(value, newline))
         self._blankline()
 
+    def comment(self, comment):
+        self._actions.append(_Comment(comment))
+        self._blankline()
+
     def _blankline(self):
         self._actions.append(_BlankLine())
 
@@ -391,10 +409,7 @@ class Environment(object):
         finally:
             if export:
                 for action in self._actions:
-                    if action.name in orig_env:
-                        os.environ[action.name] = orig_env[action.name]
-                    else:
-                        os.environ.pop(action.name, None)
+                    action.unapply(env=os.environ, orig_env=orig_env)
 
     def get(self, key, default=None):
         """Get the value of a variable within context of this object."""
