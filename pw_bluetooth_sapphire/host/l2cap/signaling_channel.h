@@ -224,7 +224,11 @@ class SignalingChannel : public SignalingChannelInterface {
   uint8_t next_cmd_id_;
 
   // Stores response handlers for requests that have been sent.
-  std::unordered_map<CommandId, std::pair<CommandCode, ResponseHandler>> pending_commands_;
+  struct PendingCommand {
+    CommandCode expected_code;
+    ResponseHandler response_handler;
+  };
+  std::unordered_map<CommandId, PendingCommand> pending_commands_;
 
   // Stores handlers for incoming request packets.
   std::unordered_map<CommandCode, RequestDelegate> inbound_handlers_;

@@ -83,7 +83,7 @@ CommandId SignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseH
     }
   }
 
-  pending_commands_[id] = std::make_pair(expected_code, std::move(cb));
+  pending_commands_[id] = PendingCommand{expected_code, std::move(cb)};
   return id;
 }
 
@@ -146,7 +146,8 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   }
 
   Status status;
-  if (packet.header().code == iter->second.first) {
+  auto& [_, pending_command] = *iter;
+  if (packet.header().code == pending_command.expected_code) {
     status = Status::kSuccess;
   } else if (packet.header().code == kCommandRejectCode) {
     status = Status::kReject;
@@ -157,8 +158,7 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
     return;
   }
 
-  ResponseHandler& handler = iter->second.second;
-  if (handler(status, packet.payload_data()) ==
+  if (pending_command.response_handler(status, packet.payload_data()) ==
       ResponseHandlerAction::kCompleteOutboundTransaction) {
     pending_commands_.erase(iter);
   }
