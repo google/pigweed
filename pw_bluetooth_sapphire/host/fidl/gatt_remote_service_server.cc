@@ -11,6 +11,7 @@ using fuchsia::bluetooth::Status;
 using fuchsia::bluetooth::gatt::Characteristic;
 using fuchsia::bluetooth::gatt::CharacteristicPtr;
 using fuchsia::bluetooth::gatt::Descriptor;
+using fuchsia::bluetooth::gatt::WriteOptions;
 
 using bt::ByteBuffer;
 using bt::MutableBufferView;
@@ -132,6 +133,7 @@ void GattRemoteServiceServer::WriteCharacteristic(uint64_t id, ::std::vector<uin
 
 void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offset,
                                                       ::std::vector<uint8_t> value,
+                                                      WriteOptions write_options,
                                                       WriteLongCharacteristicCallback callback) {
   auto cb = [callback = std::move(callback)](bt::att::Status status) {
     callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
