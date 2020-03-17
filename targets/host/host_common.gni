@@ -15,7 +15,7 @@
 import("$dir_pigweed/pw_vars_default.gni")
 
 declare_args() {
-  pw_build_host_tools = true
+  pw_build_host_tools = false
 }
 
 # Use logging-based test output on host.
