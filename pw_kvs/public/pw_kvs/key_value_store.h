@@ -60,8 +60,7 @@ struct Options {
   // garbage collection is attempted if space for an entry cannot be found. This
   // is a relatively lengthy operation. If kDisabled, Put calls that would
   // require garbage collection fail with RESOURCE_EXHAUSTED.
-  GargbageCollectOnWrite gc_on_write =
-      GargbageCollectOnWrite::kAsManySectorsNeeded;
+  GargbageCollectOnWrite gc_on_write = GargbageCollectOnWrite::kOneSector;
 
   // When the KVS handles errors that are discovered, such as corrupt entries,
   // not enough redundant copys of an entry, etc.
