@@ -252,9 +252,16 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
     return;
   }
 
+  auto on_conn_rsp =
+      [self = weak_ptr_factory_.GetWeakPtr()](const BrEdrCommandHandler::ConnectionResponse& rsp) {
+        if (self) {
+          return self->OnRxConnRsp(rsp);
+        }
+        return BrEdrCommandHandler::ResponseHandlerAction::kCompleteOutboundTransaction;
+      };
+
   BrEdrCommandHandler cmd_handler(signaling_channel_);
-  if (!cmd_handler.SendConnectionRequest(
-          psm(), local_cid(), fit::bind_member(this, &BrEdrDynamicChannel::OnRxConnRsp))) {
+  if (!cmd_handler.SendConnectionRequest(psm(), local_cid(), std::move(on_conn_rsp))) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Connection Request", local_cid());
     PassOpenError();
     return;

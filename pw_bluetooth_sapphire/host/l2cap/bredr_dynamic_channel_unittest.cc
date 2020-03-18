@@ -746,6 +746,28 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
+  auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view());
+
+  // Build channel and operate it directly to be able to delete it.
+  auto channel =
+      BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId, kChannelParams, false);
+  ASSERT_TRUE(channel);
+
+  int open_result_cb_count = 0;
+  channel->Open([&open_result_cb_count] { open_result_cb_count++; });
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  channel = nullptr;
+  RETURN_IF_FATAL(sig()->ReceiveResponses(
+      conn_id, {{SignalingChannel::Status::kSuccess, kOutboundEmptyPendingConfigRsp.view()}}));
+
+  EXPECT_EQ(0, open_result_cb_count);
+
+  // No disconnection transaction expected because the channel isn't actually owned by the registry.
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, FailConnectChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kRejectConnRsp.view()});
