@@ -41,6 +41,7 @@ pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
     "../CODE_OF_CONDUCT.md",
+    "../CONTRIBUTING.md",
     "../README.md",
     "index.rst",
     "modules.rst",

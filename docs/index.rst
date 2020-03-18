@@ -10,6 +10,7 @@
 
   Home <self>
   CODE_OF_CONDUCT.md
+  CONTRIBUTING.md
   docs/getting_started.md
   docs/embedded_cpp_guide
   docs/style_guide
