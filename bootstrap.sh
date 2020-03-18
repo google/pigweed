@@ -85,6 +85,8 @@ fi
 _PW_IS_BOOTSTRAP=$?
 
 if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
+  _PW_NAME="bootstrap"
+
   if [ -z "$PW_ENVSETUP_QUIET" ]; then
     _pw_green "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
   fi
@@ -104,6 +106,8 @@ if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
 
   $PYTHON $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py --shell-file $SETUP_SH
 else
+  _PW_NAME="activate"
+
   if [ -z "$PW_ENVSETUP_QUIET" ]; then
     _pw_green "  ACTIVATOR! This sets your shell environment variables.\n"
   fi
@@ -112,18 +116,22 @@ fi
 if [ -f $SETUP_SH ]; then
   . $SETUP_SH
 
-  if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
-    echo
-    echo "To activate this environment in the future, run this in your "
-    echo "terminal:"
-    echo
-    _pw_green "  . ./activate.sh\n"
+  if [ $? == 0 ]; then
+    if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
+      echo "To activate this environment in the future, run this in your "
+      echo "terminal:"
+      echo
+      _pw_green "  . ./activate.sh\n"
+    fi
+  else
+    _pw_red "Error during $_PW_NAME--see messages above."
   fi
 else
-  _pw_red "Error during bootstrap--see messages above."
+  _pw_red "Error during $_PW_NAME--see messages above."
 fi
 
 unset _PW_IS_BOOTSTRAP
+unset _PW_NAME
 unset _PIGWEED_BANNER
 unset _pw_abspath
 unset _pw_red

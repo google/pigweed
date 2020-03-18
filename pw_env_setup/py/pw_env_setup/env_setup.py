@@ -197,9 +197,23 @@ Then use `set +x` to go back to normal.
         self._log('')
         self._env.echo('')
 
+        self._env.hash()
+
+        self._env.echo(Color.bold('Sanity checking the environment:'))
+        self._env.echo()
+
+        log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
+        doctor = ['pw', '--no-banner', '--loglevel', log_level, 'doctor']
+
+        self._env.command(doctor)
+        self._env.echo()
+
+        self._env.echo(
+            Color.bold('Environment looks good, you are ready to go!'))
+        self._env.echo()
+
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
-            self.write_sanity_check(outs)
 
         return 0
 
@@ -280,42 +294,6 @@ Then use `set +x` to go back to normal.
             return _Result(_Result.Status.FAILED)
 
         return _Result(_Result.Status.DONE)
-
-    def write_sanity_check(self, fd):
-        """Call pw doctor after setting environment variables."""
-
-        echo_empty = 'echo.' if self._is_windows else 'echo'
-
-        if not self._quiet:
-            # Not quoting args to echo because Windows will treat them as if
-            # they're already quoted and Linux will just space-separate them.
-            fd.write('echo {}\n'.format(
-                Color.bold('Sanity checking the environment:')))
-            fd.write('{}\n'.format(echo_empty))
-
-        log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
-        doctor = ' '.join(
-            ['pw', '--no-banner', '--loglevel', log_level, 'doctor'])
-
-        if self._is_windows:
-            fd.write('{}\n'.format(doctor))
-            fd.write('if %ERRORLEVEL% EQU 0 (\n')
-        else:
-            fd.write('if {}; then\n'.format(doctor))
-
-        if not self._quiet:
-            fd.write('  {}\n'.format(echo_empty))
-            # Again, not quoting args to echo.
-            fd.write('  echo {}\n'.format(
-                Color.bold('Environment looks good, you are ready to go!')))
-
-        if self._is_windows:
-            fd.write(')\n')
-        else:
-            # If PW_ENVSETUP_QUIET is set, there might not be anything inside
-            # the if which is an error. Always echo nothing at the end.
-            fd.write('  echo -n\n')
-            fd.write('fi\n')
 
 
 def parse(argv=None):

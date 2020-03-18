@@ -94,7 +94,8 @@ class _VariableAction(_Action):
             env.pop(self.name, None)
 
 
-class _Set(_VariableAction):
+class Set(_VariableAction):
+    """Set a variable."""
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
             outs.write('set {name}={value}\n'.format(**vars(self)))
@@ -106,11 +107,12 @@ class _Set(_VariableAction):
         env[self.name] = self.value
 
 
-class _Clear(_VariableAction):
+class Clear(_VariableAction):
+    """Remove a variable from the environment."""
     def __init__(self, *args, **kwargs):
         kwargs['value'] = ''
         kwargs['allow_empty_values'] = True
-        super(_Clear, self).__init__(*args, **kwargs)
+        super(Clear, self).__init__(*args, **kwargs)
 
     def write(self, outs, windows=(os.name == 'nt')):
         if windows:
@@ -123,9 +125,10 @@ class _Clear(_VariableAction):
             del env[self.name]
 
 
-class _Remove(_VariableAction):
+class Remove(_VariableAction):
+    """Remove a value from a PATH-like variable."""
     def __init__(self, name, value, pathsep, *args, **kwargs):
-        super(_Remove, self).__init__(name, value, *args, **kwargs)
+        super(Remove, self).__init__(name, value, *args, **kwargs)
         self._pathsep = pathsep
 
     def write(self, outs, windows=(os.name == 'nt')):
@@ -167,9 +170,10 @@ def _append_prepend_check(action):
         raise BadVariableValue('"{}" contains "="'.format(action.value))
 
 
-class _Prepend(_VariableAction):
+class Prepend(_VariableAction):
+    """Prepend a value to a PATH-like variable."""
     def __init__(self, name, value, join, *args, **kwargs):
-        super(_Prepend, self).__init__(name, value, *args, **kwargs)
+        super(Prepend, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
     def write(self, outs, windows=(os.name == 'nt')):
@@ -185,13 +189,14 @@ class _Prepend(_VariableAction):
         env[self.name] = self._join(self.value, env.get(self.name, ''))
 
     def _check(self):
-        super(_Prepend, self)._check()
+        super(Prepend, self)._check()
         _append_prepend_check(self)
 
 
-class _Append(_VariableAction):
+class Append(_VariableAction):
+    """Append a value to a PATH-like variable. (Uncommon, see Prepend.)"""
     def __init__(self, name, value, join, *args, **kwargs):
-        super(_Append, self).__init__(name, value, *args, **kwargs)
+        super(Append, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
     def write(self, outs, windows=(os.name == 'nt')):
@@ -207,7 +212,7 @@ class _Append(_VariableAction):
         env[self.name] = self._join(env.get(self.name, ''), self.value)
 
     def _check(self):
-        super(_Append, self)._check()
+        super(Append, self)._check()
         _append_prepend_check(self)
 
 
@@ -215,12 +220,13 @@ class BadEchoValue(ValueError):
     pass
 
 
-class _Echo(_Action):
+class Echo(_Action):
+    """Echo a value to the terminal."""
     def __init__(self, value, newline, *args, **kwargs):
         # These values act funny on Windows.
         if value.lower() in ('off', 'on'):
             raise BadEchoValue(value)
-        super(_Echo, self).__init__(*args, **kwargs)
+        super(Echo, self).__init__(*args, **kwargs)
         self.value = value
         self._newline = newline
 
@@ -229,7 +235,10 @@ class _Echo(_Action):
         # pass the command line as is without parsing, so quoting is wrong.
         if windows:
             if self._newline:
-                outs.write('echo {}\n'.format(self.value))
+                if not self.value:
+                    outs.write('echo.\n')
+                else:
+                    outs.write('echo {}\n'.format(self.value))
             else:
                 outs.write('<nul set /p="{}"\n'.format(self.value))
         else:
@@ -245,9 +254,10 @@ class _Echo(_Action):
         del env  # Unused.
 
 
-class _Comment(_Action):
+class Comment(_Action):
+    """Add a comment to the init script."""
     def __init__(self, value, *args, **kwargs):
-        super(_Comment, self).__init__(*args, **kwargs)
+        super(Comment, self).__init__(*args, **kwargs)
         self.value = value
 
     def write(self, outs, windows=(os.name == 'nt')):
@@ -259,11 +269,52 @@ class _Comment(_Action):
         del env  # Unused.
 
 
-class _BlankLine(_Action):
+class Command(_Action):
+    """Run a command."""
+    def __init__(self, command, *args, **kwargs):
+        exit_on_error = kwargs.pop('exit_on_error', True)
+        super(Command, self).__init__(*args, **kwargs)
+        assert isinstance(command, (list, tuple))
+        self.command = command
+        self.exit_on_error = exit_on_error
+
+    def write(self, outs, windows=(os.name == 'nt')):
+        # TODO(mohrr) use shlex.quote here?
+        outs.write('{}\n'.format(' '.join(self.command)))
+        if not self.exit_on_error:
+            return
+
+        if windows:
+            pass  # TODO(pwbug/147) Fill in.
+        else:
+            # Assume failing command produced relevant output.
+            outs.write('if [ $? != 0 ]; then\n  return 1\nfi\n')
+
+
+class BlankLine(_Action):
+    """Write a blank line to the init script."""
     def write(  # pylint: disable=no-self-use
         self, outs, windows=(os.name == 'nt')):
         del windows  # Unused.
         outs.write('\n')
+
+    def apply(self, env):  # pylint: disable=no-self-use
+        del env  # Unused.
+
+
+class Hash(_Action):
+    def write(self, outs, windows=(os.name == 'nt')):  # pylint: disable=no-self-use
+        if windows:
+            return
+
+        outs.write('''
+# This should detect bash and zsh, which have a hash command that must be
+# called to get it to forget past commands. Without forgetting past
+# commands the $PATH changes we made may not be respected.
+if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
+  hash -r\n
+fi
+''')
 
     def apply(self, env):  # pylint: disable=no-self-use
         del env  # Unused.
@@ -306,13 +357,15 @@ class Environment(object):
     # operations should not invoke each other (this is why _remove() exists).
 
     def set(self, name, value):
+        """Set a variable."""
         name = self.normalize_key(name)
-        self._actions.append(_Set(name, value))
+        self._actions.append(Set(name, value))
         self._blankline()
 
     def clear(self, name):
+        """Remove a variable."""
         name = self.normalize_key(name)
-        self._actions.append(_Clear(name))
+        self._actions.append(Clear(name))
         self._blankline()
 
     def _remove(self, name, value):
@@ -320,44 +373,60 @@ class Environment(object):
 
         name = self.normalize_key(name)
         if self.get(name, None):
-            self._actions.append(_Remove(name, value, self._pathsep))
+            self._actions.append(Remove(name, value, self._pathsep))
 
     def remove(self, name, value):
+        """Remove a value from a PATH-like variable."""
         self._remove(name, value)
         self._blankline()
 
     def append(self, name, value):
-        """Add a value to the end of a variable. Rarely used, see prepend()."""
+        """Add a value to a PATH-like variable. Rarely used, see prepend()."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
             self._remove(name, value)
-            self._actions.append(_Append(name, value, self._join))
+            self._actions.append(Append(name, value, self._join))
         else:
-            self._actions.append(_Set(name, value))
+            self._actions.append(Set(name, value))
         self._blankline()
 
     def prepend(self, name, value):
-        """Add a value to the beginning of a variable."""
+        """Add a value to the beginning of a PATH-like variable."""
 
         name = self.normalize_key(name)
         if self.get(name, None):
             self._remove(name, value)
-            self._actions.append(_Prepend(name, value, self._join))
+            self._actions.append(Prepend(name, value, self._join))
         else:
-            self._actions.append(_Set(name, value))
+            self._actions.append(Set(name, value))
         self._blankline()
 
-    def echo(self, value, newline=True):
-        self._actions.append(_Echo(value, newline))
-        self._blankline()
+    def echo(self, value='', newline=True):
+        """Echo a value to the terminal."""
+
+        self._actions.append(Echo(value, newline))
+        if value:
+            self._blankline()
 
     def comment(self, comment):
-        self._actions.append(_Comment(comment))
+        """Add a comment to the init script."""
+        self._actions.append(Comment(comment))
+        self._blankline()
+
+    def command(self, command, exit_on_error=True):
+        """Run a command."""
+
+        self._actions.append(Command(command, exit_on_error=exit_on_error))
         self._blankline()
 
     def _blankline(self):
-        self._actions.append(_BlankLine())
+        self._actions.append(BlankLine())
+
+    def hash(self):
+        """If required by the shell rehash the PATH variable."""
+        self._actions.append(Hash())
+        self._blankline()
 
     def write(self, outs):
         """Writes a shell init script to outs."""
@@ -366,16 +435,6 @@ class Environment(object):
 
         for action in self._actions:
             action.write(outs, windows=self._windows)
-
-        if not self._windows:
-            outs.write(
-                '# This should detect bash and zsh, which have a hash \n'
-                '# command that must be called to get it to forget past \n'
-                '# commands. Without forgetting past commands the $PATH \n'
-                '# changes we made may not be respected.\n'
-                'if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then\n'
-                '    hash -r\n'
-                'fi\n')
 
     @contextlib.contextmanager
     def __call__(self, export=True):
