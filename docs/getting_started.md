@@ -48,7 +48,7 @@ bootstrap may take several minutes to complete, so please be patient.
 
 **Linux/macOS**
 ```bash
-$ git clone sso://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
+$ git clone https://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
 $ . ./bootstrap.sh
 ```
@@ -56,7 +56,7 @@ $ . ./bootstrap.sh
 **Windows**
 ```batch
 :: Run git commands from the shell you set up to use with Git during install.
-> git clone sso://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
+> git clone https://pigweed.googlesource.com/pigweed/pigweed %HOMEPATH%\pigweed
 > cd %HOMEPATH%\pigweed
 > bootstrap.bat
 ```
