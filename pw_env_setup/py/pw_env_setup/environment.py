@@ -288,7 +288,8 @@ class Command(_Action):
             return
 
         if windows:
-            outs.write('if %ERRORLEVEL% neq 0 goto {}\n', _SCRIPT_END_LABEL)
+            outs.write(
+                'if %ERRORLEVEL% neq 0 goto {}\n'.format(_SCRIPT_END_LABEL))
         else:
             # Assume failing command produced relevant output.
             outs.write('if [ $? != 0 ]; then\n  return 1\nfi\n')
