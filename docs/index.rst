@@ -13,5 +13,6 @@
   docs/getting_started.md
   docs/embedded_cpp_guide
   docs/style_guide
+  docs/module_guide
   targets
   modules
