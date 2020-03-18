@@ -71,7 +71,7 @@ StatusWithSize ToString(const T& value, const span<char>& buffer) {
   } else if constexpr (std::is_integral_v<T>) {
     return string::IntToString(value, buffer);
   } else if constexpr (std::is_enum_v<T>) {
-    return string::IntToString<std::underlying_type_t<T>>(value, buffer);
+    return string::IntToString(std::underlying_type_t<T>(value), buffer);
   } else if constexpr (std::is_floating_point_v<T>) {
     return string::FloatAsIntToString(value, buffer);
   } else if constexpr (std::is_convertible_v<T, std::string_view>) {

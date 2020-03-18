@@ -96,6 +96,15 @@ TEST(ToString, Integer_AllTypesAreSupported) {
   EXPECT_STREQ("127", buffer);
 }
 
+TEST(ToString, ScopedEnum) {
+  enum class MyEnum : short { kLuckyNumber = 8 };
+
+  auto result = ToString(MyEnum::kLuckyNumber, buffer);
+  EXPECT_EQ(1u, result.size());
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_STREQ("8", buffer);
+}
+
 TEST(ToString, Integer_EmptyBuffer_WritesNothing) {
   auto result = ToString(-1234, span(buffer, 0));
   EXPECT_EQ(0u, result.size());
