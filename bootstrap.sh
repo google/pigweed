@@ -116,7 +116,7 @@ fi
 if [ -f $SETUP_SH ]; then
   . $SETUP_SH
 
-  if [ $? == 0 ]; then
+  if [ $? -eq 0 ]; then
     if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
       echo "To activate this environment in the future, run this in your "
       echo "terminal:"
