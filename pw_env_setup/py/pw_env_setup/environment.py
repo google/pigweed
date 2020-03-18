@@ -17,6 +17,9 @@ import contextlib
 import os
 import re
 
+# goto label written to the end of Windows batch files for exiting a script.
+_SCRIPT_END_LABEL = '_pw_end'
+
 
 class BadNameType(TypeError):
     pass
@@ -285,7 +288,7 @@ class Command(_Action):
             return
 
         if windows:
-            pass  # TODO(pwbug/147) Fill in.
+            outs.write('if %ERRORLEVEL% neq 0 goto {}\n', _SCRIPT_END_LABEL)
         else:
             # Assume failing command produced relevant output.
             outs.write('if [ $? != 0 ]; then\n  return 1\nfi\n')
@@ -435,6 +438,9 @@ class Environment(object):
 
         for action in self._actions:
             action.write(outs, windows=self._windows)
+
+        if self._windows:
+            outs.write(':{}\n'.format(_SCRIPT_END_LABEL))
 
     @contextlib.contextmanager
     def __call__(self, export=True):
