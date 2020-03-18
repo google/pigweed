@@ -72,6 +72,7 @@ from pw_env_setup.cipd_setup import wrapper as cipd_wrapper
 from pw_env_setup.colors import Color, enable_colors
 from pw_env_setup import cargo_setup
 from pw_env_setup import environment
+from pw_env_setup import spinner
 from pw_env_setup import virtualenv_setup
 
 
@@ -183,7 +184,9 @@ Then use `set +x` to go back to normal.
                 newline=False,
             )
 
-            result = step()
+            spin = spinner.Spinner()
+            with spin():
+                result = step()
 
             self._env.echo(result.status_str())
             for message in result.messages():
