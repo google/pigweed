@@ -87,7 +87,7 @@ def init_virtualenv(ctx: PresubmitContext):
     ))
 
 
-INIT = (
+INIT: Tuple[Callable, ...] = (
     init_cipd,
     init_virtualenv,
 )
@@ -164,11 +164,20 @@ GN: Tuple[Callable, ...] = (
 if sys.platform != 'darwin':
     GN = GN + (gn_gcc_build, )
 
+
+def gn_host_tools(ctx: PresubmitContext):
+    gn_gen(gn_args(pw_target_config='"//targets/host/host.gni"',
+                   pw_target_toolchain='"//pw_toolchain:host_clang_os"',
+                   pw_build_host_tools='true'),
+           ctx=ctx)
+    ninja('host_tools', ctx=ctx)
+
+
 #
 # C++ presubmit checks
 #
 # TODO(pwbug/45) Probably want additional checks.
-CLANG_TIDY_CHECKS = ('modernize-use-override', )
+_CLANG_TIDY_CHECKS = ('modernize-use-override', )
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
@@ -186,7 +195,7 @@ def clang_tidy(ctx: PresubmitContext):
                 run_clang_tidy = possibility
                 break
 
-    checks = ','.join(CLANG_TIDY_CHECKS)
+    checks = ','.join(_CLANG_TIDY_CHECKS)
     call(
         run_clang_tidy,
         f'-p={ctx.output_directory}',
@@ -196,7 +205,7 @@ def clang_tidy(ctx: PresubmitContext):
         *ctx.paths)
 
 
-CC = (
+CC: Tuple[Callable, ...] = (
     pw_presubmit.pragma_once,
     # TODO(pwbug/45): Enable clang-tidy when it passes.
     # clang_tidy,
@@ -338,7 +347,8 @@ def copyright_notice(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-CODE_FORMAT = (copyright_notice, *format_code.PRESUBMIT_CHECKS)
+CODE_FORMAT: Tuple[Callable, ...] = (
+    copyright_notice, *format_code.PRESUBMIT_CHECKS)  # yapf: disable
 
 #
 # General presubmit checks
@@ -413,17 +423,20 @@ def source_is_in_build_files(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-GENERAL = (source_is_in_build_files, )
+GENERAL: Tuple[Callable, ...] = (source_is_in_build_files, )
 
-BROKEN: Tuple = (
+BROKEN: Tuple[Callable, ...] = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
+    # Host tools are not broken but take long on slow internet connections.
+    # They're still run in CQ, but not in 'pw presubmit'.
+    gn_host_tools,
 )  # yapf: disable
 
 #
 # Presubmit check programs
 #
-QUICK_PRESUBMIT: Tuple = (
+QUICK_PRESUBMIT: Tuple[Callable, ...] = (
     *INIT,
     *CODE_FORMAT,
     *GENERAL,
@@ -433,8 +446,9 @@ QUICK_PRESUBMIT: Tuple = (
     *python_checks.ALL,
 )
 
-FULL_PRESUBMIT: Tuple = (INIT + CODE_FORMAT + GENERAL + CC + GN +
-                         python_checks.ALL + CMAKE + BAZEL)
+FULL_PRESUBMIT: Tuple[Callable, ...] = (
+    INIT + CODE_FORMAT + GENERAL + CC + GN +
+    python_checks.ALL + CMAKE + BAZEL)  # yapf: disable
 
 PROGRAMS: Dict[str, Tuple] = {
     'broken': BROKEN,
