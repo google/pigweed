@@ -880,6 +880,47 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ConnectChannelFailInvalidResponse) {
   // owned by the registry.
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterRtxExpiryForConnectionResponse) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionResponse) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kPendingConnRsp.view()},
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, open_cb_count);
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});

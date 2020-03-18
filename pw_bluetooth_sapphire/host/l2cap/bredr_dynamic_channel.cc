@@ -260,7 +260,15 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
         return BrEdrCommandHandler::ResponseHandlerAction::kCompleteOutboundTransaction;
       };
 
-  BrEdrCommandHandler cmd_handler(signaling_channel_);
+  auto on_conn_rsp_timeout = [this, self = weak_ptr_factory_.GetWeakPtr()] {
+    if (self) {
+      bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Timed out waiting for Connection Response",
+             local_cid());
+      PassOpenError();
+    }
+  };
+
+  BrEdrCommandHandler cmd_handler(signaling_channel_, std::move(on_conn_rsp_timeout));
   if (!cmd_handler.SendConnectionRequest(psm(), local_cid(), std::move(on_conn_rsp))) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Connection Request", local_cid());
     PassOpenError();

@@ -48,7 +48,6 @@ class DynamicChannelRegistry {
   // transfer, with a nullptr if unsuccessful. The DynamicChannel passed will
   // contain the local and remote channel IDs to be used for user data transfer
   // over the new channel. Preferred channel parameters can be set in |params|.
-  // TODO(872): Return negotiated channel parameters in |open_cb|.
   void OpenOutbound(PSM psm, ChannelParameters params, DynamicChannelCallback open_cb);
 
   // Disconnect and remove the channel identified by |local_cid|. After this
