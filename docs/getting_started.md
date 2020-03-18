@@ -1,13 +1,6 @@
-# Getting started
+# Getting Started
 
-Pigweed uses a combination of CIPD and Python virtual environments to provide
-you with the tools necessary for Pigweed development without modifying your
-system's development environment. This guide will walk you through the steps
-needed to download and set up the Pigweed repository.
-
-After the initial setup, this guide will walk you through a few things to try
-out to familiarize you with the Pigweed codebase and developer workflow.
-
+This guide will walk you through setup and general use of Pigweed.
 We hope to make the setup process as smooth as possible. If any of this doesn't
 work, please [file a bug](https://bugs.chromium.org/p/pigweed/issues/entry).
 
@@ -33,16 +26,17 @@ instructions at https://brew.sh/, then install OpenOCD with
 `brew install openocd`.
 
 **Windows**<br/>
-To start using Pigweed on Windows, you'll need to install Git and Python (2.7 or
-above). We recommend you install Git to run from the command line and third
-party software.
+To start using Pigweed on Windows, you'll need to install
+[Git](https://git-scm.com/download/win) and
+[Python](https://www.python.org/downloads/windows/) (2.7 or above). We recommend
+you install Git to run from the command line and third party software.
 
 If you plan to flash devices with firmware, you'll need to install OpenOCD and
 ensure it's on your system path.
 
 ## Bootstrap
 
-Once you satisfied the prerequisites, you should be able to clone Pigweed and
+Once you satisfied the prerequisites, you will be able to clone Pigweed and
 run the bootstrap that initializes the Pigweed virtual environment. The
 bootstrap may take several minutes to complete, so please be patient.
 
@@ -84,127 +78,113 @@ $ . ./activate.sh
 > activate.bat
 ```
 
-This will provide you with GN, Ninja, a host and Cortex-M compiler,
-clang-format, a recent version of Python, a kitted out Python virtual
-environment (venv), and more—all without messing with your current system
-configuration or requiring manual installation.
+Some major changes may require triggering the bootstrap again, so if you run
+into host tooling changes after a pull it may be worth re-running bootstrap.
 
-## Building Pigweed With GN
+## Build Pigweed for Host
 
-Pigweed is an assortment of tooling and libraries for embedded projects. One
-of the key goals is that you may chose to use things from Pigweed in an *à la
-carte* fashion. Pigweed is a bundle of helper libraries, but it doesn't provide
-an application image that can be run on a device. Because of this, the binaries
-produced when building upstream Pigweed are unit tests (which can be directly
-flashed to a device and run) and host tools.
-
-Pigweed's primary build system is GN/Ninja based. There are
-CMake and Bazel builds in-development, but they are incomplete and don't have
-feature parity with the GN build. We strongly recommend you stick to the GN
-build system.
+Pigweed's primary build system is GN/Ninja based. There are CMake and Bazel
+builds in-development, but they are incomplete and don't have feature parity
+with the GN build. We strongly recommend you stick to the GN build system.
 
 GN (Generate Ninja) just does what it says on the tin; GN generates
 [Ninja](https://ninja-build.org/) build files.
+
+The default GN configuration generates build files that will result in
+executables that can be run on your host machine.
+
+Run GN as seen below:
 
 ```bash
 $ gn gen out/host
 ```
 
-The default GN build configuration is set up to build with the host as the
-target (more on targets later). Note that `out/host` is the output directory
-that Ninja files are generated to, it doesn't imply any configuration. Now that
-the build files have been generated, you can begin the build using Ninja:
+Note that `out/host` is simply the directory the build files are saved to.
+Unless this directory is deleted or you desire to do a clean build, there's no
+need to run GN again; just rebuild using Ninja directly.
+
+Now that we have build files, it's time to build Pigweed!
+
+Now you *could* manually invoke the host build using `ninja -C out/host` every
+time you make a change, but that's tedious. Instead, let's use `pw_watch`.
+
+Go ahead and start `pw_watch`:
 
 ```bash
-$ ninja -C out/host
+$ pw watch
 ```
 
-Whenever you make changes to the source or build files, you only need to run
-`ninja`. Running GN again is only necessary if you delete your build directory
-and need to generate a new one.
+When `pw_watch` starts up, it will automatically build the directory we
+generated in `out/host`. Additionally, `pw_watch` watches source code files for
+changes, and triggers a Ninja build whenever it notices a file has been saved.
+You might be surprised how much time it can save you!
 
-No build system is perfect, so you might have the desire to clean your build
-directory if you're doubting the correctness of the build. Doing a clean build
-is relatively simple: delete the build directory `out/[target]`, and
-re-generate it using `gn gen`.
+With `pw watch` running, try modifying `pw_status/public/pw_status/status.h` and
+watch the build re-trigger when you save the file.
 
-## pw_watch
-
-Manually invoking the build can be tedious, though. You need to switch window
-focus and re-run Ninja. Fortunately, one of Pigweed's modules addresses this!
-pw_watch is a module that watches the Pigweed repository for changes to files
-with certain extensions.
-
-To start pw_watch, simply run `pw watch`:
+See below for a demo of this in action:
 
 ![build example using pw watch](images/pw_watch_build_demo.gif)
 
-Whenever you modify files, pw watch will trigger a build for all the build
-subdirectories found in `out/`. Try it, you might be surprised how much time it
-can save you!
-
 ## Running Unit Tests
 
-Fun fact, you've been running the unit tests already! Host builds automatically
-build and run the unit tests. Unit tests err on the side of being quiet in the
-success case, and only output test results when there's a failure. If you want
-to try this out, modify one of the tests to fail:
+Fun fact, you've been running the unit tests already! Ninja builds targeting the
+host automatically build and run the unit tests. Unit tests err on the side of
+being quiet in the success case, and only output test results when there's a
+failure.
+
+To see the a test failure, you can modify `pw_status/status_test.cc` to fail
+by changing one of the strings in the "KnownString" test.
 
 ![example test failure using pw watch](images/pw_watch_test_demo.gif)
 
 Running tests as part of the build isn't particularly expensive because GN
-caches passing tests. Only affected tests are re-built/rerun on a code change
-(thanks to GN's dependency resolution).
+caches passing tests. Each time you build, only the tests that are affected
+(whether directly or transitively) by the code changes since the last build will
+be re-built and re-run.
 
-## Selecting a Build Target
+Try running the `pw_status` test manually:
+```bash
+$ ./out/host/obj/pw_status/status_test
+```
 
-As mentioned previously, Pigweed builds for host by default. This builds unit
-tests and any host tools. In the context of Pigweed, a Pigweed "target" is a
-build configuration that sets a toolchain, default library configurations,
-and more to result in binaries that may be run natively on the target.
+## Building for a Device
 
-Here are some targets of interest:
+As mentioned previously, Pigweed builds for host by default. In the context of
+Pigweed, a Pigweed "target" is a build configuration that sets a toolchain,
+default library configurations, and more to result in binaries that may be run
+natively on the target.
 
- - **Host** (//targets/host/host.gni): Builds unit tests and host tools.
+Let's generate another build directory, but this time specifying a different
+target:
 
- - **Docs** (//targets/docs/target_config.gni): Builds these docs! This requires
-   a build target because of the binary size reporting automatically generated
-   with the documents. Docs are output to `[build directory]/gen/docs/html`,
-   where `[build directory]` is the output directory specified in `gn gen` (see
-   below on setting a build target).
-
- - **STM32F429I-DISC1** (//targets/stm32f429i-disc1/target_config.gni): Builds
-   unit tests for STMicroelectronics's Discovery development board (MPN:
-   STM32F429I-DISC1). This is the device Pigweed uses for upstream development.
-   It's a relatively easy to acquire Cortex-M4 development board, and has an
-   integrated STLink to simplify flashing and debugging of the device.
-
-Rather than having tens or hundreds of exposed GN arguments that configure the
-build and are easy to accidentally modify, we use target configuration files
-that only expose arguments relevant to the target. This also makes it easier
-to check in changes to target configurations.
-
-**Setting the build target**
-
-To set the target configuration for a build, set the `pw_target_config` GN build
-arg to point to the target configuration `.gni` file you wish to use.
-
-In this example, we generate Ninja build files for the stm32f429i-disc1 to
-`out/disco`.
+**Linux/macOS**
 ```bash
 $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
 ```
 
-At this time, you may either run `ninja -C out/disco` or restart pw_watch to
-build for the STM32F429I-DISC1.
+**Windows**
+```batch
+> gn gen out/disco
+> echo pw_target_config = ^"//targets/stm32f429i-disc1/target_config.gni^">> out\disco\args.gn
+```
+
+Switch to the window running `pw_watch`, and quit using `ctrl+c`.
+To get `pw_watch` to build the new directory as well, re-launch it:
+
+```bash
+$ pw watch
+```
+
+Now `pw_watch` is building for host and a device!
 
 ## Running Tests on a Device
 
-Even though we've verified tests pass on the host, it's critical to verify the
-same with the board. We've encountered some unexpected bugs that can only be
-found by running the unit tests directly on the device. This section will help
-you get set up to enable on-device testing integrated into the Ninja build
-(pw_watch comptible!) in three simple steps.
+While tests run automatically on the host, it takes a few more steps to get
+tests to run automatically on a device, too. Even though we've verified tests
+pass on the host, it's crucial to verify the same with on-device testing. We've
+encountered some unexpected bugs that can only be found by running the unit
+tests directly on the device.
 
 ### 1. Connect Device(s)
 Connect any number of STM32F429I-DISC1 boards to your computer using the mini
@@ -234,7 +214,8 @@ the stm32f429i-disc1.
 
 ```shell
 $ gn args out/disco
-# Modify and save the args file to tell GN to run on-device unit tests.
+# Append this line to the file that opens in your editor to tell GN to run
+# on-device unit tests.
 pw_use_test_server = true
 ```
 
@@ -246,6 +227,27 @@ will be run across the attached boards!
 See the demo below for an example of what this all looks like put together:
 
 ![pw watch running on-device tests](images/pw_watch_on_device_demo.gif)
+
+## Building the Documentation
+
+In addition to the markdown documentation, pigweed has a collection of
+information-rich RST files that can be built by adding another build target.
+
+To generate documentation build files, invoke GN again:
+
+**Linux/macOS**
+```bash
+$ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
+```
+
+**Windows**
+```batch
+> gn gen out/docs
+> echo pw_target_config = ^"//targets/docs/target_config.gni^">> out\docs\args.gn
+```
+
+Once again, either restart `pw_watch`, or manually run `ninja -C out/docs`. When
+the build completes, you will find the documents at `out/docs/gen/docs/html`.
 
 ## Next steps
 
