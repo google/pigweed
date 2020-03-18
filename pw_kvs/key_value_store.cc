@@ -173,8 +173,8 @@ Status KeyValueStore::Init() {
   DBG("Second pass: Count valid bytes in each sector");
   Address newest_key = 0;
 
-  // For every valid key, increment the valid bytes for that sector.
-
+  // For every valid entry, count the valid bytes in that sector. Track which
+  // entry has the newest transaction ID for initializing last_new_sector_.
   for (const EntryMetadata& metadata : entry_cache_) {
     for (Address address : metadata.addresses()) {
       Entry entry;
@@ -364,7 +364,7 @@ void KeyValueStore::Item::ReadKey() {
 KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
   // Skip to the next entry that is valid (not deleted).
   while (++item_.iterator_ != item_.kvs_.entry_cache_.end() &&
-         item_.iterator_->deleted()) {
+         item_.iterator_->state() != EntryState::kValid) {
   }
   return *this;
 }
@@ -372,7 +372,8 @@ KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
 KeyValueStore::iterator KeyValueStore::begin() const {
   internal::EntryCache::iterator cache_iterator = entry_cache_.begin();
   // Skip over any deleted entries at the start of the descriptor list.
-  while (cache_iterator != entry_cache_.end() && cache_iterator->deleted()) {
+  while (cache_iterator != entry_cache_.end() &&
+         cache_iterator->state() != EntryState::kValid) {
     ++cache_iterator;
   }
   return iterator(*this, cache_iterator);
@@ -1053,7 +1054,7 @@ void KeyValueStore::LogKeyDescriptor() const {
   DBG("Key descriptors: count %zu", entry_cache_.total_entries());
   for (auto& metadata : entry_cache_) {
     DBG("  - Key: %s, hash %#zx, transaction ID %zu, first address %#zx",
-        metadata.deleted() ? "Deleted" : "Valid",
+        metadata.state() == EntryState::kDeleted ? "Deleted" : "Valid",
         static_cast<size_t>(metadata.hash()),
         static_cast<size_t>(metadata.transaction_id()),
         static_cast<size_t>(metadata.first_address()));

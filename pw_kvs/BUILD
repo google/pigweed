@@ -122,7 +122,10 @@ pw_cc_test(
 pw_cc_test(
     name = "entry_cache_test",
     srcs = ["entry_cache_test.cc"],
-    deps = [":pw_kvs"],
+    deps = [
+        ":pw_kvs",
+        ":test_utils",
+    ],
 )
 
 pw_cc_test(

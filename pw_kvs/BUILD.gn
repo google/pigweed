@@ -133,7 +133,10 @@ pw_test("entry_test") {
 }
 
 pw_test("entry_cache_test") {
-  deps = [ ":pw_kvs" ]
+  deps = [
+    ":pw_kvs",
+    ":test_utils",
+  ]
   sources = [ "entry_cache_test.cc" ]
 }
 

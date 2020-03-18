@@ -73,7 +73,7 @@ Status EntryCache::FindExisting(FlashPartition& partition,
   // If the key's hash collides with an existing key or if the key is deleted,
   // treat it as if it is not in the KVS.
   if (status == Status::ALREADY_EXISTS ||
-      (status.ok() && metadata->deleted())) {
+      (status.ok() && metadata->state() == EntryState::kDeleted)) {
     return Status::NOT_FOUND;
   }
   return status;
@@ -169,7 +169,6 @@ void EntryCache::AddAddressIfRoom(size_t descriptor_index, Address address) {
   for (size_t i = 0; i < redundancy(); ++i) {
     if (existing[i] == kNoAddress) {
       existing[i] = address;
-      addresses(descriptor_index);
       return;
     }
   }

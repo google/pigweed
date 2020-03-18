@@ -38,12 +38,10 @@ class EntryMetadata {
 
   EntryState state() const { return descriptor_->state; }
 
-  bool deleted() const { return state() == EntryState::kDeleted; }
-
   // The first known address of this entry.
   uint32_t first_address() const { return addresses_[0]; }
 
-  // All addresses for this entry, including redundant entries.
+  // All addresses for this entry, including redundant entries, if any.
   const span<Address>& addresses() const { return addresses_; }
 
   // True if the KeyDesctiptor's transaction ID is newer than the specified ID.
@@ -52,8 +50,8 @@ class EntryMetadata {
     return transaction_id() > other_transaction_id;
   }
 
-  // Adds a new address to the entry metadata. MUST NOT be called more than
-  // allowed by the redundancy.
+  // Adds a new address to the entry metadata. MUST NOT be called more times
+  // than allowed by the redundancy.
   void AddNewAddress(Address address) {
     addresses_[addresses_.size()] = address;
     addresses_ = span(addresses_.begin(), addresses_.size() + 1);
@@ -92,7 +90,7 @@ class EntryCache {
         addresses_(addresses),
         redundancy_(redundancy) {}
 
-  // Clears all
+  // Clears all KeyDescriptors.
   void Reset() { descriptors_.clear(); }
 
   // Finds the metadata for an entry matching a particular key. Searches for a
@@ -121,7 +119,8 @@ class EntryCache {
                       std::string_view key,
                       EntryMetadata* metadata) const;
 
-  // Adds a new descriptor to the descriptor list. Must NOT be full!
+  // Adds a new descriptor to the descriptor list. The entry MUST be unique and
+  // the EntryCache must NOT be full!
   EntryMetadata AddNew(const KeyDescriptor& entry, Address address);
 
   // Adds a new descriptor, overwrites an existing one, or adds an additional
