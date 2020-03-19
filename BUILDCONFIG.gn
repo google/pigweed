@@ -31,7 +31,7 @@ declare_args() {
   #
   # When this is changed, you must run `ninja -t clean` to remove any files from
   # the previous target's build before building again.
-  pw_target_config = "$dir_pigweed/targets/host/host.gni"
+  pw_target_config = "$dir_pigweed/targets/host/target_config.gni"
 }
 
 # Import variables that provide paths to modules. Pigweed's GN build requires

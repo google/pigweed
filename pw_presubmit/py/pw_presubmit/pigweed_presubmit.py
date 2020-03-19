@@ -120,8 +120,9 @@ def ninja(*args, ctx: PresubmitContext, **kwargs):
          **kwargs)
 
 
-_CLANG_GEN_ARGS = gn_args(pw_target_config='"//targets/host/host.gni"',
-                          pw_target_toolchain='"//pw_toolchain:host_clang_os"')
+_CLANG_GEN_ARGS = gn_args(
+    pw_target_config='"//targets/host/target_config.gni"',
+    pw_target_toolchain='"//pw_toolchain:host_clang_os"')
 
 _DOCS_GEN_ARGS = gn_args(pw_target_config='"//targets/docs/target_config.gni"')
 
@@ -133,7 +134,7 @@ def gn_clang_build(ctx: PresubmitContext):
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(ctx: PresubmitContext):
-    gn_gen(gn_args(pw_target_config='"//targets/host/host.gni"',
+    gn_gen(gn_args(pw_target_config='"//targets/host/target_config.gni"',
                    pw_target_toolchain='"//pw_toolchain:host_gcc_os"'),
            ctx=ctx)
     ninja(ctx=ctx)
@@ -166,7 +167,7 @@ if sys.platform != 'darwin':
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    gn_gen(gn_args(pw_target_config='"//targets/host/host.gni"',
+    gn_gen(gn_args(pw_target_config='"//targets/host/target_config.gni"',
                    pw_target_toolchain='"//pw_toolchain:host_clang_os"',
                    pw_build_host_tools='true'),
            ctx=ctx)
