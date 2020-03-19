@@ -194,7 +194,7 @@ def main() -> int:
         report.append(out.diff())
 
         rst = bloat_output.RstOutput(diffs)
-        write_file(f'{args.target}.rst', rst.diff())
+        write_file(f'{args.target}', rst.diff())
 
     complete_output = '\n'.join(report) + '\n'
     write_file(f'{args.target}.txt', complete_output)

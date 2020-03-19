@@ -45,7 +45,7 @@ The ``Format`` functions have a small, fixed code size cost. However, relative
 to equivalent ``std::snprintf`` calls, there is no incremental code size cost to
 using ``Format``.
 
-.. include:: format_size_report.rst
+.. include:: format_size_report
 
 pw::StringBuilder
 -----------------
@@ -66,7 +66,7 @@ errors are handled. Each argument to StringBuilder's << expands to a function
 call, but one or two StringBuilder appends may have a smaller code size impact
 than a single ``snprintf`` call.
 
-.. include:: string_builder_size_report.rst
+.. include:: string_builder_size_report
 
 Future work
 ^^^^^^^^^^^

@@ -131,7 +131,7 @@ template("pw_size_report") {
     ]
   }
 
-  _doc_rst_output = "$target_gen_dir/${target_name}.rst"
+  _doc_rst_output = "$target_gen_dir/${target_name}"
 
   if (host_os == "win") {
     # Bloaty is not yet packaged for Windows systems; display a message
@@ -290,7 +290,7 @@ template("pw_toolchain_size_report") {
     not_needed("*")
     not_needed(invoker, "*")
 
-    _doc_rst_output = "$target_gen_dir/$target_name.rst"
+    _doc_rst_output = "$target_gen_dir/$target_name"
     pw_python_script(target_name) {
       metadata = {
         pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)

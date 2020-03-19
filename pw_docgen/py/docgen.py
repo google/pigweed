@@ -132,7 +132,7 @@ def main() -> int:
 
     # TODO(pwbug/164): Printing the header causes unicode problems on Windows.
     # Disabled for now; re-enable once the root issue is fixed.
-    #print(SCRIPT_HEADER)
+    # print(SCRIPT_HEADER)
     copy_doc_tree(args)
 
     # Flush all script output before running Sphinx.
