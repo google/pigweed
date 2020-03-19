@@ -22,6 +22,10 @@ selection that happen to produce visual output. For more information about the
 different Pigweed module offerings, refer to "Module Guides" section in the full
 documentation.
 
+Note: For now the full documentation is not available online; you must build
+it. Building the docs is easy; see the [getting started
+guide](docs/getting_started.md) for how.
+
 ## `pw_watch` - Build, flash, run, & test on save
 
 In the web development space, file system watchers are prevalent. These watchers

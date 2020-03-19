@@ -98,12 +98,6 @@ installation of prerequisites beyond basics like `git` and `build-essential`.
 macOS does not require any prerequisites to be installed, but you may run into
 some Mac-specific configuration issues when you begin the bootstrap process.
 
-If you're using Homebrew and you get an error saying
-`module 'http.client' has no attribute 'HTTPSConnection'` then your
-Homebrew Python was not set up to support SSL. Ensure it's installed with
-`brew install openssl` and then run
-`brew uninstall python && brew install python`.
-
 To flash firmware to a STM32 Discovery development board (and run `pw test`)
 from macOS, you will need to install OpenOCD. Install Homebrew using the latest
 instructions at https://brew.sh/, then install OpenOCD with
