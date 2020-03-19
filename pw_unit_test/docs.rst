@@ -34,7 +34,7 @@ the Google Test documentation for examples of to define unit test cases.
 
   A lot of Google Test's more advanced features are not yet implemented. To
   request a feature addition, please
-  `file a bug <https://bugs.chromium.org/p/pigweed/issues/entry>`_.
+  `let us know <mailto:pigweed@googlegroups.com>`_.
 
 Using the test framework
 ========================

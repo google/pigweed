@@ -2,14 +2,15 @@
 
 This guide will walk you through setup and general use of Pigweed.
 We hope to make the setup process as smooth as possible. If any of this doesn't
-work, please [file a bug](https://bugs.chromium.org/p/pigweed/issues/entry).
+work, please [let us know](mailto:pigweed@googlegroups.com).
 
 ## Express setup
 
-If you're impatient, below is the shorter version of getting setup for Pigweed.
-If you run into trouble, look at the more in-depth guide below, starting at
-"Prerequisites". The express setup configures Pigweed's watcher for three
-targets to give a taste of Pigweed:
+If you'd like to skip the detailed explanations, below is the shorter version of
+getting setup for Pigweed. If you run into trouble, look at the more in-depth
+guide below, starting at [Prerequisites](getting_started.md#prerequisites). The
+express setup configures Pigweed's watcher for three targets to give a taste of
+Pigweed:
 
 1. **Host** - Mac, Linux, or Windows. Builds and runs tests
 2. **Device/STM32F429** - Build only; see later in the guide to run tests on
@@ -93,6 +94,7 @@ re-bootstrapping.
 **Linux**<br/>
 Most Linux installations should work out of box, and not require any manual
 installation of prerequisites beyond basics like `git` and `build-essential`.
+Make sure gcc is set to gcc-8.
 
 **macOS**<br/>
 macOS does not require any prerequisites to be installed, but you may run into
@@ -275,7 +277,7 @@ tests!
 To allow Ninja to run tests on an arbitrary number of devices, Ninja will send
 test requests to a server running in the background. Launch the server in
 another window using the command below (remember, you'll need to activate the
-Pigweed env first).
+Pigweed environment first).
 
 ```shell
   $ stm32f429i_disc1_test_server
@@ -329,5 +331,5 @@ the build completes, you will find the documents at `out/docs/gen/docs/html`.
 
 This concludes the introduction to developing with Pigweed. If you'd like to see
 more of what Pigweed has to offer, feel free to dive into the per-module
-documentation. If you run into snags along the way, please [file
-bugs](https://bugs.chromium.org/p/pigweed/issues/entry)!
+documentation. If you run into snags along the way, please [let us
+know](mailto:pigweed@googlegroups.com)!
