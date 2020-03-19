@@ -85,10 +85,7 @@ class CommandChannel final {
   // If |complete_event_code| is set to kCommandStatus, the transaction
   // is considered complete when the CommandStatus event is received.
   //
-  // |complete_event_code| cannot be an LE event code, the LE Meta Event code,
-  // or a code that has been registered for events via AddEventHandler.
-  //
-  // TODO(jamuraa): Support LE Event Codes for LE Commands.
+  // |complete_event_code| cannot be a code that has been registered for events via AddEventHandler.
   //
   // Returns a ID unique to the command transaction, or zero if the parameters
   // are invalid.  This ID will be supplied to |callback| in its |id| parameter
@@ -96,7 +93,7 @@ class CommandChannel final {
   //
   // NOTE: Commands queued are not guaranteed to be finished or sent in order,
   // although commands with the same opcode will be sent in order, and
-  // commands with the same |complete_code| will be sent in order.
+  // commands with the same |complete_event_code| and |subevent_code| will be sent in order.
   // If strict ordering of commands is required, use SequentialCommandRunner
   // or callbacks for sequencing.
   //
@@ -107,6 +104,16 @@ class CommandChannel final {
                             async_dispatcher_t* dispatcher, CommandCallback callback,
                             const EventCode complete_event_code = kCommandCompleteEventCode);
 
+  // As SendCommand, but the transaction completes on the LE Meta Event.
+  // |le_meta_subevent_code| is a LE Meta Event subevent code as described in Core Spec v5.2, Vol 4,
+  // Part E, Sec 7.7.65.
+  //
+  // |le_meta_subevent_code| cannot be a code that has been registered for events via
+  // AddLEMetaEventHandler.
+  TransactionId SendLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
+                                   async_dispatcher_t* dispatcher, CommandCallback callback,
+                                   EventCode le_meta_subevent_code);
+
   // As SendCommand, but will wait to run this command until there are no
   // commands with with opcodes specified in |exclude| from executing. This
   // is useful to prevent running different commands that cannot run
@@ -116,6 +123,14 @@ class CommandChannel final {
       std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
       CommandCallback callback, const EventCode complete_event_code = kCommandCompleteEventCode,
       std::unordered_set<OpCode> exclusions = {});
+
+  // As SendExclusiveCommand, but the transaction completes on the LE Meta Event with subevent code
+  // |le_meta_subevent_code|.
+  TransactionId SendLeAsyncExclusiveCommand(std::unique_ptr<CommandPacket> command_packet,
+                                            async_dispatcher_t* dispatcher,
+                                            CommandCallback callback,
+                                            std::optional<EventCode> le_meta_subevent_code,
+                                            std::unordered_set<OpCode> exclusions = {});
 
   // If the command identified by |id| has not been sent to the controller, remove it from the send
   // queue and return true. In this case, its CommandCallback will not be notified. If the command
@@ -196,6 +211,13 @@ class CommandChannel final {
   const zx::channel& channel() const { return channel_; }
 
  private:
+  TransactionId SendExclusiveCommandInternal(std::unique_ptr<CommandPacket> command_packet,
+                                             async_dispatcher_t* dispatcher,
+                                             CommandCallback callback,
+                                             const EventCode complete_event_code,
+                                             std::optional<EventCode> subevent_code = std::nullopt,
+                                             std::unordered_set<OpCode> exclusions = {});
+
   // Data related to a queued or running command.
   //
   // When a command is sent to the controller, it is placed in the
@@ -214,8 +236,8 @@ class CommandChannel final {
   class TransactionData {
    public:
     TransactionData(TransactionId id, OpCode opcode, EventCode complete_event_code,
-                    std::unordered_set<OpCode> exclusions, CommandCallback callback,
-                    async_dispatcher_t* dispatcher);
+                    std::optional<EventCode> subevent_code, std::unordered_set<OpCode> exclusions,
+                    CommandCallback callback, async_dispatcher_t* dispatcher);
     ~TransactionData();
 
     // Starts the transaction timer, which will call timeout_cb if it's not
@@ -233,6 +255,7 @@ class CommandChannel final {
 
     async_dispatcher_t* dispatcher() const { return dispatcher_; }
     EventCode complete_event_code() const { return complete_event_code_; }
+    std::optional<EventCode> subevent_code() const { return subevent_code_; }
     OpCode opcode() const { return opcode_; }
     TransactionId id() const { return id_; }
     // The set of opcodes in progress that will hold this transaction in queue.
@@ -245,6 +268,7 @@ class CommandChannel final {
     TransactionId id_;
     OpCode opcode_;
     EventCode complete_event_code_;
+    std::optional<EventCode> subevent_code_;
     std::unordered_set<OpCode> exclusions_;
     CommandCallback callback_;
     async_dispatcher_t* dispatcher_;
@@ -277,6 +301,7 @@ class CommandChannel final {
   // Data stored for each event handler registered.
   struct EventHandlerData {
     EventHandlerId id;
+    // If |is_le_meta_subevent|, then |event_code| is the LE Meta Event subevent code.
     EventCode event_code;
     // For asynchronous transaction event handlers, the pending command opcode.
     // kNoOp if this is a static event handler.
@@ -285,6 +310,8 @@ class CommandChannel final {
     bool is_le_meta_subevent;
     async_dispatcher_t* dispatcher;
 
+    // Returns true if handler is for async command transaction, or false if handler is a static
+    // event handler.
     bool is_async() const { return pending_opcode != kNoOp; }
   };
 
@@ -292,6 +319,10 @@ class CommandChannel final {
 
   // Finds the event handler for |code|.  Returns nullptr if one doesn't exist.
   EventHandlerData* FindEventHandler(EventCode code) __TA_REQUIRES(event_handler_mutex_);
+
+  // Finds the LE Meta Event handler for |subevent_code|.  Returns nullptr if one doesn't exist.
+  EventHandlerData* FindLEMetaEventHandler(EventCode subevent_code)
+      __TA_REQUIRES(event_handler_mutex_);
 
   // Removes internal event handler structures for |id|.
   void RemoveEventHandlerInternal(EventHandlerId id) __TA_REQUIRES(event_handler_mutex_);
@@ -304,7 +335,7 @@ class CommandChannel final {
   void SendQueuedCommand(QueuedCommand&& cmd) __TA_REQUIRES(event_handler_mutex_);
 
   // Creates a new event handler entry in the event handler map and returns its
-  // ID.
+  // ID. If |is_le_meta|, then |event_code| should be the LE Meta Event subevent code.
   EventHandlerId NewEventHandler(EventCode event_code, bool is_le_meta, OpCode pending_opcode,
                                  EventCallback event_callback, async_dispatcher_t* dispatcher)
       __TA_REQUIRES(event_handler_mutex_);
@@ -375,8 +406,8 @@ class CommandChannel final {
   // Accessed only from the I/O thread and thus not guarded.
   size_t allowed_command_packets_;
 
-  // Guards |event_handler_id_map_| and |event_code_handlers_| which can be
-  // accessed by both the public EventHandler methods and |io_thread_|.
+  // Guards |event_handler_id_map_|, |event_code_handlers_|, and |subevent_code_handlers_|, which
+  // can be accessed by both the public EventHandler methods and |io_thread_|.
   std::mutex event_handler_mutex_;
 
   // Mapping from event handler IDs to handler data.

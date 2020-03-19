@@ -1557,6 +1557,231 @@ TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
   EXPECT_EQ(3, event_count);
 }
 
+TEST_F(HCI_CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
+  constexpr OpCode kOpCode = kLEReadRemoteFeatures;
+  constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
+
+  auto cmd = StaticByteBuffer(LowerBits(kOpCode), UpperBits(kOpCode),
+                              // parameter total size (0 byte payload)
+                              0x00);
+
+  auto cmd_status_event = StaticByteBuffer(kCommandStatusEventCode,
+                                           // parameter total size (4 byte payload)
+                                           0x04,
+                                           // status, num_hci_command_packets (250)
+                                           StatusCode::kSuccess, 0xFA,
+                                           // HCI opcode
+                                           LowerBits(kOpCode), UpperBits(kOpCode));
+  auto cmd_complete_subevent = StaticByteBuffer(kLEMetaEventCode,
+                                                0x01,  // parameter total size (1 byte payload)
+                                                kSubeventCode);
+
+  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status_event}));
+  StartTestDevice();
+
+  auto cmd_packet = CommandPacket::New(kOpCode);
+
+  size_t event_count = 0;
+  auto event_cb = [&event_count](auto, const EventPacket& event) {
+    switch (event_count) {
+      case 0: {
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        break;
+      }
+      case 1: {
+        EXPECT_EQ(kLEMetaEventCode, event.event_code());
+        break;
+      }
+      default: {
+        FAIL();
+      }
+    }
+    event_count++;
+  };
+  auto id = cmd_channel()->SendLeAsyncCommand(std::move(cmd_packet), dispatcher(),
+                                              std::move(event_cb), kSubeventCode);
+  EXPECT_NE(0u, id);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, event_count);
+
+  // Handler should be removed when subevent received.
+  test_device()->SendCommandChannelPacket(cmd_complete_subevent);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, event_count);
+
+  // This seconod complete event should be ignored because the handler should have been removed.
+  test_device()->SendCommandChannelPacket(cmd_complete_subevent);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, event_count);
+}
+
+TEST_F(
+    HCI_CommandChannelTest,
+    SendingLECommandAfterAddingLEMetaEventHandlerFailsForSameSubeventCodeAndSucceedsForDifferentSubeventCode) {
+  constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
+  constexpr OpCode kOpCode = kLEReadRemoteFeatures;  // LE Read Remote Features
+
+  StartTestDevice();
+
+  EXPECT_NE(0u, cmd_channel()->AddLEMetaEventHandler(
+                    kSubeventCode, [](const auto&) { return EventCallbackResult::kContinue; },
+                    dispatcher()));
+  EXPECT_EQ(
+      0u, cmd_channel()->SendLeAsyncCommand(
+              CommandPacket::New(kOpCode), dispatcher(), [](auto, const auto&) {}, kSubeventCode));
+
+  auto cmd = StaticByteBuffer(LowerBits(kOpCode), UpperBits(kOpCode),
+                              // parameter total size (0 byte payload)
+                              0x00);
+  test_device()->QueueCommandTransaction(CommandTransaction(std::move(cmd), {}));
+  EXPECT_NE(0u, cmd_channel()->SendLeAsyncCommand(
+                    CommandPacket::New(kOpCode), dispatcher(), [](auto, const auto&) {},
+                    kSubeventCode + 1));
+  RunLoopUntilIdle();
+}
+
+TEST_F(HCI_CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFirstToComplete) {
+  // Commands have different op codes but same subevent code so that second command is not
+  // blocked because of matching op codes (which would not test LE command handling).
+  constexpr OpCode kOpCode0 = kLEReadRemoteFeatures;
+  constexpr OpCode kOpCode1 = kLEReadBufferSize;
+  constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
+
+  auto cmd0 = StaticByteBuffer(LowerBits(kOpCode0), UpperBits(kOpCode0),
+                               // parameter total size (0 byte payload)
+                               0x00);
+  auto cmd0_status_event = StaticByteBuffer(kCommandStatusEventCode,
+                                            // parameter total size (4 byte payload)
+                                            0x04,
+                                            // status, num_hci_command_packets (250)
+                                            StatusCode::kSuccess, 0xFA,
+                                            // HCI opcode
+                                            LowerBits(kOpCode0), UpperBits(kOpCode0));
+  auto cmd1 = StaticByteBuffer(LowerBits(kOpCode1), UpperBits(kOpCode1),
+                               // parameter total size (0 byte payload)
+                               0x00);
+  auto cmd1_status_event = StaticByteBuffer(kCommandStatusEventCode,
+                                            // parameter total size (4 byte payload)
+                                            0x04,
+                                            // status, num_hci_command_packets (250)
+                                            StatusCode::kSuccess, 0xFA,
+                                            // HCI opcode
+                                            LowerBits(kOpCode1), UpperBits(kOpCode1));
+
+  auto cmd_complete_subevent = StaticByteBuffer(kLEMetaEventCode,
+                                                0x01,  // parameter total size (1 byte payload)
+                                                kSubeventCode);
+
+  test_device()->QueueCommandTransaction(CommandTransaction(cmd0, {&cmd0_status_event}));
+  StartTestDevice();
+
+  size_t event_count_0 = 0;
+  auto event_cb_0 = [&event_count_0](auto, const EventPacket& event) {
+    switch (event_count_0) {
+      case 0: {
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        break;
+      }
+      case 1: {
+        EXPECT_EQ(kLEMetaEventCode, event.event_code());
+        break;
+      }
+      default: {
+        FAIL();
+      }
+    }
+    event_count_0++;
+  };
+  auto id_0 = cmd_channel()->SendLeAsyncCommand(CommandPacket::New(kOpCode0), dispatcher(),
+                                                std::move(event_cb_0), kSubeventCode);
+  EXPECT_NE(0u, id_0);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, event_count_0);
+
+  size_t event_count_1 = 0;
+  auto event_cb_1 = [&event_count_1](auto, const EventPacket& event) {
+    switch (event_count_1) {
+      case 0: {
+        EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+        break;
+      }
+      case 1: {
+        EXPECT_EQ(kLEMetaEventCode, event.event_code());
+        break;
+      }
+      default: {
+        FAIL();
+      }
+    }
+    event_count_1++;
+  };
+  // Command should be queued and not sent until after first complete event received.
+  auto id_1 = cmd_channel()->SendLeAsyncCommand(CommandPacket::New(kOpCode1), dispatcher(),
+                                                std::move(event_cb_1), kSubeventCode);
+  EXPECT_NE(0u, id_1);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, event_count_1);
+
+  // When first command complete event is received, second command should be sent.
+  test_device()->QueueCommandTransaction(CommandTransaction(cmd1, {&cmd1_status_event}));
+  test_device()->SendCommandChannelPacket(cmd_complete_subevent);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, event_count_0);
+  EXPECT_EQ(1u, event_count_1);
+
+  // Second complete event should be received by second command event handler only.
+  test_device()->SendCommandChannelPacket(cmd_complete_subevent);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, event_count_0);
+  EXPECT_EQ(2u, event_count_1);
+}
+
+TEST_F(
+    HCI_CommandChannelTest,
+    RegisteringLEMetaEventHandlerWhileLECommandPendingFailsForSameSubeventAndSucceedsForDifferentSubevent) {
+  constexpr OpCode kOpCode = kLEReadRemoteFeatures;
+  constexpr EventCode kSubeventCode = kLEReadRemoteFeaturesCompleteSubeventCode;
+
+  auto cmd = StaticByteBuffer(LowerBits(kOpCode), UpperBits(kOpCode),
+                              // parameter total size (0 byte payload)
+                              0x00);
+
+  auto cmd_status_event = StaticByteBuffer(kCommandStatusEventCode,
+                                           // parameter total size (4 byte payload)
+                                           0x04,
+                                           // status, num_hci_command_packets (250)
+                                           StatusCode::kSuccess, 0xFA,
+                                           // HCI opcode
+                                           LowerBits(kOpCode), UpperBits(kOpCode));
+
+  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status_event}));
+  StartTestDevice();
+
+  size_t event_count = 0;
+  auto event_cb = [&event_count](auto, const EventPacket& event) {
+    EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+    event_count++;
+  };
+  auto id = cmd_channel()->SendLeAsyncCommand(CommandPacket::New(kOpCode), dispatcher(),
+                                              std::move(event_cb), kSubeventCode);
+  EXPECT_NE(0u, id);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, event_count);
+
+  // Async LE command for subevent is already pending, so registering event handler should fail by
+  // returning 0.
+  id = cmd_channel()->AddLEMetaEventHandler(
+      kSubeventCode, [](auto&) { return EventCallbackResult::kContinue; }, dispatcher());
+  EXPECT_EQ(0u, id);
+
+  // Registering event handler for different subevent code should succeed.
+  id = cmd_channel()->AddLEMetaEventHandler(
+      kSubeventCode + 1, [](auto&) { return EventCallbackResult::kContinue; }, dispatcher());
+  EXPECT_NE(0u, id);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt
