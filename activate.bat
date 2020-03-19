@@ -19,5 +19,5 @@
 :: environment in a shell.
 
 set PW_SKIP_BOOTSTRAP=1
-call %~dp0\bootstrap.bat
+call "%~dp0\bootstrap.bat"
 set PW_SKIP_BOOTSTRAP=

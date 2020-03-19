@@ -23,16 +23,16 @@
 :: TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if "%PW_CHECKOUT_ROOT%"=="" (
   :: ~dp0 is the batchism for the directory in which a .bat file resides.
-  set PW_ROOT=%~dp0
+  set "PW_ROOT=%~dp0"
 ) else (
-  set PW_ROOT=%PW_CHECKOUT_ROOT%
+  set "PW_ROOT=%PW_CHECKOUT_ROOT%"
   set PW_CHECKOUT_ROOT=
 )
 
 :: Allow forcing a specific Python version through the environment variable
 :: PW_BOOTSTRAP_PYTHON. Otherwise, use the system Python if one exists.
 if not "%PW_BOOTSTRAP_PYTHON%" == "" (
-  set python="%PW_BOOTSTRAP_PYTHON%"
+  set "python=%PW_BOOTSTRAP_PYTHON%"
 ) else (
   where python >NUL 2>&1
   if %ERRORLEVEL% EQU 0 (
@@ -48,25 +48,26 @@ if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   )
 )
 
-set _pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py
-set shell_file="%PW_ROOT%\pw_env_setup\.env_setup.bat"
+set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
+set "shell_file=%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
 :: If PW_SKIP_BOOTSTRAP is set, only run the activation stage instead of the
 :: complete env_setup.
 if "%PW_SKIP_BOOTSTRAP%" == "" (
-  call %python% %_pw_start_script% --bootstrap
-  call %python% %PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py^
-    --pw-root %PW_ROOT%^
-    --shell-file %shell_file%
+  :: Without the trailing slash in %PW_ROOT%/, batch combines that token with
+  :: the --shell-file argument.
+  call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
+      --pw-root "%PW_ROOT%/" ^
+      --shell-file "%shell_file%"
 ) else (
-  if exist %shell_file% (
-    call %python% %_pw_start_script%
+  if exist "%shell_file%" (
+    call "%python%" "%_pw_start_script%"
   ) else (
-    call %python% %_pw_start_script% --no-shell-file
+    call "%python%" "%_pw_start_script%" --no-shell-file
     goto finish
   )
 )
 
-call %shell_file%
+call "%shell_file%"
 
 :finish
