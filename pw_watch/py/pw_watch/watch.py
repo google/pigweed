@@ -141,7 +141,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             while True:
                 _ = input()
                 self.debouncer.press('Manual build requested...')
-        except KeyboardInterrupt:
+        # Ctrl-C on Unix generates KeyboardInterrupt
+        # Ctrl-Z on Windows generates EOFError
+        except (KeyboardInterrupt, EOFError):
             _exit_due_to_interrupt()
 
     def path_matches(self, raw_path):
