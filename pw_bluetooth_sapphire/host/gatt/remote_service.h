@@ -108,7 +108,7 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   //
   // TODO(armansito): Add a ByteBuffer version.
   void WriteLongCharacteristic(CharacteristicHandle id, uint16_t offset, std::vector<uint8_t> value,
-                               att::StatusCallback callback,
+                               ReliableMode reliable_mode, att::StatusCallback callback,
                                async_dispatcher_t* dispatcher = nullptr);
 
   // Sends a "Write Without Response" to the characteristic with the given
@@ -238,7 +238,8 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   // Descriptor Values" procedure. Called by WriteCharacteristic() and
   // WriteDescriptor().
   void SendLongWriteRequest(att::Handle value_handle, uint16_t offset, BufferView value,
-                            att::StatusCallback callback, async_dispatcher_t* dispatcher);
+                            ReliableMode reliable_mode, att::StatusCallback callback,
+                            async_dispatcher_t* dispatcher);
 
   // Helper function that drives the recursive "Read Long Characteristic Values"
   // procedure. Called by ReadLongCharacteristic().

@@ -24,6 +24,7 @@ using fuchsia::bluetooth::Status;
 namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
 namespace fctrl = fuchsia::bluetooth::control;
+namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
 
@@ -688,6 +689,13 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   }
 
   return output;
+}
+
+bt::gatt::ReliableMode ReliableModeFromFidl(const fgatt::WriteOptions& write_options) {
+  return (write_options.has_reliable_mode() &&
+          write_options.reliable_mode() == fgatt::ReliableMode::ENABLED)
+             ? bt::gatt::ReliableMode::kEnabled
+             : bt::gatt::ReliableMode::kDisabled;
 }
 
 }  // namespace fidl_helpers

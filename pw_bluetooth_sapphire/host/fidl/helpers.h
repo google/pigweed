@@ -137,6 +137,10 @@ fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(
 // Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
 fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);
 
+// Functions that convert FIDL GATT types to library objects.
+bt::gatt::ReliableMode ReliableModeFromFidl(
+    const fuchsia::bluetooth::gatt::WriteOptions& write_options);
+
 }  // namespace fidl_helpers
 }  // namespace bthost
 

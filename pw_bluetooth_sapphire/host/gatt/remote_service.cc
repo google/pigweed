@@ -242,27 +242,28 @@ void RemoteService::WriteCharacteristic(CharacteristicHandle id, std::vector<uin
 }
 
 void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t offset,
-                                            std::vector<uint8_t> value, StatusCallback cb,
-                                            async_dispatcher_t* dispatcher) {
-  RunGattTask(
-      [this, id, offset, value = std::move(value), cb = std::move(cb), dispatcher]() mutable {
-        RemoteCharacteristic* chrc;
-        Status status = Status(GetCharacteristic(id, &chrc));
-        ZX_DEBUG_ASSERT(chrc || !status);
-        if (!status) {
-          ReportStatus(status, std::move(cb), dispatcher);
-          return;
-        }
+                                            std::vector<uint8_t> value, ReliableMode reliable_mode,
+                                            StatusCallback cb, async_dispatcher_t* dispatcher) {
+  RunGattTask([this, id, offset, value = std::move(value), mode = std::move(reliable_mode),
+               cb = std::move(cb), dispatcher]() mutable {
+    RemoteCharacteristic* chrc;
+    Status status = Status(GetCharacteristic(id, &chrc));
+    ZX_DEBUG_ASSERT(chrc || !status);
+    if (!status) {
+      ReportStatus(status, std::move(cb), dispatcher);
+      return;
+    }
 
-        if (!(chrc->info().properties & Property::kWrite)) {
-          bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
-          ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
-          return;
-        }
+    // TODO(48704): Validate the |extended_properties| field in the case of ReliableMode::kEnabled.
+    if (!(chrc->info().properties & Property::kWrite)) {
+      bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
+      ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
+      return;
+    }
 
-        SendLongWriteRequest(chrc->info().value_handle, offset,
-                             BufferView(value.data(), value.size()), std::move(cb), dispatcher);
-      });
+    SendLongWriteRequest(chrc->info().value_handle, offset, BufferView(value.data(), value.size()),
+                         std::move(mode), std::move(cb), dispatcher);
+  });
 }
 
 void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
@@ -373,8 +374,10 @@ void RemoteService::WriteLongDescriptor(DescriptorHandle id, uint16_t offset,
           return;
         }
 
+        // For writing long descriptors, reliable mode is not supported.
+        auto mode = ReliableMode::kDisabled;
         SendLongWriteRequest(desc->handle, offset, BufferView(value.data(), value.size()),
-                             std::move(cb), dispatcher);
+                             std::move(mode), std::move(cb), dispatcher);
       });
 }
 
@@ -573,7 +576,7 @@ void RemoteService::SendWriteRequest(att::Handle handle, const ByteBuffer& value
 }
 
 void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, BufferView value,
-                                         att::StatusCallback final_cb,
+                                         ReliableMode reliable_mode, att::StatusCallback final_cb,
                                          async_dispatcher_t* dispatcher) {
   att::PrepareWriteQueue long_write_queue;
   auto header_ln = sizeof(att::PrepareWriteRequestParams) + sizeof(att::OpCode);
@@ -591,7 +594,7 @@ void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, Bu
     offset += part_value_size;
   }
 
-  client_->ExecutePrepareWrites(std::move(long_write_queue),
+  client_->ExecutePrepareWrites(std::move(long_write_queue), std::move(reliable_mode),
                                 [cb = std::move(final_cb), dispatcher](Status status) mutable {
                                   ReportStatus(status, std::move(cb), dispatcher);
                                 });

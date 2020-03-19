@@ -139,8 +139,9 @@ void GattRemoteServiceServer::WriteLongCharacteristic(uint64_t id, uint16_t offs
     callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
   };
 
+  auto reliable_mode = fidl_helpers::ReliableModeFromFidl(write_options);
   service_->WriteLongCharacteristic(CharacteristicHandle(id), offset, std::move(value),
-                                    std::move(cb));
+                                    std::move(reliable_mode), std::move(cb));
 }
 
 void GattRemoteServiceServer::WriteCharacteristicWithoutResponse(uint64_t id,

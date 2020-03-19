@@ -268,6 +268,21 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
   EXPECT_FALSE(fidl.has_services());
 }
 
+TEST(FidlHelpersTest, ReliableModeFromFidl) {
+  using WriteOptions = fuchsia::bluetooth::gatt::WriteOptions;
+  using ReliableMode = fuchsia::bluetooth::gatt::ReliableMode;
+  WriteOptions options;
+
+  // No options set, so this should default to disabled.
+  EXPECT_EQ(bt::gatt::ReliableMode::kDisabled, ReliableModeFromFidl(options));
+
+  options.set_reliable_mode(ReliableMode::ENABLED);
+  EXPECT_EQ(bt::gatt::ReliableMode::kEnabled, ReliableModeFromFidl(options));
+
+  options.set_reliable_mode(ReliableMode::DISABLED);
+  EXPECT_EQ(bt::gatt::ReliableMode::kDisabled, ReliableModeFromFidl(options));
+}
+
 }  // namespace
 }  // namespace fidl_helpers
 }  // namespace bthost

@@ -107,7 +107,7 @@ void FakeClient::WriteRequest(att::Handle handle, const ByteBuffer& value,
 }
 
 void FakeClient::ExecutePrepareWrites(att::PrepareWriteQueue write_queue,
-                                      att::StatusCallback callback) {
+                                      ReliableMode reliable_mode, att::StatusCallback callback) {
   if (execute_prepare_writes_callback_) {
     execute_prepare_writes_callback_(std::move(write_queue), std::move(callback));
   }

@@ -622,30 +622,63 @@ class Impl final : public Client {
     }
   }
 
-  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
+  // An internal object for storing the write queue, callback, and reliability mode
+  // of a long write operation.
+  struct PreparedWrite {
+    bt::att::PrepareWriteQueue prep_write_queue;
+    bt::att::StatusCallback callback;
+    ReliableMode reliable_mode;
+  };
+
+  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue, ReliableMode reliable_mode,
                             att::StatusCallback callback) override {
-    auto new_request = std::make_pair(std::move(prep_write_queue), std::move(callback));
+    PreparedWrite new_request;
+    new_request.prep_write_queue = std::move(prep_write_queue);
+    new_request.callback = std::move(callback);
+    new_request.reliable_mode = std::move(reliable_mode);
     long_write_queue_.push(std::move(new_request));
 
     // If the |long_write_queue| has a pending request, then appending this
     // request will be sufficient, otherwise kick off the request.
     if (long_write_queue_.size() == 1) {
-      ProcessWriteQueue(std::move(long_write_queue_.front().first),
-                        std::move(long_write_queue_.front().second));
+      ProcessWriteQueue(std::move(long_write_queue_.front()));
     }
   }
 
-  void ProcessWriteQueue(att::PrepareWriteQueue prep_write_queue, att::StatusCallback callback) {
-    if (!prep_write_queue.empty()) {
-      att::QueuedWrite prep_write_request = std::move(prep_write_queue.front());
-      prep_write_queue.pop();
+  void ProcessWriteQueue(PreparedWrite prep_write) {
+    if (!prep_write.prep_write_queue.empty()) {
+      att::QueuedWrite prep_write_request = std::move(prep_write.prep_write_queue.front());
+      // A copy of the |prep_write_request| is made to pass into the capture
+      // list for |prep_write_cb|. It will be used to validate the echoed blob.
+      auto prep_write_copy = att::QueuedWrite(
+          prep_write_request.handle(), prep_write_request.offset(), prep_write_request.value());
+      prep_write.prep_write_queue.pop();
 
-      auto prep_write_cb = [this, callback = std::move(callback), wq = std::move(prep_write_queue)](
+      auto prep_write_cb = [this, prep_write = std::move(prep_write),
+                            requested_blob = std::move(prep_write_copy)](
                                att::Status status, const ByteBuffer& blob) mutable {
-        // In this case, cancel the prep writes and then move on to the next
+        // If the write fails, cancel the prep writes and then move on to the next
         // long write in the queue.
+        // The device will echo the value written in the blob, according to the
+        // spec (Vol 3, Part G, 4.9.4). The offset and value will be verified if the
+        // requested |prep_write.mode| is enabled (Vol 3, Part G, 4.9.5).
+
+        if (prep_write.reliable_mode == ReliableMode::kEnabled) {
+          if (blob.size() < sizeof(att::PrepareWriteResponseParams)) {
+            // The response blob is malformed.
+            status = att::Status(HostError::kNotReliable);
+          } else {
+            auto blob_offset = le16toh(blob.As<att::PrepareWriteResponseParams>().offset);
+            auto blob_value = blob.view(sizeof(att::PrepareWriteResponseParams));
+            if ((blob_offset != requested_blob.offset()) ||
+                !(blob_value == requested_blob.value())) {
+              status = att::Status(HostError::kNotReliable);
+            }
+          }
+        }
+
         if (!status) {
-          auto exec_write_cb = [this, callback = std::move(callback),
+          auto exec_write_cb = [this, callback = std::move(prep_write.callback),
                                 prep_write_status = status](att::Status status) mutable {
             // In this case return the original failure status. This effectively
             // overrides the ExecuteWrite status.
@@ -656,8 +689,7 @@ class Impl final : public Client {
             long_write_queue_.pop();
 
             if (long_write_queue_.size() > 0) {
-              ProcessWriteQueue(std::move(long_write_queue_.front().first),
-                                std::move(long_write_queue_.front().second));
+              ProcessWriteQueue(std::move(long_write_queue_.front()));
             }
           };
 
@@ -666,11 +698,7 @@ class Impl final : public Client {
           return;
         }
 
-        // The device will echo the value written in the blob, according to the
-        // spec (Vol 3, Part G, 4.9.4) this does not need to be verified, but
-        // could be to support a 'Reliable Write' (Vol 3, Part G, 4.9.5).
-
-        ProcessWriteQueue(std::move(wq), std::move(callback));
+        ProcessWriteQueue(std::move(prep_write));
       };
 
       PrepareWriteRequest(prep_write_request.handle(), prep_write_request.offset(),
@@ -678,7 +706,8 @@ class Impl final : public Client {
     }
     // End of this write, send and prepare for next item in overall write queue
     else {
-      auto exec_write_cb = [this, callback = std::move(callback)](att::Status status) mutable {
+      auto exec_write_cb = [this,
+                            callback = std::move(prep_write.callback)](att::Status status) mutable {
         callback(status);
         // Now that this request is complete, remove it from the overall
         // queue.
@@ -688,8 +717,7 @@ class Impl final : public Client {
         // If the super queue still has any long writes left to execute,
         // initiate them
         if (long_write_queue_.size() > 0) {
-          ProcessWriteQueue(std::move(long_write_queue_.front().first),
-                            std::move(long_write_queue_.front().second));
+          ProcessWriteQueue(std::move(long_write_queue_.front()));
         }
       };
 
@@ -834,16 +862,18 @@ class Impl final : public Client {
   fxl::RefPtr<att::Bearer> att_;
   att::Bearer::HandlerId not_handler_id_;
   att::Bearer::HandlerId ind_handler_id_;
+
   NotificationCallback notification_handler_;
-  // |long_write_queue_| contains pairs of long write requests and their
-  // associated callbacks. Series of PrepareWrites are executed or cancelled at
-  // the same time so this is used to block while a single series is processed.
+  // |long_write_queue_| contains long write requests, their
+  // associated callbacks and reliable write modes.
+  // Series of PrepareWrites are executed or cancelled at the same time so
+  // this is used to block while a single series is processed.
   //
   // While the top element is processed, the |PrepareWriteQueue| and callback
   // will be empty and will be popped once the queue is cancelled or executed.
-  // Following the processing of each pair, the client will automatically
-  // process the next pair in the |long_write_queue_|.
-  std::queue<std::pair<att::PrepareWriteQueue, StatusCallback>> long_write_queue_;
+  // Following the processing of each queue, the client will automatically
+  // process the next queue in the |long_write_queue_|.
+  std::queue<PreparedWrite> long_write_queue_;
   fxl::WeakPtrFactory<Client> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);

@@ -113,7 +113,7 @@ class FakeClient final : public Client {
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override;
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;
-  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
+  void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue, ReliableMode reliable_mode,
                             att::StatusCallback callback) override;
   void PrepareWriteRequest(att::Handle handle, uint16_t offset, const ByteBuffer& part_value,
                            PrepareCallback callback) override;

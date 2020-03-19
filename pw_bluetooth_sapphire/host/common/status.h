@@ -59,6 +59,9 @@ enum class HostError : uint8_t {
   // Operation security requirements were not met.
   kInsufficientSecurity,
 
+  // A transaction did not meet reliability requirements (e.g. an ATT Reliable Write)
+  kNotReliable,
+
   // Error code for protocol errors. The actual error code is specified by a
   // protocol error code type.
   kProtocolError,

@@ -36,6 +36,8 @@ std::string HostErrorToString(HostError error) {
       return "out of memory";
     case HostError::kInsufficientSecurity:
       return "insufficient security";
+    case HostError::kNotReliable:
+      return "not reliable";
     case HostError::kProtocolError:
       return "protocol error";
     case HostError::kFailed:

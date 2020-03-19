@@ -115,7 +115,7 @@ class Client {
   // HostError::kPacketMalformed is returned if any writes in the queue are too
   // large to write in a single ATT request.
   virtual void ExecutePrepareWrites(att::PrepareWriteQueue prep_write_queue,
-                                    att::StatusCallback callback) = 0;
+                                    ReliableMode reliable_mode, att::StatusCallback callback) = 0;
 
   // Sends an ATT Prepare Write Request with the requested attribute |handle|,
   // |offset|, and |part_value|. This can be used to send a long write request

@@ -45,6 +45,12 @@ constexpr bt::UUID kServiceChangedCharacteristic(kServiceChangedCharacteristic16
 
 }  // namespace types
 
+// Represents the reliability mode during long and prepared write operations.
+enum ReliableMode {
+  kDisabled = 0x01,
+  kEnabled = 0x02,
+};
+
 // Possible values that can be used in a "Characteristic Properties" bitfield.
 // (see Vol 3, Part G, 3.3.1.1)
 enum Property : uint8_t {

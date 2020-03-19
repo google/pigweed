@@ -1205,8 +1205,9 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
         callback(att::Status());
       });
 
+  ReliableMode mode = ReliableMode::kDisabled;
   att::Status status(HostError::kFailed);
-  service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value,
+  service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
                                    [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
@@ -1257,8 +1258,9 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
         callback(att::Status());
       });
 
+  ReliableMode mode = ReliableMode::kDisabled;
   att::Status status(HostError::kFailed);
-  service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value,
+  service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
                                    [&](att::Status cb_status) { status = cb_status; });
 
   RunLoopUntilIdle();
