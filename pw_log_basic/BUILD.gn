@@ -43,6 +43,14 @@ source_set("pw_log_basic_core") {
     "$dir_pw_sys_io",
   ]
   public = [ "public/pw_log_basic/log_basic.h" ]
+
+  # Use emoji log levels if they've been enabled.
+  _use_emoji = getenv("PW_EMOJI")
+  defines = []
+  if (_use_emoji == "1") {
+    defines += [ "PW_EMOJI=1" ]
+  }
+
   sources = public + [ "log_basic.cc" ]
 }
 

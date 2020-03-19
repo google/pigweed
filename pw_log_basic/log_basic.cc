@@ -37,8 +37,11 @@
 #define RESET     "\033[0m"
 // clang-format on
 
+#ifndef PW_EMOJI
+#define PW_EMOJI 0
+#endif  // PW_EMOJI
+
 // TODO(pwbug/17): Expose these through the config system.
-#define PW_USE_EMOJIS 1
 #define PW_LOG_SHOW_FILENAME 0
 #define PW_LOG_SHOW_FUNCTION 0
 #define PW_LOG_SHOW_FLAG 0
@@ -49,7 +52,7 @@ namespace {
 const char* LogLevelToLogLevelName(int level) {
   switch (level) {
     // clang-format off
-#if PW_USE_EMOJIS
+#if PW_EMOJI
     case PW_LOG_LEVEL_DEBUG    : return "👾" RESET;
     case PW_LOG_LEVEL_INFO     : return "ℹ️ " RESET;
     case PW_LOG_LEVEL_WARN     : return "⚠️ " RESET;
@@ -128,11 +131,11 @@ extern "C" void pw_Log(int level,
 
   // Column: Flag
 #if PW_LOG_SHOW_FLAG
-#if PW_USE_EMOJIS
+#if PW_EMOJI
   buffer << (flags ? "🚩" : "  ");
 #else
   buffer << (flags ? "*" : "|");
-#endif  // PW_USE_EMOJIS
+#endif  // PW_EMOJI
   buffer << " ";
 #else
   PW_UNUSED(flags);
