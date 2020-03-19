@@ -578,8 +578,8 @@ functions.
     TransmitLogMessage(base64_buffer, base64_size);
   }
 
-War story: deploying tokenized logging to an in-development product
-===================================================================
+Deployment war story
+====================
 The tokenizer module was developed to bring tokenized logging to an
 in-development product. The product already had an established text-based
 logging system. Deploying tokenization was straightforward and had substantial

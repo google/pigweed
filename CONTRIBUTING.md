@@ -6,16 +6,18 @@ please reach out on the [mailing list](mailto:pigweed@googlegroups.com) first to
 ensure the changes make sense for upstream. We generally go through a design
 phase before making large changes.
 
+Before participating in our community, please take a moment to review our [code
+of conduct](CODE_OF_CONDUCT.md). We expect everyone who interacts with the
+project to respect these guidelines.
+
 Pigweed contribution overview:
  1. One-time contributor setup:
-   * Sign the [Contributor License
-     Agreement](https://cla.developers.google.com/).
-   * Install the [gerrit commit hook](CONTRIBUTING.md#gerrit-commit-hook) to
-     automatically add a Change-ID to your CL.
+   * Sign the [Contributor License Agreement](https://cla.developers.google.com/).
+   * Install the [Gerrit commit hook](CONTRIBUTING.md#gerrit-commit-hook) to
+     automatically add a `Change-Id: ...` line to your commit
    * Install the Pigweed presubmit check hook (`pw presubmit --install`).
      (recommended)
- 2. Ensure all files include a correct [copyright+license
-    header](CONTRIBUTING.md#source-code-headers).
+ 2. Ensure all files include a correct [copyright and license header](CONTRIBUTING.md#source-code-headers).
  2. Upload the change with `git push origin HEAD:refs/for/master`.
  3. Address any reviewer feedback by amending the commit (`git commit --amend`)
  4. Submit change to CI builders to merge.
@@ -34,7 +36,7 @@ again.
 
 ## Gerrit Commit Hook
 
-Gerrit requires all changes to have a Change-ID tag at the bottom of each CL.
+Gerrit requires all changes to have a `Change-Id` tag at the bottom of each CL.
 You should set this up to be done automatically using the instructions below.
 
 **Linux/macOS**<br/>
@@ -73,7 +75,7 @@ browsers.
 Apache header for C and C++ files:
 
 ```javascript
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -91,7 +93,7 @@ Apache header for C and C++ files:
 Apache header for Python and GN files:
 
 ```python
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of

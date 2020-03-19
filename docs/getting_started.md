@@ -4,11 +4,95 @@ This guide will walk you through setup and general use of Pigweed.
 We hope to make the setup process as smooth as possible. If any of this doesn't
 work, please [file a bug](https://bugs.chromium.org/p/pigweed/issues/entry).
 
+## Express setup
+
+If you're impatient, below is the shorter version of getting setup for Pigweed.
+If you run into trouble, look at the more in-depth guide below, starting at
+"Prerequisites". The express setup configures Pigweed's watcher for three
+targets to give a taste of Pigweed:
+
+1. **Host** - Mac, Linux, or Windows. Builds and runs tests
+2. **Device/STM32F429** - Build only; see later in the guide to run tests on
+   device
+3. **Docs** - Builds the Pigweed docs
+
+To get setup:
+
+(1) Make sure you have Git and Python installed and on your path.
+
+(2) Clone Pigweed and bootstrap the environment (compiler setup & more). **Be
+    patient, this step downloads ~1GB of LLVM, GCC, and other tooling**.
+
+```bash
+$ cd ~
+$ git clone https://pigweed.googlesource.com/pigweed/pigweed
+...
+$ cd pigweed
+$ . ./bootstrap.sh
+...
+```
+
+(3) Configure the three target GN builds: host, device, and docs.
+
+```bash
+$ gn gen out/host
+Done. Made 275 targets from 67 files in 417ms
+$ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
+Done. Made 220 targets from 65 files in 424ms
+$ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
+Done. Made 284 targets from 65 files in 415ms
+```
+
+(4) Start the watcher. The watcher will invoke Ninja to build all the targets
+
+```bash
+$ pw watch
+
+ ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+
+20200319 01:41:37 INF Starting Pigweed build watcher
+20200319 01:41:37 INF Searching for GN build dirs...
+20200319 01:41:37 INF Will build [1/3]: out/host
+20200319 01:41:37 INF Will build [2/3]: out/disco
+20200319 01:41:37 INF Will build [3/3]: out/docs
+20200319 01:41:39 INF Directory to watch: $HOME/wrk/pigweed
+20200319 01:41:39 INF Watching for file changes. Ctrl-C exits.
+20200319 01:41:39 INF Triggering initial build...
+...
+```
+
+(5) **Congratulations, you're ready to go!** Now take Pigweed for a spin with
+    the below steps.
+
+(6) With the watcher running in a separate window, edit
+    `pw_status/status_test.cc` to make an expectation fail; for example, add
+    `EXPECT_EQ(0, 1);` in a test.
+
+(7) Save the file. Observe the watcher rebuild & retest, and fail. Restore the
+    test if you feel like it.
+
+(8) Open the generated docs in `out/docs/gen/docs/html/index.html` in your
+    browser.
+
+(9) Edit `docs/getting_started.md` (this file!) and make any change. Save. See
+    the watcher rebuild the docs. Reload your browser, and see the changes.
+
+See below for equivalent Windows commands, and for more details on what each
+part does.
+
+**Note:** After running bootstrap once, use `. ./activate.sh` (or
+`activate.bat` on Windows) to re-activate the environment without
+re-bootstrapping.
+
 ## Prerequisites
 
 **Linux**<br/>
-Linux should work out of box, and not require any manual installation of
-prerequisites.
+Most Linux installations should work out of box, and not require any manual
+installation of prerequisites beyond basics like `git` and `build-essential`.
 
 **macOS**<br/>
 macOS does not require any prerequisites to be installed, but you may run into
@@ -165,8 +249,7 @@ $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gn
 
 **Windows**
 ```batch
-> gn gen out/disco
-> echo pw_target_config = ^"//targets/stm32f429i-disc1/target_config.gni^">> out\disco\args.gn
+> gn gen "pw_target_config = ""//targets/stm32f429i-disc1/target_config.gni""" out/disco
 ```
 
 Switch to the window running `pw_watch`, and quit using `ctrl+c`.
@@ -242,8 +325,7 @@ $ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
 
 **Windows**
 ```batch
-> gn gen out/docs
-> echo pw_target_config = ^"//targets/docs/target_config.gni^">> out\docs\args.gn
+> gn gen --args="pw_target_config = ""//targets/docs/target_config.gni""" out/docs
 ```
 
 Once again, either restart `pw_watch`, or manually run `ninja -C out/docs`. When

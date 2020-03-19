@@ -9,11 +9,11 @@
   :hidden:
 
   Home <self>
+  docs/getting_started.md
   CODE_OF_CONDUCT.md
   CONTRIBUTING.md
-  docs/getting_started.md
   docs/embedded_cpp_guide
   docs/style_guide
-  docs/module_guide
   targets
-  modules
+  docs/module_structure
+  module_guides

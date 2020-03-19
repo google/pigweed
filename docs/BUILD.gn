@@ -27,7 +27,7 @@ pw_doc_group("core_docs") {
   sources = [
     "embedded_cpp_guide.rst",
     "getting_started.md",
-    "module_guide.rst",
+    "module_structure.rst",
     "style_guide.rst",
   ]
 }
@@ -44,7 +44,7 @@ pw_doc_gen("docs") {
     "../CONTRIBUTING.md",
     "../README.md",
     "index.rst",
-    "modules.rst",
+    "module_guides.rst",
     "targets.rst",
   ]
   output_directory = target_gen_dir

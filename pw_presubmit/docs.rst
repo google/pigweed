@@ -11,6 +11,22 @@ The presubmit module provides Python tools for running presubmit checks and
 checking and fixing code format. It also includes the presubmit check script for
 the Pigweed repository, ``pigweed_presubmit.py``.
 
+Presubmit checks are essential tools, but they take work to set up, and
+projects don’t always get around to it. The ``pw_presubmit`` module provides
+tools for setting up high quality presubmit checks for any project. We use this
+framework to run Pigweed’s presubmit on our workstations and in our automated
+building tools.
+
+The ``pw_presubmit`` module also includes ``pw format``, a tool that provides a
+unified interface for automatically formatting code in a variety of languages.
+With ``pw format``, you can format C, C++, Python, GN, and Go code according to
+configurations defined by your project. ``pw format`` leverages existing tools
+like ``clang-format``, and it’s simple to add support for new languages.
+
+.. image:: ../docs/images/pw_presubmit_demo.gif
+   :alt: ``pw format`` demo
+   :align: left
+
 Compatibility
 =============
 Python 3
