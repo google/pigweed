@@ -138,7 +138,6 @@ class Remove(_VariableAction):
         if windows:
             outs.write(':: Remove\n::   {value}\n:: from\n::   {name}\n'
                        ':: before adding it back.\n'
-                       'set {name}=%{name}:{pathsep}{value}=%\n'
                        'set {name}=%{name}:{value}{pathsep}=%\n'.format(
                            name=self.name,
                            value=self.value,
