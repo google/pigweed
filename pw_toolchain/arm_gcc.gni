@@ -188,7 +188,11 @@ template("arm_gcc_toolchain") {
     }
 
     tool("stamp") {
-      command = "touch {{output}}"
+      if (host_os == "win") {
+        command = "cmd /c type nul > \"{{output}}\""
+      } else {
+        command = "touch {{output}}"
+      }
       description = "stamp {{output}}"
     }
 
