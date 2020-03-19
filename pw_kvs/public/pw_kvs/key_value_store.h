@@ -75,9 +75,6 @@ struct Options {
 
 class KeyValueStore {
  public:
-  // TODO: Rework entry relocation to not need a large buffer.
-  static constexpr size_t kWorkingBufferSizeBytes = (4 * 1024);
-
   // KeyValueStores are declared as instances of
   // KeyValueStoreBuffer<MAX_ENTRIES, MAX_SECTORS>, which allocates buffers for
   // tracking entries and flash sectors.
