@@ -146,15 +146,15 @@ class Remove(_VariableAction):
         else:
             outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
                        'adding it back.\n'
-                       '{name}=$(echo "${name}"'
+                       '{name}="$(echo "${name}"'
                        ' | sed "s/{pathsep}{escvalue}{pathsep}/{pathsep}/g;"'
                        ' | sed "s/^{escvalue}{pathsep}//g;"'
                        ' | sed "s/{pathsep}{escvalue}$//g;"'
-                       ')\nexport {name}\n'.format(name=self.name,
-                                                   value=self.value,
-                                                   escvalue=self.value.replace(
-                                                       '/', '\\/'),
-                                                   pathsep=self._pathsep))
+                       ')"\nexport {name}\n'.format(
+                           name=self.name,
+                           value=self.value,
+                           escvalue=self.value.replace('/', '\\/'),
+                           pathsep=self._pathsep))
 
     def apply(self, env):
         env[self.name] = env[self.name].replace(
@@ -291,7 +291,7 @@ class Command(_Action):
                 'if %ERRORLEVEL% neq 0 goto {}\n'.format(_SCRIPT_END_LABEL))
         else:
             # Assume failing command produced relevant output.
-            outs.write('if [ $? != 0 ]; then\n  return 1\nfi\n')
+            outs.write('if [ "$?" -ne 0 ]; then\n  return 1\nfi\n')
 
 
 class BlankLine(_Action):

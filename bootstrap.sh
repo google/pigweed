@@ -51,24 +51,34 @@ EOF
 # variable set.
 # TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if test -n "$PW_CHECKOUT_ROOT"; then
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")
+  PW_SETUP_SCRIPT_PATH="$(_pw_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
   unset PW_CHECKOUT_ROOT
 # Shell: bash.
 elif test -n "$BASH"; then
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath $BASH_SOURCE)
+  PW_SETUP_SCRIPT_PATH="$(_pw_abspath "$BASH_SOURCE")"
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath ${(%):-%N})
+  PW_SETUP_SCRIPT_PATH="$(_pw_abspath "${(%):-%N}")"
 # Shell: dash.
 elif test ${0##*/} = dash; then
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath \
-    $(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;'))
+  PW_SETUP_SCRIPT_PATH="$(_pw_abspath \
+    "$(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;')")"
 # If everything else fails, try $0. It could work.
 else
-  PW_SETUP_SCRIPT_PATH=$(_pw_abspath $0)
+  PW_SETUP_SCRIPT_PATH="$(_pw_abspath "$0")"
 fi
 
-PW_ROOT=$(dirname $PW_SETUP_SCRIPT_PATH)
+PW_ROOT="$(dirname "$PW_SETUP_SCRIPT_PATH")"
+
+if [[ "$PW_ROOT" = *" "* ]]; then
+  _pw_bold_red "Error: The Pigweed path contains spaces\n"
+  _pw_red "  The path '$PW_ROOT' contains spaces. "
+  _pw_red "  Pigweed's Python environment currently requires Pigweed to be "
+  _pw_red "  at a path without spaces. Please checkout Pigweed in a directory "
+  _pw_red "  without spaces and retry running bootstrap."
+  return
+fi
+
 export PW_ROOT
 
 SETUP_SH="$PW_ROOT/pw_env_setup/.env_setup.sh"
@@ -79,12 +89,12 @@ if [ -z "$PW_ENVSETUP_QUIET" ]; then
 fi
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
-[ $(basename $PW_SETUP_SCRIPT_PATH) = "bootstrap.sh" ] || \
-  [ ! -f $SETUP_SH ] || \
-  [ ! -s $SETUP_SH ]
-_PW_IS_BOOTSTRAP=$?
+[ "$(basename "$PW_SETUP_SCRIPT_PATH")" = "bootstrap.sh" ] || \
+  [ ! -f "$SETUP_SH" ] || \
+  [ ! -s "$SETUP_SH" ]
+_PW_IS_BOOTSTRAP="$?"
 
-if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
+if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   _PW_NAME="bootstrap"
 
   if [ -z "$PW_ENVSETUP_QUIET" ]; then
@@ -104,7 +114,7 @@ if [ $_PW_IS_BOOTSTRAP -eq 0 ]; then
     return
   fi
 
-  $PYTHON $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py --shell-file $SETUP_SH
+  "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH"
 else
   _PW_NAME="activate"
 
@@ -113,11 +123,11 @@ else
   fi
 fi
 
-if [ -f $SETUP_SH ]; then
-  . $SETUP_SH
+if [ -f "$SETUP_SH" ]; then
+  . "$SETUP_SH"
 
-  if [ $? -eq 0 ]; then
-    if [ $_PW_IS_BOOTSTRAP -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
+  if [ "$?" -eq 0 ]; then
+    if [ "$_PW_IS_BOOTSTRAP" -eq 0 ] && [ -z "$PW_ENVSETUP_QUIET" ]; then
       echo "To activate this environment in the future, run this in your "
       echo "terminal:"
       echo

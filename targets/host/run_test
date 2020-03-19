@@ -15,4 +15,4 @@
 
 # Test runner for host Linux/macOS systems.
 # Called with the path to a test binary and directly executes it.
-$*
+"$@"
