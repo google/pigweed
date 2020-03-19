@@ -424,25 +424,29 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
         charset=charset,
     )
 
-    observer = Observer()
-    observer.schedule(
-        event_handler,
-        path_of_directory_to_watch,
-        recursive=True,
-    )
-    observer.start()
-
-    _LOG.info('Directory to watch: %s', path_to_log)
-    _LOG.info('Watching for file changes. Ctrl-C exits.')
-
-    event_handler.debouncer.press('Triggering initial build...')
-
     try:
+        # It can take awhile to configure the filesystem watcher, so have the
+        # message reflect that with the "...". Run inside the try: to
+        # gracefully handle the user Ctrl-C'ing out during startup.
+        _LOG.info('Attaching filesystem watcher to %s/...', path_to_log)
+        observer = Observer()
+        observer.schedule(
+            event_handler,
+            path_of_directory_to_watch,
+            recursive=True,
+        )
+        observer.start()
+
+        event_handler.debouncer.press('Triggering initial build...')
+
         while observer.isAlive():
             observer.join(1)
-    except KeyboardInterrupt:
+    # Ctrl-C on Unix generates KeyboardInterrupt
+    # Ctrl-Z on Windows generates EOFError
+    except (KeyboardInterrupt, EOFError):
         _exit_due_to_interrupt()
 
+    _LOG.critical('Should never get here')
     observer.join()
 
 

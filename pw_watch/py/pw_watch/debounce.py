@@ -152,7 +152,9 @@ class Debouncer:
                     self.function.on_complete(cancelled=True)
                     self._transition(State.RERUN)
                 self._start_cooldown_timer()
-        except KeyboardInterrupt:
+        # Ctrl-C on Unix generates KeyboardInterrupt
+        # Ctrl-Z on Windows generates EOFError
+        except (KeyboardInterrupt, EOFError):
             self.function.on_keyboard_interrupt()
 
     def _start_cooldown_timer(self):
@@ -174,5 +176,7 @@ class Debouncer:
                     self._press_unlocked('Rerunning: %s' %
                                          self.rerun_event_description)
 
-        except KeyboardInterrupt:
+        # Ctrl-C on Unix generates KeyboardInterrupt
+        # Ctrl-Z on Windows generates EOFError
+        except (KeyboardInterrupt, EOFError):
             self.function.on_keyboard_interrupt()
