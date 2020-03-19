@@ -81,7 +81,7 @@ $ . ./activate.sh
 
 **Windows**
 ```batch
-> pw_env_setup\env_setup.bat
+> activate.bat
 ```
 
 This will provide you with GN, Ninja, a host and Cortex-M compiler,
