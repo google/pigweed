@@ -153,7 +153,8 @@ executable("tests") {
   deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
 }
 
-fuzzers_package("bluetooth_fuzzers") {
+fuzzers_package("fuzzers") {
+  package_name = "bt-host-fuzzers"
   fuzzers = [
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_rx_engine_fuzzer",
