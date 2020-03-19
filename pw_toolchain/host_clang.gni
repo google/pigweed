@@ -191,7 +191,12 @@ template("host_clang") {
       description = "ld $_link_outfile"
       outputs = [ _link_outfile ]
       default_output_dir = "{{target_out_dir}}"
-      default_output_extension = ""
+
+      if (host_os == "win") {
+        default_output_extension = ".exe"
+      } else {
+        default_output_extension = ""
+      }
     }
 
     tool("solink") {
