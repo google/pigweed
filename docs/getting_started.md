@@ -245,7 +245,7 @@ $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gn
 
 **Windows**
 ```batch
-> gn gen "pw_target_config = ""//targets/stm32f429i-disc1/target_config.gni""" out/disco
+> gn gen --args="pw_target_config = ""//targets/stm32f429i-disc1/target_config.gni""" out/disco
 ```
 
 Switch to the window running `pw_watch`, and quit using `ctrl+c`.
