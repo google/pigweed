@@ -44,6 +44,7 @@ source_set("pw_kvs") {
     "public/pw_kvs/internal/sectors.h",
     "public/pw_kvs/internal/span_traits.h",
     "pw_kvs_private/macros.h",
+    "sectors.cc",
   ]
   sources += public
   public_deps = [
@@ -61,6 +62,7 @@ source_set("pw_kvs") {
     ":key_value_store_test",
     ":key_value_store_binary_format_test",
     ":key_value_store_map_test",
+    ":sectors_test",
   ]
 }
 
@@ -106,6 +108,7 @@ pw_test_group("tests") {
     ":key_value_store_binary_format_test",
     ":key_value_store_fuzz_test",
     ":key_value_store_map_test",
+    ":sectors_test",
   ]
 }
 
@@ -178,6 +181,14 @@ pw_test("key_value_store_map_test") {
     dir_pw_checksum,
   ]
   sources = [ "key_value_store_map_test.cc" ]
+}
+
+pw_test("sectors_test") {
+  deps = [
+    ":pw_kvs",
+    ":test_utils",
+  ]
+  sources = [ "sectors_test.cc" ]
 }
 
 pw_doc_group("docs") {

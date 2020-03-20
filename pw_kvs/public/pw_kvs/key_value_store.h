@@ -372,58 +372,16 @@ class KeyValueStore {
                        KeyValueStore::Address& address,
                        span<const Address> addresses_to_skip);
 
-  enum FindSectorMode { kAppendEntry, kGarbageCollect };
-
-  Status FindSectorWithSpace(SectorDescriptor** found_sector,
-                             size_t size,
-                             FindSectorMode find_mode,
-                             span<const Address> addresses_to_skip,
-                             span<const Address> reserved_addresses);
-
-  SectorDescriptor* FindSectorToGarbageCollect(
-      span<const Address> addresses_to_avoid);
-
   Status GarbageCollectPartial(span<const Address> addresses_to_skip);
 
   Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
                                       const EntryMetadata& descriptor,
                                       span<const Address> addresses_to_skip);
 
-  Status GarbageCollectSector(SectorDescriptor* sector_to_gc,
+  Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
                               span<const Address> addresses_to_skip);
 
   Status Repair() { return Status::UNIMPLEMENTED; }
-
-  bool AddressInSector(const SectorDescriptor& sector, Address address) const {
-    const Address sector_base = SectorBaseAddress(&sector);
-    const Address sector_end = sector_base + partition_.sector_size_bytes();
-
-    return ((address >= sector_base) && (address < sector_end));
-  }
-
-  unsigned SectorIndex(const SectorDescriptor* sector) const {
-    return sector - sectors_.begin();
-  }
-
-  Address SectorBaseAddress(const SectorDescriptor* sector) const {
-    return SectorIndex(sector) * partition_.sector_size_bytes();
-  }
-
-  SectorDescriptor* SectorFromAddress(Address address) {
-    const size_t index = address / partition_.sector_size_bytes();
-    // TODO: Add boundary checking once asserts are supported.
-    // DCHECK_LT(index, sector_map_size_);`
-    return &sectors_[index];
-  }
-
-  const SectorDescriptor* SectorFromAddress(Address address) const {
-    return &sectors_[address / partition_.sector_size_bytes()];
-  }
-
-  Address NextWritableAddress(const SectorDescriptor* sector) const {
-    return SectorBaseAddress(sector) + partition_.sector_size_bytes() -
-           sector->writable_bytes();
-  }
 
   internal::Entry CreateEntry(Address address,
                               std::string_view key,
@@ -436,16 +394,12 @@ class KeyValueStore {
   FlashPartition& partition_;
   const internal::EntryFormats formats_;
 
+  // List of sectors used by this KVS.
+  internal::Sectors sectors_;
+
   // Unordered list of KeyDescriptors. Finding a key requires scanning and
   // verifying a match by reading the actual entry.
   internal::EntryCache entry_cache_;
-
-  // List of sectors used by this KVS.
-  Vector<SectorDescriptor>& sectors_;
-
-  // Temp buffer with redundancy() * 2 - 1 entries for use in RelocateEntry.
-  // Used in FindSectorWithSpace and FindSectorToGarbageCollect.
-  const SectorDescriptor** const temp_sectors_to_skip_;
 
   Options options_;
 
@@ -453,16 +407,6 @@ class KeyValueStore {
 
   bool error_detected_;
 
-  // The last sector that was selected as the "new empty sector" to write to.
-  // This last new sector is used as the starting point for the next "find a new
-  // empty sector to write to" operation. By using the last new sector as the
-  // start point we will cycle which empty sector is selected next, spreading
-  // the wear across all the empty sectors, rather than putting more wear on the
-  // lower number sectors.
-  //
-  // Use SectorDescriptor* for the persistent storage rather than sector index
-  // because SectorDescriptor* is the standard way to identify a sector.
-  SectorDescriptor* last_new_sector_;
   uint32_t last_transaction_id_;
 };
 

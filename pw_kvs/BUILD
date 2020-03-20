@@ -39,6 +39,7 @@ pw_cc_library(
         "public/pw_kvs/internal/sectors.h",
         "public/pw_kvs/internal/span_traits.h",
         "pw_kvs_private/macros.h",
+        "sectors.cc",
     ],
     hdrs = [
         "public/pw_kvs/alignment.h",
@@ -171,6 +172,15 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
         "//pw_checksum",
+    ],
+)
+
+pw_cc_test(
+    name = "sectors_test",
+    srcs = ["sectors_test.cc"],
+    deps = [
+        ":pw_kvs",
+        ":test_utils",
     ],
 )
 
