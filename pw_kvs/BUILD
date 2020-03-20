@@ -36,7 +36,7 @@ pw_cc_library(
         "public/pw_kvs/internal/entry_cache.h",
         "public/pw_kvs/internal/hash.h",
         "public/pw_kvs/internal/key_descriptor.h",
-        "public/pw_kvs/internal/sector_descriptor.h",
+        "public/pw_kvs/internal/sectors.h",
         "public/pw_kvs/internal/span_traits.h",
         "pw_kvs_private/macros.h",
     ],

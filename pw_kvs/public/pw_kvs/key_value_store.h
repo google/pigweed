@@ -26,7 +26,7 @@
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/entry_cache.h"
 #include "pw_kvs/internal/key_descriptor.h"
-#include "pw_kvs/internal/sector_descriptor.h"
+#include "pw_kvs/internal/sectors.h"
 #include "pw_kvs/internal/span_traits.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
