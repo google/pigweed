@@ -921,6 +921,59 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OutboundFailsAfterErtxExpiryForConnectionR
   EXPECT_EQ(1, open_cb_count);
 }
 
+// In L2CAP Test Spec v5.0.2, this is L2CAP/COS/CED/BV-08-C [Disconnect on Timeout].
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       OutboundFailsAndDisconnectsAfterRtxExpiryForConfigurationResponse) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, open_cb_count);
+}
+
+// Simulate a ERTX timer expiry after a Configuration Response with "Pending" status.
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       OutboundFailsAndDisconnectsAfterErtxExpiryForConfigurationResponse) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyPendingConfigRsp.view()},
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      EXPECT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  // FakeSignalingChannel doesn't need to be clocked in order to simulate a timeout.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, open_cb_count);
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});

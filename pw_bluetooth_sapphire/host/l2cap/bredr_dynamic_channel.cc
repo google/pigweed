@@ -643,7 +643,15 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
 }
 
 void BrEdrDynamicChannel::SendLocalConfig() {
-  BrEdrCommandHandler cmd_handler(signaling_channel_);
+  auto on_config_rsp_timeout = [this, self = weak_ptr_factory_.GetWeakPtr()] {
+    if (self) {
+      bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Timed out waiting for Configuration Response",
+             local_cid());
+      PassOpenError();
+    }
+  };
+
+  BrEdrCommandHandler cmd_handler(signaling_channel_, std::move(on_config_rsp_timeout));
 
   auto request_config = local_config_;
 
