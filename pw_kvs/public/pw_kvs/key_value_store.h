@@ -392,6 +392,8 @@ class KeyValueStore {
   Status GarbageCollectSector(SectorDescriptor* sector_to_gc,
                               span<const Address> addresses_to_skip);
 
+  Status Repair() { return Status::UNIMPLEMENTED; }
+
   bool AddressInSector(const SectorDescriptor& sector, Address address) const {
     const Address sector_base = SectorBaseAddress(&sector);
     const Address sector_end = sector_base + partition_.sector_size_bytes();
@@ -448,6 +450,8 @@ class KeyValueStore {
   Options options_;
 
   bool initialized_;
+
+  bool error_detected_;
 
   // The last sector that was selected as the "new empty sector" to write to.
   // This last new sector is used as the starting point for the next "find a new

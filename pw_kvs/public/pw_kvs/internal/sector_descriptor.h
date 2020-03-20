@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 
@@ -27,12 +28,18 @@ class SectorDescriptor {
   SectorDescriptor(const SectorDescriptor&) = default;
   SectorDescriptor& operator=(const SectorDescriptor&) = default;
 
-  // The number of bytes available to be written in this sector.
-  size_t writable_bytes() const { return tail_free_bytes_; }
+  // The number of bytes available to be written in this sector. It the sector
+  // is marked as corrupt, no bytes are available.
+  size_t writable_bytes() const {
+    return (tail_free_bytes_ == kCorruptSector) ? 0 : tail_free_bytes_;
+  }
 
   void set_writable_bytes(uint16_t writable_bytes) {
     tail_free_bytes_ = writable_bytes;
   }
+
+  void mark_corrupt() { tail_free_bytes_ = kCorruptSector; }
+  bool corrupt() const { return tail_free_bytes_ == kCorruptSector; }
 
   // The number of bytes of valid data in this sector.
   size_t valid_bytes() const { return valid_bytes_; }
@@ -61,20 +68,24 @@ class SectorDescriptor {
   }
 
   bool HasSpace(size_t required_space) const {
-    return tail_free_bytes_ >= required_space;
+    return writable_bytes() >= required_space;
   }
 
   bool Empty(size_t sector_size_bytes) const {
-    return tail_free_bytes_ == sector_size_bytes;
+    return writable_bytes() == sector_size_bytes;
   }
 
   // Returns the number of bytes that would be recovered if this sector is
   // garbage collected.
   size_t RecoverableBytes(size_t sector_size_bytes) const {
-    return sector_size_bytes - valid_bytes_ - tail_free_bytes_;
+    return sector_size_bytes - valid_bytes_ - writable_bytes();
   }
 
+  static constexpr size_t max_sector_size() { return kMaxSectorSize; }
+
  private:
+  static constexpr uint16_t kCorruptSector = UINT16_MAX;
+  static constexpr size_t kMaxSectorSize = UINT16_MAX - 1;
   uint16_t tail_free_bytes_;  // writable bytes at the end of the sector
   uint16_t valid_bytes_;      // sum of sizes of valid entries
 };
