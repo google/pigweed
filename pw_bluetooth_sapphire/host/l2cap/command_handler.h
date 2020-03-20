@@ -22,16 +22,18 @@ namespace bt::l2cap::internal {
 // kind of request to register, and even ephemerally as a temporary around a
 // SignalingChannel.
 //
-// For outbound requests, use the CommandHandler::Send*Request methods. They
-// take parameters to be encoded into the request payload (with endian
-// conversion and bounds checking) and a *ResponseCallback callback. When a
-// matching response or rejection is received, the callback will be passed a
-// *Response object containing the decoded command's parameters. Its |status()|
-// shall be checked first to determine whether it's a rejection or response
-// command. Return ResponseHandlerAction::kExpectAdditionalResponse if more
-// request responses from the peer will follow, or else
-// ResponseHandlerAction::kCompleteOutboundTransaction. Returning kCompleteOutboundTransaction
-// will destroy the *ResponseCallback object.
+// For outbound requests, use the CommandHandler::Send*Request methods. They take parameters to be
+// encoded into the request payload (with endian conversion and bounds checking) and a
+// *ResponseCallback callback. When a matching response or rejection is received, the callback will
+// be passed a *Response object containing the decoded command's parameters. Its |status()| shall
+// be checked first to determine whether it's a rejection or response command. Return
+// ResponseHandlerAction::kExpectAdditionalResponse if more request responses from the peer will
+// follow, or else ResponseHandlerAction::kCompleteOutboundTransaction. Returning
+// kCompleteOutboundTransaction will destroy the *ResponseCallback object.
+//
+// If the underlying SignalingChannel times out waiting for a response, the *ResponseCallback will
+// not be called. Instead, the |request_fail_callback| that CommandHandler was constructed with will
+// be called.
 //
 // Example:
 //   DisconnectionResponseCallback rsp_cb =

@@ -76,14 +76,22 @@ CommandId SignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseH
 
     if (id == initial_id) {
       bt_log(WARN, "l2cap",
-             "sig: all valid command IDs in use for "
-             "pending requests; can't queue expected response command %#.2x",
+             "sig: all valid command IDs in use for pending requests; can't queue expected "
+             "response command %#.2x",
              expected_code);
       return kInvalidCommandId;
     }
   }
 
-  pending_commands_[id] = PendingCommand{expected_code, std::move(cb)};
+  const auto [iter, inserted] = pending_commands_.try_emplace(id, expected_code, std::move(cb));
+  ZX_ASSERT(inserted);
+
+  // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which will call
+  // OnResponseTimeout when it expires. This timer is canceled if the response is received before
+  // expiry because OnRxResponse destroys its containing PendingCommand.
+  auto& rtx_task = iter->second.response_timeout_task;
+  rtx_task.set_handler(std::bind(&SignalingChannel::OnResponseTimeout, this, id));
+  rtx_task.PostDelayed(async_get_default_dispatcher(), kSignalingChannelResponseTimeout);
   return id;
 }
 
@@ -162,6 +170,13 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
       ResponseHandlerAction::kCompleteOutboundTransaction) {
     pending_commands_.erase(iter);
   }
+}
+
+void SignalingChannel::OnResponseTimeout(CommandId id) {
+  auto node = pending_commands_.extract(id);
+  ZX_ASSERT(node);
+  ResponseHandler& response_handler = node.mapped().response_handler;
+  response_handler(Status::kTimeOut, BufferView());
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {

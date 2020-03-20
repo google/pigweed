@@ -5,6 +5,7 @@
 #include "signaling_channel.h"
 
 #include "fake_channel_test.h"
+#include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
@@ -434,6 +435,55 @@ TEST_F(L2CAP_SignalingChannelTest, RemoteRejectionPassedToHandler) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(rx_success);
+}
+
+TEST_F(L2CAP_SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfterRtxTimeout) {
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
+  int rx_cb_count = 0;
+  EXPECT_TRUE(
+      sig()->SendRequest(kEchoRequest, req_data, [&rx_cb_count](Status status, const ByteBuffer&) {
+        rx_cb_count++;
+        EXPECT_EQ(Status::kSuccess, status);
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+      }));
+
+  const StaticByteBuffer echo_rsp(
+      // Echo response with no payload.
+      0x09, 0x01, 0x00, 0x00);
+  fake_chan()->Receive(echo_rsp);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+  EXPECT_EQ(1, rx_cb_count);
+
+  RunLoopFor(kSignalingChannelResponseTimeout);
+  EXPECT_EQ(1, rx_cb_count);
+}
+
+// Ensure that the signaling channel calls ResponseHandler with Status::kTimeOut after a request
+// times out waiting for a peer response.
+TEST_F(L2CAP_SignalingChannelTest, CallHandlerWithKTimeOutStatusAfterRtxTimeout) {
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
+  bool rx_cb_called = false;
+  EXPECT_TRUE(
+      sig()->SendRequest(kEchoRequest, req_data, [&rx_cb_called](Status status, const ByteBuffer&) {
+        rx_cb_called = true;
+        EXPECT_EQ(Status::kTimeOut, status);
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+      }));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+  EXPECT_FALSE(rx_cb_called);
+
+  RunLoopFor(kSignalingChannelResponseTimeout);
+  EXPECT_TRUE(rx_cb_called);
 }
 
 TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {

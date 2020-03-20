@@ -29,6 +29,13 @@ static_assert(kErtmReceiverReadyPollTimerDuration <= zx::msec(std::numeric_limit
 static constexpr auto kErtmMonitorTimerDuration = zx::sec(12);
 static_assert(kErtmMonitorTimerDuration <= zx::msec(std::numeric_limits<uint16_t>::max()));
 
+// See Core Spec v5.0, Volume 3, Part A, Sec 6.2.1. This initial value is the only timeout duration
+// used because Signaling Channel packets are not to be sent as automatically flushable and thus
+// requests will not be retransmitted at the L2CAP level per its "at least double" back-off scheme.
+static constexpr auto kSignalingChannelResponseTimeout = zx::sec(1);
+static_assert(kSignalingChannelResponseTimeout >= zx::sec(1));
+static_assert(kSignalingChannelResponseTimeout <= zx::sec(60));
+
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented
 // channels over a logical link.
 // (see Core Spec v5.0, Vol 3, Part A, Section 2.1)

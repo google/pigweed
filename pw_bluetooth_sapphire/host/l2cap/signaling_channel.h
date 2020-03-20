@@ -10,6 +10,7 @@
 
 #include <fbl/macros.h>
 
+#include "lib/async/cpp/task.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -178,14 +179,16 @@ class SignalingChannel : public SignalingChannelInterface {
   // If the signaling channel receives a Command Reject that matches the same
   // identifier, the rejection packet will be forwarded to the callback instead.
   // |handler| will be run on the L2CAP thread.
-  //
-  // TODO(xow): Add function to cancel a queued response.
   CommandId EnqueueResponse(CommandCode expected_code, ResponseHandler cb);
 
   // Called when a response-type command packet is received. Sends a Command
   // Reject if no ResponseHandler was registered for inbound packet's command
   // code and identifier.
   void OnRxResponse(const SignalingPacket& packet);
+
+  // Called after Response Timeout eXpired (RTX) timer expires. |id| must be in |pending_commands_|.
+  // The ResponseHandler will be invoked with Status::kTimeOut and an empty ByteBuffer.
+  void OnResponseTimeout(CommandId id);
 
   // True if an outbound request-type command has registered a callback for its
   // response matching a particular |id|.
@@ -225,8 +228,15 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Stores response handlers for requests that have been sent.
   struct PendingCommand {
+    PendingCommand(CommandCode expected_code, ResponseHandler response_handler)
+        : expected_code(expected_code),
+          response_handler(std::move(response_handler)),
+          response_timeout_task() {}
     CommandCode expected_code;
     ResponseHandler response_handler;
+
+    // Automatically canceled by destruction if the response is received.
+    async::TaskClosure response_timeout_task;
   };
   std::unordered_map<CommandId, PendingCommand> pending_commands_;
 
