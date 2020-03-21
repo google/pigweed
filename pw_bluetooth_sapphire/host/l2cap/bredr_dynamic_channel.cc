@@ -296,7 +296,6 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
     return;
   }
 
-  // TODO(BT-331): Call |done_cb| after RTX timeout to avoid zombie channels.
   auto on_discon_rsp =
       [local_cid = local_cid(), remote_cid = remote_cid(), self = weak_ptr_factory_.GetWeakPtr(),
        done_cb = done_cb.share()](const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
@@ -314,7 +313,17 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
         }
       };
 
-  BrEdrCommandHandler cmd_handler(signaling_channel_);
+  auto on_discon_rsp_timeout = [local_cid = local_cid(), self = weak_ptr_factory_.GetWeakPtr(),
+                                done_cb = done_cb.share()]() mutable {
+    bt_log(WARN, "l2cap-bredr",
+           "Channel %#.4x: Timed out waiting for Disconnection Response; completing disconnection",
+           local_cid);
+    if (self) {
+      done_cb();
+    }
+  };
+
+  BrEdrCommandHandler cmd_handler(signaling_channel_, std::move(on_discon_rsp_timeout));
   if (!cmd_handler.SendDisconnectionRequest(remote_cid(), local_cid(), std::move(on_discon_rsp))) {
     bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Disconnection Request",
            local_cid());

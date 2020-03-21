@@ -1222,6 +1222,37 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 }
 
+// DisconnectDoneCallback is load-bearing as a signal for the registry to delete a channel's state
+// and recycle its channel ID, so test that it's called even when the peer doesn't actually send a
+// Disconnect Response.
+TEST_F(L2CAP_BrEdrDynamicChannelTest, DisconnectDoneCallbackCalledAfterDisconnectResponseTimeOut) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+
+  // Build channel and operate it directly to be able to disconnect it.
+  auto channel =
+      BrEdrDynamicChannel::MakeOutbound(registry(), sig(), kPsm, kLocalCId, kChannelParams, false);
+  ASSERT_TRUE(channel);
+  channel->Open([] {});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_TRUE(channel->IsConnected());
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kTimeOut, BufferView()});
+
+  bool disconnect_done_cb_called = false;
+  channel->Disconnect([&disconnect_done_cb_called] { disconnect_done_cb_called = true; });
+  EXPECT_FALSE(channel->IsConnected());
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_TRUE(disconnect_done_cb_called);
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenChannelConfigWrongId) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
