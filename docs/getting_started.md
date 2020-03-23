@@ -97,13 +97,20 @@ installation of prerequisites beyond basics like `git` and `build-essential`.
 Make sure gcc is set to gcc-8.
 
 **macOS**<br/>
-macOS does not require any prerequisites to be installed, but you may run into
-some Mac-specific configuration issues when you begin the bootstrap process.
+On macOS you may get SSL certificate errors with the system Python
+installation. Run `sudo pip install certifi` to fix this. If you get SSL
+errors with the Python from [Homebrew](https://brew.sh) try running the
+following commands to ensure Python knows how to use OpenSSL.
+
+```bash
+brew install openssl
+brew uninstall python
+brew install python
+```
 
 To flash firmware to a STM32 Discovery development board (and run `pw test`)
-from macOS, you will need to install OpenOCD. Install Homebrew using the latest
-instructions at https://brew.sh/, then install OpenOCD with
-`brew install openocd`.
+from macOS, you will need to install OpenOCD. Install
+[Homebrew](https://brew.sh), then install OpenOCD with `brew install openocd`.
 
 **Windows**<br/>
 To start using Pigweed on Windows, you'll need to install
