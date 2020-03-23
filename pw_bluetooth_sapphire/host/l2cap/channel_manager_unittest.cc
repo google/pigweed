@@ -75,7 +75,8 @@ auto MakeExtendedFeaturesInformationRequest(CommandId id, hci::ConnectionHandle 
 }
 
 auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaultMTU,
-                          std::optional<ChannelMode> mode = std::nullopt) {
+                          std::optional<ChannelMode> mode = std::nullopt,
+                          uint8_t max_inbound_transmissions = 0) {
   if (mode.has_value()) {
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 27 bytes)
@@ -93,8 +94,8 @@ auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaul
         // Retransmission & Flow Control option (type, length: 9, mode, tx_window: 63,
         // max_retransmit: 0, retransmit timeout: 0 ms, monitor timeout: 0 ms, mps: 65535)
         0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames,
-        kErtmMaxInboundRetransmissions, 0x00, 0x00, 0x00, 0x00,
-        LowerBits(kMaxInboundPduPayloadSize), UpperBits(kMaxInboundPduPayloadSize)));
+        max_inbound_transmissions, 0x00, 0x00, 0x00, 0x00, LowerBits(kMaxInboundPduPayloadSize),
+        UpperBits(kMaxInboundPduPayloadSize)));
   }
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
@@ -119,8 +120,9 @@ auto InboundConnectionResponse(CommandId id) {
 }
 
 auto InboundConfigurationRequest(CommandId id, uint16_t mtu = kDefaultMTU,
-                                 std::optional<ChannelMode> mode = std::nullopt) {
-  return ConfigurationRequest(id, kLocalId, mtu, mode);
+                                 std::optional<ChannelMode> mode = std::nullopt,
+                                 uint8_t max_inbound_transmissions = 0) {
+  return ConfigurationRequest(id, kLocalId, mtu, mode, max_inbound_transmissions);
 }
 
 auto InboundConfigurationResponse(CommandId id) {
@@ -164,11 +166,14 @@ auto OutboundConnectionRequest(CommandId id) {
 
 auto OutboundConfigurationRequest(CommandId id, uint16_t mtu = kMaxMTU,
                                   std::optional<ChannelMode> mode = std::nullopt) {
-  return ConfigurationRequest(id, kRemoteId, mtu, mode);
+  return ConfigurationRequest(id, kRemoteId, mtu, mode, kErtmMaxInboundRetransmissions);
 }
 
+// |max_transmissions| is ignored per Core Spec v5.0 Vol 3, Part A, Sec 5.4 but still parameterized
+// because this needs to match the value that is sent by our L2CAP configuration logic.
 auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
-                                   std::optional<ChannelMode> mode = std::nullopt) {
+                                   std::optional<ChannelMode> mode = std::nullopt,
+                                   uint8_t max_transmissions = 0) {
   const uint8_t kConfigLength = 10 + (mode.has_value() ? 11 : 0);
   const uint16_t kL2capLength = kConfigLength + 4;
   const uint16_t kAclLength = kL2capLength + 4;
@@ -192,11 +197,10 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
 
         // Retransmission & Flow Control option (type, length: 9, mode, TxWindow, MaxTransmit, rtx
         // timeout: 2 secs, monitor timeout: 12 secs, mps)
-        0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames,
-        kErtmMaxInboundRetransmissions, LowerBits(kErtmReceiverReadyPollTimerMsecs),
-        UpperBits(kErtmReceiverReadyPollTimerMsecs), LowerBits(kErtmMonitorTimerMsecs),
-        UpperBits(kErtmMonitorTimerMsecs), LowerBits(kMaxInboundPduPayloadSize),
-        UpperBits(kMaxInboundPduPayloadSize)));
+        0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames, max_transmissions,
+        LowerBits(kErtmReceiverReadyPollTimerMsecs), UpperBits(kErtmReceiverReadyPollTimerMsecs),
+        LowerBits(kErtmMonitorTimerMsecs), UpperBits(kErtmMonitorTimerMsecs),
+        LowerBits(kMaxInboundPduPayloadSize), UpperBits(kMaxInboundPduPayloadSize)));
   } else {
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 14 bytes)
