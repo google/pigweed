@@ -90,6 +90,7 @@ fit::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
 }
 
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);
+fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);
 
 // Functions that convert FIDL types to library objects.
 bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::sys::InputCapability,

@@ -6,6 +6,7 @@
 
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
@@ -13,7 +14,7 @@ using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
 
 namespace fidlbredr = fuchsia::bluetooth::bredr;
-using fidlbredr::DataElementType;
+using fidlbredr::DataElement;
 using fidlbredr::Profile;
 
 namespace bthost {
@@ -66,90 +67,70 @@ fidlbredr::Channel ChannelSocketToFidlChannel(bt::l2cap::ChannelSocket chan_sock
 
 bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement* out) {
   ZX_DEBUG_ASSERT(out);
-  switch (fidl.type) {
-    case DataElementType::NOTHING:
-      out->Set(nullptr);
-      return true;
-    case DataElementType::UNSIGNED_INTEGER: {
-      if (!fidl.data.is_integer()) {
-        return false;
-      }
-      if (fidl.size == 1) {
-        out->Set(uint8_t(fidl.data.integer()));
-      } else if (fidl.size == 2) {
-        out->Set(uint16_t(fidl.data.integer()));
-      } else if (fidl.size == 4) {
-        out->Set(uint32_t(fidl.data.integer()));
-      } else if (fidl.size == 8) {
-        out->Set(uint64_t(fidl.data.integer()));
-      } else {
-        return false;
-      }
-      return true;
-    }
-    case DataElementType::SIGNED_INTEGER: {
-      if (!fidl.data.is_integer()) {
-        return false;
-      }
-      if (fidl.size == 1) {
-        out->Set(int8_t(fidl.data.integer()));
-      } else if (fidl.size == 2) {
-        out->Set(int16_t(fidl.data.integer()));
-      } else if (fidl.size == 4) {
-        out->Set(int32_t(fidl.data.integer()));
-      } else if (fidl.size == 8) {
-        out->Set(int64_t(fidl.data.integer()));
-      } else {
-        return false;
-      }
-      return true;
-    }
-    case DataElementType::UUID: {
-      if (!fidl.data.is_uuid()) {
-        return false;
-      }
-      bt::UUID uuid;
-      bool success = StringToUuid(fidl.data.uuid(), &uuid);
-      if (!success) {
-        return false;
-      }
-      out->Set(uuid);
-      return true;
-    }
-    case DataElementType::STRING: {
-      if (!fidl.data.is_str()) {
-        return false;
-      }
-      out->Set(fidl.data.str());
-      return true;
-    }
-    case DataElementType::BOOLEAN: {
-      if (!fidl.data.is_b()) {
-        return false;
-      }
-      out->Set(fidl.data.b());
-      return true;
-    }
-    case DataElementType::SEQUENCE: {
-      if (!fidl.data.is_sequence()) {
-        return false;
-      }
-      bool success = true;
-      std::vector<bt::sdp::DataElement> elems;
-      for (const auto& fidl_elem : fidl.data.sequence()) {
+  switch (fidl.Which()) {
+    case fidlbredr::DataElement::Tag::kInt8:
+      out->Set(fidl.int8());
+      break;
+    case fidlbredr::DataElement::Tag::kInt16:
+      out->Set(fidl.int16());
+      break;
+    case fidlbredr::DataElement::Tag::kInt32:
+      out->Set(fidl.int32());
+      break;
+    case fidlbredr::DataElement::Tag::kInt64:
+      out->Set(fidl.int64());
+      break;
+    case fidlbredr::DataElement::Tag::kUint8:
+      out->Set(fidl.uint8());
+      break;
+    case fidlbredr::DataElement::Tag::kUint16:
+      out->Set(fidl.uint16());
+      break;
+    case fidlbredr::DataElement::Tag::kUint32:
+      out->Set(fidl.uint32());
+      break;
+    case fidlbredr::DataElement::Tag::kUint64:
+      out->Set(fidl.uint64());
+      break;
+    case fidlbredr::DataElement::Tag::kStr:
+      out->Set(fidl.str());
+      break;
+    case fidlbredr::DataElement::Tag::kB:
+      out->Set(fidl.b());
+      break;
+    case fidlbredr::DataElement::Tag::kUuid:
+      out->Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
+      break;
+    case fidlbredr::DataElement::Tag::kSequence: {
+      std::vector<bt::sdp::DataElement> seq;
+      for (const auto& fidl_elem : fidl.sequence()) {
         bt::sdp::DataElement it;
-        success = FidlToDataElement(*fidl_elem, &it);
-        if (!success) {
+        if (!FidlToDataElement(*fidl_elem, &it)) {
           return false;
         }
-        elems.emplace_back(std::move(it));
+        seq.emplace_back(std::move(it));
       }
-      out->Set(std::move(elems));
-      return true;
+      out->Set(std::move(seq));
+      break;
+    }
+    case fidlbredr::DataElement::Tag::kAlternatives: {
+      std::vector<bt::sdp::DataElement> alts;
+      for (const auto& fidl_elem : fidl.alternatives()) {
+        bt::sdp::DataElement it;
+        if (!FidlToDataElement(*fidl_elem, &it)) {
+          return false;
+        }
+        alts.emplace_back(std::move(it));
+      }
+      out->SetAlternative(std::move(alts));
+      break;
     }
     default:
+      // Types not handled: Null datatype (never used) and Url data type (not supported by Set)
+      bt_log(WARN, "profile_server", "Encountered FidlToDataElement type not handled.");
       return false;
   }
+  return true;
 }
 
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
@@ -157,85 +138,85 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   bt_log(SPEW, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
   ZX_DEBUG_ASSERT(in);
   switch (in->type()) {
-    case bt::sdp::DataElement::Type::kNull:
-      elem->type = DataElementType::NOTHING;
-      return elem;
     case bt::sdp::DataElement::Type::kUnsignedInt: {
-      elem->type = DataElementType::UNSIGNED_INTEGER;
-      auto size = in->size();
-      if (size == bt::sdp::DataElement::Size::kOneByte) {
-        elem->data.set_integer(*in->Get<uint8_t>());
-      } else if (size == bt::sdp::DataElement::Size::kTwoBytes) {
-        elem->data.set_integer(*in->Get<uint16_t>());
-      } else if (size == bt::sdp::DataElement::Size::kFourBytes) {
-        elem->data.set_integer(*in->Get<uint32_t>());
-      } else if (size == bt::sdp::DataElement::Size::kEightBytes) {
-        elem->data.set_integer(*in->Get<uint64_t>());
-      } else {
-        // TODO: handle 128-bit integers
-        bt_log(DEBUG, "profile_server", "no 128-bit integer type yet");
-        return nullptr;
+      switch (in->size()) {
+        case bt::sdp::DataElement::Size::kOneByte:
+          elem->set_uint8(*in->Get<uint8_t>());
+          break;
+        case bt::sdp::DataElement::Size::kTwoBytes:
+          elem->set_uint16(*in->Get<uint16_t>());
+          break;
+        case bt::sdp::DataElement::Size::kFourBytes:
+          elem->set_uint32(*in->Get<uint32_t>());
+          break;
+        case bt::sdp::DataElement::Size::kEightBytes:
+          elem->set_uint64(*in->Get<uint64_t>());
+          break;
+        default:
+          bt_log(INFO, "profile_server", "no 128-bit integer support in FIDL yet");
+          return nullptr;
       }
       return elem;
     }
     case bt::sdp::DataElement::Type::kSignedInt: {
-      elem->type = DataElementType::SIGNED_INTEGER;
-      auto size = in->size();
-      if (size == bt::sdp::DataElement::Size::kOneByte) {
-        elem->data.set_integer(*in->Get<int8_t>());
-      } else if (size == bt::sdp::DataElement::Size::kTwoBytes) {
-        elem->data.set_integer(*in->Get<int16_t>());
-      } else if (size == bt::sdp::DataElement::Size::kFourBytes) {
-        elem->data.set_integer(*in->Get<int32_t>());
-      } else if (size == bt::sdp::DataElement::Size::kEightBytes) {
-        elem->data.set_integer(*in->Get<int64_t>());
-      } else {
-        // TODO: handle 128-bit integers
-        bt_log(DEBUG, "profile_server", "no 128-bit integer type yet");
-        return nullptr;
+      switch (in->size()) {
+        case bt::sdp::DataElement::Size::kOneByte:
+          elem->set_int8(*in->Get<int8_t>());
+          break;
+        case bt::sdp::DataElement::Size::kTwoBytes:
+          elem->set_int16(*in->Get<int16_t>());
+          break;
+        case bt::sdp::DataElement::Size::kFourBytes:
+          elem->set_int32(*in->Get<int32_t>());
+          break;
+        case bt::sdp::DataElement::Size::kEightBytes:
+          elem->set_int64(*in->Get<int64_t>());
+          break;
+        default:
+          bt_log(INFO, "profile_server", "no 128-bit integer support in FIDL yet");
+          return nullptr;
       }
       return elem;
     }
     case bt::sdp::DataElement::Type::kUuid: {
-      elem->type = DataElementType::UUID;
       auto uuid = in->Get<bt::UUID>();
       ZX_DEBUG_ASSERT(uuid);
-      elem->data.uuid() = uuid->ToString();
+      elem->set_uuid(fidl_helpers::UuidToFidl(*uuid));
       return elem;
     }
     case bt::sdp::DataElement::Type::kString: {
-      elem->type = DataElementType::STRING;
-      elem->data.str() = *in->Get<std::string>();
+      elem->set_str(*in->Get<std::string>());
       return elem;
     }
     case bt::sdp::DataElement::Type::kBoolean: {
-      elem->type = DataElementType::BOOLEAN;
-      elem->data.set_b(*in->Get<bool>());
+      elem->set_b(*in->Get<bool>());
       return elem;
     }
     case bt::sdp::DataElement::Type::kSequence: {
-      elem->type = DataElementType::SEQUENCE;
       std::vector<fidlbredr::DataElementPtr> elems;
       const bt::sdp::DataElement* it;
       for (size_t idx = 0; (it = in->At(idx)); ++idx) {
         elems.emplace_back(DataElementToFidl(it));
       }
-      elem->data.set_sequence(std::move(elems));
+      elem->set_sequence(std::move(elems));
       return elem;
     }
     case bt::sdp::DataElement::Type::kAlternative: {
-      elem->type = DataElementType::ALTERNATIVE;
       std::vector<fidlbredr::DataElementPtr> elems;
       const bt::sdp::DataElement* it;
       for (size_t idx = 0; (it = in->At(idx)); ++idx) {
         elems.emplace_back(DataElementToFidl(it));
       }
-      elem->data.set_sequence(std::move(elems));
+      elem->set_alternatives(std::move(elems));
       return elem;
     }
     case bt::sdp::DataElement::Type::kUrl: {
-      ZX_PANIC("not implemented");
-      break;
+      bt_log(INFO, "profile_server", "no support for Url types in DataElement yet");
+      return nullptr;
+    }
+    case bt::sdp::DataElement::Type::kNull: {
+      bt_log(INFO, "profile_server", "no support for null DataElement types in FIDL");
+      return nullptr;
     }
   }
 }
@@ -254,38 +235,6 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
   for (size_t idx = 1; (it = in->At(idx)); ++idx) {
     desc->params.push_back(std::move(*DataElementToFidl(it)));
   }
-
-  return desc;
-}
-
-fidlbredr::ProfileDescriptorPtr DataElementToProfileDescriptor(const bt::sdp::DataElement* in) {
-  auto desc = fidlbredr::ProfileDescriptor::New();
-  if (in->type() != bt::sdp::DataElement::Type::kSequence) {
-    return nullptr;
-  }
-
-  const bt::sdp::DataElement* profile_desc = in->At(0);
-  const bt::sdp::DataElement* profile_elem = profile_desc->At(0);
-  if (!profile_elem) {
-    return nullptr;
-  }
-  const auto profile_uuid = profile_elem->Get<bt::UUID>();
-  if (!profile_uuid) {
-    return nullptr;
-  }
-  desc->profile_id = fidlbredr::ServiceClassProfileIdentifier(*profile_uuid->As16Bit());
-
-  const bt::sdp::DataElement* version_elem = profile_desc->At(1);
-  if (!version_elem) {
-    return nullptr;
-  }
-  const auto version = version_elem->Get<uint16_t>();
-  if (!version) {
-    return nullptr;
-  }
-
-  desc->major_version = static_cast<uint8_t>(*version >> 8);
-  desc->minor_version = static_cast<uint8_t>(*version & 0xFF);
 
   return desc;
 }
@@ -320,7 +269,8 @@ void AddProtocolDescriptorList(
 ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                              fidl::InterfaceRequest<Profile> request)
     : ServerBase(this, std::move(request)),
-      last_service_id_(0),
+      advertised_total_(0),
+      searches_total_(0),
       adapter_(adapter),
       weak_ptr_factory_(this) {}
 
@@ -328,115 +278,130 @@ ProfileServer::~ProfileServer() {
   if (adapter()) {
     // Unregister anything that we have registered.
     auto sdp = adapter()->sdp_server();
-    for (const auto& it : registered_) {
-      sdp->UnregisterService(it.second);
+    for (const auto& it : current_advertised_) {
+      sdp->UnregisterService(it.second.service_handle);
     }
-    for (const auto& search_id : searches_) {
-      adapter()->bredr_connection_manager()->RemoveServiceSearch(search_id);
+    auto conn_manager = adapter()->bredr_connection_manager();
+    for (const auto& it : searches_) {
+      conn_manager->RemoveServiceSearch(it.second.search_id);
     }
   }
 }
 
-void ProfileServer::AddService(fidlbredr::ServiceDefinition definition,
-                               fidlbredr::SecurityLevel sec_level,
-                               fidlbredr::ChannelParameters parameters,
-                               AddServiceCallback callback) {
+void ProfileServer::Advertise(
+    std::vector<fidlbredr::ServiceDefinition> definitions,
+    fidlbredr::SecurityRequirements requirements, fidlbredr::ChannelParameters parameters,
+    fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver) {
   // TODO: check that the service definition is valid for useful error messages
 
-  bt::sdp::ServiceRecord rec;
-  std::vector<bt::UUID> classes;
-  for (auto& uuid_str : definition.service_class_uuids) {
-    bt::UUID uuid;
-    bt_log(SPEW, "profile_server", "Setting Service Class UUID %s", uuid_str.c_str());
-    bool success = bt::StringToUuid(uuid_str, &uuid);
-    if (!success) {
-      callback(
-          fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Service class UUIDs not valid"),
-          0);
+  std::vector<bt::sdp::ServiceRecord> registering;
+
+  for (auto& definition : definitions) {
+    bt::sdp::ServiceRecord rec;
+    std::vector<bt::UUID> classes;
+
+    if (!definition.has_service_class_uuids()) {
+      bt_log(INFO, "proile_server", "Advertised service contains no Service UUIDs");
+      // Dropping receiver as we didn't register.
       return;
-    };
-    classes.emplace_back(std::move(uuid));
-  }
-
-  rec.SetServiceClassUUIDs(classes);
-
-  AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
-                            definition.protocol_descriptors);
-
-  size_t protocol_list_id = 1;
-  if (definition.additional_protocol_descriptors.has_value()) {
-    for (const auto& descriptor_list : *definition.additional_protocol_descriptors) {
-      AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list);
-      protocol_list_id++;
     }
-  }
 
-  for (const auto& profile : definition.profile_descriptors) {
-    bt_log(SPEW, "profile_server", "Adding Profile %#x v%d.%d", profile.profile_id,
-           profile.major_version, profile.minor_version);
-    rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
-                   profile.minor_version);
-  }
-
-  for (const auto& info : definition.information) {
-    bt_log(SPEW, "profile_server", "Adding Info (%s): (%s, %s, %s)", info.language.c_str(),
-           info.name.value_or("").c_str(), info.description.value_or("").c_str(),
-           info.provider.value_or("").c_str());
-    rec.AddInfo(info.language, info.name.value_or(""), info.description.value_or(""),
-                info.provider.value_or(""));
-  }
-
-  if (definition.additional_attributes.has_value()) {
-    for (const auto& attribute : *definition.additional_attributes) {
-      bt::sdp::DataElement elem;
-      FidlToDataElement(attribute.element, &elem);
-      bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
-             elem.ToString().c_str());
-      rec.SetAttribute(attribute.id, std::move(elem));
+    for (auto& uuid : definition.service_class_uuids()) {
+      bt::UUID btuuid = fidl_helpers::UuidFromFidl(uuid);
+      bt_log(SPEW, "profile_server", "Setting Service Class UUID %s", bt_str(btuuid));
+      classes.emplace_back(std::move(btuuid));
     }
-  }
 
-  uint64_t next = last_service_id_ + 1;
+    rec.SetServiceClassUUIDs(classes);
+
+    if (definition.has_protocol_descriptor_list()) {
+      AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
+                                definition.protocol_descriptor_list());
+    }
+
+    if (definition.has_additional_protocol_descriptor_lists()) {
+      size_t protocol_list_id = 1;
+      for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {
+        AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list);
+        protocol_list_id++;
+      }
+    }
+
+    if (definition.has_profile_descriptors()) {
+      for (const auto& profile : definition.profile_descriptors()) {
+        bt_log(SPEW, "profile_server", "Adding Profile %#hx v%d.%d", profile.profile_id,
+               profile.major_version, profile.minor_version);
+        rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
+                       profile.minor_version);
+      }
+    }
+
+    if (definition.has_information()) {
+      for (const auto& info : definition.information()) {
+        if (!info.has_language()) {
+          bt_log(INFO, "profile_server", "Adding information to service definition: no language!");
+          // Dropping the receiver as it's not registered.
+          return;
+        }
+        std::string language = info.language();
+        std::string name, description, provider;
+        if (info.has_name()) {
+          name = info.name();
+        }
+        if (info.has_description()) {
+          description = info.description();
+        }
+        if (info.has_provider()) {
+          provider = info.provider();
+        }
+        bt_log(SPEW, "profile_server", "Adding Info (%s): (%s, %s, %s)", language.c_str(),
+               name.c_str(), description.c_str(), provider.c_str());
+        rec.AddInfo(language, name, description, provider);
+      }
+    }
+
+    if (definition.has_additional_attributes()) {
+      for (const auto& attribute : definition.additional_attributes()) {
+        bt::sdp::DataElement elem;
+        FidlToDataElement(attribute.element, &elem);
+        bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
+               elem.ToString().c_str());
+        rec.SetAttribute(attribute.id, std::move(elem));
+      }
+    }
+
+    registering.emplace_back(std::move(rec));
+  }
 
   ZX_DEBUG_ASSERT(adapter());
   auto sdp = adapter()->sdp_server();
   ZX_DEBUG_ASSERT(sdp);
 
-  auto handle = sdp->RegisterService(
-      std::move(rec), FidlToChannelParameters(parameters),
+  uint64_t next = advertised_total_ + 1;
+
+  // TODO(1346): register more than just the first one.
+  auto sdp_handle = sdp->RegisterService(
+      std::move(registering.front()), FidlToChannelParameters(parameters),
       [this, next](auto chan_sock, auto handle, const auto& protocol_list) {
         OnChannelConnected(next, std::move(chan_sock), handle, std::move(protocol_list));
       });
 
-  if (!handle) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
-                                        "Service definition was not valid"),
-             0);
+  if (!sdp_handle) {
     return;
   };
 
-  registered_.emplace(next, handle);
-  last_service_id_ = next;
-  callback(fidl_helpers::StatusToFidlDeprecated(bt::sdp::Status()), next);
+  auto receiverptr = receiver.Bind();
+
+  receiverptr.set_error_handler(
+      [this, next](zx_status_t status) { OnConnectionReceiverError(next, status); });
+
+  current_advertised_.try_emplace(next, std::move(receiverptr), sdp_handle);
+  advertised_total_ = next;
 }
 
-void ProfileServer::RemoveService(uint64_t service_id) {
-  auto it = registered_.find(service_id);
-  if (it == registered_.end()) {
-    bt_log(INFO, "profile_server", "RemoveService with unused id %lu", service_id);
-    return;
-  }
-
-  ZX_DEBUG_ASSERT(adapter());
-  auto server = adapter()->sdp_server();
-  ZX_DEBUG_ASSERT(server);
-  bool removed = server->UnregisterService(it->second);
-  ZX_DEBUG_ASSERT(removed);
-  registered_.erase(it);
-}
-
-void ProfileServer::AddSearch(fidlbredr::ServiceClassProfileIdentifier service_uuid,
-                              std::vector<uint16_t> attr_ids) {
+void ProfileServer::Search(
+    fidlbredr::ServiceClassProfileIdentifier service_uuid, std::vector<uint16_t> attr_ids,
+    fidl::InterfaceHandle<fuchsia::bluetooth::bredr::SearchResults> results) {
   bt::UUID search_uuid(static_cast<uint32_t>(service_uuid));
   std::unordered_set<bt::sdp::AttributeId> attributes(attr_ids.begin(), attr_ids.end());
   if (!attr_ids.empty()) {
@@ -445,73 +410,127 @@ void ProfileServer::AddSearch(fidlbredr::ServiceClassProfileIdentifier service_u
   }
 
   ZX_DEBUG_ASSERT(adapter());
+
+  auto next = searches_total_ + 1;
+
   auto search_id = adapter()->bredr_connection_manager()->AddServiceSearch(
       search_uuid, std::move(attributes),
-      [this](auto id, const auto& attrs) { OnServiceFound(id, attrs); });
+      [this, next](auto id, const auto& attrs) { OnServiceFound(next, id, attrs); });
 
-  if (search_id) {
-    searches_.emplace_back(search_id);
-  }
-}
-
-void ProfileServer::ConnectL2cap(std::string peer_id, uint16_t channel,
-                                 fidlbredr::ChannelParameters parameters,
-                                 ConnectL2capCallback callback) {
-  auto dev_id = fidl_helpers::PeerIdFromString(peer_id);
-  if (!dev_id.has_value()) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid device ID"),
-             fidlbredr::Channel());
+  if (!search_id) {
     return;
   }
 
+  auto results_ptr = results.Bind();
+  results_ptr.set_error_handler(
+      [this, next](zx_status_t status) { OnSearchResultError(next, status); });
+
+  searches_.try_emplace(next, std::move(results_ptr), search_id);
+  searches_total_ = next;
+}
+
+void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
+                            fidlbredr::ChannelParameters parameters, ConnectCallback callback) {
+  bt::PeerId id{peer_id.value};
+
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
-    cb(fidl_helpers::StatusToFidlDeprecated(bt::sdp::Status()),
-       ChannelSocketToFidlChannel(std::move(chan_sock)));
+    cb(fit::ok(ChannelSocketToFidlChannel(std::move(chan_sock))));
   };
   ZX_DEBUG_ASSERT(adapter());
 
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      *dev_id, channel, FidlToChannelParameters(parameters), std::move(connected_cb),
+      id, psm, FidlToChannelParameters(parameters), std::move(connected_cb),
       async_get_default_dispatcher());
   if (!connecting) {
-    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND,
-                                        "Remote device not found - is it connected?"),
-             fidlbredr::Channel());
+    callback(fit::error(fuchsia::bluetooth::ErrorCode::NOT_FOUND));
   }
 }
 
-void ProfileServer::OnChannelConnected(uint64_t service_id, bt::l2cap::ChannelSocket chan_sock,
+void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket chan_sock,
                                        bt::hci::ConnectionHandle handle,
                                        const bt::sdp::DataElement& protocol_list) {
+  auto it = current_advertised_.find(ad_id);
+  if (it == current_advertised_.end()) {
+    // The receiver has disappeared, do nothing.
+    return;
+  }
+
   ZX_DEBUG_ASSERT(adapter());
   auto id = adapter()->bredr_connection_manager()->GetPeerId(handle);
 
-  const auto* prot_seq = protocol_list.At(1);
-
-  // If there isn't a second-level protocol, return the l2cap protocol
-  if (!prot_seq) {
-    prot_seq = protocol_list.At(0);
-  }
+  // The protocol that is connected should be L2CAP, because that is the only thing that
+  // we can connect. We can't say anything about what the higher level protocols will be.
+  auto prot_seq = protocol_list.At(0);
   ZX_ASSERT(prot_seq);
 
   fidlbredr::ProtocolDescriptorPtr desc = DataElementToProtocolDescriptor(prot_seq);
   ZX_ASSERT(desc);
 
-  binding()->events().OnConnected(id.ToString(), service_id,
-                                  ChannelSocketToFidlChannel(std::move(chan_sock)),
-                                  std::move(*desc));
+  fuchsia::bluetooth::PeerId peer_id{id.value()};
+
+  std::vector<fidlbredr::ProtocolDescriptor> list;
+  list.emplace_back(std::move(*desc));
+
+  it->second.receiver->Connected(peer_id, ChannelSocketToFidlChannel(std::move(chan_sock)),
+                                 std::move(list));
+}
+
+void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
+  bt_log(SPEW, "profile_server", "Connection receiver closed, ending advertisement %lu", ad_id);
+
+  auto it = current_advertised_.find(ad_id);
+
+  if (it == current_advertised_.end() || !adapter()) {
+    return;
+  }
+
+  adapter()->sdp_server()->UnregisterService(it->second.service_handle);
+
+  current_advertised_.erase(it);
+}
+
+void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) {
+  bt_log(SPEW, "profile_server", "Search result closed, ending search %lu", search_id);
+
+  auto it = searches_.find(search_id);
+
+  if (it == searches_.end() || !adapter()) {
+    return;
+  }
+
+  adapter()->bredr_connection_manager()->RemoveServiceSearch(it->second.search_id);
+
+  searches_.erase(it);
 }
 
 void ProfileServer::OnServiceFound(
-    bt::PeerId peer_id, const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes) {
-  // Convert ProfileDescriptor Attribute
-  auto it = attributes.find(bt::sdp::kBluetoothProfileDescriptorList);
-  if (it == attributes.end()) {
-    bt_log(WARN, "profile_server",
-           "Found service on %s didn't contain profile descriptor, dropping", bt_str(peer_id));
+    uint64_t search_id, bt::PeerId peer_id,
+    const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes) {
+  auto search_it = searches_.find(search_id);
+  if (search_it == searches_.end()) {
+    // Search was de-registered.
     return;
   }
-  fidlbredr::ProfileDescriptorPtr desc = DataElementToProfileDescriptor(&it->second);
+
+  // Convert ProfileDescriptor Attribute
+  auto it = attributes.find(bt::sdp::kProtocolDescriptorList);
+
+  fidl::VectorPtr<fidlbredr::ProtocolDescriptor> descriptor_list;
+
+  if (it != attributes.end()) {
+    std::vector<fidlbredr::ProtocolDescriptor> list;
+    size_t idx = 0;
+    auto* sdp_list_element = it->second.At(idx);
+    while (sdp_list_element != nullptr) {
+      fidlbredr::ProtocolDescriptorPtr desc = DataElementToProtocolDescriptor(sdp_list_element);
+      if (!desc) {
+        break;
+      }
+      list.push_back(std::move(*desc));
+      sdp_list_element = it->second.At(++idx);
+    }
+    descriptor_list = std::move(list);
+  }
 
   // Add the rest of the attributes
   std::vector<fidlbredr::Attribute> fidl_attrs;
@@ -523,7 +542,10 @@ void ProfileServer::OnServiceFound(
     fidl_attrs.emplace_back(std::move(*attr));
   }
 
-  binding()->events().OnServiceFound(peer_id.ToString(), std::move(*desc), std::move(fidl_attrs));
+  fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  search_it->second.results->ServiceFound(fidl_peer_id, std::move(descriptor_list),
+                                          std::move(fidl_attrs), []() {});
 }
 
 }  // namespace bthost

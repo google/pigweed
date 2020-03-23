@@ -4,10 +4,13 @@
 
 #include "profile_server.h"
 
-#include <gtest/gtest.h>
+#include <fuchsia/bluetooth/bredr/cpp/fidl_test_base.h>
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
@@ -23,31 +26,30 @@ constexpr bt::l2cap::PSM kPSM = bt::l2cap::kAVDTP;
 
 fidlbredr::ServiceDefinition MakeFIDLServiceDefinition() {
   fidlbredr::ServiceDefinition def;
-  def.service_class_uuids.emplace_back(bt::sdp::profile::kAudioSink.ToString());
+  def.mutable_service_class_uuids()->emplace_back(
+      fidl_helpers::UuidToFidl(bt::sdp::profile::kAudioSink));
 
   fidlbredr::ProtocolDescriptor l2cap_proto;
   l2cap_proto.protocol = fidlbredr::ProtocolIdentifier::L2CAP;
   fidlbredr::DataElement l2cap_data_el;
-  l2cap_data_el.type = fidlbredr::DataElementType::UNSIGNED_INTEGER;
-  l2cap_data_el.size = 2;
-  l2cap_data_el.data.set_integer(fidlbredr::kPSM_AVDTP);
+  l2cap_data_el.set_uint16(fidlbredr::PSM_AVDTP);
   l2cap_proto.params.emplace_back(std::move(l2cap_data_el));
-  def.protocol_descriptors.emplace_back(std::move(l2cap_proto));
+
+  def.mutable_protocol_descriptor_list()->emplace_back(std::move(l2cap_proto));
 
   fidlbredr::ProtocolDescriptor avdtp_proto;
   avdtp_proto.protocol = fidlbredr::ProtocolIdentifier::AVDTP;
   fidlbredr::DataElement avdtp_data_el;
-  avdtp_data_el.type = fidlbredr::DataElementType::UNSIGNED_INTEGER;
-  avdtp_data_el.size = 2;
-  avdtp_data_el.data.set_integer(0x0103);  // Version 1.3
+  avdtp_data_el.set_uint16(0x0103);  // Version 1.3
   avdtp_proto.params.emplace_back(std::move(avdtp_data_el));
-  def.protocol_descriptors.emplace_back(std::move(avdtp_proto));
+
+  def.mutable_protocol_descriptor_list()->emplace_back(std::move(avdtp_proto));
 
   fidlbredr::ProfileDescriptor prof_desc;
-  prof_desc.profile_id = fidlbredr::ServiceClassProfileIdentifier::AdvancedAudioDistribution;
+  prof_desc.profile_id = fidlbredr::ServiceClassProfileIdentifier::ADVANCED_AUDIO_DISTRIBUTION;
   prof_desc.major_version = 1;
   prof_desc.minor_version = 3;
-  def.profile_descriptors.emplace_back(prof_desc);
+  def.mutable_profile_descriptors()->emplace_back(prof_desc);
 
   return def;
 }
@@ -93,26 +95,46 @@ class FIDL_ProfileServerTest : public TestingBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest);
 };
 
-TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidUuid) {
-  bool called = false;
-  fuchsia::bluetooth::Status status;
-  uint64_t service_id;
-  auto cb = [&](auto s, uint64_t id) {
-    called = true;
-    status = std::move(s);
-    service_id = id;
-  };
+class MockConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_TestBase {
+ public:
+  MockConnectionReceiver(fidl::InterfaceRequest<ConnectionReceiver> request,
+                         async_dispatcher_t* dispatcher)
+      : binding_(this, std::move(request), dispatcher) {}
 
+  ~MockConnectionReceiver() override = default;
+
+  MOCK_METHOD(void, Connected,
+              (fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel channel,
+               std::vector<fidlbredr::ProtocolDescriptor> protocol),
+              (override));
+
+ private:
+  fidl::Binding<ConnectionReceiver> binding_;
+
+  void NotImplemented_(const std::string& name) override {
+    FAIL() << name << " is not implemented";
+  }
+};
+
+TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
+  auto request = receiver_handle.NewRequest();
+
+  std::vector<fidlbredr::ServiceDefinition> services;
   fidlbredr::ServiceDefinition def;
-  def.service_class_uuids.emplace_back("bogus_uuid");
+  // Empty service definition is not allowed - it must contain at least a serivce UUID.
 
-  client()->AddService(std::move(def), fidlbredr::SecurityLevel::ENCRYPTION_OPTIONAL,
-                       fidlbredr::ChannelParameters(), std::move(cb));
+  services.emplace_back(std::move(def));
+
+  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
+                      fidlbredr::ChannelParameters(), std::move(receiver_handle));
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(called);
-  EXPECT_TRUE(status.error);
+  // Server should close because it's not a good definition.
+  zx_signals_t signals;
+  request.channel().wait_one(ZX_CHANNEL_PEER_CLOSED, zx::time(0), &signals);
+  EXPECT_TRUE(signals & ZX_CHANNEL_PEER_CLOSED);
 }
 
 class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
@@ -184,10 +206,12 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   fidlbredr::ChannelParameters fidl_params;
   fidl_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
   fidl_params.set_max_rx_sdu_size(bt::l2cap::kMinACLMTU);
-  auto sock_cb = [](auto /*status*/, auto /*channel*/) {};
+  auto sock_cb = [](auto /*result*/) {};
   // Initiates pairing
-  client()->ConnectL2cap(peer()->identifier().ToString(), kPSM, std::move(fidl_params),
-                         std::move(sock_cb));
+
+  fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
+
+  client()->Connect(peer_id, kPSM, std::move(fidl_params), std::move(sock_cb));
   RunLoopUntilIdle();
 }
 
@@ -202,31 +226,29 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
-  size_t sock_cb_count = 0;
-  auto sock_cb = [&](std::string /*device_id*/, uint64_t /*service_id*/, fidlbredr::Channel channel,
-                     fidlbredr::ProtocolDescriptor /*protocol*/) {
-    sock_cb_count++;
-    EXPECT_EQ(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION, channel.channel_mode());
-    EXPECT_EQ(kTxMtu, channel.max_tx_sdu_size());
-  };
-  client().events().OnConnected = sock_cb;
+  using ::testing::StrictMock;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
+  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
+      connect_receiver_handle.NewRequest(), dispatcher());
 
-  bool service_cb_called = false;
-  auto cb = [&](fuchsia::bluetooth::Status status, uint64_t id) {
-    service_cb_called = true;
-    EXPECT_FALSE(status.error);
-  };
+  std::vector<fidlbredr::ServiceDefinition> services;
+  services.emplace_back(MakeFIDLServiceDefinition());
 
-  client()->AddService(MakeFIDLServiceDefinition(), fidlbredr::SecurityLevel::ENCRYPTION_OPTIONAL,
-                       std::move(fidl_chan_params), std::move(cb));
+  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
+                      std::move(fidl_chan_params), std::move(connect_receiver_handle));
   RunLoopUntilIdle();
-  EXPECT_TRUE(service_cb_called);
+
+  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
+      .WillOnce([expected_id = peer()->identifier()](fuchsia::bluetooth::PeerId peer_id,
+                                                     fidlbredr::Channel channel,
+                                                     ::testing::Unused) {
+        ASSERT_EQ(expected_id.value(), peer_id.value);
+        ASSERT_TRUE(channel.has_socket());
+      });
 
   EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
                                                         0x41, kTxMtu));
-
   RunLoopUntilIdle();
-  EXPECT_EQ(1u, sock_cb_count);
 }
 
 }  // namespace

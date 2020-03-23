@@ -256,6 +256,14 @@ bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
   return output;
 }
 
+fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid) {
+  fuchsia::bluetooth::Uuid output;
+  // Conversion must always succeed given the defined size of |input|.
+  static_assert(sizeof(output.value) == 16, "FIDL UUID definition malformed!");
+  output.value = uuid.value();
+  return output;
+}
+
 bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
                                           fsys::OutputCapability output) {
   if (input == fsys::InputCapability::NONE && output == fsys::OutputCapability::NONE) {

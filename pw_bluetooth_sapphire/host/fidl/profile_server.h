@@ -27,35 +27,58 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
  private:
   // fuchsia::bluetooth::bredr::Profile overrides:
-  void AddService(fuchsia::bluetooth::bredr::ServiceDefinition definition,
-                  fuchsia::bluetooth::bredr::SecurityLevel sec_level,
-                  fuchsia::bluetooth::bredr::ChannelParameters parameters,
-                  AddServiceCallback callback) override;
-  void AddSearch(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
-                 std::vector<uint16_t> attr_ids) override;
-  void RemoveService(uint64_t service_id) override;
-  void ConnectL2cap(std::string peer_id, uint16_t psm,
-                    fuchsia::bluetooth::bredr::ChannelParameters parameters,
-                    ConnectL2capCallback callback) override;
+  void Advertise(
+      std::vector<fuchsia::bluetooth::bredr::ServiceDefinition> definitions,
+      fuchsia::bluetooth::bredr::SecurityRequirements requirements,
+      fuchsia::bluetooth::bredr::ChannelParameters parameters,
+      fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver) override;
+  void Search(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
+              std::vector<uint16_t> attr_ids,
+              fidl::InterfaceHandle<fuchsia::bluetooth::bredr::SearchResults> results) override;
+  void Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
+               fuchsia::bluetooth::bredr::ChannelParameters parameters,
+               ConnectCallback callback) override;
+
+  // Callback when clients close their connection targets
+  void OnConnectionReceiverError(uint64_t ad_id, zx_status_t status);
+
+  // Callback when clients close their search results
+  void OnSearchResultError(uint64_t search_id, zx_status_t status);
 
   // Callback for incoming connections
-  void OnChannelConnected(uint64_t service_id, bt::l2cap::ChannelSocket chan_sock,
+  void OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket chan_sock,
                           bt::hci::ConnectionHandle handle,
                           const bt::sdp::DataElement& protocol_list);
 
   // Callback for services found on connected device
-  void OnServiceFound(bt::PeerId peer_id,
+  void OnServiceFound(uint64_t search_id, bt::PeerId peer_id,
                       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
   bt::gap::Adapter* adapter() const { return adapter_.get(); }
 
-  // Registered service IDs handed out, correlated with Service Handles.
-  std::map<uint64_t, bt::sdp::ServiceHandle> registered_;
+  // Advertised Services
+  struct AdvertisedService {
+    AdvertisedService(fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
+                      bt::sdp::ServiceHandle service_handle)
+        : receiver(std::move(receiver)), service_handle(service_handle) {}
+    fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver;
+    bt::sdp::ServiceHandle service_handle;
+  };
 
-  // Last service ID handed out
-  uint64_t last_service_id_;
+  uint64_t advertised_total_;
+  std::map<uint64_t, AdvertisedService> current_advertised_;
 
-  std::vector<bt::gap::BrEdrConnectionManager::SearchId> searches_;
+  // Searches registered
+  struct RegisteredSearch {
+    RegisteredSearch(fidl::InterfacePtr<fuchsia::bluetooth::bredr::SearchResults> results,
+                     bt::gap::BrEdrConnectionManager::SearchId search_id)
+        : results(std::move(results)), search_id(search_id) {}
+    fidl::InterfacePtr<fuchsia::bluetooth::bredr::SearchResults> results;
+    bt::gap::BrEdrConnectionManager::SearchId search_id;
+  };
+
+  uint64_t searches_total_;
+  std::map<uint64_t, RegisteredSearch> searches_;
 
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
