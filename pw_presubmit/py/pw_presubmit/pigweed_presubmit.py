@@ -299,6 +299,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'(?:.+/)?\..+',
     r'AUTHORS',
     r'LICENSE',
+    r'OWNERS',
     r'.*\.elf',
     r'.*\.gif',
     r'.*\.jpg',
