@@ -155,6 +155,9 @@ def gn_docs_build(ctx: PresubmitContext):
     ninja('docs:docs', ctx=ctx)
 
 
+_QEMU_GEN_ARGS = gn_args(
+    pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
+
 GN: Tuple[Callable, ...] = (
     gn_clang_build,
     gn_arm_build,
@@ -403,6 +406,11 @@ def source_is_in_build_files(ctx: PresubmitContext):
     gn_gen(_DOCS_GEN_ARGS, ctx=ctx, path=docs_dir)
     build_gn.update(
         _get_paths_from_command('gn', 'desc', docs_dir, '*', ctx=ctx))
+
+    qemu_dir = ctx.output_directory.joinpath('qemu')
+    gn_gen(_QEMU_GEN_ARGS, ctx=ctx, path=qemu_dir)
+    build_gn.update(
+        _get_paths_from_command('gn', 'desc', qemu_dir, '*', ctx=ctx))
 
     missing_bazel = []
     missing_gn = []

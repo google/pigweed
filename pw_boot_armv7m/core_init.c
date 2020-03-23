@@ -103,6 +103,12 @@ void pw_BootEntry() {
   // Run main.
   main();
 
+#if PW_BOOT_ARMV7M_QEMU_SHUTDOWN
+  // QEMU requires a special command to tell the VM to shut down.
+  volatile uint32_t* aircr = (uint32_t*)(0xE000ED0CU);
+  *aircr = 0x5fa0004;
+#endif  // PW_BOOT_ARMV7M_QEMU_SHUTDOWN
+
   // In case main() returns, just sit here until the device is reset.
   while (true) {
   }

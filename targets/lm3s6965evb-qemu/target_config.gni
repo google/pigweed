@@ -1,0 +1,74 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# Target configuration for the lm3s6965evb development board, run using QEMU.
+#
+# TODO(amontanez): This target configuration treats
+# pw_sys_io_baremetal_lm3s6965evb as if it were a platform. This is for
+# testing/development and should eventually point to something more
+# sophisticated.
+
+import("$dir_pigweed/pw_vars_default.gni")
+
+declare_args() {
+  # Specifies the toolchain to use for this build.
+  pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m3_og"
+}
+
+# Use the logging main.
+pw_unit_test_main = "$dir_pw_unit_test:logging_main"
+
+# Expose the tool to use for preprocessing linker scripts.
+# TODO(pwbug/53): Temporary, will be removed when proper linker script support
+# is added to GN.
+pw_cc_command = "arm-none-eabi-gcc"
+
+# Executable wrapper that includes some baremetal startup code.
+template("lm3s6965evb_executable") {
+  target("executable", target_name) {
+    forward_variables_from(invoker, "*")
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ dir_pw_sys_io_baremetal_lm3s6965evb ]
+  }
+}
+
+# Configuration options for Pigweed executable targets.
+pw_executable_config.target_type = "lm3s6965evb_executable"
+
+# Path to the bloaty config file for the output binaries.
+pw_executable_config.bloaty_config_file =
+    "$dir_pw_boot_armv7m/bloaty_config.bloaty"
+
+# Facade backends
+dir_pw_assert_backend = dir_pw_assert_basic
+dir_pw_boot_backend = dir_pw_boot_armv7m
+dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
+dir_pw_log_backend = dir_pw_log_basic
+dir_pw_sys_io_backend = dir_pw_sys_io_baremetal_lm3s6965evb
+
+# Tell QEMU to shut down after running a binary.
+pw_boot_armv7m_qemu_shutdown = true
+
+pw_boot_armv7m_config.defines += [
+  "PW_BOOT_FLASH_BEGIN=0x00000200",
+  "PW_BOOT_FLASH_SIZE=255K",
+  "PW_BOOT_HEAP_SIZE=0",
+  "PW_BOOT_MIN_STACK_SIZE=1K",
+  "PW_BOOT_RAM_BEGIN=0x20000000",
+  "PW_BOOT_RAM_SIZE=64K",
+  "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
+  "PW_BOOT_VECTOR_TABLE_SIZE=512",
+]

@@ -72,6 +72,44 @@ template("generate_toolchains") {
   }
 }
 
+generate_toolchains("cortex_m3") {
+  toolchain_template = "arm_gcc_toolchain"
+
+  common_toolchain_cflags = [
+    "-mabi=aapcs",
+    "-mcpu=cortex-m3",
+    "-mfloat-abi=soft",
+    "-mthumb",
+    "-specs=nano.specs",
+    "-specs=nosys.specs",
+  ]
+
+  common_toolchain_ldflags = [
+    "-lnosys",
+    "-lc",
+  ]
+
+  toolchains = [
+    # All Cortex-M3 toolchains use software-emulated floating point.
+    {
+      toolchain_name = "arm_gcc_cortex_m3_og"
+      additional_cflags = [ "-Og" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m3_o1"
+      additional_cflags = [ "-O1" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m3_o2"
+      additional_cflags = [ "-O2" ]
+    },
+    {
+      toolchain_name = "arm_gcc_cortex_m3_os"
+      additional_cflags = [ "-Os" ]
+    },
+  ]
+}
+
 generate_toolchains("cortex_m4") {
   toolchain_template = "arm_gcc_toolchain"
 
