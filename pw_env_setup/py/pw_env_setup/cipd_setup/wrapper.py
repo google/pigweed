@@ -25,6 +25,7 @@ from __future__ import print_function
 import hashlib
 import os
 import platform
+import ssl
 import subprocess
 import sys
 
@@ -167,11 +168,22 @@ brew uninstall python && brew install python
         version=version)
 
     for _ in range(10):
-        conn.request('GET', path)
-        res = conn.getresponse()
-        # Have to read the response before making a new request, so make sure
-        # we always read it.
-        content = res.read()
+        try:
+            conn.request('GET', path)
+            res = conn.getresponse()
+            # Have to read the response before making a new request, so make
+            # sure we always read it.
+            content = res.read()
+        except ssl.SSLError:
+            print(
+                'Python SSL error--if using system Python try\n'
+                '    sudo pip install certifi.\n'
+                'If using Homebrew Python try\n'
+                '    brew install openssl\n'
+                '    brew uninstall python\n'
+                '    brew install python\n',
+                file=sys.stderr)
+            raise
 
         # Found client bytes.
         if res.status == httplib.OK:  # pylint: disable=no-else-return
