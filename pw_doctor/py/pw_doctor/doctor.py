@@ -107,8 +107,8 @@ def git_hook(ctx: DoctorContext):
 
     hook = root / '.git' / 'hooks' / 'pre-push'
     if not os.path.isfile(hook):
-        ctx.warning('Presubmit hook not installed, please run '
-                    "'pw presubmit --install'")
+        ctx.info('Presubmit hook not installed, please run '
+                 "'pw presubmit --install' before pushing changes.")
 
 
 @register_into(CHECKS)
