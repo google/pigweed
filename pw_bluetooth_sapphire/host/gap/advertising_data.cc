@@ -452,7 +452,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer) const {
   if (tx_power_) {
     (*buffer)[pos++] = 2;
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kTxPowerLevel);
-    (*buffer)[pos++] = *reinterpret_cast<uint8_t*>(tx_power_.value());
+    (*buffer)[pos++] = static_cast<uint8_t>(tx_power_.value());
   }
 
   if (appearance_) {
