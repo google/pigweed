@@ -36,6 +36,13 @@ static constexpr auto kSignalingChannelResponseTimeout = zx::sec(1);
 static_assert(kSignalingChannelResponseTimeout >= zx::sec(1));
 static_assert(kSignalingChannelResponseTimeout <= zx::sec(60));
 
+// See Core Spec v5.0, Volume 3, Part A, Sec 6.2.2. This initial value is the only timeout duration
+// used because Signaling Channel packets are not to be sent as automatically flushable and thus
+// requests will not be retransmitted at the L2CAP level per its "at least double" back-off scheme.
+static constexpr auto kSignalingChannelExtendedResponseTimeout = zx::sec(60);
+static_assert(kSignalingChannelExtendedResponseTimeout >= zx::sec(60));
+static_assert(kSignalingChannelExtendedResponseTimeout <= zx::sec(300));
+
 // L2CAP channel identifier uniquely identifies fixed and connection-oriented
 // channels over a logical link.
 // (see Core Spec v5.0, Vol 3, Part A, Section 2.1)

@@ -186,8 +186,9 @@ class SignalingChannel : public SignalingChannelInterface {
   // code and identifier.
   void OnRxResponse(const SignalingPacket& packet);
 
-  // Called after Response Timeout eXpired (RTX) timer expires. |id| must be in |pending_commands_|.
-  // The ResponseHandler will be invoked with Status::kTimeOut and an empty ByteBuffer.
+  // Called after Response Timeout eXpired (RTX) or Extended Response Timeout eXpired (ERTX) timer
+  // expires. |id| must be in |pending_commands_|. The ResponseHandler will be invoked with
+  // Status::kTimeOut and an empty ByteBuffer.
   void OnResponseTimeout(CommandId id);
 
   // True if an outbound request-type command has registered a callback for its

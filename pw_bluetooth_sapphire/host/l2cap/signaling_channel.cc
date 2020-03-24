@@ -169,6 +169,11 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   if (pending_command.response_handler(status, packet.payload_data()) ==
       ResponseHandlerAction::kCompleteOutboundTransaction) {
     pending_commands_.erase(iter);
+  } else {
+    // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
+    pending_command.response_timeout_task.Cancel();
+    pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
+                                                      kSignalingChannelExtendedResponseTimeout);
   }
 }
 

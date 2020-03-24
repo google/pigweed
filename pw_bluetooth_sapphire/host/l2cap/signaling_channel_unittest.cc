@@ -486,6 +486,49 @@ TEST_F(L2CAP_SignalingChannelTest, CallHandlerWithKTimeOutStatusAfterRtxTimeout)
   EXPECT_TRUE(rx_cb_called);
 }
 
+// When the response handler expects more responses, use the longer ERTX timeout for the following
+// response.
+TEST_F(L2CAP_SignalingChannelTest, ExpectAdditionalResponseExtendsRtxTimeoutToErtxTimeout) {
+  bool tx_success = false;
+  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+
+  const StaticByteBuffer req_data{'h', 'e', 'l', 'l', 'o'};
+  int rx_cb_calls = 0;
+  EXPECT_TRUE(
+      sig()->SendRequest(kEchoRequest, req_data, [&rx_cb_calls](Status status, const ByteBuffer&) {
+        rx_cb_calls++;
+        if (rx_cb_calls <= 2) {
+          EXPECT_EQ(Status::kSuccess, status);
+        } else {
+          EXPECT_EQ(Status::kTimeOut, status);
+        }
+        return SignalingChannel::ResponseHandlerAction::kExpectAdditionalResponse;
+      }));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(tx_success);
+  EXPECT_EQ(0, rx_cb_calls);
+
+  const StaticByteBuffer echo_rsp(
+      // Echo response with no payload.
+      0x09, 0x01, 0x00, 0x00);
+  fake_chan()->Receive(echo_rsp);
+  EXPECT_EQ(1, rx_cb_calls);
+
+  // The handler expects more responses so the RTX timer shouldn't have expired.
+  RunLoopFor(kSignalingChannelResponseTimeout);
+
+  fake_chan()->Receive(echo_rsp);
+  EXPECT_EQ(2, rx_cb_calls);
+
+  // The second response should have reset the ERTX timer, so it shouldn't fire yet.
+  RunLoopFor(kSignalingChannelExtendedResponseTimeout - zx::msec(100));
+
+  // If the renewed ERTX timer expires without a third response, receive a kTimeOut "response."
+  RunLoopFor(zx::sec(1));
+  EXPECT_EQ(3, rx_cb_calls);
+}
+
 TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {
   const ByteBuffer& remote_req = StaticByteBuffer(
       // Disconnection Request.
