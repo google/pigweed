@@ -5,11 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include <zircon/assert.h>
 
 #include <cstdint>
+#include <string>
 
-#include <zircon/assert.h>
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace hci {
@@ -48,6 +50,14 @@ class LMPFeatureSet {
 
   // Returns true if the feature page |page| has been set.
   inline bool HasPage(size_t page) const { return (page < kMaxPages) && valid_pages_[page]; }
+
+  inline std::string ToString() const {
+    std::string str;
+    for (size_t i = 0; i <= last_page_number_; i++)
+      if (HasPage(i))
+        str += fxl::StringPrintf("[P%zu: 0x%016lx]", i, features_[i]);
+    return str;
+  }
 
   inline void set_last_page_number(uint8_t page) {
     last_page_number_ = page > kMaxLastPageNumber ? kMaxLastPageNumber : page;

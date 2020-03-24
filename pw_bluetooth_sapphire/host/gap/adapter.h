@@ -7,6 +7,8 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/sys/inspect/cpp/component.h>
+#include <lib/zx/vmo.h>
 #include <zircon/assert.h>
 
 #include <memory>
@@ -173,6 +175,9 @@ class Adapter final {
   // Sets the Device Class of this adapter.
   void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback);
 
+  // Returns a duplicate read-only version of the Inspect VMO.
+  zx::vmo InspectVmo() const { return inspector_.DuplicateVmo(); }
+
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,
   // Part C, 9.3.3).
@@ -193,6 +198,10 @@ class Adapter final {
   // Fourth step of the initialization sequence. Called by InitializeStep3()
   // when the third batch of HCI commands have been sent.
   void InitializeStep4(InitializeCallback callback);
+
+  // Assigns properties to |adapter_node_| using values discovered during other initialization
+  // steps.
+  void UpdateInspectProperties();
 
   // Builds and returns the HCI event mask based on our supported host side
   // features and controller capabilities. This is used to mask events that we
@@ -221,6 +230,21 @@ class Adapter final {
   // Called by |le_address_manager_| to query whether it is currently allowed to
   // reconfigure the LE random address.
   bool IsLeRandomAddressChangeAllowed();
+
+  // Must be initialized first so that child nodes can be passed to other constructors.
+  inspect::Inspector inspector_;
+  inspect::Node adapter_node_;
+  struct InspectProperties {
+    inspect::StringProperty adapter_id;
+    inspect::StringProperty hci_version;
+    inspect::UintProperty bredr_max_num_packets;
+    inspect::UintProperty bredr_max_data_length;
+    inspect::UintProperty le_max_num_packets;
+    inspect::UintProperty le_max_data_length;
+    inspect::StringProperty lmp_features;
+    inspect::StringProperty le_features;
+  };
+  InspectProperties inspect_properties_;
 
   // Uniquely identifies this adapter on the current system.
   AdapterId identifier_;

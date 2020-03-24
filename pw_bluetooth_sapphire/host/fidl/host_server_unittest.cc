@@ -8,6 +8,7 @@
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl_test_base.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
 #include "adapter_test_fixture.h"
@@ -29,6 +30,8 @@
 
 namespace bthost {
 namespace {
+
+using namespace inspect::testing;
 
 // Limiting the de-scoped aliases here helps test cases be more specific about whether they're using
 // FIDL names or bt-host internal names.
@@ -628,6 +631,16 @@ TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
     replied = true;
   });
   EXPECT_TRUE(replied);
+}
+
+TEST_F(FIDL_HostServerTest, GetInspectVmoCallsCallbackWithAdapterInspectVmo) {
+  std::optional<fuchsia::mem::Buffer> vmo_buf;
+  auto vmo_cb = [&vmo_buf](fuchsia::mem::Buffer vmo) { vmo_buf = std::move(vmo); };
+  host_server()->GetInspectVmo(std::move(vmo_cb));
+  ASSERT_TRUE(vmo_buf.has_value());
+
+  auto hierarchy = inspect::ReadFromVmo(vmo_buf->vmo).take_value();
+  EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root"))));
 }
 
 }  // namespace

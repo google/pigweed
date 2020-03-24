@@ -29,7 +29,9 @@ namespace gap {
 
 Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
                  std::optional<fbl::RefPtr<data::Domain>> data_domain)
-    : identifier_(Random<AdapterId>()),
+    : inspector_(),
+      adapter_node_(inspector_.GetRoot().CreateChild("adapter")),
+      identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(hci),
       init_state_(State::kNotInitialized),
@@ -510,6 +512,9 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
   }
 
+  // Update properties before callback called so properties can be verified in unit tests.
+  UpdateInspectProperties();
+
   // Assign a default name and device class before notifying completion.
   auto self = weak_ptr_factory_.GetWeakPtr();
   SetLocalName(kDefaultLocalName, [self, callback = std::move(callback)](auto status) mutable {
@@ -523,6 +528,28 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
       callback(true);
     });
   });
+}
+
+void Adapter::UpdateInspectProperties() {
+  inspect_properties_.adapter_id = adapter_node_.CreateString("adapter_id", identifier_.ToString());
+  inspect_properties_.hci_version =
+      adapter_node_.CreateString("hci_version", hci::HCIVersionToString(state_.hci_version()));
+
+  inspect_properties_.bredr_max_num_packets = adapter_node_.CreateUint(
+      "bredr_max_num_packets", state_.bredr_data_buffer_info().max_num_packets());
+  inspect_properties_.bredr_max_data_length = adapter_node_.CreateUint(
+      "bredr_max_data_length", state_.bredr_data_buffer_info().max_data_length());
+
+  inspect_properties_.le_max_num_packets = adapter_node_.CreateUint(
+      "le_max_num_packets", state_.low_energy_state().data_buffer_info().max_num_packets());
+  inspect_properties_.le_max_data_length = adapter_node_.CreateUint(
+      "le_max_data_length", state_.low_energy_state().data_buffer_info().max_data_length());
+
+  inspect_properties_.lmp_features =
+      adapter_node_.CreateString("lmp_features", state_.features().ToString());
+
+  auto le_features = fxl::StringPrintf("0x%016lx", state_.low_energy_state().supported_features());
+  inspect_properties_.le_features = adapter_node_.CreateString("le_features", le_features);
 }
 
 uint64_t Adapter::BuildEventMask() {

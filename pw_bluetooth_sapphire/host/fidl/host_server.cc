@@ -4,6 +4,7 @@
 
 #include "host_server.h"
 
+#include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fit/result.h>
 #include <zircon/assert.h>
 
@@ -730,6 +731,16 @@ void HostServer::Close() {
   if (binding()->is_bound()) {
     NotifyInfoChange();
   }
+}
+
+void HostServer::GetInspectVmo(GetInspectVmoCallback callback) {
+  bt_log(TRACE, "bt-host", "Get Inspect Vmo");
+  auto vmo = adapter()->InspectVmo();
+  size_t vmo_size = 0;
+  auto status = vmo.get_size(&vmo_size);
+  ZX_ASSERT_MSG(status == ZX_OK, "Reading VMO size failed");
+  fuchsia::mem::Buffer buffer = {.vmo = std::move(vmo), .size = vmo_size};
+  callback(std::move(buffer));
 }
 
 bt::sm::IOCapability HostServer::io_capability() const {

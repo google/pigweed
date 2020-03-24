@@ -24,6 +24,8 @@ class LowEnergyState final {
     return supported_features_ & static_cast<uint64_t>(feature_bit);
   }
 
+  uint64_t supported_features() const { return supported_features_; }
+
   // Returns the LE ACL data buffer capacity.
   const hci::DataBufferInfo& data_buffer_info() const { return data_buffer_info_; }
 

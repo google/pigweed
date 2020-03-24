@@ -5,9 +5,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 
 #include <lib/async/cpp/task.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
 #include <memory>
+
+#include <gmock/gmock.h>
 
 #include "bredr_discovery_manager.h"
 #include "low_energy_address_manager.h"
@@ -15,6 +18,7 @@
 #include "low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -23,6 +27,7 @@ namespace bt {
 namespace gap {
 namespace {
 
+using namespace inspect::testing;
 using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::FakeControllerTest<FakeController>;
@@ -818,6 +823,51 @@ TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
   session = nullptr;
   RunLoopUntilIdle();
   EXPECT_FALSE(adapter()->IsDiscoverable());
+}
+
+TEST_F(GAP_AdapterTest, InspectHierarchy) {
+  bool success;
+  int init_cb_count = 0;
+  auto init_cb = [&](bool cb_success) {
+    success = cb_success;
+    init_cb_count++;
+  };
+
+  // Return valid buffer information and enable LE support. (This should
+  // succeed).
+  FakeController::Settings settings;
+  settings.lmp_features_page0 |= static_cast<uint64_t>(hci::LMPFeature::kLESupported);
+  settings.le_acl_data_packet_length = 5;
+  settings.le_total_num_acl_data_packets = 1;
+  test_device()->set_settings(settings);
+
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+
+  auto adapter_matcher = AllOf(
+      NodeMatches(AllOf(
+          NameMatches("adapter"),
+          PropertyList(UnorderedElementsAre(
+              StringIs("adapter_id", adapter()->identifier().ToString()),
+              StringIs("hci_version", hci::HCIVersionToString(adapter()->state().hci_version())),
+              UintIs("bredr_max_num_packets",
+                     adapter()->state().bredr_data_buffer_info().max_num_packets()),
+              UintIs("bredr_max_data_length",
+                     adapter()->state().bredr_data_buffer_info().max_data_length()),
+              UintIs("le_max_num_packets",
+                     adapter()->state().low_energy_state().data_buffer_info().max_num_packets()),
+              UintIs("le_max_data_length",
+                     adapter()->state().low_energy_state().data_buffer_info().max_data_length()),
+              StringIs("lmp_features", adapter()->state().features().ToString()),
+              StringIs(
+                  "le_features",
+                  fxl::StringPrintf(
+                      "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
+      ChildrenMatch(::testing::IsEmpty()));
+  auto hierarchy = inspect::ReadFromVmo(adapter()->InspectVmo()).take_value();
+
+  EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),
+                               ChildrenMatch(UnorderedElementsAre(adapter_matcher))));
 }
 
 }  // namespace
