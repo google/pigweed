@@ -129,8 +129,8 @@ Status EntryCache::AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
     // this same key.
     for (Address existing_address : addresses(index)) {
       if (existing_address / sector_size_bytes == address / sector_size_bytes) {
-        PW_LOG_DEBUG("Multiple Redundant entries in same sector %zu",
-                     address / sector_size_bytes);
+        PW_LOG_DEBUG("Multiple Redundant entries in same sector %u",
+                     unsigned(address / sector_size_bytes));
         return Status::DATA_LOSS;
       }
     }

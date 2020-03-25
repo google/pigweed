@@ -54,7 +54,7 @@ Status FlashPartitionWithStats::SaveStorageStats(const KeyValueStore& kvs,
   std::fprintf(out_file,
                ",%zu,%u,%zu",
                utilization_percentage,
-               kvs.transaction_count(),
+               unsigned(kvs.transaction_count()),
                kvs.size());
 
   for (size_t counter : sector_erase_counters()) {
