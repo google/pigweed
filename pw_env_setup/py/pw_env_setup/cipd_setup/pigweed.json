@@ -91,7 +91,7 @@
   {
     "path": "pigweed/host_tools/${platform}", 
     "tags": [
-      "git_revision:77f3d46a250a27f34069d2ca2bac21ef73d60dc2"
+      "git_revision:0054a9be7053688b4001319ca7e9bce9340f9e9f"
     ]
   }, 
   {
@@ -99,9 +99,9 @@
     "tags": [
       "git_revision:108fb36e5538b3749016ec19ef1268fc43681e33"
     ]
-  },
+  }, 
   {
-    "path": "fuchsia/third_party/qemu/${os=linux,mac}-${arch=amd64}",
+    "path": "fuchsia/third_party/qemu/${os=linux,mac}-${arch=amd64}", 
     "tags": [
       "git_revision:f3497771a70ba80987c80490aa688794ed971820"
     ]
