@@ -13,13 +13,16 @@ project to respect these guidelines.
 Pigweed contribution overview:
  1. One-time contributor setup:
    * Sign the [Contributor License Agreement](https://cla.developers.google.com/).
+   * Verify that Git user email (git config user.email) is either Google Account
+     email or an Alternate email for the Google account used to sign the CLA (Manage
+     Google account->Personal Info->email).
    * Install the [Gerrit commit hook](CONTRIBUTING.md#gerrit-commit-hook) to
-     automatically add a `Change-Id: ...` line to your commit
+     automatically add a `Change-Id: ...` line to your commit.
    * Install the Pigweed presubmit check hook (`pw presubmit --install`).
-     (recommended)
+     (recommended).
  2. Ensure all files include a correct [copyright and license header](CONTRIBUTING.md#source-code-headers).
  2. Upload the change with `git push origin HEAD:refs/for/master`.
- 3. Address any reviewer feedback by amending the commit (`git commit --amend`)
+ 3. Address any reviewer feedback by amending the commit (`git commit --amend`).
  4. Submit change to CI builders to merge.
 
 ## Contributor License Agreement
