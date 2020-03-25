@@ -58,6 +58,9 @@ class EntryMetadata {
     addresses_ = span(addresses_.begin(), addresses_.size() + 1);
   }
 
+  // Remove an address from the entry metadata.
+  void RemoveAddress(Address address_to_remove);
+
   // Resets the KeyDescrtiptor and addresses to refer to the provided
   // KeyDescriptor and address.
   void Reset(const KeyDescriptor& descriptor, Address address);

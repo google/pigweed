@@ -319,7 +319,7 @@ class KvsTester {
 
   void GCFull() {
     StartOperation("GCFull");
-    Status status = kvs_.GarbageCollectFull();
+    Status status = kvs_.FullMaintenance();
     EXPECT_EQ(Status::OK, status);
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
@@ -329,7 +329,7 @@ class KvsTester {
   void GCPartial() {
     StartOperation("GCPartial");
     KeyValueStore::StorageStats pre_stats = kvs_.GetStorageStats();
-    Status status = kvs_.GarbageCollectPartial();
+    Status status = kvs_.PartialMaintenance();
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (pre_stats.reclaimable_bytes != 0) {
       EXPECT_EQ(Status::OK, status);

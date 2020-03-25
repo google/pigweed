@@ -49,10 +49,15 @@ enum class ErrorRecovery {
   // Immediately do full recovery of any errors that are detected.
   kImmediate,
 
-  // Recover from errors, but do some time consuming steps at a later time. Such
-  // as waiting to garbage collect sectors with corrupt entries until the next
-  // garbage collection.
+  // Recover from errors, but delay time consuming recovery steps until later
+  // as part of other time consuming operations. Such as waiting to garbage
+  // collect sectors with corrupt entries until the next garbage collection.
   kLazy,
+
+  // Only recover from errors when manually triggered as part of maintenance
+  // operations. This is not recommended for normal use, only for test or
+  // read-only use.
+  kManual,
 };
 
 struct Options {
@@ -90,7 +95,9 @@ class KeyValueStore {
   //
   Status Init();
 
-  bool initialized() const { return initialized_; }
+  bool initialized() const {
+    return initialized_ == InitializationState::kReady;
+  }
 
   // Reads the value of an entry in the KVS. The value is read into the provided
   // buffer and the number of bytes read is returned. If desired, the read can
@@ -171,14 +178,17 @@ class KeyValueStore {
   //
   StatusWithSize ValueSize(std::string_view key) const;
 
-  // Perform garbage collection of all reclaimable space in the KVS.
-  Status GarbageCollectFull();
+  // Perform all maintenance possible, including all neeeded repairing of
+  // corruption and garbage collection of all reclaimable space in the KVS. When
+  // configured for manual recovery, this is the only way KVS repair is
+  // triggered.
+  Status FullMaintenance();
 
-  // Perform garbage collection of part of the KVS, typically a single sector or
-  // similar unit that makes sense for the KVS implementation.
-  Status GarbageCollectPartial() {
-    return GarbageCollectPartial(span<const Address>());
-  }
+  // Perform a portion of KVS maintenance. If configured for at least lazy
+  // recovery, will do any needed repairing of corruption. Does garbage
+  // collection of part of the KVS, typically a single sector or similar unit
+  // that makes sense for the KVS implementation.
+  Status PartialMaintenance() { return GarbageCollect(span<const Address>()); }
 
   void LogDebugInfo() const;
 
@@ -280,12 +290,17 @@ class KeyValueStore {
     size_t writable_bytes;
     size_t in_use_bytes;
     size_t reclaimable_bytes;
+    size_t corrupt_sectors_recovered;
+    size_t missing_redundant_entries_recovered;
   };
 
   StorageStats GetStorageStats() const;
 
   // Level of redundancy to use for writing entries.
   size_t redundancy() const { return entry_cache_.redundancy(); }
+
+  bool error_detected() const { return error_detected_; }
+  bool CheckForErrors();
 
  protected:
   using Address = FlashPartition::Address;
@@ -340,7 +355,8 @@ class KeyValueStore {
                       void* value,
                       size_t size_bytes) const;
 
-  Status CheckOperation(std::string_view key) const;
+  Status CheckWriteOperation(std::string_view key) const;
+  Status CheckReadOperation(std::string_view key) const;
 
   Status WriteEntryForExistingKey(EntryMetadata& metadata,
                                   EntryState new_state,
@@ -364,6 +380,8 @@ class KeyValueStore {
                            size_t entry_size,
                            span<const Address> addresses_to_skip);
 
+  Status MarkSectorCorruptIfNotOk(Status status, SectorDescriptor* sector);
+
   Status AppendEntry(const Entry& entry,
                      std::string_view key,
                      span<const std::byte> value);
@@ -372,7 +390,9 @@ class KeyValueStore {
                        KeyValueStore::Address& address,
                        span<const Address> addresses_to_skip);
 
-  Status GarbageCollectPartial(span<const Address> addresses_to_skip);
+  // Find and garbage collect a singe sector that does not include an address to
+  // skip.
+  Status GarbageCollect(span<const Address> addresses_to_skip);
 
   Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
                                       const EntryMetadata& descriptor,
@@ -381,7 +401,15 @@ class KeyValueStore {
   Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
                               span<const Address> addresses_to_skip);
 
-  Status Repair() { return Status::UNIMPLEMENTED; }
+  Status AddRedundantEntries(EntryMetadata& metadata);
+
+  Status RepairCorruptSectors();
+
+  Status EnsureFreeSectorExists();
+
+  Status EnsureEntryRedundancy();
+
+  Status Repair();
 
   internal::Entry CreateEntry(Address address,
                               std::string_view key,
@@ -403,9 +431,26 @@ class KeyValueStore {
 
   Options options_;
 
-  bool initialized_;
+  enum class InitializationState {
+    // KVS Init() has not been called and KVS is not usable.
+    kNotInitialized,
+
+    // KVS Init() run but not all the needed invariants are met for an operating
+    // KVS. KVS is not writable, but read operaions are possible.
+    kNeedsMaintenance,
+
+    // KVS is fully ready for use.
+    kReady,
+  };
+  InitializationState initialized_;
 
   bool error_detected_;
+
+  struct ErrorStats {
+    size_t corrupt_sectors_recovered;
+    size_t missing_redundant_entries_recovered;
+  };
+  ErrorStats error_stats_;
 
   uint32_t last_transaction_id_;
 };

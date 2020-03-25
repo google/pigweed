@@ -31,6 +31,23 @@ constexpr FlashPartition::Address kNoAddress = FlashPartition::Address(-1);
 
 }  // namespace
 
+void EntryMetadata::RemoveAddress(Address address_to_remove) {
+  // Find the index of the address to remove.
+  for (Address& address : addresses_) {
+    if (address == address_to_remove) {
+      // Move the address at the back of the list to the slot of the address
+      // being removed. Do this unconditionally, even if the address to remove
+      // is the last slot since the logic still works.
+      address = addresses_.back();
+
+      // Remove the back entry of the address list.
+      addresses_.back() = kNoAddress;
+      addresses_ = span(addresses_.begin(), addresses_.size() - 1);
+      break;
+    }
+  }
+}
+
 void EntryMetadata::Reset(const KeyDescriptor& descriptor, Address address) {
   *descriptor_ = descriptor;
 

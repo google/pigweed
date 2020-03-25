@@ -99,8 +99,17 @@ constexpr auto MakeValidEntry(uint32_t magic,
 }
 
 constexpr uint32_t kMagic = 0xc001beef;
+
 constexpr Options kNoGcOptions{
     .gc_on_write = GargbageCollectOnWrite::kDisabled,
+    .recovery = ErrorRecovery::kManual,
+    .verify_on_read = true,
+    .verify_on_write = true,
+};
+
+constexpr Options kRecoveryNoGcOptions{
+    .gc_on_write = GargbageCollectOnWrite::kDisabled,
+    .recovery = ErrorRecovery::kLazy,
     .verify_on_read = true,
     .verify_on_write = true,
 };
@@ -211,8 +220,8 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
   flash_.buffer()[1025] = byte(0xef);
 
   ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, kvs_.Put("hello", ByteStr("world")));
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, kvs_.Put("a", ByteStr("b")));
+  EXPECT_EQ(Status::FAILED_PRECONDITION, kvs_.Put("hello", ByteStr("world")));
+  EXPECT_EQ(Status::FAILED_PRECONDITION, kvs_.Put("a", ByteStr("b")));
 
   // Existing valid entries should still be readable.
   EXPECT_EQ(1u, kvs_.size());
@@ -230,8 +239,8 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
   InitFlashTo(AsBytes(kEntry1, kEntry2));
 
   // Corrupt all of the 4 512-byte flash sectors. Leave the pre-init entries
-  // intact. A corrupt sector without entries should be GC'ed on init because
-  // the KVS must maintain one empty sector at all times.
+  // intact. The KVS should be unavailable because recovery is set to full
+  // manual, and it does not have the required one empty sector at all times.
   flash_.buffer()[64] = byte(0xef);
   flash_.buffer()[513] = byte(0xef);
   flash_.buffer()[1025] = byte(0xef);
@@ -241,7 +250,7 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
 
   auto stats = kvs_.GetStorageStats();
   EXPECT_EQ(64u, stats.in_use_bytes);
-  EXPECT_EQ(3 * 512u - 64u, stats.reclaimable_bytes);
+  EXPECT_EQ(4 * 512u - 64u, stats.reclaimable_bytes);
   EXPECT_EQ(0u, stats.writable_bytes);
 }
 
@@ -281,8 +290,8 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
   auto stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, 0u);
-  EXPECT_EQ(stats.reclaimable_bytes, 32u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - 32);
+  EXPECT_EQ(stats.reclaimable_bytes, 512u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2);
 
   // The bytes were marked used, so a new key should not overlap with the bytes
   // from the failed Put.
@@ -290,8 +299,201 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (32u * kvs_.redundancy()));
-  EXPECT_EQ(stats.reclaimable_bytes, 32u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (32 + (32 * kvs_.redundancy())));
+  EXPECT_EQ(stats.reclaimable_bytes, 512u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (32 * kvs_.redundancy()));
+}
+
+class KvsErrorRecovery : public ::testing::Test {
+ protected:
+  KvsErrorRecovery()
+      : flash_(internal::Entry::kMinAlignmentBytes),
+        partition_(&flash_),
+        kvs_(&partition_,
+             {.magic = kMagic, .checksum = &checksum},
+             kRecoveryNoGcOptions) {}
+
+  void InitFlashTo(span<const byte> contents) {
+    partition_.Erase();
+    std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
+  }
+
+  FakeFlashBuffer<512, 4> flash_;
+  FlashPartition partition_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
+};
+
+TEST_F(KvsErrorRecovery, Init_Ok) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  EXPECT_EQ(Status::OK, kvs_.Init());
+  byte buffer[64];
+  EXPECT_EQ(Status::OK, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+}
+
+TEST_F(KvsErrorRecovery, Init_DuplicateEntries_RecoversDuringInit) {
+  InitFlashTo(AsBytes(kEntry1, kEntry1));
+
+  EXPECT_EQ(Status::OK, kvs_.Init());
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 1u);
+
+  byte buffer[64];
+  EXPECT_EQ(Status::OK, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("k2", buffer).status());
+}
+
+TEST_F(KvsErrorRecovery, Init_CorruptEntry_FindsSubsequentValidEntry) {
+  // Corrupt each byte in the first entry once.
+  for (size_t i = 0; i < kEntry1.size(); ++i) {
+    InitFlashTo(AsBytes(kEntry1, kEntry2));
+    flash_.buffer()[i] = byte(int(flash_.buffer()[i]) + 1);
+
+    ASSERT_EQ(Status::OK, kvs_.Init());
+    byte buffer[64];
+    ASSERT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+    ASSERT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+    auto stats = kvs_.GetStorageStats();
+    // One valid entry.
+    ASSERT_EQ(32u, stats.in_use_bytes);
+    // The sector with corruption should have been recovered.
+    ASSERT_EQ(0u, stats.reclaimable_bytes);
+    ASSERT_EQ(1u, stats.corrupt_sectors_recovered);
+  }
+}
+
+TEST_F(KvsErrorRecovery, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2, kEntry3, kEntry4));
+
+  // Corrupt the first and third entries.
+  flash_.buffer()[9] = byte(0xef);
+  flash_.buffer()[67] = byte(0xef);
+
+  ASSERT_EQ(Status::OK, kvs_.Init());
+
+  EXPECT_EQ(2u, kvs_.size());
+
+  byte buffer[64];
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("k3y", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("4k", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  ASSERT_EQ(64u, stats.in_use_bytes);
+  ASSERT_EQ(0u, stats.reclaimable_bytes);
+  ASSERT_EQ(1472u, stats.writable_bytes);
+  ASSERT_EQ(1u, stats.corrupt_sectors_recovered);
+}
+
+TEST_F(KvsErrorRecovery, Init_ReadError_IsNotInitialized) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  flash_.InjectReadError(
+      FlashError::InRange(Status::UNAUTHENTICATED, kEntry1.size()));
+
+  EXPECT_EQ(Status::UNKNOWN, kvs_.Init());
+  EXPECT_FALSE(kvs_.initialized());
+}
+
+TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldBeUnwritable) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  // Corrupt 3 of the 4 512-byte flash sectors. Corrupt sectors should be
+  // recovered via garbage collection.
+  flash_.buffer()[1] = byte(0xef);
+  flash_.buffer()[513] = byte(0xef);
+  flash_.buffer()[1025] = byte(0xef);
+
+  ASSERT_EQ(Status::OK, kvs_.Init());
+  EXPECT_EQ(Status::OK, kvs_.Put("hello", ByteStr("world")));
+  EXPECT_EQ(Status::OK, kvs_.Put("a", ByteStr("b")));
+
+  // Existing valid entries should still be readable.
+  EXPECT_EQ(3u, kvs_.size());
+  byte buffer[64];
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(96u, stats.in_use_bytes);
+  EXPECT_EQ(0u, stats.reclaimable_bytes);
+  EXPECT_EQ(1440u, stats.writable_bytes);
+  ASSERT_EQ(3u, stats.corrupt_sectors_recovered);
+}
+
+TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldRecoverOne) {
+  InitFlashTo(AsBytes(kEntry1, kEntry2));
+
+  // Corrupt all of the 4 512-byte flash sectors. Leave the pre-init entries
+  // intact. As part of recovery all corrupt sectors should get garbage
+  // collected.
+  flash_.buffer()[64] = byte(0xef);
+  flash_.buffer()[513] = byte(0xef);
+  flash_.buffer()[1025] = byte(0xef);
+  flash_.buffer()[1537] = byte(0xef);
+
+  ASSERT_EQ(Status::OK, kvs_.Init());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(64u, stats.in_use_bytes);
+  EXPECT_EQ(0u, stats.reclaimable_bytes);
+  EXPECT_EQ(3 * 512u - 64u, stats.writable_bytes);
+}
+
+TEST_F(KvsErrorRecovery, Init_CorruptKey_RevertsToPreviousVersion) {
+  constexpr auto kVersion7 =
+      MakeValidEntry(kMagic, 7, "my_key", ByteStr("version 7"));
+  constexpr auto kVersion8 =
+      MakeValidEntry(kMagic, 8, "my_key", ByteStr("version 8"));
+
+  InitFlashTo(AsBytes(kVersion7, kVersion8));
+
+  // Corrupt a byte of entry version 8 (addresses 32-63).
+  flash_.buffer()[34] = byte(0xef);
+
+  ASSERT_EQ(Status::OK, kvs_.Init());
+
+  char buffer[64] = {};
+
+  EXPECT_EQ(1u, kvs_.size());
+
+  auto result = kvs_.Get("my_key", as_writable_bytes(span(buffer)));
+  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(sizeof("version 7") - 1, result.size());
+  EXPECT_STREQ("version 7", buffer);
+
+  EXPECT_EQ(32u, kvs_.GetStorageStats().in_use_bytes);
+}
+
+TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
+  ASSERT_EQ(Status::OK, kvs_.Init());
+  flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
+
+  EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
+  EXPECT_EQ(true, kvs_.error_detected());
+
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", span<byte>()).status());
+  ASSERT_TRUE(kvs_.empty());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, 0u);
+  EXPECT_EQ(stats.reclaimable_bytes, 512u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2);
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
+
+  // The bytes were marked used, so a new key should not overlap with the bytes
+  // from the failed Put.
+  EXPECT_EQ(Status::OK, kvs_.Put("key1", ByteStr("value1")));
+
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (32u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 512u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (32 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
 constexpr uint32_t kAltMagic = 0xbadD00D;
@@ -328,7 +530,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
                  {.magic = kAltMagic, .checksum = &alt_checksum},
                  {.magic = kNoChecksumMagic, .checksum = nullptr},
              }},
-             kNoGcOptions) {
+             kRecoveryNoGcOptions) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(),
                 kInitialContents.data(),
