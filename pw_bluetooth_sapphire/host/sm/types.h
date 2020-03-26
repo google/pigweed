@@ -182,6 +182,22 @@ enum class BondableMode {
   NonBondable,
 };
 
+// Represents the local device's settings for easy mapping to Pairing(Request|Response)Parameters.
+struct LocalPairingParams {
+  // The local I/O capability.
+  IOCapability io_capability;
+  // Whether or not OOB authentication data is available locally.
+  OOBDataFlag oob_data_flag;
+  // The local requested security properties (Vol 3, Part H, 2.3.1).
+  AuthReqField auth_req;
+  // Maximum encryption key size supported by the local device. Valid values are 7-16.
+  uint8_t max_encryption_key_size;
+  // The keys that the local system is able to distribute.
+  KeyDistGenField local_keys;
+  // The keys that are desired from the peer.
+  KeyDistGenField remote_keys;
+};
+
 }  // namespace sm
 }  // namespace bt
 

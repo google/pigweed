@@ -17,12 +17,6 @@ class FakeListener : public PairingPhase::Listener {
   ~FakeListener() override = default;
 
   // PairingPhase::Listener override:
-  bool StartTimer() override {
-    timer_started_count_++;
-    return is_timer_working_;
-  };
-
-  // PairingPhase::Listener override:
   std::optional<IdentityInfo> OnIdentityRequest() override {
     identity_info_count_++;
     return identity_info_;
@@ -51,9 +45,6 @@ class FakeListener : public PairingPhase::Listener {
 
   fxl::WeakPtr<PairingPhase::Listener> as_weak_ptr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-  void set_timer_working(bool timer_working) { is_timer_working_ = timer_working; }
-  int timer_started_count() const { return timer_started_count_; }
-
   void set_identity_info(std::optional<IdentityInfo> value) { identity_info_ = value; }
   int identity_info_count() const { return identity_info_count_; }
 
@@ -67,9 +58,6 @@ class FakeListener : public PairingPhase::Listener {
   const LTK& ltk() const { return ltk_; }
 
  private:
-  bool is_timer_working_ = true;
-  int timer_started_count_ = 0;
-
   std::optional<IdentityInfo> identity_info_ = std::nullopt;
   int identity_info_count_ = 0;
 

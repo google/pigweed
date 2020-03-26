@@ -37,9 +37,6 @@ class PairingPhase {
    public:
     virtual ~Listener() = default;
 
-    // Starts the SM Pairing timer (Vol. 3 Part H Section 3.4).
-    virtual bool StartTimer() = 0;
-
     // Polls for the local identity information, which must be handled by another component of the
     // Bluetooth stack. Returns std::nullopt if no local identity info is available.
     virtual std::optional<IdentityInfo> OnIdentityRequest() = 0;

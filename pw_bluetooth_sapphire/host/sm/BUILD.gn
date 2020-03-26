@@ -33,6 +33,8 @@ static_library("sm") {
     "pairing_phase.h",
     "pairing_state.cc",
     "pairing_state.h",
+    "phase_1.cc",
+    "phase_1.h",
     "util.cc",
     "util.h",
   ]
@@ -57,6 +59,7 @@ source_set("tests") {
     "pairing_channel_unittest.cc",
     "pairing_phase_unittest.cc",
     "pairing_state_unittest.cc",
+    "phase_1_unittest.cc",
     "types_unittest.cc",
     "util_unittest.cc",
   ]

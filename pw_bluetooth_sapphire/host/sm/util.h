@@ -14,6 +14,12 @@ namespace bt {
 namespace sm {
 namespace util {
 
+// Returns the size of the SMP Packet with the given `Payload` template parameter type.
+template <typename Payload>
+constexpr size_t PacketSize() {
+  return sizeof(Header) + sizeof(Payload);
+}
+
 // Returns a string representation of a given pairing method.
 std::string PairingMethodToString(PairingMethod method);
 

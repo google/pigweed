@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "third_party/googletest/googletest/include/gtest/gtest.h"
 
@@ -75,7 +76,7 @@ TEST_F(SMP_IdlePhaseTest, HandlesChannelClosedGracefully) {
 
 TEST_F(SMP_IdlePhaseTest, PairingRequestAsSlavePassedThrough) {
   NewIdlePhase(hci::Connection::Role::kSlave);
-  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)> preq_packet;
+  StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
   auto preq = PairingRequestParams{.auth_req = 0x01, .responder_key_dist_gen = 0x03};
   *writer.mutable_payload<PairingRequestParams>() = preq;
@@ -88,7 +89,7 @@ TEST_F(SMP_IdlePhaseTest, PairingRequestAsSlavePassedThrough) {
 }
 
 TEST_F(SMP_IdlePhaseTest, PairingRequestAsMasterSendsPairingFailed) {
-  StaticByteBuffer<sizeof(Header) + sizeof(PairingRequestParams)> preq_packet;
+  StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
   auto preq = PairingRequestParams{.auth_req = 0x01, .responder_key_dist_gen = 0x03};
   *writer.mutable_payload<PairingRequestParams>() = preq;
@@ -146,7 +147,7 @@ TEST_F(SMP_IdlePhaseTest, SecurityRequestAsSlaveSendsPairingFailed) {
 }
 
 TEST_F(SMP_IdlePhaseTest, NonSecurityPairingRequestMessageDropped) {
-  StaticByteBuffer<sizeof(Header) + sizeof(PairingResponseParams)> pres_packet;
+  StaticByteBuffer<util::PacketSize<PairingResponseParams>()> pres_packet;
   PacketWriter writer(kPairingResponse, &pres_packet);
   *writer.mutable_payload<PairingResponseParams>() = PairingResponseParams();
 
