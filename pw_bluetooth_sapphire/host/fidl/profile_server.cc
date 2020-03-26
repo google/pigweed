@@ -4,6 +4,8 @@
 
 #include "profile_server.h"
 
+#include <zircon/status.h>
+
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -490,7 +492,8 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
 }
 
 void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) {
-  bt_log(SPEW, "profile_server", "Search result closed, ending search %lu", search_id);
+  bt_log(SPEW, "profile_server", "Search result closed, ending search %lu reason %s", search_id,
+         zx_status_get_string(status));
 
   auto it = searches_.find(search_id);
 
