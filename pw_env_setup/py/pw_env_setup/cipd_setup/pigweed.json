@@ -46,7 +46,7 @@
     "path": "fuchsia/third_party/clang/${os=linux,mac}-${arch}", 
     "_comment": "TODO(pwbug/70) Put clang in cipd for Windows.", 
     "tags": [
-      "git_revision:fc31b58eff9da4447f9f332f07de3cd07ab4b56c"
+      "git_revision:6e00e3fcb082c3f19309ebc6f184ab326eec3328"
     ]
   }, 
   {
