@@ -303,7 +303,7 @@ PW_EXTERN_C_END
 #define _PW_TOKENIZER_CONST const
 #endif  // __cplusplus
 
-// _PW_TOKENIZER_SECTION places the format string in a special .pw_tokenized.#
+// _PW_TOKENIZER_SECTION places the format string in a special .tokenized.#
 // linker section. Host-side decoding tools read the strings from this section
 // to build a database of tokenized strings.
 //

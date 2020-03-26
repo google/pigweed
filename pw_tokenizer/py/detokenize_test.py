@@ -88,7 +88,8 @@ EMPTY_ELF = (
 #   arm-none-eabi-objcopy -S --only-section ".tokenize*" <ELF> <OUTPUT>
 #
 # The resulting ELF was converted to a Python binary string using
-# path_to_byte_string function above.
+# path_to_byte_string function above. The file is also included in the repo as
+# example_binary_with_tokenized_logs.elf.
 ELF_WITH_TOKENIZER_SECTIONS = (
     b'\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00(\x00\x01'
     b'\x00\x00\x00\xd1\x83\x00\x084\x00\x00\x00\x04\x03\x00\x00\x00\x04\x00\x05'

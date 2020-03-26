@@ -24,8 +24,8 @@ defined in ``public/``. These files are symlinks to their implementations in
 
     for f in $(ls internal/); do ln -s internal/$f ${f%.h}; done
 
-Requirments
-===========
+Requirements
+============
 - C++17
 - gcc or clang
 - The C Standard Library

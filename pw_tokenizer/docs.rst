@@ -7,102 +7,130 @@
 ------------
 pw_tokenizer
 ------------
-
 Logging is critical, but developers are often forced to choose between
-additional logging or saving crucial flash space. ``pw_tokenizer`` helps
-ameliorate this issue by providing facilities to convert strings to integer
-tokens that can be decoded off-device, enabling extensive logging and debugging
-with significantly less memory usage. Printf-style format strings such as ``"My
-name is %s"`` are also supported; ``pw_tokenizer`` encodes the arguments into
-compact binary form at runtime. We’ve seen over 50% optimization in log contents
-and substantial savings in flash size, with additional benefits such as
-minimizing communication bandwidth and reducing CPU usage.
+additional logging or saving crucial flash space. The ``pw_tokenizer`` module
+helps address this by replacing printf-style strings with binary tokens during
+compilation. This enables extensive logging with substantially less memory
+usage.
 
 .. note::
   This usage of the term "tokenizer" is not related to parsing! The
   module is called tokenizer because it replaces a whole string literal with an
   integer token. It does not parse strings into separate tokens.
 
-The most common application of the tokenizer module is binary logging, and it is
+The most common application of ``pw_tokenizer`` is binary logging, and it is
 designed to integrate easily into existing logging systems. However, the
-tokenizer is general purpose and can be used to tokenize any strings.
+tokenizer is general purpose and can be used to tokenize any strings, with or
+without printf-style arguments.
 
 **Why tokenize strings?**
 
   * Dramatically reduce binary size by removing string literals from binaries.
-  * Reduce CPU usage by replacing snprintf calls with simple tokenization code.
   * Reduce I/O traffic, RAM, and flash usage by sending and storing compact
-    tokens instead of strings.
+    tokens instead of strings. We've seen over 50% reduction in encoded log
+    contents.
+  * Reduce CPU usage by replacing snprintf calls with simple tokenization code.
   * Remove potentially sensitive log, assert, and other strings from binaries.
 
-Example
-=======
+Basic overview
+==============
+There are two sides to ``pw_tokenizer``, which we call tokenization and
+detokenization.
 
-Before: With plain text logging
+  * **Tokenization** converts string literals in the source code to
+    binary tokens at compile time. If the string has printf-style arguments,
+    these are encoded to compact binary form at runtime.
+  * **Detokenization** converts tokenized strings back to the original
+    human-readable strings.
+
+Here's an overview of what happens when ``pw_tokenizer`` is used:
+
+  1. During compilation, the ``pw_tokenizer`` module hashes string literals to
+     generate stable 32-bit tokens.
+  2. The tokenization macro removes these strings by declaring them in an ELF
+     section that is excluded from the final binary.
+  3. After compilation, strings are extracted from the ELF to build a database
+     of tokenized strings for use by the detokenizer. The ELF file may also be
+     used directly.
+  4. During operation, the device encodes the string token and its arguments, if
+     any.
+  5. The encoded tokenized strings are sent off-device or stored.
+  6. Off-device, the detokenizer tools use the token database to decode the
+     strings to human-readable form.
+
+Example: tokenized logging
+--------------------------
+This example demonstrates using ``pw_tokenizer`` for logging. In this example,
+tokenized logging saves ~90% in binary size (41 → 4 bytes) and 70% in encoded
+size (49 → 15 bytes).
+
+**Before**: plain text logging
 
 +------------------+-------------------------------------------+---------------+
 | Location         | Logging Content                           | Size in bytes |
 +==================+===========================================+===============+
-| Source contains  | LOG_INFO("Battery state: %s; battery      |               |
-|                  | voltage: %d mV", state, voltage);         |               |
+| Source contains  | ``LOG("Battery state: %s; battery         |               |
+|                  | voltage: %d mV", state, voltage);``       |               |
 +------------------+-------------------------------------------+---------------+
-| Binary contains  | "Battery state: %s; battery               | 41            |
-|                  | voltage: %d mV"                           |               |
+| Binary contains  | ``"Battery state: %s; battery             | 41            |
+|                  | voltage: %d mV"``                         |               |
 +------------------+-------------------------------------------+---------------+
-|                  | (log statement is called with "CHARGING"  |               |
-|                  | and 3989 as arguments)                    |               |
+|                  | (log statement is called with             |               |
+|                  | ``"CHARGING"`` and ``3989`` as arguments) |               |
 +------------------+-------------------------------------------+---------------+
-| Device transmits | "Battery state: CHARGING; battery         | 49            |
-|                  | voltage: 3989 mV"                         |               |
+| Device transmits | ``"Battery state: CHARGING; battery       | 49            |
+|                  | voltage: 3989 mV"``                       |               |
 +------------------+-------------------------------------------+---------------+
-| When viewed      | "Battery state: CHARGING; battery         |               |
-|                  | voltage: 3989 mV"                         |               |
+| When viewed      | ``"Battery state: CHARGING; battery       |               |
+|                  | voltage: 3989 mV"``                       |               |
 +------------------+-------------------------------------------+---------------+
 
-After: With tokenized logging
+**After**: tokenized logging
 
-+------------------+-------------------------------------------------+---------+
-| Location         | Logging Content                                 | Size in |
-|                  |                                                 | bytes   |
-+==================+=================================================+=========+
-| Source contains  | LOG_INFO("Battery state: %s; battery            |         |
-|                  | voltage: %d mV", state, voltage);               |         |
-+------------------+-------------------------------------------------+---------+
-| Binary contains  | 0x8e4728d9                                      | 4       |
-+------------------+-------------------------------------------------+---------+
-|                  | (log statement is called with "CHARGING"        |         |
-|                  | and 3989 as arguments)                          |         |
-+------------------+-------------------------------------------------+---------+
-| Device transmits | =========== ========================== ======   | 15      |
-|                  | d9 28 47 8e 08 43 48 41 52 47 49 4E 47 aa 3e    |         |
-|                  | ----------- -------------------------- ------   |         |
-|                  | Token       "CHARGING" argument        3989,    |         |
-|                  |                                        as       |         |
-|                  |                                        varint   |         |
-|                  | =========== ========================== ======   |         |
-+------------------+-------------------------------------------------+---------+
-| When viewed      | "Battery state: CHARGING; battery               |         |
-|                  | voltage: 3989 mV"                               |         |
-+------------------+-------------------------------------------------+---------+
++------------------+-----------------------------------------------------------+---------+
+| Location         | Logging Content                                           | Size in |
+|                  |                                                           | bytes   |
++==================+===========================================================+=========+
+| Source contains  | ``LOG("Battery state: %s; battery                         |         |
+|                  | voltage: %d mV", state, voltage);``                       |         |
++------------------+-----------------------------------------------------------+---------+
+| Binary contains  | ``d9 28 47 8e`` (0x8e4728d9)                              | 4       |
++------------------+-----------------------------------------------------------+---------+
+|                  | (log statement is called with                             |         |
+|                  | ``"CHARGING"`` and ``3989`` as arguments)                 |         |
++------------------+-----------------------------------------------------------+---------+
+| Device transmits | =============== ============================== ========== | 15      |
+|                  | ``d9 28 47 8e`` ``08 43 48 41 52 47 49 4E 47`` ``aa 3e``  |         |
+|                  | --------------- ------------------------------ ---------- |         |
+|                  | Token           ``"CHARGING"`` argument        ``3989``,  |         |
+|                  |                                                as         |         |
+|                  |                                                varint     |         |
+|                  | =============== ============================== ========== |         |
++------------------+-----------------------------------------------------------+---------+
+| When viewed      | ``"Battery state: CHARGING; battery voltage: 3989 mV"``   |         |
++------------------+-----------------------------------------------------------+---------+
 
-In the above logging example, we achieve a savings of ~90% in binary size  (41 →
-4 bytes)  and 70% in bandwidth (49 → 15 bytes).
-
-Basic operation
+Getting started
 ===============
-There are two sides to tokenization: tokenizing strings in the source code and
-detokenizing these strings back to human-readable form.
+Integrating ``pw_tokenizer`` requires a few steps beyond building the code. This
+section describes one way ``pw_tokenizer`` might be integrated with a project.
+These steps can be adapted as needed.
 
-  1. In C or C++ code, strings are hashed to generate a stable 32-bit token.
-  2. The tokenization macro removes the string literal by placing it in an ELF
-     section that is excluded from the final binary.
-  3. Strings are extracted from an ELF to build a database of tokenized strings
-     for use by the detokenizer. The ELF file may also be used directly.
-  4. During operation, the device encodes the string token and its arguments, if
-     any.
-  5. The encoded tokenized strings are sent off-device or stored.
-  6. Off-device, the detokenizer tools use the token database or ELF files to
-     detokenize the strings to human-readable form.
+  1. Add ``pw_tokenizer`` to your build. Build files for GN, CMake, and Bazel
+     are provided. For Make or other build systems, add the files specified in
+     the BUILD.gn's ``pw_tokenizer`` target to the build.
+  2. Use the tokenization macros in your code. See `Tokenization`_.
+  3. Add the contents of ``tokenizer_linker_sections.ld`` to your project's
+     linker script.
+  4. Compile your code to produce an ELF file.
+  5. Run ``database.py create`` on the ELF file to generate a CSV token
+     database. See `Managing token databases`_.
+  6. Commit the token database to your repository. See notes in `Database
+     management`_.
+  7. Integrate a ``database.py add`` command to your build to automatically
+     update the committed token database. See `Update a database`_.
+  8. Integrate ``detokenize.py`` or the C++ detokenization library with your
+     tools to decode tokenized logs. See `Detokenization`_.
 
 Tokenization
 ============
@@ -367,6 +395,10 @@ Managing token databases
 Token databases are managed with the ``database.py`` script. This script can be
 used to extract tokens from compilation artifacts and manage database files.
 Invoke ``database.py`` with ``-h`` for full usage information.
+
+An example ELF file with tokenized logs is provided at
+``pw_tokenizer/py/example_binary_with_tokenized_logs.elf``. You can use that
+file to experiment with the ``database.py`` commands.
 
 Create a database
 ^^^^^^^^^^^^^^^^^
