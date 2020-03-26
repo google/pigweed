@@ -39,9 +39,18 @@ try:
 except ImportError:
     import urllib.parse as urlparse  # type: ignore
 
-SCRIPT_DIR = os.path.dirname(__file__)
+try:
+    SCRIPT_DIR = os.path.dirname(__file__)
+except NameError:  # __file__ not defined.
+    try:
+        SCRIPT_DIR = os.path.join(os.environ['PW_ROOT'], 'pw_env_setup', 'py',
+                                  'pw_env_setup', 'cipd_setup')
+    except KeyError:
+        raise Exception('Environment variable PW_ROOT not set')
+
 VERSION_FILE = os.path.join(SCRIPT_DIR, '.cipd_version')
 DIGESTS_FILE = VERSION_FILE + '.digests'
+
 # Put CIPD client in tools so that users can easily get it in their PATH.
 CIPD_HOST = 'chrome-infra-packages.appspot.com'
 

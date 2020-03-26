@@ -435,6 +435,27 @@ def source_is_in_build_files(ctx: PresubmitContext):
 
 GENERAL: Tuple[Callable, ...] = (source_is_in_build_files, )
 
+
+def build_env_setup(ctx: PresubmitContext):
+    if 'PW_CARGO_SETUP' not in os.environ:
+        _LOG.warning(
+            'Skipping build_env_setup since PW_CARGO_SETUP is not set')
+        return
+
+    tmpl = ctx.repository_root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl')
+    out = ctx.output_directory.joinpath('pyoxidizer.bzl')
+
+    with open(tmpl, 'r') as ins:
+        cfg = ins.read().replace('${PW_ROOT}', str(ctx.repository_root))
+        with open(out, 'w') as outs:
+            outs.write(cfg)
+
+    call('pyoxidizer', 'build', cwd=ctx.output_directory)
+
+
+BUILD_ENV_SETUP = (build_env_setup, )
+
+
 BROKEN: Tuple[Callable, ...] = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
@@ -458,7 +479,7 @@ QUICK_PRESUBMIT: Tuple[Callable, ...] = (
 
 FULL_PRESUBMIT: Tuple[Callable, ...] = (
     INIT + CODE_FORMAT + GENERAL + CC + GN +
-    python_checks.ALL + CMAKE + BAZEL)  # yapf: disable
+    python_checks.ALL + CMAKE + BAZEL + BUILD_ENV_SETUP)  # yapf: disable
 
 PROGRAMS: Dict[str, Tuple] = {
     'broken': BROKEN,
