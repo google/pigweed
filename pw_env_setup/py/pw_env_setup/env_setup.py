@@ -140,14 +140,9 @@ class EnvSetup(object):
             ('Pigweed host tools', self.host_tools),
         ]
 
-        # TODO(pwbug/67): Rust isn't currently used anywhere, so this is
-        # commented out to avoid cluttering the bootstrap output. It should be
-        # re-enabled once we have a use for Rust.
-        #
         # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
-        #
-        # if not self._is_windows:
-        #   steps.append(("Rust's cargo", self.cargo))
+        if not self._is_windows:
+            steps.append(("Rust cargo", self.cargo))
 
         self._log(
             Color.bold('Downloading and installing packages into local '
@@ -290,7 +285,7 @@ Then use `set +x` to go back to normal.
                 _Result.Status.SKIPPED,
                 '    Note: Re-run bootstrap with PW_CARGO_SETUP=1 set '
                 'in your environment',
-                '          to enable Rust.',
+                '          to enable Rust. (Rust is usually not needed.)',
             )
 
         if not cargo_setup.install(pw_root=self._pw_root, env=self._env):

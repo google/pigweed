@@ -15,6 +15,8 @@
 
 import os
 import subprocess
+import sys
+import tempfile
 
 
 def install(pw_root, env):
@@ -50,6 +52,15 @@ def install(pw_root, env):
                 package,
             ]  # yapf: disable
 
-            subprocess.check_call(cmd)
+            # TODO(pwbug/135) Use function from common utility module.
+            with tempfile.TemporaryFile(mode='w+') as temp:
+                try:
+                    subprocess.check_call(cmd,
+                                          stdout=temp,
+                                          stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError:
+                    temp.seek(0)
+                    sys.stderr.write(temp.read())
+                    raise
 
     return True
