@@ -29,7 +29,7 @@ $ cd ~
 $ git clone https://pigweed.googlesource.com/pigweed/pigweed
 ...
 $ cd pigweed
-$ . ./bootstrap.sh
+$ source ./bootstrap.sh
 ...
 ```
 
@@ -131,7 +131,7 @@ bootstrap may take several minutes to complete, so please be patient.
 ```bash
 $ git clone https://pigweed.googlesource.com/pigweed/pigweed ~/pigweed
 $ cd ~/pigweed
-$ . ./bootstrap.sh
+$ source ./bootstrap.sh
 ```
 
 **Windows**
