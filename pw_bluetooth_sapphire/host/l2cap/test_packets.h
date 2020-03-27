@@ -49,6 +49,12 @@ DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,
                                          l2cap::ChannelId channel_id, uint8_t receive_seq_num,
                                          bool is_poll_request, bool is_poll_response);
 
+// I-Frame Packets
+
+DynamicByteBuffer AclIFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
+                            uint8_t receive_seq_num, uint8_t tx_seq, bool is_poll_response,
+                            const ByteBuffer& payload);
+
 }  // namespace bt::l2cap::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TEST_PACKETS_H_

@@ -279,6 +279,8 @@ class ChannelImpl : public Channel {
   // (especially in the HCI layer).
   std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_ __TA_GUARDED(mtx_);
 
+  fxl::ThreadChecker thread_checker_;
+
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };
 

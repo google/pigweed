@@ -348,6 +348,33 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     expected_packets_.push({file_name, line_number, DynamicByteBuffer(data), ll_type, priority});
   }
 
+  void ActivateOutboundErtmChannel(ChannelCallback activated_cb,
+                                   hci::ConnectionHandle conn_handle = kTestHandle1,
+                                   Channel::ClosedCallback closed_cb = DoNothing,
+                                   Channel::RxCallback rx_cb = NopRxCallback) {
+    l2cap::ChannelParameters chan_params;
+    chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+
+    const auto conn_req_id = NextCommandId();
+    const auto config_req_id = NextCommandId();
+    EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+    EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id, kMaxMTU, *chan_params.mode),
+                          kHighPriority);
+    const auto kInboundMtu = kDefaultMTU;
+    const auto kMaxOutboundTransmit = 1;
+    EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu,
+                                                        chan_params.mode, kMaxOutboundTransmit),
+                          kHighPriority);
+
+    ActivateOutboundChannel(kTestPsm, chan_params, std::move(activated_cb), conn_handle,
+                            std::move(closed_cb), std::move(rx_cb));
+
+    ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
+    ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu,
+                                                     chan_params.mode, kMaxOutboundTransmit));
+    ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+  }
+
   // Returns true if all expected outbound packets up to this call have been sent by the test case.
   [[nodiscard]] bool AllExpectedPacketsSent() const { return expected_packets_.empty(); }
 
@@ -1901,6 +1928,56 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
+}
+
+// Based on L2CAP Test Spec v5.0.2 L2CAP/ERM/BV-12-C, this test simulates non-acknowledgment of an
+// I-Frame that the local host sends which causes us to meet the MaxTransmit that the peer specified
+// in its Retransmission & Flow Control Configuration Option then disconnect.
+TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExhausted) {
+  bool link_error = false;
+  auto link_error_cb = [&link_error] { link_error = true; };
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, std::move(link_error_cb));
+  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
+                                                      kExtendedFeaturesBitEnhancedRetransmission));
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+    channel = std::move(opened_chan);
+  };
+  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(channel);
+
+  const StaticByteBuffer payload('h', 'i');
+  EXPECT_ACL_PACKET_OUT(testing::AclIFrame(kTestHandle1, kRemoteId, /*receive_seq_num=*/0,
+                                           /*tx_seq=*/0, /*is_poll_response=*/false, payload),
+                        kLowPriority);
+  channel->Send(std::make_unique<DynamicByteBuffer>(payload));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  EXPECT_ACL_PACKET_OUT(testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId,
+                                                        /*receive_seq_num=*/0,
+                                                        /*is_poll_request=*/true,
+                                                        /*is_poll_response=*/false),
+                        kLowPriority);
+
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1, kLocalId,
+                                                       /*receive_seq_num=*/0,
+                                                       /*is_poll_request=*/false,
+                                                       /*is_poll_response=*/true));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // TODO(47561): Set expectation on outbound Disconnection Request when we send that following a
+  // link error, as expected by L2CAP/ERM/BV-12-C.
+  EXPECT_TRUE(link_error);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {

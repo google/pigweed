@@ -3,6 +3,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt::l2cap::testing {
 
@@ -291,6 +293,36 @@ DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,
   acl_packet[acl_packet.size() - 2] = LowerBits(fcs.fcs);
   acl_packet[acl_packet.size() - 1] = UpperBits(fcs.fcs);
   return DynamicByteBuffer(acl_packet);
+}
+
+DynamicByteBuffer AclIFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
+                            uint8_t receive_seq_num, uint8_t tx_seq, bool is_poll_response,
+                            const ByteBuffer& payload) {
+  const uint16_t l2cap_size =
+      sizeof(internal::SimpleInformationFrameHeader) + payload.size() + sizeof(FrameCheckSequence);
+  const uint16_t acl_size = l2cap_size + sizeof(BasicHeader);
+  StaticByteBuffer headers(
+      // ACL data header (handle: |link handle|, length)
+      LowerBits(link_handle), UpperBits(link_handle), LowerBits(acl_size), UpperBits(acl_size),
+
+      // L2CAP B-frame header: length, channel-id
+      LowerBits(l2cap_size), UpperBits(l2cap_size), LowerBits(channel_id), UpperBits(channel_id),
+
+      // Enhanced Control Field: F is_poll_response, TxSeq tx_seq, Type I-Frame,
+      // ReqSeq receive_seq_num
+      (is_poll_response ? 0b1000'0000 : 0) | ((tx_seq << 1) & 0b111'1110),
+      receive_seq_num & 0b11'1111);
+
+  FrameCheckSequence fcs = ComputeFcs(headers.view(sizeof(hci::ACLDataHeader), acl_size));
+  fcs = ComputeFcs(payload.view(), fcs);
+
+  DynamicByteBuffer acl_packet(headers.size() + payload.size() + sizeof(fcs));
+  headers.Copy(&acl_packet);
+  auto payload_destination = acl_packet.mutable_view(headers.size());
+  payload.Copy(&payload_destination);
+  acl_packet[acl_packet.size() - 2] = LowerBits(fcs.fcs);
+  acl_packet[acl_packet.size() - 1] = UpperBits(fcs.fcs);
+  return acl_packet;
 }
 
 }  // namespace bt::l2cap::testing

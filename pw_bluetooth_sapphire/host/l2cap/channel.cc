@@ -59,14 +59,13 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
       "Channel constructed with unsupported mode: %hhu\n", info.mode);
 
+  // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
   FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
                                             ? FrameCheckSequenceOption::kIncludeFcs
                                             : FrameCheckSequenceOption::kNoFcs;
-  auto send_cb = [rid = remote_id, link = link_, fcs_option](auto pdu) {
+  auto send_cb = [rid = remote_id, link, fcs_option](auto pdu) {
     async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
       // |link| is expected to ignore this call and drop the packet if it has been closed.
-      // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A,
-      // Sec 3.1)
       link->SendFrame(rid, *pdu, fcs_option);
     });
   };
@@ -75,9 +74,18 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
     tx_engine_ = std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), send_cb);
   } else {
+    // Must capture |link| and not |link_| to avoid having to take |mutex_|.
+    auto connection_failure_cb = [this, link] {
+      ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+
+      // This isn't called until Channel has been activated and the callback is destroyed by
+      // Deactivate, so even without taking |mutex_| we know that the channel is active.
+      // |link| is expected to ignore this call if it has been closed.
+      link->SignalError();
+    };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window, send_cb,
-        /*connection_failure_callback=*/std::bind(&Channel::Deactivate, this));
+        std::move(connection_failure_cb));
   }
 }
 

@@ -246,7 +246,8 @@ Engine* Engine::RetransmitUnackedData() {
     ZX_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
 
     if (cur_frame->tx_count >= max_transmissions_) {
-      ZX_DEBUG_ASSERT(cur_frame->tx_count == max_transmissions_);
+      ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
+                    max_transmissions_);
       connection_failure_callback_();
       return nullptr;
     }
