@@ -302,22 +302,20 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                    DataElement());
-  // Don't need an argument for RFCOMM, it will be auto-assigned.
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                   DataElement());
+                                   DataElement(uint16_t(5)));
 
   EXPECT_TRUE(server()->RegisterService(std::move(psm_rfcomm), kChannelParams, NopConnectCallback));
 
-  // Another RFCOMM is also fine.
+  // Another RFCOMM should fail, even with a different channel.
   ServiceRecord psm_rfcomm2;
   psm_rfcomm2.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                     DataElement());
-  // Don't need an argument for RFCOMM, it will be auto-assigned.
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                    DataElement());
+                                    DataElement(uint16_t(5)));
 
-  EXPECT_TRUE(
+  EXPECT_FALSE(
       server()->RegisterService(std::move(psm_rfcomm2), kChannelParams, NopConnectCallback));
 
   ServiceRecord psm_ok;
@@ -328,13 +326,12 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   auto handle = server()->RegisterService(std::move(psm_ok), kChannelParams, NopConnectCallback);
   EXPECT_TRUE(handle);
 
-  ServiceRecord psm_duplicate;
-  psm_duplicate.SetServiceClassUUIDs({profile::kAVRemoteControl});
-  psm_duplicate.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                      DataElement(uint16_t(500)));
+  ServiceRecord psm_same;
+  psm_same.SetServiceClassUUIDs({profile::kAVRemoteControl});
+  psm_same.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                                 DataElement(uint16_t(500)));
 
-  EXPECT_FALSE(
-      server()->RegisterService(std::move(psm_duplicate), kChannelParams, NopConnectCallback));
+  EXPECT_FALSE(server()->RegisterService(std::move(psm_same), kChannelParams, NopConnectCallback));
 
   // Unregistering allows us to re-register with PSM.
   server()->UnregisterService(handle);
@@ -344,9 +341,6 @@ TEST_F(SDP_ServerTest, PSMVerification) {
                                   DataElement(uint16_t(500)));
 
   EXPECT_TRUE(server()->RegisterService(std::move(psm_readd), kChannelParams, NopConnectCallback));
-
-  // TODO(NET-1417): test that new connections to the PSM get delivered once
-  // they are deliverable
 }
 
 #define UINT32_AS_BE_BYTES(x) \

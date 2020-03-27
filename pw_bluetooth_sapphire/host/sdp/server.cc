@@ -8,7 +8,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/rfcomm/rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
 namespace bt {
@@ -56,16 +55,12 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   }
   UUID protocol_uuid = *next_protocol_uuid->Get<UUID>();
   // When it's RFCOMM, the L2CAP protocol descriptor omits the PSM parameter
+  // See example in the SPP Spec, v1.2
   if (protocol_uuid == protocol::kRFCOMM) {
     return l2cap::kRFCOMM;
   }
   bt_log(SPEW, "sdp", "Can't determine L2CAP PSM from protocol");
   return l2cap::kInvalidPSM;
-}
-
-// Writes the RFCOMM channel into a ProtocolDescriptorList
-DataElement WriteRFCOMMChannel(const DataElement& protocol_list, rfcomm::ServerChannel channel) {
-  return protocol_list.Clone();
 }
 
 }  // namespace
@@ -119,9 +114,8 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
       },
       async_get_default_dispatcher());
 
-  // SDP and RFCOMM are used by SDP server.
+  // SDP is used by SDP server.
   psm_to_service_.emplace(l2cap::kSDP, kSDPHandle);
-  psm_to_service_.emplace(l2cap::kRFCOMM, kSDPHandle);
 }
 
 Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
@@ -180,24 +174,7 @@ l2cap::PSM Server::PSMFromProtocolList(ServiceRecord* record, const DataElement*
     bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
     return l2cap::kInvalidPSM;
   }
-
-  if (psm == l2cap::kRFCOMM) {
-    const auto* rfcomm_protocol = protocol_list->At(1);
-    if (!rfcomm_protocol) {
-      bt_log(SPEW, "sdp", "ProtocolDesciptorList missing RFCOMM protocol");
-      return l2cap::kInvalidPSM;
-    }
-    const auto* rfcomm_uuid = rfcomm_protocol->At(0);
-    if (!rfcomm_uuid || rfcomm_uuid->type() != DataElement::Type::kUuid ||
-        *rfcomm_uuid->Get<UUID>() != protocol::kRFCOMM) {
-      bt_log(SPEW, "sdp", "L2CAP is RFCOMM, but RFCOMM is not specified");
-      return l2cap::kInvalidPSM;
-    }
-    // TODO(NET-1015): allocate an actual RFCOMM channel with RFCOMM
-    rfcomm::ServerChannel rfcomm_channel = 0;
-    record->SetAttribute(kProtocolDescriptorList,
-                         WriteRFCOMMChannel(*protocol_list, rfcomm_channel));
-  } else if (psm_to_service_.count(psm)) {
+  if (psm_to_service_.count(psm)) {
     bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
     return l2cap::kInvalidPSM;
   }
@@ -253,13 +230,12 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
     const auto& primary_list = record.GetAttribute(kProtocolDescriptorList);
     auto psm = PSMFromProtocolList(&record, &primary_list);
 
-    // TODO(NET-1015): Remove RFCOMM exception when it's implemented.
     if (psm == l2cap::kInvalidPSM) {
       return 0;
-    } else if (psm != l2cap::kRFCOMM) {
-      auto data = std::make_pair(std::move(psm), primary_list.Clone());
-      psm_to_register.emplace_back(std::move(data));
     }
+
+    auto data = std::make_pair(std::move(psm), primary_list.Clone());
+    psm_to_register.emplace_back(std::move(data));
   }
 
   // AdditionalProtocolDescriptorList handling:
@@ -281,10 +257,10 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
       auto psm = PSMFromProtocolList(&record, additional);
       if (psm == l2cap::kInvalidPSM) {
         return 0;
-      } else if (psm != l2cap::kRFCOMM) {
-        auto data = std::make_pair(std::move(psm), additional->Clone());
-        psm_to_register.emplace_back(std::move(data));
       }
+
+      auto data = std::make_pair(std::move(psm), additional->Clone());
+      psm_to_register.emplace_back(std::move(data));
 
       attribute_id++;
       additional = additional_list.At(attribute_id);
