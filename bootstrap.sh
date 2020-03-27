@@ -68,6 +68,37 @@ else
   PW_SETUP_SCRIPT_PATH="$(_pw_abspath "$0")"
 fi
 
+# Check if this file is being executed or sourced.
+_pw_sourced=0
+if [ -n "$SWARMING_BOT_ID" ]; then
+  # If set we're running on swarming and don't need this check.
+  _pw_sourced=1
+elif [ -n "$ZSH_EVAL_CONTEXT" ]; then
+  case $ZSH_EVAL_CONTEXT in *:file) _pw_sourced=1;; esac
+elif [ -n "$KSH_VERSION" ]; then
+  [ "$(cd $(dirname -- $0) && pwd -P)/$(basename -- $0)" != \
+    "$(cd $(dirname -- ${.sh.file}) && pwd -P)/$(basename -- ${.sh.file})" ] \
+    && _pw_sourced=1
+elif [ -n "$BASH_VERSION" ]; then
+  (return 0 2>/dev/null) && _pw_sourced=1
+else  # All other shells: examine $0 for known shell binary filenames
+  # Detects `sh` and `dash`; add additional shell filenames as needed.
+  case ${0##*/} in sh|dash) _pw_sourced=1;; esac
+fi
+
+if [ "$_pw_sourced" -eq 0 ]; then
+  _PW_NAME=$(basename "$PW_SETUP_SCRIPT_PATH" .sh)
+  _pw_bold_red "Error: Attempting to $_PW_NAME in a subshell"
+  _pw_red "  Since $_PW_NAME.sh modifies your shell's environment variables, it"
+  _pw_red "  must be sourced rather than executed. In particular, "
+  _pw_red "  'bash $_PW_NAME.sh' will not work since the modified environment "
+  _pw_red "  will get destroyed at the end of the script. Instead, source the "
+  _pw_red "  script's contents in your shell:"
+  _pw_red ""
+  _pw_red "    \$ source $_PW_NAME.sh"
+  exit 1
+fi
+
 PW_ROOT="$(dirname "$PW_SETUP_SCRIPT_PATH")"
 
 if [[ "$PW_ROOT" = *" "* ]]; then
@@ -131,7 +162,7 @@ if [ -f "$SETUP_SH" ]; then
       echo "To activate this environment in the future, run this in your "
       echo "terminal:"
       echo
-      _pw_green "  . ./activate.sh\n"
+      _pw_green "  source ./activate.sh\n"
     fi
   else
     _pw_red "Error during $_PW_NAME--see messages above."
@@ -148,3 +179,4 @@ unset _pw_red
 unset _pw_bold_red
 unset _pw_green
 unset _pw_bright_magenta
+unset _pw_sourced
