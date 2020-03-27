@@ -51,6 +51,7 @@ group("pw_facades") {
 group("pw_modules") {
   deps = [
     "$dir_pigweed/docs",
+    "$dir_pw_allocator",
     "$dir_pw_base64",
     "$dir_pw_checksum",
     "$dir_pw_polyfill",
@@ -79,6 +80,7 @@ group("pw_modules") {
 # Targets for all module unit test groups.
 pw_test_group("pw_module_tests") {
   group_deps = [
+    "$dir_pw_allocator:tests",
     "$dir_pw_assert:tests",
     "$dir_pw_base64:tests",
     "$dir_pw_checksum:tests",

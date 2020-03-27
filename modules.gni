@@ -16,6 +16,7 @@
 # allows modules to be moved or swapped out without breaking existing builds.
 # All module variables are prefixed with dir_.
 
+dir_pw_allocator = "$dir_pigweed/pw_allocator"
 dir_pw_assert = "$dir_pigweed/pw_assert"
 dir_pw_assert_basic = "$dir_pigweed/pw_assert_basic"
 dir_pw_base64 = "$dir_pigweed/pw_base64"
