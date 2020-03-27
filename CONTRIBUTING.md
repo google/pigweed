@@ -57,7 +57,9 @@ copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
 ## Code Reviews
 
 All Pigweed development happens on Gerrit, following the [typical Gerrit
-development workflow](http://ceres-solver.org/contributing.html).
+development workflow](http://ceres-solver.org/contributing.html). Consult
+[Gerrit User Guide](https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/intro-user.html)
+for more information on using Gerrit.
 
 In the future we may support GitHub pull requests, but until that time we will
 close GitHub pull requests and ask that the changes be uploaded to Gerrit
