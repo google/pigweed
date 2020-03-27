@@ -222,20 +222,17 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
   browse_list.emplace_back(DataElement(kPublicBrowseRootUuid));
   record.SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
 
-  // The PSMs and their protocol_lists to register.
-  std::vector<std::pair<l2cap::PSM, DataElement>> psm_to_register;
+  // The PSMs to register
+  auto psms_to_register = std::unordered_set<l2cap::PSM>{};
 
   // ProtocolDescriptorList handling:
   if (record.HasAttribute(kProtocolDescriptorList)) {
     const auto& primary_list = record.GetAttribute(kProtocolDescriptorList);
     auto psm = PSMFromProtocolList(&record, &primary_list);
-
     if (psm == l2cap::kInvalidPSM) {
       return 0;
     }
-
-    auto data = std::make_pair(std::move(psm), primary_list.Clone());
-    psm_to_register.emplace_back(std::move(data));
+    psms_to_register.insert(psm);
   }
 
   // AdditionalProtocolDescriptorList handling:
@@ -258,33 +255,32 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
       if (psm == l2cap::kInvalidPSM) {
         return 0;
       }
-
-      auto data = std::make_pair(std::move(psm), additional->Clone());
-      psm_to_register.emplace_back(std::move(data));
+      psms_to_register.insert(psm);
 
       attribute_id++;
       additional = additional_list.At(attribute_id);
     }
   }
 
-  auto psm_set = std::unordered_set<l2cap::PSM>{};
 
-  // All PSMs in |psm_to_register| are valid and ready to be registered.
-  for (const auto& [psm, protocol_list] : psm_to_register) {
+  // All PSMs in |psms_to_register| are valid and ready to be registered.
+  for (const auto& psm : psms_to_register) {
     bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
     psm_to_service_.emplace(psm, next);
-    data_domain_->RegisterService(
-        psm, chan_params,
-        [psm = psm, protocol = protocol_list.Clone(), conn_cb = conn_cb.share()](
-            auto chan_sock, auto handle) mutable {
-          bt_log(SPEW, "sdp", "Channel connected to %#.4x with protocol: %s", psm,
-                 protocol.ToString().c_str());
-          conn_cb(std::move(chan_sock), handle, std::move(protocol));
+    data_domain_->RegisterService(psm, chan_params,
+        [psm = psm, conn_cb = conn_cb.share()](auto chan_sock, auto handle) mutable {
+          bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
+          // Build the L2CAP descriptor
+          std::vector<DataElement> protocol_l2cap;
+          protocol_l2cap.emplace_back(DataElement(protocol::kL2CAP));
+          protocol_l2cap.emplace_back(DataElement(psm));
+          std::vector<DataElement> protocol;
+          protocol.emplace_back(std::move(protocol_l2cap));
+          conn_cb(std::move(chan_sock), handle, DataElement(std::move(protocol)));
         },
         async_get_default_dispatcher());
-    psm_set.insert(psm);
   }
-  service_to_psms_.emplace(next, std::move(psm_set));
+  service_to_psms_.emplace(next, std::move(psms_to_register));
 
   auto placement = records_.emplace(next, std::move(record));
   ZX_DEBUG_ASSERT(placement.second);
