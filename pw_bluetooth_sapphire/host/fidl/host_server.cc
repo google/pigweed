@@ -310,7 +310,8 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
                                   AddBondedDevicesCallback callback) {
   bt_log(TRACE, "bt-host", "AddBondedDevices");
   if (bonds.empty()) {
-    callback(NewFidlError(ErrorCode::NOT_SUPPORTED, "No bonds were added"));
+    // A request to restore an empty list of bonds succeeds immediately, as there is nothing to do
+    callback(Status());
     return;
   }
 
