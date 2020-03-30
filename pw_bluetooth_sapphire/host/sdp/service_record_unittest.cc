@@ -46,6 +46,7 @@ TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
   record.SetServiceClassUUIDs(service_class);
 
   EXPECT_TRUE(record.HasAttribute(kServiceClassIdList));
+  EXPECT_FALSE(record.IsRegisterable());
 
   const DataElement& elem = record.GetAttribute(kServiceClassIdList);
 
@@ -301,6 +302,25 @@ TEST_F(SDP_ServiceRecordTest, AddInfo) {
 
   EXPECT_FALSE(record.HasAttribute(*base_attrid + kProviderNameOffset));
 };
+
+// Test: IsRegisterable
+// - ServiceRecord must contain the BrowseGroupList to be registerable.
+TEST_F(SDP_ServiceRecordTest, IsRegisterable) {
+  ServiceRecord record;
+  record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                               DataElement(uint16_t(25)));
+  record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(27)));
+
+  EXPECT_FALSE(record.IsRegisterable());
+
+  UUID browse_uuid = UUID(uint16_t(0xfeaa));
+  std::vector<DataElement> browse_list;
+  browse_list.emplace_back(DataElement(browse_uuid));
+  record.SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
+
+  EXPECT_TRUE(record.IsRegisterable());
+}
 
 }  // namespace
 }  // namespace sdp

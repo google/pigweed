@@ -41,6 +41,10 @@ class ServiceRecord {
   // Removes the attribute identified by |id|. Idempotent.
   void RemoveAttribute(AttributeId id);
 
+  // Returns true if the ServiceRecord contains the required fields
+  // needed for SDP registration.
+  bool IsRegisterable() const;
+
   // Returns the handle of this service.
   ServiceHandle handle() const { return handle_; }
 

@@ -13,6 +13,8 @@
 namespace bt {
 namespace sdp {
 
+using RegistrationHandle = Server::RegistrationHandle;
+
 namespace {
 
 void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_sdu_size,
@@ -61,6 +63,40 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   }
   bt_log(SPEW, "sdp", "Can't determine L2CAP PSM from protocol");
   return l2cap::kInvalidPSM;
+}
+
+l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list) {
+  const auto* primary_protocol = protocol_list->At(0);
+  if (!primary_protocol) {
+    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not a sequence");
+    return l2cap::kInvalidPSM;
+  }
+
+  const auto* prot_uuid = primary_protocol->At(0);
+  if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid) {
+    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid");
+    return l2cap::kInvalidPSM;
+  }
+
+  // We do nothing for primary protocols that are not L2CAP
+  if (*prot_uuid->Get<UUID>() != protocol::kL2CAP) {
+    return l2cap::kInvalidPSM;
+  }
+
+  l2cap::PSM psm = FindProtocolListPSM(*protocol_list);
+  if (psm == l2cap::kInvalidPSM) {
+    bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
+    return l2cap::kInvalidPSM;
+  }
+
+  return psm;
+}
+
+// Sets the browse group list of the record to be the top-level group.
+void SetBrowseGroupList(ServiceRecord* record) {
+  std::vector<DataElement> browse_list;
+  browse_list.emplace_back(DataElement(kPublicBrowseRootUuid));
+  record->SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
 }
 
 }  // namespace
@@ -115,7 +151,7 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
       async_get_default_dispatcher());
 
   // SDP is used by SDP server.
-  psm_to_service_.emplace(l2cap::kSDP, kSDPHandle);
+  psm_to_service_.emplace(l2cap::kSDP, std::unordered_set<ServiceHandle>({kSDPHandle}));
 }
 
 Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
@@ -151,94 +187,29 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   return true;
 }
 
-l2cap::PSM Server::PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list) {
-  const auto* primary_protocol = protocol_list->At(0);
-  if (!primary_protocol) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not a sequence");
-    return l2cap::kInvalidPSM;
-  }
-
-  const auto* prot_uuid = primary_protocol->At(0);
-  if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid");
-    return l2cap::kInvalidPSM;
-  }
-
-  // We do nothing for primary protocols that are not L2CAP
-  if (*prot_uuid->Get<UUID>() != protocol::kL2CAP) {
-    return l2cap::kInvalidPSM;
-  }
-
-  l2cap::PSM psm = FindProtocolListPSM(*protocol_list);
-  if (psm == l2cap::kInvalidPSM) {
-    bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
-    return l2cap::kInvalidPSM;
-  }
-  if (psm_to_service_.count(psm)) {
-    bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
-    return l2cap::kInvalidPSM;
-  }
-
-  return psm;
-}
-
-ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
-                                      ConnectCallback conn_cb) {
-  ServiceHandle next = GetNextHandle();
-  if (!next) {
-    return 0;
-  }
-
-  record.SetHandle(next);
-
-  // Services must at least have a ServiceClassIDList (5.0, Vol 3, Part B, 5.1)
-  if (!record.HasAttribute(kServiceClassIdList)) {
-    bt_log(SPEW, "sdp", "new record doesn't have a ServiceClass");
-    return 0;
-  }
-  // Class ID list is a data element sequence in which each data element is
-  // a UUID representing the service classes that a given service record
-  // conforms to. (5.0, Vol 3, Part B, 5.1.2)
-  const DataElement& class_id_list = record.GetAttribute(kServiceClassIdList);
-  if (class_id_list.type() != DataElement::Type::kSequence) {
-    bt_log(SPEW, "sdp", "class ID list isn't a sequence");
-    return 0;
-  }
-  size_t idx;
-  const DataElement* elem;
-  for (idx = 0; nullptr != (elem = class_id_list.At(idx)); idx++) {
-    if (elem->type() != DataElement::Type::kUuid) {
-      bt_log(SPEW, "sdp", "class ID list elements are not all UUIDs");
-      return 0;
-    }
-  }
-  if (idx == 0) {
-    bt_log(SPEW, "sdp", "no elements in the Class ID list (need at least 1)");
-    return 0;
-  }
-
-  // All services are placed in the top-level browse group.
-  std::vector<DataElement> browse_list;
-  browse_list.emplace_back(DataElement(kPublicBrowseRootUuid));
-  record.SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
-
-  // The PSMs to register
-  auto psms_to_register = std::unordered_set<l2cap::PSM>{};
-
+bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register) {
   // ProtocolDescriptorList handling:
-  if (record.HasAttribute(kProtocolDescriptorList)) {
-    const auto& primary_list = record.GetAttribute(kProtocolDescriptorList);
-    auto psm = PSMFromProtocolList(&record, &primary_list);
+  if (record->HasAttribute(kProtocolDescriptorList)) {
+    const auto& primary_list = record->GetAttribute(kProtocolDescriptorList);
+    auto psm = PSMFromProtocolList(record, &primary_list);
+
     if (psm == l2cap::kInvalidPSM) {
-      return 0;
+      return false;
     }
-    psms_to_register.insert(psm);
+
+    if (psm_to_service_.count(psm)) {
+      bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+      return false;
+    }
+
+    auto data = std::make_pair(psm, record->handle());
+    protocols_to_register->emplace_back(std::move(data));
   }
 
   // AdditionalProtocolDescriptorList handling:
-  if (record.HasAttribute(kAdditionalProtocolDescriptorList)) {
+  if (record->HasAttribute(kAdditionalProtocolDescriptorList)) {
     // |additional_list| is a list of ProtocolDescriptorLists.
-    const auto& additional_list = record.GetAttribute(kAdditionalProtocolDescriptorList);
+    const auto& additional_list = record->GetAttribute(kAdditionalProtocolDescriptorList);
     size_t attribute_id = 0;
     const auto* additional = additional_list.At(attribute_id);
 
@@ -246,28 +217,99 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
     // protocol provided.
     if (!additional) {
       bt_log(SPEW, "sdp", "AdditionalProtocolDescriptorList provided but empty");
-      return 0;
+      return false;
     }
 
     // Add valid additional PSMs to the register queue.
     while (additional) {
-      auto psm = PSMFromProtocolList(&record, additional);
+      auto psm = PSMFromProtocolList(record, additional);
+
       if (psm == l2cap::kInvalidPSM) {
-        return 0;
+        return false;
       }
-      psms_to_register.insert(psm);
+
+      if (psm_to_service_.count(psm)) {
+        bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+        return false;
+      }
+
+      auto data = std::make_pair(psm, record->handle());
+      protocols_to_register->emplace_back(std::move(data));
 
       attribute_id++;
       additional = additional_list.At(attribute_id);
     }
   }
 
+  return true;
+}
 
-  // All PSMs in |psms_to_register| are valid and ready to be registered.
+RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
+                                           l2cap::ChannelParameters chan_params,
+                                           ConnectCallback conn_cb) {
+  if (records.empty()) {
+    return 0;
+  }
+
+  // The PSMs and their ServiceHandles to register.
+  ProtocolQueue protocols_to_register;
+
+  // The ServiceHandles that are assigned to each ServiceRecord.
+  // There should be one ServiceHandle per ServiceRecord in |records|.
+  std::set<ServiceHandle> assigned_handles;
+
+  for (auto& record : records) {
+    // Assign a new handle for the service record.
+    ServiceHandle next = GetNextHandle();
+    if (!next) {
+      return 0;
+    }
+    record.SetHandle(next);
+
+    // Place record in a browse group.
+    SetBrowseGroupList(&record);
+
+    // Validate the |ServiceRecord|.
+    if (!record.IsRegisterable()) {
+      return 0;
+    }
+
+    // Attempt to queue the |record| for registration.
+    // Note: Since the validation & queueing operations for ALL the records
+    // occur before registration, multiple ServiceRecords can share the same PSM.
+    //
+    // If any |record| is not parseable, exit the registration process early.
+    if (!QueueService(&record, &protocols_to_register)) {
+      return 0;
+    }
+
+    // For every ServiceRecord, there will be one ServiceHandle assigned.
+    assigned_handles.emplace(next);
+  }
+
+  ZX_ASSERT(assigned_handles.size() == records.size());
+
+  // The RegistrationHandle is the smallest ServiceHandle that was assigned.
+  RegistrationHandle reg_handle = *assigned_handles.begin();
+
+  // Multiple ServiceRecords in |records| can request the same PSM. However,
+  // |data_domain_| expects a single target for each PSM to go to. Consequently,
+  // only the first occurrence of a PSM needs to be registered with the |data_domain_|.
+  std::unordered_set<l2cap::PSM> psms_to_register;
+
+  // All PSMs have assigned handles and will be registered.
+  for (auto& [psm, handle] : protocols_to_register) {
+    psm_to_service_[psm].insert(handle);
+    service_to_psms_[handle].insert(psm);
+
+    // Add unique PSMs to the data domain registration queue.
+    psms_to_register.insert(psm);
+  }
+
   for (const auto& psm : psms_to_register) {
     bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
-    psm_to_service_.emplace(psm, next);
-    data_domain_->RegisterService(psm, chan_params,
+    data_domain_->RegisterService(
+        psm, chan_params,
         [psm = psm, conn_cb = conn_cb.share()](auto chan_sock, auto handle) mutable {
           bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
@@ -280,33 +322,49 @@ ServiceHandle Server::RegisterService(ServiceRecord record, l2cap::ChannelParame
         },
         async_get_default_dispatcher());
   }
-  service_to_psms_.emplace(next, std::move(psms_to_register));
 
-  auto placement = records_.emplace(next, std::move(record));
-  ZX_DEBUG_ASSERT(placement.second);
-  bt_log(SPEW, "sdp", "registered service %#.8x, classes: %s", next,
-         placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
-  return next;
+  // Store the complete records.
+  for (auto& record : records) {
+    auto placement = records_.emplace(record.handle(), std::move(record));
+    ZX_DEBUG_ASSERT(placement.second);
+    bt_log(SPEW, "sdp", "registered service %#.8x, classes: %s", placement.first->second.handle(),
+           placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
+  }
+
+  // Store the RegistrationHandle that represents the set of services that were registered.
+  reg_to_service_[reg_handle] = std::move(assigned_handles);
+
+  return reg_handle;
 }
 
-bool Server::UnregisterService(ServiceHandle handle) {
-  if (handle == kSDPHandle || records_.find(handle) == records_.end()) {
+bool Server::UnregisterService(RegistrationHandle handle) {
+  if (handle == kNotRegistered) {
     return false;
   }
-  bt_log(TRACE, "sdp", "unregistering service (handle: %#.8x)", handle);
 
-  // Unregister any service callbacks from L2CAP
-  auto psms_it = service_to_psms_.find(handle);
-  if (psms_it != service_to_psms_.end()) {
-    for (const auto& psm : psms_it->second) {
-      bt_log(TRACE, "sdp", "removing registration for psm %#.4x", psm);
-      data_domain_->UnregisterService(psm);
-      psm_to_service_.erase(psm);
-    }
-    service_to_psms_.erase(psms_it);
+  auto handles_it = reg_to_service_.extract(handle);
+  if (!handles_it) {
+    return false;
   }
 
-  records_.erase(handle);
+  for (const auto& svc_h : handles_it.mapped()) {
+    ZX_ASSERT(svc_h != kSDPHandle);
+    ZX_ASSERT(records_.find(svc_h) != records_.end());
+    bt_log(TRACE, "sdp", "unregistering service (handle: %#.8x)", svc_h);
+
+    // Unregister any service callbacks from L2CAP
+    auto psms_it = service_to_psms_.extract(svc_h);
+    if (psms_it) {
+      for (const auto& psm : psms_it.mapped()) {
+        bt_log(TRACE, "sdp", "removing registration for psm %#.4x", psm);
+        data_domain_->UnregisterService(psm);
+        psm_to_service_.erase(psm);
+      }
+    }
+
+    records_.erase(svc_h);
+  }
+
   return true;
 }
 

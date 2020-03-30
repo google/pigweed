@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -59,10 +60,10 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Advertised Services
   struct AdvertisedService {
     AdvertisedService(fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
-                      bt::sdp::ServiceHandle service_handle)
-        : receiver(std::move(receiver)), service_handle(service_handle) {}
+                      bt::sdp::Server::RegistrationHandle registration_handle)
+        : receiver(std::move(receiver)), registration_handle(registration_handle) {}
     fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver;
-    bt::sdp::ServiceHandle service_handle;
+    bt::sdp::Server::RegistrationHandle registration_handle;
   };
 
   uint64_t advertised_total_;

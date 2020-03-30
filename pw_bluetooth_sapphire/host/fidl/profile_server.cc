@@ -281,7 +281,7 @@ ProfileServer::~ProfileServer() {
     // Unregister anything that we have registered.
     auto sdp = adapter()->sdp_server();
     for (const auto& it : current_advertised_) {
-      sdp->UnregisterService(it.second.service_handle);
+      sdp->UnregisterService(it.second.registration_handle);
     }
     auto conn_manager = adapter()->bredr_connection_manager();
     for (const auto& it : searches_) {
@@ -303,7 +303,7 @@ void ProfileServer::Advertise(
     std::vector<bt::UUID> classes;
 
     if (!definition.has_service_class_uuids()) {
-      bt_log(INFO, "proile_server", "Advertised service contains no Service UUIDs");
+      bt_log(INFO, "profile_server", "Advertised service contains no Service UUIDs");
       // Dropping receiver as we didn't register.
       return;
     }
@@ -381,14 +381,13 @@ void ProfileServer::Advertise(
 
   uint64_t next = advertised_total_ + 1;
 
-  // TODO(1346): register more than just the first one.
-  auto sdp_handle = sdp->RegisterService(
-      std::move(registering.front()), FidlToChannelParameters(parameters),
+  auto registration_handle = sdp->RegisterService(
+      std::move(registering), FidlToChannelParameters(parameters),
       [this, next](auto chan_sock, auto handle, const auto& protocol_list) {
         OnChannelConnected(next, std::move(chan_sock), handle, std::move(protocol_list));
       });
 
-  if (!sdp_handle) {
+  if (!registration_handle) {
     return;
   };
 
@@ -397,7 +396,7 @@ void ProfileServer::Advertise(
   receiverptr.set_error_handler(
       [this, next](zx_status_t status) { OnConnectionReceiverError(next, status); });
 
-  current_advertised_.try_emplace(next, std::move(receiverptr), sdp_handle);
+  current_advertised_.try_emplace(next, std::move(receiverptr), registration_handle);
   advertised_total_ = next;
 }
 
@@ -486,7 +485,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
     return;
   }
 
-  adapter()->sdp_server()->UnregisterService(it->second.service_handle);
+  adapter()->sdp_server()->UnregisterService(it->second.registration_handle);
 
   current_advertised_.erase(it);
 }

@@ -39,25 +39,30 @@ class Server final {
   // Returns false if the channel cannot be activated.
   bool AddConnection(fbl::RefPtr<l2cap::Channel> channel);
 
-  // Given an incomplete ServiceRecord, register a service that will be made available over SDP.
-  // Takes ownership of |record|. Channels created for this service will be configured using the
+  // An identifier for a set of services that have been registered at the same time.
+  using RegistrationHandle = uint32_t;
+
+  const RegistrationHandle kNotRegistered = 0x00000000;
+
+  // Given incomplete ServiceRecords, register services that will be made available over SDP.
+  // Takes ownership of |records|. Channels created for this service will be configured using the
   // preferred parameters in |chan_params|.
   //
-  // A non-zero ServiceHandle will be returned if the service was successfully registered. Any
-  // service handle previously set in |record| is ignored and overwritten.
+  // A non-zero RegistrationHandle will be returned if the service was successfully registered.
   //
-  // |conn_cb| will be called for any connections made to the registered service with a connected
-  // socket, the accepted channel parameters, the connection handle the channel was opened on, and
-  // the descriptor list for the endpoint which was connected.
-  // TODO: possibly combine these into a struct later
+  // If any record in |records| fails registration checks, none of the services will be registered.
+  //
+  // |conn_cb| will be called for any connections made to any of the services in |records| with a
+  // connected socket, the accepted channel parameters, the connection handle the channel was opened
+  // on, and the descriptor list for the endpoint which was connected.
   using ConnectCallback =
       fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle, const DataElement&)>;
-  ServiceHandle RegisterService(ServiceRecord record, l2cap::ChannelParameters chan_params,
-                                ConnectCallback conn_cb);
+  RegistrationHandle RegisterService(std::vector<ServiceRecord> records,
+                                     l2cap::ChannelParameters chan_params, ConnectCallback conn_cb);
 
-  // Unregister a service from the database. Idempotent.
-  // Returns |true| if a record was removed.
-  bool UnregisterService(ServiceHandle handle);
+  // Unregister services previously registered with RegisterService. Idempotent.
+  // Returns |true| if any records were removed.
+  bool UnregisterService(RegistrationHandle handle);
 
   // Define the ServiceDiscoveryService record for the SDP server object.
   // This method is public for testing purposes.
@@ -82,9 +87,17 @@ class Server final {
       const std::unordered_set<UUID>& search_pattern,
       const std::list<AttributeRange>& attribute_ranges) const;
 
-  // Attempts to extract the PSM from the protocol list.
-  // Returns the PSM if successful, otherwise |kInvalidPSM|.
-  l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list);
+  // An array of PSM to ServiceHandle assignments that are used to represent
+  // the services that need to be registered in Server::QueueService.
+  using ProtocolQueue = std::vector<std::pair<l2cap::PSM, ServiceHandle>>;
+
+  // Given a complete ServiceRecord, extracts the PSM, ProtocolDescriptorList, and
+  // any AditionalProtocolDescriptorList information.
+  // Inserts the extracted info into |psm_to_register|.
+  //
+  // Returns |true| if the protocols are successfully validated and queued,
+  // |false| otherwise.
+  bool QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register);
 
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
@@ -95,15 +108,21 @@ class Server final {
   fbl::RefPtr<data::Domain> data_domain_;
 
   std::unordered_map<hci::ConnectionHandle, l2cap::ScopedChannel> channels_;
+  // The map of ServiceHandles that are associated with ServiceRecords.
+  // This is a 1:1 mapping.
   std::unordered_map<ServiceHandle, ServiceRecord> records_;
 
-  // Which PSMs are registered to services.
-  std::unordered_map<l2cap::PSM, ServiceHandle> psm_to_service_;
+  // Which PSMs are registered to services. Multiple ServiceHandles can be registered
+  // to a single PSM.
+  std::unordered_map<l2cap::PSM, std::unordered_set<ServiceHandle>> psm_to_service_;
   // The set of PSMs that are registered to a service.
   std::unordered_map<ServiceHandle, std::unordered_set<l2cap::PSM>> service_to_psms_;
 
   // The next available ServiceHandle.
   ServiceHandle next_handle_;
+
+  // The set of ServiceHandles that are registered together, identified by a RegistrationHandle.
+  std::unordered_map<RegistrationHandle, std::set<ServiceHandle>> reg_to_service_;
 
   // The service database state tracker.
   uint32_t db_state_ __UNUSED;
