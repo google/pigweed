@@ -32,8 +32,8 @@ class Result {
   constexpr Result(std::in_place_t, Args&&... args)
       : value_(std::forward<Args>(args)...), status_(Status::OK) {}
 
-  constexpr Result(Status status) : status_(status) { EnsureOk(); }
-  constexpr Result(Status::Code code) : status_(code) { EnsureOk(); }
+  constexpr Result(Status status) : status_(status) { EnsureNotOk(); }
+  constexpr Result(Status::Code code) : status_(code) { EnsureNotOk(); }
 
   constexpr Result(const Result&) = default;
   constexpr Result& operator=(const Result&) = default;
@@ -81,8 +81,14 @@ class Result {
   };
   Status status_;
 
-  void EnsureOk() const {
+  constexpr void EnsureOk() const {
     if (!ok()) {
+      // TODO(frolv): Crash.
+    }
+  }
+
+  constexpr void EnsureNotOk() const {
+    if (ok()) {
       // TODO(frolv): Crash.
     }
   }
