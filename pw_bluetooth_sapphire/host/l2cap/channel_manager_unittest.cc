@@ -1930,6 +1930,52 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
   EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
+// Based on L2CAP Test Spec v5.0.2 L2CAP/ERM/BV-11-C, this test simulates a peer's non-response to
+// our S-Frame poll request which causes us to disconnect.
+TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExpiry) {
+  bool link_error = false;
+  auto link_error_cb = [&link_error] { link_error = true; };
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, std::move(link_error_cb));
+  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
+                                                      kExtendedFeaturesBitEnhancedRetransmission));
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+    channel = std::move(opened_chan);
+  };
+  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(channel);
+
+  const StaticByteBuffer payload('h', 'i');
+  EXPECT_ACL_PACKET_OUT(testing::AclIFrame(kTestHandle1, kRemoteId, /*receive_seq_num=*/0,
+                                           /*tx_seq=*/0, /*is_poll_response=*/false, payload),
+                        kLowPriority);
+  channel->Send(std::make_unique<DynamicByteBuffer>(payload));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  EXPECT_ACL_PACKET_OUT(testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId,
+                                                        /*receive_seq_num=*/0,
+                                                        /*is_poll_request=*/true,
+                                                        /*is_poll_response=*/false),
+                        kLowPriority);
+
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  // Monitor Timer expires without a response from the peer.
+  EXPECT_FALSE(link_error);
+  RETURN_IF_FATAL(RunLoopFor(kErtmMonitorTimerDuration));
+
+  // TODO(47561): Set expectation on outbound Disconnection Request when we send that following a
+  // link error, as expected by L2CAP/ERM/BV-11-C.
+  EXPECT_TRUE(link_error);
+}
+
 // Based on L2CAP Test Spec v5.0.2 L2CAP/ERM/BV-12-C, this test simulates non-acknowledgment of an
 // I-Frame that the local host sends which causes us to meet the MaxTransmit that the peer specified
 // in its Retransmission & Flow Control Configuration Option then disconnect.
