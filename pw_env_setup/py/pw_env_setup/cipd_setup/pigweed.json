@@ -105,5 +105,11 @@
     "tags": [
       "git_revision:f3497771a70ba80987c80490aa688794ed971820"
     ]
+  }, 
+  {
+    "path": "pigweed/third_party/kythe", 
+    "tags": [
+      "version:0.0.43"
+    ]
   }
 ]
