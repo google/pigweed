@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <string>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
@@ -43,7 +44,7 @@ class LMPFeatureSet {
 
   // Sets |page| features to |features|
   inline void SetPage(size_t page, uint64_t features) {
-    ZX_DEBUG_ASSERT(page < kMaxPages);
+    ZX_ASSERT(page < kMaxPages);
     features_[page] = features;
     valid_pages_[page] = true;
   }
@@ -60,7 +61,13 @@ class LMPFeatureSet {
   }
 
   inline void set_last_page_number(uint8_t page) {
-    last_page_number_ = page > kMaxLastPageNumber ? kMaxLastPageNumber : page;
+    if (page > kMaxLastPageNumber) {
+      bt_log(DEBUG, "hci", "attempt to set lmp last page number to %u, capping at %u", page,
+             kMaxLastPageNumber);
+      last_page_number_ = kMaxLastPageNumber;
+    } else {
+      last_page_number_ = page;
+    }
   }
 
   inline uint8_t last_page_number() const { return last_page_number_; }

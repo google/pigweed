@@ -319,7 +319,7 @@ struct SetConnectionEncryptionCommandParams {
 // Encryption Change event will indicate that this command has been completed.
 
 // ============================================================
-// Read Remote Version Information Command (v1.1) (BR/EDR & LE)
+// Read Remote Name Request Command (v1.1) (BR/EDR)
 constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);
 
 struct RemoteNameRequestCommandParams {

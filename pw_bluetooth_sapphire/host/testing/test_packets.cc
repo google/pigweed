@@ -117,6 +117,15 @@ DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uin
       LowerBits(conn), UpperBits(conn), LowerBits(num_packets), UpperBits(num_packets)));
 }
 
+DynamicByteBuffer CommandStatusPacket(hci::OpCode op_code, hci::StatusCode status_code) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci::kCommandStatusEventCode,
+      0x04,  // parameter size (4 bytes)
+      status_code,
+      0xF0,  // number of HCI command packets allowed to be sent to controller (240)
+      LowerBits(op_code), UpperBits(op_code)));
+}
+
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(

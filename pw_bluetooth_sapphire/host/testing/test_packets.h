@@ -40,6 +40,8 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
 
+DynamicByteBuffer CommandStatusPacket(hci::OpCode op_code, hci::StatusCode status_code);
+
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address);
 
@@ -49,9 +51,11 @@ DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
                                                             bool extended_features);
+
+// The ReadRemoteExtended*CompletePacket packets report a max page number of 3, even though there
+// are only 2 pages, in order to test this behavior seen in real devices.
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
-
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
 
