@@ -254,7 +254,7 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq, const ByteBu
     // We have TK so we can generate the confirm value now.
     const DeviceAddress *ia, *ra;
     self->LEPairingAddresses(&ia, &ra);
-    state->local_rand = RandomUInt128();
+    state->local_rand = Random<UInt128>();
     util::C1(state->tk, state->local_rand, state->preq, state->pres, *ia, *ra,
              &state->local_confirm);
 
@@ -328,7 +328,7 @@ bool PairingState::SendLocalKeys() {
 
   if (legacy_state_->ShouldSendLTK()) {
     // Generate a completely random value for LTK.
-    UInt128 ltk = RandomUInt128();
+    UInt128 ltk = Random<UInt128>();
 
     // Mask the ltk down to the maximum encryption key size.
     uint8_t key_size = legacy_state_->features->encryption_key_size;

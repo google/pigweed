@@ -14,6 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -764,7 +765,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConn
 
   sm::PairingData data;
   data.ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
   // Issue connection ref.
@@ -796,7 +797,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAuto
 
   sm::PairingData data;
   data.ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
   // Issue connection ref.

@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -387,7 +388,7 @@ TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
 
   sm::PairingData data;
   data.ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
   // Bonded peers should autoconnect
@@ -411,7 +412,7 @@ TEST_F(GAP_PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
   // Only bonded peers are eligible for autoconnect.
   sm::PairingData data;
   data.ltk = sm::LTK();
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
   cache()->SetAutoConnectBehaviorForIntentionalDisconnect(peer()->identifier());
@@ -546,7 +547,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerWithIrkIsAddedToResolvingList) {
   sm::PairingData data;
   data.ltk = kLTK;
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
 
   EXPECT_TRUE(cache()->AddBondedPeer(BondingData{kId, kAddrLeRandom, {}, data, {}}));
   auto* peer = cache()->FindByAddress(kAddrLeRandom);
@@ -676,7 +677,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvin
   sm::PairingData data;
   data.ltk = kLTK;
   data.identity_address = kAddrLeRandom;
-  data.irk = sm::Key(sm::SecurityProperties(), RandomUInt128());
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
 
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
   ASSERT_TRUE(peer()->le()->bonded());

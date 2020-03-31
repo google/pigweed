@@ -5,6 +5,7 @@
 #include "identity_resolving_list.h"
 
 #include "gtest/gtest.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
 namespace bt {
@@ -23,8 +24,8 @@ TEST(GAP_IdentityResolvingListTest, Resolve) {
   IdentityResolvingList rl;
 
   // Populate the list with two resolvable identities.
-  UInt128 irk1 = RandomUInt128();
-  UInt128 irk2 = RandomUInt128();
+  UInt128 irk1 = Random<UInt128>();
+  UInt128 irk2 = Random<UInt128>();
   rl.Add(kAddress1, irk1);
   rl.Add(kAddress2, irk2);
 
@@ -42,7 +43,7 @@ TEST(GAP_IdentityResolvingListTest, Resolve) {
 
   // A resolvable address that can't be resolved by the list should report
   // failure.
-  UInt128 unknown_irk = RandomUInt128();
+  UInt128 unknown_irk = Random<UInt128>();
   DeviceAddress unknown_rpa = sm::util::GenerateRpa(unknown_irk);
   auto result = rl.Resolve(unknown_rpa);
   EXPECT_FALSE(result);
@@ -60,8 +61,8 @@ TEST(GAP_IdentityResolvingListTest, Resolve) {
 // Tests that an identity address can be assigned a new IRK.
 TEST(GAP_IdentityResolvingListTest, OverwriteIrk) {
   IdentityResolvingList rl;
-  UInt128 irk1 = RandomUInt128();
-  UInt128 irk2 = RandomUInt128();
+  UInt128 irk1 = Random<UInt128>();
+  UInt128 irk2 = Random<UInt128>();
   DeviceAddress rpa1 = sm::util::GenerateRpa(irk1);
   DeviceAddress rpa2 = sm::util::GenerateRpa(irk2);
 

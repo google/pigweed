@@ -6,10 +6,21 @@
 
 #include <zircon/assert.h>
 
-#include <openssl/aes.h>
+#include <algorithm>
+#include <optional>
 
+#include <openssl/aes.h>
+#include <openssl/cmac.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 
 namespace bt {
 
@@ -19,6 +30,10 @@ namespace {
 
 constexpr size_t kPreqSize = 7;
 constexpr uint32_t k24BitMax = 0xFFFFFF;
+// F5 parameters are stored in little-endian
+const auto kF5Salt = UInt128{0xBE, 0x83, 0x60, 0x5A, 0xDB, 0x0B, 0x37, 0x60,
+                             0x38, 0xA5, 0xF5, 0xAA, 0x91, 0x83, 0x88, 0x6C};
+const auto kF5KeyId = std::array<uint8_t, 4>{0x65, 0x6C, 0x74, 0x62};
 
 // Swap the endianness of a 128-bit integer. |in| and |out| should not be backed
 // by the same buffer.
@@ -45,6 +60,23 @@ void Xor128(const UInt128& int1, const UInt128& int2, UInt128* out) {
 
   std::memcpy(out->data(), &lower_res, 8);
   std::memcpy(out->data() + 8, &upper_res, 8);
+}
+
+// Writes |data| to |output_data_loc| & returns a view of the remainder of |output_data_loc|.
+template <typename InputType>
+MutableBufferView WriteToBuffer(InputType data, MutableBufferView output_data_loc) {
+  output_data_loc.WriteObj(data);
+  return output_data_loc.mutable_view(sizeof(data));
+}
+
+// Converts |addr| into the 56-bit format used by F5/F6 and writes that data to a BufferView.
+// Returns a buffer view pointing just past the last byte written.
+MutableBufferView WriteCryptoDeviceAddr(const DeviceAddress& addr, const MutableBufferView& out) {
+  std::array<uint8_t, sizeof(addr.value()) + 1> little_endian_addr_buffer;
+  BufferView addr_bytes = addr.value().bytes();
+  std::copy(addr_bytes.begin(), addr_bytes.end(), little_endian_addr_buffer.data());
+  little_endian_addr_buffer[6] = addr.IsPublic() ? 0x00 : 0x01;
+  return WriteToBuffer(little_endian_addr_buffer, out);
 }
 
 }  // namespace
@@ -337,6 +369,122 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
   }
 
   return DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(addr_bytes));
+}
+
+std::optional<UInt128> AesCmac(const UInt128& hash_key, const ByteBuffer& msg) {
+  // Reverse little-endian input parameters to the big-endian format expected by BoringSSL.
+  UInt128 big_endian_key;
+  Swap128(hash_key, &big_endian_key);
+  DynamicByteBuffer big_endian_msg(msg);
+  uint8_t* msg_begin = big_endian_msg.mutable_data();
+  std::reverse(msg_begin, msg_begin + big_endian_msg.size());
+  UInt128 big_endian_out, little_endian_out;
+  // 0 is the failure error code for AES_CMAC
+  if (AES_CMAC(big_endian_out.data(), big_endian_key.data(), big_endian_key.size(), msg_begin,
+               big_endian_msg.size()) == 0) {
+    return std::nullopt;
+  }
+  Swap128(big_endian_out, &little_endian_out);
+  return little_endian_out;
+}
+
+std::optional<UInt128> F4(const UInt256& u, const UInt256& v, const UInt128& x, const uint8_t z) {
+  constexpr size_t kDataLength = 2 * kUInt256Size + 1;
+  StaticByteBuffer<kDataLength> data_to_encrypt;
+  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
+  MutableBufferView current_view = WriteToBuffer(z, data_to_encrypt.mutable_view());
+  current_view = WriteToBuffer(v, current_view);
+  current_view = WriteToBuffer(u, current_view);
+
+  // Ensures |current_view| is at the end of data_to_encrypt
+  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  return AesCmac(x, data_to_encrypt);
+}
+
+std::optional<F5Results> F5(const UInt256& dhkey, const UInt128& initiator_nonce,
+                            const UInt128& responder_nonce, const DeviceAddress& initiator_addr,
+                            const DeviceAddress& responder_addr) {
+  // Get the T key value
+  StaticByteBuffer<kUInt256Size> dhkey_buffer;
+  WriteToBuffer(dhkey, dhkey_buffer.mutable_view());
+  std::optional<UInt128> maybe_cmac = AesCmac(kF5Salt, dhkey_buffer);
+  if (!maybe_cmac.has_value()) {
+    return std::nullopt;
+  }
+  UInt128 t_key = maybe_cmac.value();
+
+  // Create the MacKey and LTK using the T Key value.
+  uint8_t counter = 0x00;
+  const std::array<uint8_t, 2> length = {0x00, 0x01};  // 256 in little-endian
+  constexpr size_t kDataLength = sizeof(counter) + kF5KeyId.size() + 2 * kUInt128Size +
+                                 2 * (1 + kDeviceAddressSize) + length.size();
+  StaticByteBuffer<kDataLength> data_to_encrypt;
+
+  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
+  MutableBufferView current_view = WriteToBuffer(length, data_to_encrypt.mutable_view());
+  current_view = WriteCryptoDeviceAddr(responder_addr, current_view);
+  current_view = WriteCryptoDeviceAddr(initiator_addr, current_view);
+  current_view = WriteToBuffer(responder_nonce, current_view);
+  current_view = WriteToBuffer(initiator_nonce, current_view);
+  current_view = WriteToBuffer(kF5KeyId, current_view);
+  current_view = WriteToBuffer(counter, current_view);
+
+  // Ensures |current_view| is at the end of data_to_encrypt
+  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  maybe_cmac = AesCmac(t_key, data_to_encrypt);
+  if (!maybe_cmac.has_value()) {
+    return std::nullopt;
+  }
+  F5Results results{.mac_key = *maybe_cmac};
+
+  // Overwrite counter value only for LTK calculation.
+  counter = 0x01;
+  data_to_encrypt.Write(&counter, 1, kDataLength - 1);
+  maybe_cmac = AesCmac(t_key, data_to_encrypt);
+  if (!maybe_cmac.has_value()) {
+    return std::nullopt;
+  }
+  results.ltk = *maybe_cmac;
+  return results;
+}
+
+std::optional<UInt128> F6(const UInt128& mackey, const UInt128& n1, const UInt128& n2,
+                          const UInt128& r, AuthReqField auth_req, OOBDataFlag oob,
+                          IOCapability io_cap, const DeviceAddress& a1, const DeviceAddress& a2) {
+  constexpr size_t kDataLength = 3 * kUInt128Size + sizeof(AuthReqField) + sizeof(OOBDataFlag) +
+                                 sizeof(IOCapability) + 2 * (1 + kDeviceAddressSize);
+  StaticByteBuffer<kDataLength> data_to_encrypt;
+  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
+  MutableBufferView current_view = WriteCryptoDeviceAddr(a2, data_to_encrypt.mutable_view());
+  current_view = WriteCryptoDeviceAddr(a1, current_view);
+  current_view = WriteToBuffer(static_cast<uint8_t>(io_cap), current_view);
+  current_view = WriteToBuffer(static_cast<uint8_t>(oob), current_view);
+  current_view = WriteToBuffer(auth_req, current_view);
+  current_view = WriteToBuffer(r, current_view);
+  current_view = WriteToBuffer(n2, current_view);
+  current_view = WriteToBuffer(n1, current_view);
+  // Ensures |current_view| is at the end of data_to_encrypt
+  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  return AesCmac(mackey, data_to_encrypt);
+}
+
+std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& responder_pubkey_x,
+                           const UInt128& initiator_nonce, const UInt128& responder_nonce) {
+  constexpr size_t kDataLength = 2 * kUInt256Size + kUInt128Size;
+  StaticByteBuffer<kDataLength> data_to_encrypt;
+  // Write to buffer in reverse of human-readable spec format as all parameters are little-endian.
+  MutableBufferView current_view = WriteToBuffer(responder_nonce, data_to_encrypt.mutable_view());
+  current_view = WriteToBuffer(responder_pubkey_x, current_view);
+  current_view = WriteToBuffer(initiator_pubkey_x, current_view);
+  ZX_DEBUG_ASSERT(current_view.size() == 0);
+  std::optional<UInt128> maybe_cmac = AesCmac(initiator_nonce, data_to_encrypt);
+  if (!maybe_cmac.has_value()) {
+    return std::nullopt;
+  }
+  UInt128 cmac_output = *maybe_cmac;
+  // Implements the "mod 32" part of G2 on the little-endian output of AES-CMAC.
+  return (uint32_t)cmac_output[3] << 24 | (uint32_t)cmac_output[2] << 16 |
+         (uint32_t)cmac_output[1] << 8 | (uint32_t)cmac_output[0];
 }
 
 }  // namespace util

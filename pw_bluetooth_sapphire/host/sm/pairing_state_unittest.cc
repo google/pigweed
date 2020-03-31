@@ -6,6 +6,7 @@
 
 #include <fbl/macros.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -408,7 +409,7 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
                                         uint32_t tk = 0) {
     ZX_DEBUG_ASSERT(out_confirm);
     ZX_DEBUG_ASSERT(out_random);
-    *out_random = RandomUInt128();
+    *out_random = Random<UInt128>();
     GenerateConfirmValue(*out_random, out_confirm, false /* peer_initiator */, tk);
   }
 
@@ -2200,7 +2201,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys)
   // Still waiting for initiator's keys.
   EXPECT_EQ(0, pairing_data_callback_count());
 
-  const auto kIrk = RandomUInt128();
+  const auto kIrk = Random<UInt128>();
   ReceiveIdentityResolvingKey(kIrk);
   ReceiveIdentityAddress(kPeerAddr);
   RunLoopUntilIdle();
@@ -2291,7 +2292,7 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKey
   // Still waiting for master's keys.
   EXPECT_EQ(0, pairing_data_callback_count());
 
-  const auto kIrk = RandomUInt128();
+  const auto kIrk = Random<UInt128>();
   ReceiveIdentityResolvingKey(kIrk);
   ReceiveIdentityAddress(kPeerAddr);
   RunLoopUntilIdle();

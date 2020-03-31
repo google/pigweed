@@ -32,8 +32,8 @@ source_set("common") {
     "status.h",
     "task_domain.h",
     "test_helpers.h",
-    "uint128.cc",
     "uint128.h",
+    "uint256.h",
     "uuid.cc",
     "uuid.h",
   ]

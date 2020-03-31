@@ -12,13 +12,10 @@ namespace bt {
 
 // Represents a 128-bit (16-octet) unsigned integer. This is commonly used for
 // encryption keys and UUID values.
-using UInt128 = std::array<uint8_t, 16>;
+constexpr size_t kUInt128Size = 16;
+using UInt128 = std::array<uint8_t, kUInt128Size>;
 
-static_assert(sizeof(UInt128) == 16, "UInt128 must take up exactly 16 bytes");
-
-// Returns a random 128-bit value.
-// TODO(armansito): Remove this in favor of using Random<UInt128>() directly.
-UInt128 RandomUInt128();
+static_assert(sizeof(UInt128) == kUInt128Size, "UInt128 must take up exactly 16 bytes");
 
 }  // namespace bt
 
