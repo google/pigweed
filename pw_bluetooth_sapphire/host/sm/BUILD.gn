@@ -25,6 +25,8 @@ static_library("sm") {
     "active_phase.h",
     "bearer.cc",
     "bearer.h",
+    "ecdh_key.cc",
+    "ecdh_key.h",
     "idle_phase.cc",
     "idle_phase.h",
     "pairing_channel.cc",
@@ -53,6 +55,7 @@ source_set("tests") {
   sources = [
     "active_phase_unittest.cc",
     "bearer_unittest.cc",
+    "ecdh_key_unittest.cc",
     "fake_phase_listener.h",
     "idle_phase_unittest.cc",
     "packet_unittest.cc",
