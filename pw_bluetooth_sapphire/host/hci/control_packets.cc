@@ -61,6 +61,21 @@ bool StatusCodeFromEvent(const EventPacket& event, hci::StatusCode* out_code) {
   return true;
 }
 
+// As StatusCodeFromEvent, but for LEMetaEvent subevents.
+// Returns true and populates the |out_code| field with the subevent status parameter.
+// Returns false if |event|'s payload is too small to hold a LEMetaEvent containing a T. T must have
+// a |status| member of type hci::StatusCode for this to compile.
+template <typename T>
+bool StatusCodeFromSubevent(const EventPacket& event, hci::StatusCode* out_code) {
+  ZX_ASSERT(out_code);
+
+  if (event.view().payload_size() < sizeof(LEMetaEventParams) + sizeof(T))
+    return false;
+
+  *out_code = event.le_event_params<T>()->status;
+  return true;
+}
+
 // Specialization for the CommandComplete event.
 template <>
 bool StatusCodeFromEvent<CommandCompleteEventParams>(const EventPacket& event,
@@ -102,6 +117,10 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
   case k##event_name##EventCode:      \
     return StatusCodeFromEvent<event_name##EventParams>(*this, out_code)
 
+#define CASE_SUBEVENT_STATUS(subevent_name) \
+  case k##subevent_name##SubeventCode:      \
+    return StatusCodeFromSubevent<subevent_name##SubeventParams>(*this, out_code)
+
   switch (event_code()) {
     CASE_EVENT_STATUS(AuthenticationComplete);
     CASE_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
@@ -116,6 +135,15 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(ReadRemoteExtendedFeaturesComplete);
     CASE_EVENT_STATUS(SimplePairingComplete);
+    case kLEMetaEventCode: {
+      auto subevent_code = params<LEMetaEventParams>().subevent_code;
+      switch (subevent_code) {
+        CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
+        default:
+          ZX_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
+          break;
+      }
+    }
 
       // TODO(armansito): Complete this list.
 

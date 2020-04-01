@@ -52,6 +52,10 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
                                                             bool extended_features);
 
+DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn);
+DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci::ConnectionHandle conn,
+                                                     hci::LESupportedFeatures le_features);
+
 // The ReadRemoteExtended*CompletePacket packets report a max page number of 3, even though there
 // are only 2 pages, in order to test this behavior seen in real devices.
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);

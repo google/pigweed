@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
 
@@ -100,6 +101,9 @@ class Peer final {
     // This peer's LE bond data, if bonded.
     const std::optional<sm::PairingData>& bond_data() const { return bond_data_; }
 
+    // Bit mask of LE features (Core Spec v5.2, Vol 6, Part B, Section 4.6).
+    std::optional<hci::LESupportedFeatures> features() const { return features_; }
+
     // Setters:
 
     // Overwrites the stored advertising and scan response data with the contents of |data|
@@ -126,6 +130,8 @@ class Peer final {
     // is disconnected. Does not notify listeners.
     void ClearBondData();
 
+    void SetFeatures(hci::LESupportedFeatures features) { features_ = features; }
+
     // TODO(armansito): Store most recently seen random address and identity
     // address separately, once PeerCache can index peers by multiple
     // addresses.
@@ -150,6 +156,8 @@ class Peer final {
     std::optional<sm::PairingData> bond_data_;
 
     AutoConnectBehavior auto_conn_behavior_ = AutoConnectBehavior::kAlways;
+
+    std::optional<hci::LESupportedFeatures> features_;
 
     // TODO(armansito): Store all keys
     // TODO(armansito): Store GATT service UUIDs.

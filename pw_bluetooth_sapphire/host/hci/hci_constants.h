@@ -569,6 +569,12 @@ enum class SupportedCommand : uint8_t {
   kLESetPrivacyMode                  = (1 << 2),
 };
 
+// Bitmask of 8-octet LE supported features field. See Core Spec
+// v5.0, Volume 6, Part B, Section 4.6 "Feature Support".
+struct LESupportedFeatures {
+  uint64_t le_features;
+} __PACKED;
+
 // Bitmask values for the 8-octet LE Supported Features bit-field. See Core Spec
 // v5.0, Volume 6, Part B, Section 4.6 "Feature Support".
 enum class LESupportedFeature : uint64_t {

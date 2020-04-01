@@ -32,6 +32,8 @@ static_library("gap") {
     "low_energy_connection_manager.h",
     "low_energy_discovery_manager.cc",
     "low_energy_discovery_manager.h",
+    "low_energy_interrogator.cc",
+    "low_energy_interrogator.h",
     "low_energy_state.cc",
     "low_energy_state.h",
     "pairing_delegate.h",
@@ -100,6 +102,7 @@ source_set("tests") {
     "low_energy_advertising_manager_unittest.cc",
     "low_energy_connection_manager_unittest.cc",
     "low_energy_discovery_manager_unittest.cc",
+    "low_energy_interrogator_unittest.cc",
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
   ]

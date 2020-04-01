@@ -195,6 +195,28 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandl
       ));
 }
 
+DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn) {
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      LowerBits(hci::kLEReadRemoteFeatures), UpperBits(hci::kLEReadRemoteFeatures),
+      0x02,             // parameter_total_size (2 bytes)
+      LowerBits(conn),  // Little-Endian Connection_handle
+      UpperBits(conn)));
+}
+
+DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci::ConnectionHandle conn,
+                                                     hci::LESupportedFeatures le_features) {
+  const BufferView features(&le_features, sizeof(le_features));
+  return DynamicByteBuffer(StaticByteBuffer(hci::kLEMetaEventCode,
+                                            0x0c,  // parameter total size (12 bytes)
+                                            hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+                                            hci::StatusCode::kSuccess,  // status
+                                            // Little-Endian connection handle
+                                            LowerBits(conn), UpperBits(conn),
+                                            // bit mask of LE features
+                                            features[0], features[1], features[2], features[3],
+                                            features[4], features[5], features[6], features[7]));
+}
+
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kReadRemoteExtendedFeatures), UpperBits(hci::kReadRemoteExtendedFeatures),
