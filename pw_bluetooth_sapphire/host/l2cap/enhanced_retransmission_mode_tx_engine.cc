@@ -42,28 +42,20 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       last_tx_seq_(0),
       req_seqnum_(0),
       n_receiver_ready_polls_sent_(0),
-      remote_is_busy_(false),
-      weak_factory_(this) {
+      remote_is_busy_(false) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
-  receiver_ready_poll_task_.set_handler(
-      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task, zx_status_t status) {
-        if (status == ZX_OK && weak_self) {
-          weak_self->SendReceiverReadyPoll();
-          weak_self->StartMonitorTimer();
-        }
-      });
-  monitor_task_.set_handler(
-      [weak_self = weak_factory_.GetWeakPtr()](auto dispatcher, auto task, zx_status_t status) {
-        if (status == ZX_OK && weak_self) {
-          if (weak_self->max_transmissions_ == 0 ||
-              weak_self->n_receiver_ready_polls_sent_ < weak_self->max_transmissions_) {
-            weak_self->SendReceiverReadyPoll();
-            weak_self->StartMonitorTimer();
-          } else {
-            weak_self->connection_failure_callback_();  // May invalidate |weak_self|.
-          }
-        }
-      });
+  receiver_ready_poll_task_.set_handler([this] {
+    SendReceiverReadyPoll();
+    StartMonitorTimer();
+  });
+  monitor_task_.set_handler([this] {
+    if (max_transmissions_ == 0 || n_receiver_ready_polls_sent_ < max_transmissions_) {
+      SendReceiverReadyPoll();
+      StartMonitorTimer();
+    } else {
+      connection_failure_callback_();  // May invalidate |self|.
+    }
+  });
 }
 
 bool Engine::QueueSdu(ByteBufferPtr sdu) {

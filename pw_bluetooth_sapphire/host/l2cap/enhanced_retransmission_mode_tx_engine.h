@@ -161,9 +161,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   uint8_t n_receiver_ready_polls_sent_;
   bool remote_is_busy_;
   std::list<PendingPdu> pending_pdus_;
-  async::Task receiver_ready_poll_task_;
-  async::Task monitor_task_;
-  fxl::WeakPtrFactory<EnhancedRetransmissionModeTxEngine> weak_factory_;  // Keep last
+  async::TaskClosure receiver_ready_poll_task_;
+  async::TaskClosure monitor_task_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };
