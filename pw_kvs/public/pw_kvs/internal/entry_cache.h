@@ -20,7 +20,9 @@
 
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/format.h"
 #include "pw_kvs/internal/key_descriptor.h"
+#include "pw_kvs/internal/sectors.h"
 #include "pw_span/span.h"
 
 namespace pw::kvs::internal {
@@ -161,17 +163,9 @@ class EntryCache {
   //                 key's hash collides with the hash for an existing
   //                 descriptor
   //
-  Status Find(FlashPartition& partition,
-              std::string_view key,
-              EntryMetadata* metadata) const;
-
-  // Searches for a KeyDescriptor that matches this key and sets *metadata to
-  // point to it if one is found.
-  //
-  //          OK: there is a matching descriptor and *metadata is set
-  //   NOT_FOUND: there is no descriptor that matches this key
-  //
-  Status FindExisting(FlashPartition& partition,
+  StatusWithSize Find(FlashPartition& partition,
+                      const Sectors& sectors,
+                      const EntryFormats& formats,
                       std::string_view key,
                       EntryMetadata* metadata) const;
 

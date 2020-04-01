@@ -188,7 +188,10 @@ class KeyValueStore {
   // recovery, will do any needed repairing of corruption. Does garbage
   // collection of part of the KVS, typically a single sector or similar unit
   // that makes sense for the KVS implementation.
-  Status PartialMaintenance() { return GarbageCollect(span<const Address>()); }
+  Status PartialMaintenance() {
+    CheckForErrors();
+    return GarbageCollect(span<const Address>());
+  }
 
   void LogDebugInfo() const;
 
@@ -301,6 +304,9 @@ class KeyValueStore {
   size_t redundancy() const { return entry_cache_.redundancy(); }
 
   bool error_detected() const { return error_detected_; }
+
+  // Check KVS for any error conditions. Primarily intended for test and
+  // internal use.
   bool CheckForErrors();
 
  protected:
@@ -341,6 +347,30 @@ class KeyValueStore {
   Status PutBytes(std::string_view key, span<const std::byte> value);
 
   StatusWithSize ValueSize(const EntryMetadata& metadata) const;
+
+  Status ReadEntry(const EntryMetadata& metadata, Entry& entry) const;
+
+  // Finds the metadata for an entry matching a particular key. Searches for a
+  // KeyDescriptor that matches this key and sets *metadata to point to it if
+  // one is found.
+  //
+  //             OK: there is a matching descriptor and *metadata is set
+  //      NOT_FOUND: there is no descriptor that matches this key, but this key
+  //                 has a unique hash (and could potentially be added to the
+  //                 KVS)
+  // ALREADY_EXISTS: there is no descriptor that matches this key, but the
+  //                 key's hash collides with the hash for an existing
+  //                 descriptor
+  //
+  Status FindEntry(std::string_view key, EntryMetadata* metadata) const;
+
+  // Searches for a KeyDescriptor that matches this key and sets *metadata to
+  // point to it if one is found.
+  //
+  //          OK: there is a matching descriptor and *metadata is set
+  //   NOT_FOUND: there is no descriptor that matches this key
+  //
+  Status FindExisting(std::string_view key, EntryMetadata* metadata) const;
 
   StatusWithSize Get(std::string_view key,
                      const EntryMetadata& metadata,
@@ -387,6 +417,10 @@ class KeyValueStore {
                      std::string_view key,
                      span<const std::byte> value);
 
+  StatusWithSize CopyEntryToSector(Entry& entry,
+                                   SectorDescriptor* new_sector,
+                                   Address& new_address);
+
   Status RelocateEntry(const EntryMetadata& metadata,
                        KeyValueStore::Address& address,
                        span<const Address> addresses_to_skip);
@@ -396,7 +430,7 @@ class KeyValueStore {
   Status GarbageCollect(span<const Address> addresses_to_skip);
 
   Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
-                                      const EntryMetadata& descriptor,
+                                      EntryMetadata& descriptor,
                                       span<const Address> addresses_to_skip);
 
   Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
@@ -445,7 +479,9 @@ class KeyValueStore {
   };
   InitializationState initialized_;
 
-  bool error_detected_;
+  // error_detected_ needs to be set from const KVS methods (such as Get), so
+  // make it mutable.
+  mutable bool error_detected_;
 
   struct ErrorStats {
     size_t corrupt_sectors_recovered;

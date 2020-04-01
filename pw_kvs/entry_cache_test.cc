@@ -194,6 +194,8 @@ TEST_F(EmptyEntryCache, Iterator_Const_CanBeAssignedFromMutable) {
   EXPECT_EQ(99u, it->first_address());
 }
 
+constexpr size_t kSectorSize = 64;
+
 constexpr auto kTheEntry = AsBytes(uint32_t(12345),  // magic
                                    uint32_t(0),      // checksum
                                    uint8_t(0),       // alignment (16 B)
@@ -201,7 +203,9 @@ constexpr auto kTheEntry = AsBytes(uint32_t(12345),  // magic
                                    uint16_t(0),                   // value size
                                    uint32_t(123),  // transaction ID
                                    ByteStr(kTheKey));
-constexpr std::array<byte, 16 - kTheEntry.size() % 16> kPadding1{};
+constexpr std::array<byte, kSectorSize - kTheEntry.size() % kSectorSize>
+    kPadding1{};
+constexpr size_t kSize1 = kTheEntry.size() + kPadding1.size();
 
 constexpr char kCollision1[] = "9FDC";
 constexpr char kCollision2[] = "axzzK";
@@ -214,7 +218,9 @@ constexpr auto kCollisionEntry =
             uint16_t(0),                       // value size
             uint32_t(123),                     // transaction ID
             ByteStr(kCollision1));
-constexpr std::array<byte, 16 - kCollisionEntry.size() % 16> kPadding2{};
+constexpr std::array<byte, kSectorSize - kCollisionEntry.size() % kSectorSize>
+    kPadding2{};
+constexpr size_t kSize2 = kCollisionEntry.size() + kPadding2.size();
 
 constexpr auto kDeletedEntry =
     AsBytes(uint32_t(12345),                  // magic
@@ -224,29 +230,65 @@ constexpr auto kDeletedEntry =
             uint16_t(0xffff),                 // value size (deleted)
             uint32_t(123),                    // transaction ID
             ByteStr("delorted"));
+constexpr std::array<byte, kSectorSize - kDeletedEntry.size() % kSectorSize>
+    kPadding3{};
+
+constexpr EntryFormat kFormat{.magic = uint32_t(12345), .checksum = nullptr};
 
 class InitializedEntryCache : public EmptyEntryCache {
  protected:
   static_assert(Hash(kCollision1) == Hash(kCollision2));
 
   InitializedEntryCache()
-      : flash_(AsBytes(
-            kTheEntry, kPadding1, kCollisionEntry, kPadding2, kDeletedEntry)),
-        partition_(&flash_) {
-    entries_.AddNew(kDescriptor, 0);
+      : flash_(AsBytes(kTheEntry,
+                       kPadding1,
+                       kTheEntry,
+                       kPadding1,
+                       kCollisionEntry,
+                       kPadding2,
+                       kDeletedEntry,
+                       kPadding3)),
+        partition_(&flash_),
+        sectors_(sector_descriptors_, partition_, nullptr),
+        format_(kFormat) {
+    sectors_.Reset();
+    size_t address = 0;
+    auto entry = entries_.AddNew(kDescriptor, address);
+
+    address += kSize1;
+    entry.AddNewAddress(kSize1);
+
+    address += kSize1;
     entries_.AddNew({.key_hash = Hash(kCollision1),
                      .transaction_id = 125,
                      .state = EntryState::kDeleted},
-                    kTheEntry.size() + kPadding1.size());
+                    address);
+
+    address += kSize2;
     entries_.AddNew({.key_hash = Hash("delorted"),
                      .transaction_id = 256,
                      .state = EntryState::kDeleted},
-                    kTheEntry.size() + kPadding1.size() +
-                        kCollisionEntry.size() + kPadding2.size());
+                    address);
   }
 
-  FakeFlashBuffer<64, 128> flash_;
+  void CheckForCorruptSectors(SectorDescriptor* sector1 = nullptr,
+                              SectorDescriptor* sector2 = nullptr) {
+    for (auto& sector : sectors_) {
+      bool expect_corrupt =
+          (&sector == sector1 || &sector == sector2) ? true : false;
+
+      EXPECT_EQ(expect_corrupt, sector.corrupt());
+    }
+  }
+
+  static constexpr size_t kTotalSectors = 128;
+  FakeFlashBuffer<kSectorSize, kTotalSectors> flash_;
   FlashPartition partition_;
+
+  Vector<SectorDescriptor, kTotalSectors> sector_descriptors_;
+  Sectors sectors_;
+
+  EntryFormats format_;
 };
 
 TEST_F(InitializedEntryCache, EntryCounts) {
@@ -265,51 +307,80 @@ TEST_F(InitializedEntryCache, Reset_ClearsEntryCounts) {
 
 TEST_F(InitializedEntryCache, Find_PresentEntry) {
   EntryMetadata metadata;
-  ASSERT_EQ(Status::OK, entries_.Find(partition_, kTheKey, &metadata));
+
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
+
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash(kTheKey), metadata.hash());
   EXPECT_EQ(EntryState::kValid, metadata.state());
+  CheckForCorruptSectors();
+}
+
+TEST_F(InitializedEntryCache, Find_PresentEntryWithSingleReadError) {
+  // Inject 2 read errors so that the initial key read and the follow-up full
+  // read of the first entry fail.
+  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 2));
+
+  EntryMetadata metadata;
+
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
+
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(1u, result.size());
+  EXPECT_EQ(Hash(kTheKey), metadata.hash());
+  EXPECT_EQ(EntryState::kValid, metadata.state());
+  CheckForCorruptSectors(&sectors_.FromAddress(0));
+}
+
+TEST_F(InitializedEntryCache, Find_PresentEntryWithMultiReadError) {
+  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 4));
+
+  EntryMetadata metadata;
+
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
+
+  ASSERT_EQ(Status::DATA_LOSS, result.status());
+  EXPECT_EQ(1u, result.size());
+  CheckForCorruptSectors(&sectors_.FromAddress(0),
+                         &sectors_.FromAddress(kSize1));
 }
 
 TEST_F(InitializedEntryCache, Find_DeletedEntry) {
   EntryMetadata metadata;
-  ASSERT_EQ(Status::OK, entries_.Find(partition_, "delorted", &metadata));
+
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, "delorted", &metadata);
+
+  ASSERT_EQ(Status::OK, result.status());
+  EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash("delorted"), metadata.hash());
   EXPECT_EQ(EntryState::kDeleted, metadata.state());
+  CheckForCorruptSectors();
 }
 
 TEST_F(InitializedEntryCache, Find_MissingEntry) {
   EntryMetadata metadata;
-  ASSERT_EQ(Status::NOT_FOUND, entries_.Find(partition_, "3.141", &metadata));
+
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, "3.141", &metadata);
+
+  ASSERT_EQ(Status::NOT_FOUND, result.status());
+  EXPECT_EQ(0u, result.size());
+  CheckForCorruptSectors();
 }
 
 TEST_F(InitializedEntryCache, Find_Collision) {
   EntryMetadata metadata;
-  EXPECT_EQ(Status::ALREADY_EXISTS,
-            entries_.Find(partition_, kCollision2, &metadata));
-}
 
-TEST_F(InitializedEntryCache, FindExisting_PresentEntry) {
-  EntryMetadata metadata;
-  ASSERT_EQ(Status::OK, entries_.FindExisting(partition_, kTheKey, &metadata));
-  EXPECT_EQ(Hash(kTheKey), metadata.hash());
-}
-
-TEST_F(InitializedEntryCache, FindExisting_DeletedEntry) {
-  EntryMetadata metadata;
-  ASSERT_EQ(Status::NOT_FOUND,
-            entries_.FindExisting(partition_, "delorted", &metadata));
-}
-
-TEST_F(InitializedEntryCache, FindExisting_MissingEntry) {
-  EntryMetadata metadata;
-  ASSERT_EQ(Status::NOT_FOUND,
-            entries_.FindExisting(partition_, "3.141", &metadata));
-}
-
-TEST_F(InitializedEntryCache, FindExisting_Collision) {
-  EntryMetadata metadata;
-  EXPECT_EQ(Status::NOT_FOUND,
-            entries_.FindExisting(partition_, kCollision2, &metadata));
+  StatusWithSize result =
+      entries_.Find(partition_, sectors_, format_, kCollision2, &metadata);
+  EXPECT_EQ(Status::ALREADY_EXISTS, result.status());
+  EXPECT_EQ(0u, result.size());
+  CheckForCorruptSectors();
 }
 
 }  // namespace

@@ -56,7 +56,6 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
 Status KeyValueStore::Init() {
   initialized_ = InitializationState::kNotInitialized;
   error_detected_ = false;
-  error_stats_ = {};
   last_transaction_id_ = 0;
   sectors_.Reset();
   entry_cache_.Reset();
@@ -174,17 +173,39 @@ Status KeyValueStore::Init() {
   DBG("Second pass: Count valid bytes in each sector");
   Address newest_key = 0;
 
-  // For every valid entry, count the valid bytes in that sector. Track which
-  // entry has the newest transaction ID for initializing last_new_sector_.
-  for (const EntryMetadata& metadata : entry_cache_) {
+  // For every valid entry, for each address, count the valid bytes in that
+  // sector. If the address fails to read, remove the address and mark the
+  // sector as corrupt. Track which entry has the newest transaction ID for
+  // initializing last_new_sector_.
+  for (EntryMetadata& metadata : entry_cache_) {
     if (metadata.addresses().size() < redundancy()) {
       error_detected_ = true;
     }
-    for (Address address : metadata.addresses()) {
+    size_t index = 0;
+    while (index < metadata.addresses().size()) {
+      Address address = metadata.addresses()[index];
       Entry entry;
-      TRY(Entry::Read(partition_, address, formats_, &entry));
-      sectors_.FromAddress(address).AddValidBytes(entry.size());
+
+      Status read_result = Entry::Read(partition_, address, formats_, &entry);
+
+      SectorDescriptor& sector = sectors_.FromAddress(address);
+
+      if (read_result.ok()) {
+        sector.AddValidBytes(entry.size());
+        index++;
+      } else {
+        corrupt_entries++;
+        total_corrupt_bytes += sector.writable_bytes();
+        error_detected_ = true;
+        sector.mark_corrupt();
+
+        // Remove the bad address and stay at this index. The removal
+        // replaces out the removed address with the back address so
+        // this index needs to be rechecked with the new address.
+        metadata.RemoveAddress(address);
+      }
     }
+
     if (metadata.IsNewerThan(last_transaction_id_)) {
       last_transaction_id_ = metadata.transaction_id();
       newest_key = metadata.addresses().back();
@@ -201,14 +222,15 @@ Status KeyValueStore::Init() {
     initialized_ = InitializationState::kReady;
   } else {
     if (options_.recovery != ErrorRecovery::kManual) {
-      WRN("KVS init: Corruption detected, beginning repair");
+      WRN("KVS init: Corruption detected, beginning repair. Found %zu corrupt "
+          "bytes and %d corrupt entries.",
+          total_corrupt_bytes,
+          corrupt_entries);
       Status recovery_status = Repair();
 
       if (recovery_status.ok()) {
         WRN("KVS init: Corruption detected and fully repaired");
         initialized_ = InitializationState::kReady;
-        total_corrupt_bytes = 0;
-        corrupt_entries = 0;
       } else if (recovery_status == Status::RESOURCE_EXHAUSTED) {
         WRN("KVS init: Unable to maintain required free sector");
         initialized_ = InitializationState::kNeedsMaintenance;
@@ -230,11 +252,9 @@ Status KeyValueStore::Init() {
       partition_.sector_size_bytes());
 
   // Report any corruption was not repaired.
-  if (total_corrupt_bytes > 0) {
-    WRN("Found %zu corrupt bytes and %d corrupt entries during init process; "
-        "some keys may be missing",
-        total_corrupt_bytes,
-        corrupt_entries);
+  if (error_detected_) {
+    WRN("KVS init: Corruption found but not repaired, KVS unavailable until "
+        "successful maintenance.");
     return Status::DATA_LOSS;
   }
 
@@ -269,12 +289,14 @@ KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
   return stats;
 }
 
+// Check KVS for any error conditions. Primarily intended for test and
+// internal use.
 bool KeyValueStore::CheckForErrors() {
   // Check for corrupted sectors
   for (SectorDescriptor& sector : sectors_) {
     if (sector.corrupt()) {
       error_detected_ = true;
-      break;
+      return error_detected();
     }
   }
 
@@ -283,7 +305,7 @@ bool KeyValueStore::CheckForErrors() {
     for (const EntryMetadata& metadata : entry_cache_) {
       if (metadata.addresses().size() < redundancy()) {
         error_detected_ = true;
-        break;
+        return error_detected();
       }
     }
   }
@@ -343,7 +365,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
   TRY_WITH_SIZE(CheckReadOperation(key));
 
   EntryMetadata metadata;
-  TRY_WITH_SIZE(entry_cache_.FindExisting(partition_, key, &metadata));
+  TRY_WITH_SIZE(FindExisting(key, &metadata));
 
   return Get(key, metadata, value_buffer, offset_bytes);
 }
@@ -362,7 +384,7 @@ Status KeyValueStore::PutBytes(string_view key, span<const byte> value) {
   }
 
   EntryMetadata metadata;
-  Status status = entry_cache_.Find(partition_, key, &metadata);
+  Status status = FindEntry(key, &metadata);
 
   if (status.ok()) {
     // TODO: figure out logging how to support multiple addresses.
@@ -384,7 +406,7 @@ Status KeyValueStore::Delete(string_view key) {
   TRY(CheckWriteOperation(key));
 
   EntryMetadata metadata;
-  TRY(entry_cache_.FindExisting(partition_, key, &metadata));
+  TRY(FindExisting(key, &metadata));
 
   // TODO: figure out logging how to support multiple addresses.
   DBG("Writing tombstone for key 0x%08" PRIx32 " in %zu sectors including %u",
@@ -398,11 +420,7 @@ void KeyValueStore::Item::ReadKey() {
   key_buffer_.fill('\0');
 
   Entry entry;
-  // TODO: add support for using one of the redundant entries if reading the
-  // first copy fails.
-  if (Entry::Read(
-          kvs_.partition_, iterator_->first_address(), kvs_.formats_, &entry)
-          .ok()) {
+  if (kvs_.ReadEntry(*iterator_, entry).ok()) {
     entry.ReadKey(key_buffer_);
   }
 }
@@ -429,9 +447,52 @@ StatusWithSize KeyValueStore::ValueSize(string_view key) const {
   TRY_WITH_SIZE(CheckReadOperation(key));
 
   EntryMetadata metadata;
-  TRY_WITH_SIZE(entry_cache_.FindExisting(partition_, key, &metadata));
+  TRY_WITH_SIZE(FindExisting(key, &metadata));
 
   return ValueSize(metadata);
+}
+
+Status KeyValueStore::ReadEntry(const EntryMetadata& metadata,
+                                Entry& entry) const {
+  // Try to read an entry
+  Status read_result = Status::DATA_LOSS;
+  for (Address address : metadata.addresses()) {
+    read_result = Entry::Read(partition_, address, formats_, &entry);
+    if (read_result.ok()) {
+      return read_result;
+    }
+
+    // Found a bad address. Set the sector as corrupt.
+    error_detected_ = true;
+    sectors_.FromAddress(address).mark_corrupt();
+  }
+
+  ERR("No valid entries for key. Data has been lost!");
+  return read_result;
+}
+
+Status KeyValueStore::FindEntry(string_view key,
+                                EntryMetadata* found_entry) const {
+  StatusWithSize find_result =
+      entry_cache_.Find(partition_, sectors_, formats_, key, found_entry);
+
+  if (find_result.size() > 0u) {
+    error_detected_ = true;
+  }
+  return find_result.status();
+}
+
+Status KeyValueStore::FindExisting(string_view key,
+                                   EntryMetadata* metadata) const {
+  Status status = FindEntry(key, metadata);
+
+  // If the key's hash collides with an existing key or if the key is deleted,
+  // treat it as if it is not in the KVS.
+  if (status == Status::ALREADY_EXISTS ||
+      (status.ok() && metadata->state() == EntryState::kDeleted)) {
+    return Status::NOT_FOUND;
+  }
+  return status;
 }
 
 StatusWithSize KeyValueStore::Get(string_view key,
@@ -439,10 +500,8 @@ StatusWithSize KeyValueStore::Get(string_view key,
                                   span<std::byte> value_buffer,
                                   size_t offset_bytes) const {
   Entry entry;
-  // TODO: add support for using one of the redundant entries if reading the
-  // first copy fails.
-  TRY_WITH_SIZE(
-      Entry::Read(partition_, metadata.first_address(), formats_, &entry));
+
+  TRY_WITH_SIZE(ReadEntry(metadata, entry));
 
   StatusWithSize result = entry.ReadValue(value_buffer, offset_bytes);
   if (result.ok() && options_.verify_on_read && offset_bytes == 0u) {
@@ -464,7 +523,7 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
   TRY(CheckWriteOperation(key));
 
   EntryMetadata metadata;
-  TRY(entry_cache_.FindExisting(partition_, key, &metadata));
+  TRY(FindExisting(key, &metadata));
 
   return FixedSizeGet(key, metadata, value, size_bytes);
 }
@@ -490,10 +549,7 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
 
 StatusWithSize KeyValueStore::ValueSize(const EntryMetadata& metadata) const {
   Entry entry;
-  // TODO: add support for using one of the redundant entries if reading the
-  // first copy fails.
-  TRY_WITH_SIZE(
-      Entry::Read(partition_, metadata.first_address(), formats_, &entry));
+  TRY_WITH_SIZE(ReadEntry(metadata, entry));
 
   return StatusWithSize(entry.value_size());
 }
@@ -529,9 +585,7 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
                                                span<const byte> value) {
   // Read the original entry to get the size for sector accounting purposes.
   Entry entry;
-  // TODO: add support for using one of the redundant entries if reading the
-  // first copy fails.
-  TRY(Entry::Read(partition_, metadata.first_address(), formats_, &entry));
+  TRY(ReadEntry(metadata, entry));
 
   return WriteEntry(key, value, new_state, &metadata, entry.size());
 }
@@ -668,10 +722,7 @@ Status KeyValueStore::AppendEntry(const Entry& entry,
                                   span<const byte> value) {
   const StatusWithSize result = entry.Write(key, value);
 
-  // Remove any bytes that were written, even if the write was not successful.
-  // This is important to retain the writable space invariant on the sectors.
   SectorDescriptor& sector = sectors_.FromAddress(entry.address());
-  sector.RemoveWritableBytes(result.size());
 
   if (!result.ok()) {
     ERR("Failed to write %zu bytes at %#zx. %zu actually written",
@@ -685,15 +736,36 @@ Status KeyValueStore::AppendEntry(const Entry& entry,
     TRY(MarkSectorCorruptIfNotOk(entry.VerifyChecksumInFlash(), &sector));
   }
 
+  sector.RemoveWritableBytes(result.size());
   sector.AddValidBytes(result.size());
   return Status::OK;
+}
+
+StatusWithSize KeyValueStore::CopyEntryToSector(Entry& entry,
+                                                SectorDescriptor* new_sector,
+                                                Address& new_address) {
+  new_address = sectors_.NextWritableAddress(*new_sector);
+  const StatusWithSize result = entry.Copy(new_address);
+
+  TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(result.status(), new_sector));
+
+  if (options_.verify_on_write) {
+    TRY_WITH_SIZE(
+        MarkSectorCorruptIfNotOk(entry.VerifyChecksumInFlash(), new_sector));
+  }
+  // Entry was written successfully; update descriptor's address and the sector
+  // descriptors to reflect the new entry.
+  new_sector->RemoveWritableBytes(result.size());
+  new_sector->AddValidBytes(result.size());
+
+  return result;
 }
 
 Status KeyValueStore::RelocateEntry(const EntryMetadata& metadata,
                                     KeyValueStore::Address& address,
                                     span<const Address> reserved_addresses) {
   Entry entry;
-  TRY(Entry::Read(partition_, address, formats_, &entry));
+  TRY(ReadEntry(metadata, entry));
 
   // Find a new sector for the entry and write it to the new location. For
   // relocation the find should not not be a sector already containing the key
@@ -706,19 +778,10 @@ Status KeyValueStore::RelocateEntry(const EntryMetadata& metadata,
   TRY(sectors_.FindSpaceDuringGarbageCollection(
       &new_sector, entry.size(), metadata.addresses(), reserved_addresses));
 
-  const Address new_address = sectors_.NextWritableAddress(*new_sector);
-  const StatusWithSize result = entry.Copy(new_address);
-
-  TRY(MarkSectorCorruptIfNotOk(result.status(), new_sector));
-
-  if (options_.verify_on_write) {
-    TRY(MarkSectorCorruptIfNotOk(entry.VerifyChecksumInFlash(), new_sector));
-  }
-  // Entry was written successfully; update descriptor's address and the sector
-  // descriptors to reflect the new entry.
-  new_sector->RemoveWritableBytes(result.size());
-  new_sector->AddValidBytes(result.size());
-  sectors_.FromAddress(address).RemoveValidBytes(result.size());
+  Address new_address;
+  TRY_ASSIGN(const size_t result_size,
+             CopyEntryToSector(entry, new_sector, new_address));
+  sectors_.FromAddress(address).RemoveValidBytes(result_size);
   address = new_address;
 
   return Status::OK;
@@ -730,6 +793,7 @@ Status KeyValueStore::FullMaintenance() {
   }
 
   DBG("Do full maintenance");
+  CheckForErrors();
 
   if (error_detected_) {
     TRY(Repair());
@@ -784,7 +848,7 @@ Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
 
 Status KeyValueStore::RelocateKeyAddressesInSector(
     SectorDescriptor& sector_to_gc,
-    const EntryMetadata& metadata,
+    EntryMetadata& metadata,
     span<const Address> reserved_addresses) {
   for (FlashPartition::Address& address : metadata.addresses()) {
     if (sectors_.AddressInSector(sector_to_gc, address)) {
@@ -803,7 +867,7 @@ Status KeyValueStore::GarbageCollectSector(
   DBG("  Garbage Collect sector %u", sectors_.Index(sector_to_gc));
   // Step 1: Move any valid entries in the GC sector to other sectors
   if (sector_to_gc.valid_bytes() != 0) {
-    for (const EntryMetadata& metadata : entry_cache_) {
+    for (EntryMetadata& metadata : entry_cache_) {
       TRY(RelocateKeyAddressesInSector(
           sector_to_gc, metadata, reserved_addresses));
     }
@@ -831,10 +895,7 @@ Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
 
   Entry entry;
 
-  // For simplicity use just the first copy. Any known bad copies should have
-  // been removed already.
-  // TODO: Add support to read other copies if needed.
-  TRY(Entry::Read(partition_, metadata.first_address(), formats_, &entry));
+  TRY(ReadEntry(metadata, entry));
   TRY(entry.VerifyChecksumInFlash());
 
   for (size_t i = metadata.addresses().size();
@@ -842,17 +903,8 @@ Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
        i++) {
     TRY(sectors_.FindSpace(&new_sector, entry.size(), metadata.addresses()));
 
-    const Address new_address = sectors_.NextWritableAddress(*new_sector);
-    const StatusWithSize result = entry.Copy(new_address);
-    TRY(MarkSectorCorruptIfNotOk(result.status(), new_sector));
-
-    if (options_.verify_on_write) {
-      TRY(MarkSectorCorruptIfNotOk(entry.VerifyChecksumInFlash(), new_sector));
-    }
-    // Entry was written successfully; update descriptor's address and the
-    // sector descriptors to reflect the new entry.
-    new_sector->RemoveWritableBytes(result.size());
-    new_sector->AddValidBytes(result.size());
+    Address new_address;
+    TRY(CopyEntryToSector(entry, new_sector, new_address));
 
     metadata.AddNewAddress(new_address);
   }
@@ -922,14 +974,14 @@ Status KeyValueStore::EnsureEntryRedundancy() {
   Status repair_status = Status::OK;
 
   if (redundancy() == 1) {
-    DBG("   Redundancy not in use, nothing to check");
+    DBG("   Redundancy not in use, nothting to check");
     return Status::OK;
   }
 
-  DBG("   Write any needed additional duplicate copies of key to fulfill %u "
-      "redundancy",
+  DBG("   Write any needed additional duplicate copies of keys to fulfill %u"
+      " redundancy",
       unsigned(redundancy()));
-  for (const EntryMetadata& metadata : entry_cache_) {
+  for (EntryMetadata& metadata : entry_cache_) {
     if (metadata.addresses().size() >= redundancy()) {
       continue;
     }
@@ -937,10 +989,7 @@ Status KeyValueStore::EnsureEntryRedundancy() {
     DBG("   Key with %u of %u copies found, adding missing copies",
         unsigned(metadata.addresses().size()),
         unsigned(redundancy()));
-    // TODO: Add non-const iterator to the entry_cache_ and remove this
-    // const_cast.
-    Status fill_status =
-        AddRedundantEntries(const_cast<EntryMetadata&>(metadata));
+    Status fill_status = AddRedundantEntries(metadata);
     if (fill_status.ok()) {
       error_stats_.missing_redundant_entries_recovered += 1;
       DBG("   Key missing copies added");

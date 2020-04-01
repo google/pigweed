@@ -143,15 +143,9 @@ class Sectors {
     return Index(sector) * partition_.sector_size_bytes();
   }
 
-  // Returns the sector that contains this address. The address must be valid.
-  SectorDescriptor& FromAddress(Address address) {
-    const size_t index = address / partition_.sector_size_bytes();
+  SectorDescriptor& FromAddress(Address address) const {
     // TODO: Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);`
-    return descriptors_[index];
-  }
-
-  const SectorDescriptor& FromAddress(Address address) const {
     return descriptors_[address / partition_.sector_size_bytes()];
   }
 

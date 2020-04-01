@@ -279,6 +279,9 @@ TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
   EXPECT_EQ(32u, kvs_.GetStorageStats().in_use_bytes);
 }
 
+// The Put_WriteFailure_EntryNotAddedButBytesMarkedWritten test is run with both
+// the KvsErrorRecovery and KvsErrorHandling test fixtures (different KVS
+// configurations).
 TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   ASSERT_EQ(Status::OK, kvs_.Init());
   flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
@@ -359,7 +362,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptEntry_FindsSubsequentValidEntry) {
     ASSERT_EQ(32u, stats.in_use_bytes);
     // The sector with corruption should have been recovered.
     ASSERT_EQ(0u, stats.reclaimable_bytes);
-    ASSERT_EQ(1u, stats.corrupt_sectors_recovered);
+    ASSERT_EQ(i + 1u, stats.corrupt_sectors_recovered);
   }
 }
 
@@ -467,6 +470,9 @@ TEST_F(KvsErrorRecovery, Init_CorruptKey_RevertsToPreviousVersion) {
   EXPECT_EQ(32u, kvs_.GetStorageStats().in_use_bytes);
 }
 
+// The Put_WriteFailure_EntryNotAddedButBytesMarkedWritten test is run with both
+// the KvsErrorRecovery and KvsErrorHandling test fixtures (different KVS
+// configurations).
 TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   ASSERT_EQ(Status::OK, kvs_.Init());
   flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
@@ -559,6 +565,145 @@ TEST_F(InitializedMultiMagicKvs, AllEntriesArePresent) {
   ASSERT_CONTAINS_ENTRY("k3y", "value3");
   ASSERT_CONTAINS_ENTRY("A Key", "XD");
   ASSERT_CONTAINS_ENTRY("kee", "O_o");
+}
+
+TEST_F(InitializedMultiMagicKvs, RecoversLossOfFirstSector) {
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+
+  EXPECT_EQ(Status::OK, partition_.Erase(0, 1));
+
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("A Key", "XD");
+  ASSERT_CONTAINS_ENTRY("kee", "O_o");
+
+  EXPECT_EQ(true, kvs_.error_detected());
+
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 352u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+
+  EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 1u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+}
+
+TEST_F(InitializedMultiMagicKvs, RecoversLossOfSecondSector) {
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+
+  EXPECT_EQ(Status::OK, partition_.Erase(partition_.sector_size_bytes(), 1));
+
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("A Key", "XD");
+  ASSERT_CONTAINS_ENTRY("kee", "O_o");
+
+  EXPECT_EQ(false, kvs_.error_detected());
+
+  EXPECT_EQ(false, kvs_.Init());
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 10u);
+}
+
+TEST_F(InitializedMultiMagicKvs, SingleReadErrors) {
+  // Inject 2 read errors, so the first read attempt fully fails.
+  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 2));
+
+  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 1, 7));
+
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("A Key", "XD");
+  ASSERT_CONTAINS_ENTRY("kee", "O_o");
+
+  EXPECT_EQ(true, kvs_.error_detected());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 352u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+}
+
+TEST_F(InitializedMultiMagicKvs, SingleWriteError) {
+  flash_.InjectWriteError(FlashError::Unconditional(Status::INTERNAL, 1, 1));
+
+  EXPECT_EQ(Status::INTERNAL, kvs_.Put("new key", ByteStr("abcd?")));
+
+  EXPECT_EQ(true, kvs_.error_detected());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, 32 + (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 352u);
+  EXPECT_EQ(stats.writable_bytes,
+            512u * 2 - 32 - (160 * (kvs_.redundancy() - 1)));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+
+  char val[20] = {};
+  EXPECT_EQ(Status::OK,
+            kvs_.Get("new key", as_writable_bytes(span(val))).status());
+
+  EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 1u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 6u);
+
+  EXPECT_EQ(Status::OK,
+            kvs_.Get("new key", as_writable_bytes(span(val))).status());
+}
+
+TEST_F(InitializedMultiMagicKvs, DataLossAfterLosingBothCopies) {
+  EXPECT_EQ(Status::OK, partition_.Erase(0, 2));
+
+  char val[20] = {};
+  EXPECT_EQ(Status::DATA_LOSS,
+            kvs_.Get("key1", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(Status::DATA_LOSS,
+            kvs_.Get("k2", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(Status::DATA_LOSS,
+            kvs_.Get("k3y", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(Status::DATA_LOSS,
+            kvs_.Get("A Key", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(Status::DATA_LOSS,
+            kvs_.Get("kee", as_writable_bytes(span(val))).status());
+
+  EXPECT_EQ(true, kvs_.error_detected());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 2 * 352u);
+  EXPECT_EQ(stats.writable_bytes, 512u);
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
 }
 
 TEST_F(InitializedMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
