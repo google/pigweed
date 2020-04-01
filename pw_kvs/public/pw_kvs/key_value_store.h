@@ -213,13 +213,13 @@ class KeyValueStore {
     friend class iterator;
 
     constexpr Item(const KeyValueStore& kvs,
-                   const internal::EntryCache::iterator& iterator)
+                   const internal::EntryCache::const_iterator& iterator)
         : kvs_(kvs), iterator_(iterator), key_buffer_{} {}
 
     void ReadKey();
 
     const KeyValueStore& kvs_;
-    internal::EntryCache::iterator iterator_;
+    internal::EntryCache::const_iterator iterator_;
 
     // Buffer large enough for a null-terminated version of any valid key.
     std::array<char, internal::Entry::kMaxKeyLength + 1> key_buffer_;
@@ -253,7 +253,7 @@ class KeyValueStore {
     friend class KeyValueStore;
 
     constexpr iterator(const KeyValueStore& kvs,
-                       const internal::EntryCache::iterator& iterator)
+                       const internal::EntryCache::const_iterator& iterator)
         : item_(kvs, iterator) {}
 
     Item item_;

@@ -381,7 +381,7 @@ KeyValueStore::iterator& KeyValueStore::iterator::operator++() {
 }
 
 KeyValueStore::iterator KeyValueStore::begin() const {
-  internal::EntryCache::iterator cache_iterator = entry_cache_.begin();
+  internal::EntryCache::const_iterator cache_iterator = entry_cache_.begin();
   // Skip over any deleted entries at the start of the descriptor list.
   while (cache_iterator != entry_cache_.end() &&
          cache_iterator->state() != EntryState::kValid) {

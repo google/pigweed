@@ -166,6 +166,34 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntryInSameSector) {
   }
 }
 
+TEST_F(EmptyEntryCache, Iterator_Mutable_CanModify) {
+  entries_.AddNew(kDescriptor, 1);
+  EntryCache::iterator it = entries_.begin();
+
+  static_assert(kRedundancy > 1);
+  it->AddNewAddress(1234);
+
+  EXPECT_EQ(1u, it->first_address());
+  EXPECT_EQ(1u, (*it).addresses()[0]);
+  EXPECT_EQ(1234u, it->addresses()[1]);
+}
+
+TEST_F(EmptyEntryCache, Iterator_Const) {
+  entries_.AddNew(kDescriptor, 99);
+  EntryCache::const_iterator it = entries_.cbegin();
+
+  EXPECT_EQ(99u, (*it).first_address());
+  EXPECT_EQ(99u, it->first_address());
+}
+
+TEST_F(EmptyEntryCache, Iterator_Const_CanBeAssignedFromMutable) {
+  entries_.AddNew(kDescriptor, 99);
+  EntryCache::const_iterator it = entries_.begin();
+
+  EXPECT_EQ(99u, (*it).first_address());
+  EXPECT_EQ(99u, it->first_address());
+}
+
 constexpr auto kTheEntry = AsBytes(uint32_t(12345),  // magic
                                    uint32_t(0),      // checksum
                                    uint8_t(0),       // alignment (16 B)

@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <type_traits>
 
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
@@ -74,7 +75,61 @@ class EntryMetadata {
 // Tracks entry metadata. Combines KeyDescriptors and with their associated
 // addresses.
 class EntryCache {
+ private:
+  enum Constness : bool { kMutable = false, kConst = true };
+
+  // Iterates over the EntryCache as EntryMetadata objects.
+  template <Constness kIsConst>
+  class Iterator {
+   public:
+    using value_type =
+        std::conditional_t<kIsConst, const EntryMetadata, EntryMetadata>;
+
+    Iterator& operator++() {
+      ++metadata_.descriptor_;
+      return *this;
+    }
+    Iterator& operator++(int) { return operator++(); }
+
+    // Updates the internal EntryMetadata object.
+    value_type& operator*() const {
+      metadata_.addresses_ = entry_cache_->addresses(
+          metadata_.descriptor_ - entry_cache_->descriptors_.begin());
+      return metadata_;
+    }
+    value_type* operator->() const { return &operator*(); }
+
+    constexpr bool operator==(const Iterator& rhs) const {
+      return metadata_.descriptor_ == rhs.metadata_.descriptor_;
+    }
+    constexpr bool operator!=(const Iterator& rhs) const {
+      return metadata_.descriptor_ != rhs.metadata_.descriptor_;
+    }
+
+    // Allow non-const to convert to const.
+    operator Iterator<kConst>() const {
+      return {entry_cache_, metadata_.descriptor_};
+    }
+
+   private:
+    friend class EntryCache;
+
+    using Cache = std::conditional_t<kIsConst, const EntryCache, EntryCache>;
+
+    constexpr Iterator(Cache* entry_cache, KeyDescriptor* descriptor)
+        : entry_cache_(entry_cache), metadata_(*descriptor, {}) {}
+
+    Cache* entry_cache_;
+
+    // Mark this mutable so it can be updated in the const operator*() method.
+    // This allows lazy updating of the EntryMetadata.
+    mutable EntryMetadata metadata_;
+  };
+
  public:
+  using iterator = Iterator<kMutable>;
+  using const_iterator = Iterator<kConst>;
+
   using Address = FlashPartition::Address;
 
   // The type to use for an address list with the specified number of entries
@@ -152,47 +207,13 @@ class EntryCache {
   // The maximum number of entries supported by this EntryCache.
   size_t max_entries() const { return descriptors_.max_size(); }
 
-  // Iterates over the EntryCache as EntryMetadata objects.
-  class iterator {
-   public:
-    iterator& operator++() {
-      ++metadata_.descriptor_;
-      return *this;
-    }
-    iterator& operator++(int) { return operator++(); }
+  iterator begin() { return {this, descriptors_.begin()}; }
+  const_iterator begin() const { return cbegin(); }
+  const_iterator cbegin() const { return {this, descriptors_.begin()}; }
 
-    // Updates the EntryMetadata object.
-    const EntryMetadata& operator*() const {
-      metadata_.addresses_ = entry_cache_.addresses(
-          metadata_.descriptor_ - entry_cache_.descriptors_.begin());
-      return metadata_;
-    }
-    const EntryMetadata* operator->() const { return &operator*(); }
-
-    constexpr bool operator==(const iterator& rhs) const {
-      return metadata_.descriptor_ == rhs.metadata_.descriptor_;
-    }
-    constexpr bool operator!=(const iterator& rhs) const {
-      return metadata_.descriptor_ != rhs.metadata_.descriptor_;
-    }
-
-   private:
-    friend class EntryCache;
-
-    constexpr iterator(const EntryCache* entry_cache, KeyDescriptor* descriptor)
-        : entry_cache_(*entry_cache), metadata_(*descriptor, {}) {}
-
-    const EntryCache& entry_cache_;
-
-    // Mark this mutable so it can be updated in the const operator*() method.
-    // This allows lazy updating of the EntryMetadata.
-    mutable EntryMetadata metadata_;
-  };
-
-  using const_iterator = iterator;
-
-  iterator begin() const { return iterator(this, descriptors_.begin()); }
-  iterator end() const { return iterator(this, descriptors_.end()); }
+  iterator end() { return {this, descriptors_.end()}; }
+  const_iterator end() const { return cend(); }
+  const_iterator cend() const { return {this, descriptors_.end()}; }
 
  private:
   int FindIndex(uint32_t key_hash) const;
