@@ -1083,6 +1083,60 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   EXPECT_TRUE(link_error);
 }
 
+TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+
+  fbl::RefPtr<Channel> dynamic_channel;
+  auto channel_cb = [&dynamic_channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+    dynamic_channel = std::move(activated_chan);
+  };
+
+  int dynamic_channel_closed = 0;
+  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
+                          /*closed_cb=*/[&dynamic_channel_closed] { dynamic_channel_closed++; });
+
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  // The channel on kTestHandle1 should be open.
+  EXPECT_TRUE(dynamic_channel);
+  EXPECT_EQ(0, dynamic_channel_closed);
+
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+
+  // Activate a new Security Manager channel to signal the error on kTestHandle1.
+  int fixed_channel_closed = 0;
+  auto fixed_channel =
+      ActivateNewFixedChannel(kSMPChannelId, kTestHandle1,
+                              /*closed_cb=*/[&fixed_channel_closed] { fixed_channel_closed++; });
+  fixed_channel->SignalLinkError();
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, fixed_channel_closed);
+  EXPECT_EQ(1, dynamic_channel_closed);
+
+  // Simulate closing the link.
+  chanmgr()->Unregister(kTestHandle1);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, fixed_channel_closed);
+  EXPECT_EQ(1, dynamic_channel_closed);
+}
+
 TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
   bool conn_param_cb_called = false;
   auto conn_param_cb = [&conn_param_cb_called](const auto& params) {
@@ -1967,12 +2021,12 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
   RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
   EXPECT_TRUE(AllExpectedPacketsSent());
 
-  // Monitor Timer expires without a response from the peer.
+  // Monitor Timer expires without a response from the peer, signaling a link error that also
+  // disconnects this channel.
   EXPECT_FALSE(link_error);
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   RETURN_IF_FATAL(RunLoopFor(kErtmMonitorTimerDuration));
 
-  // TODO(47561): Set expectation on outbound Disconnection Request when we send that following a
-  // link error, as expected by L2CAP/ERM/BV-11-C.
   EXPECT_TRUE(link_error);
 }
 
@@ -2014,6 +2068,9 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
   RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
   EXPECT_TRUE(AllExpectedPacketsSent());
 
+  // Peer response doesn't acknowledge the I-Frame's TxSeq and we already used up MaxTransmit, so
+  // signal a link error that also disconnects this channel.
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1, kLocalId,
                                                        /*receive_seq_num=*/0,
                                                        /*is_poll_request=*/false,
@@ -2021,8 +2078,6 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  // TODO(47561): Set expectation on outbound Disconnection Request when we send that following a
-  // link error, as expected by L2CAP/ERM/BV-12-C.
   EXPECT_TRUE(link_error);
 }
 

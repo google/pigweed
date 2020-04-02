@@ -79,9 +79,13 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
       ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
       // This isn't called until Channel has been activated and the callback is destroyed by
-      // Deactivate, so even without taking |mutex_| we know that the channel is active.
-      // |link| is expected to ignore this call if it has been closed.
-      link->SignalError();
+      // Deactivate, so even without taking |mutex_| we know that the channel is active. However,
+      // this may be called from a locked context in HandleRxPdu, so defer the signal to after the
+      // critical section so that we don't deadlock when removing this channel.
+      async::PostTask(link->dispatcher(), [link] {
+        // |link| is expected to ignore this call if it has been closed.
+        link->SignalError();
+      });
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window, send_cb,
@@ -90,7 +94,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
 }
 
 const sm::SecurityProperties ChannelImpl::security() {
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard lock(mtx_);
   if (link_) {
     return link_->security();
   }
@@ -106,7 +110,7 @@ bool ChannelImpl::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback 
   bool run_task = false;
 
   {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::lock_guard lock(mtx_);
 
     // Activating on a closed link has no effect. We also clear this on
     // deactivation to prevent a channel from being activated more than once.
@@ -145,7 +149,7 @@ bool ChannelImpl::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback cl
 }
 
 void ChannelImpl::Deactivate() {
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard lock(mtx_);
 
   // De-activating on a closed link has no effect.
   if (!link_ || !active_) {
@@ -170,7 +174,7 @@ void ChannelImpl::Deactivate() {
 }
 
 void ChannelImpl::SignalLinkError() {
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard lock(mtx_);
 
   // Cannot signal an error on a closed or deactivated link.
   if (!link_ || !active_)
@@ -185,7 +189,7 @@ void ChannelImpl::SignalLinkError() {
 bool ChannelImpl::Send(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
 
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard lock(mtx_);
 
   if (!link_) {
     bt_log(ERROR, "l2cap", "cannot send SDU on a closed link");
@@ -204,7 +208,7 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   ZX_ASSERT(callback);
   ZX_ASSERT(dispatcher);
 
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::lock_guard lock(mtx_);
 
   if (!link_ || !active_) {
     bt_log(TRACE, "l2cap", "Ignoring security request on inactive channel");
@@ -222,7 +226,7 @@ void ChannelImpl::OnClosed() {
   fit::closure task;
 
   {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::lock_guard lock(mtx_);
 
     if (!link_ || !active_) {
       link_ = nullptr;
@@ -245,7 +249,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
   fit::closure task;
 
   {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::lock_guard lock(mtx_);
 
     // link_ may be nullptr if a pdu is received after the channel has been deactivated but
     // before LogicalLink::RemoveChannel has been dispatched

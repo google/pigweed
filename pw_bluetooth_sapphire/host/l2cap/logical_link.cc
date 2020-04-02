@@ -363,10 +363,24 @@ void LogicalLink::SignalError() {
     return;
   }
 
+  bt_log(INFO, "l2cap", "Signal upper layer error on link %#.4x; closing all channels", handle());
+
   if (link_error_cb_) {
     async::PostTask(link_error_dispatcher_, std::move(link_error_cb_));
     link_error_dispatcher_ = nullptr;
   }
+
+  for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
+    auto& [_, channel] = *channel_iter++;
+
+    // Signal the channel, as it did not request the closure.
+    channel->OnClosed();
+
+    // This erases from |channel_| and invalidates any iterator pointing to |channel|.
+    RemoveChannel(channel.get());
+  }
+
+  // Link is expected to be closed by its owner.
 }
 
 void LogicalLink::Close() {
