@@ -12,6 +12,7 @@
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace l2cap {
@@ -163,6 +164,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   std::list<PendingPdu> pending_pdus_;
   async::TaskClosure receiver_ready_poll_task_;
   async::TaskClosure monitor_task_;
+
+  fxl::ThreadChecker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeTxEngine);
 };
