@@ -220,6 +220,41 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   RunLoopUntilIdle();
 }
 
+// Tests receiving an empty Channel results in an error propagated through the callback.
+TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
+  auto pairing_delegate =
+      std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
+  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  // Approve pairing requests.
+  pairing_delegate->SetConfirmPairingCallback(
+      [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
+  pairing_delegate->SetCompletePairingCallback(
+      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  // Make the l2cap channel creation fail.
+  data_domain()->set_simulate_open_channel_failure(true);
+
+  bt::l2cap::ChannelParameters expected_params;
+  expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
+  expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
+  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                            expected_params);
+
+  fidlbredr::ChannelParameters fidl_params;
+  fidl_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
+  fidl_params.set_max_rx_sdu_size(bt::l2cap::kMinACLMTU);
+  auto sock_cb = [](auto result) {
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(fuchsia::bluetooth::ErrorCode::FAILED, result.err());
+  };
+  // Initiates pairing
+
+  fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
+
+  client()->Connect(peer_id, kPSM, std::move(fidl_params), std::move(sock_cb));
+  RunLoopUntilIdle();
+}
+
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
        AddServiceChannelParametersReceivedInOnChannelConnectedCallback) {
   fidlbredr::ChannelParameters fidl_chan_params;

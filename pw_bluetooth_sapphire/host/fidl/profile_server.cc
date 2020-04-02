@@ -433,8 +433,13 @@ void ProfileServer::Search(
 void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
                             fidlbredr::ChannelParameters parameters, ConnectCallback callback) {
   bt::PeerId id{peer_id.value};
-
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
+    if (!chan_sock) {
+      bt_log(SPEW, "profile_server", "Channel socket is empty, returning failed.");
+      cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+      return;
+    }
+
     cb(fit::ok(ChannelSocketToFidlChannel(std::move(chan_sock))));
   };
   ZX_DEBUG_ASSERT(adapter());
