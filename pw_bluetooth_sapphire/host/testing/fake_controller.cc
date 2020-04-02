@@ -958,7 +958,7 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   uint8_t key[] = {0xc0, 0xde, 0xfa, 0x57, 0x4b, 0xad, 0xf0, 0x0d,
                    0xa7, 0x60, 0x06, 0x1e, 0xca, 0x1e, 0xca, 0xfe};
   std::copy(key, key + sizeof(key), link_key_event.link_key);
-  link_key_event.key_type = 5;  // Authenticated Combination Key generated from P-192
+  link_key_event.key_type = 4;  // Authenticated Combination Key generated from P-192
   SendEvent(hci::kLinkKeyNotificationEventCode,
             BufferView(&link_key_event, sizeof(link_key_event)));
 

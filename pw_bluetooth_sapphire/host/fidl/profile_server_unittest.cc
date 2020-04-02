@@ -206,7 +206,12 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   fidlbredr::ChannelParameters fidl_params;
   fidl_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
   fidl_params.set_max_rx_sdu_size(bt::l2cap::kMinACLMTU);
-  auto sock_cb = [](auto /*result*/) {};
+
+  // Expect a non-empty channel result.
+  auto sock_cb = [](auto result) {
+    EXPECT_TRUE(result.is_response());
+    EXPECT_TRUE(!result.response().ResultValue_().IsEmpty());
+  };
   // Initiates pairing
 
   fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
