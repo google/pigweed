@@ -53,6 +53,20 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "freelist_heap",
+    srcs = [
+        "freelist_heap.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/freelist_heap.h",
+    ],
+    deps = [
+        ":block",
+        ":freelist",
+    ],
+)
+
 pw_cc_test(
     name = "block_test",
     srcs = [
@@ -75,5 +89,15 @@ pw_cc_test(
         "//pw_span",
         "//pw_status",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "freelist_heap_test",
+    srcs = [
+        "freelist_heap_test.cc",
+    ],
+    deps = [
+        ":freelist_heap",
     ],
 )

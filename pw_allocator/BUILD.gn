@@ -23,6 +23,7 @@ group("pw_allocator") {
   deps = [
     ":block",
     ":freelist",
+    ":freelist_heap",
   ]
 }
 
@@ -49,10 +50,23 @@ source_set("freelist") {
   sources += public
 }
 
+source_set("freelist_heap") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_allocator/freelist_heap.h" ]
+  public_deps = [
+    ":block",
+    ":freelist",
+    "$dir_pw_span",
+  ]
+  sources = [ "freelist_heap.cc" ]
+  sources += public
+}
+
 pw_test_group("tests") {
   tests = [
     ":block_test",
     ":freelist_test",
+    ":freelist_heap_test",
   ]
 }
 
@@ -64,6 +78,11 @@ pw_test("block_test") {
 pw_test("freelist_test") {
   deps = [ ":freelist" ]
   sources = [ "freelist_test.cc" ]
+}
+
+pw_test("freelist_heap_test") {
+  deps = [ ":freelist_heap" ]
+  sources = [ "freelist_heap_test.cc" ]
 }
 
 pw_doc_group("docs") {
