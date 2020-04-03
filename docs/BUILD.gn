@@ -70,6 +70,7 @@ pw_doc_gen("docs") {
     "$dir_pw_docgen:docs",
     "$dir_pw_doctor:docs",
     "$dir_pw_env_setup:docs",
+    "$dir_pw_fuzzer:docs",
     "$dir_pw_kvs:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_basic:docs",
