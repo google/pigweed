@@ -23,7 +23,10 @@ config("default_config") {
 pw_facade("pw_assert") {
   backend = dir_pw_assert_backend
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_assert/assert.h" ]
+  public = [
+    "public/pw_assert/assert.h",
+    "public/pw_assert/internal/assert_impl.h",
+  ]
   public_deps = [ dir_pw_preprocessor ]
 }
 
