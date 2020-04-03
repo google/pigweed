@@ -47,9 +47,9 @@ _LOG = logging.getLogger(__name__)
 # Initialization
 #
 def init_cipd(ctx: PresubmitContext):
-    # TODO(mohrr) invoke by importing rather than by subprocess.
+    # TODO(mohrr): invoke by importing rather than by subprocess.
 
-    # TODO(pwbug/138) find way to support dependent project package files.
+    # TODO(pwbug/138): find way to support dependent project package files.
 
     cmd = [
         sys.executable,
@@ -84,9 +84,9 @@ def init_virtualenv(ctx: PresubmitContext):
                                                      'pw_env_setup',
                                                      'virtualenv_setup')
 
-    # TODO(pwbug/138) find way to support dependent project requirements.
+    # TODO(pwbug/138): find way to support dependent project requirements.
 
-    # For speed, don't build the venv if it exists. Use --clean to recreate it.
+    # For speed, don't build the venv if it exists. Use --clear-py to rebuild.
     if not ctx.output_directory.joinpath('pyvenv.cfg').is_file():
         call(
             'python3',
@@ -522,30 +522,28 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
         help='Output directory (default: <repo root>/.presubmit)',
     )
 
-    parser.add_argument(
+    exclusive = parser.add_mutually_exclusive_group()
+    exclusive.add_argument(
+        '--clear',
         '--clean',
         action='store_true',
-        help='Delete the entire output directory before starting.',
+        help='Delete the presubmit output directory and exit.',
     )
-    parser.add_argument(
-        '--clean-py',
+    exclusive.add_argument(
+        '--clear-py',
         action='store_true',
-        help=('Delete the Python virtualenv in the output directory before '
-              'starting.'),
+        help='Delete the Python virtualenv and exit.',
     )
-
-    exclusive = parser.add_mutually_exclusive_group()
     exclusive.add_argument(
         '--install',
         action='store_true',
-        help='Install the presubmit as a Git pre-push hook and exits.')
+        help='Install the presubmit as a Git pre-push hook and exit.')
     exclusive.add_argument('-p',
                            '--program',
                            dest='program_name',
                            choices=[x for x in PROGRAMS if x != 'broken'],
                            default='full',
                            help='Which presubmit program to run')
-
     exclusive.add_argument(
         '--step',
         dest='steps',
@@ -561,8 +559,8 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
 
 def main(
         program_name: str,
-        clean: bool,
-        clean_py: bool,
+        clear: bool,
+        clear_py: bool,
         install: bool,
         repository: Path,
         output_directory: Path,
@@ -577,13 +575,22 @@ def main(
     if not output_directory:
         output_directory = pw_presubmit.git_repo_path('.presubmit',
                                                       repo=repository)
-    environment = output_directory
-    _LOG.debug('Using environment at %s', environment)
+    _LOG.debug('Using environment at %s', output_directory)
 
-    if clean and environment.exists():
-        shutil.rmtree(environment)
-    elif clean_py and environment.joinpath('init_virtualenv').exists():
-        shutil.rmtree(environment.joinpath('init_virtualenv'))
+    if clear or clear_py:
+        _LOG.info('Clearing presubmit%s environment',
+                  '' if clear else ' Python')
+
+        if clear and output_directory.exists():
+            shutil.rmtree(output_directory)
+            _LOG.info('Deleted %s', output_directory)
+
+        init_venv = output_directory.joinpath('init_virtualenv')
+        if clear_py and init_venv.exists():
+            shutil.rmtree(init_venv)
+            _LOG.info('Deleted %s', init_venv)
+
+        return 0
 
     if install:
         install_hook(__file__, 'pre-push',
