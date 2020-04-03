@@ -194,6 +194,11 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
     le_conn_params_cb_ = std::move(callback);
   }
 
+  // Sets a callback to be invoked just before LE Read Remote Feature commands are handled.
+  void set_le_read_remote_features_callback(fit::closure callback) {
+    le_read_remote_features_cb_ = std::move(callback);
+  }
+
   // Sends a HCI event with the given parameters.
   void SendEvent(hci::EventCode event_code, const ByteBuffer& payload);
 
@@ -370,6 +375,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci::ReadEncryptionKeySizeParams& params);
 
+  // Called when a HCI_LE_Read_Remote_Features_Command is received.
+  void OnLEReadRemoteFeaturesCommand(const hci::LEReadRemoteFeaturesCommandParams& params);
+
   // FakeControllerBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
@@ -430,6 +438,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   fit::closure advertising_state_cb_;
   ConnectionStateCallback conn_state_cb_;
   LEConnectionParametersCallback le_conn_params_cb_;
+  fit::closure le_read_remote_features_cb_;
 
   // Called when ACL data packets received.
   DataCallback data_callback_;

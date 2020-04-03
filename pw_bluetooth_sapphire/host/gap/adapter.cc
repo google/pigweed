@@ -599,6 +599,7 @@ uint64_t Adapter::BuildLEEventMask() {
   ENABLE_EVT(kLEConnectionComplete);
   ENABLE_EVT(kLEConnectionUpdateComplete);
   ENABLE_EVT(kLELongTermKeyRequest);
+  ENABLE_EVT(kLEReadRemoteFeaturesComplete);
 
 #undef ENABLE_EVT
 

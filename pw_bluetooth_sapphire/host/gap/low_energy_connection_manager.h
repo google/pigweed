@@ -18,6 +18,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
@@ -116,16 +117,15 @@ class LowEnergyConnectionManager final {
   // false, if |peer_id| is not recognized, otherwise:
   //
   //   * If the requested peer is already connected, this method
-  //     asynchronously returns a LowEnergyConnectionRef without sending any
-  //     requests to the controller. This is done for both local and remote
-  //     initiated connections (i.e. the local adapter can either be in the LE
-  //     central or peripheral roles). |callback| always succeeds.
+  //     asynchronously returns a LowEnergyConnectionRef after interrogation (if necessary).
+  //     This is done for both local and remote initiated connections (i.e. the local adapter
+  //     can either be in the LE central or peripheral roles).
   //
   //   * If the requested peer is NOT connected, then this method initiates a
   //     connection to the requested peer using one of the GAP central role
   //     connection establishment procedures described in Core Spec v5.0, Vol 3,
-  //     Part C, Section 9.3. A LowEnergyConnectionRef is asynchronously
-  //     returned to the caller once the connection has been set up.
+  //     Part C, Section 9.3. The peer is then interrogated. A LowEnergyConnectionRef is
+  //     asynchronously returned to the caller once the connection has been set up.
   //
   //     The status of the procedure is reported in |callback| in the case of an
   //     error.
@@ -143,17 +143,20 @@ class LowEnergyConnectionManager final {
   // disconnected.
   bool Disconnect(PeerId peer_id);
 
-  // Initializes a new connection over the given |link| and returns a connection
-  // reference. Returns nullptr if the connection was rejected.
+  // Initializes a new connection over the given |link| and asynchronously returns a connection
+  // reference.
   //
   // |link| must be the result of a remote initiated connection.
+  //
+  // |callback| will be called with a connection status and connection reference. The connection
+  // reference will be nullptr if the connection was rejected (as indicated by a failure status).
   //
   // TODO(armansito): Add an |own_address| parameter for the locally advertised
   // address that was connected to.
   //
   // A link with the given handle should not have been previously registered.
-  LowEnergyConnectionRefPtr RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
-                                                        sm::BondableMode bondable_mode);
+  void RegisterRemoteInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode,
+                                   ConnectionResultCallback callback);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
   PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
@@ -243,11 +246,11 @@ class LowEnergyConnectionManager final {
   // Initiates a connection attempt to |peer|.
   void RequestCreateConnection(Peer* peer, sm::BondableMode bondable_mode);
 
-  // Initializes the connection to the peer with the given identifier and
-  // returns the initial reference to it. This method is responsible for setting
+  // Initializes the connection to the peer with the given identifier, performs interrogation,
+  // and returns the initial reference to it via |callback|. This method is responsible for setting
   // up all data bearers.
-  LowEnergyConnectionRefPtr InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
-                                                 sm::BondableMode bondable_mode);
+  void InitializeConnection(PeerId peer_id, hci::ConnectionPtr link, sm::BondableMode bondable_mode,
+                            ConnectionResultCallback callback);
 
   // Adds a new connection reference to an existing connection to the peer
   // with the ID |peer_id| and returns it. Returns nullptr if
@@ -267,8 +270,13 @@ class LowEnergyConnectionManager final {
   void CleanUpConnection(std::unique_ptr<internal::LowEnergyConnection> conn);
 
   // Called by |connector_| when a new locally initiated LE connection has been
-  // created.
+  // created. Notifies pending connection request callbacks when connection initialization
+  // completes.
   void RegisterLocalInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode);
+
+  // Called by RegisterLocalInitiatedLink() when connection has been initialized.
+  void OnLocalInitiatedLinkInitialized(hci::Status status, LowEnergyConnectionRefPtr conn_ref,
+                                       PeerId peer_id);
 
   // Updates |peer_cache_| with the given |link| and returns the corresponding
   // Peer.
@@ -376,6 +384,10 @@ class LowEnergyConnectionManager final {
   // Address manager is used to obtain local identity information during pairing
   // procedures. Expected to outlive this instance.
   hci::LocalAddressDelegate* local_address_delegate_;  // weak
+
+  // Sends HCI commands that request version and feature support information from peer
+  // controllers.
+  LowEnergyInterrogator interrogator_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

@@ -412,6 +412,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transpor
       gatt_(gatt),
       connector_(connector),
       local_address_delegate_(addr_delegate),
+      interrogator_(peer_cache, hci, dispatcher_),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(peer_cache_);
@@ -562,22 +563,28 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
   iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
 }
 
-LowEnergyConnectionRefPtr LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
-    hci::ConnectionPtr link, BondableMode bondable_mode) {
+void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
+                                                             BondableMode bondable_mode,
+                                                             ConnectionResultCallback callback) {
   ZX_DEBUG_ASSERT(link);
   bt_log(TRACE, "gap-le", "new remote-initiated link (local addr: %s): %s",
-         link->local_address().ToString().c_str(), link->ToString().c_str());
+         bt_str(link->local_address()), bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
+  auto peer_id = peer->identifier();
 
   // TODO(armansito): Use own address when storing the connection (NET-321).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
-  auto conn_ref = InitializeConnection(peer->identifier(), std::move(link), bondable_mode);
-  if (conn_ref) {
-    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-  }
-  return conn_ref;
+  InitializeConnection(peer_id, std::move(link), bondable_mode,
+                       [peer_id, cb = std::move(callback), this](
+                           hci::Status status, LowEnergyConnectionRefPtr conn_ref) {
+                         auto peer = peer_cache_->FindById(peer_id);
+                         if (conn_ref && peer) {
+                           peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+                         }
+                         cb(status, std::move(conn_ref));
+                       });
 }
 
 void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
@@ -684,23 +691,28 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer, BondableMod
                                kLEScanFastInterval, initial_params, status_cb, request_timeout_);
 }
 
-LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
-    PeerId peer_id, std::unique_ptr<hci::Connection> link, BondableMode bondable_mode) {
+void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
+                                                      std::unique_ptr<hci::Connection> link,
+                                                      BondableMode bondable_mode,
+                                                      ConnectionResultCallback callback) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
+
+  auto handle = link->handle();
 
   // TODO(armansito): For now reject having more than one link with the same
   // peer. This should change once this has more context on the local
   // destination for remote initiated connections (see NET-321).
   if (connections_.find(peer_id) != connections_.end()) {
     bt_log(TRACE, "gap-le", "multiple links from peer; connection refused");
-    return nullptr;
+    callback(hci::Status(HostError::kFailed), nullptr);
+    return;
   }
 
   // Add the connection to the L2CAP table. Incoming data will be buffered until
   // the channels are open.
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto conn_param_update_cb = [self, handle = link->handle(), peer_id](const auto& params) {
+  auto conn_param_update_cb = [self, handle, peer_id](const auto& params) {
     if (self) {
       self->OnNewLEConnectionParams(peer_id, handle, params);
     }
@@ -714,8 +726,8 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
   };
 
   // Initialize connection.
-  auto conn = std::make_unique<internal::LowEnergyConnection>(
-      peer_id, std::move(link), dispatcher_, weak_ptr_factory_.GetWeakPtr(), data_domain_, gatt_);
+  auto conn = std::make_unique<internal::LowEnergyConnection>(peer_id, std::move(link), dispatcher_,
+                                                              self, data_domain_, gatt_);
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
                                 bondable_mode);
 
@@ -725,15 +737,29 @@ LowEnergyConnectionRefPtr LowEnergyConnectionManager::InitializeConnection(
   // TODO(armansito): Should complete a few more things before returning the
   // connection:
   //    1. If this is the first time we connected to this peer:
-  //      a. Obtain LE remote features
-  //      b. If master, obtain Peripheral Preferred Connection Parameters via
+  //      a. If master, obtain Peripheral Preferred Connection Parameters via
   //         GATT if available
-  //      c. Initiate name discovery over GATT if complete name is unknown
-  //      e. If master, allow slave to initiate procedures (service discovery,
+  //      b. Initiate name discovery over GATT if complete name is unknown
+  //      c. If master, allow slave to initiate procedures (service discovery,
   //         encryption setup, etc) for kLEConnectionPauseCentral before
   //         updating the connection parameters to the slave's preferred values.
 
-  return first_ref;
+  interrogator_.Start(peer_id, handle,
+                      [conn_ref = std::move(first_ref), cb = std::move(callback),
+                       self](hci::Status status) mutable {
+                        if (!self) {
+                          return;
+                        }
+
+                        if (!status.is_success()) {
+                          // Releasing ref will disconnect.
+                          conn_ref.release();
+                          cb(status, nullptr);
+                          return;
+                        }
+
+                        cb(status, std::move(conn_ref));
+                      });
 }
 
 LowEnergyConnectionRefPtr LowEnergyConnectionManager::AddConnectionRef(PeerId peer_id) {
@@ -761,40 +787,67 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci:
                                                             BondableMode bondable_mode) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
-  bt_log(INFO, "gap-le", "new connection %s", link->ToString().c_str());
+  bt_log(INFO, "gap-le", "new connection %s", bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
 
   // Initialize the connection  and obtain the initial reference.
-  // This reference lasts until this method returns to prevent it from dropping
-  // to 0 due to an unclaimed reference while notifying pending callbacks and
-  // listeners below.
-  auto first_ref = InitializeConnection(peer->identifier(), std::move(link), bondable_mode);
+  // On successful initialization, this reference lasts until this method returns to prevent it from
+  // dropping to 0 due to an unclaimed reference while notifying pending callbacks and listeners
+  // below.
+  InitializeConnection(peer->identifier(), std::move(link), bondable_mode,
+                       [this, peer_id = peer->identifier()](hci::Status status,
+                                                            LowEnergyConnectionRefPtr first_ref) {
+                         OnLocalInitiatedLinkInitialized(status, std::move(first_ref), peer_id);
+                       });
+}
 
-  // We take care never to initiate more than one connection to the same peer.
-  ZX_DEBUG_ASSERT(first_ref);
+void LowEnergyConnectionManager::OnLocalInitiatedLinkInitialized(hci::Status status,
+                                                                 LowEnergyConnectionRefPtr conn_ref,
+                                                                 PeerId peer_id) {
+  if (!status.is_success()) {
+    ZX_ASSERT(!conn_ref);
 
-  auto conn_iter = connections_.find(peer->identifier());
-  ZX_DEBUG_ASSERT(conn_iter != connections_.end());
+    auto iter = pending_requests_.find(peer_id);
+    if (iter != pending_requests_.end()) {
+      // Remove the entry from |pending_requests_| before notifying the
+      // callbacks.
+      auto pending_req_data = std::move(iter->second);
+      pending_requests_.erase(iter);
 
-  // For now, jump to the initialized state.
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+      pending_req_data.NotifyCallbacks(status, [] { return nullptr; });
+    }
+  } else {
+    // We take care never to initiate more than one connection to the same
+    // peer.
+    ZX_ASSERT(conn_ref);
 
-  auto iter = pending_requests_.find(peer->identifier());
-  if (iter != pending_requests_.end()) {
-    // Remove the entry from |pending_requests_| before notifying the callbacks.
-    auto pending_req_data = std::move(iter->second);
-    pending_requests_.erase(iter);
+    auto conn_iter = connections_.find(peer_id);
+    ZX_ASSERT(conn_iter != connections_.end());
 
-    pending_req_data.NotifyCallbacks(hci::Status(),
-                                     [&conn_iter] { return conn_iter->second->AddRef(); });
+    auto peer = peer_cache_->FindById(peer_id);
+    ZX_ASSERT(peer);
+
+    // For now, jump to the initialized state.
+    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+
+    auto iter = pending_requests_.find(peer_id);
+    if (iter != pending_requests_.end()) {
+      // Remove the entry from |pending_requests_| before notifying the
+      // callbacks.
+      auto pending_req_data = std::move(iter->second);
+      pending_requests_.erase(iter);
+
+      pending_req_data.NotifyCallbacks(status,
+                                       [&conn_iter] { return conn_iter->second->AddRef(); });
+    }
+
+    // Release the extra reference before attempting the next connection.
+    // This will disconnect the link if no callback retained its reference.
+    conn_ref = nullptr;
   }
 
-  // Release the extra reference before attempting the next connection. This
-  // will disconnect the link if no callback retained its reference.
-  first_ref = nullptr;
-
-  ZX_DEBUG_ASSERT(!connector_->request_pending());
+  ZX_ASSERT(!connector_->request_pending());
   TryCreateNextConnection();
 }
 

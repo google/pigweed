@@ -100,6 +100,9 @@ class FakePeer {
   const hci::LEConnectionParameters& le_params() const { return le_params_; }
   void set_le_params(const hci::LEConnectionParameters& value) { le_params_ = value; }
 
+  hci::LESupportedFeatures le_features() const { return le_features_; }
+  void set_le_features(hci::LESupportedFeatures le_features) { le_features_ = le_features; }
+
   // The response status that will be returned when this device receives a LE
   // Create Connection command.
   hci::StatusCode connect_response() const { return connect_response_; }
@@ -154,6 +157,8 @@ class FakePeer {
   bool force_pending_connect_;  // Causes connection requests to remain pending.
 
   hci::LEConnectionParameters le_params_;
+
+  hci::LESupportedFeatures le_features_;
 
   bool should_batch_reports_;
   DynamicByteBuffer adv_data_;

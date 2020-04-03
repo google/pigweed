@@ -42,6 +42,7 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       connect_status_(hci::StatusCode::kSuccess),
       connect_response_(hci::StatusCode::kSuccess),
       force_pending_connect_(false),
+      le_features_(hci::LESupportedFeatures{0}),
       should_batch_reports_(false),
       gatt_server_(this) {}
 

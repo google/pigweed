@@ -224,35 +224,43 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     return;
   }
 
-  auto conn = adapter()->le_connection_manager()->RegisterRemoteInitiatedLink(std::move(link),
-                                                                              bondable_mode);
-  if (!conn) {
-    bt_log(TRACE, LOG_TAG, "incoming connection rejected");
-    return;
-  }
-
-  auto peer_id = conn->peer_identifier();
-  auto conn_handle = std::make_unique<LowEnergyConnectionServer>(std::move(conn), std::move(local));
   auto self = weak_ptr_factory_.GetWeakPtr();
-  conn_handle->set_closed_handler([self, peer_id] {
-    bt_log(TRACE, LOG_TAG, "peer disconnected");
-    if (self) {
-      // Removing the connection
-      self->connections_.erase(peer_id);
+  auto on_conn = [self, local = std::move(local), remote = std::move(remote)](
+                     bt::hci::Status status, bt::gap::LowEnergyConnectionRefPtr conn) mutable {
+    if (!self) {
+      return;
     }
-  });
+    if (!conn) {
+      bt_log(TRACE, LOG_TAG, "incoming connection rejected");
+      return;
+    }
 
-  auto* peer = adapter()->peer_cache()->FindById(peer_id);
-  ZX_ASSERT(peer);
+    auto peer_id = conn->peer_identifier();
+    auto conn_handle =
+        std::make_unique<LowEnergyConnectionServer>(std::move(conn), std::move(local));
+    conn_handle->set_closed_handler([self, peer_id] {
+      bt_log(TRACE, LOG_TAG, "peer disconnected");
+      if (self) {
+        // Removing the connection
+        self->connections_.erase(peer_id);
+      }
+    });
 
-  bt_log(TRACE, LOG_TAG, "central connected");
-  auto fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
-  binding()->events().OnPeerConnected(std::move(fidl_peer),
-                                      fidl::InterfaceHandle<fble::Connection>(std::move(remote)));
+    auto* peer = self->adapter()->peer_cache()->FindById(peer_id);
+    ZX_ASSERT(peer);
 
-  // Close the AdvertisingHandle since advertising is stopped in response to a connection.
-  advertisement_.reset();
-  connections_[peer_id] = std::move(conn_handle);
+    bt_log(TRACE, LOG_TAG, "central connected");
+    auto fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
+    self->binding()->events().OnPeerConnected(
+        std::move(fidl_peer), fidl::InterfaceHandle<fble::Connection>(std::move(remote)));
+
+    // Close the AdvertisingHandle since advertising is stopped in response to a connection.
+    self->advertisement_.reset();
+    self->connections_[peer_id] = std::move(conn_handle);
+  };
+
+  adapter()->le_connection_manager()->RegisterRemoteInitiatedLink(std::move(link), bondable_mode,
+                                                                  std::move(on_conn));
 }
 
 }  // namespace bthost

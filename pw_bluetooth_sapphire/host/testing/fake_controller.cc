@@ -76,6 +76,8 @@ void FakeController::Settings::ApplyDualModeDefaults() {
   SetBit(&lmp_features_page0, hci::LMPFeature::kRSSIwithInquiryResults);
   SetBit(&lmp_features_page0, hci::LMPFeature::kExtendedInquiryResponse);
 
+  le_features = 0;
+
   AddBREDRSupportedCommands();
   AddLESupportedCommands();
 }
@@ -130,6 +132,7 @@ void FakeController::Settings::AddLESupportedCommands() {
   SetBit(supported_commands + 26, hci::SupportedCommand::kLECreateConnection);
   SetBit(supported_commands + 26, hci::SupportedCommand::kLECreateConnectionCancel);
   SetBit(supported_commands + 27, hci::SupportedCommand::kLEConnectionUpdate);
+  SetBit(supported_commands + 27, hci::SupportedCommand::kLEReadRemoteFeatures);
 }
 
 void FakeController::Settings::ApplyLegacyLEConfig() {
@@ -1011,8 +1014,34 @@ void FakeController::OnReadEncryptionKeySizeCommand(
   RespondWithCommandComplete(hci::kReadEncryptionKeySize, BufferView(&response, sizeof(response)));
 }
 
+void FakeController::OnLEReadRemoteFeaturesCommand(
+    const hci::LEReadRemoteFeaturesCommandParams& params) {
+  if (le_read_remote_features_cb_) {
+    le_read_remote_features_cb_();
+  }
+
+  const hci::ConnectionHandle handle = letoh16(params.connection_handle);
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    RespondWithCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kLEReadRemoteFeatures, hci::kSuccess);
+
+  hci::LEReadRemoteFeaturesCompleteSubeventParams response;
+  response.connection_handle = params.connection_handle;
+  response.status = hci::kSuccess;
+  response.le_features = peer->le_features().le_features;
+  SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+                  BufferView(&response, sizeof(response)));
+}
+
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
+
+  bt_log(DEBUG, "fake-hci", "received command packet with opcode: %#.4x", opcode);
+
   if (MaybeRespondWithDefaultStatus(opcode))
     return;
 
@@ -1543,7 +1572,13 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       OnReadEncryptionKeySizeCommand(params);
       break;
     }
+    case hci::kLEReadRemoteFeatures: {
+      const auto& params = command_packet.payload<hci::LEReadRemoteFeaturesCommandParams>();
+      OnLEReadRemoteFeaturesCommand(params);
+      break;
+    }
     default: {
+      bt_log(WARN, "fake-hci", "received unhandled command with opcode: %#.4x", opcode);
       hci::SimpleReturnParams params;
       params.status = hci::StatusCode::kUnknownCommand;
       RespondWithCommandComplete(opcode, BufferView(&params, sizeof(params)));

@@ -1030,8 +1030,18 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
   // A Peer should now exist in the cache.
@@ -1040,6 +1050,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   EXPECT_EQ(peer->identifier(), conn_ref->peer_identifier());
   EXPECT_TRUE(peer->connected());
   EXPECT_TRUE(peer->le()->connected());
+  EXPECT_TRUE(peer->version().has_value());
+  EXPECT_TRUE(peer->le()->features().has_value());
 
   conn_ref = nullptr;
 
@@ -1065,8 +1077,13 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrP
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
+  LowEnergyConnectionRefPtr conn_ref;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&conn_ref](hci::Status status, LowEnergyConnectionRefPtr conn) {
+        conn_ref = std::move(conn);
+      });
+  RunLoopUntilIdle();
   ASSERT_TRUE(conn_ref);
 
   EXPECT_EQ(peer->identifier(), conn_ref->peer_identifier());
@@ -1337,9 +1354,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PassBondableThroughRemoteInitiatedLin
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable);
-
+  LowEnergyConnectionRefPtr conn_ref;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&conn_ref](hci::Status status, LowEnergyConnectionRefPtr conn) {
+        conn_ref = std::move(conn);
+      });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(conn_ref);
@@ -1358,9 +1378,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PassNonBondableThroughRemoteInitiated
   auto link = MoveLastRemoteInitiated();
   ASSERT_TRUE(link);
 
-  LowEnergyConnectionRefPtr conn_ref =
-      conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::NonBondable);
-
+  LowEnergyConnectionRefPtr conn_ref;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::NonBondable,
+      [&conn_ref](hci::Status status, LowEnergyConnectionRefPtr conn) {
+        conn_ref = std::move(conn);
+      });
   RunLoopUntilIdle();
 
   ASSERT_TRUE(conn_ref);
@@ -1456,6 +1479,100 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionF
 
   EXPECT_TRUE(ref_cleaned_up);
   EXPECT_TRUE(disconnected);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, SuccessfulInterrogationSetsPeerVersionAndFeatures) {
+  constexpr hci::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer->le());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  fake_peer->set_le_features(kLEFeatures);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  conn_mgr()->Connect(
+      peer->identifier(), [&](auto, auto c) { conn = std::move(c); }, BondableMode::Bondable);
+
+  EXPECT_FALSE(peer->version().has_value());
+  EXPECT_FALSE(peer->le()->features().has_value());
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->version().has_value());
+  EXPECT_TRUE(peer->le()->features().has_value());
+  EXPECT_EQ(kLEFeatures.le_features, peer->le()->features()->le_features);
+  EXPECT_FALSE(peer->temporary());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectInterrogationFailure) {
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer->le());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  std::optional<hci::Status> status;
+  conn_mgr()->Connect(
+      peer->identifier(),
+      [&](auto cb_status, auto c) {
+        conn = std::move(c);
+        status = cb_status;
+      },
+      BondableMode::Bondable);
+  ASSERT_FALSE(peer->le()->features().has_value());
+
+  // Remove fake peer so LE Read Remote Features command fails during interrogation.
+  test_device()->set_le_read_remote_features_callback(
+      [this]() { test_device()->RemovePeer(kAddress0); });
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(conn);
+  EXPECT_FALSE(peer->connected());
+  EXPECT_FALSE(peer->le()->connected());
+  EXPECT_FALSE(peer->temporary());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailure) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+
+  // Remove fake peer so LE Read Remote Features command fails during interrogation.
+  test_device()->set_le_read_remote_features_callback(
+      [this]() { test_device()->RemovePeer(kAddress0); });
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status.has_value());
+  EXPECT_FALSE(status->is_success());
+  EXPECT_FALSE(conn_ref);
+  // A Peer should now exist in the cache.
+  auto* peer = peer_cache()->FindByAddress(kAddress0);
+  ASSERT_TRUE(peer);
+  EXPECT_FALSE(peer->connected());
+  EXPECT_FALSE(peer->le()->connected());
+  EXPECT_TRUE(peer->temporary());
 }
 
 // Tests for assertions that enforce invariants.

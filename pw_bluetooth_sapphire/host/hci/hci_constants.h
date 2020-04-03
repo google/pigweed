@@ -451,7 +451,7 @@ enum class SupportedCommand : uint8_t {
   kLEConnectionUpdate             = (1 << 2),
   kLESetHostChannelClassification = (1 << 3),
   kLEReadChannelMap               = (1 << 4),
-  kLEReadRemoteUsedFeatures       = (1 << 5),
+  kLEReadRemoteFeatures           = (1 << 5),
   kLEEncrypt                      = (1 << 6),
   kLERand                         = (1 << 7),
 
