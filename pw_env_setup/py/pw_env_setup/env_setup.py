@@ -96,6 +96,37 @@ class _Result:
         return self._messages
 
 
+def _get_env(varname):
+    globs = os.environ.get(varname, '').split(os.pathsep)
+    unique_globs = []
+    for pat in globs:
+        if pat and pat not in unique_globs:
+            unique_globs.append(pat)
+
+    files = []
+    warnings = []
+    for pat in unique_globs:
+        if pat:
+            matches = glob.glob(pat)
+            if not matches:
+                warnings.append(
+                    'warning: pattern "{}" in {} matched 0 files'.format(
+                        pat, varname))
+            files.extend(matches)
+
+    if not files:
+        warnings.append('warning: variable {} matched 0 files'.format(varname))
+
+    return files, warnings
+
+
+def result_func(glob_warnings):
+    def result(status, *args):
+        return _Result(status, *([str(x) for x in glob_warnings] + list(args)))
+
+    return result
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 class EnvSetup(object):
@@ -183,14 +214,15 @@ Then use `set +x` to go back to normal.
             with spin():
                 result = step()
 
+            self._log(result.status_str())
+
             self._env.echo(result.status_str())
             for message in result.messages():
+                sys.stderr.write('{}\n'.format(message))
                 self._env.echo(message)
 
             if not result.ok():
                 return -1
-
-            self._log('done')
 
         self._log('')
         self._env.echo('')
@@ -220,27 +252,33 @@ Then use `set +x` to go back to normal.
 
         cipd_client = cipd_wrapper.init(install_dir, silent=True)
 
-        package_files = glob.glob(
-            os.path.join(self._setup_root, 'cipd_setup', '*.json'))
-        if not cipd_update.update(
-                cipd=cipd_client,
-                root_install_dir=install_dir,
-                package_files=package_files,
-                cache_dir=self._cipd_cache_dir,
-                env_vars=self._env,
-        ):
-            return _Result(_Result.Status.FAILED)
+        package_files, glob_warnings = _get_env('PW_CIPD_PACKAGE_FILES')
+        result = result_func(glob_warnings)
 
-        return _Result(_Result.Status.DONE)
+        if not package_files:
+            return result(_Result.Status.SKIPPED)
+
+        if not cipd_update.update(cipd=cipd_client,
+                                  root_install_dir=install_dir,
+                                  package_files=package_files,
+                                  cache_dir=self._cipd_cache_dir,
+                                  env_vars=self._env):
+            return result(_Result.Status.FAILED)
+
+        return result(_Result.Status.DONE)
 
     def virtualenv(self):
         """Setup virtualenv."""
 
         venv_path = os.path.join(self._pw_root, '.python3-env')
 
-        requirements = os.path.join(self._setup_root, 'virtualenv_setup',
-                                    'requirements.txt')
+        requirements, req_glob_warnings = _get_env(
+            'PW_VIRTUALENV_REQUIREMENTS')
+        setup_py_roots, setup_glob_warnings = _get_env(
+            'PW_VIRTUALENV_SETUP_PY_ROOTS')
+        result = result_func(req_glob_warnings + setup_glob_warnings)
 
+        # TODO(pwbug/138) don't hardcode the path to Python.
         cipd_bin = os.path.join(
             self._pw_root,
             '.cipd',
@@ -262,19 +300,22 @@ Then use `set +x` to go back to normal.
 
         python = os.path.join(cipd_bin, py_executable)
 
-        if not virtualenv_setup.install(
-                venv_path=venv_path,
-                requirements=[requirements],
-                python=python,
-                env=self._env,
-        ):
-            return _Result(_Result.Status.FAILED)
+        if not requirements and not setup_py_roots:
+            return result(_Result.Status.SKIPPED)
 
-        return _Result(_Result.Status.DONE)
+        if not virtualenv_setup.install(venv_path=venv_path,
+                                        requirements=requirements,
+                                        setup_py_roots=setup_py_roots,
+                                        python=python,
+                                        env=self._env):
+            return result(_Result.Status.FAILED)
+
+        return result(_Result.Status.DONE)
 
     def host_tools(self):
         # The host tools are grabbed from CIPD, at least initially. If the
         # user has a current host build, that build will be used instead.
+        # TODO(mohrr) find a way to do stuff like this for all projects.
         host_dir = os.path.join(self._pw_root, 'out', 'host')
         self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
         return _Result(_Result.Status.DONE)
@@ -288,10 +329,18 @@ Then use `set +x` to go back to normal.
                 '          to enable Rust. (Rust is usually not needed.)',
             )
 
-        if not cargo_setup.install(pw_root=self._pw_root, env=self._env):
-            return _Result(_Result.Status.FAILED)
+        package_files, glob_warnings = _get_env('PW_CARGO_PACKAGE_FILES')
+        result = result_func(glob_warnings)
 
-        return _Result(_Result.Status.DONE)
+        if not package_files:
+            return result(_Result.Status.SKIPPED)
+
+        if not cargo_setup.install(pw_root=self._pw_root,
+                                   package_files=package_files,
+                                   env=self._env):
+            return result(_Result.Status.FAILED)
+
+        return result(_Result.Status.DONE)
 
 
 def parse(argv=None):

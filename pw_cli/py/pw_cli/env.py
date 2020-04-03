@@ -40,6 +40,11 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_LUCI_CIPD_INSTALL_DIR')
     parser.add_var('PW_CIPD_INSTALL_DIR')
 
+    parser.add_var('PW_CIPD_PACKAGE_FILES')
+    parser.add_var('PW_VIRTUALENV_REQUIREMENTS')
+    parser.add_var('PW_VIRTUALENV_SETUP_PY_ROOTS')
+    parser.add_var('PW_CARGO_PACKAGE_FILES')
+
     return parser
 
 

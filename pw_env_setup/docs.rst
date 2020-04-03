@@ -37,3 +37,26 @@ project.
   experience.
 
 .. _send us a note: pigweed@googlegroups.com
+
+Projects using Pigweed can leverage ``pw_env_setup`` to install their own
+dependencies. The following environment variables are now used to pass options
+into pw_env_setup.
+
+    * ``PW_CIPD_PACKAGE_FILES``
+    * ``PW_VIRTUALENV_REQUIREMENTS``
+    * ``PW_VIRTUALENV_SETUP_PY_ROOTS``
+    * ``PW_CARGO_PACKAGE_FILES``
+
+Each of these variables can contain multiple entries separated by ``:``
+(or ``;`` on Windows) like the ``PATH`` environment variable. However, they
+will also be interpreted as globs, so
+``PW_VIRTUALENV_REQUIREMENTS="/foo/bar/*/requirements.txt"`` is perfectly
+valid. They should be full paths.
+
+Projects depending on Pigweed should set these variables and then invoke
+Pigweed's ``bootstrap.sh`` (or ``bootstrap.bat``), which will add to each of
+these variables before invoking ``pw_env_setup``. Users wanting additional
+setup can set these variables in their shell init files. Pigweed will add to
+these variables and will not remove any existing values. At the end of
+Pigweed's bootstrap process, it will reset these variables to their initial
+values.

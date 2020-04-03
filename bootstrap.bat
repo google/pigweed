@@ -48,6 +48,16 @@ if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   )
 )
 
+set _PW_OLD_CIPD_PACKAGE_FILES=%PW_CIPD_PACKAGE_FILES%
+set _PW_OLD_VIRTUALENV_REQUIREMENTS=%PW_VIRTUALENV_REQUIREMENTS%
+set _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS=%PW_VIRTUALENV_SETUP_PY_ROOTS%
+set _PW_OLD_CARGO_PACKAGE_FILES=%PW_CARGO_PACKAGE_FILES%
+
+set PW_CIPD_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\*.json;%PW_CIPD_PACKAGE_FILES%
+set PW_VIRTUALENV_REQUIREMENTS=%PW_ROOT%\pw_env_setup\py\pw_env_setup\virtualenv_setup\requirements.txt;%PW_VIRTUALENV_REQUIREMENTS%
+set PW_VIRTUALENV_SETUP_PY_ROOTS=%PW_ROOT%;%PW_VIRTUALENV_SETUP_PY_ROOTS%
+set PW_CARGO_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cargo_setup\packages.txt;%PW_CARGO_PACKAGE_FILES%
+
 set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
 set "shell_file=%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
@@ -67,6 +77,11 @@ if "%PW_SKIP_BOOTSTRAP%" == "" (
     goto finish
   )
 )
+
+set PW_CIPD_PACKAGE_FILES=%_PW_OLD_CIPD_PACKAGE_FILES%
+set PW_VIRTUALENV_REQUIREMENTS=%_PW_OLD_VIRTUALENV_REQUIREMENTS%
+set PW_VIRTUALENV_SETUP_PY_ROOTS=%_PW_OLD_VIRTUALENV_SETUP_PY_ROOTS%
+set PW_CARGO_PACKAGE_FILES=%_PW_OLD_CARGO_PACKAGE_FILES%
 
 call "%shell_file%"
 

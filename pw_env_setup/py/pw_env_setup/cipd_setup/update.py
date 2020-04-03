@@ -22,7 +22,6 @@ The stdout of this script is meant to be executed by the invoking shell.
 from __future__ import print_function
 
 import argparse
-import glob
 import json
 import os
 import shutil
@@ -137,13 +136,16 @@ def update(
         pw_root = os.environ['PW_ROOT']
 
     # Run cipd for each json file.
-    default_packages = os.path.join(pw_root, 'pw_env_setup', 'py',
-                                    'pw_env_setup', 'cipd_setup', '*.json')
-    for package_file in package_files or glob.glob(default_packages):
-        ensure_file = os.path.join(
-            root_install_dir,
-            os.path.basename(os.path.splitext(package_file)[0] + '.ensure'))
-        write_ensure_file(package_file, ensure_file)
+    for package_file in package_files:
+        if os.path.splitext(package_file)[1] == '.ensure':
+            ensure_file = package_file
+        else:
+            ensure_file = os.path.join(
+                root_install_dir,
+                os.path.basename(
+                    os.path.splitext(package_file)[0] + '.ensure'))
+            write_ensure_file(package_file, ensure_file)
+
         install_dir = os.path.join(
             root_install_dir,
             os.path.basename(os.path.splitext(package_file)[0]))

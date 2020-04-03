@@ -27,11 +27,6 @@ def git_stdout(*args, **kwargs):
     return subprocess.check_output(['git'] + list(args), **kwargs).strip()
 
 
-def git_list_files(*args, **kwargs):
-    """Run git ls-files, passing args as git params and kwargs to subprocess."""
-    return git_stdout('ls-files', *args, **kwargs).split()
-
-
 def git_repo_root(path='./'):
     """Find git repository root."""
     try:
@@ -80,11 +75,21 @@ def _check_call(args, **kwargs):
             raise
 
 
+def _find_files_by_name(roots, name):
+    matches = []
+    for root in roots:
+        for dirpart, _, files in os.walk(root):
+            if name in files:
+                matches.append(os.path.join(dirpart, name))
+    return matches
+
+
 def install(
     venv_path,
     full_envsetup=True,
     requirements=(),
     python=sys.executable,
+    setup_py_roots=(),
     env=None,
 ):
     """Creates a venv and installs all packages in this Git repo."""
@@ -120,7 +125,7 @@ def install(
     if not pw_root:
         raise GitRepoNotFound()
 
-    setup_py_files = git_list_files('setup.py', '*/setup.py', cwd=pw_root)
+    setup_py_files = _find_files_by_name(setup_py_roots, 'setup.py')
 
     # Sometimes we get an error saying "Egg-link ... does not match
     # installed location". This gets around that. The egg-link files
@@ -137,18 +142,24 @@ def install(
     pip_install('--upgrade', 'pip')
 
     def package(pkg_path):
-        return os.path.join(pw_root, os.path.dirname(pkg_path.decode()))
+        if isinstance(pkg_path, bytes) and bytes != str:
+            pkg_path = pkg_path.decode()
+        return os.path.join(pw_root, os.path.dirname(pkg_path))
 
-    package_args = tuple('--editable={}'.format(package(path))
-                         for path in setup_py_files)
+    if requirements:
+        requirement_args = tuple('--requirement={}'.format(req)
+                                 for req in requirements)
+        pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
+                    *requirement_args)
 
-    requirement_args = tuple('--requirement={}'.format(req)
-                             for req in requirements)
-
-    pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
-                *requirement_args)
-    pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
-                *package_args)
+    if setup_py_files:
+        # Run through sorted so pw_cli (on which other packages depend) comes
+        # early in the list.
+        # TODO(mohrr) come up with a way better than just using sorted().
+        package_args = tuple('--editable={}'.format(package(path))
+                             for path in sorted(setup_py_files))
+        pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
+                    *package_args)
 
     if env:
         env.set('VIRTUAL_ENV', venv_path)

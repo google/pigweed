@@ -48,11 +48,24 @@ _LOG = logging.getLogger(__name__)
 #
 def init_cipd(ctx: PresubmitContext):
     # TODO(mohrr) invoke by importing rather than by subprocess.
-    call(
+
+    # TODO(pwbug/138) find way to support dependent project package files.
+
+    cmd = [
         sys.executable,
         ctx.repository_root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
                                      'cipd_setup', 'update.py'),
-        '--install-dir', ctx.output_directory)
+        '--install-dir', ctx.output_directory,
+    ]  # yapf: disable
+
+    package_files = ctx.repository_root.joinpath('pw_env_setup', 'py',
+                                                 'pw_env_setup',
+                                                 'cipd_setup').glob('*.json')
+
+    for package_file in package_files:
+        cmd.extend(('--package-file', package_file))
+
+    call(*cmd)
 
     paths = [ctx.output_directory, ctx.output_directory.joinpath('bin')]
     for base in ctx.output_directory.glob('*'):
@@ -71,6 +84,8 @@ def init_virtualenv(ctx: PresubmitContext):
                                                      'pw_env_setup',
                                                      'virtualenv_setup')
 
+    # TODO(pwbug/138) find way to support dependent project requirements.
+
     # For speed, don't build the venv if it exists. Use --clean to recreate it.
     if not ctx.output_directory.joinpath('pyvenv.cfg').is_file():
         call(
@@ -79,6 +94,7 @@ def init_virtualenv(ctx: PresubmitContext):
             f'--venv_path={ctx.output_directory}',
             '--requirements={}'.format(
                 virtualenv_source.joinpath('requirements.txt')),
+            '--setup-py-roots={}'.format(ctx.repository_root),
         )
 
     os.environ['PATH'] = os.pathsep.join((

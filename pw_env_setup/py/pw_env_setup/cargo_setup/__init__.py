@@ -19,7 +19,7 @@ import sys
 import tempfile
 
 
-def install(pw_root, env):
+def install(pw_root, package_files, env):
     """Installs rust tools using cargo."""
     prefix = os.path.join(pw_root, '.cargo')
 
@@ -30,37 +30,35 @@ def install(pw_root, env):
     if 'CARGO_TARGET_DIR' not in os.environ:
         env.set('CARGO_TARGET_DIR', os.path.expanduser('~/.cargo-cache'))
 
-    # packages.txt contains packages one per line with two fields: package
-    # name and version.
-    package_path = os.path.join(pw_root, 'pw_env_setup', 'py', 'pw_env_setup',
-                                'cargo_setup', 'packages.txt')
-    with env(), open(package_path, 'r') as ins:
-        for line in ins:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
+    with env():
+        for package_file in package_files:
+            with open(package_file, 'r') as ins:
+                for line in ins:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
 
-            package, version = line.split()
-            cmd = [
-                'cargo',
-                'install',
-                # If downgrading (which could happen when switching branches)
-                # '--force' is required.
-                '--force',
-                '--root', prefix,
-                '--version', version,
-                package,
-            ]  # yapf: disable
+                    package, version = line.split()
+                    cmd = [
+                        'cargo',
+                        'install',
+                        # If downgrading (which could happen when switching
+                        # branches) '--force' is required.
+                        '--force',
+                        '--root', prefix,
+                        '--version', version,
+                        package,
+                    ]  # yapf: disable
 
-            # TODO(pwbug/135) Use function from common utility module.
-            with tempfile.TemporaryFile(mode='w+') as temp:
-                try:
-                    subprocess.check_call(cmd,
-                                          stdout=temp,
-                                          stderr=subprocess.STDOUT)
-                except subprocess.CalledProcessError:
-                    temp.seek(0)
-                    sys.stderr.write(temp.read())
-                    raise
+                    # TODO(pwbug/135) Use function from common utility module.
+                    with tempfile.TemporaryFile(mode='w+') as temp:
+                        try:
+                            subprocess.check_call(cmd,
+                                                  stdout=temp,
+                                                  stderr=subprocess.STDOUT)
+                        except subprocess.CalledProcessError:
+                            temp.seek(0)
+                            sys.stderr.write(temp.read())
+                            raise
 
     return True
