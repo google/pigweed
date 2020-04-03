@@ -134,6 +134,7 @@ pw_cc_test(
     deps = [
         ":pw_kvs",
         ":test_utils",
+        "//pw_log:backend",
     ],
 )
 
@@ -143,6 +144,7 @@ pw_cc_test(
     deps = [
         ":pw_kvs",
         ":test_utils",
+        "//pw_log:backend",
     ],
 )
 
@@ -153,7 +155,7 @@ pw_cc_test(
         ":crc16",
         ":pw_kvs",
         ":test_utils",
-        "//pw_log",
+        "//pw_log:backend",
     ],
 )
 
@@ -166,7 +168,7 @@ pw_cc_test(
         ":crc16",
         ":pw_kvs",
         ":test_utils",
-        "//pw_log",
+        "//pw_log:backend",
     ],
 )
 
@@ -179,6 +181,7 @@ pw_cc_test(
         ":test_partition",
         ":test_utils",
         "//pw_checksum",
+        "//pw_log:backend",
     ],
 )
 
@@ -191,6 +194,7 @@ pw_cc_test(
         ":test_partition",
         ":test_utils",
         "//pw_checksum",
+        "//pw_log:backend",
     ],
 )
 
@@ -200,6 +204,7 @@ pw_cc_test(
     deps = [
         ":pw_kvs",
         ":test_utils",
+        "//pw_log:backend",
     ],
 )
 

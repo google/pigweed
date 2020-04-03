@@ -41,6 +41,13 @@ pw_cc_library(
     name = "pw_log",
     deps = [
         ":facade",
+        PW_LOG_BACKEND + ":headers",
+    ],
+)
+
+pw_cc_library(
+    name = "backend",
+    deps = [
         PW_LOG_BACKEND,
     ],
 )
@@ -51,5 +58,8 @@ pw_cc_test(
         "basic_log_test.cc",
         "basic_log_test_plain_c.c",
     ],
-    deps = [":pw_log"],
+    deps = [
+        ":backend",
+        ":pw_log",
+    ],
 )
