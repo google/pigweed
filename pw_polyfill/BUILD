@@ -63,5 +63,6 @@ pw_cc_test(
     ],
     deps = [
         ":pw_polyfill",
+        "//pw_unit_test",
     ],
 )

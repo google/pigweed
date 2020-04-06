@@ -33,6 +33,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        PW_LOG_BACKEND + ":headers",
         "//pw_preprocessor",
     ],
 )
@@ -60,6 +61,9 @@ pw_cc_test(
     ],
     deps = [
         ":backend",
+        ":facade",
         ":pw_log",
+        "//pw_preprocessor",
+        "//pw_unit_test",
     ],
 )

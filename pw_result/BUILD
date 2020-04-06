@@ -28,10 +28,16 @@ pw_cc_library(
         "public/pw_result/result.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_status",
+    ],
 )
 
 pw_cc_test(
     name = "result_test",
-    srcs = [ "result_test.cc" ],
-    deps = ["//pw_result"],
+    srcs = ["result_test.cc"],
+    deps = [
+        ":pw_result",
+        "//pw_unit_test",
+    ],
 )

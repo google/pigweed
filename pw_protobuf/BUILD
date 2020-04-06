@@ -47,19 +47,29 @@ pw_cc_library(
 pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],
-    deps = ["//pw_protobuf"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
-    deps = ["//pw_protobuf"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(
     name = "find_test",
     srcs = ["find_test.cc"],
-    deps = ["//pw_protobuf"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
 )
 
 # TODO(frolv): Figure out how to integrate pw_protobuf codegen into Bazel.

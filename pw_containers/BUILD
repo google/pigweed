@@ -35,5 +35,8 @@ pw_cc_test(
     srcs = [
         "vector_test.cc",
     ],
-    deps = ["//pw_containers"],
+    deps = [
+        ":pw_containers",
+        "//pw_unit_test",
+    ],
 )

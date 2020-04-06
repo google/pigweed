@@ -48,22 +48,27 @@ pw_cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
     deps = [
+        ":pw_string",
         "//pw_span",
-        "//pw_string",
+        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
-    deps = ["//pw_string"],
+    deps = [
+        ":pw_string",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(
     name = "string_builder_test",
     srcs = ["string_builder_test.cc"],
     deps = [
-        "//pw_string",
+        ":pw_string",
+        "//pw_unit_test",
     ],
 )
 
@@ -71,13 +76,17 @@ pw_cc_test(
     name = "to_string_test",
     srcs = ["to_string_test.cc"],
     deps = [
+        ":pw_string",
         "//pw_status",
-        "//pw_string",
+        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
-    deps = ["//pw_string"],
+    deps = [
+        ":pw_string",
+        "//pw_unit_test",
+    ],
 )

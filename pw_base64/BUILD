@@ -44,5 +44,6 @@ pw_cc_test(
     ],
     deps = [
         ":pw_base64",
+        "//pw_unit_test",
     ],
 )

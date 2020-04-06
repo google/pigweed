@@ -42,6 +42,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_varint",
@@ -94,6 +95,7 @@ pw_cc_binary(
         ":decoder",
         ":pw_tokenizer",
         "//pw_preprocessor",
+        "//pw_span",
         "//pw_varint",
     ],
 )
@@ -121,6 +123,8 @@ pw_cc_test(
     ],
     deps = [
         ":pw_tokenizer",
+        "//pw_preprocessor",
+        "//pw_unit_test",
     ],
 )
 
@@ -131,6 +135,8 @@ pw_cc_test(
     ],
     deps = [
         ":base64",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
@@ -143,6 +149,7 @@ pw_cc_test(
     ],
     deps = [
         ":decoder",
+        "//pw_unit_test",
         "//pw_varint",
     ],
 )
@@ -154,6 +161,7 @@ pw_cc_test(
     ],
     deps = [
         ":decoder",
+        "//pw_unit_test",
     ],
 )
 
@@ -165,6 +173,8 @@ pw_cc_test(
     ],
     deps = [
         ":pw_tokenizer",
+        "//pw_preprocessor",
+        "//pw_unit_test",
     ],
 )
 
@@ -175,6 +185,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_tokenizer",
+        "//pw_unit_test",
     ],
 )
 
@@ -185,6 +196,7 @@ pw_cc_test(
     ],
     deps = [
         ":decoder",
+        "//pw_unit_test",
     ],
 )
 
@@ -197,6 +209,8 @@ pw_cc_test(
     ],
     deps = [
         ":pw_tokenizer",
+        "//pw_preprocessor",
+        "//pw_unit_test",
         "//pw_varint",
     ],
 )

@@ -55,6 +55,8 @@ pw_cc_library(
         "//pw_checksum",
         "//pw_containers",
         "//pw_log",
+        "//pw_log:facade",
+        "//pw_span",
         "//pw_status",
     ],
 )
@@ -67,6 +69,7 @@ pw_cc_library(
     deps = [
         ":pw_kvs",
         "//pw_checksum",
+        "//pw_span",
     ],
 )
 
@@ -82,8 +85,11 @@ pw_cc_library(
     includes = ["public"],
     visibility = ["//visibility:private"],
     deps = [
+        "//pw_containers",
         "//pw_kvs",
         "//pw_log",
+        "//pw_log:facade",
+        "//pw_span",
         "//pw_status",
     ],
 )
@@ -99,8 +105,10 @@ pw_cc_library(
     includes = ["public"],
     visibility = ["//visibility:private"],
     deps = [
+        "//pw_containers",
         "//pw_kvs",
         "//pw_log",
+        "//pw_log:facade",
         "//pw_status",
     ],
 )
@@ -112,6 +120,8 @@ pw_cc_test(
     ],
     deps = [
         ":pw_kvs",
+        "//pw_status",
+        "//pw_unit_test",
     ],
 )
 
@@ -123,6 +133,7 @@ pw_cc_test(
         ":pw_kvs",
         "//pw_checksum",
         "//pw_log",
+        "//pw_unit_test",
     ],
 )
 
@@ -135,6 +146,8 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
         "//pw_log:backend",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
@@ -145,6 +158,7 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
         "//pw_log:backend",
+        "//pw_unit_test",
     ],
 )
 
@@ -155,7 +169,13 @@ pw_cc_test(
         ":crc16",
         ":pw_kvs",
         ":test_utils",
+        "//pw_checksum",
         "//pw_log:backend",
+        "//pw_log:facade",
+        "//pw_span",
+        "//pw_status",
+        "//pw_string",
+        "//pw_unit_test",
     ],
 )
 
@@ -169,6 +189,7 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
         "//pw_log:backend",
+        "//pw_unit_test",
     ],
 )
 
@@ -182,6 +203,7 @@ pw_cc_test(
         ":test_utils",
         "//pw_checksum",
         "//pw_log:backend",
+        "//pw_unit_test",
     ],
 )
 
@@ -195,6 +217,9 @@ pw_cc_test(
         ":test_utils",
         "//pw_checksum",
         "//pw_log:backend",
+        "//pw_log:facade",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
@@ -205,6 +230,7 @@ pw_cc_test(
         ":pw_kvs",
         ":test_utils",
         "//pw_log:backend",
+        "//pw_unit_test",
     ],
 )
 

@@ -40,5 +40,8 @@ pw_cc_test(
         "ccitt_crc16_test.c",
         "ccitt_crc16_test.cc",
     ],
-    deps = [":pw_checksum"],
+    deps = [
+        ":pw_checksum",
+        "//pw_unit_test",
+    ],
 )

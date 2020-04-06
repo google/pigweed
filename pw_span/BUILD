@@ -32,5 +32,8 @@ pw_cc_library(
 pw_cc_test(
     name = "span_test",
     srcs = ["span_test.cc"],
-    deps = ["//pw_span"],
+    deps = [
+        ":pw_span",
+        "//pw_unit_test",
+    ],
 )

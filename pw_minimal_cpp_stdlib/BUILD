@@ -18,6 +18,10 @@ load(
     "pw_cc_test",
 )
 
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
 pw_cc_library(
     name = "pw_minimal_cpp_stdlib",
     srcs = [
@@ -68,5 +72,6 @@ pw_cc_test(
     copts = ["-nostdinc++"],
     deps = [
         ":pw_minimal_cpp_stdlib",
+        "//pw_unit_test",
     ],
 )

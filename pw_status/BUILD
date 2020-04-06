@@ -38,11 +38,17 @@ pw_cc_test(
         "status_test.c",
         "status_test.cc",
     ],
-    deps = ["//pw_status"],
+    deps = [
+        ":pw_status",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(
     name = "status_with_size_test",
     srcs = ["status_with_size_test.cc"],
-    deps = ["//pw_status"],
+    deps = [
+        ":pw_status",
+        "//pw_unit_test",
+    ],
 )

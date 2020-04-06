@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 // Macros for cleanly working with Status or StatusWithSize objects in functions
 // that return Status.

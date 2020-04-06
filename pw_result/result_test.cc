@@ -61,13 +61,13 @@ Result<float> Divide(float a, float b) {
 }
 
 TEST(Divide, ReturnOk) {
-  Result res = Divide(10, 5);
+  Result<float> res = Divide(10, 5);
   ASSERT_TRUE(res.ok());
   EXPECT_EQ(res.value(), 2.0f);
 }
 
 TEST(Divide, ReturnNotOk) {
-  Result res = Divide(10, 0);
+  Result<float> res = Divide(10, 0);
   EXPECT_FALSE(res.ok());
   EXPECT_EQ(res.status(), Status::INVALID_ARGUMENT);
 }

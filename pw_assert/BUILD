@@ -32,6 +32,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        PW_ASSERT_BACKEND + ":headers",
         "//pw_preprocessor",
     ],
 )
@@ -40,6 +41,13 @@ pw_cc_library(
     name = "pw_assert",
     deps = [
         ":facade",
+        PW_ASSERT_BACKEND + ":headers",
+    ],
+)
+
+pw_cc_library(
+    name = "backend",
+    deps = [
         PW_ASSERT_BACKEND,
     ],
 )
@@ -47,8 +55,13 @@ pw_cc_library(
 pw_cc_test(
     name = "test",
     srcs = [
-        "assert_test.cc",
         "assert_test.c",
+        "assert_test.cc",
     ],
-    deps = [":pw_assert"],
+    deps = [
+        ":backend",
+        ":facade",
+        ":pw_assert",
+        "//pw_unit_test",
+    ],
 )

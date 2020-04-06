@@ -81,6 +81,7 @@ pw_cc_library(
     deps = [
         ":pw_unit_test",
         ":simple_printing_event_handler",
+        "//pw_span",
         "//pw_sys_io",
     ],
 )
@@ -88,4 +89,7 @@ pw_cc_library(
 pw_cc_test(
     name = "framework_test",
     srcs = ["framework_test.cc"],
+    deps = [
+        ":pw_unit_test",
+    ],
 )

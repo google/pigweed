@@ -22,10 +22,7 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "pw_assert_basic",
-    srcs = [
-        "assert_basic.cc",
-    ],
+    name = "headers",
     hdrs = [
         "public/pw_assert_basic/assert_basic.h",
         "public_overrides/pw_assert_backend/assert_backend.h",
@@ -35,7 +32,19 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_assert_basic",
+    srcs = [
+        "assert_basic.cc",
+    ],
+    deps = [
+        ":headers",
         "//pw_assert:facade",
+        "//pw_preprocessor",
         "//pw_string",
         "//pw_sys_io",
     ],

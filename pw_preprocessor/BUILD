@@ -39,7 +39,10 @@ TESTS = [
     pw_cc_test(
         name = t,
         srcs = [t + ".cc"],
-        deps = ["//pw_preprocessor"],
+        deps = [
+            ":pw_preprocessor",
+            "//pw_unit_test",
+        ],
     )
     for t in TESTS
 ]

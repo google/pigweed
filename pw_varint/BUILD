@@ -32,6 +32,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_polyfill",
         "//pw_span",
     ],
 )
@@ -42,5 +43,8 @@ pw_cc_test(
         "varint_test.c",
         "varint_test.cc",
     ],
-    deps = ["//pw_varint"],
+    deps = [
+        ":pw_varint",
+        "//pw_unit_test",
+    ],
 )
