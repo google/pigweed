@@ -438,7 +438,7 @@ def source_is_in_build_files(ctx: PresubmitContext):
             missing_gn.append(path)
 
     # TODO(pwbug/176) Replace this workaround for fuzzers.
-    missing_bazel = [p for p in missing_bazel if 'fuzz' not in p.name]
+    missing_bazel = [p for p in missing_bazel if 'fuzz' not in str(p)]
 
     if missing_bazel or missing_gn:
         for build, files in [('Bazel', missing_bazel), ('GN', missing_gn)]:

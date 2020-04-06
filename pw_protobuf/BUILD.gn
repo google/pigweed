@@ -15,6 +15,7 @@
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -68,6 +69,7 @@ pw_test_group("tests") {
     ":codegen_test",
     ":decoder_test",
     ":encoder_test",
+    ":encoder_fuzzer",
     ":find_test",
   ]
 }
@@ -101,4 +103,9 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_protos/test_protos/proto2.proto",
     "pw_protobuf_protos/test_protos/repeated.proto",
   ]
+}
+
+pw_fuzzer("encoder_fuzzer") {
+  sources = [ "encoder_fuzzer.cc" ]
+  deps = [ ":pw_protobuf" ]
 }
