@@ -76,6 +76,47 @@ from pw_env_setup import spinner
 from pw_env_setup import virtualenv_setup
 
 
+# TODO(pwbug/67, pwbug/68) switch to shutil.which().
+def _which(executable,
+           pathsep=os.pathsep,
+           use_pathext=None,
+           case_sensitive=None):
+    if use_pathext is None:
+        use_pathext = (os.name == 'nt')
+    if case_sensitive is None:
+        case_sensitive = (os.name != 'nt' and sys.platform != 'darwin')
+
+    if not case_sensitive:
+        executable = executable.lower()
+
+    exts = None
+    if use_pathext:
+        exts = frozenset(os.environ['PATHEXT'].split(pathsep))
+        if not case_sensitive:
+            exts = frozenset(x.lower() for x in exts)
+        if not exts:
+            raise ValueError('empty PATHEXT')
+
+    paths = os.environ['PATH'].split(pathsep)
+    for path in paths:
+        try:
+            entries = frozenset(os.listdir(path))
+            if not case_sensitive:
+                entries = frozenset(x.lower() for x in entries)
+        except OSError:
+            continue
+
+        if exts:
+            for ext in exts:
+                if executable + ext in entries:
+                    return os.path.join(path, executable + ext)
+        else:
+            if executable in entries:
+                return os.path.join(path, executable)
+
+    return None
+
+
 class _Result:
     class Status:  # pylint: disable=too-few-public-methods
         DONE = 'done'
@@ -278,27 +319,21 @@ Then use `set +x` to go back to normal.
             'PW_VIRTUALENV_SETUP_PY_ROOTS')
         result = result_func(req_glob_warnings + setup_glob_warnings)
 
-        # TODO(pwbug/138) don't hardcode the path to Python.
-        cipd_bin = os.path.join(
-            self._pw_root,
-            '.cipd',
-            'pigweed',
-            'bin',
-        )
-        if self._is_windows:
-            # There is an issue with the virtualenv module on Windows where it
-            # expects sys.executable to be called "python.exe" or it fails to
-            # properly execute. Create a copy of python3.exe called python.exe
-            # so that virtualenv works.
-            old_python = os.path.join(cipd_bin, 'python3.exe')
-            new_python = os.path.join(cipd_bin, 'python.exe')
-            if not os.path.exists(new_python):
-                shutil.copyfile(old_python, new_python)
-            py_executable = 'python.exe'
-        else:
-            py_executable = 'python3'
+        orig_python3 = _which('python3')
+        with self._env():
+            new_python3 = _which('python3')
 
-        python = os.path.join(cipd_bin, py_executable)
+        # There is an issue with the virtualenv module on Windows where it
+        # expects sys.executable to be called "python.exe" or it fails to
+        # properly execute. If we installed Python 3 in the CIPD step we need
+        # to address this. Detect if we did so and if so create a copy of
+        # python3.exe called python.exe so that virtualenv works.
+        if orig_python3 != new_python3 and self._is_windows:
+            python3_copy = os.path.join(os.path.dirname(new_python3),
+                                        'python.exe')
+            if not os.path.exists(python3_copy):
+                shutil.copyfile(new_python3, python3_copy)
+            new_python3 = python3_copy
 
         if not requirements and not setup_py_roots:
             return result(_Result.Status.SKIPPED)
@@ -306,7 +341,7 @@ Then use `set +x` to go back to normal.
         if not virtualenv_setup.install(venv_path=venv_path,
                                         requirements=requirements,
                                         setup_py_roots=setup_py_roots,
-                                        python=python,
+                                        python=new_python3,
                                         env=self._env):
             return result(_Result.Status.FAILED)
 
