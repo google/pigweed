@@ -43,6 +43,17 @@ template("pw_fuzzer") {
         "$dir_pw_fuzzer:default_config",
         "$dir_pw_fuzzer:fuzzing",
       ]
+
+      # Metadata for this fuzzer when used as part of a pw_test_group target.
+      metadata = {
+        tests = [
+          {
+            type = "fuzzer"
+            test_name = target_name
+            test_directory = rebase_path(target_out_dir, root_build_dir)
+          },
+        ]
+      }
     }
 
     # Dummy target to satisfy `pw_test_group`. It is empty as we don't want to
