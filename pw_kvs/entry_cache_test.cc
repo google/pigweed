@@ -166,9 +166,9 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntryInSameSector) {
   }
 }
 
-TEST_F(EmptyEntryCache, Iterator_Mutable_CanModify) {
+TEST_F(EmptyEntryCache, Iterator_MutableFromConst_CanModify) {
   entries_.AddNew(kDescriptor, 1);
-  EntryCache::iterator it = entries_.begin();
+  EntryCache::iterator it = static_cast<const EntryCache&>(entries_).begin();
 
   static_assert(kRedundancy > 1);
   it->AddNewAddress(1234);

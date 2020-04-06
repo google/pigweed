@@ -117,12 +117,10 @@ class EntryCache {
    private:
     friend class EntryCache;
 
-    using Cache = std::conditional_t<kIsConst, const EntryCache, EntryCache>;
-
-    constexpr Iterator(Cache* entry_cache, KeyDescriptor* descriptor)
+    constexpr Iterator(const EntryCache* entry_cache, KeyDescriptor* descriptor)
         : entry_cache_(entry_cache), metadata_(*descriptor, {}) {}
 
-    Cache* entry_cache_;
+    const EntryCache* entry_cache_;
 
     // Mark this mutable so it can be updated in the const operator*() method.
     // This allows lazy updating of the EntryMetadata.
@@ -149,7 +147,7 @@ class EntryCache {
         redundancy_(redundancy) {}
 
   // Clears all KeyDescriptors.
-  void Reset() { descriptors_.clear(); }
+  void Reset() const { descriptors_.clear(); }
 
   // Finds the metadata for an entry matching a particular key. Searches for a
   // KeyDescriptor that matches this key and sets *metadata to point to it if
@@ -179,14 +177,14 @@ class EntryCache {
 
   // Adds a new descriptor to the descriptor list. The entry MUST be unique and
   // the EntryCache must NOT be full!
-  EntryMetadata AddNew(const KeyDescriptor& entry, Address address);
+  EntryMetadata AddNew(const KeyDescriptor& entry, Address address) const;
 
   // Adds a new descriptor, overwrites an existing one, or adds an additional
   // redundant address to one. The sector size is included for checking that
   // redundant entries are in different sectors.
   Status AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
                                 Address address,
-                                size_t sector_size_bytes);
+                                size_t sector_size_bytes) const;
 
   // Returns a pointer to an array of redundancy() addresses for temporary use.
   // This is used by the KeyValueStore to track reserved addresses when finding
@@ -210,12 +208,10 @@ class EntryCache {
   // The maximum number of entries supported by this EntryCache.
   size_t max_entries() const { return descriptors_.max_size(); }
 
-  iterator begin() { return {this, descriptors_.begin()}; }
-  const_iterator begin() const { return cbegin(); }
+  iterator begin() const { return {this, descriptors_.begin()}; }
   const_iterator cbegin() const { return {this, descriptors_.begin()}; }
 
-  iterator end() { return {this, descriptors_.end()}; }
-  const_iterator end() const { return cend(); }
+  iterator end() const { return {this, descriptors_.end()}; }
   const_iterator cend() const { return {this, descriptors_.end()}; }
 
  private:
@@ -223,7 +219,7 @@ class EntryCache {
 
   // Adds the address to the descriptor at the specified index if there is an
   // address slot available.
-  void AddAddressIfRoom(size_t descriptor_index, Address address);
+  void AddAddressIfRoom(size_t descriptor_index, Address address) const;
 
   // Returns a span of the valid addresses for the descriptor.
   span<Address> addresses(size_t descriptor_index) const;
@@ -232,7 +228,7 @@ class EntryCache {
     return &addresses_[descriptor_index * redundancy_];
   }
 
-  Address* ResetAddresses(size_t descriptor_index, Address address);
+  Address* ResetAddresses(size_t descriptor_index, Address address) const;
 
   Vector<KeyDescriptor>& descriptors_;
   FlashPartition::Address* const addresses_;

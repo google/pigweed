@@ -97,7 +97,7 @@ Status EntryCache::FindExisting(FlashPartition& partition,
 }
 
 EntryMetadata EntryCache::AddNew(const KeyDescriptor& descriptor,
-                                 Address entry_address) {
+                                 Address entry_address) const {
   // TODO(hepler): DCHECK(!full());
   Address* first_address = ResetAddresses(descriptors_.size(), entry_address);
   descriptors_.push_back(descriptor);
@@ -110,7 +110,7 @@ EntryMetadata EntryCache::AddNew(const KeyDescriptor& descriptor,
 // for a small number of keys
 Status EntryCache::AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
                                           Address address,
-                                          size_t sector_size_bytes) {
+                                          size_t sector_size_bytes) const {
   // With the new key descriptor, either add it to the descriptor table or
   // overwrite an existing entry with an older version of the key.
   const int index = FindIndex(descriptor.key_hash);
@@ -180,7 +180,8 @@ int EntryCache::FindIndex(uint32_t key_hash) const {
   return -1;
 }
 
-void EntryCache::AddAddressIfRoom(size_t descriptor_index, Address address) {
+void EntryCache::AddAddressIfRoom(size_t descriptor_index,
+                                  Address address) const {
   Address* const existing = first_address(descriptor_index);
 
   for (size_t i = 0; i < redundancy(); ++i) {
@@ -203,7 +204,7 @@ span<EntryCache::Address> EntryCache::addresses(size_t descriptor_index) const {
 }
 
 EntryCache::Address* EntryCache::ResetAddresses(size_t descriptor_index,
-                                                Address address) {
+                                                Address address) const {
   Address* first = first_address(descriptor_index);
   *first = address;
 

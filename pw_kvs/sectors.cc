@@ -157,7 +157,7 @@ Status Sectors::Find(FindMode find_mode,
 
 // TODO: Consider breaking this function into smaller sub-chunks.
 SectorDescriptor* Sectors::FindSectorToGarbageCollect(
-    span<const Address> reserved_addresses) {
+    span<const Address> reserved_addresses) const {
   const size_t sector_size_bytes = partition_.sector_size_bytes();
   SectorDescriptor* sector_candidate = nullptr;
   size_t candidate_bytes = 0;
