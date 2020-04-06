@@ -21,14 +21,34 @@ declare_args() {
   pw_sanitizer = ""
 }
 
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
 # This is added automatically by the `pw_fuzzer` template.
-config("pw_fuzzer") {
+config("fuzzing") {
   common_flags = [ "-fsanitize=fuzzer" ]
   if (pw_sanitizer != "") {
     common_flags += [ "-fsanitize=$pw_sanitizer" ]
   }
   cflags = common_flags
   ldflags = common_flags
+}
+
+source_set("pw_fuzzer") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_fuzzer/fuzzed_data_provider.h" ]
+  sources = public
+  public_deps = [ "$dir_pw_log" ]
+}
+
+# See https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
+config("fuzzing_build_mode_unsafe_for_production") {
+  defines = [ "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION" ]
+}
+
+config("fuzzing_verbose_logging") {
+  defines = [ "FUZZING_VERBOSE_LOGGING" ]
 }
 
 pw_doc_group("docs") {

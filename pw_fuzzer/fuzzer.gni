@@ -39,7 +39,10 @@ template("pw_fuzzer") {
       configs = []
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
-      configs += [ "$dir_pw_fuzzer" ]
+      configs += [
+        "$dir_pw_fuzzer:default_config",
+        "$dir_pw_fuzzer:fuzzing",
+      ]
     }
 
     # Dummy target to satisfy `pw_test_group`. It is empty as we don't want to
@@ -50,10 +53,12 @@ template("pw_fuzzer") {
     # Build a unit test that exercise the fuzz target function.
     pw_test(target_name) {
       sources = []
+      configs = []
       deps = []
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
-      sources += [ "pw_fuzzer_disabled.cc" ]
+      sources += [ "$dir_pw_fuzzer/pw_fuzzer_disabled.cc" ]
+      configs += [ "$dir_pw_fuzzer:default_config" ]
       deps += [
         "$dir_pw_log",
         "$dir_pw_unit_test",
