@@ -103,7 +103,7 @@
   {
     "path": "fuchsia/third_party/qemu/${os=linux,mac}-${arch=amd64}", 
     "tags": [
-      "git_revision:f3497771a70ba80987c80490aa688794ed971820"
+      "git_revision:487fc6fd6e173571c9842a45dd8071a23f24aaf3-2"
     ]
   }, 
   {
