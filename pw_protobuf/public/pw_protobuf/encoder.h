@@ -153,7 +153,7 @@ class Encoder {
   }
 
   // Writes a repeated fixed64 field using packed encoding.
-  Status WritePackedFixed32(uint32_t field_number,
+  Status WritePackedFixed64(uint32_t field_number,
                             span<const uint64_t> values) {
     return WriteBytes(field_number, as_bytes(values));
   }
