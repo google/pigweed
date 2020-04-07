@@ -15,12 +15,6 @@
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 
-declare_args() {
-  # Sets the sanitizer to pass to clang. Valid values are those for "-fsanitize"
-  # listed in https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html.
-  pw_sanitizer = ""
-}
-
 config("default_config") {
   include_dirs = [ "public" ]
 }

@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_toolchain/host_clang.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Creates a libFuzzer-based fuzzer executable target.

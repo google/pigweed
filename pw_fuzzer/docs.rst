@@ -64,6 +64,8 @@ When writing you fuzz target function, you may want to consider:
   those **only** when fuzzing by using LLVM's
   `FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION`_
 
+.. _build:
+
 Building fuzzers
 ================
 
@@ -98,8 +100,10 @@ To build a fuzzer, do the following:
 
 3. Build normally, e.g. using ``pw watch``.
 
-Running fuzzers
-===============
+.. _run:
+
+Running fuzzers locally
+=======================
 
 Based on the example above, the fuzzer output will be at
 ``out/host/obj/my_module/my_fuzzer``. It can be invoked using the normal
@@ -157,8 +161,60 @@ saves failing inputs to ``artifacts/``, treats any input that takes longer than
   MS: 1 CrossOver-; base unit: 9f479f7a6e3a21363397a25da3168218ba182a16
   0x68,0x65,0x6c,0x6c,0x6f,0x0,0x77,0x6f,0x72,0x6c,0x64,0x0,0x0,0x0,
   hello\x00world\x00\x00\x00
-  artifact_prefix='artifacts'; Test unit written to artifactscrash-6e4fdc7ffd04131ea15dd243a0890b1b606f4831
+  artifact_prefix='artifacts'; Test unit written to artifacts/crash-6e4fdc7ffd04131ea15dd243a0890b1b606f4831
   Base64: aGVsbG8Ad29ybGQAAAA=
+
+Running fuzzers on OSS-Fuzz
+===========================
+
+Pigweed is integrated with `OSS-Fuzz`_, a continuous fuzzing infrastructure for
+open source software. Fuzzers listed in in ``pw_test_groups`` will automatically
+start being run within a day or so of appearing in the git repository.
+
+Bugs produced by OSS-Fuzz can be found in its `Monorail instance`_. These bugs
+include:
+
+* A detailed report, including a symbolized backtrace.
+* A revision range indicating when the bug has been detected.
+* A minimized testcase, which is a fuzzer input that can be used to reproduce
+  the bug.
+
+To reproduce a bug:
+
+#. Build_ the fuzzers as described above.
+#. Download the minimized testcase.
+#. Run_ the fuzzer with the testcase as an argument.
+
+For example, if the testcase is saved as "~/Downloads/testcase"
+and the fuzzer is the same as in the examples above, you could run:
+
+.. code::
+
+  $ ./out/host/obj/pw_fuzzer/toy_fuzzer ~/Downloads/testcase
+
+If you need to recreate the OSS-Fuzz environment locally, you can use its
+documentation on `reproducing`_ issues.
+
+In particular, you can recreate the OSS-Fuzz environment using:
+
+.. code::
+
+  $ python infra/helper.py pull_images
+  $ python infra/helper.py build_image pigweed
+  $ python infra/helper.py build_fuzzers --sanitizer <address/undefined> pigweed
+
+With that environment, you can run the reproduce bugs using:
+
+.. code::
+
+  python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase
+
+You can even verify fixes in your local source checkout:
+
+.. code::
+
+  $ python infra/helper.py build_fuzzers --sanitizer <address/undefined> pigweed $PW_ROOT
+  $ python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase
 
 .. _compiler_rt: https://compiler-rt.llvm.org/
 .. _corpus: https://llvm.org/docs/LibFuzzer.html#corpus
@@ -167,6 +223,9 @@ saves failing inputs to ``artifacts/``, treats any input that takes longer than
 .. _libFuzzer: https://llvm.org/docs/LibFuzzer.html
 .. _libFuzzer options: https://llvm.org/docs/LibFuzzer.html#options
 .. _LLVMFuzzerTestOneInput: https://llvm.org/docs/LibFuzzer.html#fuzz-target
+.. _monorail instance: https://bugs.chromium.org/p/oss-fuzz
+.. _oss-fuzz: https://github.com/google/oss-fuzz
+.. _reproducing: https://google.github.io/oss-fuzz/advanced-topics/reproducing/
 .. _running a fuzzer: https://llvm.org/docs/LibFuzzer.html#running
 .. _sanitizer runtime flags: https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
 .. _split a fuzzing input: https://github.com/google/fuzzing/blob/master/docs/split-inputs.md

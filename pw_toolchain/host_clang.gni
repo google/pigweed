@@ -12,6 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+declare_args() {
+  # Sets the sanitizer to pass to clang. Valid values are those for "-fsanitize"
+  # listed in https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html.
+  pw_sanitizer = ""
+
+  # Indicates if this build is a part of OSS-Fuzz, which needs to be able to
+  # provide its own compiler and flags. This violates the build hermeticisim and
+  # should only be used for OSS-Fuzz.
+  oss_fuzz_enabled = false
+}
+
 # Generates a host clang toolchain for a specific target.
 #
 # Args:
@@ -40,13 +51,17 @@ template("host_clang") {
 
   _toolchain_cflags = string_join(" ", _cflags_list)
 
-  # Specify the default C++ version, which targets can override with a config.
-  _toolchain_cflags_cc = "-std=c++17 -Wno-register"
+  # Toolchain C++ flags
+  _cflags_cc_list = [
+    # Specify the default C++ version, which targets can override with a config.
+    "-std=c++17",
+    "-Wno-register",
+  ]
 
   # Toolchain LD flags
-  _toolchain_ldflags = ""
+  _ldflags_list = []
   if (defined(invoker.toolchain_ldflags)) {
-    _toolchain_ldflags = string_join(" ", invoker.toolchain_ldflags)
+    _ldflags_list += invoker.toolchain_ldflags
   }
   if (host_os == "mac") {
     # The CIPD provided Clang/LLVM toolchain must link against the matched
@@ -58,13 +73,13 @@ template("host_clang") {
     assert(getenv("PW_PIGWEED_CIPD_INSTALL_DIR") != "",
            "You forgot to activate the Pigweed environment; " +
                "did you source pw_env_setup/setup.sh?")
+    _ldflags_list += [
+      # Force dropping the system libc++
+      "-nostdlib++",
 
-    # Force dropping the system libc++
-    _toolchain_ldflags += "-nostdlib++ "
-
-    # Use the libc++ from CIPD.
-    _toolchain_ldflags += getenv("PW_PIGWEED_CIPD_INSTALL_DIR")
-    _toolchain_ldflags += "/lib/libc++.a"
+      # Use the libc++ from CIPD.
+      getenv("PW_PIGWEED_CIPD_INSTALL_DIR") + "/lib/libc++.a",
+    ]
   }
 
   # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
@@ -72,6 +87,19 @@ template("host_clang") {
   _ar = "ar"
   _cc = "clang"
   _cxx = "clang++"
+
+  # OSS-Fuzz needs to be able to specify its own compilers and add flags.
+  if (oss_fuzz_enabled) {
+    _cc = getenv("CC")
+    _cxx = getenv("CXX")
+    _cflags_list += string_split(getenv("CFLAGS"))
+    _cflags_cc_list += string_split(getenv("CXXFLAGS"))
+    _ldflags_list += string_split(getenv("LDFLAGS"))
+  }
+
+  _toolchain_cflags = string_join(" ", _cflags_list)
+  _toolchain_cflags_cc = string_join(" ", _cflags_cc_list)
+  _toolchain_ldflags = string_join(" ", _ldflags_list)
 
   toolchain(target_name) {
     tool("asm") {
