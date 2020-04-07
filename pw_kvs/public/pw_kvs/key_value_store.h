@@ -223,8 +223,8 @@ class KeyValueStore {
     friend class iterator;
 
     constexpr Item(const KeyValueStore& kvs,
-                   const internal::EntryCache::const_iterator& iterator)
-        : kvs_(kvs), iterator_(iterator), key_buffer_{} {}
+                   const internal::EntryCache::const_iterator& item_iterator)
+        : kvs_(kvs), iterator_(item_iterator), key_buffer_{} {}
 
     void ReadKey();
 
@@ -262,9 +262,10 @@ class KeyValueStore {
    private:
     friend class KeyValueStore;
 
-    constexpr iterator(const KeyValueStore& kvs,
-                       const internal::EntryCache::const_iterator& iterator)
-        : item_(kvs, iterator) {}
+    constexpr iterator(
+        const KeyValueStore& kvs,
+        const internal::EntryCache::const_iterator& item_iterator)
+        : item_(kvs, item_iterator) {}
 
     Item item_;
   };
