@@ -33,7 +33,7 @@ Status FlashError::Check(span<FlashError> errors,
 Status FlashError::Check(FlashMemory::Address start_address, size_t size) {
   // Check if the event overlaps with this address range.
   if (begin_ != kAnyAddress &&
-      (start_address >= end_ || (start_address + size) < begin_)) {
+      (start_address >= end_ || (start_address + size) <= begin_)) {
     return Status::OK;
   }
 

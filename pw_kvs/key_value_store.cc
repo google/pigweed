@@ -57,8 +57,6 @@ Status KeyValueStore::Init() {
   initialized_ = InitializationState::kNotInitialized;
   error_detected_ = false;
   last_transaction_id_ = 0;
-  sectors_.Reset();
-  entry_cache_.Reset();
 
   INF("Initializing key value store");
   if (partition_.sector_count() > sectors_.max_size()) {
@@ -80,6 +78,53 @@ Status KeyValueStore::Init() {
     return Status::FAILED_PRECONDITION;
   }
 
+  InitializeMetadata();
+
+  if (!error_detected_) {
+    initialized_ = InitializationState::kReady;
+  } else {
+    if (options_.recovery != ErrorRecovery::kManual) {
+      Status recovery_status = FixErrors();
+
+      if (recovery_status.ok()) {
+        WRN("KVS init: Corruption detected and fully repaired");
+        initialized_ = InitializationState::kReady;
+      } else if (recovery_status == Status::RESOURCE_EXHAUSTED) {
+        WRN("KVS init: Unable to maintain required free sector");
+        initialized_ = InitializationState::kNeedsMaintenance;
+      } else {
+        WRN("KVS init: Corruption detected and unable repair");
+        initialized_ = InitializationState::kNeedsMaintenance;
+      }
+    } else {
+      WRN("KVS init: Corruption detected, no repair attempted due to options");
+      initialized_ = InitializationState::kNeedsMaintenance;
+    }
+  }
+
+  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
+      "%zu, logical sector size %zu bytes",
+      size(),
+      (entry_cache_.total_entries() - size()),
+      sectors_.size(),
+      partition_.sector_size_bytes());
+
+  // Report any corruption was not repaired.
+  if (error_detected_) {
+    WRN("KVS init: Corruption found but not repaired, KVS unavailable until "
+        "successful maintenance.");
+    return Status::DATA_LOSS;
+  }
+
+  return Status::OK;
+}
+
+void KeyValueStore::InitializeMetadata() {
+  const size_t sector_size_bytes = partition_.sector_size_bytes();
+
+  sectors_.Reset();
+  entry_cache_.Reset();
+
   DBG("First pass: Read all entries from all sectors");
   Address sector_address = 0;
 
@@ -93,10 +138,10 @@ Status KeyValueStore::Init() {
     size_t sector_corrupt_bytes = 0;
 
     for (int num_entries_in_sector = 0; true; num_entries_in_sector++) {
-      DBG("Load entry: sector=%" PRIx32 ", entry#=%d, address=%" PRIx32,
-          sector_address,
+      DBG("Load entry: sector=%u, entry#=%d, address=%u",
+          unsigned(sector_address),
           num_entries_in_sector,
-          entry_address);
+          unsigned(entry_address));
 
       if (!sectors_.AddressInSector(sector, entry_address)) {
         DBG("Fell off end of sector; moving to the next sector");
@@ -108,13 +153,10 @@ Status KeyValueStore::Init() {
       if (status == Status::NOT_FOUND) {
         DBG("Hit un-written data in sector; moving to the next sector");
         break;
-      }
-      if (status == Status::DATA_LOSS) {
-        // The entry could not be read, indicating data corruption within the
-        // sector. Try to scan the remainder of the sector for other entries.
-        WRN("KVS init: data loss detected in sector %u at address %zu",
-            sectors_.Index(sector),
-            size_t(entry_address));
+      } else if (!status.ok()) {
+        // The entry could not be read, indicating likely data corruption within
+        // the sector. Try to scan the remainder of the sector for other
+        // entries.
 
         error_detected_ = true;
         corrupt_entries++;
@@ -122,7 +164,7 @@ Status KeyValueStore::Init() {
         status = ScanForEntry(sector,
                               entry_address + Entry::kMinAlignmentBytes,
                               &next_entry_address);
-        if (status == Status::NOT_FOUND) {
+        if (!status.ok()) {
           // No further entries in this sector. Mark the remaining bytes in the
           // sector as corrupt (since we can't reliably know the size of the
           // corrupt entry).
@@ -131,15 +173,7 @@ Status KeyValueStore::Init() {
           break;
         }
 
-        if (!status.ok()) {
-          ERR("Unexpected error in KVS initialization: %s", status.str());
-          return Status::UNKNOWN;
-        }
-
         sector_corrupt_bytes += next_entry_address - entry_address;
-      } else if (!status.ok()) {
-        ERR("Unexpected error in KVS initialization: %s", status.str());
-        return Status::UNKNOWN;
       }
 
       // Entry loaded successfully; so get ready to load the next one.
@@ -218,47 +252,11 @@ Status KeyValueStore::Init() {
     error_detected_ = true;
   }
 
-  if (!error_detected_) {
-    initialized_ = InitializationState::kReady;
-  } else {
-    if (options_.recovery != ErrorRecovery::kManual) {
-      WRN("KVS init: Corruption detected, beginning repair. Found %zu corrupt "
-          "bytes and %d corrupt entries.",
-          total_corrupt_bytes,
-          corrupt_entries);
-      Status recovery_status = Repair();
-
-      if (recovery_status.ok()) {
-        WRN("KVS init: Corruption detected and fully repaired");
-        initialized_ = InitializationState::kReady;
-      } else if (recovery_status == Status::RESOURCE_EXHAUSTED) {
-        WRN("KVS init: Unable to maintain required free sector");
-        initialized_ = InitializationState::kNeedsMaintenance;
-      } else {
-        WRN("KVS init: Corruption detected and unable repair");
-        initialized_ = InitializationState::kNeedsMaintenance;
-      }
-    } else {
-      WRN("KVS init: Corruption detected, no repair attempted due to options");
-      initialized_ = InitializationState::kNeedsMaintenance;
-    }
+  if (total_corrupt_bytes != 0 || corrupt_entries != 0) {
+    WRN("Corruption detected. Found %zu corrupt bytes and %d corrupt entries.",
+        total_corrupt_bytes,
+        corrupt_entries);
   }
-
-  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
-      "%zu, logical sector size %zu bytes",
-      size(),
-      (entry_cache_.total_entries() - size()),
-      sectors_.size(),
-      partition_.sector_size_bytes());
-
-  // Report any corruption was not repaired.
-  if (error_detected_) {
-    WRN("KVS init: Corruption found but not repaired, KVS unavailable until "
-        "successful maintenance.");
-    return Status::DATA_LOSS;
-  }
-
-  return Status::OK;
 }
 
 KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
@@ -336,9 +334,9 @@ Status KeyValueStore::LoadEntry(Address entry_address,
 Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
                                    Address start_address,
                                    Address* next_entry_address) {
-  DBG("Scanning sector %u for entries starting from address %zx",
+  DBG("Scanning sector %u for entries starting from address %u",
       sectors_.Index(sector),
-      size_t(start_address));
+      unsigned(start_address));
 
   // Entries must start at addresses which are aligned on a multiple of
   // Entry::kMinAlignmentBytes. However, that multiple can vary between entries.
@@ -348,9 +346,13 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
        sectors_.AddressInSector(sector, address);
        address += Entry::kMinAlignmentBytes) {
     uint32_t magic;
-    TRY(partition_.Read(address, as_writable_bytes(span(&magic, 1))));
+    StatusWithSize read_result =
+        partition_.Read(address, as_writable_bytes(span(&magic, 1)));
+    if (!read_result.ok()) {
+      continue;
+    }
     if (formats_.KnownMagic(magic)) {
-      DBG("Found entry magic at address %zx", size_t(address));
+      DBG("Found entry magic at address %u", unsigned(address));
       *next_entry_address = address;
       return Status::OK;
     }
@@ -823,14 +825,14 @@ Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
     return Status::FAILED_PRECONDITION;
   }
 
-  // Do automatic repair, if KVS options allow for it.
-  if (error_detected_ && options_.recovery != ErrorRecovery::kManual) {
-    TRY(Repair());
-  }
-
   DBG("Garbage Collect a single sector");
   for (Address address : reserved_addresses) {
     DBG("   Avoid address %u", unsigned(address));
+  }
+
+  // Do automatic repair, if KVS options allow for it.
+  if (error_detected_ && options_.recovery != ErrorRecovery::kManual) {
+    TRY(Repair());
   }
 
   // Step 1: Find the sector to garbage collect
@@ -848,7 +850,7 @@ Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
 
 Status KeyValueStore::RelocateKeyAddressesInSector(
     SectorDescriptor& sector_to_gc,
-    EntryMetadata& metadata,
+    const EntryMetadata& metadata,
     span<const Address> reserved_addresses) {
   for (FlashPartition::Address& address : metadata.addresses()) {
     if (sectors_.AddressInSector(sector_to_gc, address)) {
@@ -1004,23 +1006,17 @@ Status KeyValueStore::EnsureEntryRedundancy() {
   return repair_status;
 }
 
-Status KeyValueStore::Repair() {
-  // Collect and return the first error encountered.
-  Status overall_status = Status::OK;
-
-  DBG("KVS repair");
+Status KeyValueStore::FixErrors() {
+  DBG("Fixing KVS errors");
 
   // Step 1: Garbage collect any sectors marked as corrupt.
-  Status repair_status = RepairCorruptSectors();
-  if (overall_status.ok()) {
-    overall_status = repair_status;
-  }
+  Status overall_status = RepairCorruptSectors();
 
   // Step 2: Make sure there is at least 1 empty sector. This needs to be a
   // seperate check of sectors from step 1, because a found empty sector might
   // get written to by a later GC that fails and does not result in a free
   // sector.
-  repair_status = EnsureFreeSectorExists();
+  Status repair_status = EnsureFreeSectorExists();
   if (overall_status.ok()) {
     overall_status = repair_status;
   }
@@ -1037,6 +1033,17 @@ Status KeyValueStore::Repair() {
     initialized_ = InitializationState::kReady;
   }
   return overall_status;
+}
+
+Status KeyValueStore::Repair() {
+  // If errors have been detected, just reinit the KVS metadata. This does a
+  // full deep error check and any needed repairs. Then repair any errors.
+  INF("Starting KVS repair");
+
+  DBG("Reinitialize KVS metadata");
+  InitializeMetadata();
+
+  return FixErrors();
 }
 
 KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,

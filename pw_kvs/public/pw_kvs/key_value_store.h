@@ -339,6 +339,7 @@ class KeyValueStore {
         "as_bytes(span(&value, 1)) or as_writable_bytes(span(&value, 1)).");
   }
 
+  void InitializeMetadata();
   Status LoadEntry(Address entry_address, Address* next_entry_address);
   Status ScanForEntry(const SectorDescriptor& sector,
                       Address start_address,
@@ -430,7 +431,7 @@ class KeyValueStore {
   Status GarbageCollect(span<const Address> addresses_to_skip);
 
   Status RelocateKeyAddressesInSector(SectorDescriptor& sector_to_gc,
-                                      EntryMetadata& descriptor,
+                                      const EntryMetadata& descriptor,
                                       span<const Address> addresses_to_skip);
 
   Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
@@ -443,6 +444,8 @@ class KeyValueStore {
   Status EnsureFreeSectorExists();
 
   Status EnsureEntryRedundancy();
+
+  Status FixErrors();
 
   Status Repair();
 
