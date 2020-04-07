@@ -461,7 +461,8 @@ def build_env_setup(ctx: PresubmitContext):
             'Skipping build_env_setup since PW_CARGO_SETUP is not set')
         return
 
-    tmpl = ctx.repository_root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl')
+    tmpl = ctx.repository_root.joinpath('pw_env_setup', 'py',
+                                        'pyoxidizer.bzl.tmpl')
     out = ctx.output_directory.joinpath('pyoxidizer.bzl')
 
     with open(tmpl, 'r') as ins:
