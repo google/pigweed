@@ -17,6 +17,16 @@
 
 namespace std {
 
+template <class InputIterator, class OutputIterator>
+constexpr OutputIterator copy(InputIterator first,
+                              InputIterator last,
+                              OutputIterator dest) {
+  while (first != last) {
+    *dest++ = *first++;
+  }
+  return dest;
+}
+
 template <typename T>
 constexpr const T& min(const T& lhs, const T& rhs) {
   return (rhs < lhs) ? rhs : lhs;
@@ -25,6 +35,18 @@ constexpr const T& min(const T& lhs, const T& rhs) {
 template <typename T>
 constexpr const T& max(const T& lhs, const T& rhs) {
   return (lhs < rhs) ? rhs : lhs;
+}
+
+template <class InputIterator, typename T>
+constexpr InputIterator find(InputIterator first,
+                             InputIterator last,
+                             const T& value) {
+  for (; first != last; ++first) {
+    if (*first == value) {
+      return first;
+    }
+  }
+  return last;
 }
 
 template <typename T>

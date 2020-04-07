@@ -20,6 +20,16 @@ namespace std {
 #define __cpp_lib_nonmember_container_access 201411L
 
 template <typename C>
+auto begin(C& container) -> decltype(container.begin()) {
+  return container.begin();
+}
+
+template <typename C>
+auto begin(const C& container) -> decltype(container.begin()) {
+  return container.begin();
+}
+
+template <typename C>
 constexpr auto data(C& container) -> decltype(container.data()) {
   return container.data();
 }
@@ -32,6 +42,16 @@ constexpr auto data(const C& container) -> decltype(container.data()) {
 template <typename T, decltype(sizeof(int)) kSize>
 constexpr T* data(T (&array)[kSize]) noexcept {
   return array;
+}
+
+template <typename C>
+auto end(C& container) -> decltype(container.end()) {
+  return container.end();
+}
+
+template <typename C>
+auto end(const C& container) -> decltype(container.end()) {
+  return container.end();
 }
 
 template <typename C>

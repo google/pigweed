@@ -41,6 +41,64 @@ TEST(Algorithm, Basic) {
   EXPECT_EQ(std::forward<int>(2), 2);
 }
 
+TEST(Algorithm, Copy) {
+  constexpr size_t kCopyOffset = 1;
+  std::array<int, 3> foo{3, 2, 1};
+  std::array<int, 5> bar{0};
+
+  // Ensure zero-element iterator doesn't modify the destination object when
+  // copied.
+  int temp = foo[0];
+  std::copy(foo.end(), foo.end(), bar.begin());
+  EXPECT_EQ(foo[0], temp);
+
+  // Copy a single element.
+  std::array<int, 1> one{-101};
+  std::copy(one.begin(), one.end(), foo.begin());
+  EXPECT_EQ(foo[0], -101);
+
+  auto copy_end = std::copy(foo.begin(), foo.end(), bar.begin() + kCopyOffset);
+  // Verify the iterator points to the end of the copied region.
+  EXPECT_EQ(copy_end, bar.begin() + foo.size() + kCopyOffset);
+
+  // Verify all the values were properly copied from foo to bar.
+  {
+    size_t i = 0;
+    for (auto it = bar.begin() + kCopyOffset; it != copy_end; ++it) {
+      EXPECT_EQ(*it, foo[i++]);
+    }
+  }
+}
+
+TEST(Algorithm, Find) {
+  std::array<int, 5> foo{3, 2, 1, 42, 17};
+  // Ensure a value in the middle of the array is properly found.
+  EXPECT_EQ(*std::find(std::begin(foo), std::end(foo), 42), 42);
+
+  // Ensure the iterator returned by find() matches the expected location of the
+  // element.
+  EXPECT_EQ(std::find(std::begin(foo), std::end(foo), 42), std::begin(foo) + 3);
+
+  // Ensure an element at the beginning of an array is found.
+  EXPECT_EQ(*std::find(std::begin(foo), std::end(foo), 3), foo[0]);
+
+  // Ensure an element at the end of an array is found.
+  EXPECT_EQ(*std::find(std::begin(foo), std::end(foo), 17),
+            foo[foo.size() - 1]);
+}
+
+TEST(Algorithm, NotFound) {
+  std::array<int, 3> foo{3, 2, 1};
+
+  // Ensure that if an element is not found, an iterator matching foo.end() is
+  // returned.
+  EXPECT_EQ(std::find(std::begin(foo), std::end(foo), -99), std::end(foo));
+
+  // Ensure that a zero-element iterator range returns the end iterator passed
+  // to std::find().
+  EXPECT_EQ(std::find(std::end(foo), std::end(foo), 3), std::end(foo));
+}
+
 TEST(Array, Basic) {
   constexpr std::array<int, 4> array{0, 1, 2, 3};
 
@@ -76,6 +134,9 @@ TEST(Iterator, Basic) {
 
   EXPECT_EQ(std::data(foo), foo.data());
   EXPECT_EQ(std::size(foo), foo.size());
+
+  EXPECT_EQ(*std::begin(foo), foo[0]);
+  EXPECT_EQ(std::end(foo), std::begin(foo) + foo.size());
 
   foo.fill(99);
   EXPECT_EQ(foo[0], 99);
