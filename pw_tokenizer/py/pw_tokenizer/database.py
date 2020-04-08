@@ -27,7 +27,7 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import Callable, Dict, Iterable, List, Set
+from typing import Callable, Dict, Iterable, List, Pattern, Set, Tuple
 
 try:
     from pw_tokenizer import elf_reader, tokens
@@ -143,7 +143,8 @@ def generate_report(db: tokens.Database) -> Dict[str, int]:
     }
 
 
-def _handle_create(databases, database, force, output_type, include, exclude):
+def _handle_create(databases, database, force, output_type, include, exclude,
+                   replace):
     """Creates a token database file from one or more ELF files."""
 
     if database == '-':
@@ -156,7 +157,7 @@ def _handle_create(databases, database, force, output_type, include, exclude):
         fd = open(database, 'wb')
 
     database = tokens.Database.merged(*databases)
-    database.filter(include, exclude)
+    database.filter(include, exclude, replace)
 
     with fd:
         if output_type == 'csv':
@@ -366,17 +367,46 @@ def _parse_args():
         '-i',
         '--include',
         type=re.compile,
+        default=[],
         action='append',
-        help=(
-            'If provided, at least one of these regular expressions must match '
-            'for a string to be included in the database.'))
+        help=('If provided, at least one of these regular expressions must '
+              'match for a string to be included in the database.'))
     subparser.add_argument(
         '-e',
         '--exclude',
         type=re.compile,
+        default=[],
         action='append',
         help=('If provided, none of these regular expressions may match for a '
               'string to be included in the database.'))
+
+    unescaped_slash = re.compile(r'(?<!\\)/')
+
+    def replacement(value: str) -> Tuple[Pattern, 'str']:
+        try:
+            find, sub = unescaped_slash.split(value, 1)
+        except ValueError as err:
+            raise argparse.ArgumentTypeError(
+                'replacements must be specified as "search_regex/replacement"')
+
+        try:
+            return re.compile(find.replace(r'\/', '/')), sub
+        except re.error as err:
+            raise argparse.ArgumentTypeError(
+                f'"{value}" is not a valid regular expression: {err}')
+
+    subparser.add_argument(
+        '--replace',
+        type=replacement,
+        default=[],
+        action='append',
+        help=('If provided, replaces text that matches a regular expression. '
+              'This can be used to replace sensitive terms in a token '
+              'database that will be distributed publicly. The expression and '
+              'replacement are specified as "search_regex/replacement". '
+              'Plain slash characters in the regex must be escaped with a '
+              r'backslash (\/). The replacement text may include '
+              'backreferences for captured groups in the regex.'))
 
     # The 'add' command adds strings to a database from a set of ELFs.
     subparser = subparsers.add_parser(

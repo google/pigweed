@@ -22,7 +22,7 @@ from pathlib import Path
 import re
 import struct
 from typing import BinaryIO, Callable, Dict, Iterable, List, NamedTuple
-from typing import Optional, Tuple, Union, ValuesView
+from typing import Optional, Pattern, Tuple, Union, ValuesView
 
 DATE_FORMAT = '%Y-%m-%d'
 
@@ -242,12 +242,18 @@ class Database:
                 else:
                     self._database[key] = entry
 
-    def filter(self, include: Iterable = (), exclude: Iterable = ()) -> None:
+    def filter(
+        self,
+        include: Iterable[Union[str, Pattern[str]]] = (),
+        exclude: Iterable[Union[str, Pattern[str]]] = (),
+        replace: Iterable[Tuple[Union[str, Pattern[str]], str]] = ()
+    ) -> None:
         """Filters the database using regular expressions (strings or compiled).
 
     Args:
       include: iterable of regexes; only entries matching at least one are kept
       exclude: iterable of regexes; entries matching any of these are removed
+      replace: iterable of (regex, str); replaces matching terms in all entries
     """
         self._cache = None
 
@@ -261,12 +267,17 @@ class Database:
 
         if exclude:
             exclude_re = [re.compile(pattern) for pattern in exclude]
-            to_delete.extend(key for key, val in self._database.items()  #
-                             if any(
-                                 rgx.search(val.string) for rgx in exclude_re))
+            to_delete.extend(key for key, val in self._database.items() if any(
+                rgx.search(val.string) for rgx in exclude_re))
 
         for key in to_delete:
             del self._database[key]
+
+        for search, replacement in replace:
+            search = re.compile(search)
+
+            for value in self._database.values():
+                value.string = search.sub(replacement, value.string)
 
     def __len__(self) -> int:
         """Returns the number of entries in the database."""

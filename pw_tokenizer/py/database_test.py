@@ -193,6 +193,14 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self.assertIn(REPORT_DEFAULT_DOMAIN, mock_stdout.buffer.getvalue())
         self.assertIn(REPORT_TEST_DOMAIN, mock_stdout.buffer.getvalue())
 
+    def test_replace(self):
+        sub = 'replace/ment'
+        run_cli('create', '--database', self._csv, ELF, '--replace',
+                r'(?i)\b[jh]ello\b/' + sub)
+        self.assertEqual(
+            CSV_DEFAULT_DOMAIN.replace('Jello', sub).replace('Hello', sub),
+            self._csv.read_text())
+
 
 if __name__ == '__main__':
     unittest.main()
