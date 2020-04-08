@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
@@ -1573,6 +1574,112 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailu
   EXPECT_FALSE(peer->connected());
   EXPECT_FALSE(peer->le()->connected());
   EXPECT_TRUE(peer->temporary());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterrogation) {
+  const hci::LEPreferredConnectionParameters kConnParams(
+      hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
+      /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+
+  // Connection Parameter Update procedure NOT supported.
+  constexpr hci::LESupportedFeatures kLEFeatures{0};
+  auto peer = std::make_unique<FakePeer>(kAddress0);
+  peer->set_le_features(kLEFeatures);
+  test_device()->AddPeer(std::move(peer));
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+
+  size_t l2cap_conn_param_update_count = 0;
+  fake_l2cap()->set_connection_parameter_update_request_responder([&](auto handle, auto params) {
+    EXPECT_EQ(kConnParams, params);
+    l2cap_conn_param_update_count++;
+    return true;
+  });
+
+  size_t hci_update_conn_param_count = 0;
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, auto parameters) { hci_update_conn_param_count++; });
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, l2cap_conn_param_update_count);
+  EXPECT_EQ(0u, hci_update_conn_param_count);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
+  constexpr hci::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+
+  auto peer = std::make_unique<FakePeer>(kAddress0);
+  peer->set_le_features(kLEFeatures);
+  test_device()->AddPeer(std::move(peer));
+
+  // First create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+
+  size_t l2cap_conn_param_update_count = 0;
+  fake_l2cap()->set_connection_parameter_update_request_responder(
+      [&](auto handle, const auto params) {
+        l2cap_conn_param_update_count++;
+        return true;
+      });
+
+  size_t hci_update_conn_param_count = 0;
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, const hci::LEConnectionParameters& params) {
+        // FakeController will pick an interval between min and max interval.
+        EXPECT_TRUE(params.interval() >= hci::defaults::kLEConnectionIntervalMin &&
+                    params.interval() <= hci::defaults::kLEConnectionIntervalMax);
+        EXPECT_EQ(0u, params.latency());
+        EXPECT_EQ(hci::defaults::kLESupervisionTimeout, params.supervision_timeout());
+        hci_update_conn_param_count++;
+      });
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, l2cap_conn_param_update_count);
+  EXPECT_EQ(1u, hci_update_conn_param_count);
 }
 
 // Tests for assertions that enforce invariants.

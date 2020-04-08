@@ -120,6 +120,9 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
 
     ZX_ASSERT(event.event_code() == hci::kReadRemoteVersionInfoCompleteEventCode);
 
+    bt_log(SPEW, "gap", "read remote version info completed (peer id: %s)",
+           bt_str(interrogation->peer_id()));
+
     const auto params = event.params<hci::ReadRemoteVersionInfoCompleteEventParams>();
 
     Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());

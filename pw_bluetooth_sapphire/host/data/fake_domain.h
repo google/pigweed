@@ -94,6 +94,15 @@ class FakeDomain final : public Domain {
     simulate_open_channel_failure_ = simulate_failure;
   }
 
+  // Called when RequestConnectionParameterUpdate is called. |request_cb| will be called with return
+  // value. Defaults to returning true if not set.
+  using ConnectionParameterUpdateRequestResponder =
+      fit::function<bool(hci::ConnectionHandle, hci::LEPreferredConnectionParameters)>;
+  void set_connection_parameter_update_request_responder(
+      ConnectionParameterUpdateRequestResponder responder) {
+    connection_parameter_update_request_responder_ = std::move(responder);
+  }
+
  private:
   friend class fbl::RefPtr<FakeDomain>;
 
@@ -145,6 +154,8 @@ class FakeDomain final : public Domain {
   std::unordered_map<hci::ConnectionHandle, LinkData> links_;
   FakeChannelCallback chan_cb_;
   bool simulate_open_channel_failure_ = false;
+
+  ConnectionParameterUpdateRequestResponder connection_parameter_update_request_responder_;
 
   using ServiceInfo = l2cap::ServiceInfo<l2cap::ChannelCallback>;
   std::unordered_map<l2cap::PSM, ServiceInfo> registered_services_;

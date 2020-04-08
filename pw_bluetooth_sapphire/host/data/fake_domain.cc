@@ -142,7 +142,10 @@ void FakeDomain::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
 void FakeDomain::RequestConnectionParameterUpdate(
     hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
     l2cap::ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
-  async::PostTask(dispatcher, std::bind(std::move(request_cb), true));
+  bool response = connection_parameter_update_request_responder_
+                      ? connection_parameter_update_request_responder_(handle, params)
+                      : true;
+  async::PostTask(dispatcher, std::bind(std::move(request_cb), response));
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
