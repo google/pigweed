@@ -94,6 +94,11 @@ template("host_clang") {
     _cxx = getenv("CXX")
     _cflags_list += string_split(getenv("CFLAGS"))
     _cflags_cc_list += string_split(getenv("CXXFLAGS"))
+
+    # TODO(pwbug/184): OSS-Fuzz sets -stdlib=libc++, but pw_minimal_cpp_stdlib
+    # sets -nostdinc++. Find a more flexible mechanism to achieve this and
+    # similar needs (like removing -fno-rtti fro UBSan).
+    _cflags_cc_list += [ "-Wno-unused-command-line-argument" ]
     _ldflags_list += string_split(getenv("LDFLAGS"))
   }
 
