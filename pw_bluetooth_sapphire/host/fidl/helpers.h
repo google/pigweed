@@ -134,6 +134,8 @@ bt::gap::AdvertisingData AdvertisingDataFromFidl(
     const fuchsia::bluetooth::le::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(
     const bt::gap::AdvertisingData& input);
+fuchsia::bluetooth::le::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
+    const bt::gap::AdvertisingData& input);
 
 // Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
 fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);

@@ -5,7 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
 
-#include <fuchsia/bluetooth/le/cpp/fidl.h>
+#include <lib/fit/function.h>
 
 #include <cstddef>
 #include <unordered_map>
@@ -120,9 +120,6 @@ class AdvertisingData {
   // Returns false without modifying |buffer| if there is not enough space
   // (if the buffer size is less than block_size())
   bool WriteBlock(MutableByteBuffer* buffer) const;
-
-  // Makes a FIDL object that holds the same data
-  fuchsia::bluetooth::le::AdvertisingDataDeprecatedPtr AsLEAdvertisingData() const;
 
   // Relation operators
   bool operator==(const AdvertisingData& other) const;

@@ -160,6 +160,69 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.manufacturer_data(kCompanyId2)));
 }
 
+TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
+  bt::gap::AdvertisingData input;
+  auto output = AdvertisingDataToFidlDeprecated(input);
+
+  // All fields in |input| are not set. Therefore, output should have no set fields as well.
+  EXPECT_FALSE(output.name);
+  EXPECT_FALSE(output.tx_power_level);
+  EXPECT_FALSE(output.appearance);
+  EXPECT_FALSE(output.service_uuids);
+  EXPECT_FALSE(output.service_data);
+  EXPECT_FALSE(output.manufacturer_specific_data);
+  EXPECT_FALSE(output.solicited_service_uuids);
+  EXPECT_FALSE(output.uris);
+}
+
+TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
+  bt::gap::AdvertisingData input;
+  input.SetLocalName("fuchsia");
+  input.SetTxPower(4);
+  input.SetAppearance(0x1234);
+
+  const uint16_t id = 0x5678;
+  const bt::UUID test_uuid = bt::UUID(id);
+  auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
+  input.AddServiceUuid(test_uuid);
+  input.SetServiceData(test_uuid, service_bytes.view());
+
+  uint16_t company_id = 0x98;
+  auto manufacturer_bytes = bt::CreateStaticByteBuffer(0x04, 0x03);
+  input.SetManufacturerData(company_id, manufacturer_bytes.view());
+
+  auto uri = "http://fuchsia.cl";
+  input.AddURI(uri);
+
+  auto output = AdvertisingDataToFidlDeprecated(input);
+
+  EXPECT_EQ("fuchsia", output.name);
+
+  auto expected_power_level = fbt::Int8::New();
+  expected_power_level->value = 4;
+  EXPECT_EQ(expected_power_level->value, output.tx_power_level->value);
+
+  auto expected_appearance = fbt::UInt16::New();
+  expected_appearance->value = 0x1234;
+  EXPECT_EQ(expected_appearance->value, output.appearance->value);
+
+  EXPECT_EQ(1u, output.service_uuids->size());
+  EXPECT_EQ(test_uuid.ToString(), output.service_uuids->front());
+
+  EXPECT_EQ(1u, output.service_data->size());
+  auto service_data = output.service_data->front();
+  EXPECT_EQ(test_uuid.ToString(), service_data.uuid);
+  EXPECT_TRUE(ContainersEqual(bt::BufferView(service_bytes), service_data.data));
+
+  EXPECT_EQ(1u, output.manufacturer_specific_data->size());
+  auto manufacturer_data = output.manufacturer_specific_data->front();
+  EXPECT_EQ(company_id, manufacturer_data.company_id);
+  EXPECT_TRUE(ContainersEqual(bt::BufferView(manufacturer_bytes), manufacturer_data.data));
+
+  EXPECT_EQ(1u, output.uris->size());
+  EXPECT_EQ(uri, output.uris->front());
+}
+
 TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
   EXPECT_EQ(fsys::TechnologyType::LOW_ENERGY,
             TechnologyTypeToFidl(bt::gap::TechnologyType::kLowEnergy));

@@ -9,29 +9,10 @@
 
 #include <type_traits>
 
-#include "lib/fidl/cpp/type_converter.h"
-#include "lib/fidl/cpp/vector.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "src/lib/fxl/strings/utf_codecs.h"
-
-// A partial fidl::TypeConverter template specialization for copying the
-// contents of a type that derives from ByteBuffer into a
-// std::vector<unsigned char>. If the input array is empty, the output array
-// will be empty. Used by Vector<uint8_t>::From() in AsLEAdvertisingData()
-template <typename T>
-struct fidl::TypeConverter<std::vector<unsigned char>, T> {
-  static std::vector<unsigned char> Convert(const T& input) {
-    static_assert(std::is_base_of<bt::ByteBuffer, T>::value, "");
-
-    std::vector<unsigned char> result(input.size());
-    memcpy(result.data(), input.data(), input.size());
-    return result;
-  }
-};
-
-namespace ble = fuchsia::bluetooth::le;
 
 namespace bt {
 namespace gap {
@@ -245,61 +226,6 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
   }
 
   return true;
-}
-
-::ble::AdvertisingDataDeprecatedPtr AdvertisingData::AsLEAdvertisingData() const {
-  auto fidl_data = ::ble::AdvertisingDataDeprecated::New();
-  ZX_DEBUG_ASSERT(fidl_data);
-
-  if (tx_power_) {
-    fidl_data->tx_power_level = ::fuchsia::bluetooth::Int8::New();
-    fidl_data->tx_power_level->value = *tx_power_;
-  }
-
-  if (appearance_) {
-    fidl_data->appearance = ::fuchsia::bluetooth::UInt16::New();
-    fidl_data->appearance->value = *appearance_;
-  }
-
-  if (!manufacturer_data_.empty()) {
-    fidl_data->manufacturer_specific_data.emplace();
-    for (const auto& pair : manufacturer_data_) {
-      ::ble::ManufacturerSpecificDataEntry entry;
-      entry.company_id = pair.first;
-      entry.data = fidl::To<std::vector<unsigned char>>(pair.second);
-      fidl_data->manufacturer_specific_data->push_back(std::move(entry));
-    }
-  }
-
-  if (!service_data_.empty()) {
-    fidl_data->service_data.emplace();
-    for (const auto& pair : service_data_) {
-      ::ble::ServiceDataEntry entry;
-      entry.uuid = pair.first.ToString();
-      entry.data = fidl::To<std::vector<unsigned char>>(pair.second);
-      fidl_data->service_data->push_back(std::move(entry));
-    }
-  }
-
-  if (!service_uuids_.empty()) {
-    fidl_data->service_uuids.emplace();
-    for (const auto& uuid : service_uuids_) {
-      fidl_data->service_uuids->push_back(uuid.ToString());
-    }
-  }
-
-  if (!uris_.empty()) {
-    fidl_data->uris.emplace();
-    for (const auto& uri : uris_) {
-      fidl_data->uris->push_back(uri);
-    }
-  }
-
-  if (local_name_) {
-    fidl_data->name = *local_name_;
-  }
-
-  return fidl_data;
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {

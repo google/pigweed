@@ -514,7 +514,9 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
     if (!bt::gap::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
       return nullptr;
     }
-    fidl_device->advertising_data = ad.AsLEAdvertisingData();
+    auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad);
+    fidl_device->advertising_data =
+        std::make_unique<fble::AdvertisingDataDeprecated>(std::move(data));
   }
 
   if (peer.rssi() != bt::hci::kRSSIInvalid) {
@@ -671,6 +673,53 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::gap::AdvertisingData& inpu
       uris.push_back(uri);
     }
     output.set_uris(std::move(uris));
+  }
+
+  return output;
+}
+
+fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
+    const bt::gap::AdvertisingData& input) {
+  fble::AdvertisingDataDeprecated output;
+
+  if (input.local_name()) {
+    output.name = *input.local_name();
+  }
+  if (input.appearance()) {
+    output.appearance = fbt::UInt16::New();
+    output.appearance->value = *input.appearance();
+  }
+  if (input.tx_power()) {
+    output.tx_power_level = fbt::Int8::New();
+    output.tx_power_level->value = *input.tx_power();
+  }
+  if (!input.service_uuids().empty()) {
+    output.service_uuids.emplace();
+    for (const auto& uuid : input.service_uuids()) {
+      output.service_uuids->push_back(uuid.ToString());
+    }
+  }
+  if (!input.service_data_uuids().empty()) {
+    output.service_data.emplace();
+    for (const auto& uuid : input.service_data_uuids()) {
+      auto data = input.service_data(uuid);
+      fble::ServiceDataEntry entry{uuid.ToString(), data.ToVector()};
+      output.service_data->push_back(std::move(entry));
+    }
+  }
+  if (!input.manufacturer_data_ids().empty()) {
+    output.manufacturer_specific_data.emplace();
+    for (const auto& id : input.manufacturer_data_ids()) {
+      auto data = input.manufacturer_data(id);
+      fble::ManufacturerSpecificDataEntry entry{id, data.ToVector()};
+      output.manufacturer_specific_data->push_back(std::move(entry));
+    }
+  }
+  if (!input.uris().empty()) {
+    output.uris.emplace();
+    for (const auto& uri : input.uris()) {
+      output.uris->push_back(uri);
+    }
   }
 
   return output;
