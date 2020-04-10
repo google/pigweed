@@ -4,6 +4,7 @@
 
 #include "low_energy_connection_manager.h"
 
+#include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
@@ -139,6 +140,34 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
   // Cancels any on-going pairing procedures and sets up SMP to use the provided
   // new I/O capabilities for future pairing procedures.
   void ResetPairingState(sm::IOCapability ioc) { pairing_->Reset(ioc); }
+
+  // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
+  // timeout has already finished.
+  void on_peripheral_pause_timeout(fit::callback<void()> callback) {
+    // Check if timeout already completed.
+    if (conn_pause_peripheral_timeout_.has_value() &&
+        !conn_pause_peripheral_timeout_->is_pending()) {
+      callback();
+      return;
+    }
+    conn_pause_peripheral_callback_ = std::move(callback);
+  }
+
+  // Should be called as soon as connection is established.
+  // Calls |conn_pause_peripheral_callback_| after kLEConnectionPausePeripheral.
+  void StartConnectionPausePeripheralTimeout() {
+    ZX_ASSERT(!conn_pause_peripheral_timeout_.has_value());
+    conn_pause_peripheral_timeout_.emplace([self = weak_ptr_factory_.GetWeakPtr()]() {
+      if (!self) {
+        return;
+      }
+
+      if (self->conn_pause_peripheral_callback_) {
+        self->conn_pause_peripheral_callback_();
+      }
+    });
+    conn_pause_peripheral_timeout_->PostDelayed(dispatcher_, kLEConnectionPausePeripheral);
+  }
 
   size_t ref_count() const { return refs_.size(); }
 
@@ -330,6 +359,12 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
 
   // SMP pairing manager.
   std::unique_ptr<sm::PairingState> pairing_;
+
+  // Called after kLEConnectionPausePeripheral.
+  std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
+
+  // Called by |conn_pause_peripheral_timeout_task_|.
+  fit::callback<void()> conn_pause_peripheral_callback_;
 
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
@@ -730,7 +765,7 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
                                                               self, data_domain_, gatt_);
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
                                 bondable_mode);
-
+  conn->StartConnectionPausePeripheralTimeout();
   auto first_ref = conn->AddRef();
   connections_[peer_id] = std::move(conn);
 
@@ -771,14 +806,16 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id) {
   }
   auto& conn = it->second;
 
-  // Perform the Connection Parameter Update Procedure after connecting as slave (Core Spec v5.2,
-  // Vol 3, Part C, 9.3.12.2). This may send either a Link Layer or L2cap connection update
-  // request, depending on what the peer supports.
   if (conn->link()->role() == hci::Connection::Role::kSlave) {
-    const hci::LEPreferredConnectionParameters params(
-        hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
-        /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
-    RequestConnectionParameterUpdate(peer_id, *conn, params);
+    // "The peripheral device should not perform a connection parameter update procedure within
+    // kLEConnectionPausePeripheral after establishing a connection." (Core Spec v5.2, Vol 3, Part
+    // C, Sec 9.3.12).
+    conn->on_peripheral_pause_timeout([&conn, peer_id, this]() {
+      const hci::LEPreferredConnectionParameters params(
+          hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
+          /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+      RequestConnectionParameterUpdate(peer_id, *conn, params);
+    });
   }
 }
 
@@ -1010,7 +1047,7 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
     PeerId peer_id, const internal::LowEnergyConnection& conn,
     const hci::LEPreferredConnectionParameters& params) {
   ZX_ASSERT_MSG(conn.link()->role() == hci::Connection::Role::kSlave,
-                "tried to send l2cap connection parameter update request as master");
+                "tried to send connection parameter update request as master");
 
   Peer* peer = peer_cache_->FindById(peer_id);
   // Ensure interrogation has completed.
@@ -1025,8 +1062,6 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
   bt_log(DEBUG, "gap-le", "ll connection parameters req procedure supported: %s",
          ll_connection_parameters_req_supported ? "true" : "false");
 
-  // TODO(49716): don't update params until after kLEConnectionPausePeripheral after
-  // establishing connection (Core Spec v5.2, Vol 3, Part C, Sec 9.3.12).
   if (ll_connection_parameters_req_supported) {
     UpdateConnectionParams(conn.handle(), params);
   } else {

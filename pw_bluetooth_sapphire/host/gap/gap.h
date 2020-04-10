@@ -149,7 +149,11 @@ constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)
 constexpr zx::duration kLEConnectionParameterTimeout = zx::sec(30);
+// Recommended minimum time upon connection establishment before the central starts a connection
+// update procedure.
 constexpr zx::duration kLEConnectionPauseCentral = zx::sec(1);
+// Recommended minimum time upon connection establishment before the peripheral starts a connection
+// update procedure.
 constexpr zx::duration kLEConnectionPausePeripheral = zx::sec(5);
 
 constexpr uint16_t kLEInitialConnIntervalMin = 0x0018;       // 30 ms

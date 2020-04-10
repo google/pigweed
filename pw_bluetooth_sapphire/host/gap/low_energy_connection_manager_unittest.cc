@@ -1587,7 +1587,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInter
   peer->set_le_features(kLEFeatures);
   test_device()->AddPeer(std::move(peer));
 
-  // First create a fake incoming connection.
+  // First create a fake incoming connection as peripheral.
   test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
 
   RunLoopUntilIdle();
@@ -1621,8 +1621,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInter
   EXPECT_TRUE(status->is_success());
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(0u, l2cap_conn_param_update_count);
+  EXPECT_EQ(0u, hci_update_conn_param_count);
 
-  RunLoopUntilIdle();
+  RunLoopFor(kLEConnectionPausePeripheral);
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
   EXPECT_EQ(0u, hci_update_conn_param_count);
 }
@@ -1676,8 +1678,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation
   EXPECT_TRUE(status->is_success());
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(0u, l2cap_conn_param_update_count);
+  EXPECT_EQ(0u, hci_update_conn_param_count);
 
-  RunLoopUntilIdle();
+  RunLoopFor(kLEConnectionPausePeripheral);
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
   EXPECT_EQ(1u, hci_update_conn_param_count);
 }
