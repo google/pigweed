@@ -64,6 +64,15 @@ constexpr auto AsBytes(Args... args) {
   return bytes;
 }
 
+template <size_t kSize>
+constexpr auto InitializedBytes(uint8_t value) {
+  std::array<std::byte, kSize> bytes{};
+  for (std::byte& b : bytes) {
+    b = std::byte(value);
+  }
+  return bytes;
+}
+
 namespace internal {
 
 template <typename T, size_t... kIndex>

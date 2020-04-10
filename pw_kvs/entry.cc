@@ -41,9 +41,9 @@ Status Entry::Read(FlashPartition& partition,
 
   const EntryFormat* format = formats.Find(header.magic);
   if (format == nullptr) {
-    PW_LOG_ERROR("Found corrupt magic: %" PRIx32 " at address %zx",
+    PW_LOG_ERROR("Found corrupt magic: %" PRIx32 " at address %u",
                  header.magic,
-                 size_t(address));
+                 unsigned(address));
     return Status::DATA_LOSS;
   }
 
@@ -174,7 +174,7 @@ Status Entry::VerifyChecksumInFlash() const {
   TRY(partition().Read(read_address, read_size, buffer));
 
   if (header_to_verify.checksum != header_.checksum) {
-    PW_LOG_ERROR("Expected checksum %08" PRIx32 ", found %08" PRIx32,
+    PW_LOG_ERROR("Expected checksum 0x%08" PRIx32 ", found 0x%08" PRIx32,
                  header_.checksum,
                  header_to_verify.checksum);
     return Status::DATA_LOSS;

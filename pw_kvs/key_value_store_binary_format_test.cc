@@ -126,6 +126,9 @@ constexpr auto kEntry2 = MakeValidEntry(kMagic, 3, "k2", ByteStr("value2"));
 constexpr auto kEntry3 = MakeValidEntry(kMagic, 4, "k3y", ByteStr("value3"));
 constexpr auto kEntry4 = MakeValidEntry(kMagic, 5, "4k", ByteStr("value4"));
 
+constexpr auto kEmpty32Bytes = InitializedBytes<32>(0xff);
+static_assert(sizeof(kEmpty32Bytes) == 32);
+
 class KvsErrorHandling : public ::testing::Test {
  protected:
   KvsErrorHandling()
@@ -259,6 +262,26 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
   EXPECT_EQ(64u, stats.in_use_bytes);
   EXPECT_EQ(4 * 512u - 64u, stats.reclaimable_bytes);
   EXPECT_EQ(0u, stats.writable_bytes);
+}
+
+// Currently disabled due to KVS failing the test. KVS fails due to Init bailing
+// out when it sees a small patch of "erased" looking flash space, which could
+// result in missing keys that are actually written after a write error in
+// flash.
+TEST_F(KvsErrorHandling, DISABLED_Init_OkWithWriteErrorOnFlash) {
+  InitFlashTo(AsBytes(kEntry1, kEmpty32Bytes, kEntry2));
+
+  EXPECT_EQ(Status::DATA_LOSS, kvs_.Init());
+  byte buffer[64];
+  EXPECT_EQ(2u, kvs_.size());
+  EXPECT_EQ(true, kvs_.error_detected());
+  EXPECT_EQ(Status::OK, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(64u, stats.in_use_bytes);
+  EXPECT_EQ(512u - 64u, stats.reclaimable_bytes);
+  EXPECT_EQ(2 * 512u, stats.writable_bytes);
 }
 
 TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
@@ -457,6 +480,28 @@ TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldRecoverOne) {
   EXPECT_EQ(0u, stats.reclaimable_bytes);
   EXPECT_EQ(3 * 512u - 64u, stats.writable_bytes);
   EXPECT_EQ(4u, stats.corrupt_sectors_recovered);
+}
+
+// Currently disabled due to KVS failing the test. KVS fails due to Init bailing
+// out when it sees a small patch of "erased" looking flash space, which could
+// result in missing keys that are actually written after a write error in
+// flash.
+TEST_F(KvsErrorRecovery, DISABLED_Init_OkWithWriteErrorOnFlash) {
+  InitFlashTo(AsBytes(kEntry1, kEmpty32Bytes, kEntry2));
+
+  EXPECT_EQ(Status::OK, kvs_.Init());
+  byte buffer[64];
+  EXPECT_EQ(2u, kvs_.size());
+  EXPECT_EQ(false, kvs_.error_detected());
+  EXPECT_EQ(Status::OK, kvs_.Get("key1", buffer).status());
+  EXPECT_EQ(Status::OK, kvs_.Get("k2", buffer).status());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(64u, stats.in_use_bytes);
+  EXPECT_EQ(0u, stats.reclaimable_bytes);
+  EXPECT_EQ(3 * 512u - 64u, stats.writable_bytes);
+  EXPECT_EQ(1u, stats.corrupt_sectors_recovered);
+  EXPECT_EQ(0u, stats.missing_redundant_entries_recovered);
 }
 
 TEST_F(KvsErrorRecovery, Init_CorruptKey_RevertsToPreviousVersion) {
