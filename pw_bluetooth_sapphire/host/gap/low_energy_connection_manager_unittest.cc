@@ -1617,7 +1617,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInter
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.has_value());
+  ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_success());
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());
@@ -1672,7 +1672,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.has_value());
+  ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_success());
   ASSERT_TRUE(conn_ref);
   EXPECT_TRUE(conn_ref->active());

@@ -328,10 +328,10 @@ class LowEnergyConnectionManager final {
                                const hci::LEPreferredConnectionParameters& params);
 
   // As an LE peripheral, request that the connection parameters |params| be used on the given
-  // logical link |handle|. This may send an HCI LE Connection Update command or an L2CAP Connection
-  // Parameter Update Request depending on what the local and remote controllers and hosts support.
-  // Interrogation must have completed before this may be called.
-  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
+  // logical link |link| with peer |peer_id|. This may send an HCI LE Connection Update command or
+  // an L2CAP Connection Parameter Update Request depending on what the local and remote controllers
+  // and hosts support. Interrogation must have completed before this may be called.
+  void RequestConnectionParameterUpdate(PeerId peer_id, const internal::LowEnergyConnection& conn,
                                         const hci::LEPreferredConnectionParameters& params);
 
   // Requests that the controller use the given connection |params| on the given
@@ -356,7 +356,7 @@ class LowEnergyConnectionManager final {
   // NOTE: This should only be used if the LE peripheral and/or LE central do not support the
   // Connection Parameters Request Link Layer Control Procedure (Core Spec v5.2  Vol 3, Part A,
   // Sec 4.20). If they do, UpdateConnectionParams(...) should be used instead.
-  void L2capRequestConnectionParameterUpdate(hci::ConnectionHandle handle,
+  void L2capRequestConnectionParameterUpdate(const internal::LowEnergyConnection& conn,
                                              const hci::LEPreferredConnectionParameters& params);
 
   // Returns an iterator into |connections_| if a connection is found that

@@ -770,14 +770,15 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id) {
     bt_log(INFO, "gap", "OnInterrogationComplete called for non-connected peer");
   }
   auto& conn = it->second;
-  auto handle = conn->handle();
-  auto role = conn->link()->role();
 
-  if (role == hci::Connection::Role::kSlave) {
+  // Perform the Connection Parameter Update Procedure after connecting as slave (Core Spec v5.2,
+  // Vol 3, Part C, 9.3.12.2). This may send either a Link Layer or L2cap connection update
+  // request, depending on what the peer supports.
+  if (conn->link()->role() == hci::Connection::Role::kSlave) {
     const hci::LEPreferredConnectionParameters params(
         hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
         /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
-    RequestConnectionParameterUpdate(handle, params);
+    RequestConnectionParameterUpdate(peer_id, *conn, params);
   }
 }
 
@@ -1006,11 +1007,8 @@ void LowEnergyConnectionManager::OnNewLEConnectionParams(
 }
 
 void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
-    hci::ConnectionHandle handle, const hci::LEPreferredConnectionParameters& params) {
-  auto iter = FindConnection(handle);
-  ZX_ASSERT(iter != connections_.end());
-  const auto& conn = *iter->second;
-  auto peer_id = iter->first;
+    PeerId peer_id, const internal::LowEnergyConnection& conn,
+    const hci::LEPreferredConnectionParameters& params) {
   ZX_ASSERT_MSG(conn.link()->role() == hci::Connection::Role::kSlave,
                 "tried to send l2cap connection parameter update request as master");
 
@@ -1018,7 +1016,7 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
   // Ensure interrogation has completed.
   ZX_ASSERT(peer->le()->features().has_value());
 
-  // TODO(benlawson): check local controller support for LL Connection Parameters Request procedure
+  // TODO(49714): check local controller support for LL Connection Parameters Request procedure
   // (mask is currently in Adapter le state, consider propagating down)
   bool ll_connection_parameters_req_supported =
       peer->le()->features()->le_features &
@@ -1027,12 +1025,12 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
   bt_log(DEBUG, "gap-le", "ll connection parameters req procedure supported: %s",
          ll_connection_parameters_req_supported ? "true" : "false");
 
-  // TODO(benlawson): don't update params until after kLEConnectionPausePeripheral after
+  // TODO(49716): don't update params until after kLEConnectionPausePeripheral after
   // establishing connection (Core Spec v5.2, Vol 3, Part C, Sec 9.3.12).
   if (ll_connection_parameters_req_supported) {
-    UpdateConnectionParams(handle, params);
+    UpdateConnectionParams(conn.handle(), params);
   } else {
-    L2capRequestConnectionParameterUpdate(handle, params);
+    L2capRequestConnectionParameterUpdate(conn, params);
   }
 }
 
@@ -1062,21 +1060,19 @@ void LowEnergyConnectionManager::UpdateConnectionParams(
 }
 
 void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(
-    hci::ConnectionHandle handle, const hci::LEPreferredConnectionParameters& params) {
-  auto iter = FindConnection(handle);
-  ZX_ASSERT(iter != connections_.end());
-  const auto& conn = *iter->second;
+    const internal::LowEnergyConnection& conn, const hci::LEPreferredConnectionParameters& params) {
   ZX_ASSERT_MSG(conn.link()->role() == hci::Connection::Role::kSlave,
                 "tried to send l2cap connection parameter update request as master");
 
   bt_log(TRACE, "gap-le", "sending l2cap connection parameter update request");
 
+  auto handle = conn.handle();
   auto response_cb = [handle](bool accepted) {
     bt_log(TRACE, "gap-le", "peer %s l2cap connection parameter update request (handle: %#.4x)",
            accepted ? "accepted" : "rejected", handle);
   };
 
-  // TODO(benlawson): don't send request until after kLEConnectionParameterTimeout of an l2cap conn
+  // TODO(49717): don't send request until after kLEConnectionParameterTimeout of an l2cap conn
   // parameter update response being received (Core Spec v5.2, Vol 3, Part C, Sec 9.3.9).
   data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb),
                                                  dispatcher_);
