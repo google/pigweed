@@ -43,7 +43,7 @@ CPP17_COPTS = [
     "-Wno-register",
 ]
 
-DISABLE_PENDING_WORKAROUND_OPTS = [
+DISABLE_PENDING_WORKAROUND_COPTS = [
     "-Wno-private-header",
 ]
 
@@ -51,15 +51,23 @@ PW_DEFAULT_COPTS = (
     DEBUGGING +
     REDUCED_SIZE_COPTS +
     STRICT_WARNINGS_COPTS +
-    DISABLE_PENDING_WORKAROUND_OPTS
+    DISABLE_PENDING_WORKAROUND_COPTS
 )
+
+KYTHE_COPTS = [
+    "-Wno-unknown-warning-option",
+]
 
 PW_DEFAULT_LINKOPTS = []
 
 def _add_defaults(kwargs):
     """Adds default arguments suitable for both C and C++ code to kwargs."""
 
-    kwargs["copts"] = kwargs.get("copts", []) + PW_DEFAULT_COPTS
+    copts = kwargs.get("copts", []) + PW_DEFAULT_COPTS
+    kwargs["copts"] = select({
+        "//pw_build:kythe": copts + KYTHE_COPTS,
+        "//conditions:default": copts,
+    })
     kwargs["linkopts"] = kwargs.get("linkopts", []) + PW_DEFAULT_LINKOPTS
 
     # Set linkstatic to avoid building .so files.

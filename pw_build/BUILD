@@ -15,3 +15,10 @@
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
+
+config_setting(
+    name = "kythe",
+    values = {
+        "define": "kythe_corpus=pigweed.googlesource.com/pigweed/pigweed",
+    },
+)
