@@ -212,11 +212,6 @@ void TestCase(TestDataFile* file,
 // Formats the contents like an error.
 #define ERROR_STR PW_TOKENIZER_ARG_DECODING_ERROR
 
-extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t*, size_t) {}
-extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(pw_TokenizerPayload,
-                                                            const uint8_t*,
-                                                            size_t) {}
-
 // Generates data to test tokenized string decoding.
 void GenerateEncodedStrings(TestDataFile* file) {
   std::mt19937 random(6006411);

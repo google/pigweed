@@ -90,6 +90,7 @@ pw_cc_binary(
     name = "generate_decoding_test_data",
     srcs = [
         "generate_decoding_test_data.cc",
+        "tokenize_test_fakes.cc",
     ],
     deps = [
         ":decoder",
@@ -120,6 +121,7 @@ pw_cc_test(
         "argument_types_test.c",
         "argument_types_test.cc",
         "pw_tokenizer_private/argument_types_test.h",
+        "tokenize_test_fakes.cc",
     ],
     deps = [
         ":pw_tokenizer",
@@ -170,6 +172,7 @@ pw_cc_test(
     srcs = [
         "hash_test.cc",
         "pw_tokenizer_private/generated_hash_test_cases.h",
+        "tokenize_test_fakes.cc",
     ],
     deps = [
         ":pw_tokenizer",

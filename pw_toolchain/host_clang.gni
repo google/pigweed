@@ -49,7 +49,7 @@ template("host_clang") {
     _cflags_list += [ "--sysroot=$_xcode_sysroot" ]
   }
 
-  _toolchain_cflags = string_join(" ", _cflags_list)
+  _cflags_c_list = []
 
   # Toolchain C++ flags
   _cflags_cc_list = [
@@ -92,17 +92,18 @@ template("host_clang") {
   if (oss_fuzz_enabled) {
     _cc = getenv("CC")
     _cxx = getenv("CXX")
-    _cflags_list += string_split(getenv("CFLAGS"))
+    _cflags_c_list += string_split(getenv("CFLAGS"))
     _cflags_cc_list += string_split(getenv("CXXFLAGS"))
+    _ldflags_list += string_split(getenv("CXXFLAGS"))
 
     # TODO(pwbug/184): OSS-Fuzz sets -stdlib=libc++, but pw_minimal_cpp_stdlib
     # sets -nostdinc++. Find a more flexible mechanism to achieve this and
     # similar needs (like removing -fno-rtti fro UBSan).
     _cflags_cc_list += [ "-Wno-unused-command-line-argument" ]
-    _ldflags_list += string_split(getenv("LDFLAGS"))
   }
 
   _toolchain_cflags = string_join(" ", _cflags_list)
+  _toolchain_cflags_c = string_join(" ", _cflags_c_list)
   _toolchain_cflags_cc = string_join(" ", _cflags_cc_list)
   _toolchain_ldflags = string_join(" ", _ldflags_list)
 
@@ -136,6 +137,7 @@ template("host_clang") {
                             [
                               "$_cc",
                               "-MMD -MF $depfile",  # Write out dependencies.
+                              _toolchain_cflags_c,
                               _toolchain_cflags,
                               "{{defines}}",
                               "{{include_dirs}}",
@@ -188,8 +190,8 @@ template("host_clang") {
       "$_cxx",
       "{{ldflags}}",
 
-      _toolchain_cflags,
       _toolchain_ldflags,
+      _toolchain_cflags,
 
       "{{inputs}}",
       "{{libs}}",

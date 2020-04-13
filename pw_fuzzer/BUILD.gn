@@ -22,11 +22,31 @@ config("default_config") {
 # This is added automatically by the `pw_fuzzer` template.
 config("fuzzing") {
   common_flags = [ "-fsanitize=fuzzer" ]
-  if (pw_sanitizer != "") {
-    common_flags += [ "-fsanitize=$pw_sanitizer" ]
-  }
   cflags = common_flags
   ldflags = common_flags
+}
+
+config("sanitize_address") {
+  cflags = [ "-fsanitize=address" ]
+  ldflags = cflags
+}
+
+config("sanitize_memory") {
+  cflags = [ "-fsanitize=memory" ]
+  ldflags = cflags
+}
+
+config("sanitize_undefined") {
+  cflags = [ "-fsanitize=undefined" ]
+  ldflags = cflags
+}
+
+# OSS-Fuzz needs to be able to specify its own compilers and add flags.
+config("oss_fuzz") {
+  # OSS-Fuzz doesn't always link with -fsanitize=fuzzer, sometimes it uses
+  #-fsanitize=fuzzer-no-link and provides the fuzzing engine explicitly to be
+  # passed to the linker.
+  ldflags = [ getenv("LIB_FUZZING_ENGINE") ]
 }
 
 source_set("pw_fuzzer") {

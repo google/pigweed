@@ -96,7 +96,10 @@ pw::span<const T> ConsumeSpan(FuzzedDataProvider* provider,
 const char* ConsumeString(FuzzedDataProvider* provider,
                           std::vector<std::string>* data) {
   size_t off = data->size();
-  data->push_back(provider->ConsumeRandomLengthString());
+  // OSS-Fuzz's clang doesn't have the zero-parameter version of
+  // ConsumeRandomLengthString yet.
+  size_t max_length = std::numeric_limits<size_t>::max();
+  data->push_back(provider->ConsumeRandomLengthString(max_length));
   return (*data)[off].c_str();
 }
 

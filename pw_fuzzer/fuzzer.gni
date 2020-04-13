@@ -34,7 +34,7 @@ template("pw_fuzzer") {
   can_fuzz = fuzzing_platforms + [ host_os ] - [ host_os ] != fuzzing_platforms
   can_fuzz = fuzzing_toolchains + [ current_toolchain ] -
              [ current_toolchain ] != fuzzing_toolchains && can_fuzz
-  if (can_fuzz) {
+  if (can_fuzz && pw_sanitizer != "") {
     # Build the actual fuzzer using the fuzzing config.
     pw_executable(target_name) {
       configs = []
@@ -42,8 +42,13 @@ template("pw_fuzzer") {
       forward_variables_from(invoker, [ "visibility" ])
       configs += [
         "$dir_pw_fuzzer:default_config",
-        "$dir_pw_fuzzer:fuzzing",
+        "$dir_pw_fuzzer:sanitize_${pw_sanitizer}",
       ]
+      if (oss_fuzz_enabled) {
+        configs += [ "$dir_pw_fuzzer:oss_fuzz" ]
+      } else {
+        configs += [ "$dir_pw_fuzzer:fuzzing" ]
+      }
 
       # Metadata for this fuzzer when used as part of a pw_test_group target.
       metadata = {
