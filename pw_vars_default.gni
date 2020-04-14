@@ -73,15 +73,21 @@ pw_unit_test_main = "$dir_pw_unit_test:simple_printing_main"
 # unit tests, such as desktops with multiple cores.
 pw_automatic_test_runner = ""
 
-# Languages for which to generate protobuf code. These are used by the
+################################# PROTOBUF #####################################
+
+# Generators with which to compile protobuf code. These are used by the
 # pw_proto_library template to determine which build targets to create.
 #
-# Supported languages:
-#   "cc", "go"
-pw_protobuf_langs = [
-  "cc",
+# Supported generators:
+#   "pwpb", "nanopb", "go"
+pw_protobuf_generators = [
+  "pwpb",
   "go",
 ]
+
+# If compiling for nanopb, this variable is set to the path to the nanopb
+# installation.
+dir_third_party_nanopb = ""
 
 ################################# BACKENDS #####################################
 

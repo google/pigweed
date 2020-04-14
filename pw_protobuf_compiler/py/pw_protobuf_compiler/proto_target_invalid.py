@@ -36,10 +36,10 @@ def argument_parser(
     parser.add_argument('--dir', required=True, help='Target directory')
     parser.add_argument('--root', required=True, help='GN root')
     parser.add_argument('--target', required=True, help='Build target')
-    parser.add_argument('languages',
-                        metavar='LANG',
+    parser.add_argument('generators',
+                        metavar='GEN',
                         nargs='+',
-                        help='Supported protobuf languages')
+                        help='Supported protobuf generators')
 
     return parser
 
@@ -54,11 +54,11 @@ def main() -> int:
     _LOG.error('The target %s is not a compiled protobuf library.',
                colors().bold_white(args.target))
     _LOG.error('')
-    _LOG.error('A different target is generated for each supported language.')
+    _LOG.error('A different target is generated for each active generator.')
     _LOG.error('Depend on one of the following targets instead:')
     _LOG.error('')
-    for lang in args.languages:
-        _LOG.error('  //%s:%s_%s', relative_dir, args.target, lang)
+    for gen in args.generators:
+        _LOG.error('  //%s:%s_%s', relative_dir, args.target, gen)
     _LOG.error('')
 
     return 1

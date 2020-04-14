@@ -36,6 +36,7 @@ def argument_parser(
         parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument('--language', default='cc', help='Output language')
+    parser.add_argument('--custom-plugin', help='Custom protoc plugin')
     parser.add_argument('--module-path',
                         required=True,
                         help='Path to the module containing the .proto files')
@@ -61,11 +62,19 @@ def protoc_go_args(args: argparse.Namespace) -> List[str]:
     return ['--go_out', f'plugins=grpc:{args.out_dir}']
 
 
+def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
+    return [
+        '--plugin', f'protoc-gen-nanopb={args.custom_plugin}', '--nanopb_out',
+        args.out_dir
+    ]
+
+
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
     'cc': protoc_cc_args,
     'go': protoc_go_args,
+    'nanopb': protoc_nanopb_args,
 }
 
 

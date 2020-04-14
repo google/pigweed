@@ -10,25 +10,26 @@ pw_protobuf_compiler
 The Protobuf compiler module provides build system integration and wrapper
 scripts for generating source code for Protobuf definitions.
 
-Language support
-================
+Generator support
+=================
 
-Protobuf code generation is currently supported for the following languages:
+Protobuf code generation is currently supported for the following generators:
 
-+----------+--------+----------------------------------------------------------+
-| Language | Code   | Notes                                                    |
-+----------+--------+----------------------------------------------------------+
-| C++      | ``cc`` | Currently only supports using ``pw_protobuf``.           |
-|          |        |                                                          |
-|          |        | Support for other libraries such as ``nanopb`` is        |
-|          |        | planned.                                                 |
-+----------+--------+----------------------------------------------------------+
-| Go       | ``go`` | Compiles using the standard Go protobuf plugin with gRPC |
-|          |        | service support.                                         |
-+----------+--------+----------------------------------------------------------+
++-------------+------------+---------------------------------------------------+
+| Generator   | Code       | Notes                                             |
++-------------+------------+---------------------------------------------------+
+| pw_protobuf | ``pwpb``   | Compiles using ``pw_protobuf``.                   |
++-------------+------------+---------------------------------------------------+
+| Go          | ``go``     | Compiles using the standard Go protobuf plugin    |
+|             |            | with gRPC service support.                        |
++-------------+------------+---------------------------------------------------+
+| Nanopb      | ``nanopb`` | Compiles using Nanopb. The build variable         |
+|             |            | ``dir_third_party_nanopb`` must be set to point   |
+|             |            | to a local nanopb installation.                   |
++-------------+------------+---------------------------------------------------+
 
-The build variable ``pw_protobuf_langs`` tells the module the languages for
-which it should compile code. It is defined as a list of language codes.
+The build variable ``pw_protobuf_generators`` tells the module the generators
+for which it should compile code. It is defined as a list of generator codes.
 
 GN template
 ===========
@@ -36,21 +37,21 @@ GN template
 The ``pw_proto_library`` GN template is provided by the module.
 
 It tells the build system to compile a set of source proto files to a library in
-each chosen language. A different target is created for each language, with the
-language's code appended as a suffix to the template's target name.
+each chosen generator. A different target is created for each generator, with
+the generator's code appended as a suffix to the template's target name.
 
 For example, given the definitions:
 
 .. code::
 
-  pw_protobuf_langs = [ "cc", "py" ]
+  pw_protobuf_generators = [ "pwpb", "py" ]
 
   pw_proto_library("test_protos") {
     sources = [ "test.proto" ]
   }
 
-Two targets are created, named ``test_protos_cc`` and ``test_protos_py``,
-containing the generated code for their respective languages.
+Two targets are created, named ``test_protos_pwpb`` and ``test_protos_py``,
+containing the generated code from their respective generators.
 
 **Arguments**
 

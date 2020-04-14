@@ -366,7 +366,7 @@ def process_proto_file(proto_file):
     root = build_hierarchy(proto_file)
     populate_fields(proto_file, root)
 
-    output_filename = os.path.splitext(proto_file.name)[0] + '.pb.h'
+    output_filename = os.path.splitext(proto_file.name)[0] + '.pwpb.h'
     output_file = OutputFile(output_filename)
     generate_code_for_package(root, output_file)
 
