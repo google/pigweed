@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -110,6 +111,7 @@ pw_test_group("tests") {
     ":argument_types_test",
     ":base64_test",
     ":decode_test",
+    ":detokenize_fuzzer",
     ":detokenize_test",
     ":hash_test",
     ":simple_tokenize_test_cpp11",
@@ -221,6 +223,15 @@ pw_test("tokenize_test") {
   deps = [
     ":pw_tokenizer",
     "$dir_pw_varint",
+  ]
+}
+
+pw_fuzzer("detokenize_fuzzer") {
+  sources = [ "detokenize_fuzzer.cc" ]
+  deps = [
+    ":decoder",
+    "$dir_pw_fuzzer",
+    "$dir_pw_preprocessor",
   ]
 }
 
