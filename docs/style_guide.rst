@@ -254,6 +254,16 @@ additional requirements.
   * If private code must be exposed in a header file, it must be in a namespace
     nested under ``pw``. The namespace may be named for its subsystem or use a
     name that designates it as private, such as ``internal``.
+  * Template arguments for non-type names (e.g. ``template <int foo_bar>``)
+    should follow the variable naming convention, which means snake case (e.g.
+    ``foo_bar``). This matches the Google C++ style, however the wording in the
+    official style guide isn't explicit and could be interpreted to use
+    ``kFooBar`` style naming. Wide practice establishes that the naming
+    convention is ``snake_case``, and so that is the style we use in Pigweed.
+
+    **Note:** At time of writing much of Pigweed incorrectly follows the
+    ``kCamelCase`` naming for non-type template arguments. This is a bug that
+    will be fixed eventually.
 
 **C code**
   * Public names used by C code must be prefixed with ``pw_``.
