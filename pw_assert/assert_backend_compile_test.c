@@ -12,20 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// This is "test" verifies that the assert backend:
+// This is a compile test that verifies that the assert macros compile in a C
+// context. They are not correctness checks.
 //
-// - Compiles as plain C
-//
-// Unfortunately, this doesn't really test the crashing functionality since
-// that is so backend dependent.
-//
-// NOTE: To run these tests for pw_assert_basic, you must modify two things:
-//
-//   (1) Set DISABLE_ASSERT_TEST_EXECUTION 1 in assert_test.cc (this file)
-//   (1) Set DISABLE_ASSERT_TEST_EXECUTION 1 in assert_test.c
-//   (2) Set PW_ASSERT_BASIC_DISABLE_NORETURN 1 in assert_basic.h
-//
-// This is obviously not a long term solution.
+// Note: These tests cannot be run with a normal assert backend, since they
+// will abort. However, the assert_basic backend supports non-aborting assert;
+// see the note in assert_backend_compile_test.cc.
+
+// The compile tests verifies that the short macros compile, so enable them.
+#undef PW_ASSERT_USE_SHORT_NAMES
+#define PW_ASSERT_USE_SHORT_NAMES 1
 
 #include "pw_assert/assert.h"
 
@@ -56,7 +52,7 @@ static const int z = 10;
 
 static int Add3(int a, int b, int c) { return a + b + c; }
 
-void AssertTestsInC() {
+void AssertBackendCompileTestsInC() {
   {  // TEST(Crash, WithAndWithoutMessageArguments)
     MAYBE_SKIP_TEST;
     PW_CRASH(FAIL_IF_HIDDEN);
@@ -133,5 +129,33 @@ void AssertTestsInC() {
 
     PW_CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
     PW_CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
+  }
+
+  // Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
+  {  // TEST(Check, ShortNamesWork) {
+    MAYBE_SKIP_TEST;
+
+    // Crash
+    CRASH(FAIL_IF_HIDDEN);
+    CRASH(FAIL_IF_HIDDEN_ARGS, z);
+
+    // Check
+    CHECK(1, FAIL_IF_DISPLAYED);
+    CHECK(1, FAIL_IF_DISPLAYED_ARGS, z);
+    CHECK(0, FAIL_IF_HIDDEN);
+    CHECK(0, FAIL_IF_HIDDEN_ARGS, z);
+
+    // Check with binary comparison
+    int x_int = 50;
+    int y_int = 66;
+
+    CHECK_INT_LE(Add3(1, 2, 3), y_int);
+    CHECK_INT_LE(x_int, Add3(1, 2, 3));
+
+    CHECK_INT_LE(Add3(1, 2, 3), y_int, FAIL_IF_DISPLAYED);
+    CHECK_INT_LE(x_int, Add3(1, 2, 3), FAIL_IF_DISPLAYED_ARGS, z);
+
+    CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
+    CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
   }
 }

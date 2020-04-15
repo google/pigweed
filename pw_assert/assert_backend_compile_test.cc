@@ -12,11 +12,28 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// This is mostly a compile test to verify that the log backend is able to
-// compile the constructs promised by the logging facade; and that when run,
-// there is no crash.
+// This series of "tests" is more a compile test to verify that the assert
+// backend is able to compile the constructs promised by the assert facade.
+// Truly testing the backend in a general way from the facade is impossible
+// since the device will go down when an assert triggers, and so that must be
+// handled inside the individual backends.
 //
-// TODO(pwbug/88): Add verification of the actually logged statements.
+// NOTE: While these tests are not intended to run, it *is* possible to run
+// them with the assert_basic backend, in a special mode where the assert
+// statements fall through instead of aborting.
+//
+// To run these "tests" for pw_assert_basic, you must modify two things:
+//
+//   (1) Set DISABLE_ASSERT_TEST_EXECUTION 0 in assert_backend_compile_test.cc
+//   (2) Set DISABLE_ASSERT_TEST_EXECUTION 0 in assert_backend_compile_test.c
+//   (3) Set PW_ASSERT_BASIC_DISABLE_NORETURN 1 in assert_basic.h
+//   (4) Compile and run the resulting binary, paying attention to the
+//       displayed error messages. If "FAIL IF DISPLAYED" is printed, the
+//       test has failed. If any "FAIL_IF_HIDDEN" asserts are not displayed,
+//       the test has failed. Obviously manually verifying these is a pain
+//       and so this is not a suitable test for production.
+//
+// TODO(pwbug/88): Add verification of the actually recorded asserts statements.
 
 // clang-format off
 #define PW_ASSERT_USE_SHORT_NAMES 1
@@ -128,45 +145,6 @@ TEST(Check, ComparisonArgumentsWithCommas) {
   PW_CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
 }
 
-// These are defined in assert_test.c, to test C compatibility.
-extern "C" {
-void AssertTestsInC();
-}  // extern "C"
-
-TEST(Check, AssertTestsInC) {
-  MAYBE_SKIP_TEST;
-  AssertTestsInC();
-}
-
-static int global_state_for_multi_evaluate_test;
-static int IncrementsGlobal() {
-  global_state_for_multi_evaluate_test++;
-  return 0;
-}
-
-// This test verifies that the binary CHECK_*(x,y) macros only
-// evaluate their arguments once.
-TEST(Check, BinaryOpOnlyEvaluatesOnce) {
-  MAYBE_SKIP_TEST;
-
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(0, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
-
-  // Fails; should only evaluate IncrementGlobal() once.
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(1, IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
-
-  global_state_for_multi_evaluate_test = 0;
-  PW_CHECK_INT_EQ(IncrementsGlobal(), 1 + IncrementsGlobal());
-  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
-}
-
 // Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
 TEST(Check, ShortNamesWork) {
   MAYBE_SKIP_TEST;
@@ -194,4 +172,13 @@ TEST(Check, ShortNamesWork) {
   CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
   CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
 }
+
+// These are defined in assert_test.c, to test C compatibility.
+extern "C" void AssertBackendCompileTestsInC();
+
+TEST(Check, AssertBackendCompileTestsInC) {
+  MAYBE_SKIP_TEST;
+  AssertBackendCompileTestsInC();
+}
+
 }  // namespace

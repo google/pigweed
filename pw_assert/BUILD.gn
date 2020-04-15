@@ -31,22 +31,34 @@ pw_facade("pw_assert") {
 }
 
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":assert_facade_test" ]
   if (dir_pw_assert_backend != "") {
-    tests += [ ":assert_test" ]
+    tests += [ ":assert_backend_compile_test" ]
   }
 }
 
+# The assert facade test doesn't require a backend since a fake one is
+# provided.  However, since this doesn't depend on the backend it re-includes
+# the facade headers.
+pw_test("assert_facade_test") {
+  configs = [ ":default_config" ]  # For internal/assert_impl.h
+  sources = [
+    "assert_facade_test.cc",
+    "fake_backend.cc",
+    "public/pw_assert/internal/assert_impl.h",
+    "pw_assert_test/fake_backend.h",
+  ]
+}
+
 if (dir_pw_assert_backend != "") {
-  pw_test("assert_test") {
+  pw_test("assert_backend_compile_test") {
     deps = [
       ":pw_assert",
       dir_pw_assert_backend,
     ]
-
     sources = [
-      "assert_test.c",
-      "assert_test.cc",
+      "assert_backend_compile_test.c",
+      "assert_backend_compile_test.cc",
     ]
   }
 }
