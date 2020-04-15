@@ -76,11 +76,11 @@ void Peer::LowEnergyData::ProcessNewAdvertisingData(int8_t rssi, const ByteBuffe
 
   // Walk through the advertising data and update common fields.
   // TODO(armansito): Validate that the advertising data is not malformed?
-  AdvertisingDataReader reader(new_data);
-  gap::DataType type;
+  SupplementDataReader reader(new_data);
+  DataType type;
   BufferView data;
   while (reader.GetNextField(&type, &data)) {
-    if (type == gap::DataType::kCompleteLocalName || type == gap::DataType::kShortenedLocalName) {
+    if (type == DataType::kCompleteLocalName || type == DataType::kShortenedLocalName) {
       // TODO(armansito): Parse more advertising data fields, such as preferred
       // connection parameters.
       // TODO(NET-607): SetName should be a no-op if a name was obtained via
@@ -255,13 +255,12 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
   eir_len_ = eir.size();
   eir.Copy(&eir_buffer_);
 
-  // TODO(jamuraa): maybe rename this class?
-  AdvertisingDataReader reader(eir);
-  gap::DataType type;
+  SupplementDataReader reader(eir);
+  DataType type;
   BufferView data;
   bool changed = false;
   while (reader.GetNextField(&type, &data)) {
-    if (type == gap::DataType::kCompleteLocalName) {
+    if (type == DataType::kCompleteLocalName) {
       // TODO(armansito): Parse more fields.
       // TODO(armansito): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.

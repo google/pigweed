@@ -31,32 +31,6 @@ enum class Mode {
   kExtended,
 };
 
-// EIR Data Type, Advertising Data Type (AD Type), OOB Data Type definitions.
-// clang-format off
-enum class DataType : uint8_t {
-  kFlags                        = 0x01,
-  kIncomplete16BitServiceUuids  = 0x02,
-  kComplete16BitServiceUuids    = 0x03,
-  kIncomplete32BitServiceUuids  = 0x04,
-  kComplete32BitServiceUuids    = 0x05,
-  kIncomplete128BitServiceUuids = 0x06,
-  kComplete128BitServiceUuids   = 0x07,
-  kShortenedLocalName           = 0x08,
-  kCompleteLocalName            = 0x09,
-  kTxPowerLevel                 = 0x0A,
-  kClassOfDevice                = 0x0D,
-  kSSPOOBHash                   = 0x0E,
-  kSSPOOBRandomizer             = 0x0F,
-  kServiceData16Bit             = 0x16,
-  kAppearance                   = 0x19,
-  kServiceData32Bit             = 0x20,
-  kServiceData128Bit            = 0x21,
-  kURI                          = 0x24,
-  kManufacturerSpecificData     = 0xFF,
-  // TODO(armansito): Complete this list.
-};
-// clang-format on
-
 // Constants for the expected size (in octets) of an
 // advertising/EIR/scan-response data field.
 //

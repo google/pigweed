@@ -7,6 +7,7 @@
 #include <endian.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
@@ -60,7 +61,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
   bool pathloss_ok = !pathloss_;
   bool tx_power_found = false;
 
-  AdvertisingDataReader reader(advertising_data);
+  SupplementDataReader reader(advertising_data);
   if (advertising_data.size() && !reader.is_valid())
     return false;
 

@@ -30,6 +30,8 @@ source_set("common") {
     "slab_buffer.h",
     "status.cc",
     "status.h",
+    "supplement_data.cc",
+    "supplement_data.h",
     "task_domain.h",
     "test_helpers.h",
     "uint128.h",
@@ -73,6 +75,7 @@ source_set("tests") {
     "slab_allocator_traits_unittest.cc",
     "slab_allocator_unittest.cc",
     "status_unittest.cc",
+    "supplement_data_unittest.cc",
     "task_domain_unittest.cc",
     "uuid_unittest.cc",
   ]
