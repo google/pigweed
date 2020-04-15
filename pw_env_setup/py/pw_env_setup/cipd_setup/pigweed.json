@@ -18,8 +18,8 @@
     ]
   },
   {
-    "path": "fuchsia/third_party/bazel/${os=linux,mac}-${arch}",
     "_comment": "TODO(pwbug/93): Package Bazel for Windows.",
+    "path": "fuchsia/third_party/bazel/${os=linux,mac}-${arch}",
     "tags": [
       "version:0.25.1"
     ]
@@ -43,15 +43,15 @@
     ]
   },
   {
-    "path": "fuchsia/third_party/clang/${os=linux,mac}-${arch}",
     "_comment": "TODO(pwbug/70) Put clang in cipd for Windows.",
+    "path": "fuchsia/third_party/clang/${os=linux,mac}-${arch}",
     "tags": [
       "git_revision:74e6a5b2a3b0e1992fb38c986b18f1aa7ca6fabd"
     ]
   },
   {
-    "path": "infra/3pp/tools/cpython3/${platform}",
     "_comment": "When bumping the minor version (e.g., to 3.9.x) also update env_setup/virtualenv/init.py to check for the new version.",
+    "path": "infra/3pp/tools/cpython3/${platform}",
     "tags": [
       "version:3.8.2.chromium.10"
     ]
@@ -69,15 +69,15 @@
     ]
   },
   {
-    "path": "pigweed/third_party/openocd/${os=linux}-${arch}",
     "_comment": "TODO(pwbug/66) Put openocd in cipd for Windows.",
+    "path": "pigweed/third_party/openocd/${os=linux}-${arch}",
     "tags": [
       "git_revision:646566e006acd58fb9ac405511d3ecca79f26d55"
     ]
   },
   {
-    "path": "fuchsia/rust/${os=linux,mac}-${arch}",
     "_comment": "TODO(pwbug/69) Put rust in cipd for Windows.",
+    "path": "fuchsia/rust/${os=linux,mac}-${arch}",
     "tags": [
       "git_revision:4d1fbaccb822b6d52dc786589de7918d3c5effb1"
     ]
@@ -91,7 +91,7 @@
   {
     "path": "pigweed/host_tools/${platform}",
     "tags": [
-      "git_revision:003044ad3564ec7b9705e70604af65fa5b304b84"
+      "git_revision:415411228bce1b3d01339f56666d0385e0eda9ef"
     ]
   },
   {
