@@ -497,9 +497,17 @@ QUICK_PRESUBMIT: Tuple[Callable, ...] = (
     *python_checks.ALL,
 )
 
-FULL_PRESUBMIT: Tuple[Callable, ...] = (
-    INIT + CODE_FORMAT + GENERAL + CC + GN +
-    python_checks.ALL + CMAKE + BAZEL + BUILD_ENV_SETUP)  # yapf: disable
+FULL_PRESUBMIT: Tuple[Callable, ...] = sum([
+    INIT,
+    CODE_FORMAT,
+    CC,
+    GN,
+    python_checks.ALL,
+    CMAKE,
+    BAZEL,
+    GENERAL,
+    BUILD_ENV_SETUP,
+], ())
 
 PROGRAMS: Dict[str, Tuple] = {
     'broken': BROKEN,

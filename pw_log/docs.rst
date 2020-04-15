@@ -62,7 +62,7 @@ Logging macros
   .. code-block:: cpp
 
     PW_LOG(PW_NO_FLAGS, PW_LOG_LEVEL_INFO, "Temperature is %d degrees", temp);
-    PW_LOG(UNRELIABLE_DELIVERY, PW_LOG_LEVEL_ERROR, "It didn't work!"); 
+    PW_LOG(UNRELIABLE_DELIVERY, PW_LOG_LEVEL_ERROR, "It didn't work!");
 
   .. note::
 

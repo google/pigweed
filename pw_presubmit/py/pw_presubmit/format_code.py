@@ -184,6 +184,36 @@ def fix_py_format(files: Iterable):
     _yapf('--in-place', *files, check=True)
 
 
+_TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
+
+
+def _check_trailing_space(paths: Iterable[Path], fix: bool) -> Dict[Path, str]:
+    """Checks for and optionally removes trailing whitespace."""
+    errors = {}
+
+    for path in paths:
+        with path.open('rb') as fd:
+            contents = fd.read()
+
+        corrected = _TRAILING_SPACE.sub(b'', contents)
+        if corrected != contents:
+            errors[path] = _diff(path, contents, corrected)
+
+            if fix:
+                with path.open('wb') as fd:
+                    fd.write(corrected)
+
+    return errors
+
+
+def check_trailing_space(files: Iterable[Path]) -> Dict[Path, str]:
+    return _check_trailing_space(files, fix=False)
+
+
+def fix_trailing_space(files: Iterable[Path]) -> None:
+    _check_trailing_space(files, fix=True)
+
+
 def print_format_check(
         errors: Dict[Path, str],
         show_fix_commands: bool,
@@ -224,20 +254,38 @@ C_FORMAT: CodeFormat = CodeFormat(
     'C and C++', frozenset(['.h', '.hh', '.hpp', '.c', '.cc', '.cpp']),
     check_c_format, fix_c_format)
 
-GN_FORMAT: CodeFormat = CodeFormat('GN', ('.gn', '.gni'), check_gn_format,
-                                   fix_gn_format)
-
 GO_FORMAT: CodeFormat = CodeFormat('Go', ('.go', ), check_go_format,
                                    fix_go_format)
 
 PYTHON_FORMAT: CodeFormat = CodeFormat('Python', ('.py', ), check_py_format,
                                        fix_py_format)
 
+GN_FORMAT: CodeFormat = CodeFormat('GN', ('.gn', '.gni'), check_gn_format,
+                                   fix_gn_format)
+
+# TODO(pwbug/191): Add real code formatting support for Bazel and CMake
+BAZEL_FORMAT: CodeFormat = CodeFormat('Bazel', ('BUILD', ),
+                                      check_trailing_space, fix_trailing_space)
+
+CMAKE_FORMAT: CodeFormat = CodeFormat('CMake', ('CMakeLists.txt', '.cmake'),
+                                      check_trailing_space, fix_trailing_space)
+
+RST_FORMAT: CodeFormat = CodeFormat('reStructuredText', ('.rst', ),
+                                    check_trailing_space, fix_trailing_space)
+
+MARKDOWN_FORMAT: CodeFormat = CodeFormat('Markdown', ('.md', ),
+                                         check_trailing_space,
+                                         fix_trailing_space)
+
 CODE_FORMATS: Sequence[CodeFormat] = (
     C_FORMAT,
-    GN_FORMAT,
     GO_FORMAT,
     PYTHON_FORMAT,
+    GN_FORMAT,
+    BAZEL_FORMAT,
+    CMAKE_FORMAT,
+    RST_FORMAT,
+    MARKDOWN_FORMAT,
 )
 
 
