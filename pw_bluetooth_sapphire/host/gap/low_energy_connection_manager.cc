@@ -734,6 +734,7 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
 
   auto handle = link->handle();
+  auto role = link->role();
 
   // TODO(armansito): For now reject having more than one link with the same
   // peer. This should change once this has more context on the local
@@ -778,6 +779,14 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   //      c. If master, allow slave to initiate procedures (service discovery,
   //         encryption setup, etc) for kLEConnectionPauseCentral before
   //         updating the connection parameters to the slave's preferred values.
+
+  // TODO(49300): wait for kLEConnectionPauseCentral before updating connection parameters
+  if (role == hci::Connection::Role::kMaster) {
+    const hci::LEPreferredConnectionParameters params(
+        hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
+        /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+    UpdateConnectionParams(handle, params);
+  }
 
   interrogator_.Start(peer_id, handle,
                       [peer_id, conn_ref = std::move(first_ref), cb = std::move(callback),

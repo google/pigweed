@@ -1686,6 +1686,33 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation
   EXPECT_EQ(1u, hci_update_conn_param_count);
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest, CentralUpdatesConnectionParametersAfterInitialization) {
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer->le());
+
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+
+  size_t hci_update_conn_param_count = 0;
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, const hci::LEConnectionParameters& params) {
+        // FakeController will pick an interval between min and max interval.
+        EXPECT_TRUE(params.interval() >= hci::defaults::kLEConnectionIntervalMin &&
+                    params.interval() <= hci::defaults::kLEConnectionIntervalMax);
+        EXPECT_EQ(0u, params.latency());
+        EXPECT_EQ(hci::defaults::kLESupervisionTimeout, params.supervision_timeout());
+        hci_update_conn_param_count++;
+      });
+
+  LowEnergyConnectionRefPtr conn;
+  conn_mgr()->Connect(
+      peer->identifier(), [&](auto, auto c) { conn = std::move(c); }, BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, hci_update_conn_param_count);
+  EXPECT_TRUE(conn);
+}
+
 // Tests for assertions that enforce invariants.
 class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
 
