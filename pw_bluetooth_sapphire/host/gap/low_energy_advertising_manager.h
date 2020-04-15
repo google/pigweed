@@ -7,8 +7,8 @@
 
 #include <lib/fit/function.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"

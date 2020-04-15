@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
 #include "gtest/gtest.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {
-namespace gap {
 namespace {
 
 constexpr uint16_t kGattUuid = 0x1801;
@@ -291,5 +290,4 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSmallBufError) {
 }
 
 }  // namespace
-}  // namespace gap
 }  // namespace bt

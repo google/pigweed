@@ -161,7 +161,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
-  bt::gap::AdvertisingData input;
+  bt::AdvertisingData input;
   auto output = AdvertisingDataToFidlDeprecated(input);
 
   // All fields in |input| are not set. Therefore, output should have no set fields as well.
@@ -176,7 +176,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
-  bt::gap::AdvertisingData input;
+  bt::AdvertisingData input;
   input.SetLocalName("fuchsia");
   input.SetTxPower(4);
   input.SetAppearance(0x1234);

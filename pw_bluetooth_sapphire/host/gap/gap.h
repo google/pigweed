@@ -31,25 +31,6 @@ enum class Mode {
   kExtended,
 };
 
-// Constants for the expected size (in octets) of an
-// advertising/EIR/scan-response data field.
-//
-//  * If a constant contains the word "Min", then it specifies a minimum
-//    expected length rather than an exact length.
-//
-//  * If a constants contains the word "ElemSize", then the data field is
-//    expected to contain a contiguous array of elements of the specified size.
-constexpr size_t kAppearanceSize = 2;
-constexpr size_t kManufacturerIdSize = 2;
-constexpr size_t kTxPowerLevelSize = 1;
-
-constexpr size_t kFlagsSizeMin = 1;
-constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
-
-constexpr size_t k16BitUuidElemSize = 2;
-constexpr size_t k32BitUuidElemSize = 4;
-constexpr size_t k128BitUuidElemSize = 16;
-
 // Potential values that can be provided in the "Flags" advertising data
 // bitfield.
 // clang-format off

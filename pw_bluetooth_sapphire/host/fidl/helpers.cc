@@ -336,9 +336,9 @@ fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
   }
 
   if (peer.le()) {
-    bt::gap::AdvertisingData adv_data;
+    bt::AdvertisingData adv_data;
 
-    if (!bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv_data)) {
+    if (!bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv_data)) {
       return fidl_device;
     }
 
@@ -404,8 +404,8 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
     output.set_name(*peer.name());
   }
 
-  bt::gap::AdvertisingData adv;
-  if (peer.le() && bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv)) {
+  bt::AdvertisingData adv;
+  if (peer.le() && bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv)) {
     if (adv.appearance()) {
       output.set_appearance(static_cast<fbt::Appearance>(le16toh(*adv.appearance())));
     }
@@ -498,7 +498,7 @@ std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
 }
 
 fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
-  bt::gap::AdvertisingData ad;
+  bt::AdvertisingData ad;
   if (!peer.le()) {
     return nullptr;
   }
@@ -510,8 +510,8 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
 
   // Initialize advertising data only if its non-empty.
   if (le.advertising_data().size() != 0u) {
-    bt::gap::AdvertisingData ad;
-    if (!bt::gap::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
+    bt::AdvertisingData ad;
+    if (!bt::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
       return nullptr;
     }
     auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad);
@@ -591,8 +591,8 @@ bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(fble::AdvertisingModeHi
   return bt::gap::AdvertisingInterval::SLOW;
 }
 
-bt::gap::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& input) {
-  bt::gap::AdvertisingData output;
+bt::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& input) {
+  bt::AdvertisingData output;
 
   if (input.has_name()) {
     output.SetLocalName(input.name());
@@ -630,7 +630,7 @@ bt::gap::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& in
   return output;
 }
 
-fble::AdvertisingData AdvertisingDataToFidl(const bt::gap::AdvertisingData& input) {
+fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
   fble::AdvertisingData output;
 
   if (input.local_name()) {
@@ -679,7 +679,7 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::gap::AdvertisingData& inpu
 }
 
 fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
-    const bt::gap::AdvertisingData& input) {
+    const bt::AdvertisingData& input) {
   fble::AdvertisingDataDeprecated output;
 
   if (input.local_name()) {
@@ -739,8 +739,8 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   if (peer.le()->advertising_data().size() != 0u) {
     // We populate |output|'s AdvertisingData field if we can parse the payload. We leave it blank
     // otherwise.
-    bt::gap::AdvertisingData unpacked;
-    if (bt::gap::AdvertisingData::FromBytes(peer.le()->advertising_data(), &unpacked)) {
+    bt::AdvertisingData unpacked;
+    if (bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &unpacked)) {
       output.set_advertising_data(fidl_helpers::AdvertisingDataToFidl(unpacked));
     }
   }

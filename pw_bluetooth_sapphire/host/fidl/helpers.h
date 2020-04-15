@@ -15,12 +15,12 @@
 
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
@@ -130,12 +130,12 @@ bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filt
 bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(
     fuchsia::bluetooth::le::AdvertisingModeHint mode_hint);
 
-bt::gap::AdvertisingData AdvertisingDataFromFidl(
+bt::AdvertisingData AdvertisingDataFromFidl(
     const fuchsia::bluetooth::le::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(
-    const bt::gap::AdvertisingData& input);
+    const bt::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
-    const bt::gap::AdvertisingData& input);
+    const bt::AdvertisingData& input);
 
 // Constructs a fuchsia.bluetooth.le Peer type from the stack representation.
 fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);

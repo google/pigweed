@@ -6,9 +6,10 @@
 
 #include <endian.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
 namespace bt {

@@ -4,6 +4,8 @@
 
 source_set("common") {
   sources = [
+    "advertising_data.cc",
+    "advertising_data.h",
     "byte_buffer.cc",
     "byte_buffer.h",
     "device_address.cc",
@@ -63,6 +65,7 @@ source_set("tests") {
   testonly = true
 
   sources = [
+    "advertising_data_unittest.cc",
     "byte_buffer_unittest.cc",
     "device_address_unittest.cc",
     "device_class_unittest.cc",

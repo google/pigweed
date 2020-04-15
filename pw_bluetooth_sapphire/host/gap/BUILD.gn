@@ -8,8 +8,6 @@ static_library("gap") {
     "adapter.h",
     "adapter_state.cc",
     "adapter_state.h",
-    "advertising_data.cc",
-    "advertising_data.h",
     "bredr_connection_manager.cc",
     "bredr_connection_manager.h",
     "bredr_discovery_manager.cc",
@@ -88,7 +86,6 @@ source_set("tests") {
 
   sources = [
     "adapter_unittest.cc",
-    "advertising_data_unittest.cc",
     "bredr_connection_manager_unittest.cc",
     "bredr_discovery_manager_unittest.cc",
     "bredr_interrogator_unittest.cc",

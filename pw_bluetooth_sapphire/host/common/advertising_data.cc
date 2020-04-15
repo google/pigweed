@@ -15,7 +15,6 @@
 #include "src/lib/fxl/strings/utf_codecs.h"
 
 namespace bt {
-namespace gap {
 
 namespace {
 
@@ -508,5 +507,4 @@ bool AdvertisingData::operator==(const AdvertisingData& other) const {
 
 bool AdvertisingData::operator!=(const AdvertisingData& other) const { return !(*this == other); }
 
-}  // namespace gap
 }  // namespace bt

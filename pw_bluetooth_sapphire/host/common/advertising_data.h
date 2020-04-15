@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ADVERTISING_DATA_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ADVERTISING_DATA_H_
 
 #include <lib/fit/function.h>
 
@@ -14,10 +14,27 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 
 namespace bt {
-namespace gap {
+
+// Constants for the expected size (in octets) of an
+// advertising/EIR/scan-response data field.
+//
+//  * If a constant contains the word "Min", then it specifies a minimum
+//    expected length rather than an exact length.
+//
+//  * If a constants contains the word "ElemSize", then the data field is
+//    expected to contain a contiguous array of elements of the specified size.
+constexpr size_t kAppearanceSize = 2;
+constexpr size_t kManufacturerIdSize = 2;
+constexpr size_t kTxPowerLevelSize = 1;
+
+constexpr size_t kFlagsSizeMin = 1;
+constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
+
+constexpr size_t k16BitUuidElemSize = 2;
+constexpr size_t k32BitUuidElemSize = 4;
+constexpr size_t k128BitUuidElemSize = 16;
 
 // A helper to build Adversiting Data, Scan Response Data, or Extended Inquiry
 // Response Data fields.
@@ -141,7 +158,6 @@ class AdvertisingData {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingData);
 };
 
-}  // namespace gap
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADVERTISING_DATA_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_ADVERTISING_DATA_H_

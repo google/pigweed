@@ -9,9 +9,9 @@
 #include <zircon/status.h>
 
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -112,7 +112,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
     advertisement_.reset();
   }
 
-  bt::gap::AdvertisingData adv_data, scan_rsp;
+  bt::AdvertisingData adv_data, scan_rsp;
   if (parameters.has_data()) {
     adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
   }
