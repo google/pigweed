@@ -82,7 +82,7 @@ TEST_F(AssertFail, CheckMessageWithArguments) {
 }
 
 // PW_CHECK_INT_*(...)
-// Binary checks with ints, comparisons: <, <=, =, >, >=.
+// Binary checks with ints, comparisons: <, <=, =, !=, >, >=.
 
 // Test message formatting separate from the triggering.
 // Only test formatting for the type once.
@@ -119,6 +119,12 @@ TEST_F(AssertFail, IntEq2) { PW_CHECK_INT_EQ(1, 2); }
 TEST_F(AssertFail, IntEq3) { PW_CHECK_INT_EQ(-1, -2); }
 TEST_F(AssertPass, IntEq4) { PW_CHECK_INT_EQ(1, 1); }
 
+// INT !=
+TEST_F(AssertPass, IntNe1) { PW_CHECK_INT_NE(-1, 2); }
+TEST_F(AssertPass, IntNe2) { PW_CHECK_INT_NE(1, 2); }
+TEST_F(AssertPass, IntNe3) { PW_CHECK_INT_NE(-1, -2); }
+TEST_F(AssertFail, IntNe4) { PW_CHECK_INT_NE(1, 1); }
+
 // INT >
 TEST_F(AssertFail, IntGt1) { PW_CHECK_INT_GT(-1, 2); }
 TEST_F(AssertFail, IntGt2) { PW_CHECK_INT_GT(1, 2); }
@@ -132,7 +138,7 @@ TEST_F(AssertPass, IntGe3) { PW_CHECK_INT_GE(-1, -2); }
 TEST_F(AssertPass, IntGe4) { PW_CHECK_INT_GE(1, 1); }
 
 // PW_CHECK_UINT_*(...)
-// Binary checks with uints, comparisons: <, <=, =, >, >=.
+// Binary checks with uints, comparisons: <, <=, =, !=, >, >=.
 
 // Test message formatting separate from the triggering.
 // Only test formatting for the type once.
@@ -166,6 +172,11 @@ TEST_F(AssertFail, UintEq1) { PW_CHECK_UINT_EQ(1, 2); }
 TEST_F(AssertPass, UintEq2) { PW_CHECK_UINT_EQ(2, 2); }
 TEST_F(AssertFail, UintEq3) { PW_CHECK_UINT_EQ(2, 1); }
 
+// UINT !=
+TEST_F(AssertPass, UintNe1) { PW_CHECK_UINT_NE(1, 2); }
+TEST_F(AssertFail, UintNe2) { PW_CHECK_UINT_NE(2, 2); }
+TEST_F(AssertPass, UintNe3) { PW_CHECK_UINT_NE(2, 1); }
+
 // UINT >
 TEST_F(AssertFail, UintGt1) { PW_CHECK_UINT_GT(1, 2); }
 TEST_F(AssertFail, UintGt2) { PW_CHECK_UINT_GT(2, 2); }
@@ -176,8 +187,48 @@ TEST_F(AssertFail, UintGe1) { PW_CHECK_UINT_GE(1, 2); }
 TEST_F(AssertPass, UintGe2) { PW_CHECK_UINT_GE(2, 2); }
 TEST_F(AssertPass, UintGe3) { PW_CHECK_UINT_GE(2, 1); }
 
+// PW_CHECK_PTR_*(...)
+// Binary checks with uints, comparisons: <, <=, =, !=, >, >=.
+// Note: The format checks are skipped since they're not portable.
+
+// Test comparison boundaries.
+
+// PTR <
+TEST_F(AssertPass, PtrLt1) { PW_CHECK_PTR_LT(0xa, 0xb); }
+TEST_F(AssertFail, PtrLt2) { PW_CHECK_PTR_LT(0xb, 0xb); }
+TEST_F(AssertFail, PtrLt3) { PW_CHECK_PTR_LT(0xb, 0xa); }
+
+// PTR <=
+TEST_F(AssertPass, PtrLe1) { PW_CHECK_PTR_LE(0xa, 0xb); }
+TEST_F(AssertPass, PtrLe2) { PW_CHECK_PTR_LE(0xb, 0xb); }
+TEST_F(AssertFail, PtrLe3) { PW_CHECK_PTR_LE(0xb, 0xa); }
+
+// PTR ==
+TEST_F(AssertFail, PtrEq1) { PW_CHECK_PTR_EQ(0xa, 0xb); }
+TEST_F(AssertPass, PtrEq2) { PW_CHECK_PTR_EQ(0xb, 0xb); }
+TEST_F(AssertFail, PtrEq3) { PW_CHECK_PTR_EQ(0xb, 0xa); }
+
+// PTR !=
+TEST_F(AssertPass, PtrNe1) { PW_CHECK_PTR_NE(0xa, 0xb); }
+TEST_F(AssertFail, PtrNe2) { PW_CHECK_PTR_NE(0xb, 0xb); }
+TEST_F(AssertPass, PtrNe3) { PW_CHECK_PTR_NE(0xb, 0xa); }
+
+// PTR >
+TEST_F(AssertFail, PtrGt1) { PW_CHECK_PTR_GT(0xa, 0xb); }
+TEST_F(AssertFail, PtrGt2) { PW_CHECK_PTR_GT(0xb, 0xb); }
+TEST_F(AssertPass, PtrGt3) { PW_CHECK_PTR_GT(0xb, 0xa); }
+
+// PTR >=
+TEST_F(AssertFail, PtrGe1) { PW_CHECK_PTR_GE(0xa, 0xb); }
+TEST_F(AssertPass, PtrGe2) { PW_CHECK_PTR_GE(0xb, 0xb); }
+TEST_F(AssertPass, PtrGe3) { PW_CHECK_PTR_GE(0xb, 0xa); }
+
+// NOTNULL
+TEST_F(AssertPass, PtrNotNull) { PW_CHECK_NOTNULL(0xa); }
+TEST_F(AssertFail, PtrNotNull) { PW_CHECK_NOTNULL(0x0); }
+
 // PW_CHECK_FLOAT_*(...)
-// Binary checks with floats, comparisons: <, <=, =, >, >=.
+// Binary checks with floats, comparisons: <, <=, =, !=, >, >=.
 
 // Test message formatting separate from the triggering.
 // Only test formatting for the type once.
@@ -212,6 +263,11 @@ TEST_F(AssertFail, FloatLe3) { PW_CHECK_FLOAT_LE(1.2, 1.1); }
 TEST_F(AssertFail, FloatEq1) { PW_CHECK_FLOAT_EQ(1.1, 1.2); }
 TEST_F(AssertPass, FloatEq2) { PW_CHECK_FLOAT_EQ(1.2, 1.2); }
 TEST_F(AssertFail, FloatEq3) { PW_CHECK_FLOAT_EQ(1.2, 1.1); }
+
+// FLOAT !=
+TEST_F(AssertPass, FloatNe1) { PW_CHECK_FLOAT_NE(1.1, 1.2); }
+TEST_F(AssertFail, FloatNe2) { PW_CHECK_FLOAT_NE(1.2, 1.2); }
+TEST_F(AssertPass, FloatNe3) { PW_CHECK_FLOAT_NE(1.2, 1.1); }
 
 // FLOAT >
 TEST_F(AssertFail, FloatGt1) { PW_CHECK_FLOAT_GT(1.1, 1.2); }

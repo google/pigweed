@@ -96,6 +96,20 @@ invoke to assert.
     PW_CHECK(StartTurbines());
     PW_CHECK(StartWarpDrive(), "Oddly warp drive couldn't start; ruh-roh!");
 
+.. cpp:function:: PW_CHECK_NOTNULL(ptr)
+.. cpp:function:: PW_CHECK_NOTNULL(ptr, format, ...)
+
+  Assert that the given pointer is not ``NULL``, optionally including a message
+  with arguments to report if the pointer is ``NULL``.
+
+  .. code-block:: cpp
+
+    Foo* foo = GetTheFoo()
+    PW_CHECK_NOTNULL(foo);
+
+    Bar* bar = GetSomeBar()
+    PW_CHECK_NOTNULL(bar, "Weirdly got NULL bar; state: %d", MyState());
+
 .. cpp:function:: PW_CHECK_TYPE_OP(a, b)
 .. cpp:function:: PW_CHECK_TYPE_OP(a, b, format, ...)
 
@@ -135,6 +149,8 @@ invoke to assert.
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_INT_EQ   | int          | a == b    | %d                    |
   +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_NE   | int          | a != b    | %d                    |
+  +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_UINT_LE  | unsigned int | a <= b    | %u                    |
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_UINT_LT  | unsigned int | a <  b    | %u                    |
@@ -145,6 +161,20 @@ invoke to assert.
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_UINT_EQ  | unsigned int | a == b    | %u                    |
   +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_NE  | unsigned int | a != b    | %u                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_LE   | void*        | a <= b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_LT   | void*        | a <  b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_GE   | void*        | a >= b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_GT   | void*        | a >  b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_EQ   | void*        | a == b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_NE   | void*        | a != b    | %p                    |
+  +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_FLOAT_LE | float        | a <= b    | %f                    |
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_FLOAT_LT | float        | a <  b    | %f                    |
@@ -154,6 +184,8 @@ invoke to assert.
   | PW_CHECK_FLOAT_GT | float        | a >  b    | %f                    |
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_FLOAT_EQ | float        | a == b    | %f                    |
+  +-------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_NE | float        | a != b    | %f                    |
   +-------------------+--------------+-----------+-----------------------+
 
 ----------------------------

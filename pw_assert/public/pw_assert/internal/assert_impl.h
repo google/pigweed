@@ -42,6 +42,8 @@
   _PW_CHECK_BINARY_CMP_IMPL(arga, >, argb, int, "%d", __VA_ARGS__)
 #define PW_CHECK_INT_EQ(arga, argb, ...) \
   _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, int, "%d", __VA_ARGS__)
+#define PW_CHECK_INT_NE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, int, "%d", __VA_ARGS__)
 
 // Checks for unsigned int: LE, LT, GE, GT, EQ.
 #define PW_CHECK_UINT_LE(arga, argb, ...) \
@@ -54,6 +56,26 @@
   _PW_CHECK_BINARY_CMP_IMPL(arga, >, argb, unsigned int, "%u", __VA_ARGS__)
 #define PW_CHECK_UINT_EQ(arga, argb, ...) \
   _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, unsigned int, "%u", __VA_ARGS__)
+#define PW_CHECK_UINT_NE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, unsigned int, "%u", __VA_ARGS__)
+
+// Checks for pointer: LE, LT, GE, GT, EQ, NE.
+#define PW_CHECK_PTR_LE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_LT(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, <, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_GE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_GT(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, >, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_EQ(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_NE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, void*, "%p", __VA_ARGS__)
+
+// For implementation simplicity, re-use PTR_NE for NOTNULL.
+#define PW_CHECK_NOTNULL(arga, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, NULL, void*, "%p", __VA_ARGS__)
 
 // Checks for float: LE, LT, GE, GT, EQ.
 #define PW_CHECK_FLOAT_LE(arga, argb, ...) \
@@ -66,6 +88,8 @@
   _PW_CHECK_BINARY_CMP_IMPL(arga, >, argb, float, "%f", __VA_ARGS__)
 #define PW_CHECK_FLOAT_EQ(arga, argb, ...) \
   _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, float, "%f", __VA_ARGS__)
+#define PW_CHECK_FLOAT_NE(arga, argb, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, float, "%f", __VA_ARGS__)
 
 // =========================================================================
 // Implementation for PW_CHECK
@@ -197,20 +221,30 @@
 #define CRASH          PW_CRASH
 #define CHECK          PW_CHECK
 #define CHECK          PW_CHECK
+#define CHECK_PTR_LE   PW_CHECK_PTR_LE
+#define CHECK_PTR_LT   PW_CHECK_PTR_LT
+#define CHECK_PTR_GE   PW_CHECK_PTR_GE
+#define CHECK_PTR_GT   PW_CHECK_PTR_GT
+#define CHECK_PTR_EQ   PW_CHECK_PTR_EQ
+#define CHECK_PTR_NE   PW_CHECK_PTR_NE
+#define CHECK_NOTNULL  PW_CHECK_NOTNULL
 #define CHECK_INT_LE   PW_CHECK_INT_LE
 #define CHECK_INT_LT   PW_CHECK_INT_LT
 #define CHECK_INT_GE   PW_CHECK_INT_GE
 #define CHECK_INT_GT   PW_CHECK_INT_GT
 #define CHECK_INT_EQ   PW_CHECK_INT_EQ
+#define CHECK_INT_NE   PW_CHECK_INT_NE
 #define CHECK_UINT_LE  PW_CHECK_UINT_LE
 #define CHECK_UINT_LT  PW_CHECK_UINT_LT
 #define CHECK_UINT_GE  PW_CHECK_UINT_GE
 #define CHECK_UINT_GT  PW_CHECK_UINT_GT
 #define CHECK_UINT_EQ  PW_CHECK_UINT_EQ
+#define CHECK_UINT_NE  PW_CHECK_UINT_NE
 #define CHECK_FLOAT_LE PW_CHECK_FLOAT_LE
 #define CHECK_FLOAT_LT PW_CHECK_FLOAT_LT
 #define CHECK_FLOAT_GE PW_CHECK_FLOAT_GE
 #define CHECK_FLOAT_GT PW_CHECK_FLOAT_GT
 #define CHECK_FLOAT_EQ PW_CHECK_FLOAT_EQ
+#define CHECK_FLOAT_NE PW_CHECK_FLOAT_NE
 #endif  // PW_ASSERT_SHORT_NAMES
 // clang-format on
