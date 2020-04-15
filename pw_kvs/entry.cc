@@ -112,7 +112,7 @@ Status Entry::Update(const EntryFormat& new_format,
 }
 
 StatusWithSize Entry::Copy(Address new_address) const {
-  PW_LOG_DEBUG("Copying entry from 0x%x to 0x%x as ID %" PRIu32,
+  PW_LOG_DEBUG("Copying entry from %u to %u as ID %" PRIu32,
                unsigned(address()),
                unsigned(new_address),
                transaction_id());

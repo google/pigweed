@@ -403,10 +403,17 @@ class KeyValueStore {
                     EntryMetadata* prior_metadata = nullptr,
                     size_t prior_size = 0);
 
-  EntryMetadata UpdateKeyDescriptor(const Entry& new_entry,
-                                    std::string_view key,
+  EntryMetadata CreateOrUpdateKeyDescriptor(const Entry& new_entry,
+                                            std::string_view key,
+                                            EntryMetadata* prior_metadata,
+                                            size_t prior_size);
+
+  EntryMetadata UpdateKeyDescriptor(const Entry& entry,
+                                    Address new_address,
                                     EntryMetadata* prior_metadata,
                                     size_t prior_size);
+
+  Status GetAddressesForWrite(Address* write_addresses, size_t write_size);
 
   Status GetSectorForWrite(SectorDescriptor** sector,
                            size_t entry_size,
@@ -420,7 +427,7 @@ class KeyValueStore {
 
   StatusWithSize CopyEntryToSector(Entry& entry,
                                    SectorDescriptor* new_sector,
-                                   Address& new_address);
+                                   Address new_address);
 
   Status RelocateEntry(const EntryMetadata& metadata,
                        KeyValueStore::Address& address,
@@ -436,6 +443,10 @@ class KeyValueStore {
 
   Status GarbageCollectSector(SectorDescriptor& sector_to_gc,
                               span<const Address> addresses_to_skip);
+
+  // Ensure that all entries are on the primary (first) format. Entries that are
+  // not on the primary format are rewritten.
+  Status UpdateEntriesToPrimaryFormat();
 
   Status AddRedundantEntries(EntryMetadata& metadata);
 

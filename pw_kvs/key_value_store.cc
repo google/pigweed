@@ -213,6 +213,10 @@ void KeyValueStore::InitializeMetadata() {
   // initializing last_new_sector_.
   for (EntryMetadata& metadata : entry_cache_) {
     if (metadata.addresses().size() < redundancy()) {
+      DBG("Key 0x%08x missing copies, has %u, needs %u",
+          unsigned(metadata.hash()),
+          unsigned(metadata.addresses().size()),
+          unsigned(redundancy()));
       error_detected_ = true;
     }
     size_t index = 0;
@@ -249,10 +253,11 @@ void KeyValueStore::InitializeMetadata() {
   sectors_.set_last_new_sector(newest_key);
 
   if (!empty_sector_found) {
+    DBG("No empty sector found");
     error_detected_ = true;
   }
 
-  if (total_corrupt_bytes != 0 || corrupt_entries != 0) {
+  if (error_detected_) {
     WRN("Corruption detected. Found %zu corrupt bytes and %d corrupt entries.",
         total_corrupt_bytes,
         corrupt_entries);
@@ -613,15 +618,9 @@ Status KeyValueStore::WriteEntry(string_view key,
   // List of addresses for sectors with space for this entry.
   Address* reserved_addresses = entry_cache_.TempReservedAddressesForWrite();
 
-  // Find sectors to write the entry to. This may involve garbage collecting one
-  // or more sectors.
-  for (size_t i = 0; i < redundancy(); i++) {
-    SectorDescriptor* sector;
-    TRY(GetSectorForWrite(&sector, entry_size, span(reserved_addresses, i)));
-
-    DBG("Found space for entry in sector %u", sectors_.Index(sector));
-    reserved_addresses[i] = sectors_.NextWritableAddress(*sector);
-  }
+  // Find addresses to write the entry to. This may involve garbage collecting
+  // one or more sectors.
+  TRY(GetAddressesForWrite(reserved_addresses, entry_size));
 
   // Write the entry at the first address that was found.
   Entry entry = CreateEntry(reserved_addresses[0], key, value, new_state);
@@ -630,7 +629,7 @@ Status KeyValueStore::WriteEntry(string_view key,
   // After writing the first entry successfully, update the key descriptors.
   // Once a single new the entry is written, the old entries are invalidated.
   EntryMetadata new_metadata =
-      UpdateKeyDescriptor(entry, key, prior_metadata, prior_size);
+      CreateOrUpdateKeyDescriptor(entry, key, prior_metadata, prior_size);
 
   // Write the additional copies of the entry, if redundancy is greater than 1.
   for (size_t i = 1; i < redundancy(); ++i) {
@@ -641,7 +640,7 @@ Status KeyValueStore::WriteEntry(string_view key,
   return Status::OK;
 }
 
-KeyValueStore::EntryMetadata KeyValueStore::UpdateKeyDescriptor(
+KeyValueStore::EntryMetadata KeyValueStore::CreateOrUpdateKeyDescriptor(
     const Entry& entry,
     string_view key,
     EntryMetadata* prior_metadata,
@@ -651,13 +650,37 @@ KeyValueStore::EntryMetadata KeyValueStore::UpdateKeyDescriptor(
     return entry_cache_.AddNew(entry.descriptor(key), entry.address());
   }
 
+  return UpdateKeyDescriptor(
+      entry, entry.address(), prior_metadata, prior_size);
+}
+
+KeyValueStore::EntryMetadata KeyValueStore::UpdateKeyDescriptor(
+    const Entry& entry,
+    Address new_address,
+    EntryMetadata* prior_metadata,
+    size_t prior_size) {
   // Remove valid bytes for the old entry and its copies, which are now stale.
   for (Address address : prior_metadata->addresses()) {
     sectors_.FromAddress(address).RemoveValidBytes(prior_size);
   }
 
-  prior_metadata->Reset(entry.descriptor(key), entry.address());
+  prior_metadata->Reset(entry.descriptor(prior_metadata->hash()), new_address);
   return *prior_metadata;
+}
+
+Status KeyValueStore::GetAddressesForWrite(Address* write_addresses,
+                                           size_t write_size) {
+  for (size_t i = 0; i < redundancy(); i++) {
+    SectorDescriptor* sector;
+    TRY(GetSectorForWrite(&sector, write_size, span(write_addresses, i)));
+    write_addresses[i] = sectors_.NextWritableAddress(*sector);
+
+    DBG("Found space for entry in sector %u at address %u",
+        sectors_.Index(sector),
+        unsigned(write_addresses[i]));
+  }
+
+  return Status::OK;
 }
 
 // Finds a sector to use for writing a new entry to. Does automatic garbage
@@ -745,15 +768,19 @@ Status KeyValueStore::AppendEntry(const Entry& entry,
 
 StatusWithSize KeyValueStore::CopyEntryToSector(Entry& entry,
                                                 SectorDescriptor* new_sector,
-                                                Address& new_address) {
-  new_address = sectors_.NextWritableAddress(*new_sector);
+                                                Address new_address) {
   const StatusWithSize result = entry.Copy(new_address);
 
   TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(result.status(), new_sector));
 
   if (options_.verify_on_write) {
-    TRY_WITH_SIZE(
-        MarkSectorCorruptIfNotOk(entry.VerifyChecksumInFlash(), new_sector));
+    Entry new_entry;
+    TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(
+        Entry::Read(partition_, new_address, formats_, &new_entry),
+        new_sector));
+    // TODO: add test that catches doing the verify on the old entry.
+    TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(new_entry.VerifyChecksumInFlash(),
+                                           new_sector));
   }
   // Entry was written successfully; update descriptor's address and the sector
   // descriptors to reflect the new entry.
@@ -780,7 +807,7 @@ Status KeyValueStore::RelocateEntry(const EntryMetadata& metadata,
   TRY(sectors_.FindSpaceDuringGarbageCollection(
       &new_sector, entry.size(), metadata.addresses(), reserved_addresses));
 
-  Address new_address;
+  Address new_address = sectors_.NextWritableAddress(*new_sector);
   TRY_ASSIGN(const size_t result_size,
              CopyEntryToSector(entry, new_sector, new_address));
   sectors_.FromAddress(address).RemoveValidBytes(result_size);
@@ -800,6 +827,9 @@ Status KeyValueStore::FullMaintenance() {
   if (error_detected_) {
     TRY(Repair());
   }
+
+  // Make sure all the entries are on the primary format.
+  UpdateEntriesToPrimaryFormat();
 
   SectorDescriptor* sector = sectors_.last_new();
 
@@ -891,6 +921,52 @@ Status KeyValueStore::GarbageCollectSector(
   return Status::OK;
 }
 
+Status KeyValueStore::UpdateEntriesToPrimaryFormat() {
+  for (EntryMetadata& prior_metadata : entry_cache_) {
+    Entry entry;
+    TRY(ReadEntry(prior_metadata, entry));
+    if (formats_.primary().magic == entry.magic()) {
+      // Ignore entries that are already on the primary format.
+      continue;
+    }
+
+    DBG("Updating entry 0x%08x from old format [0x%08x] to new format "
+        "[0x%08x]",
+        unsigned(prior_metadata.hash()),
+        unsigned(entry.magic()),
+        unsigned(formats_.primary().magic));
+
+    last_transaction_id_ += 1;
+    TRY(entry.Update(formats_.primary(), last_transaction_id_));
+
+    // List of addresses for sectors with space for this entry.
+    Address* reserved_addresses = entry_cache_.TempReservedAddressesForWrite();
+
+    // Find addresses to write the entry to. This may involve garbage collecting
+    // one or more sectors.
+    TRY(GetAddressesForWrite(reserved_addresses, entry.size()));
+
+    TRY(CopyEntryToSector(entry,
+                          &sectors_.FromAddress(reserved_addresses[0]),
+                          reserved_addresses[0]));
+
+    // After writing the first entry successfully, update the key descriptors.
+    // Once a single new the entry is written, the old entries are invalidated.
+    EntryMetadata new_metadata = UpdateKeyDescriptor(
+        entry, reserved_addresses[0], &prior_metadata, entry.size());
+
+    // Write the additional copies of the entry, if redundancy is greater
+    // than 1.
+    for (size_t i = 1; i < redundancy(); ++i) {
+      TRY(CopyEntryToSector(entry,
+                            &sectors_.FromAddress(reserved_addresses[i]),
+                            reserved_addresses[i]));
+      new_metadata.AddNewAddress(reserved_addresses[i]);
+    }
+  }
+  return Status::OK;
+}
+
 // Add any missing redundant entries/copies for a key.
 Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
   SectorDescriptor* new_sector;
@@ -905,7 +981,7 @@ Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
        i++) {
     TRY(sectors_.FindSpace(&new_sector, entry.size(), metadata.addresses()));
 
-    Address new_address;
+    Address new_address = sectors_.NextWritableAddress(*new_sector);
     TRY(CopyEntryToSector(entry, new_sector, new_address));
 
     metadata.AddNewAddress(new_address);

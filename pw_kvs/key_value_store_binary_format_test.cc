@@ -581,12 +581,12 @@ constexpr uint32_t kNoChecksumMagic = 0x6000061e;
 constexpr auto kNoChecksumEntry =
     MakeValidEntry<NoChecksum>(kNoChecksumMagic, 64, "kee", ByteStr("O_o"));
 
-class InitializedMultiMagicKvs : public ::testing::Test {
+class InitializedRedundantMultiMagicKvs : public ::testing::Test {
  protected:
   static constexpr auto kInitialContents =
       AsBytes(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
 
-  InitializedMultiMagicKvs()
+  InitializedRedundantMultiMagicKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
@@ -618,7 +618,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
     ASSERT_STREQ(str_value, val);                                      \
   } while (0)
 
-TEST_F(InitializedMultiMagicKvs, AllEntriesArePresent) {
+TEST_F(InitializedRedundantMultiMagicKvs, AllEntriesArePresent) {
   ASSERT_CONTAINS_ENTRY("key1", "value1");
   ASSERT_CONTAINS_ENTRY("k2", "value2");
   ASSERT_CONTAINS_ENTRY("k3y", "value3");
@@ -626,7 +626,7 @@ TEST_F(InitializedMultiMagicKvs, AllEntriesArePresent) {
   ASSERT_CONTAINS_ENTRY("kee", "O_o");
 }
 
-TEST_F(InitializedMultiMagicKvs, RecoversLossOfFirstSector) {
+TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   auto stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
@@ -660,7 +660,7 @@ TEST_F(InitializedMultiMagicKvs, RecoversLossOfFirstSector) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 10u);
 }
 
-TEST_F(InitializedMultiMagicKvs, RecoversLossOfSecondSector) {
+TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
   auto stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
@@ -687,7 +687,7 @@ TEST_F(InitializedMultiMagicKvs, RecoversLossOfSecondSector) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 10u);
 }
 
-TEST_F(InitializedMultiMagicKvs, SingleReadErrors) {
+TEST_F(InitializedRedundantMultiMagicKvs, SingleReadErrors) {
   // Inject 2 read errors, so the first read attempt fully fails.
   flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 2));
 
@@ -709,7 +709,7 @@ TEST_F(InitializedMultiMagicKvs, SingleReadErrors) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
 }
 
-TEST_F(InitializedMultiMagicKvs, SingleWriteError) {
+TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   flash_.InjectWriteError(FlashError::Unconditional(Status::INTERNAL, 1, 1));
 
   EXPECT_EQ(Status::INTERNAL, kvs_.Put("new key", ByteStr("abcd?")));
@@ -740,7 +740,7 @@ TEST_F(InitializedMultiMagicKvs, SingleWriteError) {
             kvs_.Get("new key", as_writable_bytes(span(val))).status());
 }
 
-TEST_F(InitializedMultiMagicKvs, DataLossAfterLosingBothCopies) {
+TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
   EXPECT_EQ(Status::OK, partition_.Erase(0, 2));
 
   char val[20] = {};
@@ -765,12 +765,115 @@ TEST_F(InitializedMultiMagicKvs, DataLossAfterLosingBothCopies) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
 }
 
-class RedundantKvsInitializedSingleCopyData : public ::testing::Test {
+TEST_F(InitializedRedundantMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
+  EXPECT_EQ(Status::OK, kvs_.Put("new key", ByteStr("abcd?")));
+
+  constexpr auto kNewEntry =
+      MakeValidEntry(kMagic, 65, "new key", ByteStr("abcd?"));
+  EXPECT_EQ(0,
+            std::memcmp(kNewEntry.data(),
+                        flash_.buffer().data() + kInitialContents.size(),
+                        kNewEntry.size()));
+  ASSERT_CONTAINS_ENTRY("new key", "abcd?");
+}
+
+TEST_F(InitializedRedundantMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
+  EXPECT_EQ(Status::OK, kvs_.Put("A Key", ByteStr("New value!")));
+
+  constexpr auto kNewEntry =
+      MakeValidEntry(kMagic, 65, "A Key", ByteStr("New value!"));
+  EXPECT_EQ(0,
+            std::memcmp(kNewEntry.data(),
+                        flash_.buffer().data() + kInitialContents.size(),
+                        kNewEntry.size()));
+  ASSERT_CONTAINS_ENTRY("A Key", "New value!");
+}
+
+#define ASSERT_KVS_CONTAINS_ENTRY(kvs, key, str_value)                \
+  do {                                                                \
+    char val[sizeof(str_value)] = {};                                 \
+    StatusWithSize stat = kvs.Get(key, as_writable_bytes(span(val))); \
+    ASSERT_EQ(Status::OK, stat.status());                             \
+    ASSERT_EQ(sizeof(str_value) - 1, stat.size());                    \
+    ASSERT_STREQ(str_value, val);                                     \
+  } while (0)
+
+TEST_F(InitializedRedundantMultiMagicKvs, UpdateEntryFormat) {
+  ASSERT_EQ(Status::OK, kvs_.FullMaintenance());
+
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2, 1> local_kvs(
+      &partition_, {.magic = kMagic, .checksum = &checksum}, kNoGcOptions);
+
+  ASSERT_EQ(Status::OK, local_kvs.Init());
+  EXPECT_EQ(false, local_kvs.error_detected());
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "key1", "value1");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k2", "value2");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k3y", "value3");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "A Key", "XD");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "kee", "O_o");
+}
+
+class InitializedMultiMagicKvs : public ::testing::Test {
+ protected:
+  static constexpr auto kInitialContents =
+      AsBytes(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
+
+  InitializedMultiMagicKvs()
+      : flash_(internal::Entry::kMinAlignmentBytes),
+        partition_(&flash_),
+        kvs_(&partition_,
+             {{
+                 {.magic = kMagic, .checksum = &checksum},
+                 {.magic = kAltMagic, .checksum = &alt_checksum},
+                 {.magic = kNoChecksumMagic, .checksum = nullptr},
+             }},
+             kRecoveryNoGcOptions) {
+    partition_.Erase();
+    std::memcpy(flash_.buffer().data(),
+                kInitialContents.data(),
+                kInitialContents.size());
+
+    EXPECT_EQ(Status::OK, kvs_.Init());
+  }
+
+  FakeFlashBuffer<512, 4, 3> flash_;
+  FlashPartition partition_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 1, 3> kvs_;
+};
+
+// Similar to test for InitializedRedundantMultiMagicKvs. Doing similar test
+// with different KVS configuration.
+TEST_F(InitializedMultiMagicKvs, AllEntriesArePresent) {
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("A Key", "XD");
+  ASSERT_CONTAINS_ENTRY("kee", "O_o");
+}
+
+// Similar to test for InitializedRedundantMultiMagicKvs. Doing similar test
+// with different KVS configuration.
+TEST_F(InitializedMultiMagicKvs, UpdateEntryFormat) {
+  ASSERT_EQ(Status::OK, kvs_.FullMaintenance());
+
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 1, 1> local_kvs(
+      &partition_, {.magic = kMagic, .checksum = &checksum}, kNoGcOptions);
+
+  ASSERT_EQ(Status::OK, local_kvs.Init());
+  EXPECT_EQ(false, local_kvs.error_detected());
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "key1", "value1");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k2", "value2");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k3y", "value3");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "A Key", "XD");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "kee", "O_o");
+}
+
+class InitializedRedundantLazyRecoveryKvs : public ::testing::Test {
  protected:
   static constexpr auto kInitialContents =
       AsBytes(kEntry1, kEntry2, kEntry3, kEntry4);
 
-  RedundantKvsInitializedSingleCopyData()
+  InitializedRedundantLazyRecoveryKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
@@ -789,7 +892,7 @@ class RedundantKvsInitializedSingleCopyData : public ::testing::Test {
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2> kvs_;
 };
 
-TEST_F(RedundantKvsInitializedSingleCopyData, WriteAfterDataLoss) {
+TEST_F(InitializedRedundantLazyRecoveryKvs, WriteAfterDataLoss) {
   EXPECT_EQ(Status::OK, partition_.Erase(0, 4));
 
   char val[20] = {};
@@ -822,8 +925,7 @@ TEST_F(RedundantKvsInitializedSingleCopyData, WriteAfterDataLoss) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
 }
 
-TEST_F(RedundantKvsInitializedSingleCopyData,
-       TwoSectorsCorruptWithGoodEntries) {
+TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
   ASSERT_CONTAINS_ENTRY("key1", "value1");
   ASSERT_CONTAINS_ENTRY("k2", "value2");
   ASSERT_CONTAINS_ENTRY("k3y", "value3");
@@ -856,30 +958,6 @@ TEST_F(RedundantKvsInitializedSingleCopyData,
   EXPECT_EQ(stats.writable_bytes, 3 * 512u - (128u * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 2u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 8u);
-}
-
-TEST_F(InitializedMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
-  EXPECT_EQ(Status::OK, kvs_.Put("new key", ByteStr("abcd?")));
-
-  constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 65, "new key", ByteStr("abcd?"));
-  EXPECT_EQ(0,
-            std::memcmp(kNewEntry.data(),
-                        flash_.buffer().data() + kInitialContents.size(),
-                        kNewEntry.size()));
-  ASSERT_CONTAINS_ENTRY("new key", "abcd?");
-}
-
-TEST_F(InitializedMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
-  EXPECT_EQ(Status::OK, kvs_.Put("A Key", ByteStr("New value!")));
-
-  constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 65, "A Key", ByteStr("New value!"));
-  EXPECT_EQ(0,
-            std::memcmp(kNewEntry.data(),
-                        flash_.buffer().data() + kInitialContents.size(),
-                        kNewEntry.size()));
-  ASSERT_CONTAINS_ENTRY("A Key", "New value!");
 }
 
 }  // namespace

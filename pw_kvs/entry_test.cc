@@ -344,14 +344,14 @@ TEST_F(EntryInFlash, Update_DifferentFormat_MagicAndTransactionIdAreUpdated) {
   EXPECT_FALSE(entry_.deleted());
 }
 
-TEST_F(EntryInFlash, Update_ReadError_NoChecksumIsOkay) {
+TEST_F(EntryInFlash, Update_ReadError_WithChecksumIsError) {
   flash_.InjectReadError(FlashError::Unconditional(Status::ABORTED));
 
   EXPECT_EQ(Status::ABORTED,
             entry_.Update(kFormatWithChecksum, kTransactionId1 + 1));
 }
 
-TEST_F(EntryInFlash, Update_ReadError_WithChecksumIsError) {
+TEST_F(EntryInFlash, Update_ReadError_NoChecksumIsOkay) {
   flash_.InjectReadError(FlashError::Unconditional(Status::ABORTED));
 
   EXPECT_EQ(Status::OK, entry_.Update(kNoChecksum, kTransactionId1 + 1));
@@ -381,37 +381,43 @@ constexpr uint32_t ByteSum(span<const byte> bytes, uint32_t value = 0) {
   return value;
 }
 
-TEST_F(EntryInFlash, UpdateAndCopy_DifferentChecksum_UpdatesToNewFormat) {
-  static class Sum final : public ChecksumAlgorithm {
-   public:
-    Sum() : ChecksumAlgorithm(as_bytes(span(&state_, 1))), state_(0) {}
+class ChecksumSummation final : public ChecksumAlgorithm {
+ public:
+  ChecksumSummation() : ChecksumAlgorithm(as_bytes(span(&sum_, 1))), sum_(0) {}
 
-    void Update(span<const byte> data) override {
-      state_ = ByteSum(data, state_);
+  void Reset() override { sum_ = 0; }
+
+  void Update(span<const std::byte> data) override {
+    for (const std::byte data_byte : data) {
+      sum_ += unsigned(data_byte);
     }
+  }
 
-    void Reset() override { state_ = 0; }
+ private:
+  uint32_t sum_;
+} sum_checksum;
 
-   private:
-    uint32_t state_;
-  } sum_checksum;
+constexpr uint32_t kMagicWithSum = 0x12345678;
+constexpr EntryFormat kFormatWithSum{kMagicWithSum, &sum_checksum};
+constexpr internal::EntryFormats kFormatsWithSum(kFormatWithSum);
 
-  constexpr EntryFormat sum_format{.magic = 0x12345678,
-                                   .checksum = &sum_checksum};
+TEST_F(EntryInFlash, UpdateAndCopy_DifferentChecksum_UpdatesToNewFormat) {
+  constexpr EntryFormat kFormatWithSum{.magic = 0x12345678,
+                                       .checksum = &sum_checksum};
 
-  ASSERT_EQ(Status::OK, entry_.Update(sum_format, kTransactionId1 + 9));
+  ASSERT_EQ(Status::OK, entry_.Update(kFormatWithSum, kTransactionId1 + 9));
 
   auto result = entry_.Copy(kEntry1.size());
   ASSERT_EQ(Status::OK, result.status());
   EXPECT_EQ(kEntry1.size(), result.size());
 
   constexpr uint32_t checksum =
-      ByteSum(AsBytes(sum_format.magic)) + 0 /* checksum */ +
+      ByteSum(AsBytes(kFormatWithSum.magic)) + 0 /* checksum */ +
       0 /* alignment */ + kKey1.size() + kValue1.size() +
       ByteSum(AsBytes(kTransactionId1 + 9)) + ByteSum(kKey1) + ByteSum(kValue1);
 
   constexpr auto kNewHeader1 =
-      AsBytes(sum_format.magic,          // magic
+      AsBytes(kFormatWithSum.magic,      // magic
               checksum,                  // checksum (byte sum)
               uint8_t(0),                // alignment (changed to 16 B from 32)
               uint8_t(kKey1.size()),     // key length
@@ -447,6 +453,66 @@ TEST_F(EntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
             std::memcmp(&flash_.buffer()[kEntry1.size()],
                         kNewEntry1.data(),
                         kNewEntry1.size()));
+}
+
+TEST_F(EntryInFlash, UpdateAndCopy_DifferentFormat_UpdateAndReadBack) {
+  ASSERT_EQ(Status::OK, entry_.Update(kFormatWithSum, kTransactionId1 + 6));
+
+  FlashPartition::Address new_address = entry_.size();
+
+  StatusWithSize copy_result = entry_.Copy(new_address);
+  ASSERT_EQ(Status::OK, copy_result.status());
+  ASSERT_EQ(kEntry1.size(), copy_result.size());
+
+  Entry entry;
+  ASSERT_EQ(Status::OK,
+            Entry::Read(partition_, new_address, kFormatsWithSum, &entry));
+
+  EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash());
+  EXPECT_EQ(kFormatWithSum.magic, entry.magic());
+  EXPECT_EQ(new_address, entry.address());
+  EXPECT_EQ(kTransactionId1 + 6, entry.transaction_id());
+  EXPECT_FALSE(entry.deleted());
+}
+
+TEST_F(EntryInFlash,
+       UpdateAndCopy_DifferentFormat_UpdateFormatAndCopyMultiple) {
+  ASSERT_EQ(Status::OK, entry_.Update(kFormatWithSum, kTransactionId1 + 6));
+
+  FlashPartition::Address new_address = entry_.size();
+
+  for (int i = 0; i < 10; i++) {
+    StatusWithSize copy_result = entry_.Copy(new_address + (i * entry_.size()));
+    ASSERT_EQ(Status::OK, copy_result.status());
+    ASSERT_EQ(kEntry1.size(), copy_result.size());
+  }
+
+  for (int j = 0; j < 10; j++) {
+    Entry entry;
+    FlashPartition::Address read_address = (new_address + (j * entry_.size()));
+    ASSERT_EQ(Status::OK,
+              Entry::Read(partition_, read_address, kFormatsWithSum, &entry));
+
+    EXPECT_EQ(Status::OK, entry.VerifyChecksumInFlash());
+    EXPECT_EQ(kFormatWithSum.magic, entry.magic());
+    EXPECT_EQ(read_address, entry.address());
+    EXPECT_EQ(kTransactionId1 + 6, entry.transaction_id());
+    EXPECT_FALSE(entry.deleted());
+  }
+}
+
+TEST_F(EntryInFlash, DifferentFormat_UpdatedCopy_FailsWithWrongMagic) {
+  ASSERT_EQ(Status::OK, entry_.Update(kFormatWithSum, kTransactionId1 + 6));
+
+  FlashPartition::Address new_address = entry_.size();
+
+  StatusWithSize copy_result = entry_.Copy(new_address);
+  ASSERT_EQ(Status::OK, copy_result.status());
+  ASSERT_EQ(kEntry1.size(), copy_result.size());
+
+  Entry entry;
+  ASSERT_EQ(Status::DATA_LOSS,
+            Entry::Read(partition_, new_address, kFormats, &entry));
 }
 
 TEST_F(EntryInFlash, UpdateAndCopy_WriteError) {
