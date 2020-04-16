@@ -329,6 +329,77 @@ TEST(AssertFail, BinaryOpTwoSideEffectingCalls) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
 }
 
+// Verify side effects of debug checks work as expected.
+// Only check a couple of cases, since the logic is all the same.
+#if PW_ASSERT_ENABLE_DCHECK
+// When DCHECKs are enabled, they behave the same as normal checks.
+TEST(AssertPass, DCheckEnabledSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK(IncrementsGlobal() == 0);
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+}
+TEST(AssertFail, DCheckEnabledSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK(IncrementsGlobal() == 1);
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+}
+TEST(AssertPass, DCheckEnabledBinaryOpSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(0, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+}
+TEST(AssertPass, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
+}
+TEST(AssertFail, DCheckEnabledBinaryOpSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(12314, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 1);
+}
+TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
+}
+
+#else   // PW_ASSERT_ENABLE_DCHECK
+
+// When DCHECKs are disabled, they should not trip, and their arguments
+// shouldn't be evaluated.
+TEST(AssertPass, DCheckDisabledSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK(IncrementsGlobal() == 0);
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+TEST(AssertPass, DCheckDisabledSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK(IncrementsGlobal() == 1);
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(0, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(12314, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls) {
+  global_state_for_multi_evaluate_test = 0;
+  PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
+  EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
+}
+#endif  // PW_ASSERT_ENABLE_DCHECK
+
 // Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
 TEST(Check, ShortNamesWork) {
   // Crash

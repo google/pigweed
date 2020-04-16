@@ -33,6 +33,7 @@ The ``pw_assert`` public API provides three classes of macros:
 +-----------------------------------------+--------------------------------+
 
 .. tip::
+
   All of the assert macros optionally support a message with additional
   arguments, to assist in debugging when an assert triggers:
 
@@ -62,6 +63,21 @@ Example
                     ReadSensorStateString());
   }
 
+.. tip::
+
+  All macros have both a ``CHECK`` and ``DCHECK`` variant. The ``CHECK``
+  variant is always enabled, even in production. Generally, we advise making
+  most asserts ``CHECK`` rather than ``DCHECK``, unless there is a critical
+  performance or code size reason to use ``DCHECK``.
+
+  .. code-block:: cpp
+
+    // This assert is always enabled, even in production.
+    PW_CHECK_INT_LE(ItemCount(), 100);
+
+    // This assert disabled for release builds, where NDEBUG is defined.
+    // The functions ItemCount() and GetStateStr() are never called.
+    PW_DCHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
 
 ---------------------------
 Assert facade API reference
@@ -87,9 +103,14 @@ invoke to assert.
 
 .. cpp:function:: PW_CHECK(condition)
 .. cpp:function:: PW_CHECK(condition, format, ...)
+.. cpp:function:: PW_DCHECK(condition)
+.. cpp:function:: PW_DCHECK(condition, format, ...)
 
   Assert that a condition is true, optionally including a message with
   arguments to report if the codition is false.
+
+  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
+  entire statement is removed (and the expression not evaluated).
 
   .. code-block:: cpp
 
@@ -98,9 +119,14 @@ invoke to assert.
 
 .. cpp:function:: PW_CHECK_NOTNULL(ptr)
 .. cpp:function:: PW_CHECK_NOTNULL(ptr, format, ...)
+.. cpp:function:: PW_DCHECK_NOTNULL(ptr)
+.. cpp:function:: PW_DCHECK_NOTNULL(ptr, format, ...)
 
   Assert that the given pointer is not ``NULL``, optionally including a message
   with arguments to report if the pointer is ``NULL``.
+
+  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
+  entire statement is removed (and the expression not evaluated).
 
   .. code-block:: cpp
 
@@ -112,12 +138,17 @@ invoke to assert.
 
 .. cpp:function:: PW_CHECK_TYPE_OP(a, b)
 .. cpp:function:: PW_CHECK_TYPE_OP(a, b, format, ...)
+.. cpp:function:: PW_DCHECK_TYPE_OP(a, b)
+.. cpp:function:: PW_DCHECK_TYPE_OP(a, b, format, ...)
 
   Asserts that ``a OP b`` is true, where ``a`` and ``b`` are converted to
   ``TYPE``; with ``OP`` and ``TYPE`` described below.
 
   If present, the optional format message is reported on failure. Depending on
   the backend, values of ``a`` and ``b`` will also be reported.
+
+  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
+  entire statement is removed (and the expression not evaluated).
 
   Example, with no message:
 
@@ -187,6 +218,61 @@ invoke to assert.
   +-------------------+--------------+-----------+-----------------------+
   | PW_CHECK_FLOAT_NE | float        | a != b    | %f                    |
   +-------------------+--------------+-----------+-----------------------+
+
+  The above ``CHECK_*_*()`` are also available in DCHECK variants, which will
+  only evaluate their arguments and trigger if the ``NDEBUG`` macro is defined.
+
+  +--------------------+--------------+-----------+-----------------------+
+  | Macro              | a, b type    | condition | a, b format specifier |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_LE   | int          | a <= b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_LT   | int          | a <  b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_GE   | int          | a >= b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_GT   | int          | a >  b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_EQ   | int          | a == b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_INT_NE   | int          | a != b    | %d                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_LE  | unsigned int | a <= b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_LT  | unsigned int | a <  b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_GE  | unsigned int | a >= b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_GT  | unsigned int | a >  b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_EQ  | unsigned int | a == b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_UINT_NE  | unsigned int | a != b    | %u                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_LE   | void*        | a <= b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_LT   | void*        | a <  b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_GE   | void*        | a >= b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_GT   | void*        | a >  b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_EQ   | void*        | a == b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_PTR_NE   | void*        | a != b    | %p                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_LE | float        | a <= b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_LT | float        | a <  b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_GE | float        | a >= b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_GT | float        | a >  b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_EQ | float        | a == b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
+  | PW_DCHECK_FLOAT_NE | float        | a != b    | %f                    |
+  +--------------------+--------------+-----------+-----------------------+
 
 ----------------------------
 Assert backend API reference

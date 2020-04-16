@@ -102,6 +102,20 @@ void AssertBackendCompileTestsInC() {
     PW_CHECK_UINT_GE(x_uint, y_uint, "UINT: " FAIL_IF_HIDDEN_ARGS, z);
   }
 
+  {  // TEST(Check, PtrComparison)
+    MAYBE_SKIP_TEST;
+    void* x_ptr = (void*)(50);
+    void* y_ptr = (void*)(66);
+
+    PW_CHECK_PTR_EQ(x_ptr, y_ptr);
+    PW_CHECK_PTR_LE(x_ptr, y_ptr, "PTR: " FAIL_IF_DISPLAYED);
+    PW_CHECK_PTR_LE(x_ptr, y_ptr, "PTR: " FAIL_IF_DISPLAYED_ARGS, z);
+
+    PW_CHECK_PTR_GE(x_ptr, y_ptr);
+    PW_CHECK_PTR_GE(x_ptr, y_ptr, "PTR: " FAIL_IF_HIDDEN);
+    PW_CHECK_PTR_GE(x_ptr, y_ptr, "PTR: " FAIL_IF_HIDDEN_ARGS, z);
+  }
+
   {  // TEST(Check, FloatComparison)
     MAYBE_SKIP_TEST;
     float x_float = 50.5;
@@ -114,6 +128,16 @@ void AssertBackendCompileTestsInC() {
     PW_CHECK_FLOAT_GE(x_float, y_float);
     PW_CHECK_FLOAT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN);
     PW_CHECK_FLOAT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN_ARGS, z);
+  }
+
+  // Don't exhaustively test the DCHECKs but have a sampling of them.
+  {  // TEST(DCheck, Sampling)
+    MAYBE_SKIP_TEST;
+    PW_DCHECK(5 == 10);
+    PW_DCHECK(5 == 10, "Message");
+    PW_DCHECK(5 == 10, "Message: %d", 5);
+    PW_DCHECK_INT_LE(5.4, 10.0);
+    PW_DCHECK_FLOAT_EQ(5.4, 10.0, "Message");
   }
 
   {  // TEST(Check, ComparisonArgumentsWithCommas)
