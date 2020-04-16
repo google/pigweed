@@ -117,6 +117,7 @@ pw_test_group("tests") {
     ":simple_tokenize_test_cpp11",
     ":simple_tokenize_test_cpp14",
     ":simple_tokenize_test_cpp17",
+    ":token_database_fuzzer",
     ":token_database_test",
     ":tokenize_test",
   ]
@@ -223,6 +224,16 @@ pw_test("tokenize_test") {
   deps = [
     ":pw_tokenizer",
     "$dir_pw_varint",
+  ]
+}
+
+pw_fuzzer("token_database_fuzzer") {
+  sources = [ "token_database_fuzzer.cc" ]
+  deps = [
+    ":decoder",
+    "$dir_pw_fuzzer",
+    "$dir_pw_preprocessor",
+    "$dir_pw_span",
   ]
 }
 
