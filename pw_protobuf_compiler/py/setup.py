@@ -35,6 +35,7 @@ setuptools.setup(
         ['generate_protos = pw_protobuf_compiler.generate_protos:main']
     },
     install_requires=[
+        'protobuf',
         'pw_cli',
     ],
 )
