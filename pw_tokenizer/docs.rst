@@ -288,6 +288,13 @@ line of the log message does not generate a new token. There is no overhead for
 additional tokens, but it may not be desirable to fill a token database with
 duplicate log lines.
 
+Tokenization in Python
+----------------------
+The Python ``pw_tokenizer.encode`` module has limited support for encoding
+tokenized messages with the ``encode_token_and_args`` function.
+
+.. autofunction:: pw_tokenizer.encode.encode_token_and_args
+
 Encoding
 --------
 The token is a 32-bit hash calculated during compilation. The string is encoded
@@ -302,7 +309,7 @@ Arguments are encoded as follows:
     similarly to Protocol Buffers. Smaller values take fewer bytes.
   * **Floating point numbers** (4 bytes) -- Single precision floating point.
   * **Strings** (1--128 bytes) -- Length byte followed by the string contents.
-    The top bit of the length byte indicates whether the string was truncated or
+    The top bit of the length whether the string was truncated or
     not. The remaining 7 bits encode the string length, with a maximum of 127
     bytes.
 

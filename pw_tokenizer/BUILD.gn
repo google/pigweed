@@ -265,4 +265,5 @@ shared_library("detokenizer_jni") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  inputs = [ "py/pw_tokenizer/encode.py" ]
 }

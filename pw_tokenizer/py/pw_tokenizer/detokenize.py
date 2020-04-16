@@ -48,13 +48,13 @@ import time
 from typing import Dict, List, Iterable, NamedTuple, Optional, Tuple
 
 try:
-    from pw_tokenizer import database, decoder, tokens
+    from pw_tokenizer import database, decode, tokens
 except ImportError:
     # Append this path to the module search path to allow running this module
     # without installing the pw_tokenizer package.
     sys.path.append(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))))
-    from pw_tokenizer import database, decoder, tokens
+    from pw_tokenizer import database, decode, tokens
 
 ENCODED_TOKEN = struct.Struct('<I')
 _LOG = logging.getLogger('pw_tokenizer')
@@ -71,10 +71,10 @@ class DetokenizedString:
         self.encoded_message = encoded_message
         self._show_errors = show_errors
 
-        self.successes: List[decoder.FormattedString] = []
-        self.failures: List[decoder.FormattedString] = []
+        self.successes: List[decode.FormattedString] = []
+        self.failures: List[decode.FormattedString] = []
 
-        decode_attempts: List[Tuple[Tuple, decoder.FormattedString]] = []
+        decode_attempts: List[Tuple[Tuple, decode.FormattedString]] = []
 
         for entry, fmt in format_string_entries:
             result = fmt.format(encoded_message[ENCODED_TOKEN.size:],
@@ -113,11 +113,11 @@ class DetokenizedString:
         """True if exactly one string decoded the arguments successfully."""
         return len(self.successes) == 1
 
-    def matches(self) -> List[decoder.FormattedString]:
+    def matches(self) -> List[decode.FormattedString]:
         """Returns the strings that matched the token, best matches first."""
         return self.successes + self.failures
 
-    def best_result(self) -> Optional[decoder.FormattedString]:
+    def best_result(self) -> Optional[decode.FormattedString]:
         """Returns the string and args for the most likely decoded string."""
         for string_and_args in self.matches():
             return string_and_args
@@ -163,7 +163,7 @@ class DetokenizedString:
 
 class _TokenizedFormatString(NamedTuple):
     entry: tokens.TokenizedStringEntry
-    format: decoder.FormatString
+    format: decode.FormatString
 
 
 class Detokenizer:
@@ -189,7 +189,7 @@ class Detokenizer:
             return self._cache[token]
         except KeyError:
             format_strings = [
-                _TokenizedFormatString(entry, decoder.FormatString(str(entry)))
+                _TokenizedFormatString(entry, decode.FormatString(str(entry)))
                 for entry in self.database.token_to_entries[token]
             ]
             self._cache[token] = format_strings
