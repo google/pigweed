@@ -14,12 +14,18 @@
 
 #include "pw_containers/vector.h"
 
+#include <cstddef>
 #include <vector>
 
 #include "gtest/gtest.h"
 
 namespace pw {
 namespace {
+
+// Since pw::Vector<T, N> downcasts to a pw::Vector<T, 0>, ensure that the
+// alignment doesn't change.
+static_assert(alignof(Vector<std::max_align_t, 0>) ==
+              alignof(Vector<std::max_align_t, 1>));
 
 struct CopyOnly {
   explicit CopyOnly(int value) : value(value) {}
