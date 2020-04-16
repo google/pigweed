@@ -109,10 +109,12 @@ TEST(Array, Basic) {
   }
 }
 
-TEST(Cmath, Basic) {
+TEST(Cmath, Basic) PW_NO_SANITIZE("float-divide-by-zero") {
   EXPECT_EQ(std::abs(-1), 1);
   EXPECT_EQ(std::abs(1), 1);
 
+  // Although Clang/LLVM do not fully support __STDC_IEC_559__, they do have the
+  // necessary IEEE 754 support for floating point division by zero.
   EXPECT_TRUE(std::isfinite(1.0));
   EXPECT_FALSE(std::isfinite(1.0 / 0.0));
 
