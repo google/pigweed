@@ -55,14 +55,13 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  // The presence of `peer_request_params` must correspond to our role (initiator or responder).
-  ZX_ASSERT(!(role == hci::Connection::Role::kMaster && peer_request_params_.has_value()));
-  ZX_ASSERT(!(role == hci::Connection::Role::kSlave && !peer_request_params_.has_value()));
+  ZX_ASSERT(!(is_initiator() && peer_request_params_.has_value()));
+  ZX_ASSERT(!(is_responder() && !peer_request_params_.has_value()));
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase1::Start() {
-  if (role() == hci::Connection::Role::kSlave) {
+  if (is_responder()) {
     ZX_ASSERT(peer_request_params_.has_value());
     RespondToPairingRequest(*peer_request_params_);
     return;
@@ -72,8 +71,8 @@ void Phase1::Start() {
 }
 
 void Phase1::InitiateFeatureExchange() {
-  // Only the master can initiate the feature exchange.
-  ZX_ASSERT(role() == hci::Connection::Role::kMaster);
+  // Only the initiator can initiate the feature exchange.
+  ZX_ASSERT(is_initiator());
   // Pairing should not be in progress when this function is called
   ZX_ASSERT(!feature_exchange_pending_);
   auto pdu = util::NewPdu(sizeof(PairingRequestParams));
@@ -101,7 +100,7 @@ void Phase1::InitiateFeatureExchange() {
 
 void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // We should only be in this state when pairing is initiated by the remote i.e. we are the slave.
-  ZX_ASSERT(role() == hci::Connection::Role::kSlave);
+  ZX_ASSERT(is_responder());
   ZX_ASSERT(!feature_exchange_pending_);
   feature_exchange_pending_ = true;
 
@@ -172,7 +171,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
     // While Vol 3 Part H Section 3.6.1 says that the master may distribute their LTK as well, this
     // conditional check here ensures that only the responder will send their LTK. Our stack will
     // not handle both sides sending their LTK correctly, and one will be overwritten.
-    if (role() == hci::Connection::Role::kMaster) {
+    if (is_initiator()) {
       local_params.remote_keys |= KeyDistGen::kEncKey;
     } else {
       local_params.local_keys |= KeyDistGen::kEncKey;
@@ -271,8 +270,8 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
 
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
   // Support receiving a pairing response only as the initiator.
-  if (role() != hci::Connection::Role::kMaster) {
-    bt_log(TRACE, "sm", "received pairing response when acting as master");
+  if (is_responder()) {
+    bt_log(TRACE, "sm", "received pairing response when acting as responder");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }

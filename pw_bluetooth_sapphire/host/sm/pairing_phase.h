@@ -82,6 +82,9 @@ class PairingPhase {
     return *chan_;
   }
 
+  bool is_initiator() const { return role_ == hci::Connection::Role::kMaster; }
+  bool is_responder() const { return role_ == hci::Connection::Role::kSlave; }
+
   fxl::WeakPtr<Listener> listener() { return listener_; }
 
  private:

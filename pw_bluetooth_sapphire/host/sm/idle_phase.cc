@@ -29,7 +29,7 @@ IdlePhase::IdlePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> l
 
 void IdlePhase::OnPairingRequest(PairingRequestParams req_params) {
   // Reject the command if we are the master.
-  if (role() == hci::Connection::Role::kMaster) {
+  if (is_initiator()) {
     bt_log(TRACE, "sm", "rejecting \"Pairing Request\" as master");
     SendPairingFailed(ErrorCode::kCommandNotSupported);
     return;
@@ -39,7 +39,7 @@ void IdlePhase::OnPairingRequest(PairingRequestParams req_params) {
 
 void IdlePhase::OnSecurityRequest(AuthReqField req) {
   // Reject the command if we are the slave.
-  if (role() == hci::Connection::Role::kSlave) {
+  if (is_responder()) {
     bt_log(TRACE, "sm", "rejecting \"Security Request\" as slave");
     SendPairingFailed(ErrorCode::kCommandNotSupported);
     return;
