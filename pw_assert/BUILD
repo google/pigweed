@@ -53,7 +53,6 @@ pw_cc_library(
     ],
 )
 
-
 pw_cc_test(
     name = "assert_facade_test",
     srcs = [
@@ -63,6 +62,7 @@ pw_cc_test(
         "pw_assert_test/fake_backend.h",
     ],
     deps = [
+        ":facade",
         "//pw_unit_test",
     ],
 )
