@@ -222,9 +222,9 @@ class Vector<T, vector_impl::kGeneric> {
   // access the data, down-cast this to a Vector with a known max size, and
   // return a pointer to the start of the array, which is the same for all
   // vectors with explicit max size.
-  T* data() noexcept { return static_cast<Vector<T, 1>*>(this)->array(); }
+  T* data() noexcept { return static_cast<Vector<T, 0>*>(this)->array(); }
   const T* data() const noexcept {
-    return static_cast<const Vector<T, 1>*>(this)->array();
+    return static_cast<const Vector<T, 0>*>(this)->array();
   }
 
   // Iterate

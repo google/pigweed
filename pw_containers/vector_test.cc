@@ -286,8 +286,6 @@ TEST(Vector, Access_Data_ArrayLocationIsIndependentOfMaxSize) {
   EXPECT_EQ(vector.data(), base.data());
   EXPECT_EQ(vector.data(), (static_cast<Vector<int, 0>&>(base).data()));
   EXPECT_EQ(vector.data(), (static_cast<Vector<int, 1>&>(base).data()));
-  EXPECT_EQ(vector.data(), (static_cast<Vector<int, 100>&>(base).data()));
-  EXPECT_EQ(vector.data(), (static_cast<Vector<int, 999>&>(base).data()));
 }
 
 TEST(Vector, Modify_Clear) {
