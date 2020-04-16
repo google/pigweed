@@ -452,19 +452,11 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
     observer.join()
 
 
-pw_cli.plugins.register(
-    name='watch',
-    short_help='Watch files for changes',
-    define_args_function=add_parser_arguments,
-    command_function=watch,
-)
-
-
 def main():
-    parser = argparse.ArgumentParser(description='Watch for changes')
+    """Watch files for changes and rebuild."""
+    parser = argparse.ArgumentParser(description=main.__doc__)
     add_parser_arguments(parser)
-    args = parser.parse_args()
-    watch(**vars(args))
+    watch(**vars(parser.parse_args()))
 
 
 if __name__ == '__main__':

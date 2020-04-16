@@ -347,45 +347,21 @@ async def find_and_run_tests(argv_copy: List[str],
     return 0 if test_runner.all_passed() else 1
 
 
-async def run_as_plugin(**kwargs) -> None:
-    """Entry point when running as a pw plugin."""
-
-    # Replace the virtualenv file path to the script in sys.argv[0] with the
-    # pw script so that users have a valid command to copy.
-    argv_copy = ['pw', *sys.argv[1:]]
-    await find_and_run_tests(argv_copy, **kwargs)
-
-
-try:
-    import pw_cli.plugins
-    pw_cli.plugins.register(
-        name='test',
-        short_help='Runs groups of unit tests on a target',
-        command_function=run_as_plugin,
-        define_args_function=register_arguments,
-    )
-
-except ImportError:
-    pass
-
-
 def main() -> int:
-    """Standalone script entry point."""
+    """Run Pigweed unit tests built using GN."""
 
-    pw_cli.log.install(hide_timestamp=True)
-
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=main.__doc__)
     register_arguments(parser)
     parser.add_argument('-v',
                         '--verbose',
                         action='store_true',
                         help='Output additional logs as the script runs')
-    args = parser.parse_args()
 
-    args_as_dict = dict(vars(args))
+    args_as_dict = dict(vars(parser.parse_args()))
     del args_as_dict['verbose']
     return asyncio.run(find_and_run_tests(sys.argv, **args_as_dict))
 
 
 if __name__ == '__main__':
+    pw_cli.log.install(hide_timestamp=True)
     sys.exit(main())

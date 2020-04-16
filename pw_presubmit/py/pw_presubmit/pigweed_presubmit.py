@@ -327,6 +327,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'AUTHORS',
     r'LICENSE',
     r'OWNERS',
+    r'PW_PLUGINS',
     r'.*\.elf',
     r'.*\.gif',
     r'.*\.jpg',
@@ -533,12 +534,10 @@ PROGRAMS: Dict[str, Tuple] = {
 ALL_STEPS = {c.__name__: c for c in itertools.chain(*PROGRAMS.values())}
 
 
-def argument_parser(parser=None) -> argparse.ArgumentParser:
-    """Create argument parser."""
+def parse_args() -> argparse.Namespace:
+    """Creates an argument parser and parses arguments."""
 
-    if parser is None:
-        parser = argparse.ArgumentParser(description=__doc__)
-
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '-o',
         '--output-directory',
@@ -578,10 +577,10 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
 
     pw_presubmit.add_arguments(parser)
 
-    return parser
+    return parser.parse_args()
 
 
-def main(
+def run(
         program_name: str,
         clear: bool,
         clear_py: bool,
@@ -635,6 +634,11 @@ def main(
     return 1
 
 
+def main() -> int:
+    """Run the presubmit for the Pigweed repository."""
+    return run(**vars(parse_args()))
+
+
 if __name__ == '__main__':
     try:
         # If pw_cli is available, use it to initialize logs.
@@ -645,4 +649,4 @@ if __name__ == '__main__':
         # If pw_cli isn't available, display log messages like a simple print.
         logging.basicConfig(format='%(message)s', level=logging.INFO)
 
-    sys.exit(main(**vars(argument_parser().parse_args())))
+    sys.exit(main())

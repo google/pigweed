@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,22 +13,19 @@
 # the License.
 """Checks a Pigweed module's format and structure."""
 
+import argparse
 import logging
 import pathlib
 import glob
 from enum import Enum
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Sequence
 
 _LOG = logging.getLogger(__name__)
 
 CheckerFunction = Callable[[str], None]
 
 
-def register_arguments(parser):
-    parser.add_argument('modules', nargs='+', help='The module to check')
-
-
-def main(modules):
+def check_modules(modules: Sequence[str]) -> int:
     if len(modules) > 1:
         _LOG.info('Checking %d modules', len(modules))
 
@@ -205,14 +202,8 @@ def check_has_public_or_override_headers(directory):
                     'Perhaps you were looking for public_overrides/?.')
 
 
-# Register the checker plugin with the 'pw' command.
-try:
-    import pw_cli.plugins
-    pw_cli.plugins.register(
-        name='module-check',
-        short_help="Check that a module matches Pigweed's module guidelines",
-        command_function=main,
-        define_args_function=register_arguments,
-    )
-except ImportError:
-    pass
+def main() -> None:
+    """Check that a module matches Pigweed's module guidelines."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('modules', nargs='+', help='The module to check')
+    check_modules(**vars(parser.parse_args()))

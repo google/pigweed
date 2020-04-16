@@ -1,0 +1,14 @@
+# The PW_PLUGINS file lists commands that should be included with the pw command
+# when it is invoked in this directory or its subdirectories. Commands in this
+# file override those registered in parent directories.
+#
+# Entries in this file have three columns:
+#
+#   <name> <Python module> <function>
+#
+# The Python package containing that module must be installed in the Pigweed
+# virtual environment. The function must have no required arguments and should
+# return an int to use as the exit code.
+
+# Pigweed's presubmit check script
+presubmit pw_presubmit.pigweed_presubmit main

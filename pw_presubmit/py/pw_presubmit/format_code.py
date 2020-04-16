@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -349,7 +349,7 @@ def _file_summary(files: Iterable[Path], base: Path) -> List[str]:
         return []
 
 
-def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
+def format_paths(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
     """Checks or fixes formatting for files in a Git repo."""
     files = [path.resolve() for path in paths if path.is_file()]
 
@@ -396,19 +396,17 @@ def main(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
     return 0
 
 
-def argument_parser(parser=None) -> argparse.ArgumentParser:
-    if parser is None:
-        parser = argparse.ArgumentParser(description=__doc__)
-
+def main() -> int:
+    """Check and fix formatting for source files."""
+    parser = argparse.ArgumentParser(description=__doc__)
     pw_presubmit.add_path_arguments(parser)
-
     parser.add_argument('--fix',
                         action='store_true',
                         help='Apply formatting fixes in place.')
 
-    return parser
+    return format_paths(**vars(parser.parse_args()))
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(message)s', level=logging.INFO)
-    sys.exit(main(**vars(argument_parser().parse_args())))
+    sys.exit(main())

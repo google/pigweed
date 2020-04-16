@@ -14,6 +14,3 @@
 """The pw_presubmit package provides tools for running presubmit checks."""
 
 from pw_presubmit.tools import *
-
-# Import pw_plugin to register the pw_cli plugin.
-import pw_presubmit.pw_plugin

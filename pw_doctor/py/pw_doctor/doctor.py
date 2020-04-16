@@ -234,7 +234,7 @@ def cipd_versions(ctx: DoctorContext):
                     installed['package_name'])
 
 
-def main(strict=False, checks=None):
+def doctor(strict=False, checks=None):
     """Run all the Check subclasses defined in this file."""
 
     ctx = DoctorContext(strict=strict)
@@ -262,23 +262,19 @@ def main(strict=False, checks=None):
     return len(ctx.failures)
 
 
-def argument_parser(
-        parser: argparse.ArgumentParser = None) -> argparse.ArgumentParser:
-    """Create argument parser."""
-
-    if parser is None:
-        parser = argparse.ArgumentParser(description=__doc__)
-
+def main() -> int:
+    """Check that the environment is set up correctly for Pigweed."""
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--strict',
         action='store_true',
         help='Run additional checks.',
     )
 
-    return parser
+    return doctor(**vars(parser.parse_args()))
 
 
 if __name__ == '__main__':
     # By default, display log messages like a simple print statement.
     logging.basicConfig(format='%(message)s', level=logging.INFO)
-    sys.exit(main(**vars(argument_parser().parse_args())))
+    sys.exit(main())

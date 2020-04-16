@@ -50,7 +50,9 @@ _LOG = logging.getLogger(__name__)
 _STDERR_HANDLER = logging.StreamHandler()
 
 
-def main():
+def main() -> None:
+    """Show how logs look at various levels."""
+
     # Force the log level to make sure all logs are shown.
     _LOG.setLevel(logging.DEBUG)
 
@@ -108,15 +110,6 @@ def set_level(log_level: int):
     """Sets the log level for logs to stderr."""
     _STDERR_HANDLER.setLevel(log_level)
 
-
-# Note: normally this shouldn't be done at the top level without a try/catch
-# around the pw_cli.plugins registry import, since pw_cli might not be
-# installed.
-pw_cli.plugins.register(
-    name='logdemo',
-    short_help='Show how how logs look at various levels',
-    command_function=main,
-)
 
 if __name__ == '__main__':
     install()
