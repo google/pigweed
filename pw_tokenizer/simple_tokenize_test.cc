@@ -23,7 +23,8 @@ namespace tokenizer {
 namespace {
 
 template <size_t kSize>
-uint32_t TestHash(const char (&str)[kSize]) {
+uint32_t TestHash(const char (&str)[kSize])
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
   static_assert(kSize > 0u, "Must have at least a null terminator");
 
   static constexpr uint32_t k65599HashConstant = 65599u;
@@ -36,6 +37,8 @@ uint32_t TestHash(const char (&str)[kSize]) {
       std::min(static_cast<size_t>(PW_TOKENIZER_CFG_HASH_LENGTH), kSize - 1);
 
   // Hash all of the characters in the string as unsigned ints.
+  // The coefficient calculation is done modulo 0x100000000, so the unsigned
+  // integer overflows are intentional.
   for (size_t i = 0; i < length; ++i) {
     hash += coefficient * str[i];
     coefficient *= k65599HashConstant;

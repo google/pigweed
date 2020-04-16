@@ -158,8 +158,10 @@ class StringBuilder {
   void push_back(char ch) { append(1, ch); }
 
   // Removes the last character. Sets the status to OUT_OF_RANGE if the buffer
-  // is empty.
-  void pop_back() { resize(size() - 1); }
+  // is empty (in which case the unsigned overflow is intentional).
+  void pop_back() PW_NO_SANITIZE("unsigned-integer-overflow") {
+    resize(size() - 1);
+  }
 
   // Appends the provided character count times.
   StringBuilder& append(size_t count, char ch);

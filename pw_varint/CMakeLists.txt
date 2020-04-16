@@ -12,4 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-pw_auto_add_simple_module(pw_varint PUBLIC_DEPS pw_span)
+pw_auto_add_simple_module(pw_varint
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_span
+)

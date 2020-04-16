@@ -75,3 +75,22 @@
 //   }
 //
 #define PW_UNREACHABLE __builtin_unreachable()
+
+// Indicate to a sanitizer compiler runtime to skip the named check in the
+// associated function.
+// Example:
+//
+//   uint32_t djb2(const void* buf, size_t len)
+//       PW_NO_SANITIZE("unsigned-integer-overflow"){
+//     uint32_t hash = 5381;
+//     const uint8_t* u8 = static_cast<const uint8_t*>(buf);
+//     for (size_t i = 0; i < len; ++i) {
+//       hash = (hash * 33) + u8[i]; /* hash * 33 + c */
+//     }
+//     return hash;
+//   }
+#if __clang__
+#define PW_NO_SANITIZE(check) __attribute__((no_sanitize(check)))
+#else
+#define PW_NO_SANITIZE(check)
+#endif  // __clang__

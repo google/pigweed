@@ -16,6 +16,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "pw_preprocessor/compiler.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,8 +66,11 @@ constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
 }
 
 // ZigZag decodes a signed integer.
+// The calculation is done modulo std::numeric_limits<T>::max()+1, so the
+// unsigned integer overflows are intentional.
 template <typename T>
-constexpr std::make_signed_t<T> ZigZagDecode(T n) {
+constexpr std::make_signed_t<T> ZigZagDecode(T n)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
   static_assert(std::is_unsigned<T>(),
                 "Zig-zag decoding is for unsigned integers");
   return static_cast<std::make_signed_t<T>>((n >> 1) ^ (~(n & 1) + 1));

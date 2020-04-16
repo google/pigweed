@@ -33,6 +33,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_polyfill",
+        "//pw_preprocessor",
         "//pw_span",
     ],
 )

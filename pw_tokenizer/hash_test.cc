@@ -62,7 +62,7 @@ constexpr uint32_t StringLength(const char (&)[kSizeIncludingNull]) {
   return kSizeIncludingNull - 1;  // subtract the null terminator
 }
 
-TEST(Hashing, Runtime) {
+TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {
   // Coefficients for the hash terms; k1 is 1.
   static constexpr uint32_t k2 = k65599HashConstant;
   static constexpr uint32_t k3 = k65599HashConstant * k2;
@@ -70,6 +70,8 @@ TEST(Hashing, Runtime) {
   static constexpr uint32_t k5 = k65599HashConstant * k4;
 
   // Hash a few things at hash length 4
+  // The coefficient calculation is done modulo 0x100000000, so the unsigned
+  // integer overflows of the hash terms are intentional.
   EXPECT_EQ(PwTokenizer65599FixedLengthHash("", 4), StringLength(""));
   EXPECT_EQ(PwTokenizer65599FixedLengthHash("1", 4),
             StringLength("1") + k2 * '1');
