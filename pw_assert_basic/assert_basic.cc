@@ -25,6 +25,11 @@
 #include "pw_string/string_builder.h"
 #include "pw_sys_io/sys_io.h"
 
+// If 1, call C's standard abort() function on assert failure.
+#ifndef PW_ASSERT_BASIC_ABORT
+#define PW_ASSERT_BASIC_ABORT 1
+#endif  // PW_ASSERT_BASIC_ABORT
+
 // TODO(pwbug/17): Expose these through the config system.
 #define PW_ASSERT_BASIC_SHOW_BANNER 1
 #define PW_ASSERT_BASIC_USE_COLORS 1
@@ -129,11 +134,15 @@ extern "C" void pw_Crash(const char* file_name,
   // device. At some point we'll have a reboot BSP function or similar, but for
   // now this is acceptable since no one is using this basic backend.
   if (!PW_ASSERT_BASIC_DISABLE_NORETURN) {
-    WriteLine(MAGENTA "  HANG TIME" RESET);
-    WriteLine("");
-    WriteLine(
-        "     ... until a debugger joins. System is waiting in a while(1)");
-    while (1) {
+    if (PW_ASSERT_BASIC_ABORT) {
+      abort();
+    } else {
+      WriteLine(MAGENTA "  HANG TIME" RESET);
+      WriteLine("");
+      WriteLine(
+          "     ... until a debugger joins. System is waiting in a while(1)");
+      while (1) {
+      }
     }
     PW_UNREACHABLE;
   } else {
