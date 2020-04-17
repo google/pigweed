@@ -299,6 +299,14 @@ if sys.platform != 'darwin':
 COPYRIGHT_FIRST_LINE = re.compile(
     r'^(#|//| \*|REM|::) Copyright 20\d\d The Pigweed Authors$')
 
+COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
+    '#!',
+    '/*',
+    '@echo off',
+    '# -*-',
+    ':',
+)
+
 COPYRIGHT_LINES = tuple("""\
 
  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -340,13 +348,19 @@ def copyright_notice(ctx: PresubmitContext):
     for path in ctx.paths:
         _LOG.debug('Checking %s', path)
         with open(path) as file:
-            # Skip shebang and blank lines
             line = file.readline()
-            while line and (line.startswith(
-                ('#!', '/*', '@echo off', '# -*-')) or not line.strip()):
+            first_line = None
+            while line:
+                first_line = COPYRIGHT_FIRST_LINE.match(line)
+                if first_line:
+                    break
+
+                if (line.strip() and
+                        not line.startswith(COPYRIGHT_FIRST_LINE_EXCEPTIONS)):
+                    break
+
                 line = file.readline()
 
-            first_line = COPYRIGHT_FIRST_LINE.match(line)
             if not first_line:
                 _LOG.debug('%s: invalid first line %r', path, line)
                 errors.append(path)

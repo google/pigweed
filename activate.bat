@@ -1,3 +1,4 @@
+:<<"::WINDOWS_ONLY"
 @echo off
 :: Copyright 2020 The Pigweed Authors
 ::
@@ -12,6 +13,13 @@
 :: WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 :: License for the specific language governing permissions and limitations under
 :: the License.
+::WINDOWS_ONLY
+:; echo "ERROR: Attempting to run Windows .bat from a Unix/POSIX shell!"
+:; echo "Instead, run the following command."
+:; echo ""
+:; echo "    source ./activate.sh"
+:; echo ""
+:<<"::WINDOWS_ONLY"
 
 :: Activates a Pigweed development environment by setting the appropriate
 :: environment variables. bootstrap.bat must be run initially to install all
@@ -21,3 +29,4 @@
 set PW_SKIP_BOOTSTRAP=1
 call "%~dp0\bootstrap.bat"
 set PW_SKIP_BOOTSTRAP=
+::WINDOWS_ONLY

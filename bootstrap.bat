@@ -1,3 +1,4 @@
+:<<"::WINDOWS_ONLY"
 @echo off
 :: Copyright 2020 The Pigweed Authors
 ::
@@ -12,6 +13,13 @@
 :: WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 :: License for the specific language governing permissions and limitations under
 :: the License.
+::WINDOWS_ONLY
+:; echo "ERROR: Attempting to run Windows .bat from a Unix/POSIX shell!"
+:; echo "Instead, run the following command."
+:; echo ""
+:; echo "    source ./bootstrap.sh"
+:; echo ""
+:<<"::WINDOWS_ONLY"
 
 :: Pigweed Windows environment setup.
 
@@ -86,3 +94,4 @@ set PW_CARGO_PACKAGE_FILES=%_PW_OLD_CARGO_PACKAGE_FILES%
 call "%shell_file%"
 
 :finish
+::WINDOWS_ONLY
