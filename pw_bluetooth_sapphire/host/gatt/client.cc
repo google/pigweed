@@ -295,6 +295,7 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
+  // TODO(49794): refactor to use ReadByTypeRequest()
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                StatusCallback status_callback) override {
@@ -545,6 +546,100 @@ class Impl final : public Client {
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
       callback(att::Status(HostError::kPacketMalformed), BufferView());
+    }
+  }
+
+  void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
+                         ReadByTypeCallback callback) override {
+    size_t type_size = type.CompactSize(/*allow_32bit=*/false);
+    ZX_ASSERT(type_size == sizeof(uint16_t) || type_size == sizeof(UInt128));
+    auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
+                                                    : sizeof(att::ReadByTypeRequestParams128));
+    if (!pdu) {
+      callback(att::Status(HostError::kOutOfMemory), {});
+      return;
+    }
+
+    att::PacketWriter writer(att::kReadByTypeRequest, pdu.get());
+    if (type_size == sizeof(uint16_t)) {
+      auto params = writer.mutable_payload<att::ReadByTypeRequestParams16>();
+      params->start_handle = htole16(start_handle);
+      params->end_handle = htole16(end_handle);
+      auto type_view = MutableBufferView(&params->type, sizeof(params->type));
+      type.ToBytes(&type_view, /*allow_32bit=*/false);
+    } else {
+      auto params = writer.mutable_payload<att::ReadByTypeRequestParams128>();
+      params->start_handle = htole16(start_handle);
+      params->end_handle = htole16(end_handle);
+      auto type_view = MutableBufferView(&params->type, sizeof(params->type));
+      type.ToBytes(&type_view, /*allow_32bit=*/false);
+    }
+
+    auto rsp_cb = BindCallback([callback = callback.share(), start_handle,
+                                end_handle](const att::PacketReader& rsp) {
+      ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
+      if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
+        callback(att::Status(HostError::kPacketMalformed), {});
+        return;
+      }
+
+      const auto& params = rsp.payload<att::ReadByTypeResponseParams>();
+      // The response contains a list of attribute handle-value pairs of uniform length.
+      const size_t list_size = rsp.payload_size() - sizeof(params.length);
+      const size_t pair_size = params.length;
+
+      // Success response must:
+      // a) Specify valid pair length (at least the size of a handle).
+      // b) Have at least 1 pair (otherwise the Attribute Not Found error should have been
+      //    sent).
+      // c) Have a list size that is evenly divisible by pair size.
+      if (pair_size < sizeof(att::Handle) || list_size < sizeof(att::Handle) ||
+          list_size % pair_size != 0) {
+        callback(att::Status(HostError::kPacketMalformed), {});
+        return;
+      }
+
+      std::vector<ReadByTypeResult> attributes;
+      BufferView attr_list_view(params.attribute_data_list,
+                                rsp.payload_size() - sizeof(params.length));
+      while (attr_list_view.size() >= params.length) {
+        const BufferView pair_view = attr_list_view.view(0, pair_size);
+        const att::Handle handle = letoh16(pair_view.As<att::Handle>());
+
+        if (handle < start_handle || handle > end_handle) {
+          bt_log(SPEW, "gatt",
+                 "client received read by type response with handle outside of requested range");
+          callback(att::Status(HostError::kPacketMalformed), {});
+          return;
+        }
+
+        if (!attributes.empty() && attributes.back().handle >= handle) {
+          bt_log(SPEW, "gatt",
+                 "client received read by type response with handles in non-increasing order");
+          callback(att::Status(HostError::kPacketMalformed), {});
+          return;
+        }
+
+        auto value_view = pair_view.view(sizeof(att::Handle));
+        attributes.push_back(ReadByTypeResult{handle, value_view});
+
+        // Advance list view to next pair (or end of list).
+        attr_list_view = attr_list_view.view(pair_size);
+      }
+      ZX_ASSERT(attr_list_view.size() == 0);
+
+      callback(att::Status(), std::move(attributes));
+    });
+
+    auto error_cb =
+        BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
+          bt_log(TRACE, "gatt", "read by type request failed: %s, start handle %#.4x",
+                 bt_str(status), handle);
+          callback(status, {});
+        });
+
+    if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
+      callback(att::Status(HostError::kPacketMalformed), {});
     }
   }
 

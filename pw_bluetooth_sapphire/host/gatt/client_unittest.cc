@@ -2590,6 +2590,222 @@ TEST_F(GATT_ClientTest, ReadRequestError) {
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
+TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
+  const UUID kUuid16((uint16_t)0xBEEF);
+  constexpr att::Handle kStartHandle = 0x0001;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  const auto kExpectedRequest =
+      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+                       // UUID
+                       0xEF, 0xBE);
+
+  constexpr att::Handle kHandle0 = 0x0002;
+  constexpr att::Handle kHandle1 = 0x0003;
+  const auto kExpectedResponse =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x03,                                            // pair length
+                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00,  // attribute pair 0
+                       LowerBits(kHandle1), UpperBits(kHandle1), 0x01   // attribute pair 1
+      );
+
+  att::Status status(HostError::kFailed);
+
+  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
+    status = cb_status;
+    ASSERT_EQ(2u, values.size());
+    EXPECT_EQ(kHandle0, values[0].handle);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), values[0].value));
+    EXPECT_EQ(kHandle1, values[1].handle);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01), values[1].value));
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->ReadByTypeRequest(kUuid16, kStartHandle, kEndHandle, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(kExpectedResponse);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status.is_success());
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess128BitUUID) {
+  const UUID kUuid128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+  constexpr att::Handle kStartHandle = 0x0001;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  const auto kExpectedRequest =
+      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+                       // UUID
+                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+  constexpr att::Handle kHandle0 = 0x0002;
+  constexpr att::Handle kHandle1 = 0x0003;
+  const auto kExpectedResponse =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x03,                                            // pair length
+                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00,  // attribute pair 0
+                       LowerBits(kHandle1), UpperBits(kHandle1), 0x01   // attribute pair 1
+      );
+
+  att::Status status(HostError::kFailed);
+
+  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
+    status = cb_status;
+    ASSERT_EQ(2u, values.size());
+    EXPECT_EQ(kHandle0, values[0].handle);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), values[0].value));
+    EXPECT_EQ(kHandle1, values[1].handle);
+    EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01), values[1].value));
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->ReadByTypeRequest(kUuid128, kStartHandle, kEndHandle, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(kExpectedResponse);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status.is_success());
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
+  constexpr att::Handle kStartHandle = 0x0001;
+  constexpr att::Handle kEndHandle = 0xFFFF;
+  const auto kExpectedRequest =
+      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+                       // UUID matches |kTestUuid3| declared above.
+                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+  const auto kErrorResponse =
+      StaticByteBuffer(att::kErrorResponse,                                      // opcode
+                       att::kReadByTypeRequest,                                  // request opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),         // start handle
+                       static_cast<uint8_t>(att::ErrorCode::kAttributeNotFound)  // error code
+      );
+
+  att::Status status;
+  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
+    status = cb_status;
+    EXPECT_EQ(0u, values.size());  // empty due to error
+  };
+
+  // Initiate the request in a loop task, as Expect() below blocks
+  async::PostTask(dispatcher(), [&, this] {
+    client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest));
+
+  fake_chan()->Receive(kErrorResponse);
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(att::ErrorCode::kAttributeNotFound, status.protocol_error());
+  EXPECT_FALSE(fake_chan()->link_error());
+}
+
+TEST_F(GATT_ClientTest, ReadByTypeRequestInvalidResponses) {
+  constexpr att::Handle kStartHandle = 0x0002;
+  constexpr att::Handle kEndHandle = 0xFF00;
+  constexpr att::Handle kHandle0 = 0x0005;
+  constexpr att::Handle kHandle1 = 0x0006;
+
+  const auto kResponseEmptyPayload = StaticByteBuffer(att::kReadByTypeResponse);
+  const auto kResponseLengthGreaterThanListLength =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x02,   // length
+                       0x01);  // invalid list (too small)
+  const auto kResponseWithInvalidLength =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x00,  // invalid pair length (less than handle size)
+                       LowerBits(kHandle0), UpperBits(kHandle0), 0x00);  // attribute pair 0
+  const auto kResponseWithEmptyList = StaticByteBuffer(att::kReadByTypeResponse,
+                                                       0x03);  // pair length
+  const auto kResponseWithInvalidList = StaticByteBuffer(
+      att::kReadByTypeResponse,
+      0x03,                                       // length
+      LowerBits(kHandle0), UpperBits(kHandle0));  // invalid attribute pair 0 (invalid length)
+  const auto kResponseWithInvalidAttributeHandleLessThanStart =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x02,  // length
+                       // invalid attribute pair 0 (handle out of range)
+                       LowerBits(kStartHandle - 1), UpperBits(kStartHandle - 1));
+  const auto kResponseWithInvalidAttributeHandleGreaterThanEnd =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x02,  // length
+                       // invalid attribute pair 0 (handle out of range)
+                       LowerBits(kEndHandle + 1), UpperBits(kEndHandle + 1));
+  const auto kResponseWithInvalidListWithDecreasingHandles =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x02,                                       // length
+                       LowerBits(kHandle1), UpperBits(kHandle1),   // attribute pair 0
+                       LowerBits(kHandle0), UpperBits(kHandle0));  // attribute pair 1
+  const auto kResponseWithInvalidListWithDuplicateHandles =
+      StaticByteBuffer(att::kReadByTypeResponse,
+                       0x02,                                       // length
+                       LowerBits(kHandle0), UpperBits(kHandle0),   // attribute pair 0
+                       LowerBits(kHandle0), UpperBits(kHandle0));  // attribute pair 1
+
+  const std::vector<std::pair<const char*, const ByteBuffer&>> kInvalidResponses = {
+      {"kResponseEmptyPayload", kResponseEmptyPayload},
+      {"kResponseLengthGreaterThanListLength", kResponseLengthGreaterThanListLength},
+      {"kResponseWithInvalidLength", kResponseWithInvalidLength},
+      {"kResponseWithEmptyList", kResponseWithEmptyList},
+      {"kResponseWithInvalidList", kResponseWithInvalidList},
+      {"kResponseWithInvalidAttributeHandleLessThanStart",
+       kResponseWithInvalidAttributeHandleLessThanStart},
+      {"kResponseWithInvalidAttributeHandleGreaterThanEnd",
+       kResponseWithInvalidAttributeHandleGreaterThanEnd},
+      {"kResponseWithInvalidListWithDecreasingHandles",
+       kResponseWithInvalidListWithDecreasingHandles},
+      {"kResponseWithInvalidListWithDuplicateHandles",
+       kResponseWithInvalidListWithDuplicateHandles}};
+
+  const auto kExpectedRequest =
+      StaticByteBuffer(att::kReadByTypeRequest,                           // opcode
+                       LowerBits(kStartHandle), UpperBits(kStartHandle),  // start handle
+                       LowerBits(kEndHandle), UpperBits(kEndHandle),      // end handle
+                       // UUID matches |kTestUuid3| declared above.
+                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+  for (const auto& [name, invalid_rsp] : kInvalidResponses) {
+    SCOPED_TRACE(fxl::StringPrintf("Invalid Response: %s", name));
+    std::optional<att::Status> status;
+    auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
+      status = cb_status;
+      ASSERT_EQ(0u, values.size());
+    };
+
+    // Initiate the request in a loop task, as Expect() below blocks
+    async::PostTask(dispatcher(), [&, this] {
+      client()->ReadByTypeRequest(kTestUuid3, kStartHandle, kEndHandle, cb);
+    });
+
+    ASSERT_TRUE(Expect(kExpectedRequest));
+
+    fake_chan()->Receive(invalid_rsp);
+
+    RunLoopUntilIdle();
+
+    ASSERT_TRUE(status.has_value());
+    EXPECT_FALSE(status->is_success());
+    EXPECT_EQ(HostError::kPacketMalformed, status->error());
+    EXPECT_FALSE(fake_chan()->link_error());
+  }
+}
+
 TEST_F(GATT_ClientTest, ReadBlobRequestEmptyResponse) {
   constexpr att::Handle kHandle = 1;
   constexpr uint16_t kOffset = 5;

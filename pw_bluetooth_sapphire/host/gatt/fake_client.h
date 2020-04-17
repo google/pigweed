@@ -110,6 +110,9 @@ class FakeClient final : public Client {
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
+  // TODO(42716): write implementation when used by RemoteService tests
+  void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
+                         ReadByTypeCallback callback) override {}
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override;
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;

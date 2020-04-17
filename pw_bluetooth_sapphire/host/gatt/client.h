@@ -91,6 +91,27 @@ class Client {
   using ReadCallback = fit::function<void(att::Status, const ByteBuffer&)>;
   virtual void ReadRequest(att::Handle handle, ReadCallback callback) = 0;
 
+  // Sends an ATT Read by Type Request with the requested attribute handle range |start_handle| to
+  // |end_handle| (inclusive), and returns the resulting status and attribute handle-value pairs in
+  // |callback|. Returns no values if the status is an error.
+  //
+  // Attribute values longer than 253 bytes will be truncated. ReadBlobRequest() should be used to
+  // read the complete values. (Core Spec v5.2, Vol 3, Part F, 3.4.4.2)
+  //
+  // The attributes returned will be the attributes with the lowest handles in the handle range, and
+  // may not include all matching attributes. To read all attributes, make additional requests with
+  // an updated |start_handle| until an error response with error code "Attribute Not Found" is
+  // received. (Core Spec v5.2, Vol 3, Part F, 3.4.4.1).
+  struct ReadByTypeResult {
+    att::Handle handle;
+    // The underlying value buffer is only valid for the duration of |callback|. Callers must make a
+    // copy if they need to retain the buffer.
+    BufferView value;
+  };
+  using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
+  virtual void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
+                                 ReadByTypeCallback callback) = 0;
+
   // Sends an ATT Read Blob request with the requested attribute |handle| and
   // returns the result value in |callback|. This can be called multiple times
   // to read the value of a characteristic that is larger than the ATT_MTU.
