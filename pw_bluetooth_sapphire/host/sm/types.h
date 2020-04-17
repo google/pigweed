@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_
 
+#include <lib/fit/function.h>
+
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -197,6 +199,11 @@ struct LocalPairingParams {
   // The keys that are desired from the peer.
   KeyDistGenField remote_keys;
 };
+
+// Used by Phase 2 classes to notify their owner that a new encryption key is ready. For Legacy
+// Pairing, this is the STK which may only be used for the current session. For Secure Connections,
+// this is the LTK which may be persisted.
+using OnPhase2KeyGeneratedCallback = fit::function<void(const UInt128&)>;
 
 }  // namespace sm
 }  // namespace bt

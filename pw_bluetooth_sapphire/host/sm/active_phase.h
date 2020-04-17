@@ -16,7 +16,9 @@ namespace sm {
 
 // Abstract class representing one of the four in-progress phases of pairing described in Vol. 3
 // Part H 2.1. Each of those phases is represented as a derived class of ActivePhase.
-
+//
+// After an ActivePhase fails (i.e. through calling OnFailure), it is invalid to make any further
+// method calls on the phase.
 class ActivePhase : public PairingPhase {
  public:
   ~ActivePhase() override = default;
@@ -24,23 +26,29 @@ class ActivePhase : public PairingPhase {
   // Kick off the state machine for the concrete ActivePhase.
   virtual void Start() = 0;
 
-  // Cleans up pairing state and and invokes the listener's error calback.
+  // Cleans up pairing state and and invokes PairingPhase::Listener::OnPairingFailed.
   void OnFailure(Status status);
 
-  // Ends the current pairing procedure with the given failure |ecode|.
+  // Ends the current pairing procedure unsuccessfully, with |ecode| as the reason, and calls
+  // OnFailure.
   void Abort(ErrorCode ecode);
 
-  // Called by the owning class when the SMP pairing timer expires.
+  // Called by the owning class when the SMP pairing timer expires, calls OnFailure.
   void OnPairingTimeout();
 
  protected:
   // For derived final classes to implement PairingChannel::Handler:
   void HandleChannelClosed();
 
-  // Just delegates to the PairingPhase constructor, as this is a stateless class
+  // Just delegates to the PairingPhase constructor.
   ActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
               hci::Connection::Role role);
 
+  // To ZX_ASSERT that methods are not called on a PairingPhase that has already failed.
+  bool has_failed() const { return has_failed_; }
+
+ private:
+  bool has_failed_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ActivePhase);
 };
 

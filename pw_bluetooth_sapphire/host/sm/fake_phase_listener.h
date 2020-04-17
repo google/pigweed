@@ -7,6 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace bt {
 namespace sm {
@@ -22,15 +23,34 @@ class FakeListener : public PairingPhase::Listener {
     return identity_info_;
   }
 
-  // PairingPhase::Listener override:
-  void OnTemporaryKeyRequest(PairingMethod method, TkResponse responder) override {
-    if (tk_delegate_) {
-      tk_delegate_(method, std::move(responder));
+  // PairingPhase::Listener override. Confirms pairing even without a delegate present so that the
+  // simplest pairing flows (JustWorks) work with minimal configuration.
+  void ConfirmPairing(ConfirmCallback confirm) override {
+    if (confirm_delegate_) {
+      confirm_delegate_(std::move(confirm));
     } else {
-      responder(true /* success */, 0);
+      confirm(true);
     }
   }
 
+  // PairingPhase::Listener override:
+  void DisplayPasskey(uint32_t passkey, bool is_numeric_comparison,
+                      ConfirmCallback confirm) override {
+    if (display_delegate_) {
+      display_delegate_(passkey, is_numeric_comparison, std::move(confirm));
+    } else {
+      ADD_FAILURE() << "No passkey display delegate set for pairing";
+    }
+  }
+
+  // PairingPhase::Listener override:
+  void RequestPasskey(PasskeyResponseCallback respond) override {
+    if (request_passkey_delegate_) {
+      request_passkey_delegate_(std::move(respond));
+    } else {
+      ADD_FAILURE() << "No passkey entry delegate set for passkey entry pairing";
+    }
+  }
   // PairingPhase::Listener override:
   void OnNewLongTermKey(const LTK& ltk) override {
     ltk_count_++;
@@ -48,8 +68,17 @@ class FakeListener : public PairingPhase::Listener {
   void set_identity_info(std::optional<IdentityInfo> value) { identity_info_ = value; }
   int identity_info_count() const { return identity_info_count_; }
 
-  using TkDelegate = fit::function<void(PairingMethod, TkResponse)>;
-  void set_tk_delegate(TkDelegate delegate) { tk_delegate_ = std::move(delegate); }
+  using ConfirmDelegate = fit::function<void(ConfirmCallback)>;
+  void set_confirm_delegate(ConfirmDelegate delegate) { confirm_delegate_ = std::move(delegate); }
+
+  using DisplayDelegate = fit::function<void(uint32_t, bool, ConfirmCallback)>;
+  void set_display_delegate(DisplayDelegate delegate) { display_delegate_ = std::move(delegate); }
+
+  // sm::Delegate override:
+  using RequestPasskeyDelegate = fit::function<void(PasskeyResponseCallback)>;
+  void set_request_passkey_delegate(RequestPasskeyDelegate delegate) {
+    request_passkey_delegate_ = std::move(delegate);
+  }
 
   int pairing_error_count() const { return pairing_error_count_; }
   Status last_error() const { return last_error_; }
@@ -61,9 +90,10 @@ class FakeListener : public PairingPhase::Listener {
   std::optional<IdentityInfo> identity_info_ = std::nullopt;
   int identity_info_count_ = 0;
 
-  // Callback used to notify when a call to OnTKRequest() is received.
-  // OnTKRequest() will reply with 0 if a callback is not set.
-  TkDelegate tk_delegate_;
+  // Delegate functions used to respond to user input requests from the pairing state.
+  ConfirmDelegate confirm_delegate_;
+  DisplayDelegate display_delegate_;
+  RequestPasskeyDelegate request_passkey_delegate_;
 
   int ltk_count_ = 0;
   LTK ltk_;

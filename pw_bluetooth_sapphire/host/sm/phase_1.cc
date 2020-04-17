@@ -61,6 +61,7 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
 }
 
 void Phase1::Start() {
+  ZX_ASSERT(!has_failed());
   if (is_responder()) {
     ZX_ASSERT(peer_request_params_.has_value());
     RespondToPairingRequest(*peer_request_params_);
@@ -312,7 +313,7 @@ void Phase1::OnRxBFrame(ByteBufferPtr sdu) {
   } else if (smp_code == kPairingResponse) {
     OnPairingResponse(reader.payload<PairingResponseParams>());
   } else {
-    bt_log(INFO, "sm", "received unexpected code %d when in Pairing Phase 1", smp_code);
+    bt_log(INFO, "sm", "received unexpected code %#.2X when in Pairing Phase 1", smp_code);
     Abort(ErrorCode::kUnspecifiedReason);
   }
 }

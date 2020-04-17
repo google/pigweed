@@ -14,16 +14,18 @@ namespace sm {
 
 ActivePhase::ActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
                          hci::Connection::Role role)
-    : PairingPhase(std::move(chan), std::move(listener), role) {}
+    : PairingPhase(std::move(chan), std::move(listener), role), has_failed_(false) {}
 
 void ActivePhase::OnFailure(Status status) {
+  ZX_ASSERT(!has_failed());
   bt_log(WARN, "sm", "pairing failed: %s", bt_str(status));
-
+  has_failed_ = true;
   ZX_ASSERT(listener());
   listener()->OnPairingFailed(status);
 }
 
 void ActivePhase::Abort(ErrorCode ecode) {
+  ZX_ASSERT(!has_failed());
   bt_log(WARN, "sm", "abort pairing");
 
   SendPairingFailed(ecode);
@@ -31,6 +33,7 @@ void ActivePhase::Abort(ErrorCode ecode) {
 }
 
 void ActivePhase::OnPairingTimeout() {
+  ZX_ASSERT(!has_failed());
   // Pairing is no longer allowed. Disconnect the link.
   bt_log(WARN, "sm", "pairing timed out! disconnecting link");
   sm_chan()->SignalLinkError();

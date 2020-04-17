@@ -92,6 +92,13 @@ class SMP_ActivePhaseTest : public l2cap::testing::FakeChannelTest {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_ActivePhaseTest);
 };
 
+using SMP_ActivePhaseDeathTest = SMP_ActivePhaseTest;
+
+TEST_F(SMP_ActivePhaseDeathTest, CallMethodOnFailedPhaseDies) {
+  active_phase()->Abort(ErrorCode::kUnspecifiedReason);
+  ASSERT_DEATH_IF_SUPPORTED(active_phase()->OnPairingTimeout(), ".*failed.*");
+}
+
 TEST_F(SMP_ActivePhaseTest, ChannelClosedNotifiesListener) {
   ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
   ASSERT_EQ(listener()->pairing_error_count(), 0);

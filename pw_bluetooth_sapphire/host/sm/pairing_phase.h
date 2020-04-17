@@ -41,15 +41,25 @@ class PairingPhase {
     // Bluetooth stack. Returns std::nullopt if no local identity info is available.
     virtual std::optional<IdentityInfo> OnIdentityRequest() = 0;
 
-    // Gets a temporary key and calls the TkResponse callback.
-    using TkResponse = fit::function<void(bool success, uint32_t tk)>;
-    virtual void OnTemporaryKeyRequest(PairingMethod method, TkResponse response) = 0;
+    using ConfirmCallback = fit::function<void(bool confirm)>;
+    virtual void ConfirmPairing(ConfirmCallback confirm) = 0;
+
+    // Show the user the 6-digit |passkey| that should be compared to the peer's passkey or entered
+    // into the peer. |confirm| may be called to accept a comparison or to reject the pairing.
+    virtual void DisplayPasskey(uint32_t passkey, bool is_numeric_comparison,
+                                ConfirmCallback confirm) = 0;
+
+    // Ask the user to enter a 6-digit passkey or reject pairing. Reports the result by invoking
+    // |respond| with |passkey| - a negative value of |passkey| indicates entry failed.
+    // TODO(49966): Use an optional to convey success/failure instead of the signedness of passkey.
+    using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
+    virtual void RequestPasskey(PasskeyResponseCallback respond) = 0;
 
     // Called when a new LTK is available from legacy pairing phase 3.
     virtual void OnNewLongTermKey(const LTK& ltk) = 0;
 
-    // Called when an on-going pairing procedure terminates with an error.
-    // |status| will never indicate success.
+    // Called when an on-going pairing procedure terminates with an error. This method should
+    // destroy the Phase that calls it. |status| will never indicate success.
     virtual void OnPairingFailed(Status status) = 0;
   };
 
