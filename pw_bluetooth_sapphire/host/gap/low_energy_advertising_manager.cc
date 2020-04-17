@@ -19,21 +19,6 @@ namespace gap {
 
 namespace {
 
-constexpr size_t kFlagsSize = 3;
-constexpr uint8_t kDefaultFlags = 0;
-
-// Write the block for the flags to the |buffer|.
-void WriteFlags(MutableByteBuffer* buffer, bool limited = false) {
-  ZX_DEBUG_ASSERT(buffer->size() >= kFlagsSize);
-  (*buffer)[0] = 2;
-  (*buffer)[1] = static_cast<uint8_t>(DataType::kFlags);
-  if (limited) {
-    (*buffer)[2] = kDefaultFlags | AdvFlag::kLELimitedDiscoverableMode;
-  } else {
-    (*buffer)[2] = kDefaultFlags | AdvFlag::kLEGeneralDiscoverableMode;
-  }
-}
-
 // Returns the matching minimum and maximum advertising interval values in controller timeslices.
 hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
   switch (interval) {
@@ -135,13 +120,11 @@ void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
   }
 
   // Serialize the data
-  auto data_bytes = NewSlabBuffer(data.CalculateBlockSize() + kFlagsSize);
-  WriteFlags(data_bytes.get());
-  auto data_view = data_bytes->mutable_view(kFlagsSize);
-  data.WriteBlock(&data_view);
+  auto data_bytes = NewSlabBuffer(data.CalculateBlockSize(/*include_flags=*/ true));
+  data.WriteBlock(data_bytes.get(), AdvFlag::kLEGeneralDiscoverableMode);
 
   auto scan_rsp_bytes = NewSlabBuffer(scan_rsp.CalculateBlockSize());
-  scan_rsp.WriteBlock(scan_rsp_bytes.get());
+  scan_rsp.WriteBlock(scan_rsp_bytes.get(), std::nullopt);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 

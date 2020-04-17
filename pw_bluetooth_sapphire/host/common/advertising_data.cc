@@ -314,8 +314,10 @@ void AdvertisingData::SetAppearance(uint16_t appearance) { appearance_ = appeara
 
 std::optional<uint16_t> AdvertisingData::appearance() const { return appearance_; }
 
-size_t AdvertisingData::CalculateBlockSize() const {
+size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
   size_t len = 0;
+  if (include_flags)
+    len += kFlagsSize;
   if (tx_power_)
     len += 3;
   if (appearance_)
@@ -369,12 +371,20 @@ size_t AdvertisingData::CalculateBlockSize() const {
   return len;
 }
 
-bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer) const {
+bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFlags> flags) const {
   ZX_DEBUG_ASSERT(buffer);
-  if (buffer->size() < CalculateBlockSize())
+
+  size_t min_buf_size = CalculateBlockSize(flags.has_value());
+  if (buffer->size() < min_buf_size)
     return false;
 
   size_t pos = 0;
+  if (flags) {
+    (*buffer)[pos++] = 2;
+    (*buffer)[pos++] = static_cast<uint8_t>(DataType::kFlags);
+    (*buffer)[pos++] = static_cast<uint8_t>(flags.value());
+  }
+
   if (tx_power_) {
     (*buffer)[pos++] = 2;
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kTxPowerLevel);

@@ -17,6 +17,30 @@
 
 namespace bt {
 
+// Potential values that can be provided in the "Flags" advertising data
+// bitfield.
+// clang-format off
+enum AdvFlag : uint8_t {
+  // Octet 0
+  kLELimitedDiscoverableMode        = (1 << 0),
+  kLEGeneralDiscoverableMode        = (1 << 1),
+  kBREDRNotSupported                = (1 << 2),
+  kSimultaneousLEAndBREDRController = (1 << 3),
+  kSimultaneousLEAndBREDRHost       = (1 << 4),
+};
+// clang-format on
+
+// The Flags bitfield used in advertising data.
+// Only the first octet (octet0) is represented in |AdvFlags|.
+//
+// See the Core Specification Supplement v9 for more information.
+using AdvFlags = uint8_t;
+
+constexpr uint8_t kDefaultNoAdvFlags = 0;
+
+// The TLV size of the Flags datatype.
+constexpr size_t kFlagsSize = 3;
+
 // Constants for the expected size (in octets) of an
 // advertising/EIR/scan-response data field.
 //
@@ -131,13 +155,19 @@ class AdvertisingData {
   std::optional<uint16_t> appearance() const;
 
   // Calculates the size of the current set of fields if they were to be written
-  // to a buffer using WriteBlock()
-  size_t CalculateBlockSize() const;
+  // to a buffer using WriteBlock().
+  //
+  // If |include_flags| is set, then the returned block size will include the
+  // expected size of writing advertising data flags.
+  size_t CalculateBlockSize(bool include_flags = false) const;
 
-  // Writes the byte representation of this to |buffer|.
-  // Returns false without modifying |buffer| if there is not enough space
-  // (if the buffer size is less than block_size())
-  bool WriteBlock(MutableByteBuffer* buffer) const;
+  // Writes the byte representation of this to |buffer| with the included |flags|.
+  // Returns false without modifying |buffer| if there is not enough space (i.e If
+  // the buffer size is less than CalculateBlockSize()).
+  //
+  // The responsibility is on the caller to provide a buffer that is large enough to
+  // encode the |AdvertisingData| and the optional flags.
+  bool WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFlags> flags) const;
 
   // Relation operators
   bool operator==(const AdvertisingData& other) const;

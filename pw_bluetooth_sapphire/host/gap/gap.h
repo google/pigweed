@@ -31,19 +31,6 @@ enum class Mode {
   kExtended,
 };
 
-// Potential values that can be provided in the "Flags" advertising data
-// bitfield.
-// clang-format off
-enum AdvFlag : uint8_t {
-  // Octet 0
-  kLELimitedDiscoverableMode        = (1 << 0),
-  kLEGeneralDiscoverableMode        = (1 << 1),
-  kBREDRNotSupported                = (1 << 2),
-  kSimultaneousLEAndBREDRController = (1 << 3),
-  kSimultaneousLEAndBREDRHost       = (1 << 4),
-};
-// clang-format on
-
 // Placeholder assigned as the local name when gap::Adapter is initialized.
 constexpr char kDefaultLocalName[] = "fuchsia";
 

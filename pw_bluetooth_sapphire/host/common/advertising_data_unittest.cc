@@ -34,7 +34,7 @@ TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
 
   EXPECT_EQ(bytes.size(), data.CalculateBlockSize());
   DynamicByteBuffer block(data.CalculateBlockSize());
-  data.WriteBlock(&block);
+  data.WriteBlock(&block, std::nullopt);
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
@@ -48,7 +48,7 @@ TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
   DynamicByteBuffer block(block_size);
-  data.WriteBlock(&block);
+  data.WriteBlock(&block, std::nullopt);
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
 
@@ -64,7 +64,7 @@ TEST(GAP_AdvertisingDataTest, CompressServiceUUIDs) {
   size_t block_size = data.CalculateBlockSize();
   EXPECT_EQ(bytes.size(), block_size);
   DynamicByteBuffer block(block_size);
-  data.WriteBlock(&block);
+  data.WriteBlock(&block, std::nullopt);
 
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }
@@ -262,7 +262,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
   data.AddURI("http://fuchsia.cl");
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize());
-  EXPECT_TRUE(data.WriteBlock(&write_buf));
+  EXPECT_TRUE(data.WriteBlock(&write_buf, std::nullopt));
 
   auto expected_buf = CreateStaticByteBuffer(
       0x02, 0x0a, 0x04,                                      // tx_power_level_: 4
@@ -286,7 +286,52 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSmallBufError) {
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize() - 1);
   // The buffer is too small. No write should occur, and should return false.
-  EXPECT_FALSE(data.WriteBlock(&write_buf));
+  EXPECT_FALSE(data.WriteBlock(&write_buf, std::nullopt));
+}
+
+// Tests writing a fully populated |AdvertisingData| with provided flags to
+// an output buffer succeeds.
+TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
+  AdvertisingData data;
+
+  data.SetTxPower(4);
+  data.SetAppearance(0x4567);
+  data.SetLocalName("fuchsia");
+
+  auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
+  data.SetManufacturerData(0x0123, bytes.view());
+
+  auto service_uuid = UUID(kId1As16);
+  auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
+  data.AddServiceUuid(service_uuid);
+  data.SetServiceData(service_uuid, service_bytes.view());
+
+  data.AddURI("http://fuchsia.cl");
+
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/ true));
+  EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
+
+  auto expected_buf = CreateStaticByteBuffer(
+      0x02, 0x01, 0x02,                                      // flags: 2
+      0x02, 0x0a, 0x04,                                      // tx_power_level_: 4
+      0x03, 0x19, 0x67, 0x45,                                // appearance_: 0x4567
+      0x08, 0x09, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69, 0x61,  // local_name_: "fuchsia"
+      0x06, 0xff, 0x23, 0x01, 0x01, 0x02, 0x03,              // manufacturer_data_
+      0x05, 0x16, 0x12, 0x02, 0x01, 0x02,                    // service_data_
+      0x0e, 0x24, 0x16, 0x2f, 0x2f, 0x66, 0x75, 0x63, 0x68, 0x73, 0x69, 0x61, 0x2e, 0x63, 0x6c,
+      0x03, 0x02, 0x12, 0x02);  // uris_
+  EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
+}
+
+TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
+  AdvertisingData data;
+
+  data.SetTxPower(6);
+  data.SetLocalName("Fuchsia");
+  data.SetAppearance(0x1234);
+
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/ true) - 1);
+  EXPECT_FALSE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 }
 
 }  // namespace
