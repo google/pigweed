@@ -6,6 +6,7 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
+#include <lib/async/time.h>
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
@@ -51,6 +52,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
         conn_mgr_(conn_mgr),
         data_domain_(data_domain),
         gatt_(gatt),
+        conn_pause_central_expiry_(zx::time(async_now(dispatcher_)) + kLEConnectionPauseCentral),
         weak_ptr_factory_(this) {
     ZX_DEBUG_ASSERT(peer_id_.IsValid());
     ZX_DEBUG_ASSERT(link_);
@@ -167,6 +169,18 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
       }
     });
     conn_pause_peripheral_timeout_->PostDelayed(dispatcher_, kLEConnectionPausePeripheral);
+  }
+
+  // Posts |callback| to be called kLEConnectionPauseCentral after this connection was established.
+  void PostCentralPauseTimeoutCallback(fit::callback<void()> callback) {
+    async::PostTaskForTime(
+        dispatcher_,
+        [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback)]() mutable {
+          if (self) {
+            cb();
+          }
+        },
+        conn_pause_central_expiry_);
   }
 
   size_t ref_count() const { return refs_.size(); }
@@ -363,8 +377,11 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
   // Called after kLEConnectionPausePeripheral.
   std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
 
-  // Called by |conn_pause_peripheral_timeout_task_|.
+  // Called by |conn_pause_peripheral_timeout_|.
   fit::callback<void()> conn_pause_peripheral_callback_;
+
+  // Set to the time when connection parameters should be sent as LE central.
+  const zx::time conn_pause_central_expiry_;
 
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
@@ -780,12 +797,18 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   //         encryption setup, etc) for kLEConnectionPauseCentral before
   //         updating the connection parameters to the slave's preferred values.
 
-  // TODO(49300): wait for kLEConnectionPauseCentral before updating connection parameters
   if (role == hci::Connection::Role::kMaster) {
-    const hci::LEPreferredConnectionParameters params(
-        hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
-        /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
-    UpdateConnectionParams(handle, params);
+    // After the Central device has no further pending actions to perform and the
+    // Peripheral device has not initiated any other actions within
+    // kLEConnectionPauseCentral, then the Central device should update the connection parameters to
+    // either the Peripheral Preferred Connection Parameters or self-determined values (Core Spec
+    // v5.2, Vol 3, Part C, Sec 9.3.12).
+    connections_[peer_id]->PostCentralPauseTimeoutCallback([this, handle]() {
+      const hci::LEPreferredConnectionParameters params(
+          hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
+          /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
+      UpdateConnectionParams(handle, params);
+    });
   }
 
   interrogator_.Start(peer_id, handle,

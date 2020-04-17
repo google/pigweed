@@ -1709,6 +1709,9 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, CentralUpdatesConnectionParametersAft
       peer->identifier(), [&](auto, auto c) { conn = std::move(c); }, BondableMode::Bondable);
 
   RunLoopUntilIdle();
+  EXPECT_EQ(0u, hci_update_conn_param_count);
+
+  RunLoopFor(kLEConnectionPauseCentral);
   EXPECT_EQ(1u, hci_update_conn_param_count);
   EXPECT_TRUE(conn);
 }
