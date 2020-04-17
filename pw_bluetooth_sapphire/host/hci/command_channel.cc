@@ -9,6 +9,8 @@
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
+#include <trace/event.h>
+
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
@@ -674,6 +676,8 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
                                     zx_status_t status, const zx_packet_signal_t* signal) {
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
+
+  TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady", "signal->count", signal->count);
 
   if (status != ZX_OK) {
     bt_log(TRACE, "hci", "channel error: %s", zx_status_get_string(status));

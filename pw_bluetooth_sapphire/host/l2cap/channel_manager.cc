@@ -6,6 +6,8 @@
 
 #include <zircon/assert.h>
 
+#include <trace/event.h>
+
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/strings/string_printf.h"
@@ -188,6 +190,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto handle = packet->connection_handle();
+  TRACE_DURATION("bluetooth", "ChannelManager::OnDataReceived", "handle", handle);
 
   auto iter = ll_map_.find(handle);
   PendingPacketMap::iterator pp_iter;
@@ -203,6 +206,8 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   }
 
   if (pp_iter != pending_packets_.end()) {
+    packet->set_trace_id(TRACE_NONCE());
+    TRACE_FLOW_BEGIN("bluetooth", "ChannelMaager::OnDataReceived queued", packet->trace_id());
     pp_iter->second.push_back(std::move(packet));
     bt_log(SPEW, "l2cap", "queued rx packet on handle: %#.4x", handle);
     return;
@@ -216,6 +221,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
                                                         hci::Connection::Role role,
                                                         size_t max_payload_size) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  TRACE_DURATION("bluetooth", "ChannelManager::RegisterInternal", "handle", handle);
 
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't
   // assume this will succeed.
@@ -236,7 +242,9 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   if (pp_iter != pending_packets_.end()) {
     auto& packets = pp_iter->second;
     while (!packets.is_empty()) {
-      ll->HandleRxPacket(packets.pop_front());
+      auto packet = packets.pop_front();
+      TRACE_FLOW_END("bluetooth", "ChannelManager::OnDataReceived queued", packet->trace_id());
+      ll->HandleRxPacket(std::move(packet));
     }
     pending_packets_.erase(pp_iter);
   }

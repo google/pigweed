@@ -6,9 +6,10 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_RECOMBINER_H_
 
 #include <endian.h>
-#include <fbl/macros.h>
 
 #include <cstdint>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -71,6 +72,13 @@ class Recombiner final {
 
   // The PDU currently being constructed, if any.
   std::optional<PDU> pdu_;
+
+#ifndef NTRACE
+  // Trace flow IDs for the fragments being recombined into a single PDU.
+  // Flows track from AddFragment to Release, only when there is fragmentation.
+  // (PDUs are expected to be released immediately when there is no recombining)
+  std::vector<trace_flow_id_t> trace_ids_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Recombiner);
 };

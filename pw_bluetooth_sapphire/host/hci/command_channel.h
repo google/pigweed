@@ -21,6 +21,7 @@
 #include <unordered_set>
 
 #include <fbl/macros.h>
+#include <trace/event.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"

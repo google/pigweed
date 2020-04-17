@@ -6,9 +6,10 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_
 
 #include <endian.h>
+#include <zircon/assert.h>
+
 #include <fbl/intrusive_double_list.h>
 #include <fbl/macros.h>
-#include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -87,6 +88,11 @@ class PDU final {
   // this is called, the PDU will become invalid.
   FragmentList ReleaseFragments();
 
+#ifndef NTRACE
+  void set_trace_id(trace_flow_id_t id) { trace_id_ = id; };
+  trace_flow_id_t trace_id() { return trace_id_; }
+#endif
+
  private:
   friend class Reader;
   friend class Fragmenter;
@@ -106,6 +112,10 @@ class PDU final {
   // expected that the sum of the payload sizes of all elements in |fragments_|
   // is equal to the length of the frame (i.e. length() + sizeof(BasicHeader)).
   FragmentList fragments_;
+
+#ifndef NTRACE
+  trace_flow_id_t trace_id_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
 };

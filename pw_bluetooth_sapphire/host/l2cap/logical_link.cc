@@ -112,6 +112,8 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
+  TRACE_DURATION("bluetooth", "LogicalLink::OpenFixedChannel", "handle", handle_, "channel id", id);
+
   // We currently only support the pre-defined fixed-channels.
   if (!AllowsFixedChannel(id)) {
     bt_log(ERROR, "l2cap", "cannot open fixed channel with id %#.4x", id);
@@ -129,6 +131,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
     for (auto& pdu : pp_iter->second) {
+      TRACE_FLOW_END("bluetooth", "LogicalLink::HandleRxPacket queued", pdu.trace_id());
       chan->HandleRxPdu(std::move(pdu));
     }
     pending_pdus_.erase(pp_iter);
@@ -163,6 +166,8 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   ZX_DEBUG_ASSERT(!recombiner_.ready());
   ZX_DEBUG_ASSERT(packet);
   ZX_DEBUG_ASSERT(!closed_);
+
+  TRACE_DURATION("bluetooth", "LogicalLink::HandleRxPacket", "handle", handle_);
 
   if (!recombiner_.AddFragment(std::move(packet))) {
     bt_log(TRACE, "l2cap", "ACL data packet rejected (handle: %#.4x)", handle_);
@@ -213,6 +218,8 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   }
 
   if (pp_iter != pending_pdus_.end()) {
+    pdu.set_trace_id(TRACE_NONCE());
+    TRACE_FLOW_BEGIN("bluetooth", "LogicalLink::HandleRxPacket queued", pdu.trace_id());
     pp_iter->second.emplace_back(std::move(pdu));
 
     bt_log(SPEW, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)", channel_id, handle_);

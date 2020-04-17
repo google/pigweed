@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <fbl/macros.h>
+#include <trace/event.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
@@ -47,6 +48,12 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
   // underlying buffer.
   void InitializeFromBuffer();
 
+#ifndef NTRACE
+  // ID to trace packet flow
+  void set_trace_id(trace_flow_id_t id) { async_id_ = id; }
+  trace_flow_id_t trace_id() { return async_id_; }
+#endif
+
  protected:
   Packet<ACLDataHeader>() = default;
 
@@ -54,6 +61,10 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
   // Writes the given header fields into the underlying buffer.
   void WriteHeader(ConnectionHandle connection_handle, ACLPacketBoundaryFlag packet_boundary_flag,
                    ACLBroadcastFlag broadcast_flag);
+
+#ifndef NTRACE
+  trace_flow_id_t async_id_;
+#endif
 };
 
 }  // namespace hci

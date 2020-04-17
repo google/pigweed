@@ -5,13 +5,15 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_CHANNEL_RELAY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_CHANNEL_RELAY_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/fit/function.h>
 #include <zircon/status.h>
 
 #include <deque>
+
+#include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
+#include <trace/event.h>
 
 #include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -129,6 +131,13 @@ class SocketChannelRelay final {
   // Clears |wait|'s handler, and cancels |wait|.
   void UnbindAndCancelWait(async::Wait* wait);
 
+#ifndef NTRACE
+  // Get a trace_flow_id given a counter. Used to make sure trace flows are unique while they are
+  // active.
+  // Composed of channel UniqueId and the given counter, with the unique_id taking the top 32 bits.
+  trace_flow_id_t GetTraceId(uint32_t id);
+#endif
+
   RelayState state_;  // Initial state is kActivating.
 
   zx::socket socket_;
@@ -140,6 +149,15 @@ class SocketChannelRelay final {
   async::Wait sock_read_waiter_;
   async::Wait sock_write_waiter_;
   async::Wait sock_close_waiter_;
+
+  // Count of packets received from the peer on the channel.
+  uint32_t channel_rx_packet_count_;
+  // Count of packets sent to the peer on the channel.
+  uint32_t channel_tx_packet_count_;
+  // Count of packets sent to the socket (should match |channel_rx_packet_count_| normally)
+  uint32_t socket_packet_sent_count_;
+  // Count of packets received from the socket (should match |channel_Tx_packet_count_| normally)
+  uint32_t socket_packet_recv_count_;
 
   // We use a std::deque here to minimize the number dynamic memory
   // allocations (cf. std::list, which would require allocation on each

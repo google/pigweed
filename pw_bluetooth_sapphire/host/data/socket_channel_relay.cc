@@ -26,6 +26,10 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<
       dispatcher_(async_get_default_dispatcher()),
       deactivation_cb_(std::move(deactivation_cb)),
       socket_write_queue_max_frames_(socket_write_queue_max_frames),
+      channel_rx_packet_count_(0u),
+      channel_tx_packet_count_(0u),
+      socket_packet_sent_count_(0u),
+      socket_packet_recv_count_(0u),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(socket_);
@@ -166,6 +170,8 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) 
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
+  TRACE_DURATION("bluetooth", "SocketChannelRelay::OnChannelDataReceived", "channel id",
+                 channel_->id());
 
   if (state_ == RelayState::kDeactivating) {
     bt_log(TRACE, "l2cap", "Ignoring %s on socket for channel %u while deactivating", __func__,
@@ -188,6 +194,10 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) 
     // TODO(BT-732): Add a metric for number of dropped frames.
     socket_write_queue_.pop_front();
   }
+
+  channel_rx_packet_count_++;
+  TRACE_FLOW_BEGIN("bluetooth", "SocketChannelRelay::OnChannelDataReceived queued",
+                   GetTraceId(channel_rx_packet_count_));
   socket_write_queue_.push_back(std::move(rx_data));
   ServiceSocketWriteQueue();
 }
@@ -244,7 +254,10 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     }
 
     ZX_DEBUG_ASSERT(n_bytes_read > 0);
+    socket_packet_recv_count_++;
     if (n_bytes_read > channel_->max_tx_sdu_size()) {
+      bt_log(DEBUG, "l2cap", "Dropping %zu bytes for channel %u as max TX SDU is %u ", n_bytes_read,
+             channel_->id(), channel_->max_tx_sdu_size());
       return false;
     }
 
@@ -256,6 +269,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
       bt_log(DEBUG, "l2cap", "Failed to write %zu bytes to channel %u", n_bytes_read,
              channel_->id());
     }
+    channel_tx_packet_count_++;
   } while (read_res == ZX_OK);
 
   return true;
@@ -269,12 +283,23 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
   // much lower than the CPU's data processing throughput, so starvation
   // shouldn't be an issue. However, latency might be.
   zx_status_t write_res;
+  TRACE_DURATION("bluetooth", "SocketChannelRelay::ServiceSocketWriteQueue", "channel_id",
+                 channel_->id());
   do {
     ZX_DEBUG_ASSERT(!socket_write_queue_.empty());
     ZX_DEBUG_ASSERT(socket_write_queue_.front());
+    TRACE_DURATION("bluetooth", "SocketChannelRelay::ServiceSocketWriteQueue write", "channel_id",
+                   channel_->id());
 
     const ByteBuffer& rx_data = *socket_write_queue_.front();
     ZX_DEBUG_ASSERT_MSG(rx_data.size(), "Zero-length message on write queue");
+
+    socket_packet_sent_count_++;
+    TRACE_FLOW_END("bluetooth", "SocketChannelRelay::OnChannelDataReceived queued",
+                   GetTraceId(socket_packet_sent_count_));
+
+    // TODO: we probably need to make this unique across all profile sockets.
+    TRACE_FLOW_BEGIN("bluetooth", "ProfilePacket", socket_packet_sent_count_);
 
     size_t n_bytes_written = 0;
     write_res = socket_.write(0, rx_data.data(), rx_data.size(), &n_bytes_written);
@@ -394,6 +419,14 @@ void SocketChannelRelay<ChannelT>::UnbindAndCancelWait(async::Wait* wait) {
   cancel_res = wait->Cancel();
   ZX_DEBUG_ASSERT_MSG(cancel_res == ZX_OK || cancel_res == ZX_ERR_NOT_FOUND, "Cancel failed: %s",
                       zx_status_get_string(cancel_res));
+}
+
+template <typename ChannelT>
+trace_flow_id_t SocketChannelRelay<ChannelT>::GetTraceId(uint32_t id) {
+  static_assert(sizeof(trace_flow_id_t) >= (sizeof(typename ChannelT::UniqueId) + sizeof(uint32_t)),
+                "UniqueId needs to be small enough to make unique trace IDs");
+  return (static_cast<trace_flow_id_t>(channel_->unique_id()) << (sizeof(uint32_t) * CHAR_BIT)) |
+         id;
 }
 
 }  // namespace internal

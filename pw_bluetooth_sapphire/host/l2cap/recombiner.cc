@@ -24,6 +24,7 @@ Recombiner::Recombiner() : ready_(false), frame_length_(0u), cur_length_(0u) {}
 
 bool Recombiner::AddFragment(hci::ACLDataPacketPtr&& fragment) {
   ZX_DEBUG_ASSERT(fragment);
+  TRACE_DURATION("bluetooth", "Recombiner::AddFragment");
 
   if (ready())
     return false;
@@ -49,14 +50,31 @@ bool Recombiner::AddFragment(hci::ACLDataPacketPtr&& fragment) {
     // The PDU is complete.
     ready_ = true;
   }
+#ifndef NTRACE
+  else {
+    trace_flow_id_t flow_id = TRACE_NONCE();
+    TRACE_FLOW_BEGIN("bluetooth", "Recombiner::AddFragment packet fragment", flow_id);
+    trace_ids_.push_back(flow_id);
+  }
+#endif
 
   pdu_->AppendFragment(std::move(fragment));
   return true;
 }
 
 bool Recombiner::Release(PDU* out_pdu) {
+  TRACE_DURATION("bluetooth", "Recombiner::Release");
   if (empty() || !ready())
     return false;
+
+#ifndef NTRACE
+  if (TRACE_ENABLED()) {
+    for (auto flow_id : trace_ids_) {
+      TRACE_FLOW_END("bluetooth", "Recombiner::AddFragment packet fragment", flow_id);
+    }
+    trace_ids_.clear();
+  }
+#endif
 
   ZX_DEBUG_ASSERT(out_pdu);
 

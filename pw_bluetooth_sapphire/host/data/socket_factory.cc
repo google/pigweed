@@ -48,9 +48,9 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> c
       std::move(local_socket), channel,
       typename RelayT::DeactivationCallback(
           [self = weak_ptr_factory_.GetWeakPtr(), id = unique_id]() mutable {
-            ZX_DEBUG_ASSERT_MSG(self, "(unique_id=%lu)", id);
+            ZX_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
             size_t n_erased = self->channel_to_relay_.erase(id);
-            ZX_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%lu)", n_erased, id);
+            ZX_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
           }));
 
   // Note: Activate() may abort, if |channel| has been Activated() without

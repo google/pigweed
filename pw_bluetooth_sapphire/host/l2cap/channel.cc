@@ -9,6 +9,8 @@
 #include <functional>
 #include <memory>
 
+#include <trace/event.h>
+
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
@@ -128,7 +130,9 @@ bool ChannelImpl::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback 
     if (!pending_rx_sdus_.empty()) {
       run_task = true;
       task = [func = rx_cb_.share(), pending = std::move(pending_rx_sdus_)]() mutable {
+        TRACE_DURATION("bluetooth", "ChannelImpl::ActivateWithDispatcher pending drain");
         while (!pending.empty()) {
+          TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
           func(std::move(pending.front()));
           pending.pop();
         }
@@ -190,6 +194,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
 
   std::lock_guard lock(mtx_);
+  TRACE_DURATION("bluetooth", "l2cap:channel_send", "handle", link_->handle(), "id", id());
 
   if (!link_) {
     bt_log(ERROR, "l2cap", "cannot send SDU on a closed link");
@@ -250,6 +255,8 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 
   {
     std::lock_guard lock(mtx_);
+    TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu", "handle", link_->handle(), "channel_id",
+                   id_);
 
     // link_ may be nullptr if a pdu is received after the channel has been deactivated but
     // before LogicalLink::RemoveChannel has been dispatched
@@ -275,11 +282,21 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     // Buffer the packets if the channel hasn't been activated.
     if (!active_) {
       pending_rx_sdus_.emplace(std::move(sdu));
+      // Tracing: we assume pending_rx_sdus_ is only filled once and use the length of queue
+      // for trace ids.
+      TRACE_FLOW_BEGIN("bluetooth", "ChannelImpl::HandleRxPdu queued", pending_rx_sdus_.size());
       return;
     }
 
+    trace_flow_id_t trace_id = TRACE_NONCE();
+    TRACE_FLOW_BEGIN("bluetooth", "ChannelImpl::HandleRxPdu callback", trace_id);
+
     dispatcher = dispatcher_;
-    task = [func = rx_cb_.share(), sdu = std::move(sdu)]() mutable { func(std::move(sdu)); };
+    task = [func = rx_cb_.share(), sdu = std::move(sdu), trace_id]() mutable {
+      TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu callback task");
+      TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu callback", trace_id);
+      func(std::move(sdu));
+    };
 
     ZX_DEBUG_ASSERT(rx_cb_);
   }

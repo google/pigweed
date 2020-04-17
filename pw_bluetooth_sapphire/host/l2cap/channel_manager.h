@@ -13,6 +13,7 @@
 #include <unordered_map>
 
 #include <fbl/macros.h>
+#include <trace/event.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"

@@ -83,7 +83,7 @@ class Channel : public fbl::RefCounted<Channel> {
   // Returns a value that's unique for any channel connected to this device.
   // If two channels have different unique_ids, they represent different
   // channels even if their ids match.
-  using UniqueId = uint64_t;
+  using UniqueId = uint32_t;
   UniqueId unique_id() const {
     static_assert(sizeof(UniqueId) >= sizeof(hci::ConnectionHandle) + sizeof(ChannelId),
                   "UniqueId needs to be large enough to make unique IDs");

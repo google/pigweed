@@ -438,6 +438,7 @@ void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.er
 void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
                         uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(sdu);
+  TRACE_DURATION("bluetooth", "sdp::Server::OnRxBFrame");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(TRACE, "sdp", "PDU too short; dropping");

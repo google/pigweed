@@ -197,6 +197,7 @@ void Impl::Cancel(TransactionId id, Status status) {
 }
 
 void Impl::OnRxFrame(ByteBufferPtr data) {
+  TRACE_DURATION("bluetooth", "sdp::Client::Impl::OnRxFrame");
   // Each SDU in SDP is one request or one response. Core 5.0 Vol 3 Part B, 4.2
   PacketView<sdp::Header> packet(data.get());
   size_t pkt_params_len = data->size() - sizeof(Header);

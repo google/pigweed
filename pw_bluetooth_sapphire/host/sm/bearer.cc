@@ -704,6 +704,9 @@ void Bearer::OnChannelClosed() {
 
 void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
+
+  TRACE_DURATION("bluetooth", "sm::Bearer::OnRxBFrame");
+
   uint8_t length = sdu->size();
   if (length < sizeof(Code)) {
     bt_log(TRACE, "sm", "PDU too short!");

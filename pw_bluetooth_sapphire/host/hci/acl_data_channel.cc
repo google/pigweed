@@ -209,8 +209,8 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
   while (!packets.is_empty()) {
     auto packet = packets.pop_front();
     auto ll_type = registered_links_[packet->connection_handle()];
-    send_queue_.insert(insert_iter,
-                       QueuedDataPacket(ll_type, channel_id, priority, std::move(packet)));
+    auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet));
+    send_queue_.insert(insert_iter, std::move(queue_packet));
   }
 
   TrySendNextQueuedPacketsLocked();
@@ -474,6 +474,7 @@ void ACLDataChannel::IncrementLETotalNumPacketsLocked(size_t count) {
 
 void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                                     zx_status_t status, const zx_packet_signal_t* signal) {
+  TRACE_DURATION("bluetooth", "ACLDataChannel::OnChannelReady");
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "channel error: %s", zx_status_get_string(status));
     return;
@@ -487,11 +488,12 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
   std::lock_guard<std::mutex> lock(rx_mutex_);
-  if (!rx_callback_) {
-    return;
-  }
 
   for (size_t count = 0; count < signal->count; count++) {
+    TRACE_DURATION("bluetooth", "ACLDataChannel::OnChannelReady read packet");
+    if (!rx_callback_) {
+      continue;
+    }
     // Allocate a buffer for the event. Since we don't know the size beforehand
     // we allocate the largest possible buffer.
     auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
@@ -531,11 +533,14 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     packet->InitializeFromBuffer();
 
     ZX_DEBUG_ASSERT(rx_dispatcher_);
-
-    async::PostTask(rx_dispatcher_,
-                    [cb = rx_callback_.share(), packet = std::move(packet)]() mutable {
-                      cb(std::move(packet));
-                    });
+    trace_flow_id_t trace_id = TRACE_NONCE();
+    TRACE_FLOW_BEGIN("bluetooth", "ACLDataChannel::OnChannelReady rx_callback", trace_id);
+    async::PostTask(rx_dispatcher_, [cb = rx_callback_.share(), packet = std::move(packet),
+                                     trace_id]() mutable {
+      TRACE_DURATION("bluetooth", "ACLDataChannel->rx_callback_");
+      TRACE_FLOW_END("bluetooth", "ACLDataChannel::OnChannelReady rx_callback", trace_id);
+      cb(std::move(packet));
+    });
   }
 
   status = wait->Begin(dispatcher);
