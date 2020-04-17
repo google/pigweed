@@ -54,6 +54,13 @@ class FakeClient final : public Client {
     read_request_callback_ = std::move(callback);
   }
 
+  // Sets a callback which will run when ReadByTypeRequest gets called.
+  using ReadByTypeRequestCallback = fit::function<void(const UUID& type, att::Handle start_handle,
+                                                       att::Handle end_handle, ReadByTypeCallback)>;
+  void set_read_by_type_request_callback(ReadByTypeRequestCallback callback) {
+    read_by_type_request_callback_ = std::move(callback);
+  }
+
   // Sets a callback which will run when ReadBlobRequest gets called.
   using ReadBlobRequestCallback = fit::function<void(att::Handle, uint16_t offset, ReadCallback)>;
   void set_read_blob_request_callback(ReadBlobRequestCallback callback) {
@@ -110,9 +117,8 @@ class FakeClient final : public Client {
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
-  // TODO(42716): write implementation when used by RemoteService tests
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
-                         ReadByTypeCallback callback) override {}
+                         ReadByTypeCallback callback) override;
   void ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) override;
   void WriteRequest(att::Handle handle, const ByteBuffer& value,
                     att::StatusCallback callback) override;
@@ -155,6 +161,7 @@ class FakeClient final : public Client {
   size_t desc_discovery_count_ = 0;
 
   ReadRequestCallback read_request_callback_;
+  ReadByTypeRequestCallback read_by_type_request_callback_;
   ReadBlobRequestCallback read_blob_request_callback_;
   WriteRequestCallback write_request_callback_;
   ExecutePrepareWritesCallback execute_prepare_writes_callback_;

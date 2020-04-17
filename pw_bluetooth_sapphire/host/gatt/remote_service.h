@@ -96,6 +96,26 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   void ReadLongCharacteristic(CharacteristicHandle id, uint16_t offset, size_t max_bytes,
                               ReadValueCallback callback, async_dispatcher_t* dispatcher = nullptr);
 
+  // Sends a read by type request for attribute values in this service with the given |type|
+  // and returns read values via |callback|. If no matching attributes are found, the callback
+  // status will indicate success and the vector of values will be empty. If an error occurs, only
+  // attributes up to the first read error are returned. The callback status will indicate the
+  // error.
+  //
+  // |type| must be the UUID of a characteristic or descriptor value, NOT an internal GATT UUID
+  // such as a service or characteristic declaration (the callback will be invoked with an error in
+  // this case).
+  //
+  // NOTE: The values returned are truncated to 253 bytes. ReadLongCharacteristic() and
+  // ReadLongDescriptor() should be used to read complete values.
+  struct ReadByTypeResult {
+    CharacteristicHandle handle;
+    ByteBufferPtr value;
+  };
+  using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
+  void ReadByType(const UUID& type, ReadByTypeCallback callback,
+                  async_dispatcher_t* dispatcher = nullptr);
+
   // Sends a write request to the characteristic with the given identifier.
   //
   // TODO(armansito): Add a ByteBuffer version.
@@ -246,6 +266,14 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
   void ReadLongHelper(att::Handle value_handle, uint16_t offset, MutableByteBufferPtr buffer,
                       size_t bytes_read, ReadValueCallback callback,
                       async_dispatcher_t* dispatcher);
+
+  // Helper function that drives the recursive "Read by Type" procedure.
+  // Accumulates attribute values in |values| until either |start| > |end| or an error occurs. On
+  // completion, accumulated |values| and the status are passed to |callback| on the |dispatcher|.
+  // Called by ReadByType().
+  void ReadByTypeHelper(const UUID& type, att::Handle start, att::Handle end,
+                        std::vector<ReadByTypeResult> values, ReadByTypeCallback callback,
+                        async_dispatcher_t* dispatcher);
 
   // Returns true if characteristic discovery has completed. This must be
   // accessed only through |gatt_dispatcher_|.

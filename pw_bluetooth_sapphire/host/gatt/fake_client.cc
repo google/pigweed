@@ -93,6 +93,13 @@ void FakeClient::ReadRequest(att::Handle handle, ReadCallback callback) {
   }
 }
 
+void FakeClient::ReadByTypeRequest(const UUID& type, att::Handle start_handle,
+                                   att::Handle end_handle, ReadByTypeCallback callback) {
+  if (read_by_type_request_callback_) {
+    read_by_type_request_callback_(type, start_handle, end_handle, std::move(callback));
+  }
+}
+
 void FakeClient::ReadBlobRequest(att::Handle handle, uint16_t offset, ReadCallback callback) {
   if (read_blob_request_callback_) {
     read_blob_request_callback_(handle, offset, std::move(callback));

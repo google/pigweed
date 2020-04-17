@@ -18,6 +18,22 @@ using att::StatusCallback;
 
 namespace {
 
+bool IsInternalUuid(const UUID& uuid) {
+  // clang-format off
+  return
+    uuid == types::kPrimaryService ||
+    uuid == types::kSecondaryService ||
+    uuid == types::kIncludeDeclaration ||
+    uuid == types::kCharacteristicDeclaration ||
+    uuid == types::kCharacteristicExtProperties ||
+    uuid == types::kCharacteristicUserDescription ||
+    uuid == types::kClientCharacteristicConfig ||
+    uuid == types::kServerCharacteristicConfig ||
+    uuid == types::kCharacteristicFormat ||
+    uuid == types::kCharacteristicAggregateFormat;
+  // clang-format on
+}
+
 void ReportStatus(Status status, StatusCallback callback, async_dispatcher_t* dispatcher) {
   RunOrPost([status, cb = std::move(callback)] { cb(status); }, dispatcher);
 }
@@ -38,6 +54,21 @@ void ReportValue(att::Status status, const ByteBuffer& value,
   async::PostTask(dispatcher, [status, callback = std::move(callback), val = std::move(buffer)] {
     callback(status, *val);
   });
+}
+
+void ReportValues(att::Status status, std::vector<RemoteService::ReadByTypeResult> values,
+                  RemoteService::ReadByTypeCallback callback, async_dispatcher_t* dispatcher) {
+  if (!dispatcher) {
+    callback(status, std::move(values));
+    return;
+  }
+
+  // It is safe to capture |values| because they contain owning pointers to the value buffers
+  // (unlike in ReportValue());
+  async::PostTask(dispatcher,
+                  [status, callback = std::move(callback), values = std::move(values)]() mutable {
+                    callback(status, std::move(values));
+                  });
 }
 
 }  // namespace
@@ -216,6 +247,22 @@ void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t off
 
     ReadLongHelper(chrc->info().value_handle, offset, std::move(buffer), 0u /* bytes_read */,
                    std::move(cb), dispatcher);
+  });
+}
+
+void RemoteService::ReadByType(const UUID& type, ReadByTypeCallback callback,
+                               async_dispatcher_t* dispatcher) {
+  RunGattTask([this, type, cb = std::move(callback), dispatcher]() mutable {
+    // Caller should not request a UUID of an internal attribute (e.g. service declaration).
+    if (IsInternalUuid(type)) {
+      bt_log(SPEW, "gatt", "ReadByType called with internal GATT type (type: %s)", bt_str(type));
+      ReportValues(att::Status(HostError::kInvalidParameters), {}, std::move(cb), dispatcher);
+      return;
+    }
+
+    // Read range is entire service range.
+    ReadByTypeHelper(type, service_data_.range_start, service_data_.range_end, {}, std::move(cb),
+                     dispatcher);
   });
 }
 
@@ -645,6 +692,49 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   };
 
   client_->ReadBlobRequest(value_handle, offset, std::move(read_blob_cb));
+}
+
+void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::Handle end,
+                                     std::vector<RemoteService::ReadByTypeResult> values,
+                                     ReadByTypeCallback callback, async_dispatcher_t* dispatcher) {
+  if (start > end) {
+    ReportValues(att::Status(), std::move(values), std::move(callback), dispatcher);
+    return;
+  }
+
+  auto read_cb = [self = fbl::RefPtr(this), type, end, values_accum = std::move(values),
+                  cb = std::move(callback), dispatcher](
+                     att::Status status, std::vector<Client::ReadByTypeResult> values) mutable {
+    if (!status.is_success()) {
+      // Treat kAttributeNotFound error as success, since it's used to indicate when a sequence of
+      // reads has read all matching attributes.
+      if (status.is_protocol_error() &&
+          status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
+        status = att::Status();
+      }
+
+      ReportValues(status, std::move(values_accum), std::move(cb), dispatcher);
+      return;
+    }
+
+    // Client checks for invalid response where status is success but no values are returned.
+    ZX_ASSERT(!values.empty());
+
+    // Convert and accumulate values.
+    for (const auto& result : values) {
+      auto buffer = NewSlabBuffer(result.value.size());
+      result.value.Copy(buffer.get());
+      values_accum.push_back(
+          ReadByTypeResult{CharacteristicHandle(result.handle), std::move(buffer)});
+    }
+
+    // Start next read right after last returned attribute.
+    att::Handle start_next = values.back().handle + 1;
+
+    self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),
+                           dispatcher);
+  };
+  client_->ReadByTypeRequest(type, start, end, std::move(read_cb));
 }
 
 void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffer& value) {
