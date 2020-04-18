@@ -339,7 +339,7 @@ class KeyValueStore {
         "as_bytes(span(&value, 1)) or as_writable_bytes(span(&value, 1)).");
   }
 
-  void InitializeMetadata();
+  Status InitializeMetadata();
   Status LoadEntry(Address entry_address, Address* next_entry_address);
   Status ScanForEntry(const SectorDescriptor& sector,
                       Address start_address,

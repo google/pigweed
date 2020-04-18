@@ -78,7 +78,7 @@ Status KeyValueStore::Init() {
     return Status::FAILED_PRECONDITION;
   }
 
-  InitializeMetadata();
+  Status metadata_result = InitializeMetadata();
 
   if (!error_detected_) {
     initialized_ = InitializationState::kReady;
@@ -87,7 +87,11 @@ Status KeyValueStore::Init() {
       Status recovery_status = FixErrors();
 
       if (recovery_status.ok()) {
-        WRN("KVS init: Corruption detected and fully repaired");
+        if (metadata_result == Status::OUT_OF_RANGE) {
+          INF("KVS init: Redundancy level successfully updated");
+        } else {
+          WRN("KVS init: Corruption detected and fully repaired");
+        }
         initialized_ = InitializationState::kReady;
       } else if (recovery_status == Status::RESOURCE_EXHAUSTED) {
         WRN("KVS init: Unable to maintain required free sector");
@@ -119,7 +123,7 @@ Status KeyValueStore::Init() {
   return Status::OK;
 }
 
-void KeyValueStore::InitializeMetadata() {
+Status KeyValueStore::InitializeMetadata() {
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
   sectors_.Reset();
@@ -129,8 +133,9 @@ void KeyValueStore::InitializeMetadata() {
   Address sector_address = 0;
 
   size_t total_corrupt_bytes = 0;
-  int corrupt_entries = 0;
+  size_t corrupt_entries = 0;
   bool empty_sector_found = false;
+  size_t entry_copies_missing = 0;
 
   for (SectorDescriptor& sector : sectors_) {
     Address entry_address = sector_address;
@@ -217,7 +222,7 @@ void KeyValueStore::InitializeMetadata() {
           unsigned(metadata.hash()),
           unsigned(metadata.addresses().size()),
           unsigned(redundancy()));
-      error_detected_ = true;
+      entry_copies_missing++;
     }
     size_t index = 0;
     while (index < metadata.addresses().size()) {
@@ -257,11 +262,26 @@ void KeyValueStore::InitializeMetadata() {
     error_detected_ = true;
   }
 
-  if (error_detected_) {
-    WRN("Corruption detected. Found %zu corrupt bytes and %d corrupt entries.",
-        total_corrupt_bytes,
-        corrupt_entries);
+  if (entry_copies_missing > 0) {
+    bool other_errors = error_detected_;
+    error_detected_ = true;
+
+    if (!other_errors && entry_copies_missing == size()) {
+      INF("KVS configuration changed to redundancy of %zu total copies per key",
+          redundancy());
+      return Status::OUT_OF_RANGE;
+    }
   }
+
+  if (error_detected_) {
+    WRN("Corruption detected. Found %zu corrupt bytes, %zu corrupt entries, "
+        "and %zu keys missing redundant copies.",
+        total_corrupt_bytes,
+        corrupt_entries,
+        entry_copies_missing);
+    return Status::FAILED_PRECONDITION;
+  }
+  return Status::OK;
 }
 
 KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
