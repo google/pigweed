@@ -60,6 +60,8 @@ pw_cc_test(
     ],
     deps = [
         ":block",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
@@ -70,5 +72,8 @@ pw_cc_test(
     ],
     deps = [
         ":freelist",
+        "//pw_span",
+        "//pw_status",
+        "//pw_unit_test",
     ],
 )

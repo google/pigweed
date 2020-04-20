@@ -63,6 +63,9 @@ pw_cc_test(
     ],
     deps = [
         ":facade",
+        "//pw_presubmit",
+        "//pw_span",
+        "//pw_string",
         "//pw_unit_test",
     ],
 )
