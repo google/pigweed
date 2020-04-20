@@ -111,11 +111,5 @@
     "tags": [
       "version:0.0.43"
     ]
-  },
-  {
-    "path": "fuchsia/third_party/gcc/${os=linux,mac}-${arch=amd64}",
-    "tags": [
-      "git_revision:1a2a0af530cacca88bd65bf55d512aed03646f76,4c09b8c4e7fbe03e2b2b976399025fd846317527"
-    ]
   }
 ]
