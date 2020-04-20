@@ -22,11 +22,12 @@ using std::byte;
 
 namespace pw::allocator {
 
-static const std::array<size_t, 8> example_sizes = {
+static const size_t SIZE = 8;
+static const std::array<size_t, SIZE> example_sizes = {
     64, 128, 256, 512, 1024, 2048, 4096, 8192};
 
 TEST(FreeList, EmptyListHasNoMembers) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
 
   auto item = list.FindChunk(4);
   EXPECT_EQ(item.size(), static_cast<size_t>(0));
@@ -35,7 +36,7 @@ TEST(FreeList, EmptyListHasNoMembers) {
 }
 
 TEST(FreeList, CanRetrieveAddedMember) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN = 512;
 
   byte data[kN] = {std::byte(0)};
@@ -49,7 +50,7 @@ TEST(FreeList, CanRetrieveAddedMember) {
 }
 
 TEST(FreeList, CanRetrieveAddedMemberForSmallerSize) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN = 512;
 
   byte data[kN] = {std::byte(0)};
@@ -61,7 +62,7 @@ TEST(FreeList, CanRetrieveAddedMemberForSmallerSize) {
 }
 
 TEST(FreeList, CanRemoveItem) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN = 512;
 
   byte data[kN] = {std::byte(0)};
@@ -75,7 +76,7 @@ TEST(FreeList, CanRemoveItem) {
 }
 
 TEST(FreeList, FindReturnsSmallestChunk) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN1 = 512;
   constexpr size_t kN2 = 1024;
 
@@ -101,7 +102,7 @@ TEST(FreeList, FindReturnsSmallestChunk) {
 TEST(FreeList, FindReturnsCorrectChunkInSameBucket) {
   // If we have two values in the same bucket, ensure that the allocation will
   // pick an appropriately sized one.
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN1 = 512;
   constexpr size_t kN2 = 257;
 
@@ -119,7 +120,7 @@ TEST(FreeList, FindReturnsCorrectChunkInSameBucket) {
 TEST(FreeList, FindCanMoveUpThroughBuckets) {
   // Ensure that finding a chunk will move up through buckets if no appropriate
   // chunks were found in a given bucket
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN1 = 257;
   constexpr size_t kN2 = 513;
 
@@ -138,7 +139,7 @@ TEST(FreeList, FindCanMoveUpThroughBuckets) {
 }
 
 TEST(FreeList, RemoveUnknownChunkReturnsNotFound) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN = 512;
 
   byte data[kN] = {std::byte(0)};
@@ -150,7 +151,7 @@ TEST(FreeList, RemoveUnknownChunkReturnsNotFound) {
 }
 
 TEST(FreeList, CanStoreMultipleChunksPerBucket) {
-  FreeListBuffer list(example_sizes);
+  FreeListBuffer<SIZE> list(example_sizes);
   constexpr size_t kN = 512;
 
   byte data1[kN] = {std::byte(0)};
