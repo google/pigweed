@@ -88,8 +88,8 @@ def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
 
 def _git_ls_files(*args: PathOrStr, repo: PathOrStr = '.') -> List[str]:
     return [
-        os.path.abspath(os.path.join(repo, path))
-        for path in git_stdout('ls-files', '--', *args, repo=repo).split()
+        os.path.abspath(os.path.join(repo, path)) for path in git_stdout(
+            'ls-files', '--', *args, repo=repo).splitlines()
     ]
 
 
@@ -106,7 +106,7 @@ def git_diff_names(commit: str = 'HEAD',
                                commit,
                                '--',
                                *paths,
-                               repo=repo).split()
+                               repo=repo).splitlines()
     ]
 
 

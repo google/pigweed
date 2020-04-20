@@ -508,6 +508,7 @@ QUICK_PRESUBMIT: Tuple[Callable, ...] = (
     *CC,
     gn_clang_build,
     gn_arm_build,
+    *BAZEL,
     *python_checks.ALL,
 )
 
@@ -635,6 +636,13 @@ def main(
 
 
 if __name__ == '__main__':
-    # By default, display log messages like a simple print statement.
-    logging.basicConfig(format='%(message)s', level=logging.INFO)
+    try:
+        # If pw_cli is available, use it to initialize logs.
+        from pw_cli import log
+
+        log.install(logging.INFO)
+    except ImportError:
+        # If pw_cli isn't available, display log messages like a simple print.
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+
     sys.exit(main(**vars(argument_parser().parse_args())))
