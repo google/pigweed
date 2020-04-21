@@ -214,10 +214,8 @@ def fix_trailing_space(files: Iterable[Path]) -> None:
     _check_trailing_space(files, fix=True)
 
 
-def print_format_check(
-        errors: Dict[Path, str],
-        show_fix_commands: bool,
-) -> None:
+def print_format_check(errors: Dict[Path, str],
+                       show_fix_commands: bool) -> None:
     """Prints and returns the result of a check_*_format function."""
     if not errors:
         # Don't print anything in the all-good case.
@@ -408,5 +406,13 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(message)s', level=logging.INFO)
+    try:
+        # If pw_cli is available, use it to initialize logs.
+        from pw_cli import log
+
+        log.install(logging.INFO)
+    except ImportError:
+        # If pw_cli isn't available, display log messages like a simple print.
+        logging.basicConfig(format='%(message)s', level=logging.INFO)
+
     sys.exit(main())
