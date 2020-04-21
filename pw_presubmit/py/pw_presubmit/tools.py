@@ -63,7 +63,12 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 PathOrStr = Union[Path, str]
 
 
-def plural(items_or_count, singular: str, count_format='') -> str:
+def plural(items_or_count,
+           singular: str,
+           count_format='',
+           these: bool = False,
+           number: bool = True,
+           are: bool = False) -> str:
     """Returns the singular or plural form of a word based on a count."""
 
     try:
@@ -71,13 +76,18 @@ def plural(items_or_count, singular: str, count_format='') -> str:
     except TypeError:
         count = items_or_count
 
-    num = f'{count:{count_format}}'
+    prefix = ('this ' if count == 1 else 'these ') if these else ''
+    num = f'{count:{count_format}} ' if number else ''
+    suffix = (' is' if count == 1 else ' are') if are else ''
 
     if singular.endswith('y'):
-        return f'{num} {singular[:-1]}{"y" if count == 1 else "ies"}'
-    if singular.endswith('s'):
-        return f'{num} {singular}{"" if count == 1 else "es"}'
-    return f'{num} {singular}{"" if count == 1 else "s"}'
+        result = f'{singular[:-1]}{"y" if count == 1 else "ies"}'
+    elif singular.endswith('s'):
+        result = f'{singular}{"" if count == 1 else "es"}'
+    else:
+        result = f'{singular}{"" if count == 1 else "s"}'
+
+    return f'{prefix}{num}{result}{suffix}'
 
 
 def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
@@ -229,8 +239,8 @@ class _Result(enum.Enum):
 @dataclasses.dataclass(frozen=True)
 class PresubmitContext:
     """Context passed into presubmit checks."""
-    repository_root: Path
-    output_directory: Path
+    repo_root: Path
+    output_dir: Path
     paths: Sequence[Path]
 
 
@@ -361,8 +371,8 @@ class Presubmit:
             _LOG.addHandler(handler)
 
             yield PresubmitContext(
-                repository_root=self._repository_root.absolute(),
-                output_directory=output_directory.absolute(),
+                repo_root=self._repository_root.absolute(),
+                output_dir=output_directory.absolute(),
                 paths=paths,
             )
 

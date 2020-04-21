@@ -22,7 +22,6 @@ import os
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import sys
 from typing import Callable, Dict, Sequence, Tuple
 
@@ -35,10 +34,9 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import python_checks
-from pw_presubmit import format_code, PresubmitContext
+from pw_presubmit import build, environment, format_code, python_checks
 from pw_presubmit.install_hook import install_hook
-from pw_presubmit import call, filter_paths, log_run, plural, PresubmitFailure
+from pw_presubmit import call, filter_paths, PresubmitContext, PresubmitFailure
 
 _LOG = logging.getLogger(__name__)
 
@@ -47,131 +45,54 @@ _LOG = logging.getLogger(__name__)
 # Initialization
 #
 def init_cipd(ctx: PresubmitContext):
-    # TODO(mohrr): invoke by importing rather than by subprocess.
-
-    # TODO(pwbug/138): find way to support dependent project package files.
-
-    cmd = [
-        sys.executable,
-        ctx.repository_root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
-                                     'cipd_setup', 'update.py'),
-        '--install-dir', ctx.output_directory,
-    ]  # yapf: disable
-
-    package_files = ctx.repository_root.joinpath('pw_env_setup', 'py',
-                                                 'pw_env_setup',
-                                                 'cipd_setup').glob('*.json')
-
-    for package_file in package_files:
-        cmd.extend(('--package-file', package_file))
-
-    call(*cmd)
-
-    paths = [ctx.output_directory, ctx.output_directory.joinpath('bin')]
-    for base in ctx.output_directory.glob('*'):
-        paths.append(base)
-        paths.append(base.joinpath('bin'))
-
-    paths.append(Path(os.environ['PATH']))
-
-    os.environ['PATH'] = os.pathsep.join(str(x) for x in paths)
-    _LOG.debug('PATH %s', os.environ['PATH'])
+    environment.init_cipd(ctx.repo_root, ctx.output_dir)
 
 
 def init_virtualenv(ctx: PresubmitContext):
-    """Set up virtualenv, assumes recent Python 3 is already installed."""
-    virtualenv_source = ctx.repository_root.joinpath('pw_env_setup', 'py',
-                                                     'pw_env_setup',
-                                                     'virtualenv_setup')
-
-    # TODO(pwbug/138): find way to support dependent project requirements.
-
-    # For speed, don't build the venv if it exists. Use --clear-py to rebuild.
-    if not ctx.output_directory.joinpath('pyvenv.cfg').is_file():
-        call(
-            'python3',
-            virtualenv_source,
-            f'--venv_path={ctx.output_directory}',
-            '--requirements={}'.format(
-                virtualenv_source.joinpath('requirements.txt')),
-            '--setup-py-roots={}'.format(ctx.repository_root),
-        )
-
-    os.environ['PATH'] = os.pathsep.join((
-        str(ctx.output_directory.joinpath('bin')),
-        os.environ['PATH'],
-    ))
-
-
-INIT: Tuple[Callable, ...] = (
-    init_cipd,
-    init_virtualenv,
-)
+    environment.init_cipd(ctx.repo_root, ctx.output_dir)
 
 
 #
 # GN presubmit checks
 #
-def gn_args(**kwargs) -> str:
-    return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
-
-
-def gn_gen(*args, ctx: PresubmitContext, path=None, **kwargs) -> None:
-    call('gn',
-         'gen',
-         path or ctx.output_directory,
-         '--color=always',
-         '--check',
-         *args,
-         cwd=ctx.repository_root,
-         **kwargs)
-
-
-def ninja(*args, ctx: PresubmitContext, **kwargs):
-    call('ninja',
-         '-C',
-         ctx.output_directory,
-         *args,
-         cwd=ctx.repository_root,
-         **kwargs)
-
-
-_CLANG_GEN_ARGS = gn_args(
+_CLANG_GEN_ARGS = build.gn_args(
     pw_target_config='"//targets/host/target_config.gni"',
     pw_target_toolchain='"//pw_toolchain:host_clang_os"')
 
-_DOCS_GEN_ARGS = gn_args(pw_target_config='"//targets/docs/target_config.gni"')
+_DOCS_GEN_ARGS = build.gn_args(
+    pw_target_config='"//targets/docs/target_config.gni"')
 
 
 def gn_clang_build(ctx: PresubmitContext):
-    gn_gen(_CLANG_GEN_ARGS, ctx=ctx)
-    ninja(ctx=ctx)
+    build.gn_gen(ctx.repo_root, ctx.output_dir, _CLANG_GEN_ARGS)
+    build.ninja(ctx.output_dir)
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(ctx: PresubmitContext):
-    gn_gen(gn_args(pw_target_config='"//targets/host/target_config.gni"',
-                   pw_target_toolchain='"//pw_toolchain:host_gcc_os"'),
-           ctx=ctx)
-    ninja(ctx=ctx)
+    build.gn_gen(
+        ctx.repo_root, ctx.output_dir,
+        build.gn_args(pw_target_config='"//targets/host/target_config.gni"',
+                      pw_target_toolchain='"//pw_toolchain:host_gcc_os"'))
+    build.ninja(ctx.output_dir)
 
 
-_ARM_GEN_ARGS = gn_args(
+_ARM_GEN_ARGS = build.gn_args(
     pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"')
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(ctx: PresubmitContext):
-    gn_gen(_ARM_GEN_ARGS, ctx=ctx)
-    ninja(ctx=ctx)
+    build.gn_gen(ctx.repo_root, ctx.output_dir, _ARM_GEN_ARGS)
+    build.ninja(ctx.output_dir)
 
 
 def gn_docs_build(ctx: PresubmitContext):
-    gn_gen(_DOCS_GEN_ARGS, ctx=ctx)
-    ninja('docs:docs', ctx=ctx)
+    build.gn_gen(ctx.repo_root, ctx.output_dir, _DOCS_GEN_ARGS)
+    build.ninja(ctx.output_dir, 'docs:docs')
 
 
-_QEMU_GEN_ARGS = gn_args(
+_QEMU_GEN_ARGS = build.gn_args(
     pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
 
 GN: Tuple[Callable, ...] = (
@@ -186,11 +107,12 @@ if sys.platform != 'darwin':
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    gn_gen(gn_args(pw_target_config='"//targets/host/target_config.gni"',
-                   pw_target_toolchain='"//pw_toolchain:host_clang_os"',
-                   pw_build_host_tools='true'),
-           ctx=ctx)
-    ninja('host_tools', ctx=ctx)
+    build.gn_gen(ctx.repo_root,
+                 ctx.output_dir,
+                 pw_target_config='"//targets/host/target_config.gni"',
+                 pw_target_toolchain='"//pw_toolchain:host_clang_os"',
+                 pw_build_host_tools='true')
+    build.ninja(ctx.output_dir, 'host_tools')
 
 
 #
@@ -202,9 +124,10 @@ _CLANG_TIDY_CHECKS = ('modernize-use-override', )
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(ctx: PresubmitContext):
-    gn_gen('--export-compile-commands', _CLANG_GEN_ARGS, ctx=ctx)
-    ninja(ctx=ctx)
-    ninja('-t', 'compdb', 'objcxx', 'cxx', ctx=ctx)
+    build.gn_gen(ctx.repo_root, ctx.output_dir, '--export-compile-commands',
+                 _CLANG_GEN_ARGS)
+    build.ninja(ctx.output_dir)
+    build.ninja(ctx.output_dir, '-t', 'compdb', 'objcxx', 'cxx')
 
     run_clang_tidy = None
     for var in ('PW_PIGWEED_CIPD_INSTALL_DIR', 'PW_CIPD_INSTALL_DIR'):
@@ -218,7 +141,7 @@ def clang_tidy(ctx: PresubmitContext):
     checks = ','.join(_CLANG_TIDY_CHECKS)
     call(
         run_clang_tidy,
-        f'-p={ctx.output_directory}',
+        f'-p={ctx.output_dir}',
         f'-checks={checks}',
         # TODO(pwbug/45) not sure if this is needed.
         # f'-extra-arg-before=-warnings-as-errors={checks}',
@@ -235,23 +158,11 @@ CC: Tuple[Callable, ...] = (
 #
 # CMake presubmit checks
 #
-def _env_with_clang_cc_vars():
-    env = os.environ.copy()
-    env['CC'] = env['LD'] = env['AS'] = 'clang'
-    env['CXX'] = 'clang++'
-    return env
-
-
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
-    env = _env_with_clang_cc_vars()
-    call('cmake',
-         '-B', ctx.output_directory,
-         '-S', ctx.repository_root,
-         '-G', 'Ninja',
-         env=env)  # yapf: disable
-    ninja('pw_run_tests.modules', ctx=ctx)
+    build.cmake(ctx.repo_root, ctx.output_dir, env=build.env_with_clang_vars())
+    build.ninja(ctx.output_dir, 'pw_run_tests.modules')
 
 
 CMAKE: Tuple[Callable, ...] = ()
@@ -276,8 +187,9 @@ def bazel_test(ctx: PresubmitContext):
              '--verbose_explanations',
              '--worker_verbose',
              '--symlink_prefix',
-             ctx.output_directory.joinpath('bazel-'),
-             cwd=ctx.repository_root)
+             ctx.output_dir.joinpath('bazel-'),
+             cwd=ctx.repo_root,
+             env=build.env_with_clang_vars())
     except:
         _LOG.info('If the Bazel build inexplicably fails while the '
                   'other builds are passing, try deleting the Bazel cache:\n'
@@ -342,7 +254,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
 
 @filter_paths(exclude=_EXCLUDE_FROM_COPYRIGHT_NOTICE)
 def copyright_notice(ctx: PresubmitContext):
-    """Checks that the copyright notice is present."""
+    """Checks that the Pigweed copyright notice is present."""
 
     errors = []
 
@@ -389,79 +301,31 @@ CODE_FORMAT: Tuple[Callable, ...] = (
 #
 # General presubmit checks
 #
-
-
-def _get_paths_from_command(*args, ctx: PresubmitContext, **kwargs):
-    """Runs a command and reads Bazel or GN //-style paths from it."""
-    process = log_run(*args,
-                      stdout=subprocess.PIPE,
-                      stderr=subprocess.DEVNULL,
-                      cwd=ctx.repository_root,
-                      **kwargs)
-    files = set()
-
-    for line in process.stdout.splitlines():
-        path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
-        path = ctx.repository_root.joinpath(path)
-        if path.is_file():
-            _LOG.debug('Found file %s', path)
-            files.add(path)
-
-    return files
-
-
 _SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
 
 
 @filter_paths(endswith=(*_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
+    gn_gens_to_run = (
+        (ctx.output_dir.joinpath('arm'), _ARM_GEN_ARGS),
+        (ctx.output_dir.joinpath('clang'), _CLANG_GEN_ARGS),
+        (ctx.output_dir.joinpath('docs'), _DOCS_GEN_ARGS),
+        (ctx.output_dir.joinpath('qemu'), _QEMU_GEN_ARGS),
+    )
 
-    # Collect all paths in the Bazel build.
-    build_bazel = _get_paths_from_command('bazel',
-                                          'query',
-                                          'kind("source file", //...:*)',
-                                          ctx=ctx)
+    for directory, args in gn_gens_to_run:
+        build.gn_gen(ctx.repo_root, directory, args)
 
-    # Collect all paths in the ARM and Clang GN builds.
-    arm_dir = ctx.output_directory.joinpath('arm')
-    gn_gen(_ARM_GEN_ARGS, ctx=ctx, path=arm_dir)
-    build_gn = _get_paths_from_command('gn', 'desc', arm_dir, '*', ctx=ctx)
+    missing = build.check_builds_for_files(_SOURCES_IN_BUILD,
+                                           ctx.paths,
+                                           bazel_dirs=[ctx.repo_root],
+                                           gn_dirs=[
+                                               (ctx.repo_root, path)
+                                               for path, _ in gn_gens_to_run
+                                           ])
 
-    clang_dir = ctx.output_directory.joinpath('clang')
-    gn_gen(_CLANG_GEN_ARGS, ctx=ctx, path=clang_dir)
-    build_gn.update(
-        _get_paths_from_command('gn', 'desc', clang_dir, '*', ctx=ctx))
-
-    docs_dir = ctx.output_directory.joinpath('docs')
-    gn_gen(_DOCS_GEN_ARGS, ctx=ctx, path=docs_dir)
-    build_gn.update(
-        _get_paths_from_command('gn', 'desc', docs_dir, '*', ctx=ctx))
-
-    qemu_dir = ctx.output_directory.joinpath('qemu')
-    gn_gen(_QEMU_GEN_ARGS, ctx=ctx, path=qemu_dir)
-    build_gn.update(
-        _get_paths_from_command('gn', 'desc', qemu_dir, '*', ctx=ctx))
-
-    missing_bazel = []
-    missing_gn = []
-
-    for path in (p for p in ctx.paths if p.suffix in _SOURCES_IN_BUILD):
-        if path.suffix != '.rst' and path not in build_bazel:
-            missing_bazel.append(path)
-        if path not in build_gn:
-            missing_gn.append(path)
-
-    # TODO(pwbug/176) Replace this workaround for fuzzers.
-    missing_bazel = [p for p in missing_bazel if 'fuzz' not in str(p)]
-
-    if missing_bazel or missing_gn:
-        for build, files in [('Bazel', missing_bazel), ('GN', missing_gn)]:
-            if files:
-                _LOG.warning('%s are missing from the %s build:\n%s',
-                             plural(files, 'file'), build,
-                             '\n'.join(str(x) for x in files))
-
+    if missing:
         _LOG.warning(
             'All source files must appear in BUILD and BUILD.gn files')
         raise PresubmitFailure
@@ -476,16 +340,15 @@ def build_env_setup(ctx: PresubmitContext):
             'Skipping build_env_setup since PW_CARGO_SETUP is not set')
         return
 
-    tmpl = ctx.repository_root.joinpath('pw_env_setup', 'py',
-                                        'pyoxidizer.bzl.tmpl')
-    out = ctx.output_directory.joinpath('pyoxidizer.bzl')
+    tmpl = ctx.repo_root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl.tmpl')
+    out = ctx.output_dir.joinpath('pyoxidizer.bzl')
 
     with open(tmpl, 'r') as ins:
-        cfg = ins.read().replace('${PW_ROOT}', str(ctx.repository_root))
+        cfg = ins.read().replace('${PW_ROOT}', str(ctx.repo_root))
         with open(out, 'w') as outs:
             outs.write(cfg)
 
-    call('pyoxidizer', 'build', cwd=ctx.output_directory)
+    call('pyoxidizer', 'build', cwd=ctx.output_dir)
 
 
 BUILD_ENV_SETUP = (build_env_setup, )
@@ -503,7 +366,8 @@ BROKEN: Tuple[Callable, ...] = (
 # Presubmit check programs
 #
 QUICK_PRESUBMIT: Tuple[Callable, ...] = (
-    *INIT,
+    init_cipd,
+    init_virtualenv,
     *CODE_FORMAT,
     *GENERAL,
     *CC,
@@ -514,7 +378,7 @@ QUICK_PRESUBMIT: Tuple[Callable, ...] = (
 )
 
 FULL_PRESUBMIT: Tuple[Callable, ...] = sum([
-    INIT,
+    (init_cipd, init_virtualenv),
     CODE_FORMAT,
     CC,
     GN,
@@ -581,14 +445,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def run(
-        program_name: str,
-        clear: bool,
-        clear_py: bool,
-        install: bool,
-        repository: Path,
-        output_directory: Path,
-        steps: Sequence[str],
-        **presubmit_args,
+    program_name: str,
+    clear: bool,
+    clear_py: bool,
+    install: bool,
+    repository: Path,
+    output_directory: Path,
+    steps: Sequence[str],
+    **presubmit_args,
 ) -> int:
     """Entry point for presubmit."""
 

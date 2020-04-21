@@ -40,8 +40,7 @@ def run_module(*args, **kwargs):
 
 @filter_paths(endswith='.py')
 def test_python_packages(ctx: PresubmitContext):
-    packages = pw_presubmit.find_python_packages(ctx.paths,
-                                                 repo=ctx.repository_root)
+    packages = pw_presubmit.find_python_packages(ctx.paths, repo=ctx.repo_root)
 
     if not packages:
         _LOG.info('No Python packages were found.')
@@ -67,7 +66,7 @@ def pylint(ctx: PresubmitContext):
         '--jobs=0',
         f'--disable={",".join(disable_checkers)}',
         *ctx.paths,
-        cwd=ctx.repository_root,
+        cwd=ctx.repo_root,
     )
 
 
