@@ -24,7 +24,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
 
     parser.add_var('PW_BOOTSTRAP_PYTHON')
     parser.add_var('PW_CARGO_SETUP', type=envparse.strict_bool, default=False)
-    parser.add_var('PW_DISABLE_PRESUBMIT_HOOK_WARNING')
+    parser.add_var('PW_ENABLE_PRESUBMIT_HOOK_WARNING', default=False)
     parser.add_var('PW_EMOJI', type=envparse.strict_bool, default=False)
     parser.add_var('PW_ENVSETUP')
     parser.add_var('PW_ENVSETUP_FULL')

@@ -97,7 +97,7 @@ def pw_root(ctx: DoctorContext):
 @register_into(CHECKS)
 def git_hook(ctx: DoctorContext):
     """Check that presubmit git hook is installed."""
-    if 'PW_DISABLE_PRESUBMIT_HOOK_WARNING' in os.environ:
+    if not os.environ.get('PW_ENABLE_PRESUBMIT_HOOK_WARNING'):
         return
 
     try:
