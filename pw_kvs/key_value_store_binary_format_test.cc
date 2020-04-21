@@ -632,7 +632,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   EXPECT_EQ(Status::OK, partition_.Erase(0, 1));
 
@@ -649,7 +649,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   EXPECT_EQ(stats.reclaimable_bytes, 352u);
   EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
   stats = kvs_.GetStorageStats();
@@ -657,7 +657,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 10u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
@@ -666,7 +666,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   EXPECT_EQ(Status::OK, partition_.Erase(partition_.sector_size_bytes(), 1));
 
@@ -684,7 +684,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 10u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, SingleReadErrors) {
@@ -706,7 +706,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleReadErrors) {
   EXPECT_EQ(stats.reclaimable_bytes, 352u);
   EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
@@ -722,7 +722,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   EXPECT_EQ(stats.writable_bytes,
             512u * 2 - 32 - (160 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   char val[20] = {};
   EXPECT_EQ(Status::OK,
@@ -734,7 +734,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   EXPECT_EQ(Status::OK,
             kvs_.Get("new key", as_writable_bytes(span(val))).status());
@@ -762,7 +762,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
   EXPECT_EQ(stats.reclaimable_bytes, 2 * 352u);
   EXPECT_EQ(stats.writable_bytes, 512u);
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
@@ -912,7 +912,7 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, WriteAfterDataLoss) {
   EXPECT_EQ(stats.reclaimable_bytes, 2 * 384u);
   EXPECT_EQ(stats.writable_bytes, 512u);
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   ASSERT_EQ(Status::DATA_LOSS, kvs_.Put("key1", 1000));
 
@@ -922,7 +922,7 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, WriteAfterDataLoss) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 3 * 512u);
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
 TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
@@ -938,7 +938,7 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 3 * 512u - (128u * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   // Corrupt all the keys, alternating which copy gets corrupted.
   flash_.buffer()[0x10] = byte(0xef);
@@ -957,7 +957,7 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
   EXPECT_EQ(stats.writable_bytes, 3 * 512u - (128u * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 2u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 8u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
 }
 
 }  // namespace

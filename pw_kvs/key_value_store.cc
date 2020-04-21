@@ -84,10 +84,14 @@ Status KeyValueStore::Init() {
     initialized_ = InitializationState::kReady;
   } else {
     if (options_.recovery != ErrorRecovery::kManual) {
+      size_t pre_fix_redundancy_errors =
+          error_stats_.missing_redundant_entries_recovered;
       Status recovery_status = FixErrors();
 
       if (recovery_status.ok()) {
         if (metadata_result == Status::OUT_OF_RANGE) {
+          error_stats_.missing_redundant_entries_recovered =
+              pre_fix_redundancy_errors;
           INF("KVS init: Redundancy level successfully updated");
         } else {
           WRN("KVS init: Corruption detected and fully repaired");
