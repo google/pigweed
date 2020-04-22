@@ -24,6 +24,8 @@ import asyncio
 import sys
 import logging
 import importlib
+import os
+from pathlib import Path
 import pkgutil
 from typing import NoReturn
 
@@ -62,6 +64,19 @@ def main(raw_args=None):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    def directory(arg: str) -> Path:
+        path = Path(arg)
+        if not path.is_dir():
+            raise argparse.ArgumentTypeError(
+                f'{path} is not a path to a directory')
+
+        return path
+
+    parser.add_argument('-C',
+                        '--directory',
+                        type=directory,
+                        default=Path.cwd(),
+                        help='Change to this directory before doing anything')
     parser.add_argument('--loglevel', default='INFO')
     parser.add_argument('--no-banner',
                         action='store_true',
@@ -104,6 +119,8 @@ def main(raw_args=None):
 
     args = parser.parse_args(raw_args)
 
+    os.chdir(args.directory)
+
     # Start with the most critical part of the Pigweed command line tool.
     if not args.no_banner:
         print(colors().magenta(_PIGWEED_BANNER))
@@ -111,6 +128,8 @@ def main(raw_args=None):
     args_as_dict = dict(vars(args))
     del args_as_dict['_command']
     del args_as_dict['_run_async']
+
+    del args_as_dict['directory']
 
     # Set root log level; but then remove the arg to avoid breaking the command.
     if 'loglevel' in args_as_dict:
