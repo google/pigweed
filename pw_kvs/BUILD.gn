@@ -121,6 +121,7 @@ pw_test_group("tests") {
     ":key_value_store_fuzz_test",
     ":key_value_store_map_test",
     ":sectors_test",
+    ":wear_test",
   ]
 }
 
@@ -203,6 +204,15 @@ pw_test("sectors_test") {
     ":test_utils",
   ]
   sources = [ "sectors_test.cc" ]
+}
+
+pw_test("wear_test") {
+  deps = [
+    ":pw_kvs",
+    ":test_utils",
+    dir_pw_log,
+  ]
+  sources = [ "key_value_store_wear_test.cc" ]
 }
 
 pw_doc_group("docs") {

@@ -155,6 +155,10 @@ Status Sectors::Find(FindMode find_mode,
   return Status::RESOURCE_EXHAUSTED;
 }
 
+SectorDescriptor& Sectors::WearLeveledSectorFromIndex(size_t idx) const {
+  return descriptors_[(Index(last_new_) + 1 + idx) % descriptors_.size()];
+}
+
 // TODO: Consider breaking this function into smaller sub-chunks.
 SectorDescriptor* Sectors::FindSectorToGarbageCollect(
     span<const Address> reserved_addresses) const {
@@ -172,7 +176,8 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   // Step 1: Try to find a sectors with stale keys and no valid keys (no
   // relocation needed). If any such sectors are found, use the sector with the
   // most reclaimable bytes.
-  for (auto& sector : descriptors_) {
+  for (size_t i = 0; i < descriptors_.size(); ++i) {
+    SectorDescriptor& sector = WearLeveledSectorFromIndex(i);
     if ((sector.valid_bytes() == 0) &&
         (sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) &&
         !Contains(sectors_to_skip, &sector)) {
@@ -184,7 +189,8 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   // Step 2: If step 1 yields no sectors, just find the sector with the most
   // reclaimable bytes but no addresses to avoid.
   if (sector_candidate == nullptr) {
-    for (auto& sector : descriptors_) {
+    for (size_t i = 0; i < descriptors_.size(); ++i) {
+      SectorDescriptor& sector = WearLeveledSectorFromIndex(i);
       if ((sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) &&
           !Contains(sectors_to_skip, &sector)) {
         sector_candidate = &sector;
@@ -198,7 +204,8 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   // spread to other sectors, including sectors that already have copies of the
   // current key being written.
   if (sector_candidate == nullptr) {
-    for (auto& sector : descriptors_) {
+    for (size_t i = 0; i < descriptors_.size(); ++i) {
+      SectorDescriptor& sector = WearLeveledSectorFromIndex(i);
       if ((sector.valid_bytes() > candidate_bytes) &&
           !Contains(sectors_to_skip, &sector)) {
         sector_candidate = &sector;

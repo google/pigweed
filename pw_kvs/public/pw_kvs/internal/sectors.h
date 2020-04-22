@@ -213,6 +213,8 @@ class Sectors {
               span<const Address> addresses_to_skip,
               span<const Address> reserved_addresses);
 
+  SectorDescriptor& WearLeveledSectorFromIndex(size_t idx) const;
+
   Vector<SectorDescriptor>& descriptors_;
   FlashPartition& partition_;
 

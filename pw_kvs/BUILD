@@ -234,6 +234,19 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "key_value_store_wear_test",
+    srcs = [
+        "key_value_store_wear_test.cc",
+    ],
+    deps = [
+        ":pw_kvs",
+        ":test_utils",
+        "//pw_log:backend",
+        "//pw_unit_test",
+    ],
+)
+
 # TODO: This binary is not building due to a linker error. The error does not occur in GN Builds.
 # A filegroup is used below so that the file is included in the Bazel build.
 # cc_binary(
