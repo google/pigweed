@@ -321,8 +321,12 @@ class KvsTester {
     StartOperation("GCFull");
     Status status = kvs_.FullMaintenance();
     EXPECT_EQ(Status::OK, status);
+
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
-    EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
+    if (post_stats.in_use_bytes > ((partition_.size_bytes() * 70) / 100)) {
+      EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
+    }
+
     FinishOperation("GCFull", status);
   }
 

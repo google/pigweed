@@ -852,13 +852,24 @@ Status KeyValueStore::FullMaintenance() {
   if (error_detected_) {
     TRY(Repair());
   }
-  Status overall_status = UpdateEntriesToPrimaryFormat();
+  StatusWithSize update_status = UpdateEntriesToPrimaryFormat();
+  Status overall_status = update_status.status();
+
   // Make sure all the entries are on the primary format.
   if (!overall_status.ok()) {
     ERR("Failed to update all entries to the primary format");
   }
 
   SectorDescriptor* sector = sectors_.last_new();
+
+  // Calculate number of bytes for the threshold.
+  size_t threshold_bytes =
+      (partition_.size_bytes() * kGcUsageThresholdPercentage) / 100;
+
+  // Is bytes in use over the threshold.
+  StorageStats stats = GetStorageStats();
+  bool over_usage_threshold = stats.in_use_bytes > threshold_bytes;
+  bool force_gc = over_usage_threshold || (update_status.size() > 0);
 
   // TODO: look in to making an iterator method for cycling through sectors
   // starting from last_new_sector_.
@@ -869,7 +880,8 @@ Status KeyValueStore::FullMaintenance() {
       sector = sectors_.begin();
     }
 
-    if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0) {
+    if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0 &&
+        (force_gc || sector->valid_bytes() == 0)) {
       gc_status = GarbageCollectSector(*sector, {});
       if (!gc_status.ok()) {
         ERR("Failed to garbage collect all sectors");
@@ -964,10 +976,11 @@ Status KeyValueStore::GarbageCollectSector(
   return Status::OK;
 }
 
-Status KeyValueStore::UpdateEntriesToPrimaryFormat() {
+StatusWithSize KeyValueStore::UpdateEntriesToPrimaryFormat() {
+  size_t entries_updated = 0;
   for (EntryMetadata& prior_metadata : entry_cache_) {
     Entry entry;
-    TRY(ReadEntry(prior_metadata, entry));
+    TRY_WITH_SIZE(ReadEntry(prior_metadata, entry));
     if (formats_.primary().magic == entry.magic()) {
       // Ignore entries that are already on the primary format.
       continue;
@@ -979,17 +992,20 @@ Status KeyValueStore::UpdateEntriesToPrimaryFormat() {
         unsigned(entry.magic()),
         unsigned(formats_.primary().magic));
 
+    entries_updated++;
+
     last_transaction_id_ += 1;
-    TRY(entry.Update(formats_.primary(), last_transaction_id_));
+    TRY_WITH_SIZE(entry.Update(formats_.primary(), last_transaction_id_));
 
     // List of addresses for sectors with space for this entry.
     Address* reserved_addresses = entry_cache_.TempReservedAddressesForWrite();
 
     // Find addresses to write the entry to. This may involve garbage collecting
     // one or more sectors.
-    TRY(GetAddressesForWrite(reserved_addresses, entry.size()));
+    TRY_WITH_SIZE(GetAddressesForWrite(reserved_addresses, entry.size()));
 
-    TRY(CopyEntryToSector(entry,
+    TRY_WITH_SIZE(
+        CopyEntryToSector(entry,
                           &sectors_.FromAddress(reserved_addresses[0]),
                           reserved_addresses[0]));
 
@@ -1001,13 +1017,15 @@ Status KeyValueStore::UpdateEntriesToPrimaryFormat() {
     // Write the additional copies of the entry, if redundancy is greater
     // than 1.
     for (size_t i = 1; i < redundancy(); ++i) {
-      TRY(CopyEntryToSector(entry,
+      TRY_WITH_SIZE(
+          CopyEntryToSector(entry,
                             &sectors_.FromAddress(reserved_addresses[i]),
                             reserved_addresses[i]));
       new_metadata.AddNewAddress(reserved_addresses[i]);
     }
   }
-  return Status::OK;
+
+  return StatusWithSize(entries_updated);
 }
 
 // Add any missing redundant entries/copies for a key.

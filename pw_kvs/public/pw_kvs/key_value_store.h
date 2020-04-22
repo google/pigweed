@@ -443,7 +443,9 @@ class KeyValueStore {
 
   // Ensure that all entries are on the primary (first) format. Entries that are
   // not on the primary format are rewritten.
-  Status UpdateEntriesToPrimaryFormat();
+  //
+  // Return: status + number of entries updated.
+  StatusWithSize UpdateEntriesToPrimaryFormat();
 
   Status AddRedundantEntries(EntryMetadata& metadata);
 
@@ -476,6 +478,13 @@ class KeyValueStore {
   internal::EntryCache entry_cache_;
 
   Options options_;
+
+  // Threshold value for when to garbage collect all stale data. Above the
+  // threshold, GC all reclaimable bytes regardless of if valid data is in
+  // sector. Below the threshold, only GC sectors with reclaimable bytes and no
+  // valid bytes. The threshold is based on the portion of KVS capacity used by
+  // valid bytes.
+  static constexpr size_t kGcUsageThresholdPercentage = 70;
 
   enum class InitializationState {
     // KVS Init() has not been called and KVS is not usable.
