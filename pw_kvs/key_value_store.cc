@@ -83,6 +83,8 @@ Status KeyValueStore::Init() {
   if (!error_detected_) {
     initialized_ = InitializationState::kReady;
   } else {
+    initialized_ = InitializationState::kNeedsMaintenance;
+
     if (options_.recovery != ErrorRecovery::kManual) {
       size_t pre_fix_redundancy_errors =
           error_stats_.missing_redundant_entries_recovered;
@@ -99,14 +101,11 @@ Status KeyValueStore::Init() {
         initialized_ = InitializationState::kReady;
       } else if (recovery_status == Status::RESOURCE_EXHAUSTED) {
         WRN("KVS init: Unable to maintain required free sector");
-        initialized_ = InitializationState::kNeedsMaintenance;
       } else {
         WRN("KVS init: Corruption detected and unable repair");
-        initialized_ = InitializationState::kNeedsMaintenance;
       }
     } else {
       WRN("KVS init: Corruption detected, no repair attempted due to options");
-      initialized_ = InitializationState::kNeedsMaintenance;
     }
   }
 
@@ -874,19 +873,23 @@ Status KeyValueStore::FullMaintenance() {
   return Status::OK;
 }
 
-Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
+Status KeyValueStore::PartialMaintenance() {
   if (initialized_ == InitializationState::kNotInitialized) {
     return Status::FAILED_PRECONDITION;
   }
 
-  DBG("Garbage Collect a single sector");
-  for (Address address : reserved_addresses) {
-    DBG("   Avoid address %u", unsigned(address));
-  }
-
+  CheckForErrors();
   // Do automatic repair, if KVS options allow for it.
   if (error_detected_ && options_.recovery != ErrorRecovery::kManual) {
     TRY(Repair());
+  }
+  return GarbageCollect(span<const Address>());
+}
+
+Status KeyValueStore::GarbageCollect(span<const Address> reserved_addresses) {
+  DBG("Garbage Collect a single sector");
+  for (Address address : reserved_addresses) {
+    DBG("   Avoid address %u", unsigned(address));
   }
 
   // Step 1: Find the sector to garbage collect
@@ -993,17 +996,13 @@ Status KeyValueStore::UpdateEntriesToPrimaryFormat() {
 
 // Add any missing redundant entries/copies for a key.
 Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
-  SectorDescriptor* new_sector;
-
   Entry entry;
-
   TRY(ReadEntry(metadata, entry));
   TRY(entry.VerifyChecksumInFlash());
 
-  for (size_t i = metadata.addresses().size();
-       metadata.addresses().size() < redundancy();
-       i++) {
-    TRY(sectors_.FindSpace(&new_sector, entry.size(), metadata.addresses()));
+  while (metadata.addresses().size() < redundancy()) {
+    SectorDescriptor* new_sector;
+    TRY(GetSectorForWrite(&new_sector, entry.size(), metadata.addresses()));
 
     Address new_address = sectors_.NextWritableAddress(*new_sector);
     TRY(CopyEntryToSector(entry, new_sector, new_address));

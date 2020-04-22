@@ -960,5 +960,101 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 4u);
 }
 
+class InitializedLazyRecoveryKvs : public ::testing::Test {
+ protected:
+  static constexpr auto kInitialContents =
+      AsBytes(kEntry1, kEntry2, kEntry3, kEntry4);
+
+  InitializedLazyRecoveryKvs()
+      : flash_(internal::Entry::kMinAlignmentBytes),
+        partition_(&flash_),
+        kvs_(&partition_,
+             {.magic = kMagic, .checksum = &checksum},
+             kRecoveryLazyGcOptions) {
+    partition_.Erase();
+    std::memcpy(flash_.buffer().data(),
+                kInitialContents.data(),
+                kInitialContents.size());
+
+    EXPECT_EQ(Status::OK, kvs_.Init());
+  }
+
+  FakeFlashBuffer<512, 8> flash_;
+  FlashPartition partition_;
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
+};
+
+// Block of data to use for entry value. Sized to 470 so the total entry results
+// in the 512 byte sector having 16 bytes remaining.
+constexpr uint8_t test_data[470] = {1, 2, 3, 4, 5, 6};
+
+// Test a KVS with a number of entries, several sectors that are nearly full
+// of stale (reclaimable) space, and not enough writable (free) space to add a
+// redundant copy for any of the entries. Tests that the add redundancy step of
+// repair is able to use garbage collection to free up space needed for the new
+// copies.
+TEST_F(InitializedLazyRecoveryKvs, AddRedundancyToKvsFullOfStaleData) {
+  // Verify the pre-initialized key are present in the KVS.
+  ASSERT_CONTAINS_ENTRY("key1", "value1");
+  ASSERT_CONTAINS_ENTRY("k2", "value2");
+  ASSERT_CONTAINS_ENTRY("k3y", "value3");
+  ASSERT_CONTAINS_ENTRY("4k", "value4");
+
+  EXPECT_EQ(false, kvs_.error_detected());
+
+  auto stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.in_use_bytes, (128u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+  EXPECT_EQ(stats.writable_bytes, 7 * 512u - (128u * kvs_.redundancy()));
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
+
+  // Add a near-sector size key entry to fill the KVS with a valid large entry
+  // and stale data.
+
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+
+  // Instantiate a new KVS with redundancy of 2. This KVS should add an extra
+  // copy of each valid key as part of the init process. Because there is not
+  // enough writable space, the adding redundancy will need to garbage collect
+  // two sectors.
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2> local_kvs(
+      &partition_,
+      {.magic = kMagic, .checksum = &checksum},
+      kRecoveryLazyGcOptions);
+  ASSERT_EQ(Status::OK, local_kvs.Init());
+
+  // Verify no errors found in the new KVS and all the entries are present.
+  EXPECT_EQ(false, local_kvs.error_detected());
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "key1", "value1");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k2", "value2");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "k3y", "value3");
+  ASSERT_KVS_CONTAINS_ENTRY(local_kvs, "4k", "value4");
+  StatusWithSize big_key_size = local_kvs.ValueSize("big_key");
+  EXPECT_EQ(Status::OK, big_key_size.status());
+  EXPECT_EQ(sizeof(test_data), big_key_size.size());
+
+  // Verify that storage stats of the new redundant KVS match expected values.
+  stats = local_kvs.GetStorageStats();
+
+  // Expected in-use bytes is size of (pre-init keys + big key) * redundancy.
+  EXPECT_EQ(stats.in_use_bytes, ((128u + 496u) * local_kvs.redundancy()));
+
+  // Expected reclaimable space is number of stale entries remaining for big_key
+  // (3 after GC to add redundancy) * total sizeof big_key entry (496 bytes).
+
+  EXPECT_EQ(stats.reclaimable_bytes, 496u * 3u);
+  // Expected writable bytes is total writable size (512 * 7) - valid bytes (in
+  // use) - reclaimable bytes.
+  EXPECT_EQ(stats.writable_bytes, 848u);
+  EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
+}
+
 }  // namespace
 }  // namespace pw::kvs

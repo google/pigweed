@@ -188,10 +188,7 @@ class KeyValueStore {
   // recovery, will do any needed repairing of corruption. Does garbage
   // collection of part of the KVS, typically a single sector or similar unit
   // that makes sense for the KVS implementation.
-  Status PartialMaintenance() {
-    CheckForErrors();
-    return GarbageCollect(span<const Address>());
-  }
+  Status PartialMaintenance();
 
   void LogDebugInfo() const;
 
