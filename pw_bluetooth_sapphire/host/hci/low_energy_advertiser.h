@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -70,9 +71,9 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   //
   // -----
   //
-  // Attempt to start advertising |data| with scan response |scan_rsp| using
-  // advertising address |address|.  If |anonymous| is set, |address| is
-  // ignored.
+  // Attempt to start advertising |data| with |adv_options.flags| and scan response |scan_rsp|
+  // using advertising address |address|.
+  // If |adv_options.anonymous| is set, |address| is ignored.
   //
   // If |address| is currently advertised, the advertisement is updated.
   //
@@ -81,8 +82,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // when this advertisement is connected to and the advertisement has been
   // stopped.
   //
-  // |interval| must be a value in "controller timeslices". For hci/hci_constants.h for the valid
-  // range.
+  // |adv_options.interval| must be a value in "controller timeslices". See hci/hci_constants.h for
+  // the valid range.
   //
   // Provides results in |callback|. If advertising is setup, the final
   // interval of advertising is provided in |interval| and |status|
@@ -91,15 +92,22 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // |callback| may be called before this function returns, but will
   // be called before any calls to |connect_callback|.
   //
-  // The maxium advertising and scan response data sizes are determined by the Bluetooth controller
+  // The maximum advertising and scan response data sizes are determined by the Bluetooth controller
   // (4.x supports up to 31 bytes while 5.x is extended up to 251). If |data| and |scan_rsp| exceed
   // this internal limit, a HostError::kAdvertisingDataTooLong or HostError::kScanResponseTooLong
   // error will be generated.
+  struct AdvertisingOptions {
+    AdvertisingOptions(AdvertisingIntervalRange interval, bool anonymous, AdvFlags flags)
+        : interval(interval), anonymous(anonymous), flags(flags) {}
+
+    AdvertisingIntervalRange interval;
+    bool anonymous;
+    AdvFlags flags;
+  };
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
-  virtual void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
-                                const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
-                                AdvertisingIntervalRange interval, bool anonymous,
-                                StatusCallback callback) = 0;
+  virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
+                                const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
+                                ConnectionCallback connect_callback, StatusCallback callback) = 0;
 
   // Stops any advertisement currently active on |address|. Idempotent and
   // asynchronous. Returns true if advertising will be stopped, false otherwise.

@@ -508,9 +508,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   };
 
   // Advertising should use the public address by default.
-  AdvertisingData empty_data;
-  adapter()->le_advertising_manager()->StartAdvertising(empty_data, empty_data, nullptr,
-                                                        AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
@@ -529,8 +528,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restart advertising. This should configure the LE random address and
   // advertise using it.
-  adapter()->le_advertising_manager()->StartAdvertising(empty_data, empty_data, nullptr,
-                                                        AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
@@ -544,8 +543,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restarting advertising should refresh the controller address.
   adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(empty_data, empty_data, nullptr,
-                                                        AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
@@ -556,8 +555,8 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   // public address.
   adapter()->le_address_manager()->EnablePrivacy(false);
   adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(empty_data, empty_data, nullptr,
-                                                        AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);

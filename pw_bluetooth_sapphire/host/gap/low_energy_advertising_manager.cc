@@ -100,8 +100,7 @@ LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {
   }
 }
 
-void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
-                                                   const AdvertisingData& scan_rsp,
+void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                                                    ConnectionCallback connect_callback,
                                                    AdvertisingInterval interval, bool anonymous,
                                                    AdvertisingStatusCallback status_callback) {
@@ -118,13 +117,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
   if (interval == AdvertisingInterval::FAST1 && !connect_callback) {
     interval = AdvertisingInterval::FAST2;
   }
-
-  // Serialize the data
-  auto data_bytes = NewSlabBuffer(data.CalculateBlockSize(/*include_flags=*/ true));
-  data.WriteBlock(data_bytes.get(), AdvFlag::kLEGeneralDiscoverableMode);
-
-  auto scan_rsp_bytes = NewSlabBuffer(scan_rsp.CalculateBlockSize());
-  scan_rsp.WriteBlock(scan_rsp_bytes.get(), std::nullopt);
+  hci::LowEnergyAdvertiser::AdvertisingOptions options(GetIntervalRange(interval), anonymous,
+                                                       AdvFlag::kLEGeneralDiscoverableMode);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
@@ -138,8 +132,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
   //
   // Revisit this logic when multi-advertising is supported.
   local_addr_delegate_->EnsureLocalAddress(
-      [self, interval, anonymous, data_bytes = std::move(data_bytes),
-       scan_rsp_bytes = std::move(scan_rsp_bytes), connect_cb = std::move(connect_callback),
+      [self, data = std::move(data), scan_rsp = std::move(scan_rsp), options,
+       connect_cb = std::move(connect_callback),
        status_cb = std::move(status_callback)](const auto& address) mutable {
         if (!self)
           return;
@@ -174,9 +168,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(const AdvertisingData& data,
         };
 
         // Call StartAdvertising, with the callback
-        self->advertiser_->StartAdvertising(address, *data_bytes, *scan_rsp_bytes,
-                                            std::move(adv_conn_cb), GetIntervalRange(interval),
-                                            anonymous, std::move(status_cb_wrapper));
+        self->advertiser_->StartAdvertising(address, data, scan_rsp, options,
+                                            std::move(adv_conn_cb), std::move(status_cb_wrapper));
       });
 }
 

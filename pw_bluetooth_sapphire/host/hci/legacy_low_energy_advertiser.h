@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_ADVERTISER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_ADVERTISER_H_
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
@@ -29,10 +30,9 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // 1. If called while a start request is pending, reports kRepeatedAttempts.
   // 2. If called while a stop request is pending, then cancels the stop request
   //    and proceeds with start.
-  void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
-                        const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
-                        AdvertisingIntervalRange interval, bool anonymous,
-                        StatusCallback callback) override;
+  void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
+                        const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
+                        ConnectionCallback connect_callback, StatusCallback callback) override;
 
   // If called while a stop request is pending, returns false.
   // If called while a start request is pending, then cancels the start

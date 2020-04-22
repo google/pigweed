@@ -191,8 +191,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
 
   auto* am = adapter()->le_advertising_manager();
   ZX_DEBUG_ASSERT(am);
-  am->StartAdvertising(adv_data, scan_rsp, std::move(connect_cb), interval, false /* anonymous */,
-                       std::move(status_cb));
+  am->StartAdvertising(std::move(adv_data), std::move(scan_rsp), std::move(connect_cb), interval,
+                       false /* anonymous */, std::move(status_cb));
 }
 
 const bt::gap::LowEnergyConnectionRef* LowEnergyPeripheralServer::FindConnectionForTesting(

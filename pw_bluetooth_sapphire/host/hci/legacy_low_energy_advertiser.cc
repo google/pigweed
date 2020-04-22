@@ -10,6 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
@@ -28,30 +29,31 @@ std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) {
   return packet;
 }
 
-std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const ByteBuffer& data) {
+std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const AdvertisingData& data,
+                                                       AdvFlags flags) {
   auto packet =
       CommandPacket::New(kLESetAdvertisingData, sizeof(LESetAdvertisingDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
   auto params = packet->mutable_payload<LESetAdvertisingDataCommandParams>();
-  params->adv_data_length = data.size();
+  params->adv_data_length = data.CalculateBlockSize(/*include_flags=*/true);
 
   MutableBufferView adv_view(params->adv_data, params->adv_data_length);
-  data.Copy(&adv_view);
+  data.WriteBlock(&adv_view, flags);
 
   return packet;
 }
 
-std::unique_ptr<CommandPacket> BuildSetScanResponse(const ByteBuffer& scan_rsp) {
+std::unique_ptr<CommandPacket> BuildSetScanResponse(const AdvertisingData& scan_rsp) {
   auto packet =
       CommandPacket::New(kLESetScanResponseData, sizeof(LESetScanResponseDataCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
   auto params = packet->mutable_payload<LESetScanResponseDataCommandParams>();
-  params->scan_rsp_data_length = scan_rsp.size();
+  params->scan_rsp_data_length = scan_rsp.CalculateBlockSize();
 
   MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
-  scan_rsp.Copy(&scan_data_view);
+  scan_rsp.WriteBlock(&scan_data_view, std::nullopt);
 
   return packet;
 }
@@ -92,15 +94,13 @@ bool LegacyLowEnergyAdvertiser::AllowsRandomAddressChange() const {
   return !starting_ && !advertising();
 }
 
-void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
-                                                 const ByteBuffer& data, const ByteBuffer& scan_rsp,
-                                                 ConnectionCallback connect_callback,
-                                                 AdvertisingIntervalRange interval, bool anonymous,
-                                                 StatusCallback callback) {
+void LegacyLowEnergyAdvertiser::StartAdvertising(
+    const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
+    AdvertisingOptions adv_options, ConnectionCallback connect_callback, StatusCallback callback) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
-  if (anonymous) {
+  if (adv_options.anonymous) {
     bt_log(TRACE, "hci-le", "anonymous advertising not supported");
     callback(Status(HostError::kNotSupported));
     return;
@@ -115,13 +115,13 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     bt_log(TRACE, "hci-le", "updating existing advertisement");
   }
 
-  if (data.size() > GetSizeLimit()) {
+  if (data.CalculateBlockSize(/*include_flags=*/true) > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "advertising data too large");
     callback(Status(HostError::kAdvertisingDataTooLong));
     return;
   }
 
-  if (scan_rsp.size() > GetSizeLimit()) {
+  if (scan_rsp.CalculateBlockSize() > GetSizeLimit()) {
     bt_log(TRACE, "hci-le", "scan response too large");
     callback(Status(HostError::kScanResponseTooLong));
     return;
@@ -144,14 +144,14 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
 
   // Set advertising and scan response data. If either data is empty then it
   // will be cleared accordingly.
-  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingData(data));
+  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingData(data, adv_options.flags));
   hci_cmd_runner_->QueueCommand(BuildSetScanResponse(scan_rsp));
 
   // Set advertising parameters
   LEAdvertisingType type = LEAdvertisingType::kAdvNonConnInd;
   if (connect_callback) {
     type = LEAdvertisingType::kAdvInd;
-  } else if (scan_rsp.size() > 0) {
+  } else if (scan_rsp.CalculateBlockSize() > 0) {
     type = LEAdvertisingType::kAdvScanInd;
   }
 
@@ -162,7 +162,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,
     own_addr_type = LEOwnAddressType::kRandom;
   }
 
-  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingParams(type, own_addr_type, interval));
+  hci_cmd_runner_->QueueCommand(
+      BuildSetAdvertisingParams(type, own_addr_type, adv_options.interval));
 
   // Enable advertising.
   hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kEnable));

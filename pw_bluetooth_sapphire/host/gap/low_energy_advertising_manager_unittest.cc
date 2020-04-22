@@ -12,6 +12,7 @@
 #include <fbl/macros.h>
 
 #include "lib/gtest/test_loop_fixture.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
@@ -60,30 +61,30 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   bool AllowsRandomAddressChange() const override { return true; }
 
-  void StartAdvertising(const DeviceAddress& address, const ByteBuffer& data,
-                        const ByteBuffer& scan_rsp, ConnectionCallback connect_callback,
-                        hci::AdvertisingIntervalRange interval, bool anonymous,
+  void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,
+                        const AdvertisingData& scan_rsp, AdvertisingOptions adv_options,
+                        ConnectionCallback connect_callback,
                         hci::StatusCallback callback) override {
     if (!pending_error_) {
       callback(pending_error_);
       pending_error_ = hci::Status();
       return;
     }
-    if (data.size() > max_ad_size_) {
+    if (data.CalculateBlockSize(/*include_flags=*/true) > max_ad_size_) {
       callback(hci::Status(HostError::kInvalidParameters));
       return;
     }
-    if (scan_rsp.size() > max_ad_size_) {
+    if (scan_rsp.CalculateBlockSize(/*include_flags=*/false) > max_ad_size_) {
       callback(hci::Status(HostError::kInvalidParameters));
       return;
     }
     AdvertisementStatus new_status;
-    AdvertisingData::FromBytes(data, &new_status.data);
-    AdvertisingData::FromBytes(scan_rsp, &new_status.scan_rsp);
+    data.Copy(&new_status.data);
+    scan_rsp.Copy(&new_status.scan_rsp);
     new_status.connect_cb = std::move(connect_callback);
-    new_status.interval_min = interval.min();
-    new_status.interval_max = interval.max();
-    new_status.anonymous = anonymous;
+    new_status.interval_min = adv_options.interval.min();
+    new_status.interval_max = adv_options.interval.max();
+    new_status.anonymous = adv_options.anonymous;
     ads_->emplace(address, std::move(new_status));
     callback(hci::Status());
   }
@@ -216,12 +217,9 @@ class GAP_LowEnergyAdvertisingManagerTest : public TestingBase {
 // Tests:
 //  - When the advertiser succeeds, the callback is called with the success
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;  // Empty scan response
-
   EXPECT_FALSE(adv_mgr()->advertising());
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, /*anonymous=*/false,
-                              GetSuccessCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
+                              kTestInterval, /*anonymous=*/false, GetSuccessCallback());
 
   RunLoopUntilIdle();
 
@@ -234,21 +232,16 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, Success) {
 }
 
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, DataSize) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;  // Empty scan response
-
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, /*anonymous=*/false,
-                              GetSuccessCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
+                              kTestInterval, /*anonymous=*/false, GetSuccessCallback());
 
   RunLoopUntilIdle();
-
-  fake_ad = CreateFakeAdvertisingData(kDefaultMaxAdSize + 1);
 
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_EQ(1u, ad_store().size());
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, false /* anonymous */,
-                              GetErrorCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(kDefaultMaxAdSize + 1), AdvertisingData(),
+                              nullptr, kTestInterval, false /* anonymous */, GetErrorCallback());
 
   RunLoopUntilIdle();
 
@@ -265,13 +258,10 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
   MakeFakeAdvertiser(2 /* ads available */);
   MakeAdvertisingManager();
 
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;  // Empty scan response
-
   EXPECT_FALSE(adv_mgr()->StopAdvertising(kInvalidAdvertisementId));
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, false /* anonymous */,
-                              GetSuccessCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
+                              kTestInterval, false /* anonymous */, GetSuccessCallback());
 
   RunLoopUntilIdle();
 
@@ -290,12 +280,10 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 //  - When the advertiser returns an error, we return an error
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertiserError) {
   advertiser()->ErrorOnNext(hci::Status(hci::kInvalidHCICommandParameters));
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;
 
   EXPECT_FALSE(adv_mgr()->advertising());
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, false /* anonymous */,
-                              GetErrorCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), nullptr,
+                              kTestInterval, false /* anonymous */, GetErrorCallback());
   RunLoopUntilIdle();
 
   EXPECT_TRUE(MoveLastStatus());
@@ -304,9 +292,6 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, AdvertiserError) {
 
 //  - It calls the connectable callback correctly when connected to
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;
-
   hci::ConnectionPtr link;
   AdvertisementId advertised_id = kInvalidAdvertisementId;
 
@@ -314,8 +299,8 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
     link = std::move(cb_link);
     EXPECT_EQ(advertised_id, connected_id);
   };
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, connect_cb, kTestInterval, false /* anonymous */,
-                              GetSuccessCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
+                              kTestInterval, false /* anonymous */, GetSuccessCallback());
 
   RunLoopUntilIdle();
 
@@ -335,24 +320,19 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectCallback) {
 
 //  - Error: Connectable and Anonymous at the same time
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp;
-
   auto connect_cb = [](AdvertisementId connected_id, hci::ConnectionPtr conn) {};
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, connect_cb, kTestInterval, true /* anonymous */,
-                              GetErrorCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(), connect_cb,
+                              kTestInterval, true /* anonymous */, GetErrorCallback());
 
   EXPECT_TRUE(MoveLastStatus());
 }
 
 // Passes the values for the data on. (anonymous, data, scan_rsp)
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
-
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, kTestInterval, false /* anonymous */,
-                              GetSuccessCallback());
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
+                              CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
+                              kTestInterval, false /* anonymous */, GetSuccessCallback());
 
   RunLoopUntilIdle();
 
@@ -361,8 +341,10 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 
   auto ad_status = &ad_store().begin()->second;
 
-  EXPECT_EQ(fake_ad, ad_status->data);
-  EXPECT_EQ(scan_rsp, ad_status->scan_rsp);
+  AdvertisingData expected_ad = CreateFakeAdvertisingData();
+  AdvertisingData expected_scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
+  EXPECT_EQ(expected_ad, ad_status->data);
+  EXPECT_EQ(expected_scan_rsp, ad_status->scan_rsp);
   EXPECT_EQ(false, ad_status->anonymous);
   EXPECT_EQ(nullptr, ad_status->connect_cb);
 }
@@ -371,11 +353,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, SendsCorrectData) {
 // change in the future in favor of a more advanced policy for managing the intervals; for now they
 // get mapped to recommended values from Vol 3, Part C, Appendix A).
 TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
-  AdvertisingData fake_ad = CreateFakeAdvertisingData();
-  AdvertisingData scan_rsp = CreateFakeAdvertisingData(21 /* size of ad */);
-
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::FAST1,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */),
+      NopConnectCallback, AdvertisingInterval::FAST1, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
@@ -383,8 +363,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   EXPECT_EQ(kLEAdvertisingFastIntervalMax1, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::FAST2,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */),
+      NopConnectCallback, AdvertisingInterval::FAST2, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
@@ -392,8 +373,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
   EXPECT_EQ(kLEAdvertisingFastIntervalMax2, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, NopConnectCallback, AdvertisingInterval::SLOW,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */),
+      NopConnectCallback, AdvertisingInterval::SLOW, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
@@ -409,8 +391,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) 
   // We expect FAST1 to fall back to FAST2 due to specification recommendation (Vol 3, Part C,
   // Appendix A) and lack of support for non-connectable advertising with FAST1 parameters on
   // certain controllers.
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::FAST1,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
+      AdvertisingInterval::FAST1, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
@@ -418,8 +401,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) 
   EXPECT_EQ(kLEAdvertisingFastIntervalMax2, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::FAST2,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
+      AdvertisingInterval::FAST2, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
@@ -427,8 +411,9 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) 
   EXPECT_EQ(kLEAdvertisingFastIntervalMax2, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
 
-  adv_mgr()->StartAdvertising(fake_ad, scan_rsp, nullptr, AdvertisingInterval::SLOW,
-                              false /* anonymous */, GetSuccessCallback());
+  adv_mgr()->StartAdvertising(
+      CreateFakeAdvertisingData(), CreateFakeAdvertisingData(21 /* size of ad */), nullptr,
+      AdvertisingInterval::SLOW, false /* anonymous */, GetSuccessCallback());
   RunLoopUntilIdle();
   ASSERT_TRUE(MoveLastStatus());
   ASSERT_TRUE(current_adv());
