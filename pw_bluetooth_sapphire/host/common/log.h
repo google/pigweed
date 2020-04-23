@@ -48,8 +48,8 @@
 // PRINTF MODE:
 //
 // When the host stack code is run outside a driver (e.g. bt-host-unittests) log
-// messages can be routed to stdout via printf instead of driver_printf. To
-// enable this mode, call the UsePrintf() function at process start-up:
+// messages can be routed to stdout via printf instead of driver_logf. To enable
+// this mode, call the UsePrintf() function at process start-up:
 //
 //    int main() {
 //      bt::UsePrintf(bt::LogSeverity::ERROR);

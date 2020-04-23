@@ -64,10 +64,9 @@ void LogMessage(const char* file, int line, LogSeverity severity, const char* ta
   va_end(args);
 
   if (IsPrintfEnabled()) {
-    printf("[%s:%s:%d] %s: %s\n", tag, file, line, LogSeverityToString(severity), msg.c_str());
+    printf("[%s:%s:%d] %s: %s\n", tag, file, line, LogSeverityToString(severity), msg.data());
   } else {
-    driver_printf(LogSeverityToDdkLog(severity), "[bt-host/%s:%s:%d] %s: %s\n", tag, file, line,
-                  LogSeverityToString(severity), msg.c_str());
+    zxlogf_etc(LogSeverityToDdkLog(severity), "[%s:%s:%d] %s", tag, file, line, msg.data());
   }
 }
 
