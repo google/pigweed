@@ -30,10 +30,19 @@ import("$dir_pw_build/python_script.gni")
 #
 # Args:
 #  - backend: the dependency that implements this facade
+#  - facade_name: (optional) The name to use for the facade target on which the
+#        backend depends. Only required when a module defines multiple facades.
+#        Defaults to "facade".
 #
 template("pw_facade") {
   assert(defined(invoker.backend),
          "pw_facade requires a reference to a backend variable for the facade")
+
+  if (defined(invoker.facade_name)) {
+    _facade_name = invoker.facade_name
+  } else {
+    _facade_name = "facade"
+  }
 
   # A facade's headers are split into a separate target to avoid a circular
   # dependency between the facade and the backend.
@@ -66,9 +75,8 @@ template("pw_facade") {
     "public_deps",
     "public",
   ]
-  source_set("facade") {
+  source_set(_facade_name) {
     forward_variables_from(invoker, _facade_vars)
-    sources = public
   }
 
   if (invoker.backend == "") {
@@ -87,20 +95,11 @@ template("pw_facade") {
       forward_variables_from(invoker, "*", _ignore_vars)
 
       public_deps = [
-        ":facade",
+        ":$_facade_name",
 
         # Inject the backend as a dependency.
         invoker.backend,
       ]
-
-      if (defined(sources)) {
-        # Protect against the pattern
-        #
-        #   sources = [ "foo.cc" ] + public
-        #
-        # as the public headers are already listed in the :facade target.
-        sources -= invoker.public
-      }
     }
   }
 }

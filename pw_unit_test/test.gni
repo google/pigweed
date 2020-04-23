@@ -15,13 +15,49 @@
 import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_build/python_script.gni")
 
+# Defines a target if enable_if is true. Otherwise, it defines that target as
+# <target_name>_DISABLED and creates an empty <target_name> group. This can be
+# used to conditionally create targets without having to conditionally add them
+# to groups. This results in simpler BUILD.gn files.
+template("_pw_disableable_target") {
+  assert(defined(invoker.enable_if),
+         "`enable_if` is required for _pw_disableable_target")
+  assert(defined(invoker.target_type),
+         "`target_type` is required for _pw_disableable_target")
+
+  if (invoker.enable_if) {
+    _actual_target_name = target_name
+  } else {
+    _actual_target_name = target_name + "_DISABLED"
+
+    group(target_name) {
+      forward_variables_from(invoker, [ "testonly" ])
+    }
+  }
+
+  target(invoker.target_type, _actual_target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "enable_if",
+                             "target_type",
+                           ])
+  }
+}
+
 # Creates an executable target for a unit test.
 #
 # If the pw_automatic_test_runner variable is set, this template also creates a
 # "${test_name}_run" target which runs the unit test executable after building
 # it.
 #
-# This template accepts all of the regular "executable" target args.
+# Args:
+#   - enable_if: (optional) Conditionally enables or disables this test. The test
+#         target and *_run target do nothing when the test is disabled. The
+#         disabled test can still be built and run with the
+#         <target_name>_DISABLED and <target_name>_DISABLED_run targets.
+#         Defaults to true (enable_if).
+#   - All of the regular "executable" target args are accepted.
 template("pw_test") {
   # This is required in order to reference the pw_test template's target name
   # within the test_metadata of the metadata group below. The group() definition
@@ -29,7 +65,12 @@ template("pw_test") {
   # shadowing the one in this scope.
   _test_target_name = target_name
 
-  pw_executable(_test_target_name) {
+  _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+
+  _pw_disableable_target(_test_target_name) {
+    target_type = "pw_executable"
+    enable_if = _test_is_enabled
+
     # Metadata for this test when used as part of a pw_test_group target.
     metadata = {
       tests = [
@@ -52,9 +93,19 @@ template("pw_test") {
   if (pw_automatic_test_runner != "") {
     # When the automatic runner is set, create an action which runs the unit
     # test executable using the test runner script.
-    _run_action_name = _test_target_name + "_run"
+    if (_test_is_enabled) {
+      _test_to_run = _test_target_name
+    } else {
+      # Create a run target for the _DISABLED version of the test.
+      _test_to_run = _test_target_name + "_DISABLED"
 
-    pw_python_script(_run_action_name) {
+      # Create a dummy _run target for the regular version of the test.
+      group(_test_target_name + "_run") {
+        deps = [ ":$_test_target_name" ]
+      }
+    }
+
+    pw_python_script(_test_to_run + "_run") {
       deps = [ ":$_test_target_name" ]
       inputs = [ pw_automatic_test_runner ]
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
@@ -62,7 +113,7 @@ template("pw_test") {
         "--runner",
         pw_automatic_test_runner,
         "--test",
-        get_path_info("$target_out_dir:$_test_target_name", "abspath"),
+        get_path_info("$target_out_dir:$_test_to_run", "abspath"),
       ]
       stamp = true
     }
