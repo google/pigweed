@@ -187,6 +187,53 @@ def cipd(ctx: DoctorContext):
                         path, os.environ['PATH'])
 
 
+@register_into(CHECKS)
+def cipd_versions(ctx: DoctorContext):
+    """Check cipd is set up correctly and in use."""
+    try:
+        root = pathlib.Path(os.environ['PW_ROOT']).resolve()
+    except KeyError:
+        return  # This case is handled elsewhere.
+
+    versions_path = root.joinpath('.cipd', 'pigweed', '.versions')
+    json_path = root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
+                              'cipd_setup', 'pigweed.json')
+
+    with json_path.open() as ins:
+        packages = json.load(ins)
+
+    for package in packages:
+        ctx.debug('checking version of %s', package['path'])
+        name = [
+            part for part in package['path'].split('/') if '{' not in part
+        ][-1]
+        path = versions_path.joinpath(f'{name}.cipd_version')
+        if not path.is_file():
+            ctx.debug('no version file')
+            continue
+
+        with path.open() as ins:
+            installed = json.load(ins)
+
+        describe = (
+            'cipd',
+            'describe',
+            installed['package_name'],
+            '-version',
+            installed['instance_id'],
+        )
+        ctx.debug('%s', ' '.join(describe))
+        output_raw = subprocess.check_output(describe).decode()
+        ctx.debug('output: %r', output_raw)
+        output = output_raw.split()
+
+        for tag in package['tags']:
+            if tag not in output:
+                ctx.error(
+                    'CIPD package %s is out of date, please rerun bootstrap',
+                    installed['package_name'])
+
+
 def main(strict=False, checks=None):
     """Run all the Check subclasses defined in this file."""
 
