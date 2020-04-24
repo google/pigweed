@@ -233,15 +233,7 @@ span<const byte> Entry::CalculateChecksum(const string_view key,
     checksum_algo_->Update(value);
   }
 
-  // Update the checksum with 0s to pad the entry to its alignment boundary.
-  constexpr byte padding[kMinAlignmentBytes - 1] = {};
-  size_t padding_to_add = Padding(content_size(), alignment_bytes());
-
-  while (padding_to_add > 0u) {
-    const size_t chunk_size = std::min(padding_to_add, sizeof(padding));
-    checksum_algo_->Update(padding, chunk_size);
-    padding_to_add -= chunk_size;
-  }
+  AddPaddingBytesToChecksum();
 
   return checksum_algo_->Finish();
 }
@@ -257,6 +249,8 @@ Status Entry::CalculateChecksumFromFlash() {
   checksum_algo_->Update(&header_, sizeof(header_));
 
   Address address = address_ + sizeof(EntryHeader);
+  // To handle alignment changes, do not read the padding. The padding is added
+  // after checksumming the key and value from flash.
   const Address end = address_ + content_size();
 
   std::array<std::byte, 2 * kMinAlignmentBytes> buffer;
@@ -268,11 +262,24 @@ Status Entry::CalculateChecksumFromFlash() {
     address += read_size;
   }
 
+  AddPaddingBytesToChecksum();
+
   span checksum = checksum_algo_->Finish();
   std::memcpy(&header_.checksum,
               checksum.data(),
               std::min(checksum.size(), sizeof(header_.checksum)));
   return Status::OK;
+}
+
+void Entry::AddPaddingBytesToChecksum() const {
+  constexpr byte padding[kMinAlignmentBytes - 1] = {};
+  size_t padding_to_add = Padding(content_size(), alignment_bytes());
+
+  while (padding_to_add != 0u) {
+    const size_t chunk_size = std::min(padding_to_add, sizeof(padding));
+    checksum_algo_->Update(padding, chunk_size);
+    padding_to_add -= chunk_size;
+  }
 }
 
 }  // namespace pw::kvs::internal

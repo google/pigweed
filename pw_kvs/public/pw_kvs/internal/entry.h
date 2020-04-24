@@ -203,6 +203,9 @@ class Entry {
 
   Status CalculateChecksumFromFlash();
 
+  // Update the checksum with 0s to pad the entry to its alignment boundary.
+  void AddPaddingBytesToChecksum() const;
+
   static constexpr uint8_t alignment_bytes_to_units(size_t alignment_bytes) {
     return (alignment_bytes + 15) / 16 - 1;  // An alignment of 0 is invalid.
   }
