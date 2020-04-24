@@ -844,20 +844,25 @@ Status KeyValueStore::FullMaintenance() {
     return Status::FAILED_PRECONDITION;
   }
 
-  DBG("Do full maintenance");
+  // Full maintenance can be a potentially heavy operation, and should be
+  // relatively infrequent, so log start/end at INFO level.
+  INF("Beginning full maintenance");
   CheckForErrors();
 
   if (error_detected_) {
     TRY(Repair());
   }
-
+  Status overall_status = UpdateEntriesToPrimaryFormat();
   // Make sure all the entries are on the primary format.
-  UpdateEntriesToPrimaryFormat();
+  if (!overall_status.ok()) {
+    ERR("Failed to update all entries to the primary format");
+  }
 
   SectorDescriptor* sector = sectors_.last_new();
 
   // TODO: look in to making an iterator method for cycling through sectors
   // starting from last_new_sector_.
+  Status gc_status;
   for (size_t j = 0; j < sectors_.size(); j++) {
     sector += 1;
     if (sector == sectors_.end()) {
@@ -865,12 +870,23 @@ Status KeyValueStore::FullMaintenance() {
     }
 
     if (sector->RecoverableBytes(partition_.sector_size_bytes()) > 0) {
-      TRY(GarbageCollectSector(*sector, {}));
+      gc_status = GarbageCollectSector(*sector, {});
+      if (!gc_status.ok()) {
+        ERR("Failed to garbage collect all sectors");
+        break;
+      }
     }
   }
+  if (overall_status.ok()) {
+    overall_status = gc_status;
+  }
 
-  DBG("Full maintenance complete");
-  return Status::OK;
+  if (overall_status.ok()) {
+    INF("Full maintenance complete");
+  } else {
+    ERR("Full maintenance finished with some errors");
+  }
+  return overall_status;
 }
 
 Status KeyValueStore::PartialMaintenance() {
