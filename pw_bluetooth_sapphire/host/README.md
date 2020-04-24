@@ -15,4 +15,21 @@ adapter:
     le_max_data_length
     lmp_features
     le_features
+    peer_cache:
+        peer_0x0:
+            peer_id
+            technology
+            address
+            connectable
+            temporary
+            features
+            hci_version
+            manufacturer
+            bredr_data:
+                connection_state
+                bonded
+            le_data:
+                connection_state
+                bonded
+                features
 ```

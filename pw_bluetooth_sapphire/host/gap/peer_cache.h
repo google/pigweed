@@ -5,11 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_CACHE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_CACHE_H_
 
-#include <fbl/function.h>
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include <unordered_map>
+
+#include <fbl/function.h>
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
@@ -36,7 +38,10 @@ class PeerCache final {
   using PeerCallback = fit::function<void(const Peer& peer)>;
   using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
-  PeerCache() = default;
+  static constexpr const char* kInspectNodeName = "peer_cache";
+
+  // |node| must not be null.
+  explicit PeerCache(inspect::Node node);
 
   // Creates a new peer entry using the given parameters, and returns a
   // (non-owning) pointer to that peer. The caller must not retain the pointer
@@ -214,6 +219,8 @@ class PeerCache final {
   PeerCallback peer_updated_callback_;
   PeerIdCallback peer_removed_callback_;
   PeerCallback peer_bonded_callback_;
+
+  inspect::Node node_;
 
   fxl::ThreadChecker thread_checker_;
 

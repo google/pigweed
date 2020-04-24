@@ -17,6 +17,7 @@ static_library("gap") {
     "connection_request.h",
     "discovery_filter.cc",
     "discovery_filter.h",
+    "gap.cc",
     "gap.h",
     "identity_resolving_list.cc",
     "identity_resolving_list.h",
@@ -100,6 +101,7 @@ source_set("tests") {
     "low_energy_interrogator_unittest.cc",
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
+    "peer_unittest.cc",
   ]
 
   deps = [
@@ -112,5 +114,6 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
+    "//zircon/public/lib/async-cpp",
   ]
 }

@@ -42,7 +42,8 @@ constexpr zx::duration kTestScanPeriod = zx::sec(10);
 
 class LowEnergyDiscoveryManagerTest : public TestingBase {
  public:
-  LowEnergyDiscoveryManagerTest() = default;
+  LowEnergyDiscoveryManagerTest()
+      : peer_cache_(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName)) {}
   ~LowEnergyDiscoveryManagerTest() override = default;
 
   void SetUp() override {
@@ -193,6 +194,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   }
 
  private:
+  inspect::Inspector inspector_;
   PeerCache peer_cache_;
   hci::FakeLocalAddressDelegate fake_address_delegate_;
   std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;

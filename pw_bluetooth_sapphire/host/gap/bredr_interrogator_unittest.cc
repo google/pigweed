@@ -48,7 +48,8 @@ class BrEdrInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ = std::make_unique<PeerCache>();
+    peer_cache_ =
+        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
     auto hci = transport();
 
     interrogator_ =
@@ -105,6 +106,7 @@ class BrEdrInterrogatorTest : public TestingBase {
   BrEdrInterrogator* interrogator() const { return interrogator_.get(); }
 
  private:
+  inspect::Inspector inspector_;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;
 

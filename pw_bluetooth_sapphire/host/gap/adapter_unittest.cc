@@ -843,6 +843,7 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
 
+  auto peer_cache_matcher = AllOf(NodeMatches(NameMatches(PeerCache::kInspectNodeName)));
   auto adapter_matcher = AllOf(
       NodeMatches(AllOf(
           NameMatches("adapter"),
@@ -862,7 +863,7 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
                   "le_features",
                   fxl::StringPrintf(
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
-      ChildrenMatch(::testing::IsEmpty()));
+      ChildrenMatch(UnorderedElementsAre(peer_cache_matcher)));
   auto hierarchy = inspect::ReadFromVmo(adapter()->InspectVmo()).take_value();
 
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),

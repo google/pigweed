@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_
 
+#include <lib/sys/inspect/cpp/component.h>
+
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -13,6 +15,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -32,6 +35,26 @@ class PeerCache;
 // PeerCache.
 class Peer final {
  public:
+  static constexpr const char* kInspectPeerIdName = "peer_id";
+  static constexpr const char* kInspectTechnologyName = "technology";
+  static constexpr const char* kInspectAddressName = "address";
+  static constexpr const char* kInspectConnectableName = "connectable";
+  static constexpr const char* kInspectTemporaryName = "temporary";
+  static constexpr const char* kInspectFeaturesName = "features";
+  static constexpr const char* kInspectVersionName = "hci_version";
+  static constexpr const char* kInspectManufacturerName = "manufacturer";
+
+  using DeviceCallback = fit::function<void(const Peer&)>;
+
+  // Caller must ensure that callbacks are non-empty.
+  // Note that the ctor is only intended for use by PeerCache.
+  // Expanding access would a) violate the constraint that all Peers
+  // are created through a PeerCache, and b) introduce lifetime issues
+  // (do the callbacks outlive |this|?).
+  Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
+       DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
+       bool connectable, inspect::Node node);
+
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
   // example, GAP may consider a peer disconnected whilst the link disconnection
@@ -49,6 +72,7 @@ class Peer final {
     // Link setup, service discovery, and any encryption setup has completed
     kConnected
   };
+  static std::string ConnectionStateToString(Peer::ConnectionState);
 
   // Description of auto-connect behaviors.
   //
@@ -66,12 +90,17 @@ class Peer final {
   // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
    public:
-    explicit LowEnergyData(Peer* owner);
+    static constexpr const char* kInspectNodeName = "le_data";
+    static constexpr const char* kInspectConnectionStateName = "connection_state";
+    static constexpr const char* kInspectBondDataName = "bonded";
+    static constexpr const char* kInspectFeaturesName = "features";
+
+    LowEnergyData(Peer* owner, inspect::Node node);
 
     // Current connection state.
-    ConnectionState connection_state() const { return conn_state_; }
+    ConnectionState connection_state() const { return *conn_state_; }
     bool connected() const { return connection_state() == ConnectionState::kConnected; }
-    bool bonded() const { return bond_data_.has_value(); }
+    bool bonded() const { return bond_data_->has_value(); }
     bool should_auto_connect() const {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
@@ -99,10 +128,10 @@ class Peer final {
     }
 
     // This peer's LE bond data, if bonded.
-    const std::optional<sm::PairingData>& bond_data() const { return bond_data_; }
+    const std::optional<sm::PairingData>& bond_data() const { return *bond_data_; }
 
     // Bit mask of LE features (Core Spec v5.2, Vol 6, Part B, Section 4.6).
-    std::optional<hci::LESupportedFeatures> features() const { return features_; }
+    std::optional<hci::LESupportedFeatures> features() const { return *features_; }
 
     // Setters:
 
@@ -130,7 +159,7 @@ class Peer final {
     // is disconnected. Does not notify listeners.
     void ClearBondData();
 
-    void SetFeatures(hci::LESupportedFeatures features) { features_ = features; }
+    void SetFeatures(hci::LESupportedFeatures features) { features_.Set(features); }
 
     // TODO(armansito): Store most recently seen random address and identity
     // address separately, once PeerCache can index peers by multiple
@@ -143,7 +172,9 @@ class Peer final {
 
     Peer* peer_;  // weak
 
-    ConnectionState conn_state_;
+    inspect::Node node_;
+
+    StringInspectable<ConnectionState> conn_state_;
     std::optional<hci::LEConnectionParameters> conn_params_;
     std::optional<hci::LEPreferredConnectionParameters> preferred_conn_params_;
 
@@ -153,11 +184,11 @@ class Peer final {
     // data supercede those in the original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
 
-    std::optional<sm::PairingData> bond_data_;
+    BoolInspectable<std::optional<sm::PairingData>> bond_data_;
 
     AutoConnectBehavior auto_conn_behavior_ = AutoConnectBehavior::kAlways;
 
-    std::optional<hci::LESupportedFeatures> features_;
+    StringInspectable<std::optional<hci::LESupportedFeatures>> features_;
 
     // TODO(armansito): Store all keys
     // TODO(armansito): Store GATT service UUIDs.
@@ -166,12 +197,16 @@ class Peer final {
   // Contains Peer data that apply only to the BR/EDR transport.
   class BrEdrData final {
    public:
-    explicit BrEdrData(Peer* owner);
+    static constexpr const char* kInspectNodeName = "bredr_data";
+    static constexpr const char* kInspectConnectionStateName = "connection_state";
+    static constexpr const char* kInspectLinkKeyName = "bonded";
+
+    BrEdrData(Peer* owner, inspect::Node node);
 
     // Current connection state.
-    ConnectionState connection_state() const { return conn_state_; }
+    ConnectionState connection_state() const { return *conn_state_; }
     bool connected() const { return connection_state() == ConnectionState::kConnected; }
-    bool bonded() const { return link_key_.has_value(); }
+    bool bonded() const { return link_key_->has_value(); }
 
     // Returns the peer's BD_ADDR.
     const DeviceAddress& address() const { return address_; }
@@ -191,7 +226,7 @@ class Peer final {
     const std::optional<uint16_t>& clock_offset() const { return clock_offset_; }
     const BufferView extended_inquiry_response() const { return eir_buffer_.view(0, eir_len_); }
 
-    const std::optional<sm::LTK>& link_key() const { return link_key_; }
+    const std::optional<sm::LTK>& link_key() const { return *link_key_; }
 
     // Setters:
 
@@ -229,7 +264,10 @@ class Peer final {
     bool SetEirData(const ByteBuffer& data);
 
     Peer* peer_;  // weak
-    ConnectionState conn_state_;
+    inspect::Node node_;
+
+    StringInspectable<ConnectionState> conn_state_;
+
     DeviceAddress address_;
     std::optional<DeviceClass> device_class_;
     std::optional<hci::PageScanRepetitionMode> page_scan_rep_mode_;
@@ -237,7 +275,7 @@ class Peer final {
     // TODO(jamuraa): Parse more of the Extended Inquiry Response fields
     size_t eir_len_;
     DynamicByteBuffer eir_buffer_;
-    std::optional<sm::LTK> link_key_;
+    BoolInspectable<std::optional<sm::LTK>> link_key_;
 
     // TODO(armansito): Store traditional service UUIDs.
   };
@@ -249,10 +287,10 @@ class Peer final {
   // clients to interact with multiple controllers simultaneously though this
   // could possibly lead to collisions if the active adapter gets changed
   // without clearing the previous adapter's cache.
-  PeerId identifier() const { return identifier_; }
+  PeerId identifier() const { return *identifier_; }
 
   // The Bluetooth technologies that are supported by this device.
-  TechnologyType technology() const { return technology_; }
+  TechnologyType technology() const { return *technology_; }
 
   // The known device address of this device. Depending on the technologies
   // supported by this device this has the following meaning:
@@ -270,14 +308,14 @@ class Peer final {
   //     If a BR/EDR/LE device uses an identity address that is different from
   //     its BD_ADDR, then there will be two separate Peer entries for
   //     it.
-  const DeviceAddress& address() const { return address_; }
+  const DeviceAddress& address() const { return *address_; }
   bool identity_known() const { return identity_known_; }
 
   // The LMP version of this device obtained doing discovery.
-  const std::optional<hci::HCIVersion>& version() const { return lmp_version_; }
+  const std::optional<hci::HCIVersion>& version() const { return *lmp_version_; }
 
   // Returns true if this is a connectable device.
-  bool connectable() const { return connectable_; }
+  bool connectable() const { return *connectable_; }
 
   // Returns true if this device is connected over BR/EDR or LE transports.
   bool connected() const {
@@ -297,7 +335,7 @@ class Peer final {
   const std::optional<std::string>& name() const { return name_; }
 
   // Returns the set of features of this device.
-  const hci::LMPFeatureSet& features() const { return lmp_features_; }
+  const hci::LMPFeatureSet& features() const { return *lmp_features_; }
 
   // A temporary device gets removed from the PeerCache after a period
   // of inactivity (see the |update_expiry_callback| argument to the
@@ -310,7 +348,7 @@ class Peer final {
   //      applies to LE devices that use the privacy feature.
   //
   // Temporary devices are never bonded.
-  bool temporary() const { return temporary_; }
+  bool temporary() const { return *temporary_; }
 
   // Returns the LE transport specific data of this device, if any. This will be
   // present if information about this device is obtained using the LE discovery
@@ -339,38 +377,28 @@ class Peer final {
   void SetName(const std::string& name);
 
   // Sets the value of the LMP |features| for the given |page| number.
-  void SetFeaturePage(size_t page, uint64_t features) { lmp_features_.SetPage(page, features); }
-
-  // Sets the last available LMP feature |page| number for this device.
-  void set_last_page_number(uint8_t page) { lmp_features_.set_last_page_number(page); }
-
-  void set_version(hci::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
-    lmp_version_ = version;
-    lmp_manufacturer_ = manufacturer;
-    lmp_subversion_ = subversion;
+  void SetFeaturePage(size_t page, uint64_t features) {
+    lmp_features_.Mutable()->SetPage(page, features);
   }
 
- private:
-  friend class PeerCache;
-  using DeviceCallback = fit::function<void(const Peer&)>;
+  // Sets the last available LMP feature |page| number for this device.
+  void set_last_page_number(uint8_t page) { lmp_features_.Mutable()->set_last_page_number(page); }
 
-  // Caller must ensure that callbacks are non-empty.
-  // Note that the ctor is only intended for use by PeerCache.
-  // Expanding access would a) violate the constraint that all Peers
-  // are created through a PeerCache, and b) introduce lifetime issues
-  // (do the callbacks outlive |this|?).
-  Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
-       DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-       bool connectable);
+  void set_version(hci::HCIVersion version, uint16_t manufacturer, uint16_t subversion) {
+    lmp_version_.Set(version);
+    lmp_manufacturer_.Set(manufacturer);
+    lmp_subversion_ = subversion;
+  }
 
   // Marks this device's identity as known. Called by PeerCache when
   // initializing a bonded device and by LowEnergyData when setting bond data
   // with an identity address.
   void set_identity_known(bool value) { identity_known_ = value; }
 
+ private:
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
-  void set_address(const DeviceAddress& address) { address_ = address; }
+  void set_address(const DeviceAddress& address) { address_.Set(address); }
 
   // Updates the RSSI and returns true if it changed.
   bool SetRssiInternal(int8_t rssi);
@@ -399,24 +427,29 @@ class Peer final {
   // Mark this device as dual mode and signal the cache.
   void MakeDualMode();
 
+  // Set static and lazy inspect properties.
+  void InitializeInspect();
+
+  inspect::Node node_;
+
   // Callbacks used to notify state changes.
   DeviceCallback notify_listeners_callback_;
   DeviceCallback update_expiry_callback_;
   DeviceCallback dual_mode_callback_;
 
-  PeerId identifier_;
-  TechnologyType technology_;
+  ToStringInspectable<PeerId> identifier_;
+  StringInspectable<TechnologyType> technology_;
 
-  DeviceAddress address_;
+  ToStringInspectable<DeviceAddress> address_;
   bool identity_known_;
 
   std::optional<std::string> name_;
-  std::optional<hci::HCIVersion> lmp_version_;
-  std::optional<uint16_t> lmp_manufacturer_;
+  StringInspectable<std::optional<hci::HCIVersion>> lmp_version_;
+  StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;
-  hci::LMPFeatureSet lmp_features_;
-  bool connectable_;
-  bool temporary_;
+  ToStringInspectable<hci::LMPFeatureSet> lmp_features_;
+  BoolInspectable<bool> connectable_;
+  BoolInspectable<bool> temporary_;
   int8_t rssi_;
 
   // Data that only applies to the LE transport. This is present if this device

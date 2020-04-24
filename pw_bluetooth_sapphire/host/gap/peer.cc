@@ -7,15 +7,16 @@
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 
 namespace gap {
-namespace {
 
-std::string ConnectionStateToString(Peer::ConnectionState state) {
+std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
   switch (state) {
     case Peer::ConnectionState::kNotConnected:
       return "not connected";
@@ -29,12 +30,19 @@ std::string ConnectionStateToString(Peer::ConnectionState state) {
   return "(unknown)";
 }
 
-}  // namespace
-
-Peer::LowEnergyData::LowEnergyData(Peer* owner)
+Peer::LowEnergyData::LowEnergyData(Peer* owner, inspect::Node node)
     : peer_(owner),
-      conn_state_(ConnectionState::kNotConnected),
-      auto_conn_behavior_(AutoConnectBehavior::kAlways) {
+      node_(std::move(node)),
+      conn_state_(ConnectionState::kNotConnected,
+                  node_.CreateString(LowEnergyData::kInspectConnectionStateName, ""),
+                  &ConnectionStateToString),
+      bond_data_(std::nullopt, node_.CreateBool(LowEnergyData::kInspectBondDataName, false),
+                 [](const std::optional<sm::PairingData>& p) { return p.has_value(); }),
+      auto_conn_behavior_(AutoConnectBehavior::kAlways),
+      features_(std::nullopt, node_.CreateString(LowEnergyData::kInspectFeaturesName, ""),
+                [](const std::optional<hci::LESupportedFeatures> f) {
+                  return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
+                }) {
   ZX_DEBUG_ASSERT(peer_);
 }
 
@@ -109,7 +117,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
          bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
-  conn_state_ = state;
+  conn_state_.Set(state);
 
   // Become non-temporary if connected or a connection attempt is in progress.
   // Otherwise, become temporary again if the identity is unknown.
@@ -117,7 +125,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
     peer_->TryMakeNonTemporary();
   } else if (state == ConnectionState::kNotConnected && !peer_->identity_known()) {
     bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*peer_));
-    peer_->temporary_ = true;
+    peer_->temporary_.Set(true);
   }
 
   peer_->UpdateExpiry();
@@ -143,7 +151,7 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   peer_->TryMakeNonTemporary();
 
   // This will mark the peer as bonded
-  bond_data_ = bond_data;
+  bond_data_.Set(bond_data);
 
   // Update to the new identity address if the current address is random.
   if (peer_->address().type() == DeviceAddress::Type::kLERandom && bond_data.identity_address) {
@@ -155,15 +163,22 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
 }
 
 void Peer::LowEnergyData::ClearBondData() {
-  ZX_ASSERT(bond_data_);
-  if (bond_data_->irk) {
+  ZX_ASSERT(bond_data_->has_value());
+  if (bond_data_->value().irk) {
     peer_->set_identity_known(false);
   }
-  bond_data_ = std::nullopt;
+  bond_data_.Set(std::nullopt);
 }
 
-Peer::BrEdrData::BrEdrData(Peer* owner)
-    : peer_(owner), conn_state_(ConnectionState::kNotConnected), eir_len_(0u) {
+Peer::BrEdrData::BrEdrData(Peer* owner, inspect::Node node)
+    : peer_(owner),
+      node_(std::move(node)),
+      conn_state_(ConnectionState::kNotConnected,
+                  node_.CreateString(BrEdrData::kInspectConnectionStateName, ""),
+                  &ConnectionStateToString),
+      eir_len_(0u),
+      link_key_(std::nullopt, node_.CreateBool(BrEdrData::kInspectLinkKeyName, false),
+                [](const std::optional<sm::LTK>& l) { return l.has_value(); }) {
   ZX_DEBUG_ASSERT(peer_);
   ZX_DEBUG_ASSERT(peer_->identity_known());
 
@@ -205,7 +220,7 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
          bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
-  conn_state_ = state;
+  conn_state_.Set(state);
   peer_->UpdateExpiry();
   peer_->NotifyListeners();
 
@@ -276,29 +291,40 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
   peer_->TryMakeNonTemporary();
 
   // Storing the key establishes the bond.
-  link_key_ = link_key;
+  link_key_.Set(link_key);
 
   peer_->NotifyListeners();
 }
 
 void Peer::BrEdrData::ClearBondData() {
-  ZX_ASSERT(link_key_);
-  link_key_ = std::nullopt;
+  ZX_ASSERT(link_key_->has_value());
+  link_key_.Set(std::nullopt);
 }
 
 Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
            DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-           bool connectable)
-    : notify_listeners_callback_(std::move(notify_listeners_callback)),
+           bool connectable, inspect::Node node)
+    : node_(std::move(node)),
+      notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
-      identifier_(identifier),
+      identifier_(identifier, node_.CreateString(Peer::kInspectPeerIdName, "")),
       technology_((address.type() == DeviceAddress::Type::kBREDR) ? TechnologyType::kClassic
-                                                                  : TechnologyType::kLowEnergy),
-      address_(address),
+                                                                  : TechnologyType::kLowEnergy,
+                  node_.CreateString(Peer::kInspectTechnologyName, ""),
+                  [](TechnologyType t) { return TechnologyTypeToString(t); }),
+      address_(address, node_.CreateString(Peer::kInspectAddressName, "")),
       identity_known_(false),
-      connectable_(connectable),
-      temporary_(true),
+      lmp_version_(std::nullopt, node_.CreateString(Peer::kInspectVersionName, ""),
+                   [](const std::optional<hci::HCIVersion>& v) {
+                     return v ? hci::HCIVersionToString(*v) : "";
+                   }),
+      lmp_manufacturer_(
+          std::nullopt, node_.CreateString(Peer::kInspectManufacturerName, ""),
+          [](const std::optional<uint16_t>& m) { return m ? GetManufacturerName(*m) : ""; }),
+      lmp_features_(hci::LMPFeatureSet(), node_.CreateString(Peer::kInspectFeaturesName, "")),
+      connectable_(connectable, node_.CreateBool(Peer::kInspectConnectableName, "")),
+      temporary_(true, node_.CreateBool(Peer::kInspectTemporaryName, true)),
       rssi_(hci::kRSSIInvalid) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   ZX_DEBUG_ASSERT(update_expiry_callback_);
@@ -311,10 +337,10 @@ Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expir
   }
 
   // Initialize transport-specific state.
-  if (technology_ == TechnologyType::kClassic) {
-    bredr_data_ = BrEdrData(this);
+  if (*technology_ == TechnologyType::kClassic) {
+    bredr_data_ = BrEdrData(this, node_.CreateChild(Peer::BrEdrData::kInspectNodeName));
   } else {
-    le_data_ = LowEnergyData(this);
+    le_data_ = LowEnergyData(this, node_.CreateChild(Peer::LowEnergyData::kInspectNodeName));
   }
 }
 
@@ -323,7 +349,7 @@ Peer::LowEnergyData& Peer::MutLe() {
     return *le_data_;
   }
 
-  le_data_ = LowEnergyData(this);
+  le_data_ = LowEnergyData(this, node_.CreateChild(Peer::LowEnergyData::kInspectNodeName));
 
   // Make dual-mode if both transport states have been initialized.
   if (bredr_data_) {
@@ -337,7 +363,7 @@ Peer::BrEdrData& Peer::MutBrEdr() {
     return *bredr_data_;
   }
 
-  bredr_data_ = BrEdrData(this);
+  bredr_data_ = BrEdrData(this, node_.CreateChild(Peer::BrEdrData::kInspectNodeName));
 
   // Make dual-mode if both transport states have been initialized.
   if (le_data_) {
@@ -347,7 +373,7 @@ Peer::BrEdrData& Peer::MutBrEdr() {
 }
 
 std::string Peer::ToString() const {
-  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(identifier_), bt_str(address_));
+  return fxl::StringPrintf("{peer id: %s, address: %s}", bt_str(*identifier_), bt_str(*address_));
 }
 
 void Peer::SetName(const std::string& name) {
@@ -379,14 +405,14 @@ bool Peer::TryMakeNonTemporary() {
   // TODO(armansito): Since we don't currently support address resolution,
   // random addresses should never be persisted.
   if (!connectable()) {
-    bt_log(TRACE, "gap", "remains temporary: %s", ToString().c_str());
+    bt_log(TRACE, "gap", "remains temporary: %s", bt_str(*this));
     return false;
   }
 
-  bt_log(TRACE, "gap", "became non-temporary: %s:", ToString().c_str());
+  bt_log(TRACE, "gap", "became non-temporary: %s:", bt_str(*this));
 
-  if (temporary_) {
-    temporary_ = false;
+  if (*temporary_) {
+    temporary_.Set(false);
     UpdateExpiry();
     NotifyListeners();
   }
@@ -405,7 +431,7 @@ void Peer::NotifyListeners() {
 }
 
 void Peer::MakeDualMode() {
-  technology_ = TechnologyType::kDualMode;
+  technology_.Set(TechnologyType::kDualMode);
   ZX_DEBUG_ASSERT(dual_mode_callback_);
   dual_mode_callback_(*this);
 }

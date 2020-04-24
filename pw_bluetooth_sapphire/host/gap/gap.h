@@ -1,4 +1,4 @@
-// Copyright 2017 The Fuchsia Authors. All rights reserved.
+// Copyright 2020 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,6 +22,7 @@ enum class TechnologyType {
   kClassic,
   kDualMode,
 };
+const char* TechnologyTypeToString(TechnologyType type);
 
 enum class Mode {
   // Use the legacy HCI command set.

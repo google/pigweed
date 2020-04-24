@@ -4,6 +4,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 
+#include <lib/inspect/testing/cpp/inspect.h>
+
+#include <gmock/gmock.h>
+
 #include "gtest/gtest.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
@@ -18,6 +22,8 @@
 namespace bt {
 namespace gap {
 namespace {
+
+using namespace inspect::testing;
 
 // All fields are initialized to zero as they are unused in these tests.
 const hci::LEConnectionParameters kTestParams;
@@ -62,17 +68,22 @@ const DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
 
 class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
  public:
-  void SetUp() override { TestLoopFixture::SetUp(); }
+  void SetUp() override {
+    TestLoopFixture::SetUp();
+    cache_ =
+        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
+  }
 
   void TearDown() override {
     RunLoopUntilIdle();
+    cache_.reset();
     TestLoopFixture::TearDown();
   }
 
  protected:
   // Creates a new Peer, and caches a pointer to that peer.
   __WARN_UNUSED_RESULT bool NewPeer(const DeviceAddress& addr, bool connectable) {
-    auto* peer = cache_.NewPeer(addr, connectable);
+    auto* peer = cache()->NewPeer(addr, connectable);
     if (!peer) {
       return false;
     }
@@ -80,17 +91,43 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
     return true;
   }
 
-  PeerCache* cache() { return &cache_; }
+  PeerCache* cache() { return cache_.get(); }
   // Returns the cached pointer to the peer created in the most recent call to
   // NewPeer(). The caller must ensure that the peer has not expired out of
   // the cache. (Tests of cache expiration should generally subclass the
   // GAP_PeerCacheExpirationTest fixture.)
   Peer* peer() { return peer_; }
 
+  inspect::Inspector& inspector() { return inspector_; }
+
  private:
-  PeerCache cache_;
+  std::unique_ptr<PeerCache> cache_;
   Peer* peer_;
+  inspect::Inspector inspector_;
 };
+
+TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
+  Peer* peer0 = cache()->NewPeer(kAddrLePublic, true);
+  auto peer0_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x0"))));
+
+  cache()->NewPeer(kAddrBrEdr, true);
+  auto peer1_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x1"))));
+
+  // Hierarchy should contain peer0 and peer1.
+  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo()).take_value();
+  auto peer_cache_matcher0 =
+      AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
+            ChildrenMatch(UnorderedElementsAre(peer0_matcher, peer1_matcher)));
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher0))));
+
+  // peer0 should be removed from hierarchy after it is removed from the cache because its Node is
+  // destroyed along with the Peer object.
+  EXPECT_TRUE(cache()->RemoveDisconnectedPeer(peer0->identifier()));
+  hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo()).take_value();
+  auto peer_cache_matcher1 = AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
+                                   ChildrenMatch(UnorderedElementsAre(peer1_matcher)));
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher1))));
+}
 
 TEST_F(GAP_PeerCacheTest, LookUp) {
   auto kAdvData0 = CreateStaticByteBuffer(0x05, 0x09, 'T', 'e', 's', 't');
@@ -154,7 +191,7 @@ TEST_F(GAP_PeerCacheTest, LookUpLePeerByBrEdrAlias) {
 }
 
 TEST_F(GAP_PeerCacheTest, NewPeerDoesNotCrashWhenNoCallbackIsRegistered) {
-  PeerCache().NewPeer(kAddrLePublic, true);
+  cache()->NewPeer(kAddrLePublic, true);
 }
 
 TEST_F(GAP_PeerCacheTest, ForEachEmpty) {
@@ -803,7 +840,9 @@ INSTANTIATE_TEST_SUITE_P(GAP_PeerCacheTest, DualModeBondingTest,
 template <const DeviceAddress* DevAddr>
 class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
  public:
-  void SetUp() {
+  void SetUp() override {
+    GAP_PeerCacheTest::SetUp();
+
     was_called_ = false;
     ASSERT_TRUE(NewPeer(*DevAddr, true));
     cache()->set_peer_updated_callback([this](const auto&) { was_called_ = true; });
@@ -813,6 +852,8 @@ class GAP_PeerCacheTest_UpdateCallbackTest : public GAP_PeerCacheTest {
     eir_data().SetToZeros();
     EXPECT_FALSE(was_called_);
   }
+
+  void TearDown() override { GAP_PeerCacheTest::TearDown(); }
 
  protected:
   hci::InquiryResult& ir() { return ir_; }
@@ -1104,6 +1145,8 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdate
 
 class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
  public:
+  GAP_PeerCacheExpirationTest()
+      : cache_(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName)) {}
   void SetUp() {
     TestLoopFixture::SetUp();
     cache_.set_peer_removed_callback([this](PeerId) { peers_removed_++; });
@@ -1133,6 +1176,7 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   int peers_removed() const { return peers_removed_; }
 
  private:
+  inspect::Inspector inspector_;
   PeerCache cache_;
   DeviceAddress peer_addr_;
   DeviceAddress peer_addr_alias_;

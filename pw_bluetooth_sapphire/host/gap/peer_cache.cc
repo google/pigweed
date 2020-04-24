@@ -4,8 +4,9 @@
 
 #include "peer_cache.h"
 
-#include <fbl/function.h>
 #include <zircon/assert.h>
+
+#include <fbl/function.h>
 
 #include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -30,6 +31,11 @@ DeviceAddress GetAliasAddress(const DeviceAddress& address) {
 }
 
 }  // namespace
+
+PeerCache::PeerCache(inspect::Node node) : node_(std::move(node)) {
+  // Node must not be null, or else unique names cannot be generated for peers.
+  ZX_ASSERT(node_);
+}
 
 Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -274,7 +280,8 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
   std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
                                       fit::bind_member(this, &PeerCache::UpdateExpiry),
                                       fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
-                                      address, connectable));
+                                      address, connectable,
+                                      node_.CreateChild(node_.UniqueName("peer_"))));
   // Note: we must construct the PeerRecord in-place, because it doesn't
   // support copy or move.
   auto [iter, inserted] = peers_.try_emplace(peer->identifier(), std::move(peer),

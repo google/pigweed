@@ -36,6 +36,7 @@ Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
       hci_(hci),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
+      peer_cache_(adapter_node_.CreateChild(PeerCache::kInspectNodeName)),
       gatt_(gatt),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
