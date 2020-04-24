@@ -269,7 +269,7 @@ Status KeyValueStore::InitializeMetadata() {
     bool other_errors = error_detected_;
     error_detected_ = true;
 
-    if (!other_errors && entry_copies_missing == size()) {
+    if (!other_errors && entry_copies_missing == entry_cache_.total_entries()) {
       INF("KVS configuration changed to redundancy of %zu total copies per key",
           redundancy());
       return Status::OUT_OF_RANGE;

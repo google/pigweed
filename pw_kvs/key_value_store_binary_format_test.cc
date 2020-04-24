@@ -60,7 +60,7 @@ class ChecksumFunction final : public ChecksumAlgorithm {
 ChecksumFunction<uint32_t> checksum(SimpleChecksum);
 
 // Returns a buffer containing the necessary padding for an entry.
-template <size_t kAlignmentBytes, size_t kKeyLength, size_t kValueSize>
+template <size_t kAlignmentBytes, size_t kKeyLength, size_t kValueSize = 0>
 constexpr auto EntryPadding() {
   constexpr size_t content =
       sizeof(internal::EntryHeader) + kKeyLength + kValueSize;
@@ -87,6 +87,34 @@ constexpr auto MakeValidEntry(uint32_t magic,
                       ByteStr(key),
                       span(value),
                       EntryPadding<kAlignmentBytes, kKeyLength, kValueSize>());
+
+  // Calculate the checksum
+  uint32_t checksum = kChecksum(data, 0);
+  for (size_t i = 0; i < sizeof(checksum); ++i) {
+    data[4 + i] = byte(checksum & 0xff);
+    checksum >>= 8;
+  }
+
+  return data;
+}
+
+// Creates a buffer containing a deleted entry at compile time.
+template <uint32_t (*kChecksum)(span<const byte>, uint32_t) = &SimpleChecksum,
+          size_t kAlignmentBytes = sizeof(internal::EntryHeader),
+          size_t kKeyLengthWithNull>
+constexpr auto MakeDeletedEntry(uint32_t magic,
+                                uint32_t id,
+                                const char (&key)[kKeyLengthWithNull]) {
+  constexpr size_t kKeyLength = kKeyLengthWithNull - 1;
+
+  auto data = AsBytes(magic,
+                      uint32_t(0),
+                      uint8_t(kAlignmentBytes / 16 - 1),
+                      uint8_t(kKeyLength),
+                      uint16_t(0xFFFF),
+                      id,
+                      ByteStr(key),
+                      EntryPadding<kAlignmentBytes, kKeyLength>());
 
   // Calculate the checksum
   uint32_t checksum = kChecksum(data, 0);
@@ -581,10 +609,13 @@ constexpr uint32_t kNoChecksumMagic = 0x6000061e;
 constexpr auto kNoChecksumEntry =
     MakeValidEntry<NoChecksum>(kNoChecksumMagic, 64, "kee", ByteStr("O_o"));
 
+constexpr auto kDeletedEntry =
+    MakeDeletedEntry<AltChecksum>(kAltMagic, 128, "gone");
+
 class InitializedRedundantMultiMagicKvs : public ::testing::Test {
  protected:
-  static constexpr auto kInitialContents =
-      AsBytes(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
+  static constexpr auto kInitialContents = AsBytes(
+      kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3, kDeletedEntry);
 
   InitializedRedundantMultiMagicKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),
@@ -628,9 +659,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, AllEntriesArePresent) {
 
 TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   auto stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
@@ -645,26 +676,26 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfFirstSector) {
   EXPECT_EQ(true, kvs_.error_detected());
 
   stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
-  EXPECT_EQ(stats.reclaimable_bytes, 352u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 320u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (192 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
   stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
-  EXPECT_EQ(stats.missing_redundant_entries_recovered, 5u);
+  EXPECT_EQ(stats.missing_redundant_entries_recovered, 6u);
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
   auto stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
@@ -680,9 +711,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
 
   EXPECT_EQ(false, kvs_.Init());
   stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (160 * kvs_.redundancy()));
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
@@ -702,9 +733,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleReadErrors) {
   EXPECT_EQ(true, kvs_.error_detected());
 
   auto stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
-  EXPECT_EQ(stats.reclaimable_bytes, 352u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (160 * (kvs_.redundancy() - 1)));
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 320u);
+  EXPECT_EQ(stats.writable_bytes, 512u * 2 - (192 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
@@ -717,10 +748,10 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   EXPECT_EQ(true, kvs_.error_detected());
 
   auto stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, 32 + (160u * kvs_.redundancy()));
-  EXPECT_EQ(stats.reclaimable_bytes, 352u);
+  EXPECT_EQ(stats.in_use_bytes, 32 + (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 320u);
   EXPECT_EQ(stats.writable_bytes,
-            512u * 2 - 32 - (160 * (kvs_.redundancy() - 1)));
+            512u * 2 - 32 - (192 * (kvs_.redundancy() - 1)));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
@@ -730,9 +761,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
 
   EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
   stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.in_use_bytes, (224u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
-  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (192 * kvs_.redundancy()));
+  EXPECT_EQ(stats.writable_bytes, 512u * 3 - (224 * kvs_.redundancy()));
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
@@ -758,8 +789,8 @@ TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
   EXPECT_EQ(true, kvs_.error_detected());
 
   auto stats = kvs_.GetStorageStats();
-  EXPECT_EQ(stats.in_use_bytes, (160u * kvs_.redundancy()));
-  EXPECT_EQ(stats.reclaimable_bytes, 2 * 352u);
+  EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
+  EXPECT_EQ(stats.reclaimable_bytes, 2 * 320u);
   EXPECT_EQ(stats.writable_bytes, 512u);
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
@@ -769,7 +800,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
   EXPECT_EQ(Status::OK, kvs_.Put("new key", ByteStr("abcd?")));
 
   constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 65, "new key", ByteStr("abcd?"));
+      MakeValidEntry(kMagic, 129, "new key", ByteStr("abcd?"));
   EXPECT_EQ(0,
             std::memcmp(kNewEntry.data(),
                         flash_.buffer().data() + kInitialContents.size(),
@@ -781,7 +812,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
   EXPECT_EQ(Status::OK, kvs_.Put("A Key", ByteStr("New value!")));
 
   constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 65, "A Key", ByteStr("New value!"));
+      MakeValidEntry(kMagic, 129, "A Key", ByteStr("New value!"));
   EXPECT_EQ(0,
             std::memcmp(kNewEntry.data(),
                         flash_.buffer().data() + kInitialContents.size(),
