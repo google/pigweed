@@ -1632,6 +1632,247 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInter
   EXPECT_EQ(0u, hci_update_conn_param_count);
 }
 
+// Based on PTS L2CAP/LE/CPU/BV-01-C, in which the LE feature mask indicates support for the
+// Connection Parameter Request Procedure, but sending the request results in a
+// kUnsupportedRemoteFeature event status. PTS expects the host to retry with a L2cap connection
+// parameter request.
+//
+// Test that this behavior is followed for 2 concurrent connections in order to ensure correct
+// command/event handling.
+TEST_F(GAP_LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2capRequest) {
+  auto peer0 = std::make_unique<FakePeer>(kAddress0);
+  auto peer1 = std::make_unique<FakePeer>(kAddress1);
+
+  // Connection Parameter Update procedure supported by controller.
+  constexpr hci::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+
+  peer0->set_le_features(kLEFeatures);
+  peer1->set_le_features(kLEFeatures);
+
+  // Simulate host rejection by causing FakeController to set LE Connection Update Complete status
+  // to kUnsupportedRemoteFeature, as PTS does.
+  peer0->set_supports_ll_conn_update_procedure(false);
+  peer1->set_supports_ll_conn_update_procedure(false);
+
+  test_device()->AddPeer(std::move(peer0));
+  test_device()->AddPeer(std::move(peer1));
+
+  // First create fake incoming connections with local host as peripheral.
+  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+  auto link0 = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link0);
+
+  LowEnergyConnectionRefPtr conn_ref0;
+  std::optional<hci::Status> status0;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link0), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status0 = cb_status;
+        conn_ref0 = std::move(conn);
+      });
+
+  test_device()->ConnectLowEnergy(kAddress1, hci::ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+  auto link1 = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link1);
+
+  LowEnergyConnectionRefPtr conn_ref1;
+  std::optional<hci::Status> status1;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link1), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status1 = cb_status;
+        conn_ref1 = std::move(conn);
+      });
+
+  size_t l2cap_conn_param_update_count = 0;
+  size_t hci_update_conn_param_count = 0;
+
+  fake_l2cap()->set_connection_parameter_update_request_responder([&](auto handle, auto params) {
+    switch (l2cap_conn_param_update_count) {
+      case 0:
+        EXPECT_EQ(handle, conn_ref0->handle());
+        break;
+      case 1:
+        EXPECT_EQ(handle, conn_ref1->handle());
+        break;
+      default:
+        ADD_FAILURE();
+    }
+
+    // connection update commands should be sent before l2cap requests
+    EXPECT_EQ(2u, hci_update_conn_param_count);
+
+    l2cap_conn_param_update_count++;
+    return true;
+  });
+
+  test_device()->set_le_connection_parameters_callback([&](auto address, auto params) {
+    switch (hci_update_conn_param_count) {
+      case 0:
+        EXPECT_EQ(address, kAddress0);
+        break;
+      case 1:
+        EXPECT_EQ(address, kAddress1);
+        break;
+      default:
+        ADD_FAILURE();
+    }
+
+    // l2cap requests should not be sent until after failed HCI connection update commands
+    EXPECT_EQ(0u, l2cap_conn_param_update_count);
+
+    hci_update_conn_param_count++;
+  });
+
+  RunLoopFor(kLEConnectionPausePeripheral);
+  ASSERT_TRUE(status0.has_value());
+  EXPECT_TRUE(status0->is_success());
+  ASSERT_TRUE(conn_ref0);
+  EXPECT_TRUE(conn_ref0->active());
+
+  ASSERT_TRUE(status1.has_value());
+  EXPECT_TRUE(status1->is_success());
+  ASSERT_TRUE(conn_ref1);
+  EXPECT_TRUE(conn_ref1->active());
+
+  EXPECT_EQ(2u, hci_update_conn_param_count);
+  EXPECT_EQ(2u, l2cap_conn_param_update_count);
+
+  // l2cap requests should not be sent on subsequent events
+  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_ref1->handle(),
+                                                        hci::LEConnectionParameters(),
+                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, l2cap_conn_param_update_count);
+}
+
+// Based on PTS L2CAP/LE/CPU/BV-01-C. When run twice, the controller caches the LE Connection Update
+// Complete kUnsupportedRemoteFeature status and returns it directly in future LE Connection Update
+// Command Status events. The host should retry with the L2CAP Connection Parameter Update Request
+// after receiving this kUnsupportedRemoteFeature command status.
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       PeripheralSendsL2capConnParamReqAfterConnUpdateCommandStatusUnsupportedRemoteFeature) {
+  auto peer = std::make_unique<FakePeer>(kAddress0);
+
+  // Connection Parameter Update procedure supported by controller.
+  constexpr hci::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  peer->set_le_features(kLEFeatures);
+  test_device()->AddPeer(std::move(peer));
+
+  // First create a fake incoming connection with local host as peripheral.
+  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+
+  size_t l2cap_conn_param_update_count = 0;
+  size_t hci_update_conn_param_count = 0;
+
+  fake_l2cap()->set_connection_parameter_update_request_responder([&](auto handle, auto params) {
+    l2cap_conn_param_update_count++;
+    return true;
+  });
+
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, auto params) { hci_update_conn_param_count++; });
+
+  test_device()->SetDefaultCommandStatus(hci::kLEConnectionUpdate,
+                                         hci::StatusCode::kUnsupportedRemoteFeature);
+
+  RunLoopFor(kLEConnectionPausePeripheral);
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(0u, hci_update_conn_param_count);
+  EXPECT_EQ(1u, l2cap_conn_param_update_count);
+
+  test_device()->ClearDefaultCommandStatus(hci::kLEConnectionUpdate);
+
+  // l2cap request should not be called on subsequent events
+  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_ref->handle(),
+                                                        hci::LEConnectionParameters(),
+                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, l2cap_conn_param_update_count);
+}
+
+// A peripheral should not attempt to handle the next LE Connection Update Complete event if the
+// status of the LE Connection Update command is not success.
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       PeripheralDoesNotSendL2capConnParamReqAfterConnUpdateCommandStatusError) {
+  auto peer = std::make_unique<FakePeer>(kAddress0);
+
+  // Connection Parameter Update procedure supported by controller.
+  constexpr hci::LESupportedFeatures kLEFeatures{
+      static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};
+  peer->set_le_features(kLEFeatures);
+  test_device()->AddPeer(std::move(peer));
+
+  // First create a fake incoming connection with local host as peripheral.
+  test_device()->ConnectLowEnergy(kAddress0, hci::ConnectionRole::kSlave);
+  RunLoopUntilIdle();
+
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  std::optional<hci::Status> status;
+  conn_mgr()->RegisterRemoteInitiatedLink(
+      std::move(link), BondableMode::Bondable,
+      [&](hci::Status cb_status, LowEnergyConnectionRefPtr conn) {
+        status = cb_status;
+        conn_ref = std::move(conn);
+      });
+
+  size_t l2cap_conn_param_update_count = 0;
+  size_t hci_update_conn_param_count = 0;
+
+  fake_l2cap()->set_connection_parameter_update_request_responder([&](auto handle, auto params) {
+    l2cap_conn_param_update_count++;
+    return true;
+  });
+
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, auto params) { hci_update_conn_param_count++; });
+
+  test_device()->SetDefaultCommandStatus(hci::kLEConnectionUpdate,
+                                         hci::StatusCode::kUnspecifiedError);
+
+  RunLoopFor(kLEConnectionPausePeripheral);
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_success());
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+  EXPECT_EQ(0u, hci_update_conn_param_count);
+  EXPECT_EQ(0u, l2cap_conn_param_update_count);
+
+  test_device()->ClearDefaultCommandStatus(hci::kLEConnectionUpdate);
+
+  // l2cap request should not be called on subsequent events
+  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_ref->handle(),
+                                                        hci::LEConnectionParameters(),
+                                                        hci::StatusCode::kUnsupportedRemoteFeature);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, l2cap_conn_param_update_count);
+}
+
 TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
   constexpr hci::LESupportedFeatures kLEFeatures{
       static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure)};

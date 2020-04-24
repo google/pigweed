@@ -328,9 +328,14 @@ class LowEnergyConnectionManager final {
                                const hci::LEPreferredConnectionParameters& params);
 
   // As an LE peripheral, request that the connection parameters |params| be used on the given
-  // logical link |link| with peer |peer_id|. This may send an HCI LE Connection Update command or
-  // an L2CAP Connection Parameter Update Request depending on what the local and remote controllers
-  // and hosts support. Interrogation must have completed before this may be called.
+  // connection |conn| with peer |peer_id|. This may send an HCI LE Connection Update command or an
+  // L2CAP Connection Parameter Update Request depending on what the local and remote controllers
+  // support.
+  //
+  // If an HCI LE Connection Update command fails with status kUnsupportedRemoteFeature, the update
+  // will be retried with an L2CAP Connection Parameter Update Request.
+  //
+  // Interrogation must have completed before this may be called.
   void RequestConnectionParameterUpdate(PeerId peer_id, const internal::LowEnergyConnection& conn,
                                         const hci::LEPreferredConnectionParameters& params);
 
@@ -341,14 +346,18 @@ class LowEnergyConnectionManager final {
   // The link layer may modify the preferred parameters |params| before initiating the Connection
   // Parameters Request Link Layer Control Procedure (Core Spec v5.2, Vol 6, Part B, Sec 5.1.7).
   //
+  // If non-null, |status_cb| will be called when the HCI Command Status event is received.
+  //
   // The HCI LE Connection Update Complete event will be generated after the parameters have been
   // applied or if the update fails, and will indicate the (possibly modified) parameter values.
   //
   // NOTE: If the local host is an LE peripheral, then the local controller and the remote
   // LE central must have indicated support for this procedure in the LE feature mask. Otherwise,
   // L2capRequestConnectionParameterUpdate(...) should be used intead.
+  using StatusCallback = fit::callback<void(hci::Status)>;
   void UpdateConnectionParams(hci::ConnectionHandle handle,
-                              const hci::LEPreferredConnectionParameters& params);
+                              const hci::LEPreferredConnectionParameters& params,
+                              StatusCallback status_cb = nullptr);
 
   // As an LE peripheral, send an L2CAP Connection Parameter Update Request requesting |params| on
   // the LE signaling channel of the given logical link |handle|.
@@ -399,6 +408,12 @@ class LowEnergyConnectionManager final {
 
   // Event handler ID for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventHandlerId conn_update_cmpl_handler_id_;
+
+  // Called with the handle and status of the next HCI LE Connection Update Complete event.
+  // The HCI LE Connection Update command does not have its own complete event handler because the
+  // HCI LE Connection Complete event can be generated for other reasons.
+  fit::callback<void(hci::ConnectionHandle, hci::StatusCode)>
+      le_conn_update_complete_command_callback_;
 
   // Callbacks used by unit tests to observe connection state events.
   ConnectionParametersCallback test_conn_params_cb_;

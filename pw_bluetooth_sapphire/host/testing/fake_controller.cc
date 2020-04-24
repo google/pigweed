@@ -184,6 +184,15 @@ FakeController::FakeController()
 
 FakeController::~FakeController() { Stop(); }
 
+void FakeController::SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status) {
+  ZX_ASSERT(status != hci::StatusCode::kSuccess);
+  default_command_status_map_[opcode] = status;
+}
+
+void FakeController::ClearDefaultCommandStatus(hci::OpCode opcode) {
+  default_command_status_map_.erase(opcode);
+}
+
 void FakeController::SetDefaultResponseStatus(hci::OpCode opcode, hci::StatusCode status) {
   ZX_DEBUG_ASSERT(status != hci::StatusCode::kSuccess);
   default_status_map_[opcode] = status;
@@ -403,6 +412,20 @@ void FakeController::L2CAPConnectionParameterUpdate(
   });
 }
 
+void FakeController::SendLEConnectionUpdateCompleteSubevent(
+    hci::ConnectionHandle handle, const hci::LEConnectionParameters& params,
+    hci::StatusCode status) {
+  hci::LEConnectionUpdateCompleteSubeventParams subevent;
+  subevent.status = status;
+  subevent.connection_handle = htole16(handle);
+  subevent.conn_interval = htole16(params.interval());
+  subevent.conn_latency = htole16(params.latency());
+  subevent.supervision_timeout = htole16(params.supervision_timeout());
+
+  SendLEMetaEvent(hci::kLEConnectionUpdateCompleteSubeventCode,
+                  BufferView(&subevent, sizeof(subevent)));
+}
+
 void FakeController::Disconnect(const DeviceAddress& addr) {
   async::PostTask(dispatcher(), [addr, this] {
     FakePeer* peer = FindPeer(addr);
@@ -437,6 +460,16 @@ void FakeController::SendEncryptionChangeEvent(hci::ConnectionHandle handle, hci
   params.connection_handle = htole16(handle);
   params.encryption_enabled = encryption_enabled;
   SendEvent(hci::kEncryptionChangeEventCode, BufferView(&params, sizeof(params)));
+}
+
+bool FakeController::MaybeRespondWithDefaultCommandStatus(hci::OpCode opcode) {
+  auto iter = default_command_status_map_.find(opcode);
+  if (iter == default_command_status_map_.end()) {
+    return false;
+  }
+
+  RespondWithCommandStatus(opcode, iter->second);
+  return true;
 }
 
 bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
@@ -756,11 +789,19 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   peer->set_le_params(conn_params);
 
   hci::LEConnectionUpdateCompleteSubeventParams reply;
-  reply.status = hci::StatusCode::kSuccess;
-  reply.connection_handle = params.connection_handle;
-  reply.conn_interval = htole16(conn_params.interval());
-  reply.conn_latency = params.conn_latency;
-  reply.supervision_timeout = params.supervision_timeout;
+  if (peer->supports_ll_conn_update_procedure()) {
+    reply.status = hci::StatusCode::kSuccess;
+    reply.connection_handle = params.connection_handle;
+    reply.conn_interval = htole16(conn_params.interval());
+    reply.conn_latency = params.conn_latency;
+    reply.supervision_timeout = params.supervision_timeout;
+  } else {
+    reply.status = hci::StatusCode::kUnsupportedRemoteFeature;
+    reply.connection_handle = params.connection_handle;
+    reply.conn_interval = 0;
+    reply.conn_latency = 0;
+    reply.supervision_timeout = 0;
+  }
 
   SendLEMetaEvent(hci::kLEConnectionUpdateCompleteSubeventCode, BufferView(&reply, sizeof(reply)));
 
@@ -1042,8 +1083,13 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
 
   bt_log(DEBUG, "fake-hci", "received command packet with opcode: %#.4x", opcode);
 
-  if (MaybeRespondWithDefaultStatus(opcode))
+  if (MaybeRespondWithDefaultCommandStatus(opcode)) {
     return;
+  }
+
+  if (MaybeRespondWithDefaultStatus(opcode)) {
+    return;
+  }
 
   // TODO(NET-825): Validate size of payload to be the correct length below.
   switch (opcode) {

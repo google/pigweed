@@ -100,6 +100,11 @@ class FakePeer {
   const hci::LEConnectionParameters& le_params() const { return le_params_; }
   void set_le_params(const hci::LEConnectionParameters& value) { le_params_ = value; }
 
+  bool supports_ll_conn_update_procedure() const { return supports_ll_conn_update_procedure_; }
+  void set_supports_ll_conn_update_procedure(bool supports) {
+    supports_ll_conn_update_procedure_ = supports;
+  }
+
   hci::LESupportedFeatures le_features() const { return le_features_; }
   void set_le_features(hci::LESupportedFeatures le_features) { le_features_ = le_features; }
 
@@ -157,6 +162,10 @@ class FakePeer {
   bool force_pending_connect_;  // Causes connection requests to remain pending.
 
   hci::LEConnectionParameters le_params_;
+
+  // If false, FakeController will send LE Connection Update complete events with status
+  // kRemoteFeatureNotSupported.
+  bool supports_ll_conn_update_procedure_;
 
   hci::LESupportedFeatures le_features_;
 

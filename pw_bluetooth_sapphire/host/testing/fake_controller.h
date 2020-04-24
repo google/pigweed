@@ -127,8 +127,12 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Resets the controller settings.
   void set_settings(const Settings& settings) { settings_ = settings; }
 
+  // Always respond to the given command |opcode| with an Command Status event specifying |status|.
+  void SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status);
+  void ClearDefaultCommandStatus(hci::OpCode opcode);
+
   // Tells the FakeController to always respond to the given command opcode with
-  // the given HCI status code.
+  // a Command Complete event specifying the given HCI status code.
   void SetDefaultResponseStatus(hci::OpCode opcode, hci::StatusCode status);
   void ClearDefaultResponseStatus(hci::OpCode opcode);
 
@@ -230,6 +234,12 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   void L2CAPConnectionParameterUpdate(const DeviceAddress& addr,
                                       const hci::LEPreferredConnectionParameters& params);
 
+  // Sends an LE Meta Event Connection Update Complete Subevent. Used to simulate updates initiated
+  // by LE central or spontaneously by the controller.
+  void SendLEConnectionUpdateCompleteSubevent(hci::ConnectionHandle handle,
+                                              const hci::LEConnectionParameters& params,
+                                              hci::StatusCode status = hci::StatusCode::kSuccess);
+
   // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
   void Disconnect(const DeviceAddress& addr);
@@ -283,8 +293,12 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // and using the given data as the parameter payload.
   void RespondWithCommandStatus(hci::OpCode opcode, hci::StatusCode status);
 
+  // If a default Command Status event status has been set for the given |opcode|, send a Command
+  // Status event and returns true.
+  bool MaybeRespondWithDefaultCommandStatus(hci::OpCode opcode);
+
   // If a default status has been configured for the given opcode, sends back an
-  // error response and returns true. Returns false if no response was set.
+  // error Command Complete event and returns true. Returns false if no response was set.
   bool MaybeRespondWithDefaultStatus(hci::OpCode opcode);
 
   // Sends Inquiry Response reports for known BR/EDR devices.
@@ -427,7 +441,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // If negative, no limit has been set.
   int16_t inquiry_num_responses_left_;
 
-  // Used to setup default status responses (for simulating errors)
+  // Used to setup default Command Status event responses.
+  std::unordered_map<hci::OpCode, hci::StatusCode> default_command_status_map_;
+
+  // Used to setup default Command Complete event status responses (for simulating errors)
   std::unordered_map<hci::OpCode, hci::StatusCode> default_status_map_;
 
   // The set of fake peers that are visible.
