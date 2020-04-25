@@ -42,10 +42,12 @@ pragma_once function for an example.
 """
 
 import argparse
+import collections
 from collections import Counter, defaultdict
 import contextlib
 import dataclasses
 import enum
+import itertools
 import logging
 import re
 import os
@@ -54,8 +56,8 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Any, Callable, Dict, Iterable, List, NamedTuple, Optional
-from typing import Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, NamedTuple
+from typing import Optional, Pattern, Sequence, Tuple, Union
 from inspect import signature
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -120,17 +122,14 @@ def git_diff_names(commit: str = 'HEAD',
     ]
 
 
-def list_git_files(
-        commit: Optional[str] = None,
-        paths: Sequence[PathOrStr] = (),
-        exclude: Sequence = (),
-        repo: PathOrStr = '.',
-) -> List[Path]:
+def list_git_files(commit: Optional[str] = None,
+                   paths: Sequence[PathOrStr] = (),
+                   exclude: Sequence[Pattern[str]] = (),
+                   repo: PathOrStr = '.') -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
     This function may only be called if repo is or is in a Git repository.
     """
-
     if commit:
         files = git_diff_names(commit, paths, repo=repo)
     else:
@@ -139,6 +138,36 @@ def list_git_files(
         set(
             Path(path) for path in files
             if not any(exp.search(path) for exp in exclude)))
+
+
+def _describe_constraints(commit: Optional[str],
+                          pathspecs: Sequence[PathOrStr],
+                          exclude: Sequence[Pattern]) -> Iterator[str]:
+    if commit:
+        yield f'that have changed since {commit}'
+
+    if pathspecs:
+        paths_str = ', '.join(str(p) for p in pathspecs)
+        yield f'that match {plural(pathspecs, "pathspec")} ({paths_str})'
+
+    if exclude:
+        yield (f'that do not match {plural(exclude, "pattern")} (' +
+               ', '.join(p.pattern for p in exclude) + ')')
+
+
+def describe_files_in_repo(repo_root: Path, commit: Optional[str],
+                           pathspecs: Sequence[PathOrStr],
+                           exclude: Sequence[Pattern]) -> str:
+    """Completes 'Doing something to ...' for a set of files in a Git repo."""
+    constraints = list(_describe_constraints(commit, pathspecs, exclude))
+    if not constraints:
+        return f'all files in the {repo_root.name} repo'
+
+    msg = f'files in the {repo_root.name} repo'
+    if len(constraints) == 1:
+        return f'{msg} {constraints[0]}'
+
+    return msg + ''.join(f'\n    - {line}' for line in constraints)
 
 
 def is_git_repo(path='.') -> bool:
@@ -303,14 +332,20 @@ class Presubmit:
         self._output_directory = output_directory
         self._paths = paths
 
-    def run(self, full_program: Sequence, keep_going: bool = False) -> bool:
+    def run(self,
+            full_program: Sequence[Callable],
+            name: str = '',
+            keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
+        title = f'{name} presubmit checks' if name else 'presubmit checks'
         program = _apply_filters(full_program, self._paths)
 
-        print(_title(f'Presubmit checks for {self._repository_root.name}'))
-        _LOG.info('Running %d of %s on %s in %s', len(program),
-                  plural(full_program, 'check'), plural(self._paths, 'file'),
+        _LOG.debug('Running %s for %s', title, self._repository_root.name)
+        print(_title(f'{self._repository_root.name}: {title}'))
+
+        _LOG.info('%d of %d checks apply to %s in %s', len(program),
+                  len(full_program), plural(self._paths, 'file'),
                   self._repository_root)
 
         print()
@@ -402,7 +437,7 @@ class Presubmit:
 
 
 def _apply_filters(
-        program: Sequence,
+        program: Sequence[Callable],
         paths: Sequence[Path]) -> List[Tuple['_Check', Sequence[Path]]]:
     """Returns a list of (check, paths_to_check) for checks that should run."""
     checks = [c if isinstance(c, _Check) else _Check(c) for c in program]
@@ -484,10 +519,11 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def run_presubmit(program: Sequence[Callable],
+                  name: str = '',
                   base: Optional[str] = None,
                   paths: Sequence[PathOrStr] = (),
-                  exclude: Sequence = (),
-                  repository: PathOrStr = '.',
+                  exclude: Sequence[Pattern] = (),
+                  repo_path: PathOrStr = '.',
                   output_directory: Optional[PathOrStr] = None,
                   keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
@@ -497,10 +533,11 @@ def run_presubmit(program: Sequence[Callable],
 
     Args:
         program: list of presubmit check functions to run
+        name: name to use to refer to this presubmit check run
         base: optional base Git commit to list files against
         paths: optional list of paths to run the presubmit checks against
         exclude: regular expressions of paths to exclude from checks
-        repository: git repository to check
+        repo_path: path in the git repository to check
         output_directory: where to place output files
         keep_going: whether to continue running checks if an error occurs
 
@@ -508,16 +545,15 @@ def run_presubmit(program: Sequence[Callable],
         True if all presubmit checks succeeded
     """
 
-    if not is_git_repo(repository):
+    if not is_git_repo(repo_path):
         _LOG.critical('Presubmit checks must be run from a Git repo')
         return False
 
-    files = list_git_files(base, paths, exclude, repository)
-    root = git_repo_path(repo=repository)
+    files = list_git_files(base, paths, exclude, repo_path)
+    root = git_repo_path(repo=repo_path)
 
-    if not root.samefile(repository):
-        _LOG.info('Checking files in the %s subdirectory of the %s repository',
-                  Path.cwd().relative_to(root), root)
+    _LOG.info('Checking %s', describe_files_in_repo(root, base, paths,
+                                                    exclude))
 
     files = [path.relative_to(root) for path in files]
 
@@ -529,7 +565,7 @@ def run_presubmit(program: Sequence[Callable],
         output_directory=Path(output_directory),
         paths=files,
     )
-    return presubmit.run(program, keep_going)
+    return presubmit.run(program, name, keep_going)
 
 
 def parse_args_and_run_presubmit(
@@ -578,9 +614,11 @@ class _Check:
     It also supports filtering the paths passed to the presubmit check.
     """
     def __init__(self,
-                 check_function: Callable[[PresubmitContext], None],
+                 check_function: Callable,
                  path_filter: _PathFilter = _PathFilter(),
                  always_run: bool = True):
+        _ensure_is_valid_presubmit_check_function(check_function)
+
         self._check: Callable = check_function
         self.filter: _PathFilter = path_filter
         self.always_run: bool = always_run
@@ -629,6 +667,24 @@ class _Check:
         return _Result.PASS
 
 
+def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
+    """Checks if a Callable can be used as a presubmit check."""
+    try:
+        params = signature(check).parameters
+    except (TypeError, ValueError):
+        raise TypeError('Presubmit checks must be callable, but '
+                        f'{check!r} is a {type(check).__name__}')
+
+    required_args = [p for p in params.values() if p.default == p.empty]
+    if len(required_args) != 1:
+        raise TypeError(
+            f'Presubmit check functions must have exactly one required '
+            f'positional argument (the PresubmitContext), but '
+            f'{check.__name__} has {len(required_args)} required arguments' +
+            (f' ({", ".join(a.name for a in required_args)})'
+             if required_args else ''))
+
+
 def _make_tuple(value: Iterable[str]) -> Tuple[str, ...]:
     return tuple([value] if isinstance(value, str) else value)
 
@@ -646,11 +702,6 @@ def filter_paths(endswith: Iterable[str] = (''),
         a wrapped version of the presubmit function
     """
     def filter_paths_for_function(function: Callable):
-        if len(signature(function).parameters) != 1:
-            raise TypeError('Functions wrapped with @filter_paths must take '
-                            f'exactly one argument: {function.__name__} takes '
-                            f'{len(signature(function).parameters)}.')
-
         return _Check(function,
                       _PathFilter(_make_tuple(endswith), _make_tuple(exclude)),
                       always_run=always_run)
@@ -702,6 +753,50 @@ def pragma_once(ctx: PresubmitContext) -> None:
                     break
             else:
                 raise PresubmitFailure('#pragma once is missing!', path=path)
+
+
+def flatten(*items) -> Iterator:
+    """Yields items from a series of items and nested iterables.
+
+    This function is used to flatten arbitrarily nested lists. str and bytes
+    are kept intact.
+    """
+
+    for item in items:
+        if isinstance(item, collections.abc.Iterable) and not isinstance(
+                item, (str, bytes)):
+            yield from flatten(*item)
+        else:
+            yield item
+
+
+class Programs(collections.abc.Mapping):
+    """A mapping of presubmit check programs.
+
+    Use is optional. Helpful when managing multiple presubmit check programs.
+    """
+    def __init__(self, **programs: Sequence):
+        """Initializes a name: program mapping from the provided keyword args.
+
+        A program is a sequence of presubmit check functions. The sequence may
+        contain nested sequences, which are flattened.
+        """
+        self._programs: Dict[str, tuple] = {
+            name: tuple(flatten(checks))
+            for name, checks in programs.items()
+        }
+
+    def all_steps(self) -> Dict[str, Callable]:
+        return {c.__name__: c for c in itertools.chain(*self.values())}
+
+    def __getitem__(self, item: str) -> tuple:
+        return self._programs[item]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._programs)
+
+    def __len__(self) -> int:
+        return len(self._programs)
 
 
 if __name__ == '__main__':

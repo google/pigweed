@@ -16,14 +16,13 @@
 """Runs the local presubmit checks for the Pigweed repository."""
 
 import argparse
-import itertools
 import logging
 import os
 from pathlib import Path
 import re
 import shutil
 import sys
-from typing import Callable, Dict, Sequence, Tuple
+from typing import Callable, Sequence
 
 try:
     import pw_presubmit
@@ -35,8 +34,9 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import build, environment, format_code, python_checks
-from pw_presubmit.install_hook import install_hook
 from pw_presubmit import call, filter_paths, PresubmitContext, PresubmitFailure
+from pw_presubmit import Programs
+from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def init_virtualenv(ctx: PresubmitContext):
 
 
 #
-# GN presubmit checks
+# Build presubmit checks
 #
 _CLANG_GEN_ARGS = build.gn_args(
     pw_target_config='"//targets/host/target_config.gni"',
@@ -95,16 +95,6 @@ def gn_docs_build(ctx: PresubmitContext):
 _QEMU_GEN_ARGS = build.gn_args(
     pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
 
-GN: Tuple[Callable, ...] = (
-    gn_clang_build,
-    gn_arm_build,
-    gn_docs_build,
-)
-
-# On Mac OS, 'gcc' is a symlink to 'clang', so skip GCC host builds on Mac.
-if sys.platform != 'darwin':
-    GN = GN + (gn_gcc_build, )
-
 
 def gn_host_tools(ctx: PresubmitContext):
     build.gn_gen(ctx.repo_root,
@@ -115,9 +105,37 @@ def gn_host_tools(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'host_tools')
 
 
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
+                        'CMakeLists.txt'))
+def cmake_tests(ctx: PresubmitContext):
+    build.cmake(ctx.repo_root, ctx.output_dir, env=build.env_with_clang_vars())
+    build.ninja(ctx.output_dir, 'pw_run_tests.modules')
+
+
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
+def bazel_test(ctx: PresubmitContext):
+    try:
+        call('bazel',
+             'test',
+             '//...',
+             '--verbose_failures',
+             '--verbose_explanations',
+             '--worker_verbose',
+             '--symlink_prefix',
+             ctx.output_dir.joinpath('bazel-'),
+             cwd=ctx.repo_root,
+             env=build.env_with_clang_vars())
+    except:
+        _LOG.info('If the Bazel build inexplicably fails while the '
+                  'other builds are passing, try deleting the Bazel cache:\n'
+                  '    rm -rf ~/.cache/bazel')
+        raise
+
+
 #
-# C++ presubmit checks
+# General presubmit checks
 #
+
 # TODO(pwbug/45) Probably want additional checks.
 _CLANG_TIDY_CHECKS = ('modernize-use-override', )
 
@@ -148,66 +166,6 @@ def clang_tidy(ctx: PresubmitContext):
         *ctx.paths)
 
 
-CC: Tuple[Callable, ...] = (
-    pw_presubmit.pragma_once,
-    # TODO(pwbug/45): Enable clang-tidy when it passes.
-    # clang_tidy,
-)
-
-
-#
-# CMake presubmit checks
-#
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
-                        'CMakeLists.txt'))
-def cmake_tests(ctx: PresubmitContext):
-    build.cmake(ctx.repo_root, ctx.output_dir, env=build.env_with_clang_vars())
-    build.ninja(ctx.output_dir, 'pw_run_tests.modules')
-
-
-CMAKE: Tuple[Callable, ...] = ()
-
-# TODO(pwbug/141): Re-enable this after we have fixed the CMake toolchain issue
-# on Mac. The problem is that all clang++ invocations need the two extra
-# flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
-if sys.platform != 'darwin':
-    CMAKE = (cmake_tests, )
-
-
-#
-# Bazel presubmit checks
-#
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
-def bazel_test(ctx: PresubmitContext):
-    try:
-        call('bazel',
-             'test',
-             '//...',
-             '--verbose_failures',
-             '--verbose_explanations',
-             '--worker_verbose',
-             '--symlink_prefix',
-             ctx.output_dir.joinpath('bazel-'),
-             cwd=ctx.repo_root,
-             env=build.env_with_clang_vars())
-    except:
-        _LOG.info('If the Bazel build inexplicably fails while the '
-                  'other builds are passing, try deleting the Bazel cache:\n'
-                  '    rm -rf ~/.cache/bazel')
-        raise
-
-
-BAZEL: Tuple[Callable, ...] = ()
-
-# TODO(pwbug/141): Re-enable this after we have fixed the Bazel toolchain issue
-# on Mac. The problem is that all clang++ invocations need the two extra flags:
-# "-nostdc++" and "${clang_prefix}../lib/libc++.a".
-if sys.platform != 'darwin':
-    BAZEL = (bazel_test, )
-
-#
-# Code format presubmit checks
-#
 COPYRIGHT_FIRST_LINE = re.compile(
     r'^(#|//| \*|REM|::) Copyright 20\d\d The Pigweed Authors$')
 
@@ -295,12 +253,6 @@ def copyright_notice(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-CODE_FORMAT: Tuple[Callable, ...] = (
-    copyright_notice, *format_code.PRESUBMIT_CHECKS)  # yapf: disable
-
-#
-# General presubmit checks
-#
 _SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
 
 
@@ -331,9 +283,6 @@ def source_is_in_build_files(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-GENERAL: Tuple[Callable, ...] = (source_is_in_build_files, )
-
-
 def build_env_setup(ctx: PresubmitContext):
     if 'PW_CARGO_SETUP' not in os.environ:
         _LOG.warning(
@@ -351,51 +300,54 @@ def build_env_setup(ctx: PresubmitContext):
     call('pyoxidizer', 'build', cwd=ctx.output_dir)
 
 
-BUILD_ENV_SETUP = (build_env_setup, )
+#
+# Presubmit check programs
+#
 
-
-BROKEN: Tuple[Callable, ...] = (
+BROKEN = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
     # Host tools are not broken but take long on slow internet connections.
     # They're still run in CQ, but not in 'pw presubmit'.
     gn_host_tools,
-)  # yapf: disable
-
-#
-# Presubmit check programs
-#
-QUICK_PRESUBMIT: Tuple[Callable, ...] = (
-    init_cipd,
-    init_virtualenv,
-    *CODE_FORMAT,
-    *GENERAL,
-    *CC,
-    gn_clang_build,
-    gn_arm_build,
-    *BAZEL,
-    *python_checks.ALL,
 )
 
-FULL_PRESUBMIT: Tuple[Callable, ...] = sum([
-    (init_cipd, init_virtualenv),
-    CODE_FORMAT,
-    CC,
-    GN,
+QUICK = (
+    init_cipd,
+    init_virtualenv,
+    copyright_notice,
+    format_code.PRESUBMIT_CHECKS,
+    pw_presubmit.pragma_once,
+    gn_clang_build,
+    gn_arm_build,
+    bazel_test,
+    source_is_in_build_files,
     python_checks.ALL,
-    CMAKE,
-    BAZEL,
-    GENERAL,
-    BUILD_ENV_SETUP,
-], ())
+)
 
-PROGRAMS: Dict[str, Tuple] = {
-    'broken': BROKEN,
-    'full': FULL_PRESUBMIT,
-    'quick': QUICK_PRESUBMIT,
-}
+FULL = (
+    init_cipd,
+    init_virtualenv,
+    copyright_notice,
+    format_code.PRESUBMIT_CHECKS,
+    pw_presubmit.pragma_once,
+    gn_clang_build,
+    gn_arm_build,
+    gn_docs_build,
+    # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
+    # host builds on Mac for now.
+    gn_gcc_build if sys.platform != 'darwin' else (),
+    # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
+    # the clang issues. The problem is that all clang++ invocations need the
+    # two extra flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
+    cmake_tests if sys.platform != 'darwin' else (),
+    bazel_test if sys.platform != 'darwin' else (),
+    source_is_in_build_files,
+    python_checks.ALL,
+    build_env_setup,
+)
 
-ALL_STEPS = {c.__name__: c for c in itertools.chain(*PROGRAMS.values())}
+PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL)
 
 
 def parse_args() -> argparse.Namespace:
@@ -434,7 +386,7 @@ def parse_args() -> argparse.Namespace:
     exclusive.add_argument(
         '--step',
         dest='steps',
-        choices=sorted(ALL_STEPS),
+        choices=sorted(PROGRAMS.all_steps()),
         action='append',
         help='Provide explicit steps instead of running a predefined program.',
     )
@@ -485,12 +437,13 @@ def run(
                      repository)
         return 0
 
-    program: Sequence = PROGRAMS[program_name]
+    program: Sequence[Callable] = PROGRAMS[program_name]
     if steps:
-        program = [ALL_STEPS[name] for name in steps]
+        program = [PROGRAMS.all_steps()[name] for name in steps]
 
     if pw_presubmit.run_presubmit(program,
-                                  repository=repository,
+                                  program_name,
+                                  repo_path=repository,
                                   output_directory=output_directory,
                                   **presubmit_args):
         return 0
