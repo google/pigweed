@@ -1,10 +1,11 @@
-// Copyright 2018 The Fuchsia Authors. All rights reserved.
+// Copyright 2020 The Fuchsia Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 
+#include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 
 #include <fbl/macros.h>
@@ -36,13 +37,17 @@ namespace data {
 // primarily via message passing.
 class Domain : public fbl::RefCounted<Domain> {
  public:
+  static constexpr const char* kInspectNodeName = "data_domain";
+
   // Constructs an uninitialized data domain that can be used in production.
   // This spawns a thread on which data-domain tasks will be scheduled.
-  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, std::string thread_name);
+  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node,
+                                    std::string thread_name);
 
   // Constructs an instance using the given |dispatcher| instead of spawning a
   // thread. This is intended for unit tests.
   static fbl::RefPtr<Domain> CreateWithDispatcher(fxl::RefPtr<hci::Transport> hci,
+                                                  inspect::Node node,
                                                   async_dispatcher_t* dispatcher);
 
   // These send an Initialize/ShutDown message to the data task runner. It is

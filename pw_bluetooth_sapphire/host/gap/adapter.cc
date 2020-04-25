@@ -371,7 +371,8 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   if (!data_domain_) {
     // Initialize the data Domain to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain
-    auto data_domain = data::Domain::Create(hci_, "bt-host (data)");
+    auto data_domain = data::Domain::Create(
+        hci_, adapter_node_.CreateChild(data::Domain::kInspectNodeName), "bt-host (data)");
     if (!data_domain) {
       bt_log(ERROR, "gap", "Failed to initialize Data Domain");
       CleanUp();

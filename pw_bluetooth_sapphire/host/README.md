@@ -32,4 +32,5 @@ adapter:
                 connection_state
                 bonded
                 features
+    data_domain:
 ```

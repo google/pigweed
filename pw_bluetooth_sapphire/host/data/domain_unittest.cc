@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 
 #include <lib/async/cpp/task.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 
 #include <fbl/macros.h>
 
@@ -27,6 +28,8 @@
 namespace bt {
 namespace data {
 namespace {
+
+using namespace inspect::testing;
 
 using bt::testing::TestController;
 using TestingBase = bt::testing::FakeControllerTest<TestController>;
@@ -55,7 +58,8 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = Domain::CreateWithDispatcher(transport(), dispatcher());
+    domain_ = Domain::CreateWithDispatcher(
+        transport(), inspector_.GetRoot().CreateChild(Domain::kInspectNodeName), dispatcher());
     domain_->Initialize();
 
     StartTestDevice();
@@ -161,9 +165,12 @@ class DATA_DomainTest : public TestingBase {
 
   Domain* domain() const { return domain_.get(); }
 
+  inspect::Inspector& inspector() { return inspector_; }
+
  private:
   fbl::RefPtr<Domain> domain_;
   l2cap::CommandId next_command_id_;
+  inspect::Inspector inspector_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
 };
@@ -521,7 +528,7 @@ using DATA_DomainLifecycleTest = TestingBase;
 TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
   // Create an isolated domain, and shutdown without initializing
   // We can't use the standard DATA_DomainTest fixture, as it will initialize the domain
-  auto data_domain = Domain::CreateWithDispatcher(transport(), dispatcher());
+  auto data_domain = Domain::CreateWithDispatcher(transport(), inspect::Node(), dispatcher());
   data_domain->ShutDown();
   data_domain = nullptr;
   SUCCEED();
@@ -614,6 +621,14 @@ TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   ASSERT_TRUE(accepted.has_value());
   EXPECT_TRUE(accepted.value());
   accepted.reset();
+}
+
+TEST_F(DATA_DomainTest, InspectHierarchy) {
+  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  ASSERT_TRUE(hierarchy);
+  auto domain_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
+                              ChildrenMatch(::testing::IsEmpty()));
+  EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(domain_matcher))));
 }
 
 }  // namespace
