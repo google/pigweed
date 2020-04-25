@@ -230,7 +230,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
 
 CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     const EventPacket& event) {
-  bt_log(DEBUG, "hci-le", "received advertising report");
+  bt_log(SPEW, "hci-le", "received advertising report");
 
   // Drop the event if not requested to scan.
   if (!IsScanning())

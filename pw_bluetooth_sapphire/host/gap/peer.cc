@@ -63,7 +63,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv)
 
 void Peer::LowEnergyData::AppendScanResponse(int8_t rssi, const ByteBuffer& scan_response) {
   if (scan_response.size() == 0u) {
-    bt_log(DEBUG, "gap-le", "ignored empty scan response");
+    bt_log(SPEW, "gap-le", "ignored empty scan response");
     return;
   }
 

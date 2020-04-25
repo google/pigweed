@@ -77,7 +77,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
 
     ZX_ASSERT(event.event_code() == hci::kRemoteNameRequestCompleteEventCode);
 
-    bt_log(DEBUG, "gap-bredr", "name request complete (peer id: %s)",
+    bt_log(SPEW, "gap-bredr", "name request complete (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
     const auto& params = event.params<hci::RemoteNameRequestCompleteEventParams>();
@@ -125,7 +125,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
 
     ZX_ASSERT(event.event_code() == hci::kReadRemoteSupportedFeaturesCompleteEventCode);
 
-    bt_log(DEBUG, "gap-bredr", "remote features request complete (peer id: %s)",
+    bt_log(SPEW, "gap-bredr", "remote features request complete (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
     const auto& params =
@@ -185,7 +185,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
       return;
     }
 
-    bt_log(DEBUG, "gap-bredr",
+    bt_log(SPEW, "gap-bredr",
            "got extended features page %u, max page %u (requested page: %u, peer id: %s)",
            params.page_number, params.max_page_number, page, bt_str(interrogation->peer_id()));
 

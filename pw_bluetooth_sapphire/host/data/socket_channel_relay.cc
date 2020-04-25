@@ -50,7 +50,7 @@ SocketChannelRelay<ChannelT>::~SocketChannelRelay() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (state_ != RelayState::kDeactivated) {
-    bt_log(DEBUG, "l2cap",
+    bt_log(SPEW, "l2cap",
            "Deactivating relay for channel %u in dtor; will require Channel's "
            "mutex",
            channel_->id());
@@ -84,7 +84,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
         if (self) {
           self->OnChannelDataReceived(std::move(rx_data));
         } else {
-          bt_log(DEBUG, "l2cap", "Ignoring data received on destroyed relay (channel_id=%#.4x)",
+          bt_log(SPEW, "l2cap", "Ignoring data received on destroyed relay (channel_id=%#.4x)",
                  channel_id);
         }
       },
@@ -92,7 +92,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
         if (self) {
           self->OnChannelClosed();
         } else {
-          bt_log(DEBUG, "l2cap", "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
+          bt_log(SPEW, "l2cap", "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
                  channel_id);
         }
       },
@@ -242,13 +242,13 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     ZX_DEBUG_ASSERT_MSG(n_bytes_read <= read_buf_size, "(n_bytes_read=%zu, read_buf_size=%zu)",
                         n_bytes_read, read_buf_size);
     if (read_res == ZX_ERR_SHOULD_WAIT) {
-      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
+      bt_log(SPEW, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
              zx_status_get_string(read_res));
       return true;
     }
 
     if (read_res == ZX_ERR_PEER_CLOSED) {
-      bt_log(DEBUG, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
+      bt_log(SPEW, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
              zx_status_get_string(read_res));
       return false;
     }
@@ -256,7 +256,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     ZX_DEBUG_ASSERT(n_bytes_read > 0);
     socket_packet_recv_count_++;
     if (n_bytes_read > channel_->max_tx_sdu_size()) {
-      bt_log(DEBUG, "l2cap", "Dropping %zu bytes for channel %u as max TX SDU is %u ", n_bytes_read,
+      bt_log(SPEW, "l2cap", "Dropping %zu bytes for channel %u as max TX SDU is %u ", n_bytes_read,
              channel_->id(), channel_->max_tx_sdu_size());
       return false;
     }
@@ -266,7 +266,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     bool write_success =
         channel_->Send(std::make_unique<DynamicByteBuffer>(BufferView(read_buf, n_bytes_read)));
     if (!write_success) {
-      bt_log(DEBUG, "l2cap", "Failed to write %zu bytes to channel %u", n_bytes_read,
+      bt_log(SPEW, "l2cap", "Failed to write %zu bytes to channel %u", n_bytes_read,
              channel_->id());
     }
     channel_tx_packet_count_++;

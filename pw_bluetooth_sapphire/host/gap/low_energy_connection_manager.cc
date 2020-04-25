@@ -1099,7 +1099,7 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
       peer->le()->features()->le_features &
       static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure);
 
-  bt_log(DEBUG, "gap-le", "ll connection parameters req procedure supported: %s",
+  bt_log(SPEW, "gap-le", "ll connection parameters req procedure supported: %s",
          ll_connection_parameters_req_supported ? "true" : "false");
 
   if (ll_connection_parameters_req_supported) {

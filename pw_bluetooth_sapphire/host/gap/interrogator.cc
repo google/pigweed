@@ -76,7 +76,7 @@ void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCal
   auto [it, inserted] = pending_.try_emplace(peer_id, interrogation_ref->GetWeakPtr());
   ZX_ASSERT_MSG(inserted, "interrogating peer %s twice at once", bt_str(peer_id));
 
-  bt_log(DEBUG, "gap", "started interrogating peer %s", bt_str(peer_id));
+  bt_log(SPEW, "gap", "started interrogating peer %s", bt_str(peer_id));
 
   SendCommands(std::move(interrogation_ref));
 }

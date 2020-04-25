@@ -395,7 +395,7 @@ void CommandChannel::TrySendQueuedCommands() {
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
 
   if (allowed_command_packets_ == 0) {
-    bt_log(DEBUG, "hci", "controller queue full, waiting");
+    bt_log(SPEW, "hci", "controller queue full, waiting");
     return;
   }
 
@@ -412,7 +412,7 @@ void CommandChannel::TrySendQueuedCommands() {
     bool excluded = false;
     for (const auto& excluded_opcode : data.exclusions()) {
       if (pending_transactions_.count(excluded_opcode) != 0) {
-        bt_log(DEBUG, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
+        bt_log(SPEW, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
                it->data->opcode(), excluded_opcode);
         excluded = true;
         break;
@@ -435,7 +435,7 @@ void CommandChannel::TrySendQueuedCommands() {
     // wait on the same completion event.
     if (!IsAsync(data.complete_event_code()) || data.handler_id() != 0 ||
         !waiting_for_other_transaction) {
-      bt_log(DEBUG, "hci", "sending previously queued command id %zu", data.id());
+      bt_log(SPEW, "hci", "sending previously queued command id %zu", data.id());
       SendQueuedCommand(std::move(*it));
       it = send_queue_.erase(it);
       continue;
@@ -545,7 +545,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     allowed_command_packets_ = params.num_hci_command_packets;
     unregister_async_handler = params.status != StatusCode::kSuccess;
   }
-  bt_log(DEBUG, "hci", "allowed packets update: %zu", allowed_command_packets_);
+  bt_log(SPEW, "hci", "allowed packets update: %zu", allowed_command_packets_);
 
   if (matching_opcode == kNoOp) {
     return;
@@ -578,7 +578,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
   // If an asynchronous command failed, then remove its event handler.
   if (unregister_async_handler) {
-    bt_log(DEBUG, "hci", "async command failed; removing its handler");
+    bt_log(SPEW, "hci", "async command failed; removing its handler");
     RemoveEventHandlerInternal(pending->handler_id());
     pending_transactions_.erase(it);
   }
@@ -617,7 +617,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     auto iter = range.first;
     while (iter != range.second) {
       EventHandlerId event_id = iter->second;
-      bt_log(DEBUG, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
+      bt_log(SPEW, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
       auto handler_iter = event_handler_id_map_.find(event_id);
       ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
 

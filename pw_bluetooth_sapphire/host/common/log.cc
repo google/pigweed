@@ -26,11 +26,11 @@ static_assert(internal::BaseName("../foo/bar//main.cc") == std::string_view("mai
 std::atomic_int g_printf_min_severity(-1);
 
 uint32_t kDdkSeverities[kNumLogSeverities] = {
-    DDK_LOG_ERROR, DDK_LOG_WARN, DDK_LOG_INFO, DDK_LOG_TRACE, DDK_LOG_SPEW, DDK_LOG_DEBUG1,
+    DDK_LOG_ERROR, DDK_LOG_WARN, DDK_LOG_INFO, DDK_LOG_TRACE, DDK_LOG_SPEW,
 };
 
 const char* const kLogSeverityNames[kNumLogSeverities] = {
-    "ERROR", "WARN", "INFO", "TRACE", "SPEW", "DEBUG",
+    "ERROR", "WARN", "INFO", "TRACE", "SPEW",
 };
 
 constexpr size_t LogSeverityToIndex(LogSeverity severity) {

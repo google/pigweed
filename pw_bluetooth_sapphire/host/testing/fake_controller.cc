@@ -1081,7 +1081,7 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
 
-  bt_log(DEBUG, "fake-hci", "received command packet with opcode: %#.4x", opcode);
+  bt_log(SPEW, "fake-hci", "received command packet with opcode: %#.4x", opcode);
 
   if (MaybeRespondWithDefaultCommandStatus(opcode)) {
     return;

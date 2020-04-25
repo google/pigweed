@@ -102,13 +102,9 @@ enum class LogSeverity {
 
   // Very verbose messages.
   SPEW = 4,
-
-  // Reserved for highly verbose messages (corresponds to the "debug1" driver
-  // log flag).
-  DEBUG = 5,
 };
 
-constexpr size_t kNumLogSeverities = 6;
+constexpr size_t kNumLogSeverities = 5;
 
 bool IsLogLevelEnabled(LogSeverity severity);
 void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
