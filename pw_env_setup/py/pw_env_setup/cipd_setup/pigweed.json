@@ -79,7 +79,7 @@
     "_comment": "TODO(pwbug/69) Put rust in cipd for Windows.",
     "path": "fuchsia/rust/${os=linux,mac}-${arch}",
     "tags": [
-      "git_revision:7fb5187d0423f4cd0441526571b8cd61927123c9"
+      "git_revision:0862458dad90a0d80827e22e3f86e33add6d847c"
     ]
   },
   {
