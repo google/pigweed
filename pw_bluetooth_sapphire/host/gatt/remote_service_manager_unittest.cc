@@ -11,13 +11,15 @@
 #include "fake_client.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
 namespace bt {
 namespace gatt {
 
 // This must be in the correct namespace for it to be visible to EXPECT_EQ.
 static bool operator==(const CharacteristicData& chrc1, const CharacteristicData& chrc2) {
-  return chrc1.properties == chrc2.properties && chrc1.handle == chrc2.handle &&
+  return chrc1.properties == chrc2.properties &&
+         chrc1.extended_properties == chrc2.extended_properties && chrc1.handle == chrc2.handle &&
          chrc1.value_handle == chrc2.value_handle && chrc1.type == chrc2.type;
 }
 
@@ -34,8 +36,19 @@ constexpr UUID kTestServiceUuid2((uint16_t)0xcafe);
 constexpr UUID kTestUuid3((uint16_t)0xfefe);
 constexpr UUID kTestUuid4((uint16_t)0xefef);
 
+// Buffers for descriptor responses.
+// ExtendedProperty::kReliableWrite enabled.
+const auto kExtendedPropValue = CreateStaticByteBuffer(0x01, 0x00);
 const auto kCCCNotifyValue = CreateStaticByteBuffer(0x01, 0x00);
 const auto kCCCIndicateValue = CreateStaticByteBuffer(0x02, 0x00);
+
+// Constants used for initializing fake characteristic data.
+constexpr att::Handle kStart = 1;
+constexpr att::Handle kCharDecl = 2;
+constexpr att::Handle kCharValue = 3;
+constexpr att::Handle kDesc1 = 4;
+constexpr att::Handle kDesc2 = 5;
+constexpr att::Handle kEnd = 5;
 
 void NopStatusCallback(att::Status) {}
 void NopValueCallback(const ByteBuffer&) {}
@@ -78,15 +91,21 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     return services[0];
   }
 
+  void SetCharacteristicsAndDescriptors(
+      std::vector<CharacteristicData> fake_chrs,
+      std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
+    fake_client()->set_characteristics(std::move(fake_chrs));
+    fake_client()->set_descriptors(std::move(fake_descrs));
+    fake_client()->set_characteristic_discovery_status(att::Status());
+  }
+
   // Discover the characteristics of |service| based on the given |fake_data|.
   void SetupCharacteristics(
       fbl::RefPtr<RemoteService> service, std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
     ZX_DEBUG_ASSERT(service);
 
-    fake_client()->set_characteristics(std::move(fake_chrs));
-    fake_client()->set_descriptors(std::move(fake_descrs));
-    fake_client()->set_characteristic_discovery_status(att::Status());
+    SetCharacteristicsAndDescriptors(std::move(fake_chrs), std::move(fake_descrs));
 
     service->DiscoverCharacteristics([](auto, const auto&) {});
     RunLoopUntilIdle();
@@ -105,7 +124,7 @@ class GATT_RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     ServiceData data(1, 4, kTestServiceUuid1);
     auto service = SetUpFakeService(data);
 
-    CharacteristicData chr(Property::kNotify, 2, 3, kTestUuid3);
+    CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
     DescriptorData desc(4, types::kClientCharacteristicConfig);
     SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -302,8 +321,8 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
   auto data = ServiceData(1, 5, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData fake_chrc1(0, 2, 3, kTestUuid3);
-  CharacteristicData fake_chrc2(0, 4, 5, kTestUuid4);
+  CharacteristicData fake_chrc1(0, std::nullopt, 2, 3, kTestUuid3);
+  CharacteristicData fake_chrc2(0, std::nullopt, 4, 5, kTestUuid4);
   std::vector<CharacteristicData> fake_chrcs{{fake_chrc1, fake_chrc2}};
   fake_client()->set_characteristics(std::move(fake_chrcs));
 
@@ -360,8 +379,8 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsSuccess) {
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsError) {
   auto service = SetUpFakeService(ServiceData(1, 5, kTestServiceUuid1));
 
-  CharacteristicData chrc1(0, 2, 3, kTestUuid3);
-  CharacteristicData chrc2(0, 4, 5, kTestUuid4);
+  CharacteristicData chrc1(0, std::nullopt, 2, 3, kTestUuid3);
+  CharacteristicData chrc2(0, std::nullopt, 4, 5, kTestUuid4);
   std::vector<CharacteristicData> fake_chrcs{{chrc1, chrc2}};
   fake_client()->set_characteristics(std::move(fake_chrcs));
 
@@ -395,17 +414,10 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverCharacteristicsError) {
 
 // Discover descriptors of a service with one characteristic.
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
-  constexpr att::Handle kStart = 1;
-  constexpr att::Handle kCharDecl = 2;
-  constexpr att::Handle kCharValue = 3;
-  constexpr att::Handle kDesc1 = 4;
-  constexpr att::Handle kDesc2 = 5;
-  constexpr att::Handle kEnd = 5;
-
   ServiceData data(kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData fake_chrc(0, kCharDecl, kCharValue, kTestUuid3);
+  CharacteristicData fake_chrc(0, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
   fake_client()->set_characteristics({{fake_chrc}});
 
   DescriptorData fake_desc1(kDesc1, kTestUuid3);
@@ -438,17 +450,10 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneSuccess) {
 
 // Discover descriptors of a service with one characteristic.
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
-  constexpr att::Handle kStart = 1;
-  constexpr att::Handle kCharDecl = 2;
-  constexpr att::Handle kCharValue = 3;
-  constexpr att::Handle kDesc1 = 4;
-  constexpr att::Handle kDesc2 = 5;
-  constexpr att::Handle kEnd = 5;
-
   ServiceData data(kStart, kEnd, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData fake_chrc(0, kCharDecl, kCharValue, kTestUuid3);
+  CharacteristicData fake_chrc(0, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
   fake_client()->set_characteristics({{fake_chrc}});
 
   DescriptorData fake_desc1(kDesc1, kTestUuid3);
@@ -475,14 +480,14 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfOneError) {
 // Discover descriptors of a service with multiple characteristics
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
   // Has one descriptor
-  CharacteristicData fake_char1(0, 2, 3, kTestUuid3);
+  CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
 
   // Has no descriptors
-  CharacteristicData fake_char2(0, 5, 6, kTestUuid3);
+  CharacteristicData fake_char2(0, std::nullopt, 5, 6, kTestUuid3);
 
   // Has two descriptors
-  CharacteristicData fake_char3(0, 7, 8, kTestUuid3);
+  CharacteristicData fake_char3(0, std::nullopt, 7, 8, kTestUuid3);
   DescriptorData fake_desc2(9, kTestUuid4);
   DescriptorData fake_desc3(10, kTestUuid4);
 
@@ -520,14 +525,14 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleSuccess) {
 // request results in an error though others succeed.
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
   // Has one descriptor
-  CharacteristicData fake_char1(0, 2, 3, kTestUuid3);
+  CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
 
   // Has no descriptors
-  CharacteristicData fake_char2(0, 5, 6, kTestUuid3);
+  CharacteristicData fake_char2(0, std::nullopt, 5, 6, kTestUuid3);
 
   // Has two descriptors
-  CharacteristicData fake_char3(0, 7, 8, kTestUuid3);
+  CharacteristicData fake_char3(0, std::nullopt, 7, 8, kTestUuid3);
   DescriptorData fake_desc2(9, kTestUuid4);
   DescriptorData fake_desc3(10, kTestUuid4);
 
@@ -561,14 +566,14 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleEarlyFail) {
 // request results in an error while the preceding ones succeed.
 TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   // Has one descriptor
-  CharacteristicData fake_char1(0, 2, 3, kTestUuid3);
+  CharacteristicData fake_char1(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData fake_desc1(4, kTestUuid4);
 
   // Has no descriptors
-  CharacteristicData fake_char2(0, 5, 6, kTestUuid3);
+  CharacteristicData fake_char2(0, std::nullopt, 5, 6, kTestUuid3);
 
   // Has two descriptors
-  CharacteristicData fake_char3(0, 7, 8, kTestUuid3);
+  CharacteristicData fake_char3(0, std::nullopt, 7, 8, kTestUuid3);
   DescriptorData fake_desc2(9, kTestUuid4);
   DescriptorData fake_desc3(10, kTestUuid4);
 
@@ -598,6 +603,222 @@ TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsOfMultipleLateFail) {
   EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
+// Discover descriptors of a service with extended properties set.
+TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsWithExtendedPropertiesSuccess) {
+  ServiceData data(kStart, kEnd, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  // The ExtendedProperties of the characteristic is set.
+  const Properties props = Property::kExtendedProperties;
+  CharacteristicData fake_chrc(props, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
+
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  DescriptorData fake_desc2(kDesc2, kTestUuid4);
+
+  SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1, fake_desc2});
+
+  // The callback should be triggered once to read the value of the descriptor containing
+  // the ExtendedProperties bitfield.
+  size_t read_cb_count = 0;
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kDesc1, handle);
+    callback(att::Status(), kExtendedPropValue);
+    read_cb_count++;
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  att::Status status(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+    status = cb_status;
+    EXPECT_EQ(1u, chrcs.size());
+
+    CharacteristicData expected_chrc(props, kReliableWrite, kCharDecl, kCharValue, kTestUuid3);
+    std::map<CharacteristicHandle,
+             std::pair<CharacteristicData, std::map<DescriptorHandle, DescriptorData>>>
+        expected = {{CharacteristicHandle(kCharValue),
+                     {expected_chrc, {{kDesc1, fake_desc1}, {kDesc2, fake_desc2}}}}};
+    EXPECT_EQ(expected, chrcs);
+
+    // Validate that the ExtendedProperties have been written to the |chrcs| returned in the
+    // callback.
+    CharacteristicData chrc_data = chrcs.at(CharacteristicHandle(kCharValue)).first;
+    EXPECT_TRUE(chrc_data.extended_properties.has_value());
+    EXPECT_EQ(ExtendedProperty::kReliableWrite, chrc_data.extended_properties.value());
+  });
+
+  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
+  EXPECT_EQ(1u, fake_client()->desc_discovery_count());
+  EXPECT_EQ(1u, read_cb_count);
+  EXPECT_TRUE(service->IsDiscovered());
+  EXPECT_TRUE(status);
+  EXPECT_EQ(kDesc1, fake_client()->last_desc_discovery_start_handle());
+  EXPECT_EQ(kEnd, fake_client()->last_desc_discovery_end_handle());
+}
+
+// Discover descriptors of a service that doesn't contain the ExtendedProperties bit set,
+// but with a descriptor containing an ExtendedProperty value. This is not invalid, as per
+// the spec, and so discovery shouldn't fail.
+TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
+  ServiceData data(kStart, kEnd, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  // The ExtendedProperties of the characteristic is not set.
+  CharacteristicData fake_chrc(0, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1});
+
+  // Callback should not be executed.
+  size_t read_cb_count = 0;
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    callback(att::Status(), kExtendedPropValue);
+    read_cb_count++;
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  att::Status status(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+    status = cb_status;
+    EXPECT_EQ(1u, chrcs.size());
+
+    std::map<CharacteristicHandle,
+             std::pair<CharacteristicData, std::map<DescriptorHandle, DescriptorData>>>
+        expected = {{CharacteristicHandle(kCharValue), {fake_chrc, {{kDesc1, fake_desc1}}}}};
+
+    EXPECT_EQ(expected, chrcs);
+
+    // Validate that the ExtendedProperties has not been updated.
+    CharacteristicData chrc_data = chrcs.at(CharacteristicHandle(kCharValue)).first;
+    EXPECT_FALSE(chrc_data.extended_properties.has_value());
+  });
+
+  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
+  EXPECT_EQ(1u, fake_client()->desc_discovery_count());
+  EXPECT_EQ(0u, read_cb_count);
+  EXPECT_TRUE(service->IsDiscovered());
+  EXPECT_TRUE(status);
+}
+
+// Discover descriptors of a service with two descriptors containing ExtendedProperties.
+// This is invalid, and discovery should fail.
+TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsMultipleExtendedPropertiesError) {
+  ServiceData data(kStart, kEnd, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  // The ExtendedProperties of the characteristic is set.
+  const Properties props = Property::kExtendedProperties;
+  CharacteristicData fake_chrc(props, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
+  // Two descriptors with ExtProperties.
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  DescriptorData fake_desc2(kDesc2, types::kCharacteristicExtProperties);
+  SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1, fake_desc2});
+
+  size_t read_cb_count = 0;
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    callback(att::Status(), kExtendedPropValue);
+    read_cb_count++;
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  att::Status status(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
+
+  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
+  EXPECT_EQ(1u, fake_client()->desc_discovery_count());
+  EXPECT_EQ(0u, read_cb_count);
+  EXPECT_FALSE(service->IsDiscovered());
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kFailed, status.error());
+}
+
+// Discover descriptors of a service with ExtendedProperties set, but with
+// an error when reading the descriptor value. Discovery should fail.
+TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescValueError) {
+  ServiceData data(kStart, kEnd, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  // The ExtendedProperties of the characteristic is set.
+  const Properties props = Property::kExtendedProperties;
+  CharacteristicData fake_chrc(props, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  DescriptorData fake_desc2(kDesc2, kTestUuid4);
+  SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1, fake_desc2});
+
+  // The callback should be triggered once to read the value of the descriptor containing
+  // the ExtendedProperties bitfield.
+  size_t read_cb_count = 0;
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kDesc1, handle);
+    callback(att::Status(att::ErrorCode::kReadNotPermitted), BufferView());
+    read_cb_count++;
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  att::Status status(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, read_cb_count);
+  EXPECT_FALSE(service->IsDiscovered());
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kProtocolError, status.error());
+}
+
+// Discover descriptors of a service with ExtendedProperties set, but with
+// a malformed response when reading the descriptor value. Discovery should fail.
+TEST_F(GATT_RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesReadDescInvalidValue) {
+  ServiceData data(kStart, kEnd, kTestServiceUuid1);
+  auto service = SetUpFakeService(data);
+
+  // The ExtendedProperties of the characteristic is set.
+  const Properties props = Property::kExtendedProperties;
+  CharacteristicData fake_chrc(props, std::nullopt, kCharDecl, kCharValue, kTestUuid3);
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  DescriptorData fake_desc2(kDesc2, kTestUuid4);
+  SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1, fake_desc2});
+
+  // The callback should be triggered once to read the value of the descriptor containing
+  // the ExtendedProperties bitfield.
+  size_t read_cb_count = 0;
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    EXPECT_EQ(kDesc1, handle);
+    callback(att::Status(), BufferView());  // Invalid return buf
+    read_cb_count++;
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  att::Status status(HostError::kFailed);
+  service->DiscoverCharacteristics([&](att::Status cb_status, const auto chrcs) {
+    status = cb_status;
+    EXPECT_TRUE(chrcs.empty());
+  });
+
+  EXPECT_EQ(0u, fake_client()->chrc_discovery_count());
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, fake_client()->chrc_discovery_count());
+  EXPECT_EQ(1u, fake_client()->desc_discovery_count());
+  EXPECT_EQ(1u, read_cb_count);
+  EXPECT_FALSE(service->IsDiscovered());
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
 constexpr CharacteristicHandle kDefaultCharacteristic(3);
 constexpr CharacteristicHandle kSecondCharacteristic(6);
 constexpr CharacteristicHandle kInvalidCharacteristic(1);
@@ -605,13 +826,17 @@ constexpr CharacteristicHandle kInvalidCharacteristic(1);
 constexpr att::Handle kDefaultChrcValueHandle = 3;
 
 CharacteristicData UnreadableChrc() {
-  return CharacteristicData(0, 2, kDefaultChrcValueHandle, kTestUuid3);
+  return CharacteristicData(0, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
 }
 CharacteristicData ReadableChrc() {
-  return CharacteristicData(Property::kRead, 2, kDefaultChrcValueHandle, kTestUuid3);
+  return CharacteristicData(Property::kRead, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
 }
 CharacteristicData WritableChrc() {
-  return CharacteristicData(Property::kWrite, 2, kDefaultChrcValueHandle, kTestUuid3);
+  return CharacteristicData(Property::kWrite, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
+}
+CharacteristicData WriteableExtendedPropChrc() {
+  auto props = Property::kWrite | Property::kExtendedProperties;
+  return CharacteristicData(props, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, ReadCharAfterShutDown) {
@@ -1349,7 +1574,6 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongOffsetSuccess) {
       [&](att::PrepareWriteQueue write_queue, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
 
-        att::QueuedWrite prepare_write;
         for (int i = 0; i < kExpectedQueueSize; i++) {
           auto write = std::move(write_queue.front());
           write_queue.pop();
@@ -1407,7 +1631,6 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
       [&](att::PrepareWriteQueue write_queue, auto callback) {
         EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
 
-        att::QueuedWrite prepare_write;
         for (int i = 0; i < kExpectedQueueSize; i++) {
           auto write = std::move(write_queue.front());
           write_queue.pop();
@@ -1434,12 +1657,60 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongAtExactMultipleOfMtu) {
   EXPECT_EQ(1u, process_long_write_count);
 }
 
+// Writing a long characteristic with ReliableMode::Enabled should succeed.
+TEST_F(GATT_RemoteServiceManagerTest, WriteCharLongReliableWrite) {
+  constexpr uint16_t kOffset = 0;
+  constexpr uint16_t kExpectedQueueSize = 1;
+
+  DescriptorData fake_desc1(kDesc1, types::kCharacteristicExtProperties);
+  DescriptorData fake_desc2(kDesc2, kTestUuid4);
+
+  // The callback should be triggered once to read the value of the descriptor containing
+  // the ExtendedProperties bitfield.
+  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+    callback(att::Status(), kExtendedPropValue);
+  };
+  fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
+
+  auto service = SetupServiceWithChrcs(ServiceData(kStart, kEnd, kTestServiceUuid1),
+                                       {WriteableExtendedPropChrc()}, {fake_desc1, fake_desc2});
+
+  // Create a vector that will take 1 request to write. Since the default MTU
+  // is 23:
+  //   a. The size of |full_write_value| is 18.
+  //   b. att:Handle, |kOffset|, and att::OpCode size is 5 bytes total.
+  //   c. We should write 18 bytes.
+  std::vector<uint8_t> full_write_value((att::kLEMinMTU - 5));
+
+  // Initialize the contents.
+  for (size_t i = 0; i < full_write_value.size(); ++i) {
+    full_write_value[i] = i;
+  }
+
+  uint8_t process_long_write_count = 0;
+  fake_client()->set_execute_prepare_writes_callback(
+      [&](att::PrepareWriteQueue write_queue, auto callback) {
+        EXPECT_EQ(write_queue.size(), kExpectedQueueSize);
+        process_long_write_count++;
+        callback(att::Status());
+      });
+
+  ReliableMode mode = ReliableMode::kEnabled;
+  att::Status status(HostError::kFailed);
+  service->WriteLongCharacteristic(kDefaultCharacteristic, kOffset, full_write_value, mode,
+                                   [&](att::Status cb_status) { status = cb_status; });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_EQ(1u, process_long_write_count);
+}
+
 TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   ServiceData data(1, 3, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
   // No "write without response" property.
-  CharacteristicData chr(0, 2, 3, kTestUuid3);
+  CharacteristicData chr(0, std::nullopt, 2, 3, kTestUuid3);
   SetupCharacteristics(service, {{chr}});
 
   bool called = false;
@@ -1453,7 +1724,8 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
 TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccess) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
 
-  CharacteristicData chr(Property::kWriteWithoutResponse, 2, kDefaultChrcValueHandle, kTestUuid3);
+  CharacteristicData chr(Property::kWriteWithoutResponse, std::nullopt, 2, kDefaultChrcValueHandle,
+                         kTestUuid3);
   auto service =
       SetupServiceWithChrcs(ServiceData(1, kDefaultChrcValueHandle, kTestServiceUuid1), {chr});
 
@@ -1517,8 +1789,8 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequest) {
   ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr1(Property::kRead, 2, kValueHandle1, kTestUuid3);
-  CharacteristicData chr2(Property::kRead, 4, kValueHandle2, kTestUuid3);
+  CharacteristicData chr1(Property::kRead, std::nullopt, 2, kValueHandle1, kTestUuid3);
+  CharacteristicData chr2(Property::kRead, std::nullopt, 4, kValueHandle2, kTestUuid3);
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc}});
 
@@ -1548,7 +1820,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadDescSendsReadRequestWithDispatcher) {
   ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr(Property::kRead, 2, kValueHandle, kTestUuid3);
+  CharacteristicData chr(Property::kRead, std::nullopt, 2, kValueHandle, kTestUuid3);
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1610,7 +1882,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadLongDescriptor) {
   ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr(Property::kRead, 2, kValueHandle, kTestUuid3);
+  CharacteristicData chr(Property::kRead, std::nullopt, 2, kValueHandle, kTestUuid3);
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1696,7 +1968,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescNotAllowed) {
   auto service = SetUpFakeService(ServiceData(1, 4, kTestServiceUuid1));
 
   // "CCC" characteristic cannot be written to.
-  CharacteristicData chr(0, 2, 3, kTestUuid3);
+  CharacteristicData chr(0, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(4, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1718,7 +1990,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescSendsWriteRequest) {
   ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
+  CharacteristicData chr(Property::kWrite, std::nullopt, 2, kValueHandle, kTestUuid3);
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1751,7 +2023,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteDescLongSuccess) {
   ServiceData data(1, kDescrHandle, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  CharacteristicData chr(Property::kWrite, 2, kValueHandle, kTestUuid3);
+  CharacteristicData chr(Property::kWrite, std::nullopt, 2, kValueHandle, kTestUuid3);
   DescriptorData desc(kDescrHandle, kTestUuid4);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1846,7 +2118,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   auto service = SetUpFakeService(ServiceData(1, 4, kTestServiceUuid1));
 
   // Has neither the "notify" nor "indicate" property but has a CCC descriptor.
-  CharacteristicData chr(Property::kRead, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kRead, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(4, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1861,7 +2133,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
 
 TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoCCC) {
   // Has the "notify" property but no CCC descriptor.
-  CharacteristicData chr(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   auto service = SetupServiceWithChrcs(ServiceData(1, 3, kTestServiceUuid1), {chr});
 
   att::Status status;
@@ -1877,7 +2149,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsSuccess) {
   constexpr att::Handle kCCCHandle = 4;
   auto service = SetUpFakeService(ServiceData(1, kCCCHandle, kTestServiceUuid1));
 
-  CharacteristicData chr(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(kCCCHandle, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1906,7 +2178,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableIndications) {
   constexpr att::Handle kCCCHandle = 4;
   auto service = SetUpFakeService(ServiceData(1, kCCCHandle, kTestServiceUuid1));
 
-  CharacteristicData chr(Property::kIndicate, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kIndicate, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(kCCCHandle, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1936,7 +2208,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsError) {
 
   auto service = SetUpFakeService(ServiceData(1, 4, kTestServiceUuid1));
 
-  CharacteristicData chr(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(kCCCHandle, types::kClientCharacteristicConfig);
   SetupCharacteristics(service, {{chr}}, {{desc}});
 
@@ -1972,10 +2244,10 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestMany) {
   auto service = SetUpFakeService(ServiceData(1, 7, kTestServiceUuid1));
 
   // Set up two characteristics
-  CharacteristicData chr1(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr1(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc1(kCCCHandle1, types::kClientCharacteristicConfig);
 
-  CharacteristicData chr2(Property::kIndicate, 5, 6, kTestUuid3);
+  CharacteristicData chr2(Property::kIndicate, std::nullopt, 5, 6, kTestUuid3);
   DescriptorData desc2(kCCCHandle2, types::kClientCharacteristicConfig);
 
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc1, desc2}});
@@ -2062,7 +2334,7 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   auto service = SetUpFakeService(ServiceData(1, 4, kTestServiceUuid1));
 
   // Set up two characteristics
-  CharacteristicData chr(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc(kCCCHandle, types::kClientCharacteristicConfig);
 
   SetupCharacteristics(service, {{chr}}, {{desc}});
@@ -2127,10 +2399,10 @@ TEST_F(GATT_RemoteServiceManagerTest, NotificationCallback) {
   auto service = SetUpFakeService(ServiceData(1, 7, kTestServiceUuid1));
 
   // Set up two characteristics
-  CharacteristicData chr1(Property::kNotify, 2, 3, kTestUuid3);
+  CharacteristicData chr1(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
   DescriptorData desc1(4, types::kClientCharacteristicConfig);
 
-  CharacteristicData chr2(Property::kIndicate, 5, 6, kTestUuid3);
+  CharacteristicData chr2(Property::kIndicate, std::nullopt, 5, 6, kTestUuid3);
   DescriptorData desc2(7, types::kClientCharacteristicConfig);
 
   SetupCharacteristics(service, {{chr1, chr2}}, {{desc1, desc2}});

@@ -406,8 +406,9 @@ class Impl final : public Client {
         __UNUSED bool result = UUID::FromBytes(value.view(3), &type);
         ZX_DEBUG_ASSERT(result);
 
-        // Notify the handler.
-        chrc_cb(CharacteristicData(properties, chrc_handle, value_handle, type));
+        // Notify the handler. By default, there are no extended properties to report.
+        chrc_cb(CharacteristicData(properties, /*extended_properties=*/std::nullopt, chrc_handle,
+                                   value_handle, type));
 
         attr_data_list = attr_data_list.view(entry_length);
       }

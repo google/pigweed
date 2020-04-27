@@ -70,6 +70,14 @@ class RemoteCharacteristic final {
   // contents while resizing its storage.
   RemoteCharacteristic(RemoteCharacteristic&&);
 
+  // The properties for this characteristic.
+  Properties properties() const { return info_.properties; }
+
+  // The extended properties for this characteristic.
+  std::optional<ExtendedProperties> extended_properties() const {
+    return info_.extended_properties;
+  }
+
   // ATT declaration data for this characteristic.
   const CharacteristicData& info() const { return info_; }
 
@@ -84,6 +92,10 @@ class RemoteCharacteristic final {
 
   // Cleans up all state associated with this characteristic.
   void ShutDown();
+
+  // Updates the CharacteristicData |info_| with the Extended Properties that are read from the
+  // descriptors discovered in |DiscoverDescriptors|.
+  void UpdateDataWithExtendedProperties(ExtendedProperties ext_props);
 
   // Discovers the descriptors of this characteristic and reports the status in
   // |callback|.
@@ -117,6 +129,9 @@ class RemoteCharacteristic final {
 
   // Handle of the Client Characteristic Configuration descriptor, or 0 if none.
   att::Handle ccc_handle_;
+
+  // Handle of the Characteristic Extended Properties descriptor, or 0 if none.
+  att::Handle ext_prop_handle_;
 
   // Represents a pending request to subscribe to notifications or indications.
   struct PendingNotifyRequest {

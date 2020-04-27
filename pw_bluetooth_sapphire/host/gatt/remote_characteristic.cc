@@ -60,6 +60,7 @@ RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
       discovery_error_(false),
       shut_down_(false),
       ccc_handle_(att::kInvalidHandle),
+      ext_prop_handle_(att::kInvalidHandle),
       next_notify_handler_id_(1u),
       client_(client),
       weak_ptr_factory_(this) {
@@ -71,6 +72,7 @@ RemoteCharacteristic::RemoteCharacteristic(RemoteCharacteristic&& other)
       discovery_error_(other.discovery_error_),
       shut_down_(other.shut_down_.load()),
       ccc_handle_(other.ccc_handle_),
+      ext_prop_handle_(other.ext_prop_handle_),
       next_notify_handler_id_(other.next_notify_handler_id_),
       client_(other.client_),
       weak_ptr_factory_(this) {
@@ -95,6 +97,14 @@ void RemoteCharacteristic::ShutDown() {
       DisableNotificationsInternal();
     }
   }
+}
+
+void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties ext_props) {
+  // |CharacteristicData| is an immutable snapshot into the data associated with this
+  // Characteristic. Update |info_| with the most recent snapshot - the only new member is the
+  // recently read |ext_props|.
+  info_ =
+      CharacteristicData(info_.properties, ext_props, info_.handle, info_.value_handle, info_.type);
 }
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
@@ -129,6 +139,20 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
         return;
       }
       self->ccc_handle_ = desc.handle;
+    } else if (desc.type == types::kCharacteristicExtProperties) {
+      if (self->ext_prop_handle_ != att::kInvalidHandle) {
+        bt_log(TRACE, "gatt", "characteristic has more than one Extended Prop descriptor!");
+        self->discovery_error_ = true;
+        return;
+      }
+
+      // If the characteristic properties has the ExtendedProperties bit set, then
+      // update the handle.
+      if (self->properties() & Property::kExtendedProperties) {
+        self->ext_prop_handle_ = desc.handle;
+      } else {
+        bt_log(TRACE, "gatt", "characteristic extended properties not set");
+      }
     }
 
     // As descriptors must be strictly increasing, this emplace should always succeed
@@ -136,7 +160,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     ZX_DEBUG_ASSERT(success);
   };
 
-  auto status_cb = [self, cb = std::move(callback)](att::Status status) {
+  auto status_cb = [self, cb = std::move(callback)](att::Status status) mutable {
     if (!self) {
       cb(att::Status(HostError::kFailed));
       return;
@@ -150,7 +174,37 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
     if (!status) {
       self->descriptors_.clear();
+      cb(status);
+      return;
     }
+
+    // If the characteristic contains the ExtendedProperties descriptor, perform a Read operation
+    // to get the extended properties before notifying the callback.
+    if (self->ext_prop_handle_ != att::kInvalidHandle) {
+      auto read_cb = [self, cb = std::move(cb)](att::Status status, const ByteBuffer& data) {
+        if (!status) {
+          cb(status);
+          return;
+        }
+
+        // The ExtendedProperties descriptor value is a |uint16_t| representing the
+        // ExtendedProperties bitfield. If the retrieved |data| is malformed, respond with an error
+        // and return early.
+        if (data.size() != sizeof(uint16_t)) {
+          cb(att::Status(HostError::kPacketMalformed));
+          return;
+        }
+
+        auto ext_props = le16toh(data.As<uint16_t>());
+        self->UpdateDataWithExtendedProperties(ext_props);
+
+        cb(status);
+      };
+
+      self->client_->ReadRequest(self->ext_prop_handle_, std::move(read_cb));
+      return;
+    }
+
     cb(status);
   };
 

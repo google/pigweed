@@ -128,13 +128,15 @@ struct ServiceData {
 // An immutable definition of a GATT Characteristic
 struct CharacteristicData {
   CharacteristicData() = delete;
-  CharacteristicData(Properties props, att::Handle handle, att::Handle value_handle,
-                     const UUID& type);
+  CharacteristicData(Properties props, std::optional<ExtendedProperties> ext_props,
+                     att::Handle handle, att::Handle value_handle, const UUID& type);
 
-  const Properties properties;
-  const att::Handle handle;
-  const att::Handle value_handle;
-  const UUID type;
+
+  Properties properties;
+  std::optional<ExtendedProperties> extended_properties;
+  att::Handle handle;
+  att::Handle value_handle;
+  UUID type;
 };
 
 // An immutable definition of a GATT Descriptor

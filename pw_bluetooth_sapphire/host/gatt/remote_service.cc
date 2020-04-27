@@ -301,11 +301,17 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t of
       return;
     }
 
-    // TODO(48704): Validate the |extended_properties| field in the case of ReliableMode::kEnabled.
     if (!(chrc->info().properties & Property::kWrite)) {
       bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
       ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
+    }
+
+    if ((mode == ReliableMode::kEnabled) &&
+        ((!chrc->extended_properties().has_value()) ||
+         (!(chrc->extended_properties().value() & ExtendedProperty::kReliableWrite)))) {
+      bt_log(TRACE, "gatt",
+             "characteristic does not support \"reliable write\"; attempting request anyway");
     }
 
     SendLongWriteRequest(chrc->info().value_handle, offset, BufferView(value.data(), value.size()),
