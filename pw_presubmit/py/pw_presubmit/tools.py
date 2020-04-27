@@ -363,7 +363,7 @@ class Presubmit:
         output_directory = self._output_directory.joinpath(sanitized_name)
         os.makedirs(output_directory, exist_ok=True)
 
-        handler = logging.FileHandler(output_directory.joinpath(f'step.log'),
+        handler = logging.FileHandler(output_directory.joinpath('step.log'),
                                       mode='w')
         handler.setLevel(logging.DEBUG)
 

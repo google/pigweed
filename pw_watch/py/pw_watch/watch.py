@@ -221,9 +221,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.builds_succeeded = []
         num_builds = len(self.build_commands)
-        _LOG.info(f'Starting build with {num_builds} directories')
+        _LOG.info('Starting build with %d directories', num_builds)
         for i, cmd in enumerate(self.build_commands, 1):
-            _LOG.info(f'[{i}/{num_builds}] Starting build: {cmd}')
+            _LOG.info('[%d/%d] Starting build: %s', i, num_builds, cmd)
 
             # Run the build. Put a blank before/after for visual separation.
             print()
@@ -240,7 +240,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             else:
                 level = logging.ERROR
                 tag = '(FAIL)'
-            _LOG.log(level, f'[{i}/{num_builds}] Finished build: {cmd} {tag}')
+            _LOG.log(level, '[%d/%d] Finished build: %s %s', i, num_builds,
+                     cmd, tag)
             self.builds_succeeded.append(build_ok)
 
     # Implementation of DebouncedFunction.cancel()
@@ -384,7 +385,7 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
             _die("Build directory doesn't exist: %s", build_target)
         else:
             _LOG.info(
-                f'Will build [{i}/{len(build_commands)}]: {build_target}')
+                'Will build [%d/%d]: %s', i, len(build_commands), build_target)
 
     _LOG.debug('Patterns: %s', patterns)
 
