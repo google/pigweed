@@ -279,6 +279,15 @@ struct CommandRejectPayload {
   uint8_t data[];
 } __PACKED;
 
+// Payload of Command Reject (see Vol 3, Part A, Section 4.1).
+struct InvalidCIDPayload {
+  // Source CID (relative to rejecter)
+  ChannelId src_cid;
+
+  // Destination CID (relative to rejecter)
+  ChannelId dst_cid;
+} __PACKED;
+
 // ACL-U
 constexpr CommandCode kConnectionRequest = 0x02;
 struct ConnectionRequestPayload {

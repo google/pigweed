@@ -3,19 +3,27 @@
 namespace bt::l2cap::internal {
 
 bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
+  if (rej_payload_buf.size() < sizeof(CommandRejectPayload)) {
+    bt_log(TRACE, "l2cap", "cmd: ignoring malformed Command Reject, size %zu (expected >= %zu)",
+           rej_payload_buf.size(), sizeof(CommandRejectPayload));
+    return false;
+  }
   auto& rej_payload = rej_payload_buf.As<CommandRejectPayload>();
   reject_reason_ = static_cast<RejectReason>(letoh16(rej_payload.reason));
+
   if (reject_reason() == RejectReason::kInvalidCID) {
-    if (rej_payload_buf.size() - sizeof(CommandRejectPayload) < 4) {
+    if (rej_payload_buf.size() - sizeof(CommandRejectPayload) < sizeof(InvalidCIDPayload)) {
       bt_log(TRACE, "l2cap",
              "cmd: ignoring malformed Command Reject Invalid Channel ID, size %zu (expected %zu)",
-             rej_payload_buf.size(), sizeof(CommandRejectPayload) + 4);
+             rej_payload_buf.size(), sizeof(CommandRejectPayload) + sizeof(InvalidCIDPayload));
       return false;
     }
-
-    remote_cid_ = (rej_payload.data[1] << 8) + rej_payload.data[0];
-    local_cid_ = (rej_payload.data[3] << 8) + rej_payload.data[2];
+    auto& invalid_cid_payload =
+        rej_payload_buf.view(sizeof(CommandRejectPayload)).As<InvalidCIDPayload>();
+    remote_cid_ = letoh16(invalid_cid_payload.src_cid);
+    local_cid_ = letoh16(invalid_cid_payload.dst_cid);
   }
+
   return true;
 }
 

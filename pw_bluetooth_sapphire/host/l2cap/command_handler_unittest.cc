@@ -158,7 +158,35 @@ TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRej) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejNotEnoughBytesInRejection) {
+TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejNotEnoughBytes) {
+  constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
+
+  // Disconnect Request payload
+  auto expected_discon_req = StaticByteBuffer(
+      // Destination CID
+      LowerBits(kRemoteCId), UpperBits(kRemoteCId),
+
+      // Source CID
+      LowerBits(kBadLocalCId), UpperBits(kBadLocalCId));
+
+  // Invalid Command Reject payload (size is too small)
+  auto rej_rsp = StaticByteBuffer(0x01);
+
+  EXPECT_OUTBOUND_REQ(*fake_sig(), kDisconnectionRequest, expected_discon_req.view(),
+                      {SignalingChannel::Status::kReject, rej_rsp.view()});
+
+  bool cb_called = false;
+  auto on_discon_rsp = [&cb_called](const CommandHandler::DisconnectionResponse& rsp) {
+    cb_called = true;
+  };
+
+  EXPECT_TRUE(
+      cmd_handler()->SendDisconnectionRequest(kRemoteCId, kBadLocalCId, std::move(on_discon_rsp)));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(cb_called);
+}
+
+TEST_F(L2CAP_CommandHandlerTest, OutboundDisconReqRejInvalidCIDNotEnoughBytes) {
   constexpr ChannelId kBadLocalCId = 0x0005;  // Not a dynamic channel
 
   // Disconnect Request payload
