@@ -1510,11 +1510,26 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
   EXPECT_EQ(3u, nonexclusive_cb_count);
 }
 
+TEST_F(HCI_CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
+  constexpr EventCode kTestEventCode0 = 0xFE;
+
+  // Register event handler for kTestEventCode0.
+  auto id0 = cmd_channel()->AddEventHandler(
+      kTestEventCode0, [](const EventPacket& event) { return EventCallbackResult::kContinue; },
+      dispatcher());
+  EXPECT_NE(0u, id0);
+
+  // Try to send a command for kTestEventCode0.
+  //
+  // SendCommand should fail for a code already registered with
+  // "AddEventHander".
+  auto transaction_id = cmd_channel()->SendCommand(
+      CommandPacket::New(kReset), dispatcher(), [](auto, const auto&) {}, kTestEventCode0);
+  EXPECT_EQ(0u, transaction_id);
+}
+
 TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
   constexpr EventCode kTestEventCode0 = 0xFE;
-  auto cmd_status = CreateStaticByteBuffer(kCommandStatusEventCode, 0x04, 0x00, 0x01, 0x00, 0x00);
-  auto cmd_complete = CreateStaticByteBuffer(kCommandCompleteEventCode, 0x03, 0x01, 0x00, 0x00);
-  auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
 
   int event_count = 0;
   auto event_cb = [&event_count, kTestEventCode0](const EventPacket& event) {
@@ -1527,33 +1542,34 @@ TEST_F(HCI_CommandChannelTest, EventHandlerResults) {
     }
   };
 
-  auto id0 = cmd_channel()->AddEventHandler(kTestEventCode0, event_cb, dispatcher());
-  EXPECT_NE(0u, id0);
-
-  auto reset = CommandPacket::New(kReset);
-  auto transaction_id = cmd_channel()->SendCommand(
-      std::move(reset), dispatcher(), [](auto, const auto&) {}, kTestEventCode0);
-
-  EXPECT_EQ(0u, transaction_id);
+  // Register an event handler with its own separate dispatch loop.
+  async::Loop event_handler_loop{&kAsyncLoopConfigNeverAttachToThread};
+  EXPECT_NE(
+      cmd_channel()->AddEventHandler(kTestEventCode0, event_cb, event_handler_loop.dispatcher()),
+      0u);
 
   StartTestDevice();
-  test_device()->SendCommandChannelPacket(cmd_status);
-  test_device()->SendCommandChannelPacket(cmd_complete);
-  test_device()->SendCommandChannelPacket(event0);
-  test_device()->SendCommandChannelPacket(event0);
-  test_device()->SendCommandChannelPacket(event0);
 
-  // Without waiting for the event loop to process the handler thrice,
-  // the handler will not be removed before the fourth event is received,
-  // and the handler will be placed into the dispatcher and called a fourth time.
+  // Send three requests, but defer processing the callbacks until all three
+  // requests have been processed by the command channel.
+  //
+  // The second callback returns "remove" after the third event has already been
+  // dispatched. We expect the third command to still be processed successfully,
+  // and the command channel to gracefully handle the third event returning
+  // after the handler has been removed.
+  auto event0 = CreateStaticByteBuffer(kTestEventCode0, 0x00);
+  test_device()->SendCommandChannelPacket(event0);
+  test_device()->SendCommandChannelPacket(event0);
+  test_device()->SendCommandChannelPacket(event0);
   RunLoopUntilIdle();
-
+  event_handler_loop.RunUntilIdle();
   EXPECT_EQ(3, event_count);
 
+  // Once the "remove" has been processed, the callback shouldn't be called at
+  // all any longer.
   test_device()->SendCommandChannelPacket(event0);
-
   RunLoopUntilIdle();
-
+  event_handler_loop.RunUntilIdle();
   EXPECT_EQ(3, event_count);
 }
 
