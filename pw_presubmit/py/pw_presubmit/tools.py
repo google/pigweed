@@ -98,20 +98,19 @@ def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
                           check=True).stdout.decode().strip()
 
 
-def _git_ls_files(*args: PathOrStr, repo: PathOrStr = '.') -> List[str]:
+def _git_ls_files(args: Sequence[PathOrStr], repo: Path) -> List[Path]:
     return [
-        os.path.abspath(os.path.join(repo, path)) for path in git_stdout(
+        repo.joinpath(path).resolve() for path in git_stdout(
             'ls-files', '--', *args, repo=repo).splitlines()
     ]
 
 
-def git_diff_names(commit: str = 'HEAD',
-                   paths: Sequence[PathOrStr] = (),
-                   repo: PathOrStr = '.') -> List[str]:
+def _git_diff_names(commit: str, paths: Sequence[PathOrStr],
+                    repo: Path) -> List[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     root = git_repo_path(repo=repo)
     return [
-        os.path.abspath(os.path.join(root, path))
+        root.joinpath(path).resolve()
         for path in git_stdout('diff',
                                '--name-only',
                                '--diff-filter=d',
@@ -125,24 +124,32 @@ def git_diff_names(commit: str = 'HEAD',
 def list_git_files(commit: Optional[str] = None,
                    paths: Sequence[PathOrStr] = (),
                    exclude: Sequence[Pattern[str]] = (),
-                   repo: PathOrStr = '.') -> List[Path]:
+                   repo: Optional[Path] = None) -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
-    This function may only be called if repo is or is in a Git repository.
+    This function may only be called if repo points to a Git repository.
     """
+    if repo is None:
+        repo = Path.cwd()
+
     if commit:
-        files = git_diff_names(commit, paths, repo=repo)
+        files = _git_diff_names(commit, paths, repo)
     else:
-        files = _git_ls_files(*paths, repo=repo)
+        files = _git_ls_files(paths, repo)
+
+    root = git_repo_path(repo=repo).resolve()
     return sorted(
-        set(
-            Path(path) for path in files
-            if not any(exp.search(path) for exp in exclude)))
+        path for path in files
+        if not any(exp.search(str(path.relative_to(root))) for exp in exclude))
 
 
-def _describe_constraints(commit: Optional[str],
+def _describe_constraints(root: Path, repo_path: Path, commit: Optional[str],
                           pathspecs: Sequence[PathOrStr],
                           exclude: Sequence[Pattern]) -> Iterator[str]:
+    if not root.samefile(repo_path):
+        yield (f'under the {repo_path.resolve().relative_to(root.resolve())} '
+               'subdirectory')
+
     if commit:
         yield f'that have changed since {commit}'
 
@@ -155,15 +162,16 @@ def _describe_constraints(commit: Optional[str],
                ', '.join(p.pattern for p in exclude) + ')')
 
 
-def describe_files_in_repo(repo_root: Path, commit: Optional[str],
+def describe_files_in_repo(root: Path, repo_path: Path, commit: Optional[str],
                            pathspecs: Sequence[PathOrStr],
                            exclude: Sequence[Pattern]) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
-    constraints = list(_describe_constraints(commit, pathspecs, exclude))
+    constraints = list(
+        _describe_constraints(root, repo_path, commit, pathspecs, exclude))
     if not constraints:
-        return f'all files in the {repo_root.name} repo'
+        return f'all files in the {root.name} repo'
 
-    msg = f'files in the {repo_root.name} repo'
+    msg = f'files in the {root.name} repo'
     if len(constraints) == 1:
         return f'{msg} {constraints[0]}'
 
@@ -521,10 +529,10 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 def run_presubmit(program: Sequence[Callable],
                   name: str = '',
                   base: Optional[str] = None,
-                  paths: Sequence[PathOrStr] = (),
+                  paths: Sequence[Path] = (),
                   exclude: Sequence[Pattern] = (),
-                  repo_path: PathOrStr = '.',
-                  output_directory: Optional[PathOrStr] = None,
+                  repo_path: Path = Optional[None],
+                  output_directory: Optional[Path] = None,
                   keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -544,6 +552,8 @@ def run_presubmit(program: Sequence[Callable],
     Returns:
         True if all presubmit checks succeeded
     """
+    if repo_path is None:
+        repo_path = Path.cwd()
 
     if not is_git_repo(repo_path):
         _LOG.critical('Presubmit checks must be run from a Git repo')
@@ -552,12 +562,12 @@ def run_presubmit(program: Sequence[Callable],
     files = list_git_files(base, paths, exclude, repo_path)
     root = git_repo_path(repo=repo_path)
 
-    _LOG.info('Checking %s', describe_files_in_repo(root, base, paths,
-                                                    exclude))
+    _LOG.info('Checking %s',
+              describe_files_in_repo(root, repo_path, base, paths, exclude))
 
     files = [path.relative_to(root) for path in files]
 
-    if not output_directory:
+    if output_directory is None:
         output_directory = root.joinpath('.presubmit')
 
     presubmit = Presubmit(
@@ -586,7 +596,7 @@ def find_python_packages(python_paths, repo='.') -> Dict[str, List[str]]:
     """Returns Python package directories for the files in python_paths."""
     setup_pys = [
         os.path.dirname(file)
-        for file in _git_ls_files('setup.py', '*/setup.py', repo=repo)
+        for file in _git_ls_files(['setup.py', '*/setup.py'], repo)
     ]
 
     package_dirs: Dict[str, List[str]] = defaultdict(list)

@@ -356,7 +356,8 @@ def format_paths(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
         repo = pw_presubmit.git_repo_path()
         _LOG.info(
             'Formatting %s',
-            pw_presubmit.describe_files_in_repo(repo, base, paths, exclude))
+            pw_presubmit.describe_files_in_repo(repo, Path.cwd(), base, paths,
+                                                exclude))
 
         # Add files from Git and remove duplicates.
         files = sorted(set(list_git_files(base, paths, exclude)) | set(files))
