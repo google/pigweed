@@ -4,7 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -212,7 +213,7 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
 TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
   auto buf =
       CreateStaticByteBuffer(0x35, 0x1C,  // Sequence uint8 28 bytes
-                             // Sequence 0
+                                          // Sequence 0
                              0x35, 0x08,                    // Sequence uint8 8 bytes
                              0x09, 0x00, 0x00,              // Element: uint16_t (0)
                              0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)

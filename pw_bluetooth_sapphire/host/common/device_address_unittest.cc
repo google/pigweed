@@ -7,7 +7,7 @@
 #include <map>
 #include <unordered_map>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

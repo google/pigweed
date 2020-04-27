@@ -4,7 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/rfcomm/mux_commands.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace rfcomm {

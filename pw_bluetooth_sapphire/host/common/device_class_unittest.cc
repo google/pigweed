@@ -4,7 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

@@ -6,7 +6,8 @@
 
 #include <zircon/assert.h>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
 namespace bt {

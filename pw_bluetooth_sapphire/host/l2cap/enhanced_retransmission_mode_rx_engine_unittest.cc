@@ -4,7 +4,8 @@
 
 #include "enhanced_retransmission_mode_rx_engine.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 

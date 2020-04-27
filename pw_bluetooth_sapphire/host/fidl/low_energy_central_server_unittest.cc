@@ -6,10 +6,11 @@
 
 #include <cstddef>
 
+#include <gmock/gmock.h>
+
 #include "adapter_test_fixture.h"
 #include "fuchsia/bluetooth/gatt/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
-#include "gmock/gmock.h"
 #include "lib/fidl/cpp/interface_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"

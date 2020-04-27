@@ -6,7 +6,7 @@
 
 #include <unordered_set>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

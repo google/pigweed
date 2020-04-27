@@ -4,7 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
@@ -308,7 +309,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
 
   data.AddURI("http://fuchsia.cl");
 
-  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/ true));
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true));
   EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 
   auto expected_buf = CreateStaticByteBuffer(
@@ -330,7 +331,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
   data.SetLocalName("Fuchsia");
   data.SetAppearance(0x1234);
 
-  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/ true) - 1);
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true) - 1);
   EXPECT_FALSE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 }
 

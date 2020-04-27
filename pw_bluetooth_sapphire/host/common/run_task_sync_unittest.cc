@@ -9,7 +9,7 @@
 #include <lib/async/cpp/task.h>
 #include <lib/zx/time.h>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

@@ -7,8 +7,8 @@
 #include <lib/inspect/testing/cpp/inspect.h>
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"

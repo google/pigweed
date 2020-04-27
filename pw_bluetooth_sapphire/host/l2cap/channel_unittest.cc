@@ -4,7 +4,7 @@
 
 #include "channel.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include "fake_channel.h"
 

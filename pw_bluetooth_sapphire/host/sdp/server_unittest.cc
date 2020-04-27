@@ -4,7 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"

@@ -4,8 +4,9 @@
 
 #include "pdu.h"
 
+#include <gtest/gtest.h>
+
 #include "fragmenter.h"
-#include "gtest/gtest.h"
 #include "recombiner.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"

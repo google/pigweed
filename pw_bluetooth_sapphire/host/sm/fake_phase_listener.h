@@ -5,9 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_
 
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace bt {
 namespace sm {

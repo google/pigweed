@@ -4,7 +4,8 @@
 
 #include "identity_resolving_list.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 

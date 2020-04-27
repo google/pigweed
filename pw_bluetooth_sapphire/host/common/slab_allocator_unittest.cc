@@ -4,7 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

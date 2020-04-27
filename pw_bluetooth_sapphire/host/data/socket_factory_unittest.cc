@@ -4,13 +4,13 @@
 
 #include "socket_factory.h"
 
-#include <memory>
-#include <type_traits>
-
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 
-#include "gtest/gtest.h"
+#include <memory>
+#include <type_traits>
+
+#include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"

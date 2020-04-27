@@ -7,7 +7,8 @@
 #include <lib/async/cpp/task.h>
 #include <zircon/status.h>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
 namespace bt {

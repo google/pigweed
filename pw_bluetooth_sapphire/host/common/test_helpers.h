@@ -10,7 +10,8 @@
 #include <iostream>
 #include <type_traits>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 

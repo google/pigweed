@@ -6,9 +6,10 @@
 
 #include <forward_list>
 
+#include <gtest/gtest.h>
+
 #include "acl_data_packet.h"
 #include "control_packets.h"
-#include "gtest/gtest.h"
 
 namespace bt {
 namespace hci {

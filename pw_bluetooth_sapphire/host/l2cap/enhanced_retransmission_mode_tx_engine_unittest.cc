@@ -4,7 +4,8 @@
 
 #include "enhanced_retransmission_mode_tx_engine.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"

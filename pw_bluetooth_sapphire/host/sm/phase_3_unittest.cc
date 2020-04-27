@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <memory>
 
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -21,7 +23,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace bt {
 namespace sm {

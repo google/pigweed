@@ -4,7 +4,7 @@
 
 #include "permissions.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace att {

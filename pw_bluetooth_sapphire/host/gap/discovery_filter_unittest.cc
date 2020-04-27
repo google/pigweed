@@ -4,7 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
 namespace bt {

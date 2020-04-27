@@ -4,7 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace {

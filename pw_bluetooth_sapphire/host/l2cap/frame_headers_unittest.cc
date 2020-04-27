@@ -6,7 +6,8 @@
 
 #include <iostream>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {

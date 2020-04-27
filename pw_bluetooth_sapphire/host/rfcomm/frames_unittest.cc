@@ -4,7 +4,8 @@
 
 #include "frames.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "mux_commands.h"
 #include "rfcomm.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"

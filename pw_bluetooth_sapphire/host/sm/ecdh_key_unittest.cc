@@ -7,7 +7,8 @@
 #include <cstring>
 #include <memory>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 
 namespace bt {

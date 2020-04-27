@@ -11,9 +11,10 @@
 #include <lib/inspect/testing/cpp/inspect.h>
 #include <lib/zx/channel.h>
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "adapter_test_fixture.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"

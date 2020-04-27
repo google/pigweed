@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <fbl/macros.h>
+#include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
@@ -17,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace bt {
 namespace sm {

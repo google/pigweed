@@ -4,7 +4,7 @@
 
 #include "pdu_generator.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 namespace bt {
 namespace l2cap {
