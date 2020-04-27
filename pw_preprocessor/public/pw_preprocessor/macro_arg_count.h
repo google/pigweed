@@ -136,3 +136,22 @@
 #define _PW_COMMA_ARGS_X(has_args, ...) _PW_COMMA_ARGS_##has_args(__VA_ARGS__)
 #define _PW_COMMA_ARGS_0(...)                // no args, no comma
 #define _PW_COMMA_ARGS_1(...) , __VA_ARGS__  // comma, followed by args
+
+// Allows calling a different function-like macro based on the number of
+// arguments.  For example:
+//
+//   #define ARG_PRINT(...)  PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
+//   #define _ARG_PRINT1(a)        LOG_INFO("1 arg: %s", a)
+//   #define _ARG_PRINT2(a, b)     LOG_INFO("2 args: %s, %s", a, b)
+//   #define _ARG_PRINT3(a, b, c)  LOG_INFO("3 args: %s, %s, %s", a, b, c)
+//
+// This can the be called in code:
+//    ARG_PRINT("a");            // Outputs: 1 arg: a
+//    ARG_PRINT("a", "b");       // Outputs: 2 arg: a, b
+//    ARG_PRINT("a", "b", "c");  // Outputs: 3 arg: a, b, c
+//
+#define PW_DELEGATE_BY_ARG_COUNT(func, ...) \
+  _PW_DELEGATE_BY_ARG_COUNT(func, PW_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)
+#define _PW_DELEGATE_BY_ARG_COUNT_EXPANDED(name, n) name##n
+#define _PW_DELEGATE_BY_ARG_COUNT(name, n) \
+  _PW_DELEGATE_BY_ARG_COUNT_EXPANDED(name, n)

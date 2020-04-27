@@ -62,6 +62,7 @@ group("pw_modules") {
     "$dir_pw_status",
     "$dir_pw_stream",
     "$dir_pw_string",
+    "$dir_pw_trace",
     "$dir_pw_unit_test",
     "$dir_pw_varint",
   ]
@@ -101,6 +102,7 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_stream:tests",
     "$dir_pw_string:tests",
     "$dir_pw_tokenizer:tests",
+    "$dir_pw_trace:tests",
     "$dir_pw_unit_test:tests",
     "$dir_pw_varint:tests",
   ]

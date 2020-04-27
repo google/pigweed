@@ -251,5 +251,17 @@ TEST(CountArgs, AllSupported) {
   // clang-format on
 }
 
+TEST(DelegateByArgCount, WithoutAndWithoutArguments) {
+#define TEST_SUM0() (0)
+#define TEST_SUM1(a) (a)
+#define TEST_SUM2(a, b) ((a) + (b))
+#define TEST_SUM3(a, b, c) ((a) + (b) + (c))
+
+  static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM) == 0);
+  static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 5) == 5);
+  static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 1, 2) == 3);
+  static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 1, 2, 3) == 6);
+}
+
 }  // namespace
 }  // namespace pw
