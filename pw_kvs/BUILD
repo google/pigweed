@@ -241,6 +241,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_kvs",
+        ":test_partition",
         ":test_utils",
         "//pw_log:backend",
         "//pw_unit_test",

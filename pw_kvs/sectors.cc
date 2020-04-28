@@ -174,15 +174,17 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   const span sectors_to_skip(temp_sectors_to_skip_, reserved_addresses.size());
 
   // Step 1: Try to find a sectors with stale keys and no valid keys (no
-  // relocation needed). If any such sectors are found, use the sector with the
-  // most reclaimable bytes.
+  // relocation needed). Use the first such sector found, as that will help the
+  // KVS "rotate" around the partition. Initially this would select the sector
+  // with the most reclaimable space, but that can cause GC sector selection to
+  // "ping-pong" between two sectors when updating large keys.
   for (size_t i = 0; i < descriptors_.size(); ++i) {
     SectorDescriptor& sector = WearLeveledSectorFromIndex(i);
     if ((sector.valid_bytes() == 0) &&
-        (sector.RecoverableBytes(sector_size_bytes) > candidate_bytes) &&
+        (sector.RecoverableBytes(sector_size_bytes) > 0) &&
         !Contains(sectors_to_skip, &sector)) {
       sector_candidate = &sector;
-      candidate_bytes = sector.RecoverableBytes(sector_size_bytes);
+      break;
     }
   }
 

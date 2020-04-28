@@ -13,6 +13,9 @@
 // the License.
 #pragma once
 
+#include <algorithm>
+#include <numeric>
+
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"
@@ -39,12 +42,28 @@ class FlashPartitionWithStats : public FlashPartition {
     return span(sector_counters_.data(), sector_counters_.size());
   }
 
-  size_t total_erase_count() const {
-    size_t total_erases = 0;
-    for (const size_t& sector_count : sector_counters_) {
-      total_erases += sector_count;
+  size_t min_erase_count() const {
+    if (sector_counters_.empty()) {
+      return 0;
     }
-    return total_erases;
+    return *std::min_element(sector_counters_.begin(), sector_counters_.end());
+  }
+
+  size_t max_erase_count() const {
+    if (sector_counters_.empty()) {
+      return 0;
+    }
+    return *std::max_element(sector_counters_.begin(), sector_counters_.end());
+  }
+
+  size_t average_erase_count() const {
+    return sector_counters_.empty()
+               ? 0
+               : total_erase_count() / sector_counters_.size();
+  }
+
+  size_t total_erase_count() const {
+    return std::accumulate(sector_counters_.begin(), sector_counters_.end(), 0);
   }
 
   void ResetCounters() { sector_counters_.assign(sector_count(), 0); }

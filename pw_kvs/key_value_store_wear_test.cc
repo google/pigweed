@@ -12,8 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Always use stats, these tests depend on it.
+#define PW_KVS_RECORD_PARTITION_STATS 1
+
 #include "gtest/gtest.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/flash_partition_with_stats.h"
 #include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
@@ -21,95 +25,90 @@
 namespace pw::kvs {
 namespace {
 
-constexpr size_t kTestPartitionSectorSize = 4 * 1024;
-constexpr size_t kTestPartitionSectorCount = 6;
-constexpr size_t kMaxEntries = 256;
-constexpr size_t kMaxUsableSectors = kTestPartitionSectorCount;
-
-typedef KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> TestKvs;
-
-// Creates a FakeFlashBuffer that tracks erase count.
-template <size_t kSectorSize, size_t kSectorCount, size_t kInjectedErrors = 8>
-class FakeFlashBufferWithEraseCount
-    : public FakeFlashBuffer<kSectorSize, kSectorCount, kInjectedErrors> {
- public:
-  // Creates a flash memory with no data written.
-  explicit FakeFlashBufferWithEraseCount(
-      size_t alignment_bytes = InMemoryFakeFlash::kDefaultAlignmentBytes)
-      : FakeFlashBufferWithEraseCount(std::array<std::byte, 0>{},
-                                      alignment_bytes) {}
-
-  // Creates a flash memory initialized to the provided contents.
-  explicit FakeFlashBufferWithEraseCount(
-      span<const std::byte> contents,
-      size_t alignment_bytes = InMemoryFakeFlash::kDefaultAlignmentBytes)
-      : FakeFlashBuffer<kSectorSize, kSectorCount, kInjectedErrors>(
-            contents, alignment_bytes) {
-    std::memset(erase_counts_.data(), 0, erase_counts_.size() * sizeof(size_t));
-  }
-
-  // Override the in-memory flash fake to clear the erase counts when the entire
-  // flash partition is erased.
-  Status Clear() {
-    std::memset(erase_counts_.data(), 0, erase_counts_.size() * sizeof(size_t));
-    return Erase(FlashMemory::start_address(), FlashMemory::sector_count());
-  }
-
-  // Override the in-memory flash fake to track sector erase count.
-  Status Erase(FlashMemory::Address address, size_t num_sectors) override {
-    Status status;
-    if (status = InMemoryFakeFlash::Erase(address, num_sectors); !status.ok()) {
-      return status;
-    }
-    for (size_t i = 0; i < num_sectors; ++i) {
-      erase_counts_[address / kSectorSize + i]++;
-    }
-    return Status::OK;
-  }
-
-  // Reports the erase count of the sector with the least erases.
-  size_t MinEraseCount() {
-    size_t min_erases = ~static_cast<size_t>(0);
-    for (auto sector_erases : erase_counts_) {
-      if (sector_erases < min_erases) {
-        min_erases = sector_erases;
-      }
-    }
-    return min_erases;
-  }
-
- private:
-  std::array<size_t, kSectorCount> erase_counts_;
-};
-
-FakeFlashBufferWithEraseCount<kTestPartitionSectorSize,
-                              kTestPartitionSectorCount>
-    test_flash(16);
-FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
-
 constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
 
-}  // namespace
+class WearTest : public ::testing::Test {
+ protected:
+  WearTest()
+      : flash_(internal::Entry::kMinAlignmentBytes),
+        partition_(&flash_, 0, flash_.sector_count()),
+        kvs_(&partition_, format) {
+    EXPECT_EQ(Status::OK, kvs_.Init());
+  }
+
+  static constexpr size_t kSectors = 16;
+  static constexpr size_t kMaxEntries = 256;
+  static constexpr size_t kTestPartitionSectorSize = 512;
+
+  FakeFlashBuffer<kTestPartitionSectorSize, kSectors> flash_;
+  FlashPartitionWithStatsBuffer<kSectors> partition_;
+
+  KeyValueStoreBuffer<kMaxEntries, kSectors> kvs_;
+};
+
+// Block of data to use for entry value. Sized to 470 so the total entry results
+// in using most of the 512 byte sector.
+uint8_t test_data[470] = {1, 2, 3, 4, 5, 6};
 
 // Write a large key (i.e. only one entry fits in each sector) enough times to
 // fill up the KVS multiple times, and ensure every sector was garbage collected
 // multiple additional times.
-TEST(WearLeveling, RepeatedLargeEntry) {
+TEST_F(WearTest, RepeatedLargeEntry) {
   // Initialize an empty KVS, erasing flash and all tracked sector erase counts.
-  test_flash.Clear();
-  EXPECT_EQ(test_flash.MinEraseCount(), 1u);
-  TestKvs new_kvs(&test_partition, format);
-  new_kvs.Init();
+  partition_.ResetCounters();
 
   // Add enough large entries to fill the entire KVS several times.
-  std::byte data[kTestPartitionSectorSize / 2] = {std::byte(0)};
-  for (size_t i = 0; i < kMaxUsableSectors * 10; ++i) {
-    EXPECT_TRUE(new_kvs.Put("large_entry", span(data)).ok());
+  for (size_t i = 0; i < kSectors * 10; ++i) {
+    // modify the value to ensure a key-value different than was previously
+    // written.
+    test_data[0]++;
+
+    EXPECT_TRUE(kvs_.Put("large_entry", span(test_data)).ok());
   }
 
   // Ensure every sector has been erased at several times due to garbage
   // collection.
-  EXPECT_GE(test_flash.MinEraseCount(), 7u);
+  EXPECT_GE(partition_.min_erase_count(), 7u);
+  EXPECT_LE(partition_.max_erase_count(), partition_.min_erase_count() + 1u);
+
+  partition_.SaveStorageStats(kvs_, "WearTest RepeatedLargeEntry");
 }
 
+// Test a KVS with a number of entries, several sectors that are nearly full
+// of stale (reclaimable) space, and not enough writable (free) space to add a
+// redundant copy for any of the entries. Tests that the add redundancy step of
+// repair is able to use garbage collection to free up space needed for the new
+// copies.
+TEST_F(WearTest, TwoPassFillWithLargeAndLarger) {
+  partition_.ResetCounters();
+
+  // Add a large entry that will only fit once per sector enough times to fill
+  // the KVS with mostly stale data.
+  for (size_t i = 0; i < kSectors; i++) {
+    // modify the value to ensure a key-value different than was previously
+    // written.
+    test_data[0]++;
+
+    EXPECT_EQ(
+        Status::OK,
+        kvs_.Put("key", as_bytes(span(test_data, sizeof(test_data) - 70))));
+  }
+
+  // Add many copies of a differently sized entry that is larger than the
+  // previous entry.
+  for (size_t i = 0; i < kSectors * 200; i++) {
+    // Modify the value to ensure a key-value different than was previously
+    // written.
+    test_data[0]++;
+
+    printf("Add entry %zu\n", i);
+    EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  }
+
+  EXPECT_EQ(2u, kvs_.size());
+  EXPECT_LT(partition_.max_erase_count(),
+            2u * partition_.average_erase_count());
+}
+
+}  // namespace
 }  // namespace pw::kvs
