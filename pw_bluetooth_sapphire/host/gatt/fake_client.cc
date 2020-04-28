@@ -44,6 +44,20 @@ void FakeClient::DiscoverPrimaryServices(ServiceCallback svc_callback,
   });
 }
 
+void FakeClient::DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
+                                               StatusCallback status_callback, UUID uuid) {
+  async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
+                                status_callback = std::move(status_callback),
+                                uuid] {
+    for (const auto& svc : services_) {
+      if (svc.type == uuid) {
+        svc_callback(svc);
+      }
+    }
+    status_callback(service_discovery_status_);
+  });
+}
+
 void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                          CharacteristicCallback chrc_callback,
                                          StatusCallback status_callback) {

@@ -116,6 +116,8 @@ class FakeClient final : public Client {
   void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
+  void DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
+                                     att::StatusCallback status_callback, UUID uuid) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override;

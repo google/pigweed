@@ -295,6 +295,99 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
+  void DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback, StatusCallback status_callback,
+                                     UUID uuid) override {
+    DiscoverPrimaryServicesByUUIDInternal(att::kHandleMin, att::kHandleMax, std::move(svc_callback),
+                                          std::move(status_callback), uuid);
+  }
+
+  void DiscoverPrimaryServicesByUUIDInternal(att::Handle start, att::Handle end,
+                                             ServiceCallback svc_callback,
+                                             StatusCallback status_callback, UUID uuid) {
+    size_t uuid_size_bytes = uuid.CompactSize(/* allow 32 bit UUIDs */ false);
+    auto pdu = NewPDU(sizeof(att::FindByTypeValueRequestParams) + uuid_size_bytes);
+    if (!pdu) {
+      status_callback(att::Status(HostError::kOutOfMemory));
+      return;
+    }
+
+    att::PacketWriter writer(att::kFindByTypeValueRequest, pdu.get());
+    auto* params = writer.mutable_payload<att::FindByTypeValueRequestParams>();
+    params->start_handle = htole16(start);
+    params->end_handle = htole16(end);
+    params->type = htole16(types::kPrimaryService16);
+    MutableBufferView value_view(params->value, uuid_size_bytes);
+    uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
+
+    auto rsp_cb =
+        BindCallback([this, svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
+                      uuid](const att::PacketReader& rsp) mutable {
+          ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+
+          size_t payload_size = rsp.payload_size();
+          if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
+            // Received malformed response. Disconnect the link.
+            bt_log(TRACE, "gatt", "received malformed Find By Type Value response with size %zu", payload_size);
+            att_->ShutDown();
+            res_cb(att::Status(HostError::kPacketMalformed));
+            return;
+          }
+
+          BufferView handle_list = rsp.payload_data();
+
+          att::Handle last_handle = att::kHandleMax;
+          while (handle_list.size()) {
+            const auto& entry = handle_list.As<att::HandlesInformationList>();
+
+            ServiceData service;
+            service.range_start = le16toh(entry.handle);
+            service.range_end = le16toh(entry.group_end_handle);
+
+            if (service.range_end < service.range_start) {
+              bt_log(TRACE, "gatt", "received malformed service range values");
+              res_cb(att::Status(HostError::kPacketMalformed));
+              return;
+            }
+
+            service.type = uuid;
+
+            // Notify the handler.
+            svc_cb(service);
+
+            // HandlesInformationList is a single element of the list.
+            size_t entry_length = sizeof(att::HandlesInformationList);
+            handle_list = handle_list.view(entry_length);
+
+            last_handle = service.range_end;
+          }
+
+          // The procedure is over if we have reached the end of the handle range.
+          if (last_handle == att::kHandleMax) {
+            res_cb(att::Status());
+            return;
+          }
+
+          // Request the next batch.
+          DiscoverPrimaryServicesByUUIDInternal(last_handle + 1, att::kHandleMax, std::move(svc_cb),
+                                                std::move(res_cb), uuid);
+        });
+
+    auto error_cb = BindErrorCallback(
+        [res_cb = status_callback.share()](att::Status status, att::Handle handle) {
+          // An Error Response code of "Attribute Not Found" indicates the end
+          // of the procedure (v5.0, Vol 3, Part G, 4.4.2).
+          if (status.is_protocol_error() &&
+              status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
+            res_cb(att::Status());
+            return;
+          }
+
+          res_cb(status);
+        });
+
+    att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
+  }
+
   // TODO(49794): refactor to use ReadByTypeRequest()
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,

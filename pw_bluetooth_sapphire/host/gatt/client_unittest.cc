@@ -22,6 +22,22 @@ const auto kDiscoverAllPrimaryRequest = CreateStaticByteBuffer(
     0xFF, 0xFF,  // end handle: 0xFFFF
     0x00, 0x28   // type: primary service (0x2800)
 );
+
+const auto kDiscoverAllPrimary16ByUUID = CreateStaticByteBuffer(
+    0x06,        // opcode: find by type value request
+    0x01, 0x00,  // start handle: 0x0001
+    0xFF, 0xFF,  // end handle: 0xFFFF
+    0x00, 0x28,  // type: primary service (0x2800)
+    0xAD, 0xDE  // UUID
+);
+
+const auto kDiscoverAllPrimary128ByUUID = CreateStaticByteBuffer(
+    0x06,        // opcode: find by type value request
+    0x01, 0x00,  // start handle: 0x0001
+    0xFF, 0xFF,  // end handle: 0xFFFF
+    0x00, 0x28,  // type: primary service (0x2800)
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 // UUID
+);
 // clang-format on
 
 void NopSvcCallback(const gatt::ServiceData&) {}
@@ -365,7 +381,7 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedAttrDataList) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-// Tests that we handle an empty attribute data list properly. In practice, the
+// Tests that we handle an empty attribute data list. In practice, the
 // server would send an "Attribute Not Found" error instead but our stack treats
 // an empty data list as not an error.
 TEST_F(GATT_ClientTest, DiscoverAllPrimaryEmptyDataList) {
@@ -614,6 +630,270 @@ TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
   EXPECT_EQ(0x0008, services[2].range_start);
   EXPECT_EQ(0x0009, services[2].range_end);
   EXPECT_EQ(kTestUuid3, services[2].type);
+}
+
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDByResponseTooShort) {
+  att::Status status;
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  // Respond back with a malformed payload.
+  fake_chan()->Receive(CreateStaticByteBuffer(0x7, 0x0));
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
+// Tests that we handle an empty handle information list properly. In practice, the
+// server would send an "Attribute Not Found" error instead.  A handle list that is 
+// empty is an error.
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDEmptyDataList) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07  // opcode: find by value type response
+                                                    // data list is empty
+                                              ));
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(status);
+}
+
+// The first request results in "Attribute Not Found".
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDAttributeNotFound) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
+                                              0x06,        // request: find by type value
+                                              0x01, 0x00,  // handle: 0x0001
+                                              0x0A         // error: Attribute Not Found
+                                              ));
+
+  RunLoopUntilIdle();
+
+  // The procedure succeeds with no services.
+  EXPECT_TRUE(status);
+}
+
+// The first request results in an error.
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDError) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [&, this] {
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
+                                              0x06,        // request: find by type value
+                                              0x01, 0x00,  // handle: 0x0001
+                                              0x06         // error: Request Not Supported
+                                              ));
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status.is_protocol_error());
+  EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
+}
+
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDMalformedServiceRange) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, res_cb] {
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  // Return a service where start > end.
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
+                                              0x02, 0x00,  // svc 1 start: 0x0002
+                                              0x01, 0x00   // svc 1 end: 0x0001
+                                              ));
+
+  RunLoopUntilIdle();
+
+  // The procedure should be over since the last service in the payload has
+  // end handle 0xFFFF.
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+}
+
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUID16BitResultsSingleRequest) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
+                                              0x01, 0x00,  // svc 1 start: 0x0001
+                                              0x05, 0x00,  // svc 1 end: 0x0005
+                                              0x06, 0x00,  // svc 2 start: 0x0006
+                                              0xFF, 0xFF   // svc 2 end: 0xFFFF
+                                              ));
+
+  RunLoopUntilIdle();
+
+  // The procedure should be over since the last service in the payload has
+  // end handle 0xFFFF.
+  EXPECT_TRUE(status);
+  EXPECT_EQ(2u, services.size());
+  EXPECT_EQ(0x0001, services[0].range_start);
+  EXPECT_EQ(0x0005, services[0].range_end);
+  EXPECT_EQ(kTestUuid1, services[0].type);
+  EXPECT_EQ(0x0006, services[1].range_start);
+  EXPECT_EQ(0xFFFF, services[1].range_end);
+  EXPECT_EQ(kTestUuid1, services[1].type);
+}
+
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUID128BitResultSingleRequest) {
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid3);
+  });
+
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary128ByUUID));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
+                                              0x01, 0x00,  // svc 1 start: 0x0008
+                                              0xFF, 0xFF  // svc 1 end: 0xFFFF
+                                              ));
+
+  RunLoopUntilIdle();
+
+  // The procedure should be over since the last service in the payload has
+  // end handle 0xFFFF.
+  EXPECT_TRUE(status);
+  EXPECT_EQ(1u, services.size());
+  EXPECT_EQ(0x0001, services[0].range_start);
+  EXPECT_EQ(0xFFFF, services[0].range_end);
+  EXPECT_EQ(kTestUuid3, services[0].type);
+}
+
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDMultipleRequests) {
+  const auto kExpectedRequest1 =
+      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
+                             0x01, 0x00,  // start handle: 0x0001
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28,  // type: primary service (0x2800)
+                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+      );
+  const auto kExpectedRequest2 =
+      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
+                             0x08, 0x00,  // start handle: 0x0008
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28,  // type: primary service (0x2800)
+                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+      );
+  const auto kExpectedRequest3 =
+      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
+                             0x0A, 0x00,  // start handle: 0x000A
+                             0xFF, 0xFF,  // end handle: 0xFFFF
+                             0x00, 0x28,  // type: primary service (0x2800)
+                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+      );
+
+  att::Status status(HostError::kFailed);
+  auto res_cb = [&status](att::Status val) { status = val; };
+
+  std::vector<ServiceData> services;
+  auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
+
+  // Initiate the request on the loop since Expect() below blocks.
+  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid1);
+  });
+
+  ASSERT_TRUE(Expect(kExpectedRequest1));
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
+                                              0x01, 0x00,  // svc 1 start: 0x0001
+                                              0x05, 0x00,  // svc 1 end: 0x0005
+                                              0x06, 0x00,  // svc 2 start: 0x0006
+                                              0x07, 0x00   // svc 2 end: 0x0007
+                                              ));
+
+  // The client should follow up with a second request following the last end
+  // handle.
+  ASSERT_TRUE(Expect(kExpectedRequest2));
+
+  // Respond with one 128-bit service UUID.
+
+  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
+                                              0x08, 0x00,  // svc 1 start: 0x0008
+                                              0x09, 0x00   // svc 1 end: 0x0009
+                                              ));
+
+  // The client should follow up with a third request following the last end
+  // handle.
+  ASSERT_TRUE(Expect(kExpectedRequest3));
+
+  // Terminate the procedure with an error response.
+  fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
+                                              0x06,        // request: find by type value
+                                              0x0A, 0x00,  // handle: 0x000A
+                                              0x0A         // error: Attribute Not Found
+                                              ));
+
+  RunLoopUntilIdle();
+
+  // The procedure should be over since the last service in the payload has
+  // end handle 0xFFFF.
+  EXPECT_TRUE(status);
+  EXPECT_EQ(3u, services.size());
+
+  EXPECT_EQ(0x0001, services[0].range_start);
+  EXPECT_EQ(0x0005, services[0].range_end);
+  EXPECT_EQ(kTestUuid1, services[0].type);
+
+  EXPECT_EQ(0x0006, services[1].range_start);
+  EXPECT_EQ(0x0007, services[1].range_end);
+  EXPECT_EQ(kTestUuid1, services[1].type);
+
+  EXPECT_EQ(0x0008, services[2].range_start);
+  EXPECT_EQ(0x0009, services[2].range_end);
+  EXPECT_EQ(kTestUuid1, services[2].type);
 }
 
 TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesEqual) {
