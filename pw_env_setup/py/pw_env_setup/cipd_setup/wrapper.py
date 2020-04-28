@@ -95,8 +95,8 @@ def arch_normalized():
     """Normalize arch into format expected in CIPD paths."""
 
     machine = platform.machine()
-    if machine.startswith('arm'):
-        return machine
+    if machine.startswith(('arm', 'aarch')):
+        return machine.replace('aarch', 'arm')
     if machine.endswith('64'):
         return 'amd64'
     if machine.endswith('86'):

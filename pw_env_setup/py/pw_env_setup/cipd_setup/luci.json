@@ -18,7 +18,7 @@
         ]
     },
     {
-        "path": "infra/tools/luci/logdog/logdog/${platform}",
+        "path": "infra/tools/luci/logdog/logdog/${os}-${arch=amd64}",
         "tags": [
             "git_revision:2155d0d436bf346333810cc352791063e1dda952"
         ]
@@ -42,7 +42,7 @@
         ]
     },
     {
-        "path": "infra/tools/preview_email/${platform}",
+        "path": "infra/tools/preview_email/${os}-${arch=amd64}",
         "tags": [
             "git_revision:2155d0d436bf346333810cc352791063e1dda952"
         ]

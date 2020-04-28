@@ -1,43 +1,43 @@
 [
   {
-    "path": "gn/gn/${platform}",
+    "path": "gn/gn/${os}-${arch=amd64}",
     "tags": [
       "git_revision:4cd7fe1509f6e8b7a60430c6c19f2f03159d7889"
     ]
   },
   {
-    "path": "infra/ninja/${platform}",
+    "path": "infra/ninja/${os}-${arch=amd64}",
     "tags": [
       "version:1.9.0"
     ]
   },
   {
-    "path": "infra/cmake/${platform}",
+    "path": "infra/cmake/${os}-${arch=amd64}",
     "tags": [
       "version:3.16.1"
     ]
   },
   {
     "_comment": "TODO(pwbug/93): Package Bazel for Windows.",
-    "path": "fuchsia/third_party/bazel/${os=linux,mac}-${arch}",
+    "path": "fuchsia/third_party/bazel/${os=linux,mac}-${arch=amd64}",
     "tags": [
       "version:0.25.1"
     ]
   },
   {
-    "path": "pigweed/third_party/bloaty-embedded/${os=linux,mac}-${arch}",
+    "path": "pigweed/third_party/bloaty-embedded/${os=linux,mac}-${arch=amd64}",
     "tags": [
       "git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52-2"
     ]
   },
   {
-    "path": "pigweed/third_party/gcc-arm-none-eabi/${platform}",
+    "path": "pigweed/third_party/gcc-arm-none-eabi/${os}-${arch=amd64}",
     "tags": [
       "version:9-2019-q4-major"
     ]
   },
   {
-    "path": "infra/tools/protoc/${platform}",
+    "path": "infra/tools/protoc/${os}-${arch=amd64}",
     "tags": [
       "protobuf_version:v3.8.0"
     ]
@@ -57,45 +57,45 @@
     ]
   },
   {
-    "path": "infra/go/${platform}",
+    "path": "infra/go/${os}-${arch=amd64}",
     "tags": [
       "version:1.13.5"
     ]
   },
   {
-    "path": "pigweed/third_party/protoc-gen-go/${platform}",
+    "path": "pigweed/third_party/protoc-gen-go/${os}-${arch=amd64}",
     "tags": [
       "version:1.3.2"
     ]
   },
   {
     "_comment": "TODO(pwbug/66) Put openocd in cipd for Windows.",
-    "path": "pigweed/third_party/openocd/${os=linux,mac}-${arch}",
+    "path": "pigweed/third_party/openocd/${os=linux,mac}-${arch=amd64}",
     "tags": [
       "git_revision:646566e006acd58fb9ac405511d3ecca79f26d55-2"
     ]
   },
   {
     "_comment": "TODO(pwbug/69) Put rust in cipd for Windows.",
-    "path": "fuchsia/rust/${os=linux,mac}-${arch}",
+    "path": "fuchsia/rust/${os=linux,mac}-${arch=amd64}",
     "tags": [
       "git_revision:0862458dad90a0d80827e22e3f86e33add6d847c"
     ]
   },
   {
-    "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch}",
+    "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch=amd64}",
     "tags": [
       "version:8.1.0"
     ]
   },
   {
-    "path": "pigweed/host_tools/${platform}",
+    "path": "pigweed/host_tools/${os}-${arch=amd64}",
     "tags": [
       "git_revision:17083bb17465053966c81df5e6a58bf679fb2ad2"
     ]
   },
   {
-    "path": "infra/goma/client/${platform}",
+    "path": "infra/goma/client/${os}-${arch=amd64}",
     "tags": [
       "git_revision:108fb36e5538b3749016ec19ef1268fc43681e33"
     ]
