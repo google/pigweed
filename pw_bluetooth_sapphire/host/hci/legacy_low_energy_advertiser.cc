@@ -19,6 +19,9 @@ namespace hci {
 
 namespace {
 
+// The size, in bytes, of the serialized TX Power Level.
+constexpr size_t kTxPowerLevelTLVSize = 3;
+
 // Helpers for building HCI command packets:
 
 std::unique_ptr<CommandPacket> BuildEnablePacket(GenericEnableParam enable) {
@@ -79,6 +82,12 @@ std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(LEAdvertisingType type,
   return packet;
 }
 
+std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
+  auto packet = CommandPacket::New(kLEReadAdvertisingChannelTxPower);
+  ZX_ASSERT(packet);
+  return packet;
+}
+
 }  // namespace
 
 LegacyLowEnergyAdvertiser::LegacyLowEnergyAdvertiser(fxl::RefPtr<Transport> hci)
@@ -94,49 +103,10 @@ bool LegacyLowEnergyAdvertiser::AllowsRandomAddressChange() const {
   return !starting_ && !advertising();
 }
 
-void LegacyLowEnergyAdvertiser::StartAdvertising(
+void LegacyLowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
-    AdvertisingOptions adv_options, ConnectionCallback connect_callback, StatusCallback callback) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
-
-  if (adv_options.anonymous) {
-    bt_log(TRACE, "hci-le", "anonymous advertising not supported");
-    callback(Status(HostError::kNotSupported));
-    return;
-  }
-
-  if (advertising()) {
-    if (address != advertised_) {
-      bt_log(TRACE, "hci-le", "already advertising");
-      callback(Status(HostError::kNotSupported));
-      return;
-    }
-    bt_log(TRACE, "hci-le", "updating existing advertisement");
-  }
-
-  if (data.CalculateBlockSize(/*include_flags=*/true) > GetSizeLimit()) {
-    bt_log(TRACE, "hci-le", "advertising data too large");
-    callback(Status(HostError::kAdvertisingDataTooLong));
-    return;
-  }
-
-  if (scan_rsp.CalculateBlockSize() > GetSizeLimit()) {
-    bt_log(TRACE, "hci-le", "scan response too large");
-    callback(Status(HostError::kScanResponseTooLong));
-    return;
-  }
-
-  if (!hci_cmd_runner_->IsReady()) {
-    // Abort any remaining commands from the current stop sequence. If we got
-    // here then the controller MUST receive our request to disable advertising,
-    // so the commands that we send next will overwrite the current advertising
-    // settings and re-enable it.
-    hci_cmd_runner_->Cancel();
-  }
-
-  starting_ = true;
-
+    AdvertisingIntervalRange interval, AdvFlags flags, ConnectionCallback connect_callback,
+    StatusCallback callback) {
   if (advertising()) {
     // Temporarily disable advertising so we can tweak the parameters.
     hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kDisable));
@@ -144,7 +114,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
 
   // Set advertising and scan response data. If either data is empty then it
   // will be cleared accordingly.
-  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingData(data, adv_options.flags));
+  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingData(data, flags));
   hci_cmd_runner_->QueueCommand(BuildSetScanResponse(scan_rsp));
 
   // Set advertising parameters
@@ -162,8 +132,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     own_addr_type = LEOwnAddressType::kRandom;
   }
 
-  hci_cmd_runner_->QueueCommand(
-      BuildSetAdvertisingParams(type, own_addr_type, adv_options.interval));
+  hci_cmd_runner_->QueueCommand(BuildSetAdvertisingParams(type, own_addr_type, interval));
 
   // Enable advertising.
   hci_cmd_runner_->QueueCommand(BuildEnablePacket(GenericEnableParam::kEnable));
@@ -187,6 +156,127 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       });
 }
 
+void LegacyLowEnergyAdvertiser::StartAdvertising(
+    const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
+    AdvertisingOptions adv_options, ConnectionCallback connect_callback, StatusCallback callback) {
+  ZX_DEBUG_ASSERT(callback);
+  ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
+
+  if (adv_options.anonymous) {
+    bt_log(TRACE, "hci-le", "anonymous advertising not supported");
+    callback(Status(HostError::kNotSupported));
+    return;
+  }
+
+  if (advertising()) {
+    if (address != advertised_) {
+      bt_log(TRACE, "hci-le", "already advertising");
+      callback(Status(HostError::kNotSupported));
+      return;
+    }
+    bt_log(TRACE, "hci-le", "updating existing advertisement");
+  }
+
+  // If the TX Power Level is requested, ensure both buffers have enough space.
+  size_t size_limit = GetSizeLimit();
+  if (adv_options.include_tx_power_level)
+    size_limit -= kTxPowerLevelTLVSize;
+
+  if (data.CalculateBlockSize(/*include_flags=*/true) > size_limit) {
+    bt_log(TRACE, "hci-le", "advertising data too large");
+    callback(Status(HostError::kAdvertisingDataTooLong));
+    return;
+  }
+
+  if (scan_rsp.CalculateBlockSize() > size_limit) {
+    bt_log(TRACE, "hci-le", "scan response too large");
+    callback(Status(HostError::kScanResponseTooLong));
+    return;
+  }
+
+  // Midst of a TX power level read - send a cancel over the previous status callback.
+  if (staged_params_.has_value()) {
+    auto status_cb = std::move(staged_params_.value().callback);
+    status_cb(Status(HostError::kCanceled));
+  }
+
+  // If the TX Power level is requested, then stage the parameters for the read operation.
+  // If there already is an outstanding TX Power Level read request, return early.
+  // Advertising on the outstanding call will now use the updated |staged_params_|.
+  if (adv_options.include_tx_power_level) {
+    AdvertisingData data_copy, scan_rsp_copy;
+    data.Copy(&data_copy);
+    scan_rsp.Copy(&scan_rsp_copy);
+    staged_params_ = StagedParams{address,
+                                  adv_options.interval,
+                                  adv_options.flags,
+                                  std::move(data_copy),
+                                  std::move(scan_rsp_copy),
+                                  std::move(connect_callback),
+                                  std::move(callback)};
+    if (starting_ && hci_cmd_runner_->IsReady()) {
+      return;
+    }
+  }
+
+  if (!hci_cmd_runner_->IsReady()) {
+    // Abort any remaining commands from the current stop sequence. If we got
+    // here then the controller MUST receive our request to disable advertising,
+    // so the commands that we send next will overwrite the current advertising
+    // settings and re-enable it.
+    hci_cmd_runner_->Cancel();
+  }
+
+  starting_ = true;
+
+  // If the TX Power Level is requested, read it from the controller, update the data buf, and
+  // proceed with starting advertising.
+  //
+  // If advertising was canceled during the TX power level read (either |starting_| was
+  // reset or the |callback| was moved), return early.
+  if (adv_options.include_tx_power_level) {
+    auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
+      ZX_ASSERT(staged_params_.has_value());
+      if ((!starting_) || (!staged_params_.value().callback)) {
+        bt_log(INFO, "hci-le", "Advertising canceled during TX Power Level read.");
+        return;
+      }
+
+      if (hci_is_error(event, WARN, "hci-le", "read TX power level failed")) {
+        staged_params_.value().callback(event.ToStatus());
+        staged_params_ = {};
+        starting_ = false;
+        return;
+      }
+
+      const auto& params = event.return_params<hci::LEReadAdvertisingChannelTxPowerReturnParams>();
+
+      // Update the advertising and scan response data with the TX power level.
+      auto staged_params = std::move(staged_params_.value());
+      staged_params.data.SetTxPower(params->tx_power);
+      if (staged_params.scan_rsp.CalculateBlockSize()) {
+        staged_params.scan_rsp.SetTxPower(params->tx_power);
+      }
+      // Reset the |staged_params_| as it is no longer in use.
+      staged_params_ = {};
+
+      StartAdvertisingInternal(staged_params.address, staged_params.data, staged_params.scan_rsp,
+                               staged_params.interval, staged_params.flags,
+                               std::move(staged_params.connect_callback),
+                               std::move(staged_params.callback));
+    };
+
+    hci_->command_channel()->SendCommand(BuildReadAdvertisingTxPower(),
+                                         async_get_default_dispatcher(), std::move(power_cb));
+    return;
+  }
+
+  StartAdvertisingInternal(address, data, scan_rsp, adv_options.interval, adv_options.flags,
+                           std::move(connect_callback), std::move(callback));
+}
+
+// TODO(50542): StopAdvertising() should cancel outstanding calls to StartAdvertising() and clean
+// up state.
 bool LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
   if (advertised_ != address) {
     // not advertising, or not on this address.

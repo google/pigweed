@@ -508,8 +508,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   };
 
   // Advertising should use the public address by default.
-  adapter()->le_advertising_manager()->StartAdvertising(
-      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                                        nullptr, AdvertisingInterval::FAST1, false,
+                                                        /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
@@ -528,8 +529,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restart advertising. This should configure the LE random address and
   // advertise using it.
-  adapter()->le_advertising_manager()->StartAdvertising(
-      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                                        nullptr, AdvertisingInterval::FAST1, false,
+                                                        /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
@@ -543,8 +545,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Restarting advertising should refresh the controller address.
   adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(
-      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                                        nullptr, AdvertisingInterval::FAST1, false,
+                                                        /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
@@ -555,8 +558,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   // public address.
   adapter()->le_address_manager()->EnablePrivacy(false);
   adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(
-      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false, adv_cb);
+  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
+                                                        nullptr, AdvertisingInterval::FAST1, false,
+                                                        /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
@@ -791,12 +795,12 @@ TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 
   AdvertisementInstance instance;
-  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
-                                                        nullptr, AdvertisingInterval::FAST1, false,
-                                                        [&](AdvertisementInstance i, auto status) {
-                                                          ASSERT_TRUE(status);
-                                                          instance = std::move(i);
-                                                        });
+  adapter()->le_advertising_manager()->StartAdvertising(
+      AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false,
+      /*include_tx_power_level*/ false, [&](AdvertisementInstance i, auto status) {
+        ASSERT_TRUE(status);
+        instance = std::move(i);
+      });
   RunLoopUntilIdle();
   EXPECT_TRUE(adapter()->IsDiscoverable());
 

@@ -177,6 +177,7 @@ FakeController::FakeController()
       next_conn_handle_(0u),
       le_connect_pending_(false),
       next_le_sig_id_(1u),
+      respond_to_tx_power_read_(true),
       data_callback_(nullptr),
       data_dispatcher_(nullptr),
       auto_completed_packets_event_enabled_(true),
@@ -1078,6 +1079,15 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
                   BufferView(&response, sizeof(response)));
 }
 
+void FakeController::SendTxPowerLevelReadResponse() {
+  hci::LEReadAdvertisingChannelTxPowerReturnParams params;
+  // Send back arbitrary tx power.
+  params.status = hci::StatusCode::kSuccess;
+  params.tx_power = 9;
+  RespondWithCommandComplete(hci::kLEReadAdvertisingChannelTxPower,
+                             BufferView(&params, sizeof(params)));
+}
+
 void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
 
@@ -1621,6 +1631,12 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
     case hci::kLEReadRemoteFeatures: {
       const auto& params = command_packet.payload<hci::LEReadRemoteFeaturesCommandParams>();
       OnLEReadRemoteFeaturesCommand(params);
+      break;
+    }
+    case hci::kLEReadAdvertisingChannelTxPower: {
+      if (respond_to_tx_power_read_) {
+        SendTxPowerLevelReadResponse();
+      }
       break;
     }
     default: {

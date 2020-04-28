@@ -270,6 +270,13 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
     auto_disconnection_complete_event_enabled_ = enabled;
   }
 
+  // Sets the response flag for a TX Power Level Read.
+  // Enabled by default (i.e it will respond to TXPowerLevelRead by default).
+  void set_tx_power_level_read_response_flag(bool respond) { respond_to_tx_power_read_ = respond; }
+
+  // Send a HCI Read TX Power Level response.
+  void SendTxPowerLevelReadResponse();
+
  private:
   // Returns the current thread's task dispatcher.
   async_dispatcher_t* dispatcher() const { return async_get_default_dispatcher(); }
@@ -432,6 +439,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   // ID used for L2CAP LE signaling channel commands.
   uint8_t next_le_sig_id_;
+
+  // Used to indicate whether to respond back to TX Power Level read or not.
+  bool respond_to_tx_power_read_;
 
   // The Inquiry Mode that the controller is in.  Determines what types of
   // events are faked when a kInquiry is started.

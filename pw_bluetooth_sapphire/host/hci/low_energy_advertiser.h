@@ -97,12 +97,17 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // this internal limit, a HostError::kAdvertisingDataTooLong or HostError::kScanResponseTooLong
   // error will be generated.
   struct AdvertisingOptions {
-    AdvertisingOptions(AdvertisingIntervalRange interval, bool anonymous, AdvFlags flags)
-        : interval(interval), anonymous(anonymous), flags(flags) {}
+    AdvertisingOptions(AdvertisingIntervalRange interval, bool anonymous, AdvFlags flags,
+                       bool include_tx_power_level)
+        : interval(interval),
+          anonymous(anonymous),
+          flags(flags),
+          include_tx_power_level(include_tx_power_level) {}
 
     AdvertisingIntervalRange interval;
     bool anonymous;
     AdvFlags flags;
+    bool include_tx_power_level;
   };
   using ConnectionCallback = fit::function<void(ConnectionPtr link)>;
   virtual void StartAdvertising(const DeviceAddress& address, const AdvertisingData& data,

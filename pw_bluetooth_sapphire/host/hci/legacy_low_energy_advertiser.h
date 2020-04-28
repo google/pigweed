@@ -38,6 +38,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // If called while a start request is pending, then cancels the start
   // request and proceeds with start.
   // Returns false if called while not advertising.
+  // TODO(50542): Update documentation.
   bool StopAdvertising(const DeviceAddress& address) override;
 
   // Clears the advertising state before passing |link| on to
@@ -50,6 +51,11 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // Unconditionally stops advertising.
   void StopAdvertisingInternal();
 
+  void StartAdvertisingInternal(const DeviceAddress& address, const AdvertisingData& data,
+                                const AdvertisingData& scan_rsp, AdvertisingIntervalRange interval,
+                                AdvFlags flags, ConnectionCallback connect_callback,
+                                StatusCallback callback);
+
   // Returns true if currently advertising.
   bool advertising() const { return advertised_ != DeviceAddress(); }
 
@@ -58,6 +64,17 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   // |hci_cmd_runner_| will be running when a start or stop is pending.
   // |starting_| is set to true if a start is pending.
+  // |staged_params_| are the parameters that will be advertised.
+  struct StagedParams {
+    DeviceAddress address;
+    AdvertisingIntervalRange interval;
+    AdvFlags flags;
+    AdvertisingData data;
+    AdvertisingData scan_rsp;
+    ConnectionCallback connect_callback;
+    StatusCallback callback;
+  };
+  std::optional<StagedParams> staged_params_;
   bool starting_;
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
 

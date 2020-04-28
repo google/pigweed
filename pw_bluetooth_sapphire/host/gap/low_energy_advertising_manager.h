@@ -102,7 +102,8 @@ class LowEnergyAdvertisingManager {
       fit::function<void(AdvertisementInstance instance, hci::Status status)>;
   void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                         ConnectionCallback connect_callback, AdvertisingInterval interval,
-                        bool anonymous, AdvertisingStatusCallback status_callback);
+                        bool anonymous, bool include_tx_power_level,
+                        AdvertisingStatusCallback status_callback);
 
   // Stop advertising the advertisement with the id |advertisement_id|
   // Returns true if an advertisement was stopped, and false otherwise.

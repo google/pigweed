@@ -103,6 +103,7 @@ LowEnergyAdvertisingManager::~LowEnergyAdvertisingManager() {
 void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                                                    ConnectionCallback connect_callback,
                                                    AdvertisingInterval interval, bool anonymous,
+                                                   bool include_tx_power_level,
                                                    AdvertisingStatusCallback status_callback) {
   // Can't be anonymous and connectable
   if (anonymous && connect_callback) {
@@ -118,7 +119,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
     interval = AdvertisingInterval::FAST2;
   }
   hci::LowEnergyAdvertiser::AdvertisingOptions options(GetIntervalRange(interval), anonymous,
-                                                       AdvFlag::kLEGeneralDiscoverableMode);
+                                                       AdvFlag::kLEGeneralDiscoverableMode,
+                                                       include_tx_power_level);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 

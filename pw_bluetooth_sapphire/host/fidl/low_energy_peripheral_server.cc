@@ -113,8 +113,14 @@ void LowEnergyPeripheralServer::StartAdvertising(
   }
 
   bt::AdvertisingData adv_data, scan_rsp;
+  bool include_tx_power_level = false;
   if (parameters.has_data()) {
     adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
+
+    if (parameters.data().has_tx_power_level()) {
+      bt_log(SPEW, LOG_TAG, "Including TX Power level at HCI layer");
+      include_tx_power_level = true;
+    }
   }
   if (parameters.has_scan_response()) {
     scan_rsp = fidl_helpers::AdvertisingDataFromFidl(parameters.scan_response());
@@ -192,7 +198,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   auto* am = adapter()->le_advertising_manager();
   ZX_DEBUG_ASSERT(am);
   am->StartAdvertising(std::move(adv_data), std::move(scan_rsp), std::move(connect_cb), interval,
-                       false /* anonymous */, std::move(status_cb));
+                       false /* anonymous */, include_tx_power_level, std::move(status_cb));
 }
 
 const bt::gap::LowEnergyConnectionRef* LowEnergyPeripheralServer::FindConnectionForTesting(
