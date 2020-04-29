@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,7 @@
 import argparse
 import logging
 import os
-import pathlib
+from pathlib import Path
 import shlex
 import subprocess
 from typing import Sequence
@@ -25,10 +25,11 @@ from typing import Sequence
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def git_repo_root(path) -> str:
-    return subprocess.run(['git', '-C', path, 'rev-parse', '--show-toplevel'],
-                          check=True,
-                          stdout=subprocess.PIPE).stdout.strip().decode()
+def git_repo_root(path) -> Path:
+    return Path(
+        subprocess.run(['git', '-C', path, 'rev-parse', '--show-toplevel'],
+                       check=True,
+                       stdout=subprocess.PIPE).stdout.strip().decode())
 
 
 def install_hook(script,
@@ -36,12 +37,12 @@ def install_hook(script,
                  args: Sequence[str] = (),
                  repository='.') -> None:
     """Installs a simple Git hook that calls a script with arguments."""
-    root = pathlib.Path(git_repo_root(repository)).resolve()
-    script = pathlib.Path(script).resolve().relative_to(root)
+    root = git_repo_root(repository).resolve()
+    script = os.path.relpath(script, root)
 
     hook_path = root.joinpath('.git', 'hooks', hook)
 
-    command: str = ' '.join(shlex.quote(arg) for arg in (str(script), *args))
+    command = ' '.join(shlex.quote(arg) for arg in (script, *args))
 
     with hook_path.open('w') as file:
         line = lambda *args: print(*args, file=file)
@@ -59,11 +60,11 @@ def argument_parser(parser=None) -> argparse.ArgumentParser:
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)
 
-    def path(arg):
+    def path(arg: str) -> Path:
         if not os.path.exists(arg):
             raise argparse.ArgumentTypeError(f'"{arg}" is not a valid path')
 
-        return pathlib.Path(arg)
+        return Path(arg)
 
     parser.add_argument(
         '-r',
