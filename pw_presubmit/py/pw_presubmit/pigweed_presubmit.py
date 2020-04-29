@@ -20,9 +20,8 @@ import logging
 import os
 from pathlib import Path
 import re
-import shutil
 import sys
-from typing import Callable, Sequence
+from typing import Sequence
 
 try:
     import pw_presubmit
@@ -33,7 +32,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import build, environment, format_code, python_checks
+from pw_presubmit import build, cli, environment, format_code, python_checks
 from pw_presubmit import call, filter_paths, PresubmitContext, PresubmitFailure
 from pw_presubmit import Programs
 from pw_presubmit.install_hook import install_hook
@@ -354,82 +353,17 @@ def parse_args() -> argparse.Namespace:
     """Creates an argument parser and parses arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
+    cli.add_arguments(parser, PROGRAMS, 'quick')
     parser.add_argument(
-        '-o',
-        '--output-directory',
-        type=Path,
-        help='Output directory (default: <repo root>/.presubmit)',
-    )
-
-    exclusive = parser.add_mutually_exclusive_group()
-    exclusive.add_argument(
-        '--clear',
-        '--clean',
-        action='store_true',
-        help='Delete the presubmit output directory and exit.',
-    )
-    exclusive.add_argument(
-        '--clear-py',
-        action='store_true',
-        help='Delete the Python virtualenv and exit.',
-    )
-    exclusive.add_argument(
         '--install',
         action='store_true',
         help='Install the presubmit as a Git pre-push hook and exit.')
-    exclusive.add_argument('-p',
-                           '--program',
-                           dest='program_name',
-                           choices=[x for x in PROGRAMS if x != 'broken'],
-                           default='full',
-                           help='Which presubmit program to run')
-    exclusive.add_argument(
-        '--step',
-        dest='steps',
-        choices=sorted(PROGRAMS.all_steps()),
-        action='append',
-        help='Provide explicit steps instead of running a predefined program.',
-    )
-
-    pw_presubmit.add_arguments(parser)
 
     return parser.parse_args()
 
 
-def run(
-    program_name: str,
-    clear: bool,
-    clear_py: bool,
-    install: bool,
-    repository: Path,
-    output_directory: Path,
-    steps: Sequence[str],
-    **presubmit_args,
-) -> int:
+def run(install: bool, repository: Path, **presubmit_args) -> int:
     """Entry point for presubmit."""
-
-    os.environ.setdefault('PW_ROOT',
-                          str(pw_presubmit.git_repo_path(repo=repository)))
-
-    if not output_directory:
-        output_directory = pw_presubmit.git_repo_path('.presubmit',
-                                                      repo=repository)
-    _LOG.debug('Using environment at %s', output_directory)
-
-    if clear or clear_py:
-        _LOG.info('Clearing presubmit%s environment',
-                  '' if clear else ' Python')
-
-        if clear and output_directory.exists():
-            shutil.rmtree(output_directory)
-            _LOG.info('Deleted %s', output_directory)
-
-        init_venv = output_directory.joinpath('init_virtualenv')
-        if clear_py and init_venv.exists():
-            shutil.rmtree(init_venv)
-            _LOG.info('Deleted %s', init_venv)
-
-        return 0
 
     if install:
         install_hook(__file__, 'pre-push',
@@ -437,18 +371,7 @@ def run(
                      repository)
         return 0
 
-    program: Sequence[Callable] = PROGRAMS[program_name]
-    if steps:
-        program = [PROGRAMS.all_steps()[name] for name in steps]
-
-    if pw_presubmit.run_presubmit(program,
-                                  program_name,
-                                  repo_path=repository,
-                                  output_directory=output_directory,
-                                  **presubmit_args):
-        return 0
-
-    return 1
+    return cli.run(repository=repository, **presubmit_args)
 
 
 def main() -> int:

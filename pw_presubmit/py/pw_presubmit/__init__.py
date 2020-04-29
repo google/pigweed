@@ -13,4 +13,5 @@
 # the License.
 """The pw_presubmit package provides tools for running presubmit checks."""
 
+from pw_presubmit import cli
 from pw_presubmit.tools import *

@@ -16,4 +16,8 @@ import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  inputs = [
+    "py/pw_presubmit/cli.py",
+    "py/pw_presubmit/tools.py",
+  ]
 }

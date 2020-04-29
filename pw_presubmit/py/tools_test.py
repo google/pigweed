@@ -65,9 +65,12 @@ class ProgramsTest(unittest.TestCase):
         self.assertEqual({}, tools.Programs())
 
     def test_access_present_members(self):
+        self.assertEqual('first', self._programs['first'].name)
         self.assertEqual((_fake_function_1, _fake_function_1),
-                         self._programs['first'])
-        self.assertEqual((_fake_function_2, ), self._programs['second'])
+                         tuple(self._programs['first']))
+
+        self.assertEqual('second', self._programs['second'].name)
+        self.assertEqual((_fake_function_2, ), tuple(self._programs['second']))
 
     def test_access_missing_member(self):
         with self.assertRaises(KeyError):

@@ -31,46 +31,42 @@ Compatibility
 =============
 Python 3
 
-pw_presubmit Python package
-===========================
-
 Presubmit tools
----------------
-A presubmit check is defined as a function or other callable. The function may
-take either no arguments or a list of the paths on which to run. Presubmit
-checks communicate failure by raising any exception.
+===============
+
+Defining presubmit checks
+-------------------------
+A presubmit check is defined as a function or other callable. The function must
+accept one argument: a ``PresubmitContext``, which provides the paths on which
+to run. Presubmit checks communicate failure by raising any exception.
 
 For example, either of these functions may be used as presubmit checks:
 
 .. code-block:: python
 
   @pw_presubmit.filter_paths(endswith='.py')
-  def file_contains_ni(paths):
-      for path in paths:
+  def file_contains_ni(ctx: PresubmitContext):
+      for path in ctx.paths:
           with open(path) as file:
               contents = file.read()
               if 'ni' not in contents and 'nee' not in contents:
                   raise PresumitFailure('Files must say "ni"!', path=path)
 
-  def run_the_build():
+  def run_the_build(_):
       subprocess.run(['make', 'release'], check=True)
 
-Presubmit checks are provided to the ``parse_args_and_run_presubmit`` or
-``run_presubmit`` function as a list. For example,
+Presubmit checks may use the ``filter_paths`` decorator to automatically filter
+the paths list for file types they care about.
 
-.. code-block:: python
+See ``pigweed_presubmit.py`` for an example of how to define presubmit checks.
 
-  PRESUBMIT_CHECKS = [file_contains_ni, run_the_build]
-  sys.exit(0 if parse_args_and_run_presubmit(PRESUBMIT_CHECKS) else 1)
+Key members
+^^^^^^^^^^^
+.. autofunction:: pw_presubmit.cli.add_arguments
 
-Presubmit checks that accept a list of paths may use the ``filter_paths``
-decorator to automatically filter the paths list for file types they care about.
+.. autofunction:: pw_presubmit.cli.run
 
-Members
-^^^^^^^
 .. autofunction:: pw_presubmit.run_presubmit
-
-.. autofunction:: pw_presubmit.parse_args_and_run_presubmit
 
 .. autodecorator:: pw_presubmit.filter_paths
 
@@ -78,8 +74,10 @@ Members
 
 .. autoexception:: pw_presubmit.PresubmitFailure
 
-Presubmit checks
-----------------
+.. autoexception:: pw_presubmit.Programs
+
+Included presubmit checks
+-------------------------
 The ``pw_presubmit`` package includes presubmit checks that can be used with any
 project. These checks include:
 
@@ -87,13 +85,14 @@ project. These checks include:
 * Initialize a Python environment
 * Run all Python tests
 * Run pylint
+* Run mypy
 * Ensure source files are included in the GN and Bazel builds
 * Build and run all tests with GN
 * Build and run all tests with Bazel
 * Ensure all header files contain ``#pragma once``
 
-pw_presubmit.format_code
-------------------------
-The ``format_code`` submodule formats supported source files using external code
-format tools. The file ``format_code.py`` can be invoked directly from the
-command line or from ``pw`` as ``pw format``.
+Code formatting tools
+=====================
+The ``pw_presubmit.format_code`` module formats supported source files using
+external code format tools. The file ``format_code.py`` can be invoked directly
+from the command line or from ``pw`` as ``pw format``.

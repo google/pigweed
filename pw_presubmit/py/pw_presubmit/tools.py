@@ -30,18 +30,13 @@ For example, either of these functions may be used as presubmit checks:
   def run_the_build():
       subprocess.run(['make', 'release'], check=True)
 
-Presubmit checks are provided to the parse_args_and_run_presubmit or
-run_presubmit function as a list. For example,
-
-  PRESUBMIT_CHECKS = [file_contains_ni, run_the_build]
-  sys.exit(0 if parse_args_and_run_presubmit(PRESUBMIT_CHECKS) else 1)
-
 Presubmit checks that accept a list of paths may use the filter_paths decorator
 to automatically filter the paths list for file types they care about. See the
 pragma_once function for an example.
+
+See pigweed_presbumit.py for an example of how to define presubmit checks.
 """
 
-import argparse
 import collections
 from collections import Counter, defaultdict
 import contextlib
@@ -54,7 +49,6 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-import sys
 import time
 from typing import Any, Callable, Collection, Dict, Iterable, Iterator, List
 from typing import NamedTuple, Optional, Pattern, Sequence, Tuple, Union
@@ -273,6 +267,51 @@ class _Result(enum.Enum):
         return padding + color(self.value) + padding
 
 
+class Program(collections.abc.Sequence):
+    """A sequence of presubmit checks; basically a tuple with a name."""
+    def __init__(self, name: str, steps: Iterable[Callable]):
+        self.name = name
+        self._steps = tuple(flatten(steps))
+
+    def __getitem__(self, i):
+        return self._steps[i]
+
+    def __len__(self):
+        return len(self._steps)
+
+    def __str__(self):
+        return self.name
+
+
+class Programs(collections.abc.Mapping):
+    """A mapping of presubmit check programs.
+
+    Use is optional. Helpful when managing multiple presubmit check programs.
+    """
+    def __init__(self, **programs: Sequence):
+        """Initializes a name: program mapping from the provided keyword args.
+
+        A program is a sequence of presubmit check functions. The sequence may
+        contain nested sequences, which are flattened.
+        """
+        self._programs: Dict[str, Program] = {
+            name: Program(name, checks)
+            for name, checks in programs.items()
+        }
+
+    def all_steps(self) -> Dict[str, Callable]:
+        return {c.__name__: c for c in itertools.chain(*self.values())}
+
+    def __getitem__(self, item: str) -> Program:
+        return self._programs[item]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._programs)
+
+    def __len__(self) -> int:
+        return len(self._programs)
+
+
 @dataclasses.dataclass(frozen=True)
 class PresubmitContext:
     """Context passed into presubmit checks."""
@@ -340,21 +379,18 @@ class Presubmit:
         self._output_directory = output_directory
         self._paths = paths
 
-    def run(self,
-            full_program: Sequence[Callable],
-            name: str = '',
-            keep_going: bool = False) -> bool:
+    def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
-        title = f'{name} presubmit checks' if name else 'presubmit checks'
-        program = _apply_filters(full_program, self._paths)
+        title = f'{program.name if program.name else ""} presubmit checks'
+        checks = _apply_filters(program, self._paths)
 
         _LOG.debug('Running %s for %s', title, self._repository_root.name)
         print(_title(f'{self._repository_root.name}: {title}'))
 
-        _LOG.info('%d of %d checks apply to %s in %s', len(program),
-                  len(full_program), plural(self._paths, 'file'),
-                  self._repository_root)
+        _LOG.info('%d of %d checks apply to %s in %s', len(checks),
+                  len(program), plural(self._paths,
+                                       'file'), self._repository_root)
 
         print()
         for line in file_summary(self._paths):
@@ -365,10 +401,10 @@ class Presubmit:
         if not self._paths:
             print(color_yellow('No files are being checked!'))
 
-        _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in program))
+        _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in checks))
 
         start_time: float = time.time()
-        passed, failed, skipped = self._execute_checks(program, keep_going)
+        passed, failed, skipped = self._execute_checks(checks, keep_going)
         self._log_summary(time.time() - start_time, passed, failed, skipped)
 
         return not failed and not skipped
@@ -481,53 +517,7 @@ def _map_checks_to_paths(
     return checks_to_paths
 
 
-def add_path_arguments(parser) -> None:
-    """Adds common presubmit check options to an argument parser."""
-
-    parser.add_argument(
-        'paths',
-        metavar='path',
-        nargs='*',
-        type=Path,
-        help=('Paths to which to restrict the checks. These are interpreted '
-              'as Git pathspecs. If --base is provided, only paths changed '
-              'since that commit are checked.'))
-    parser.add_argument(
-        '-b',
-        '--base',
-        metavar='COMMIT',
-        help=('Git revision against which to diff for changed files. '
-              'If none is provided, the entire repository is used.'))
-    parser.add_argument(
-        '-e',
-        '--exclude',
-        metavar='REGULAR_EXPRESSION',
-        default=[],
-        action='append',
-        type=re.compile,
-        help='Exclude paths matching any of these regular expressions.')
-
-
-def add_arguments(parser: argparse.ArgumentParser) -> None:
-    """Adds common presubmit check options to an argument parser."""
-
-    add_path_arguments(parser)
-    parser.add_argument(
-        '-r',
-        '--repository',
-        default='.',
-        type=Path,
-        help=(
-            'Change to this directory before resolving paths or running the '
-            'presubmit. Presubmit checks must be run from a Git repository.'))
-    parser.add_argument('-k',
-                        '--keep-going',
-                        action='store_true',
-                        help='Continue instead of aborting when errors occur.')
-
-
 def run_presubmit(program: Sequence[Callable],
-                  name: str = '',
                   base: Optional[str] = None,
                   paths: Sequence[Path] = (),
                   exclude: Sequence[Pattern] = (),
@@ -575,21 +565,11 @@ def run_presubmit(program: Sequence[Callable],
         output_directory=Path(output_directory),
         paths=files,
     )
-    return presubmit.run(program, name, keep_going)
 
+    if not isinstance(program, Program):
+        program = Program('', program)
 
-def parse_args_and_run_presubmit(
-        program: Sequence[Callable],
-        arg_parser: Optional[argparse.ArgumentParser] = None) -> bool:
-    """Parses the command line arguments and calls run_presubmit with them."""
-
-    if arg_parser is None:
-        arg_parser = argparse.ArgumentParser(
-            description='Runs presubmit checks on a Git repository.',
-            formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    add_arguments(arg_parser)
-    return run_presubmit(program, **vars(arg_parser.parse_args()))
+    return presubmit.run(program, keep_going)
 
 
 def find_python_packages(python_paths, repo='.') -> Dict[str, List[str]]:
@@ -778,37 +758,3 @@ def flatten(*items) -> Iterator:
             yield from flatten(*item)
         else:
             yield item
-
-
-class Programs(collections.abc.Mapping):
-    """A mapping of presubmit check programs.
-
-    Use is optional. Helpful when managing multiple presubmit check programs.
-    """
-    def __init__(self, **programs: Sequence):
-        """Initializes a name: program mapping from the provided keyword args.
-
-        A program is a sequence of presubmit check functions. The sequence may
-        contain nested sequences, which are flattened.
-        """
-        self._programs: Dict[str, tuple] = {
-            name: tuple(flatten(checks))
-            for name, checks in programs.items()
-        }
-
-    def all_steps(self) -> Dict[str, Callable]:
-        return {c.__name__: c for c in itertools.chain(*self.values())}
-
-    def __getitem__(self, item: str) -> tuple:
-        return self._programs[item]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._programs)
-
-    def __len__(self) -> int:
-        return len(self._programs)
-
-
-if __name__ == '__main__':
-    # As an example, run a presubmit with the pragma_once check.
-    sys.exit(0 if parse_args_and_run_presubmit([pragma_once]) else 1)

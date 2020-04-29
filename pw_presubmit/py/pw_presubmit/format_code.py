@@ -40,6 +40,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
+import pw_presubmit.cli
 from pw_presubmit import file_summary, list_git_files, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -406,7 +407,7 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
 
     if git_paths:
-        pw_presubmit.add_path_arguments(parser)
+        pw_presubmit.cli.add_path_arguments(parser)
     else:
 
         def existing_path(arg: str) -> Path:
