@@ -28,6 +28,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_EMOJI', type=envparse.strict_bool, default=False)
     parser.add_var('PW_ENVSETUP')
     parser.add_var('PW_ENVSETUP_FULL')
+    parser.add_var('PW_ENVSETUP_NO_BANNER',
+                   type=envparse.strict_bool,
+                   default=False)
     parser.add_var('PW_ENVSETUP_QUIET',
                    type=envparse.strict_bool,
                    default=False)

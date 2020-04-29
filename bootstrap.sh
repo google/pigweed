@@ -114,7 +114,7 @@ export PW_ROOT
 
 SETUP_SH="$PW_ROOT/pw_env_setup/.env_setup.sh"
 
-if [ -z "$PW_ENVSETUP_QUIET" ]; then
+if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
   _pw_green "\n  WELCOME TO...\n"
   _pw_bright_magenta "$_PIGWEED_BANNER\n"
 fi
