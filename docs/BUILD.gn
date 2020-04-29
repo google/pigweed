@@ -82,6 +82,7 @@ pw_doc_gen("docs") {
     "$dir_pw_protobuf:docs",
     "$dir_pw_protobuf_compiler:docs",
     "$dir_pw_result:docs",
+    "$dir_pw_ring_buffer:docs",
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",
     "$dir_pw_string:docs",
