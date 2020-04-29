@@ -29,7 +29,7 @@ import re
 import subprocess
 import sys
 from typing import Callable, Collection, Dict, Iterable, List, NamedTuple
-from typing import Optional, Sequence
+from typing import Optional, Pattern, Sequence
 
 try:
     import pw_presubmit
@@ -312,7 +312,7 @@ PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self, files: Sequence[Path]):
+    def __init__(self, files: Collection[Path]):
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
@@ -347,13 +347,15 @@ def _file_summary(files: Iterable[Path], base: Path) -> List[str]:
         return []
 
 
-def format_paths(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
+def format_paths_in_repo(paths: Collection[Path],
+                         exclude: Collection[Pattern[str]], fix: bool,
+                         base: str) -> int:
     """Checks or fixes formatting for files in a Git repo."""
     files = [path.resolve() for path in paths if path.is_file()]
+    repo = pw_presubmit.git_repo_path() if pw_presubmit.is_git_repo() else None
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
-    if pw_presubmit.is_git_repo():
-        repo = pw_presubmit.git_repo_path()
+    if repo:
         _LOG.info(
             'Formatting %s',
             pw_presubmit.describe_files_in_repo(repo, Path.cwd(), base, paths,
@@ -366,13 +368,19 @@ def format_paths(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
             'A base commit may only be provided if running from a Git repo')
         return 1
 
-    formatter = CodeFormatter(files)
+    return format_files(files, fix, repo=repo)
+
+
+def format_files(paths: Collection[Path],
+                 fix: bool,
+                 repo: Optional[Path] = None) -> int:
+    """Checks or fixes formatting for the specified files."""
+    formatter = CodeFormatter(paths)
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
-    _LOG.debug('Files to format:\n%s', '\n'.join(str(f) for f in files))
+    _LOG.debug('Files to format:\n%s', '\n'.join(str(f) for f in paths))
 
-    for line in _file_summary(
-            files, repo if pw_presubmit.is_git_repo() else Path.cwd()):
+    for line in _file_summary(paths, repo if repo else Path.cwd()):
         print(line, file=sys.stderr)
 
     errors = formatter.check()
@@ -392,15 +400,38 @@ def format_paths(paths: Sequence[Path], exclude, base: str, fix: bool) -> int:
     return 0
 
 
-def main() -> int:
-    """Check and fix formatting for source files."""
+def arguments(git_paths: bool) -> argparse.ArgumentParser:
+    """Creates an argument parser for format_files or format_paths_in_repo."""
+
     parser = argparse.ArgumentParser(description=__doc__)
-    pw_presubmit.add_path_arguments(parser)
+
+    if git_paths:
+        pw_presubmit.add_path_arguments(parser)
+    else:
+
+        def existing_path(arg: str) -> Path:
+            path = Path(arg)
+            if not path.is_file():
+                raise argparse.ArgumentTypeError(
+                    f'{arg} is not a path to a file')
+
+            return path
+
+        parser.add_argument('paths',
+                            metavar='path',
+                            nargs='+',
+                            type=existing_path,
+                            help='File paths to check')
+
     parser.add_argument('--fix',
                         action='store_true',
                         help='Apply formatting fixes in place.')
+    return parser
 
-    return format_paths(**vars(parser.parse_args()))
+
+def main() -> int:
+    """Check and fix formatting for source files."""
+    return format_paths_in_repo(**vars(arguments(git_paths=True).parse_args()))
 
 
 if __name__ == '__main__':

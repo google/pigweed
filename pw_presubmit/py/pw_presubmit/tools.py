@@ -56,8 +56,8 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Any, Callable, Dict, Iterable, Iterator, List, NamedTuple
-from typing import Optional, Pattern, Sequence, Tuple, Union
+from typing import Any, Callable, Collection, Dict, Iterable, Iterator, List
+from typing import NamedTuple, Optional, Pattern, Sequence, Tuple, Union
 from inspect import signature
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -98,14 +98,14 @@ def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
                           check=True).stdout.decode().strip()
 
 
-def _git_ls_files(args: Sequence[PathOrStr], repo: Path) -> List[Path]:
+def _git_ls_files(args: Collection[PathOrStr], repo: Path) -> List[Path]:
     return [
         repo.joinpath(path).resolve() for path in git_stdout(
             'ls-files', '--', *args, repo=repo).splitlines()
     ]
 
 
-def _git_diff_names(commit: str, paths: Sequence[PathOrStr],
+def _git_diff_names(commit: str, paths: Collection[PathOrStr],
                     repo: Path) -> List[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     root = git_repo_path(repo=repo)
@@ -122,8 +122,8 @@ def _git_diff_names(commit: str, paths: Sequence[PathOrStr],
 
 
 def list_git_files(commit: Optional[str] = None,
-                   paths: Sequence[PathOrStr] = (),
-                   exclude: Sequence[Pattern[str]] = (),
+                   paths: Collection[PathOrStr] = (),
+                   exclude: Collection[Pattern[str]] = (),
                    repo: Optional[Path] = None) -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
@@ -144,8 +144,8 @@ def list_git_files(commit: Optional[str] = None,
 
 
 def _describe_constraints(root: Path, repo_path: Path, commit: Optional[str],
-                          pathspecs: Sequence[PathOrStr],
-                          exclude: Sequence[Pattern]) -> Iterator[str]:
+                          pathspecs: Collection[PathOrStr],
+                          exclude: Collection[Pattern]) -> Iterator[str]:
     if not root.samefile(repo_path):
         yield (f'under the {repo_path.resolve().relative_to(root.resolve())} '
                'subdirectory')
@@ -163,8 +163,8 @@ def _describe_constraints(root: Path, repo_path: Path, commit: Optional[str],
 
 
 def describe_files_in_repo(root: Path, repo_path: Path, commit: Optional[str],
-                           pathspecs: Sequence[PathOrStr],
-                           exclude: Sequence[Pattern]) -> str:
+                           pathspecs: Collection[PathOrStr],
+                           exclude: Collection[Pattern]) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
     constraints = list(
         _describe_constraints(root, repo_path, commit, pathspecs, exclude))
@@ -486,12 +486,12 @@ def add_path_arguments(parser) -> None:
 
     parser.add_argument(
         'paths',
+        metavar='path',
         nargs='*',
         type=Path,
-        help=(
-            'Paths to which to restrict the presubmit checks. '
-            'Directories are expanded with git ls-files. '
-            'If --base is provided, all paths are interpreted as Git paths.'))
+        help=('Paths to which to restrict the checks. These are interpreted '
+              'as Git pathspecs. If --base is provided, only paths changed '
+              'since that commit are checked.'))
     parser.add_argument(
         '-b',
         '--base',
