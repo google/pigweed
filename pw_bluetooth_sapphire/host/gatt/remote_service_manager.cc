@@ -67,7 +67,8 @@ RemoteServiceManager::~RemoteServiceManager() {
   }
 }
 
-void RemoteServiceManager::Initialize(att::StatusCallback cb) {
+void RemoteServiceManager::Initialize(att::StatusCallback cb,
+                                              std::optional<UUID> service_uuid) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -89,7 +90,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb) {
 
   // Start out with the MTU exchange.
   client_->ExchangeMTU(
-      [self, init_cb = std::move(init_cb)](att::Status status, uint16_t mtu) mutable {
+      [self, init_cb = std::move(init_cb), service_uuid](att::Status status, uint16_t mtu) mutable {
         if (!self) {
           init_cb(att::Status(HostError::kFailed));
           return;
@@ -136,7 +137,12 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb) {
           init_cb(status);
         };
 
-        self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
+        if (service_uuid) {
+          self->client_->DiscoverPrimaryServicesByUUID(std::move(svc_cb), std::move(status_cb),
+                                                       service_uuid.value());
+        } else {
+          self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
+        }
       });
 }
 

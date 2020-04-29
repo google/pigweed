@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_
 
-#include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <zircon/assert.h>
 
 #include <map>
 #include <memory>
 #include <vector>
+
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -47,7 +48,8 @@ class RemoteServiceManager final {
 
   // Initiates the Exchange MTU procedure followed by primary service
   // discovery. |callback| is called to notify the result of the procedure.
-  void Initialize(att::StatusCallback callback);
+  // If |uuid| is set, only discover services with that UUID.
+  void Initialize(att::StatusCallback callback, std::optional<UUID> uuid = std::nullopt);
 
   // Returns a vector containing discovered services that match any of the given
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.
