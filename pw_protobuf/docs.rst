@@ -10,6 +10,12 @@ pw_protobuf
 The protobuf module provides a lightweight interface for encoding and decoding
 the Protocol Buffer wire format.
 
+.. note::
+
+  The protobuf module is a work in progress. Wire format encoding and decoding
+  is supported, though the APIs are not final. C++ code generation exists for
+  encoding, but not decoding.
+
 Design
 ======
 Unlike other protobuf libraries, which typically provide in-memory data
