@@ -165,7 +165,7 @@ bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelC
 }
 
 void ChannelManager::UnregisterService(PSM psm) {
-  FXL_DCHECK(thread_checker_.IsCreationThreadCurrent());
+  FX_DCHECK(thread_checker_.IsCreationThreadCurrent());
 
   services_.erase(psm);
 }
