@@ -42,8 +42,8 @@ pw_cc_library(
         "log_basic.cc",
     ],
     deps = [
+        ":headers",
         "//pw_log:facade",
-        "//pw_log_basic:headers",
         "//pw_string",
         "//pw_sys_io",
     ],

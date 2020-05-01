@@ -24,13 +24,19 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_ring_buffer",
-    hdrs = [
-        "public/pw_ring_buffer/prefixed_entry_ring_buffer.h",
-    ],
     srcs = [
         "prefixed_entry_ring_buffer.cc",
     ],
+    hdrs = [
+        "public/pw_ring_buffer/prefixed_entry_ring_buffer.h",
+    ],
     includes = ["public"],
+    deps = [
+        "//pw_containers",
+        "//pw_span",
+        "//pw_status",
+        "//pw_varint",
+    ],
 )
 
 pw_cc_test(
