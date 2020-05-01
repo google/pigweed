@@ -26,7 +26,6 @@
 #pragma once
 
 #include "pw_log/levels.h"
-#include "pw_preprocessor/macro_arg_count.h"  // PW_COMMA_ARGS
 
 // log_backend.h must ultimately resolve to a header that implements the macros
 // required by the logging facade, as described below.
@@ -76,31 +75,27 @@
 // of the general PW_LOG().
 #ifndef PW_LOG_DEBUG
 #define PW_LOG_DEBUG(message, ...) \
-  PW_LOG(                          \
-      PW_LOG_LEVEL_DEBUG, PW_LOG_NO_FLAGS, message PW_COMMA_ARGS(__VA_ARGS__))
+  PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_DEBUG
 
 #ifndef PW_LOG_INFO
 #define PW_LOG_INFO(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_NO_FLAGS, message PW_COMMA_ARGS(__VA_ARGS__))
+  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_INFO
 
 #ifndef PW_LOG_WARN
 #define PW_LOG_WARN(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_NO_FLAGS, message PW_COMMA_ARGS(__VA_ARGS__))
+  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_WARN
 
 #ifndef PW_LOG_ERROR
 #define PW_LOG_ERROR(message, ...) \
-  PW_LOG(                          \
-      PW_LOG_LEVEL_ERROR, PW_LOG_NO_FLAGS, message PW_COMMA_ARGS(__VA_ARGS__))
+  PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_ERROR
 
 #ifndef PW_LOG_CRITICAL
 #define PW_LOG_CRITICAL(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_CRITICAL,       \
-         PW_LOG_NO_FLAGS,             \
-         message PW_COMMA_ARGS(__VA_ARGS__))
+  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
 // Define short, usable names if requested.

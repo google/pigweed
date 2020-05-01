@@ -103,12 +103,17 @@
 // Expands to a comma followed by __VA_ARGS__, if __VA_ARGS__ is non-empty.
 // Otherwise, expands to nothing. This is useful when calling a function with
 // __VA_ARGS__, since it removes the extra comma when no arguments are
-// provided.
+// provided. It must NOT be used when invoking a macro from another macro.
 //
 // This is a more flexible, standard-compliant version of ##__VA_ARGS__. Unlike
 // ##__VA_ARGS__, this can be used to eliminate an unwanted comma when
 // __VA_ARGS__ expands to an empty argument because an outer macro was called
 // with __VA_ARGS__ instead of ##__VA_ARGS__.
+//
+// PW_COMMA_ARGS must NOT be used to conditionally include a comma when invoking
+// a macro from another macro. PW_COMMA_ARGS only functions correctly when the
+// macro expands to C or C++ code! When invoking one macro from another, simply
+// pass __VA_ARGS__.
 //
 // This can be used to call variadic functions or provide variadic template
 // parameters from a macro. For example:

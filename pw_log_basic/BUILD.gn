@@ -30,7 +30,6 @@ if (dir_pw_log_backend == dir_pw_log_basic) {
     ]
     deps = [ ":pw_log_basic_core" ]
     public = [ "public_overrides/pw_log_backend/log_backend.h" ]
-    sources = public
   }
 }
 
@@ -43,6 +42,7 @@ source_set("pw_log_basic_core") {
     "$dir_pw_sys_io",
   ]
   public = [ "public/pw_log_basic/log_basic.h" ]
+  public_deps = [ dir_pw_preprocessor ]
 
   # Use emoji log levels if they've been enabled.
   _use_emoji = getenv("PW_EMOJI")
@@ -51,7 +51,7 @@ source_set("pw_log_basic_core") {
     defines += [ "PW_EMOJI=1" ]
   }
 
-  sources = public + [ "log_basic.cc" ]
+  sources = [ "log_basic.cc" ]
 }
 
 pw_doc_group("docs") {
