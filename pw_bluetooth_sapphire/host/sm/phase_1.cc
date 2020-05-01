@@ -20,37 +20,34 @@ namespace sm {
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, IOCapability io_capability,
-    BondableMode bondable_mode, bool mitm_required, bool secure_connections_supported,
-    CompleteCallback on_complete) {
+    BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
-  return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener),
-                                            hci::Connection::Role::kMaster, std::nullopt,
-                                            io_capability, bondable_mode, mitm_required,
-                                            secure_connections_supported, std::move(on_complete)));
+  return std::unique_ptr<Phase1>(
+      new Phase1(std::move(chan), std::move(listener), hci::Connection::Role::kMaster, std::nullopt,
+                 io_capability, bondable_mode, mitm_required, std::move(on_complete)));
 }
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, PairingRequestParams preq,
     IOCapability io_capability, BondableMode bondable_mode, bool mitm_required,
-    bool secure_connections_supported, CompleteCallback on_complete) {
+    CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
-  return std::unique_ptr<Phase1>(new Phase1(
-      std::move(chan), std::move(listener), hci::Connection::Role::kSlave, preq, io_capability,
-      bondable_mode, mitm_required, secure_connections_supported, std::move(on_complete)));
+  return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener),
+                                            hci::Connection::Role::kSlave, preq, io_capability,
+                                            bondable_mode, mitm_required, std::move(on_complete)));
 }
 
 Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
                hci::Connection::Role role, std::optional<PairingRequestParams> preq,
                IOCapability io_capability, BondableMode bondable_mode, bool mitm_required,
-               bool secure_connections_supported, CompleteCallback on_complete)
+               CompleteCallback on_complete)
     : ActivePhase(std::move(chan), std::move(listener), role),
       peer_request_params_(preq),
       oob_available_(false),
       mitm_required_(mitm_required),
       feature_exchange_pending_(false),
-      sc_supported_(secure_connections_supported),
       io_capability_(io_capability),
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
@@ -178,7 +175,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
       local_params.local_keys |= KeyDistGen::kEncKey;
     }
   }
-  if (sc_supported_) {
+  if (sm_chan().SupportsSecureConnections()) {
     local_params.auth_req |= AuthReq::kSC;
   }
   if (mitm_required_) {
@@ -300,7 +297,7 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
 }
 
 void Phase1::OnRxBFrame(ByteBufferPtr sdu) {
-  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu, mtu());
+  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     Abort(maybe_reader.error());
     return;

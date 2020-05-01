@@ -30,11 +30,14 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
  protected:
   struct ChannelOptions {
-    explicit ChannelOptions(ChannelId id) : ChannelOptions(id, id) {}
-    ChannelOptions(ChannelId id, ChannelId remote_id) : id(id), remote_id(remote_id) {}
+    explicit ChannelOptions(ChannelId id, uint16_t mtu = kDefaultMTU)
+        : ChannelOptions(id, id, mtu) {}
+    ChannelOptions(ChannelId id, ChannelId remote_id, uint16_t mtu)
+        : id(id), remote_id(remote_id), mtu(mtu) {}
 
     ChannelId id;
     ChannelId remote_id;
+    uint16_t mtu;
     hci::ConnectionHandle conn_handle = 0x0001;
     hci::Connection::LinkType link_type = hci::Connection::LinkType::kLE;
   };

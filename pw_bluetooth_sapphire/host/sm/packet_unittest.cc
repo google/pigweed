@@ -14,7 +14,7 @@ TEST(SMP_PacketTest, ParseValidPacket) {
   auto kValidPacket = CreateStaticByteBuffer(kPairingFailed, ErrorCode::kEncryptionKeySize);
   ByteBufferPtr valid_packet_ptr = std::make_unique<DynamicByteBuffer>(kValidPacket);
   fit::result<ValidPacketReader, ErrorCode> maybe_reader =
-      ValidPacketReader::ParseSdu(valid_packet_ptr, kLEMTU);
+      ValidPacketReader::ParseSdu(valid_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_ok());
   ValidPacketReader reader = maybe_reader.value();
   ASSERT_EQ(reader.code(), kPairingFailed);
@@ -25,16 +25,7 @@ TEST(SMP_PacketTest, ParseValidPacket) {
 TEST(SMP_PacketTest, EmptyPacketGivesError) {
   ByteBufferPtr empty_packet_ptr = std::make_unique<DynamicByteBuffer>();
   fit::result<ValidPacketReader, ErrorCode> maybe_reader =
-      ValidPacketReader::ParseSdu(empty_packet_ptr, kLEMTU);
-  ASSERT_TRUE(maybe_reader.is_error());
-  ErrorCode ecode = maybe_reader.error();
-  ASSERT_EQ(ecode, ErrorCode::kInvalidParameters);
-}
-
-TEST(SMP_PacketTest, PacketLengthGreaterThanMtuGivesError) {
-  ByteBufferPtr long_packet_ptr = std::make_unique<DynamicByteBuffer>(kLEMTU + 1);
-  fit::result<ValidPacketReader, ErrorCode> maybe_reader =
-      ValidPacketReader::ParseSdu(long_packet_ptr, kLEMTU);
+      ValidPacketReader::ParseSdu(empty_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error();
   ASSERT_EQ(ecode, ErrorCode::kInvalidParameters);
@@ -45,7 +36,7 @@ TEST(SMP_PacketTest, UnknownSMPCodeGivesError) {
                                                    ErrorCode::kEncryptionKeySize);
   ByteBufferPtr unknown_code_packet_ptr = std::make_unique<DynamicByteBuffer>(kUnknownCodePacket);
   fit::result<ValidPacketReader, ErrorCode> maybe_reader =
-      ValidPacketReader::ParseSdu(unknown_code_packet_ptr, kLEMTU);
+      ValidPacketReader::ParseSdu(unknown_code_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error();
   ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
@@ -56,7 +47,7 @@ TEST(SMP_PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
   auto kMalformedPacket = CreateStaticByteBuffer(kPairingFailed, 0x01, 0x01, 0x01);
   ByteBufferPtr malformed_packet_ptr = std::make_unique<DynamicByteBuffer>(kMalformedPacket);
   fit::result<ValidPacketReader, ErrorCode> maybe_reader =
-      ValidPacketReader::ParseSdu(malformed_packet_ptr, kLEMTU);
+      ValidPacketReader::ParseSdu(malformed_packet_ptr);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error();
   ASSERT_EQ(ecode, ErrorCode::kInvalidParameters);

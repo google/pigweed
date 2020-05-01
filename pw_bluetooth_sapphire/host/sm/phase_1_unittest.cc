@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -47,7 +48,8 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
                  hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
-    ChannelOptions options(cid);
+    uint16_t mtu = phase_args.sc_supported ? l2cap::kMaxMTU : kNoSecureConnectionsMtu;
+    ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
 
     listener_ = std::make_unique<FakeListener>();
@@ -56,7 +58,7 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
     if (role == hci::Connection::Role::kMaster) {
       phase_1_ = Phase1::CreatePhase1Initiator(
           sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), phase_args.io_capability,
-          phase_args.bondable_mode, phase_args.mitm_required, phase_args.sc_supported,
+          phase_args.bondable_mode, phase_args.mitm_required,
           [this](const PairingFeatures& features, const ByteBuffer& preq, const ByteBuffer& pres) {
             feature_exchange_count_++;
             features_ = features;
@@ -67,7 +69,6 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
       phase_1_ = Phase1::CreatePhase1Responder(
           sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), phase_args.preq,
           phase_args.io_capability, phase_args.bondable_mode, phase_args.mitm_required,
-          phase_args.sc_supported,
           [this](const PairingFeatures& features, const ByteBuffer& preq, const ByteBuffer& pres) {
             feature_exchange_count_++;
             features_ = features;

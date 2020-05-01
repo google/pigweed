@@ -85,8 +85,6 @@ class PairingPhase {
   // Sends a Pairing Failed command to the peer with `ecode` as the associated reason.
   void SendPairingFailed(ErrorCode ecode);
 
-  uint8_t mtu() const { return mtu_; }
-
   PairingChannel& sm_chan() const {
     ZX_ASSERT(chan_);
     return *chan_;
@@ -101,8 +99,6 @@ class PairingPhase {
   fxl::WeakPtr<PairingChannel> chan_;
   fxl::WeakPtr<Listener> listener_;
   hci::Connection::Role role_;
-
-  uint8_t mtu_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
 };

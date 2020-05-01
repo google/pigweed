@@ -137,7 +137,7 @@ class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
 
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
     ZX_ASSERT_MSG(sdu, "Tried to ExtractCodeAnd128BitCmd from nullptr in test");
-    auto maybe_reader = ValidPacketReader::ParseSdu(sdu, kLEMTU);
+    auto maybe_reader = ValidPacketReader::ParseSdu(sdu);
     ZX_ASSERT_MSG(maybe_reader.is_ok(), "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
     return {maybe_reader.value().code(), maybe_reader.value().payload<UInt128>()};
   }

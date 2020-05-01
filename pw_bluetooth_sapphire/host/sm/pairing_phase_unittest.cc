@@ -49,7 +49,6 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
 
   // Expose protected methods for testing.
   void SendPairingFailed(ErrorCode ecode) { PairingPhase::SendPairingFailed(ecode); }
-  uint8_t mtu() const { return PairingPhase::mtu(); }
 
   const ByteBuffer& last_rx_packet() { return last_rx_packet_; }
 
@@ -94,16 +93,6 @@ class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_PairingPhaseTest);
 };
-
-TEST_F(SMP_PairingPhaseTest, LePairingPhaseExposesLeMtu) {
-  NewPairingPhase(hci::Connection::Role::kMaster, hci::Connection::LinkType::kLE);
-  ASSERT_EQ(kLEMTU, pairing_phase()->mtu());
-}
-
-TEST_F(SMP_PairingPhaseTest, BrEdrPairingPhaseExposesBrEdrMtu) {
-  NewPairingPhase(hci::Connection::Role::kMaster, hci::Connection::LinkType::kACL);
-  ASSERT_EQ(kBREDRMTU, pairing_phase()->mtu());
-}
 
 TEST_F(SMP_PairingPhaseTest, SendPairingFailed) {
   ErrorCode ecode = ErrorCode::kConfirmValueFailed;

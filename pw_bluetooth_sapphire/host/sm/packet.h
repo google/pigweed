@@ -23,14 +23,14 @@ class PacketReader : public PacketView<Header> {
 };
 
 // A type which has been verified to satisfy all the preconditions of a valid SMP packet. Namely,
-// 1.) The packet's length is at least that of an SMP header AND not greater than the current MTU.
+// 1.) The packet's length is at least that of an SMP header.
 // 2.) The packet's header code is a valid SMP code that our stack supports.
 // 3.) The length of the packet's payload matches the payload associated with its header code.
 class ValidPacketReader : public PacketReader {
  public:
   // Convert a ByteBufferPtr to a ValidPacketReader if possible to allow unchecked access to
   // its payload, or an error explaining why we could not.
-  static fit::result<ValidPacketReader, ErrorCode> ParseSdu(const ByteBufferPtr& sdu, size_t mtu);
+  static fit::result<ValidPacketReader, ErrorCode> ParseSdu(const ByteBufferPtr& sdu);
 
  private:
   // Private constructor because a valid PacketReader must be parsed from a ByteBufferPtr

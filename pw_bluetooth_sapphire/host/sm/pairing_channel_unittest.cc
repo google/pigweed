@@ -2,8 +2,11 @@
 
 #include <memory>
 
+#include "fbl/ref_ptr.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -42,23 +45,27 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { sm_chan_ = nullptr; }
 
-  void NewPairingChannel(hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+  void NewPairingChannel(hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
+                         uint16_t mtu = kNoSecureConnectionsMtu) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
-    ChannelOptions options(cid);
+    ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
-
-    fake_chan_ = CreateFakeChannel(options);
-    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    sm_chan_ = std::make_unique<PairingChannel>(CreateFakeChannel(options));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
-  l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
 
  private:
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
 };
+
+using SMP_PairingChannelDeathTest = SMP_PairingChannelTest;
+TEST_F(SMP_PairingChannelDeathTest, L2capChannelMtuTooSmallDies) {
+  ASSERT_DEATH_IF_SUPPORTED(
+      NewPairingChannel(hci::Connection::LinkType::kLE, kNoSecureConnectionsMtu - 1),
+      ".*max.*_sdu_size.*");
+}
 
 // This checks that PairingChannel doesn't crash when receiving events without a handler set.
 TEST_F(SMP_PairingChannelTest, NoHandlerSetDataDropped) {

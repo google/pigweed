@@ -48,7 +48,7 @@ void IdlePhase::OnSecurityRequest(AuthReqField req) {
 }
 
 void IdlePhase::OnRxBFrame(ByteBufferPtr sdu) {
-  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu, mtu());
+  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(sdu);
   if (maybe_reader.is_error()) {
     bt_log(INFO, "sm", "dropped SMP packet: %s", bt_str(Status(maybe_reader.error())));
     return;

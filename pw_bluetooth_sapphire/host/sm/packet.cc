@@ -34,16 +34,12 @@ PacketReader::PacketReader(const ByteBuffer* buffer)
 
 ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer) : PacketReader(buffer) {}
 
-fit::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(const ByteBufferPtr& sdu,
-                                                                          size_t mtu) {
+fit::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(
+    const ByteBufferPtr& sdu) {
   ZX_DEBUG_ASSERT(sdu);
   uint8_t length = sdu->size();
   if (length < sizeof(Code)) {
     bt_log(TRACE, "sm", "PDU too short!");
-    return fit::error(ErrorCode::kInvalidParameters);
-  }
-  if (length > mtu) {
-    bt_log(TRACE, "sm", "PDU exceeds MTU!");
     return fit::error(ErrorCode::kInvalidParameters);
   }
   auto reader = PacketReader(sdu.get());

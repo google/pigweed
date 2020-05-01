@@ -36,6 +36,11 @@ class PairingChannel {
 
   fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
+  bool SupportsSecureConnections() const {
+    return chan_->max_rx_sdu_size() >= kLeSecureConnectionsMtu &&
+           chan_->max_tx_sdu_size() >= kLeSecureConnectionsMtu;
+  }
+
   // Convenience functions to provide direct access to the underlying l2cap::Channel.
   l2cap::Channel* get() const { return chan_.get(); }
   l2cap::Channel* operator->() const { return get(); }

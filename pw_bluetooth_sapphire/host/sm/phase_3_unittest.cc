@@ -118,7 +118,7 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
 
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
     ZX_ASSERT_MSG(sdu, "Tried to ExtractCodeAnd128BitCmd from nullptr in test");
-    auto maybe_reader = ValidPacketReader::ParseSdu(sdu, kLEMTU);
+    auto maybe_reader = ValidPacketReader::ParseSdu(sdu);
     ZX_ASSERT_MSG(maybe_reader.is_ok(), "Tried to ExtractCodeAnd128BitCmd from invalid SMP packet");
     return {maybe_reader.value().code(), maybe_reader.value().payload<UInt128>()};
   }
@@ -126,7 +126,7 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
   static void ExpectEncryptionInfo(ByteBufferPtr sdu,
                                    std::optional<EncryptionInformationParams>* out_ltk_bytes,
                                    std::optional<MasterIdentificationParams>* out_master_id) {
-    fit::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu, kLEMTU);
+    fit::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu);
     ASSERT_TRUE(reader.is_ok());
     if (reader.value().code() == kEncryptionInformation) {
       *out_ltk_bytes = reader.value().payload<EncryptionInformationParams>();
@@ -139,7 +139,7 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
 
   static void ExpectIdentity(ByteBufferPtr sdu, std::optional<IRK>* out_irk,
                              std::optional<IdentityAddressInformationParams>* out_id_address) {
-    fit::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu, kLEMTU);
+    fit::result<ValidPacketReader, ErrorCode> reader = ValidPacketReader::ParseSdu(sdu);
     ASSERT_TRUE(reader.is_ok());
     if (reader.value().code() == kIdentityInformation) {
       *out_irk = reader.value().payload<IRK>();

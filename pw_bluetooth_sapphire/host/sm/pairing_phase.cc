@@ -30,10 +30,8 @@ PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
   const PairingChannel& initialized_chan = *chan_;
   if (initialized_chan->link_type() == hci::Connection::LinkType::kLE) {
     ZX_ASSERT(initialized_chan->id() == l2cap::kLESMPChannelId);
-    mtu_ = kLEMTU;
   } else if (initialized_chan->link_type() == hci::Connection::LinkType::kACL) {
     ZX_ASSERT(initialized_chan->id() == l2cap::kSMPChannelId);
-    mtu_ = kBREDRMTU;
   } else {
     ZX_PANIC("unsupported link type!");
   }
