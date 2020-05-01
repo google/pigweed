@@ -16,6 +16,7 @@
 #pragma once
 
 #include <assert.h>
+#include <stdint.h>
 
 // TODO(pwbug/17): Configure these options in the config system.
 
@@ -84,5 +85,5 @@ static_assert(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4 ||
 // Sets the type of the payload argument to use for
 // PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD.
 #ifndef PW_TOKENIZER_CFG_PAYLOAD_TYPE
-#define PW_TOKENIZER_CFG_PAYLOAD_TYPE void*
+#define PW_TOKENIZER_CFG_PAYLOAD_TYPE uintptr_t
 #endif  // PW_TOKENIZER_CFG_PAYLOAD_TYPE

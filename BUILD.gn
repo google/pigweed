@@ -87,6 +87,7 @@ pw_test_group("pw_module_tests") {
     "$dir_pw_containers:tests",
     "$dir_pw_fuzzer:tests",
     "$dir_pw_log:tests",
+    "$dir_pw_log_tokenized:tests",
     "$dir_pw_polyfill:tests",
     "$dir_pw_preprocessor:tests",
     "$dir_pw_protobuf:tests",

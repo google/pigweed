@@ -152,7 +152,7 @@ class TokenizeToGlobalHandlerWithPayload
     : public GlobalMessage<TokenizeToGlobalHandlerWithPayload> {
  public:
   static void SetPayload(pw_TokenizerPayload payload) {
-    payload_ = reinterpret_cast<intptr_t>(payload);
+    payload_ = static_cast<intptr_t>(payload);
   }
 
  protected:
@@ -170,18 +170,13 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Variety) {
       ExpectedData<0, 0, 0x00, 0x00, 0x00, 0x80, 0>("%x%lld%1.2f%s");
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      reinterpret_cast<pw_TokenizerPayload>(123),
-      "%x%lld%1.2f%s",
-      0,
-      0ll,
-      -0.0,
-      "");
+      static_cast<pw_TokenizerPayload>(123), "%x%lld%1.2f%s", 0, 0ll, -0.0, "");
   ASSERT_TRUE(expected.size() == message_size_bytes_);
   EXPECT_TRUE(std::memcmp(expected.data(), message_, expected.size()) == 0);
   EXPECT_TRUE(payload_ == 123);
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      reinterpret_cast<pw_TokenizerPayload>(-543),
+      static_cast<pw_TokenizerPayload>(-543),
       "%x%lld%1.2f%s",
       0,
       0ll,
