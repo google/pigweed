@@ -102,6 +102,8 @@ template("_pw_nanopb_proto_library") {
              "nanopb",
              "--module-path",
              "//",
+             "--include-paths",
+             "$dir_third_party_nanopb/generator/proto",
              "--out-dir",
              _proto_gen_dir,
              "--custom-plugin",

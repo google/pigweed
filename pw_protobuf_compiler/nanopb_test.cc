@@ -16,7 +16,8 @@
 #include "pw_protobuf_compiler_protos/nanopb_test.pb.h"
 
 TEST(Nanopb, CompilesProtobufs) {
-  pw_protobuf_compiler_Point point = {4, 8};
+  pw_protobuf_compiler_Point point = {4, 8, "point"};
   EXPECT_EQ(point.x, 4u);
   EXPECT_EQ(point.y, 8u);
+  EXPECT_EQ(sizeof(point.name), 16u);
 }

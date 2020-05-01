@@ -13,9 +13,12 @@
 // the License.
 syntax = "proto3";
 
+import "nanopb.proto";
+
 package pw.protobuf_compiler;
 
 message Point {
   uint32 x = 1;
   uint32 y = 2;
+  string name = 3 [(nanopb).max_size = 16];
 };

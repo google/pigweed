@@ -40,6 +40,10 @@ def argument_parser(
     parser.add_argument('--module-path',
                         required=True,
                         help='Path to the module containing the .proto files')
+    parser.add_argument('--include-paths',
+                        default=[],
+                        type=lambda arg: arg.split(';'),
+                        help='protoc include paths')
     parser.add_argument('--out-dir',
                         required=True,
                         help='Output directory for generated code')
@@ -90,8 +94,11 @@ def main() -> int:
         _LOG.error('Unsupported language: %s', args.language)
         return 1
 
+    include_paths = [f'-I{path}' for path in args.include_paths]
+
     return pw_cli.process.run(
         'protoc',
+        *include_paths,
         '-I',
         args.module_path,
         *lang_args,
