@@ -192,6 +192,40 @@ TEST_F(SDP_PDUTest, ServiceSearchResponseParse) {
   ServiceSearchResponse resp2;
   status = resp2.Parse(kNotEnoughRecords);
   EXPECT_FALSE(status);
+
+  // A Truncated packet doesn't parse either.
+  const auto kTruncated =
+      CreateStaticByteBuffer(0x00, 0x02,              // Total service record count: 2
+                             0x00, 0x02              // Current service record count: 2
+      );
+  ServiceSearchResponse resp3;
+  status = resp3.Parse(kTruncated);
+  EXPECT_FALSE(status);
+
+  // Too many bytes for the number of records is also not allowed (with or without a continuation
+  // state)
+  const auto kTooLong =
+      CreateStaticByteBuffer(0x00, 0x01,              // Total service record count: 1
+                             0x00, 0x01,              // Current service record count: 1
+                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                             0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                             0x00                    // No continuation state
+      );
+  ServiceSearchResponse resp4;
+  status = resp4.Parse(kTooLong);
+  EXPECT_FALSE(status);
+
+  const auto kTooLongWithContinuation =
+      CreateStaticByteBuffer(0x00, 0x04,              // Total service record count: 1
+                             0x00, 0x01,              // Current service record count: 1
+                             0x00, 0x00, 0x00, 0x01,  // Service Handle 1
+                             0x00, 0x00, 0x00, 0x02,  // Service Handle 2
+                             0x04,                    // Continuation state (len: 4)
+                             0xF0, 0x9F, 0x92, 0x96   // Continuation state
+      );
+  ServiceSearchResponse resp5;
+  status = resp5.Parse(kTooLongWithContinuation);
+  EXPECT_FALSE(status);
 };
 
 TEST_F(SDP_PDUTest, ServiceSearchResponsePDU) {
@@ -577,16 +611,17 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
       0x00                           // No continuation state
   );
 
-  status = resp.Parse(kValidResponseItems);
+  ServiceAttributeResponse resp2;
+  status = resp2.Parse(kValidResponseItems);
 
   EXPECT_TRUE(status);
-  EXPECT_EQ(2u, resp.attributes().size());
-  auto it = resp.attributes().find(0x00);
-  EXPECT_NE(resp.attributes().end(), it);
+  EXPECT_EQ(2u, resp2.attributes().size());
+  auto it = resp2.attributes().find(0x00);
+  EXPECT_NE(resp2.attributes().end(), it);
   EXPECT_EQ(DataElement::Type::kUnsignedInt, it->second.type());
 
-  it = resp.attributes().find(0x01);
-  EXPECT_NE(resp.attributes().end(), it);
+  it = resp2.attributes().find(0x01);
+  EXPECT_NE(resp2.attributes().end(), it);
   EXPECT_EQ(DataElement::Type::kSequence, it->second.type());
 
   const auto kInvalidItemsWrongOrder = CreateStaticByteBuffer(
@@ -600,13 +635,14 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
       0x00                           // No continuation state
   );
 
-  status = resp.Parse(kInvalidItemsWrongOrder);
+  ServiceAttributeResponse resp3;
+  status = resp3.Parse(kInvalidItemsWrongOrder);
 
   EXPECT_FALSE(status);
 
   const auto kInvalidByteCount = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
-      // Attribute List
+      // Attribute List (only 17 bytes long)
       0x35, 0x0F,                    // Sequence uint8 15 bytes
       0x09, 0x00, 0x01,              // Handle: uint16_t (1)
       0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
@@ -615,9 +651,29 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
       0x00                           // No continuation state
   );
 
-  status = resp.Parse(kInvalidByteCount);
-
+  ServiceAttributeResponse resp4;
+  status = resp4.Parse(kInvalidByteCount);
   EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kPacketMalformed, status.error());
+
+  // Sending too much data eventually fails.
+  auto kContinuationPacket = DynamicByteBuffer(4096);
+  // Put the correct byte count at the front: 4096 - 2 (byte count) - 5 (continuation size)
+  const auto kAttributeListByteCount = CreateStaticByteBuffer(0x0F, 0xF9);
+  kContinuationPacket.Write(kAttributeListByteCount, 0);
+  // Put the correct continuation at the end.
+  const auto kContinuation = CreateStaticByteBuffer(0x04, 0xF0, 0x9F, 0x92, 0x96);
+  kContinuationPacket.Write(kContinuation, kContinuationPacket.size() - 5);
+
+  ServiceAttributeResponse resp5;
+  status = resp5.Parse(kContinuationPacket);
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kInProgress, status.error());
+  while (!status && status.error() == HostError::kInProgress) {
+    status = resp5.Parse(kContinuationPacket);
+  }
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
 TEST_F(SDP_PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
@@ -792,7 +848,7 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
       0x19, 0x30, 0x01,  // 13 UUIDs in the search
       0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05, 0x19, 0x30, 0x06,
       0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09, 0x19, 0x30, 0x10, 0x19, 0x30, 0x11,
-      0x19, 0x30, 0x12, 0x19, 0x30, 0x13, 0xF0, 0x0F,  // Maximum attribute byte coutn (61455)
+      0x19, 0x30, 0x12, 0x19, 0x30, 0x13, 0xF0, 0x0F,  // Maximum attribute byte count (61455)
       0x35, 0x03,                                      // Sequence uint8 3 bytes
       0x09, 0x00, 0x02,                                // uint16_t (2)
       0x00                                             // No continuation state
@@ -952,6 +1008,25 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
   status = resp3.Parse(kInvalidByteCount);
 
   EXPECT_FALSE(status);
+
+  // Sending too much data eventually fails.
+  auto kContinuationPacket = DynamicByteBuffer(4096);
+  // Put the correct byte count at the front: 4096 - 2 (byte count) - 5 (continuation size)
+  const auto kAttributeListByteCount = CreateStaticByteBuffer(0x0F, 0xF9);
+  kContinuationPacket.Write(kAttributeListByteCount, 0);
+  // Put the correct continuation at the end.
+  const auto kContinuation = CreateStaticByteBuffer(0x04, 0xF0, 0x9F, 0x92, 0x96);
+  kContinuationPacket.Write(kContinuation, kContinuationPacket.size() - 5);
+
+  ServiceSearchAttributeResponse resp4;
+  status = resp4.Parse(kContinuationPacket);
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kInProgress, status.error());
+  while (!status && status.error() == HostError::kInProgress) {
+    status = resp4.Parse(kContinuationPacket);
+  }
+  EXPECT_FALSE(status);
+  EXPECT_EQ(HostError::kNotSupported, status.error());
 }
 
 TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
@@ -1097,6 +1172,7 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
 
   EXPECT_FALSE(buf);
 }
+
 
 }  // namespace
 }  // namespace sdp

@@ -26,6 +26,11 @@ constexpr size_t kMinAttributeIDListBytes = 5;
 // Spec v5.0, Vol 3, Part B, Sec 4.5.1
 constexpr size_t kMaxServiceSearchSize = 12;
 
+// The maximum amount of Attribute list data we will store when parsing a response to
+// ServiceAttribute or ServiceSearchAttribute responses.
+// 640kb ought to be enough for anybody.
+constexpr size_t kMaxSupportedAttributeListBytes = 655360;
+
 // Validates continuation state in |buf|, which should be the configuration
 // state bytes of a PDU.
 // Returns true if the continuation state is valid here, false otherwise.
@@ -306,19 +311,25 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
 
   uint16_t record_count = betoh16(buf.view(read_size).As<uint16_t>());
   read_size += sizeof(uint16_t);
-  if ((buf.size() - read_size - sizeof(uint8_t)) < (sizeof(ServiceHandle) * record_count)) {
-    bt_log(SPEW, "sdp", "Packet too small for %d records", record_count);
+  size_t expected_record_bytes = sizeof(ServiceHandle) * record_count;
+  if (buf.size() < (read_size + expected_record_bytes)) {
+    bt_log(SPEW, "sdp", "Packet too small for %d records: %zu", record_count, buf.size());
     return Status(HostError::kPacketMalformed);
   }
+  BufferView cont_state_view;
+  if (!ValidContinuationState(buf.view(read_size + expected_record_bytes), &cont_state_view)) {
+    bt_log(SPEW, "sdp", "Failed to find continuation state");
+    return Status(HostError::kPacketMalformed);
+  }
+  size_t expected_size = read_size + expected_record_bytes + cont_state_view.size() + sizeof(uint8_t);
+  if (expected_size != buf.size()) {
+    bt_log(SPEW, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
+    return Status(HostError::kPacketMalformed);
+  }
+
   for (uint16_t i = 0; i < record_count; i++) {
     auto view = buf.view(read_size + i * sizeof(ServiceHandle));
     service_record_handle_list_.emplace_back(betoh32(view.As<uint32_t>()));
-  }
-  read_size += sizeof(ServiceHandle) * record_count;
-  BufferView cont_state_view;
-  if (!ValidContinuationState(buf.view(read_size), &cont_state_view)) {
-    bt_log(SPEW, "sdp", "Failed to find continuation state");
-    return Status(HostError::kPacketMalformed);
   }
   if (cont_state_view.size() == 0) {
     continuation_state_ = nullptr;
@@ -525,9 +536,9 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     return Status(HostError::kPacketMalformed);
   }
 
-  uint16_t attribute_list_byte_count = betoh16(buf.As<uint16_t>());
+  uint32_t attribute_list_byte_count = betoh16(buf.As<uint16_t>());
   size_t read_size = sizeof(uint16_t);
-  if (buf.view(read_size).size() < attribute_list_byte_count + sizeof(uint8_t)) {
+  if (buf.size() < read_size + attribute_list_byte_count + sizeof(uint8_t)) {
     bt_log(SPEW, "sdp", "Not enough bytes in rest of packet");
     return Status(HostError::kPacketMalformed);
   }
@@ -545,6 +556,12 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     continuation_state_->Write(cont_state_view);
   }
 
+  size_t expected_size = read_size + attribute_list_byte_count + cont_state_view.size() + sizeof(uint8_t);
+  if (buf.size() != expected_size) {
+    bt_log(SPEW, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
+    return Status(HostError::kPacketMalformed);
+  }
+
   auto attribute_list_bytes = buf.view(read_size, attribute_list_byte_count);
   if (partial_response_ || ContinuationState().size()) {
     // Append to the incomplete buffer.
@@ -552,6 +569,13 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     if (partial_response_) {
       new_partial_size += partial_response_->size();
     }
+    // We currently don't support more than approx 10 packets of the max size.
+    if (new_partial_size > kMaxSupportedAttributeListBytes) {
+      bt_log(INFO, "sdp", "ServiceAttributeResponse exceeds supported size (%zu), dropping", new_partial_size);
+      partial_response_ = nullptr;
+      return Status(HostError::kNotSupported);
+    }
+
     auto new_partial = NewSlabBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
@@ -870,6 +894,13 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
     if (partial_response_) {
       new_partial_size += partial_response_->size();
     }
+    // We currently don't support more than approx 10 packets of the max size.
+    if (new_partial_size > kMaxSupportedAttributeListBytes) {
+      bt_log(INFO, "sdp", "ServiceSearchAttributeResponse exceeds supported size, dropping");
+      partial_response_ = nullptr;
+      return Status(HostError::kNotSupported);
+    }
+
     auto new_partial = NewSlabBuffer(new_partial_size);
     if (partial_response_) {
       new_partial->Write(partial_response_->view());
