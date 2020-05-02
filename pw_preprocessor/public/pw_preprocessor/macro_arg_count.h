@@ -101,9 +101,10 @@
 #define _PW_MAKE_COMMA_IF_CALLED(...) ,
 
 // Expands to a comma followed by __VA_ARGS__, if __VA_ARGS__ is non-empty.
-// Otherwise, expands to nothing. This is useful when calling a function with
-// __VA_ARGS__, since it removes the extra comma when no arguments are
-// provided. It must NOT be used when invoking a macro from another macro.
+// Otherwise, expands to nothing. This is useful when passing __VA_ARGS__ to a
+// variadic function or template parameter list, since it removes the extra
+// comma when no arguments are provided. PW_COMMA_ARGS must NOT be used when
+// invoking a macro from another macro.
 //
 // This is a more flexible, standard-compliant version of ##__VA_ARGS__. Unlike
 // ##__VA_ARGS__, this can be used to eliminate an unwanted comma when
@@ -113,14 +114,22 @@
 // PW_COMMA_ARGS must NOT be used to conditionally include a comma when invoking
 // a macro from another macro. PW_COMMA_ARGS only functions correctly when the
 // macro expands to C or C++ code! When invoking one macro from another, simply
-// pass __VA_ARGS__.
+// pass __VA_ARGS__. Only the final macro that expands to C/C++ code should use
+// PW_COMMA_ARGS.
 //
-// This can be used to call variadic functions or provide variadic template
-// parameters from a macro. For example:
-//
-//  #define MY_PRINTF(fmt, ...) MY_PRINTF_IMPL(fmt, __VA_ARGS__)
-//  #define MY_PRINTF_IMPL(fmt, ...) printf(fmt PW_COMMA_ARGS(__VA_ARGS__))
-//
+// For example, the following does NOT work:
+/*
+     #define MY_MACRO(fmt, ...) \
+         NESTED_MACRO(fmt PW_COMMA_ARGS(__VA_ARGS__))  // BAD! Do not do this!
+
+   Instead, only use PW_COMMA_ARGS when the macro expands to C/C++ code:
+
+     #define MY_MACRO(fmt, ...) \
+         NESTED_MACRO(fmt, __VA_ARGS__)  // Pass __VA_ARGS__ to nested macros
+
+     #define NESTED_MACRO(fmt, ...) \
+         printf(fmt PW_COMMA_ARGS(__VA_ARGS__))  // PW_COMMA_ARGS is OK here
+*/
 #define PW_COMMA_ARGS(...) _PW_COMMA_ARGS(PW_HAS_ARGS(__VA_ARGS__), __VA_ARGS__)
 
 #define _PW_COMMA_ARGS(has_args, ...) _PW_COMMA_ARGS_X(has_args, __VA_ARGS__)

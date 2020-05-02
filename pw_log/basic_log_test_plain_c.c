@@ -28,7 +28,9 @@
 #error "This file must be compiled as plain C to verify C compilation works."
 #endif  // __cplusplus
 
-void LoggingFromFunctionPlainC() { PW_LOG_INFO("From a function!"); }
+static void LoggingFromFunctionPlainC() { PW_LOG_INFO("From a function!"); }
+
+static void CustomFormatStringTest(void);
 
 void BasicLogTestPlainC() {
   int n = 3;
@@ -97,4 +99,23 @@ void BasicLogTestPlainC() {
 #define PW_LOG_MODULE_NAME "XYZ"
   PW_LOG_INFO("This has a custom module name");
   PW_LOG_INFO("So does this");
+
+  CustomFormatStringTest();
+}
+
+#undef PW_LOG
+#define PW_LOG(level, flags, message, ...)                               \
+  DoNothingFakeFunction("%d/%d/%d: incoming transmission [" message "]", \
+                        level,                                           \
+                        __LINE__,                                        \
+                        flags PW_COMMA_ARGS(__VA_ARGS__))
+
+static void DoNothingFakeFunction(const char* f, ...) PW_PRINTF_FORMAT(1, 2);
+
+static void DoNothingFakeFunction(const char* f, ...) { (void)f; }
+
+static void CustomFormatStringTest(void) {
+  PW_LOG_DEBUG("Abc");
+  PW_LOG_INFO("Abc %d", 123);
+  PW_LOG_WARN("Abc %d %s", 123, "four");
 }

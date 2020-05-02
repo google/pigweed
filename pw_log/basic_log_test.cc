@@ -157,8 +157,57 @@ TEST(BasicLog, UltraShortNames) {
   CRT("A critical log: %d", 4);
 }
 
-extern "C" {
-void BasicLogTestPlainC();
-};
+extern "C" void BasicLogTestPlainC();
 
 TEST(BasicLog, FromPlainC) { BasicLogTestPlainC(); }
+
+// Test that adding to the format string compiles correctly. If PW_COMMA_ARGS is
+// used in PW_LOG_INFO and the other wrappers in pw_log/log.h, then these
+// functions tests fail to compile, because the arguments end up out-of-order.
+
+#undef PW_LOG
+#define PW_LOG(level, flags, message, ...)                               \
+  DoNothingFakeFunction("%d/%d/%d: incoming transmission [" message "]", \
+                        level,                                           \
+                        __LINE__,                                        \
+                        flags PW_COMMA_ARGS(__VA_ARGS__))
+
+void DoNothingFakeFunction(const char*, ...) PW_PRINTF_FORMAT(1, 2);
+
+void DoNothingFakeFunction(const char*, ...) {}
+
+TEST(CustomFormatString, DebugLevel) {
+  PW_LOG_DEBUG("This log statement should be at DEBUG level; no args");
+  for (int i = 0; i < N; ++i) {
+    PW_LOG_DEBUG("Counting: %d", i);
+  }
+  PW_LOG_DEBUG("Here is a string: %s; with another string %s", "foo", "bar");
+}
+
+TEST(CustomFormatString, InfoLevel) {
+  PW_LOG_INFO("This log statement should be at INFO level; no args");
+  for (int i = 0; i < N; ++i) {
+    PW_LOG_INFO("Counting: %d", i);
+  }
+  PW_LOG_INFO("Here is a string: %s; with another string %s", "foo", "bar");
+}
+
+TEST(CustomFormatString, WarnLevel) {
+  PW_LOG_WARN("This log statement should be at WARN level; no args");
+  for (int i = 0; i < N; ++i) {
+    PW_LOG_WARN("Counting: %d", i);
+  }
+  PW_LOG_WARN("Here is a string: %s; with another string %s", "foo", "bar");
+}
+
+TEST(CustomFormatString, ErrorLevel) {
+  PW_LOG_ERROR("This log statement should be at ERROR level; no args");
+  for (int i = 0; i < N; ++i) {
+    PW_LOG_ERROR("Counting: %d", i);
+  }
+  PW_LOG_ERROR("Here is a string: %s; with another string %s", "foo", "bar");
+}
+
+TEST(CustomFormatString, CriticalLevel) {
+  PW_LOG_CRITICAL("Critical, emergency log. Device should not reboot");
+}
