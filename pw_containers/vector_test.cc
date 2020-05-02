@@ -28,7 +28,7 @@ static_assert(alignof(Vector<std::max_align_t, 0>) ==
               alignof(Vector<std::max_align_t, 1>));
 
 struct CopyOnly {
-  explicit CopyOnly(int value) : value(value) {}
+  explicit CopyOnly(int val) : value(val) {}
 
   CopyOnly(const CopyOnly& other) { value = other.value; }
 
@@ -43,7 +43,7 @@ struct CopyOnly {
 };
 
 struct MoveOnly {
-  explicit MoveOnly(int value) : value(value) {}
+  explicit MoveOnly(int val) : value(val) {}
 
   MoveOnly(const MoveOnly&) = delete;
 

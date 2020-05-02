@@ -69,7 +69,13 @@ template("_pw_override_target_with_defaults") {
     }
 
     # Add default configs to use for all binary build targets.
-    configs += [ "$dir_pw_build:default" ]
+    configs += [
+      "$dir_pw_build:default",
+
+      # This is not recommended for projects, and is only enabled for upstream
+      # Pigweed to improve compatibility with projects that use these warnings.
+      "$dir_pw_build:extra_strict_warnings",
+    ]
   }
 }
 

@@ -52,6 +52,13 @@ config("strict_warnings") {
   cflags_cc = [ "-Wnon-virtual-dtor" ]
 }
 
+# This config contains warnings that we don't necessarily recommend projects
+# enable, but are enabled for upstream Pigweed for maximum project
+# compatibility.
+config("extra_strict_warnings") {
+  cflags = [ "-Wshadow" ]
+}
+
 config("cpp11") {
   cflags_cc = [ "-std=c++11" ]
 }

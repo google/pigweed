@@ -290,8 +290,8 @@ void DeringTest(bool preload) {
   EXPECT_EQ(ring.SetBuffer(test_buffer), Status::OK);
 
   // Entry data is entry size - preamble (single byte in this case).
-  byte single_entry_data[kEntrySizeBytes - 1u];
-  auto entry_data = span(single_entry_data);
+  byte single_entry_buffer[kEntrySizeBytes - 1u];
+  auto entry_data = span(single_entry_buffer);
   size_t i;
 
   size_t loop_goal = preload ? 500 : 1;
@@ -302,8 +302,8 @@ void DeringTest(bool preload) {
       // Prime the ringbuffer with some junk data to get the buffer
       // wrapped.
       for (i = 0; i < (kTotalEntryCount * (main_loop_count % 64u)); i++) {
-        memset(single_entry_data, i, sizeof(single_entry_data));
-        ring.PushBack(single_entry_data);
+        memset(single_entry_buffer, i, sizeof(single_entry_buffer));
+        ring.PushBack(single_entry_buffer);
       }
     }
 
@@ -311,17 +311,17 @@ void DeringTest(bool preload) {
     pw::Vector<byte, kTestBufferSize> expected_result;
     for (i = 0; i < kTotalEntryCount; i++) {
       // First component of the entry: the varint size.
-      static_assert(sizeof(single_entry_data) < 127);
-      expected_result.push_back(byte(sizeof(single_entry_data)));
+      static_assert(sizeof(single_entry_buffer) < 127);
+      expected_result.push_back(byte(sizeof(single_entry_buffer)));
 
       // Second component of the entry: the raw data.
-      memset(single_entry_data, 'a' + i, sizeof(single_entry_data));
+      memset(single_entry_buffer, 'a' + i, sizeof(single_entry_buffer));
       for (byte b : entry_data) {
         expected_result.push_back(b);
       }
 
       // The ring buffer internally pushes the varint size byte.
-      ring.PushBack(single_entry_data);
+      ring.PushBack(single_entry_buffer);
     }
 
     // Check values before doing the dering.

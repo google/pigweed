@@ -1226,10 +1226,10 @@ void KeyValueStore::LogDebugInfo() const {
   DBG("  Max entry count = %zu", entry_cache_.max_entries());
   DBG(" ");
   DBG("      #     hash        version    address   address (hex)");
-  size_t i = 0;
+  size_t count = 0;
   for (const EntryMetadata& metadata : entry_cache_) {
     DBG("   |%3zu: | %8zx  |%8zu  | %8zu | %8zx",
-        i++,
+        count++,
         size_t(metadata.hash()),
         size_t(metadata.transaction_id()),
         size_t(metadata.first_address()),

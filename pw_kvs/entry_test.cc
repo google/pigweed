@@ -98,8 +98,9 @@ constexpr auto kEntryWithoutPadding1 = AsBytes(kHeader1, kKey1, kValue1);
 constexpr auto kEntry1 = AsBytes(kEntryWithoutPadding1, kPadding1);
 static_assert(kEntry1.size() == 32);
 
-ChecksumCrc16 checksum;
-constexpr EntryFormat kFormatWithChecksum{kMagicWithChecksum, &checksum};
+ChecksumCrc16 default_checksum;
+constexpr EntryFormat kFormatWithChecksum{kMagicWithChecksum,
+                                          &default_checksum};
 constexpr internal::EntryFormats kFormats(kFormatWithChecksum);
 
 class ValidEntryInFlash : public ::testing::Test {

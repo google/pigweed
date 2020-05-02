@@ -289,12 +289,12 @@ class TestInfo {
   TestInfo(const char* const test_suite_name,
            const char* const test_name,
            const char* const file_name,
-           void (*run)(const TestInfo&))
+           void (*run_func)(const TestInfo&))
       : test_case_{
         .suite_name = test_suite_name,
         .test_name = test_name,
         .file_name = file_name,
-       }, run_(run) {
+       }, run_(run_func) {
     Framework::Get().RegisterTest(this);
   }
 

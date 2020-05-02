@@ -57,7 +57,7 @@ class ChecksumFunction final : public ChecksumAlgorithm {
   State (&algorithm_)(span<const byte>, State);
 };
 
-ChecksumFunction<uint32_t> checksum(SimpleChecksum);
+ChecksumFunction<uint32_t> default_checksum(SimpleChecksum);
 
 // Returns a buffer containing the necessary padding for an entry.
 template <size_t kAlignmentBytes, size_t kKeyLength, size_t kValueSize = 0>
@@ -163,7 +163,7 @@ class KvsErrorHandling : public ::testing::Test {
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
-             {.magic = kMagic, .checksum = &checksum},
+             {.magic = kMagic, .checksum = &default_checksum},
              kNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
@@ -370,7 +370,7 @@ class KvsErrorRecovery : public ::testing::Test {
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
-             {.magic = kMagic, .checksum = &checksum},
+             {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
@@ -622,7 +622,7 @@ class InitializedRedundantMultiMagicKvs : public ::testing::Test {
         partition_(&flash_),
         kvs_(&partition_,
              {{
-                 {.magic = kMagic, .checksum = &checksum},
+                 {.magic = kMagic, .checksum = &default_checksum},
                  {.magic = kAltMagic, .checksum = &alt_checksum},
                  {.magic = kNoChecksumMagic, .checksum = nullptr},
              }},
@@ -833,7 +833,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, UpdateEntryFormat) {
   ASSERT_EQ(Status::OK, kvs_.FullMaintenance());
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2, 1> local_kvs(
-      &partition_, {.magic = kMagic, .checksum = &checksum}, kNoGcOptions);
+      &partition_,
+      {.magic = kMagic, .checksum = &default_checksum},
+      kNoGcOptions);
 
   ASSERT_EQ(Status::OK, local_kvs.Init());
   EXPECT_EQ(false, local_kvs.error_detected());
@@ -854,7 +856,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
         partition_(&flash_),
         kvs_(&partition_,
              {{
-                 {.magic = kMagic, .checksum = &checksum},
+                 {.magic = kMagic, .checksum = &default_checksum},
                  {.magic = kAltMagic, .checksum = &alt_checksum},
                  {.magic = kNoChecksumMagic, .checksum = nullptr},
              }},
@@ -888,7 +890,9 @@ TEST_F(InitializedMultiMagicKvs, UpdateEntryFormat) {
   ASSERT_EQ(Status::OK, kvs_.FullMaintenance());
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 1, 1> local_kvs(
-      &partition_, {.magic = kMagic, .checksum = &checksum}, kNoGcOptions);
+      &partition_,
+      {.magic = kMagic, .checksum = &default_checksum},
+      kNoGcOptions);
 
   ASSERT_EQ(Status::OK, local_kvs.Init());
   EXPECT_EQ(false, local_kvs.error_detected());
@@ -908,7 +912,7 @@ class InitializedRedundantLazyRecoveryKvs : public ::testing::Test {
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
-             {.magic = kMagic, .checksum = &checksum},
+             {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryLazyGcOptions) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(),
@@ -1000,7 +1004,7 @@ class InitializedLazyRecoveryKvs : public ::testing::Test {
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
         kvs_(&partition_,
-             {.magic = kMagic, .checksum = &checksum},
+             {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryLazyGcOptions) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(),
@@ -1056,7 +1060,7 @@ TEST_F(InitializedLazyRecoveryKvs, AddRedundancyToKvsFullOfStaleData) {
   // two sectors.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2> local_kvs(
       &partition_,
-      {.magic = kMagic, .checksum = &checksum},
+      {.magic = kMagic, .checksum = &default_checksum},
       kRecoveryLazyGcOptions);
   ASSERT_EQ(Status::OK, local_kvs.Init());
 

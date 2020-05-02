@@ -171,7 +171,8 @@ std::array<byte, 512> buffer;
 constexpr std::array<const char*, 3> keys{"TestKey1", "Key2", "TestKey3"};
 
 ChecksumCrc16 checksum;
-constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = &checksum};
+constexpr EntryFormat default_format{.magic = 0xBAD'C0D3,
+                                     .checksum = &checksum};
 
 size_t RoundUpForAlignment(size_t size) {
   return AlignUp(size, test_partition.alignment_bytes());
@@ -204,7 +205,7 @@ class KvsAttributes {
 
 class EmptyInitializedKvs : public ::testing::Test {
  protected:
-  EmptyInitializedKvs() : kvs_(&test_partition, format) {
+  EmptyInitializedKvs() : kvs_(&test_partition, default_format) {
     test_partition.Erase();
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
@@ -406,7 +407,7 @@ TEST_F(EmptyInitializedKvs, Delete_AddBackKey_PersistsAfterInitialization) {
 
   // Ensure that the re-added key is still present after reinitialization.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> new_kvs(&test_partition,
-                                                              format);
+                                                              default_format);
   ASSERT_EQ(Status::OK, new_kvs.Init());
 
   EXPECT_EQ(Status::OK, new_kvs.Put("kEy", as_bytes(span("45678"))));
@@ -480,9 +481,9 @@ TEST_F(EmptyInitializedKvs, Iteration_OneItem) {
   for (KeyValueStore::Item entry : kvs_) {
     EXPECT_STREQ(entry.key(), "kEy");  // Make sure null-terminated.
 
-    char buffer[sizeof("123")] = {};
-    EXPECT_EQ(Status::OK, entry.Get(&buffer));
-    EXPECT_STREQ("123", buffer);
+    char temp[sizeof("123")] = {};
+    EXPECT_EQ(Status::OK, entry.Get(&temp));
+    EXPECT_STREQ("123", temp);
   }
 }
 
@@ -490,11 +491,11 @@ TEST_F(EmptyInitializedKvs, Iteration_GetWithOffset) {
   ASSERT_EQ(Status::OK, kvs_.Put("key", as_bytes(span("not bad!"))));
 
   for (KeyValueStore::Item entry : kvs_) {
-    char buffer[5];
-    auto result = entry.Get(as_writable_bytes(span(buffer)), 4);
+    char temp[5];
+    auto result = entry.Get(as_writable_bytes(span(temp)), 4);
     EXPECT_EQ(Status::OK, result.status());
     EXPECT_EQ(5u, result.size());
-    EXPECT_STREQ("bad!", buffer);
+    EXPECT_STREQ("bad!", temp);
   }
 }
 
@@ -859,7 +860,7 @@ TEST_F(EmptyInitializedKvs, Enable) {
   // Enable different KVS which should be able to properly setup the same map
   // from what is stored in flash.
   static KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_local(
-      &test_partition, format);
+      &test_partition, default_format);
   ASSERT_EQ(Status::OK, kvs_local.Init());
   EXPECT_EQ(kvs_local.size(), keys.size());
 
@@ -1244,7 +1245,7 @@ TEST_F(EmptyInitializedKvs, ValueSize_DeletedKey) {
 
 class LargeEmptyInitializedKvs : public ::testing::Test {
  protected:
-  LargeEmptyInitializedKvs() : kvs_(&large_test_partition, format) {
+  LargeEmptyInitializedKvs() : kvs_(&large_test_partition, default_format) {
     ASSERT_EQ(
         Status::OK,
         large_test_partition.Erase(0, large_test_partition.sector_count()));

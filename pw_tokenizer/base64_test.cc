@@ -33,8 +33,8 @@ class PrefixedBase64 : public ::testing::Test {
 
 const struct TestData {
   template <size_t kSize>
-  TestData(const char (&binary)[kSize], const char* base64)
-      : binary{as_bytes(span(binary, kSize - 1))}, base64(base64) {}
+  TestData(const char (&binary_data)[kSize], const char* base64_data)
+      : binary{as_bytes(span(binary_data, kSize - 1))}, base64(base64_data) {}
 
   span<const std::byte> binary;
   std::string_view base64;

@@ -245,7 +245,7 @@ TEST(TypeTraits, Basic) {
 }
 
 struct MoveTester {
-  MoveTester(int magic_value) : magic_value(magic_value), moved(false) {}
+  MoveTester(int value) : magic_value(value), moved(false) {}
 
   MoveTester(const MoveTester&) = default;
 
