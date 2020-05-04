@@ -319,7 +319,6 @@ QUICK = (
     pw_presubmit.pragma_once,
     gn_clang_build,
     gn_arm_build,
-    bazel_test,
     source_is_in_build_files,
     python_checks.ALL,
 )
