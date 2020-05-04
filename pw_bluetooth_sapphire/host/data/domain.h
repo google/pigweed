@@ -40,15 +40,8 @@ class Domain : public fbl::RefCounted<Domain> {
   static constexpr const char* kInspectNodeName = "data_domain";
 
   // Constructs an uninitialized data domain that can be used in production.
-  // This spawns a thread on which data-domain tasks will be scheduled.
   static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node,
-                                    std::string thread_name);
-
-  // Constructs an instance using the given |dispatcher| instead of spawning a
-  // thread. This is intended for unit tests.
-  static fbl::RefPtr<Domain> CreateWithDispatcher(fxl::RefPtr<hci::Transport> hci,
-                                                  inspect::Node node,
-                                                  async_dispatcher_t* dispatcher);
+                                    async_dispatcher_t* dispatcher);
 
   // These send an Initialize/ShutDown message to the data task runner. It is
   // safe for the caller to drop its Domain reference after ShutDown is called.

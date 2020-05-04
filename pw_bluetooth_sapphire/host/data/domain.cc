@@ -15,15 +15,6 @@ namespace data {
 
 class Impl final : public Domain, public TaskDomain<Impl, Domain> {
  public:
-  Impl(fxl::RefPtr<hci::Transport> hci, inspect::Node node, std::string thread_name)
-      : Domain(),
-        TaskDomain<Impl, Domain>(this, std::move(thread_name)),
-        node_(std::move(node)),
-        hci_(hci) {
-    ZX_ASSERT(hci_);
-  }
-
-  // Second constructor used by CreateWithDispatcher.
   Impl(fxl::RefPtr<hci::Transport> hci, inspect::Node node, async_dispatcher_t* dispatcher)
       : Domain(), TaskDomain<Impl, Domain>(this, dispatcher), node_(std::move(node)), hci_(hci) {
     ZX_DEBUG_ASSERT(hci_);
@@ -229,15 +220,7 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
 
 // static
 fbl::RefPtr<Domain> Domain::Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node,
-                                   std::string thread_name) {
-  ZX_DEBUG_ASSERT(hci);
-  return AdoptRef(new Impl(hci, std::move(node), std::move(thread_name)));
-}
-
-// static
-fbl::RefPtr<Domain> Domain::CreateWithDispatcher(fxl::RefPtr<hci::Transport> hci,
-                                                 inspect::Node node,
-                                                 async_dispatcher_t* dispatcher) {
+                                   async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(hci);
   ZX_DEBUG_ASSERT(dispatcher);
   return AdoptRef(new Impl(hci, std::move(node), dispatcher));

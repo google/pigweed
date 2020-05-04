@@ -58,7 +58,7 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = Domain::CreateWithDispatcher(
+    domain_ = Domain::Create(
         transport(), inspector_.GetRoot().CreateChild(Domain::kInspectNodeName), dispatcher());
     domain_->Initialize();
 
@@ -528,7 +528,7 @@ using DATA_DomainLifecycleTest = TestingBase;
 TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
   // Create an isolated domain, and shutdown without initializing
   // We can't use the standard DATA_DomainTest fixture, as it will initialize the domain
-  auto data_domain = Domain::CreateWithDispatcher(transport(), inspect::Node(), dispatcher());
+  auto data_domain = Domain::Create(transport(), inspect::Node(), dispatcher());
   data_domain->ShutDown();
   data_domain = nullptr;
   SUCCEED();
