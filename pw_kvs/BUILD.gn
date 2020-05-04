@@ -46,7 +46,6 @@ source_set("pw_kvs") {
     "pw_kvs_private/macros.h",
     "sectors.cc",
   ]
-  sources += public
   public_deps = [
     dir_pw_containers,
     dir_pw_span,
@@ -56,19 +55,11 @@ source_set("pw_kvs") {
     dir_pw_checksum,
     dir_pw_log,
   ]
-  friend = [
-    ":entry_test",
-    ":entry_cache_test",
-    ":key_value_store_test",
-    ":key_value_store_binary_format_test",
-    ":key_value_store_map_test",
-    ":sectors_test",
-  ]
+  friend = [ ":*" ]
 }
 
 source_set("crc16") {
   public = [ "public/pw_kvs/crc16_checksum.h" ]
-  sources = public
   public_deps = [
     ":pw_kvs",
     dir_pw_checksum,
@@ -81,7 +72,7 @@ source_set("test_utils") {
     "public/pw_kvs/in_memory_fake_flash.h",
     "pw_kvs_private/byte_utils.h",
   ]
-  sources = [ "in_memory_fake_flash.cc" ] + public
+  sources = [ "in_memory_fake_flash.cc" ]
   visibility = [ ":*" ]
   public_deps = [
     dir_pw_kvs,
@@ -92,7 +83,7 @@ source_set("test_utils") {
 source_set("test_partition") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/flash_partition_with_stats.h" ]
-  sources = [ "flash_partition_with_stats.cc" ] + public
+  sources = [ "flash_partition_with_stats.cc" ]
   visibility = [ ":*" ]
   public_deps = [
     dir_pw_kvs,

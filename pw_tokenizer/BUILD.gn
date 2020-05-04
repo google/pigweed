@@ -42,17 +42,13 @@ source_set("pw_tokenizer") {
     "public/pw_tokenizer/internal/tokenize_string.h",
     "tokenize.cc",
   ]
-  sources += public
-  friend = [
-    ":argument_types_test",
-    ":hash_test",
-  ]
+  friend = [ ":*" ]
 }
 
 source_set("base64") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_tokenizer/base64.h" ]
-  sources = [ "base64.cc" ] + public
+  sources = [ "base64.cc" ]
   public_deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_span",
@@ -74,11 +70,7 @@ source_set("decoder") {
     "public/pw_tokenizer/internal/decode.h",
     "token_database.cc",
   ]
-  sources += public
-  friend = [
-    ":decode_test",
-    ":generate_decoding_test_data",
-  ]
+  friend = [ ":*" ]
 }
 
 # Executable for generating test data for the C++ and Python detokenizers. This
