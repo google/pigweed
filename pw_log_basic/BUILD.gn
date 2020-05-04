@@ -28,21 +28,20 @@ if (dir_pw_log_backend == dir_pw_log_basic) {
       ":backend_config",
       ":default_config",
     ]
-    deps = [ ":pw_log_basic_core" ]
     public = [ "public_overrides/pw_log_backend/log_backend.h" ]
+    public_deps = [ ":core" ]
   }
 }
 
-source_set("pw_log_basic_core") {
+source_set("core") {
   public_configs = [ ":default_config" ]
+  public_deps = [ dir_pw_preprocessor ]
   deps = [
     "$dir_pw_log:facade",
-    "$dir_pw_preprocessor",
-    "$dir_pw_string",
-    "$dir_pw_sys_io",
+    dir_pw_string,
+    dir_pw_sys_io,
   ]
   public = [ "public/pw_log_basic/log_basic.h" ]
-  public_deps = [ dir_pw_preprocessor ]
 
   # Use emoji log levels if they've been enabled.
   _use_emoji = getenv("PW_EMOJI")
