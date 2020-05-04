@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "KVS"
+
 #include "pw_kvs/flash_partition_with_stats.h"
 
 #include <cstdio>
