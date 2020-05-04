@@ -82,7 +82,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       }
 
       case kStringView: {
-        std::string str = provider.ConsumeRandomLengthString();
+        std::string str =
+            provider.ConsumeRandomLengthString(provider.remaining_bytes());
         auto detokenized_string = detokenizer.Detokenize(str);
         PW_UNUSED(detokenized_string);
         break;

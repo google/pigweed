@@ -60,6 +60,7 @@ void IterateOverDatabase(TokenDatabase* const database) {
     PW_UNUSED(entry_token);
   }
 }
+
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
@@ -98,14 +99,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   // Consume the remaining data. Note that the data corresponding to the
   // string entries in the database are not explicitly null-terminated.
-  size_t data_bytes_consumed = provider.ConsumeData(buffer + kTokenHeaderSize,
-                                                    provider.remaining_bytes());
+  // TODO(karthikmb): Once OSS-Fuzz updates to Clang11.0, switch to
+  // provider.ConsumeData() to avoid extra memory and the memcpy call.
+  auto consumed_bytes =
+      provider.ConsumeBytes<uint8_t>(provider.remaining_bytes());
+  memcpy(buffer + kTokenHeaderSize, &consumed_bytes[0], consumed_bytes.size());
 
   SetTokenEntryCountInBuffer(buffer, random_token_count);
 
   // Poison the unused buffer space for this run of the fuzzer to
   // prevent the token database creator from reading too far in.
-  size_t data_size = kTokenHeaderSize + data_bytes_consumed;
+  size_t data_size = kTokenHeaderSize + consumed_bytes.size();
   size_t poisoned_length = kBufferSizeMax - data_size;
   void* poisoned = &buffer[data_size];
 
