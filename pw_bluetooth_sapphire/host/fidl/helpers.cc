@@ -246,6 +246,31 @@ fsys::Error HostErrorToFidl(bt::HostError error) {
   return fsys::Error::FAILED;
 }
 
+fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> status) {
+  ZX_ASSERT(!status.is_success());
+  switch (status.error()) {
+    case bt::HostError::kPacketMalformed:
+      return fuchsia::bluetooth::gatt::Error::INVALID_RESPONSE;
+    case bt::HostError::kProtocolError:
+      switch (status.protocol_error()) {
+        case bt::att::ErrorCode::kInsufficientAuthorization:
+          return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_AUTHORIZATION;
+        case bt::att::ErrorCode::kInsufficientAuthentication:
+          return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_AUTHENTICATION;
+        case bt::att::ErrorCode::kInsufficientEncryptionKeySize:
+          return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+        case bt::att::ErrorCode::kInsufficientEncryption:
+          return fuchsia::bluetooth::gatt::Error::INSUFFICIENT_ENCRYPTION;
+        case bt::att::ErrorCode::kReadNotPermitted:
+          return fuchsia::bluetooth::gatt::Error::READ_NOT_PERMITTED;
+        default:
+          return fuchsia::bluetooth::gatt::Error::FAILURE;
+      }
+    default:
+      return fuchsia::bluetooth::gatt::Error::FAILURE;
+  }
+}
+
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
   bt::UUID output;
   // Conversion must always succeed given the defined size of |input|.
@@ -678,8 +703,7 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
   return output;
 }
 
-fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
-    const bt::AdvertisingData& input) {
+fble::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(const bt::AdvertisingData& input) {
   fble::AdvertisingDataDeprecated output;
 
   if (input.local_name()) {

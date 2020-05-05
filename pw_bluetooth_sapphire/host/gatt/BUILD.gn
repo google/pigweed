@@ -49,6 +49,8 @@ source_set("testing") {
   testonly = true
 
   sources = [
+    "fake_client.cc",
+    "fake_client.h",
     "fake_layer.cc",
     "fake_layer.h",
   ]
@@ -66,8 +68,6 @@ source_set("tests") {
 
   sources = [
     "client_unittest.cc",
-    "fake_client.cc",
-    "fake_client.h",
     "generic_attribute_service_unittest.cc",
     "local_service_manager_unittest.cc",
     "remote_service_manager_unittest.cc",
@@ -76,6 +76,7 @@ source_set("tests") {
 
   deps = [
     ":gatt",
+    ":testing",
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",

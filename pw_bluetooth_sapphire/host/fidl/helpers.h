@@ -89,6 +89,9 @@ fit::result<void, fuchsia::bluetooth::sys::Error> StatusToFidl(
   }
 }
 
+// Convert a bt::Status to fuchsia.bluetooth.gatt.Error. |status| must not indicate success.
+fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> status);
+
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input);
 fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);
 

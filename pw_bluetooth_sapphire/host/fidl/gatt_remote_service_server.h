@@ -45,6 +45,7 @@ class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::
                        WriteDescriptorCallback callback) override;
   void WriteLongDescriptor(uint64_t _id, uint16_t offset, ::std::vector<uint8_t> value,
                            WriteDescriptorCallback callback) override;
+  void ReadByType(fuchsia::bluetooth::Uuid uuid, ReadByTypeCallback callback) override;
   void NotifyCharacteristic(uint64_t id, bool enable,
                             NotifyCharacteristicCallback callback) override;
 

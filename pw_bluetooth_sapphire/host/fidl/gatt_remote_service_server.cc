@@ -4,7 +4,12 @@
 
 #include "gatt_remote_service_server.h"
 
+#include <zircon/errors.h>
+
+#include <algorithm>
+
 #include "helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
@@ -201,6 +206,53 @@ void GattRemoteServiceServer::WriteLongDescriptor(uint64_t id, uint16_t offset,
                                 [callback = std::move(callback)](bt::att::Status status) {
                                   callback(fidl_helpers::StatusToFidlDeprecated(status, ""));
                                 });
+}
+
+void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
+                                         ReadByTypeCallback callback) {
+  service_->ReadByType(
+      fidl_helpers::UuidFromFidl(uuid),
+      [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback)](
+          bt::att::Status status, std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
+        if (!self) {
+          return;
+        }
+
+        switch (status.error()) {
+          case bt::HostError::kNoError:
+            break;
+          case bt::HostError::kInvalidParameters:
+            bt_log(TRACE, "bt-host",
+                   "ReadByType called with invalid parameters, closing FIDL channel");
+            self->binding()->Close(ZX_ERR_INVALID_ARGS);
+            return;
+          default:
+            cb(fit::error(fidl_helpers::GattStatusToFidl(status)));
+            return;
+        }
+
+        if (results.size() > fuchsia::bluetooth::gatt::MAX_READ_BY_TYPE_RESULTS) {
+          cb(fit::error(fuchsia::bluetooth::gatt::Error::TOO_MANY_RESULTS));
+          return;
+        }
+
+        std::vector<fuchsia::bluetooth::gatt::ReadByTypeResult> fidl_results;
+        fidl_results.reserve(results.size());
+
+        for (const auto& result : results) {
+          fuchsia::bluetooth::gatt::ReadByTypeResult fidl_result;
+          fidl_result.set_id(static_cast<uint64_t>(result.handle.value));
+          if (result.result.is_ok()) {
+            fidl_result.set_value(result.result.value()->ToVector());
+          } else {
+            fidl_result.set_error(
+                fidl_helpers::GattStatusToFidl(bt::att::Status(result.result.error())));
+          }
+          fidl_results.push_back(std::move(fidl_result));
+        }
+
+        cb(fit::ok(std::move(fidl_results)));
+      });
 }
 
 void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,

@@ -14,6 +14,7 @@
 namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
+namespace fbg = fuchsia::bluetooth::gatt;
 
 namespace bthost {
 namespace fidl_helpers {
@@ -30,6 +31,27 @@ TEST(FidlHelpersTest, HostErrorToFidl) {
 
   // All other errors currently map to FAILED.
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
+}
+
+TEST(FidlHelpersTest, GattStatusToFidl) {
+  // Host errors
+  EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
+            GattStatusToFidl(bt::att::Status(bt::HostError::kPacketMalformed)));
+  EXPECT_EQ(fbg::Error::FAILURE, GattStatusToFidl(bt::att::Status(bt::HostError::kTimedOut)));
+
+  // Protocol errors
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHORIZATION,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthorization)));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_AUTHENTICATION,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kInsufficientAuthentication)));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_ENCRYPTION_KEY_SIZE,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryptionKeySize)));
+  EXPECT_EQ(fbg::Error::INSUFFICIENT_ENCRYPTION,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kInsufficientEncryption)));
+  EXPECT_EQ(fbg::Error::READ_NOT_PERMITTED,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kReadNotPermitted)));
+  EXPECT_EQ(fbg::Error::FAILURE,
+            GattStatusToFidl(bt::att::Status(bt::att::ErrorCode::kUnlikelyError)));
 }
 
 TEST(FIDL_HelpersTest, AddressBytesFrommString) {
