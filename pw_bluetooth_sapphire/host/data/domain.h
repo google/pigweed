@@ -55,7 +55,7 @@ class Domain : public fbl::RefCounted<Domain> {
   // method.
   //
   // |link_error_callback| will be used to notify when a channel signals a link
-  // error. It will be posted onto |dispatcher|.
+  // error.
   //
   // |security_callback| will be used to request an upgrade to the link security
   // level. This can be triggered by dynamic L2CAP channel creation or by a
@@ -64,8 +64,7 @@ class Domain : public fbl::RefCounted<Domain> {
   // Has no effect if this Domain is uninitialized or shut down.
   virtual void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                                 l2cap::LinkErrorCallback link_error_callback,
-                                l2cap::SecurityUpgradeCallback security_callback,
-                                async_dispatcher_t* dispatcher) = 0;
+                                l2cap::SecurityUpgradeCallback security_callback) = 0;
 
   // Registers an LE connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this

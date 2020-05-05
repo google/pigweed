@@ -132,11 +132,10 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
-  void set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher);
+  void set_error_callback(fit::closure callback);
 
   // Assigns the security upgrade delegate for this link.
-  void set_security_upgrade_callback(SecurityUpgradeCallback callback,
-                                     async_dispatcher_t* dispatcher);
+  void set_security_upgrade_callback(SecurityUpgradeCallback callback);
 
   // Assigns the callback to be invoked when a valid Connection Parameter Update Request is received
   // on the signaling channel.
@@ -248,10 +247,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   hci::Connection::Role role_;
 
   fit::closure link_error_cb_;
-  async_dispatcher_t* link_error_dispatcher_;
 
   SecurityUpgradeCallback security_callback_;
-  async_dispatcher_t* security_dispatcher_;
 
   LEConnectionParameterUpdateCallback connection_parameter_update_callback_;
   async_dispatcher_t* connection_parameter_update_dispatcher_;

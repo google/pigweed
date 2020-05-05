@@ -100,13 +100,11 @@ class ChannelManager final {
   // level. This can be triggered by dynamic L2CAP channel creation or by a
   // service-level client via Channel::UpgradeSecurity().
   //
-  // All callbacks will be posted onto |dispatcher|.
-  //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
   void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
-                   LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,
-                   async_dispatcher_t* dispatcher);
+                   LinkErrorCallback link_error_callback,
+                   SecurityUpgradeCallback security_callback);
 
   // Registers a LE connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this

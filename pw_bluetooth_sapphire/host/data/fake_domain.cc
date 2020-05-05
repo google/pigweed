@@ -102,11 +102,11 @@ void FakeDomain::ShutDown() { initialized_ = false; }
 
 void FakeDomain::AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                                   l2cap::LinkErrorCallback link_error_cb,
-                                  l2cap::SecurityUpgradeCallback security_cb,
-                                  async_dispatcher_t* dispatcher) {
+                                  l2cap::SecurityUpgradeCallback security_cb) {
   if (!initialized_)
     return;
 
+  async_dispatcher_t* dispatcher = link_error_cb ? async_get_default_dispatcher() : nullptr;
   RegisterInternal(handle, role, hci::Connection::LinkType::kACL, std::move(link_error_cb),
                    dispatcher);
 }

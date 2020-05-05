@@ -51,12 +51,11 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
 
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                         l2cap::LinkErrorCallback link_error_callback,
-                        l2cap::SecurityUpgradeCallback security_callback,
-                        async_dispatcher_t* dispatcher) override {
+                        l2cap::SecurityUpgradeCallback security_callback) override {
     PostMessage([this, handle, role, lec = std::move(link_error_callback),
-                 suc = std::move(security_callback), dispatcher]() mutable {
+                 suc = std::move(security_callback)]() mutable {
       if (l2cap_) {
-        l2cap_->RegisterACL(handle, role, std::move(lec), std::move(suc), dispatcher);
+        l2cap_->RegisterACL(handle, role, std::move(lec), std::move(suc));
       }
     });
   }

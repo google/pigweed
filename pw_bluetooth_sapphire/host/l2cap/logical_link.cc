@@ -251,10 +251,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   }
 
   bt_log(TRACE, "l2cap", "Security upgrade requested (level = %s)", sm::LevelToString(level));
-  async::PostTask(security_dispatcher_, [handle = handle_, level, f = security_callback_.share(),
-                                         status_cb = std::move(status_cb)]() mutable {
-    f(handle, level, std::move(status_cb));
-  });
+  security_callback_(handle_, level, std::move(status_cb));
 }
 
 void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& security) {
@@ -289,21 +286,16 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
   send_packets_cb_(std::move(fragments), id);
 }
 
-void LogicalLink::set_error_callback(fit::closure callback, async_dispatcher_t* dispatcher) {
+void LogicalLink::set_error_callback(fit::closure callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
   link_error_cb_ = std::move(callback);
-  link_error_dispatcher_ = dispatcher;
 }
 
-void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback,
-                                                async_dispatcher_t* dispatcher) {
+void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
 
   security_callback_ = std::move(callback);
-  security_dispatcher_ = dispatcher;
 }
 
 void LogicalLink::set_connection_parameter_update_callback(
@@ -373,8 +365,7 @@ void LogicalLink::SignalError() {
   bt_log(INFO, "l2cap", "Signal upper layer error on link %#.4x; closing all channels", handle());
 
   if (link_error_cb_) {
-    async::PostTask(link_error_dispatcher_, std::move(link_error_cb_));
-    link_error_dispatcher_ = nullptr;
+    link_error_cb_();
   }
 
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {

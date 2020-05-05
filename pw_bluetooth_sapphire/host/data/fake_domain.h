@@ -56,8 +56,7 @@ class FakeDomain final : public Domain {
   void ShutDown() override;
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                         l2cap::LinkErrorCallback link_error_callback,
-                        l2cap::SecurityUpgradeCallback security_callback,
-                        async_dispatcher_t* dispatcher) override;
+                        l2cap::SecurityUpgradeCallback security_callback) override;
   void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                        l2cap::LinkErrorCallback link_error_callback,
                        l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
@@ -133,6 +132,7 @@ class FakeDomain final : public Domain {
   FakeDomain() = default;
   ~FakeDomain() override;
 
+  // TODO(50565): remove dispatcher argument after removing argument from all methods
   LinkData* RegisterInternal(hci::ConnectionHandle handle, hci::Connection::Role role,
                              hci::Connection::LinkType link_type,
                              l2cap::LinkErrorCallback link_error_callback,

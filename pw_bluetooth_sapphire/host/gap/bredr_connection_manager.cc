@@ -497,7 +497,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
 
   // Register with L2CAP to handle services on the ACL signaling channel.
   data_domain_->AddACLConnection(handle, connection->role(), error_handler,
-                                 std::move(security_callback), dispatcher_);
+                                 std::move(security_callback));
 
   peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 

@@ -303,7 +303,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   void RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
                    LinkErrorCallback lec = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc), dispatcher());
+    chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc));
   }
 
   fbl::RefPtr<Channel> ActivateNewFixedChannel(ChannelId id,

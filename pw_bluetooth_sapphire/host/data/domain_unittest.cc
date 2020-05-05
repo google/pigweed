@@ -151,7 +151,7 @@ class DATA_DomainTest : public TestingBase {
     acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kACL);
     domain()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
-        /*security_upgrade_callback=*/[](auto, auto, auto) {}, dispatcher());
+        /*security_upgrade_callback=*/[](auto, auto, auto) {});
     return cmd_ids;
   }
 
