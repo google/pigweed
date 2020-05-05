@@ -5,12 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 
-#include <fbl/macros.h>
 #include <zircon/compiler.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+
+#include <fbl/macros.h>
 
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"

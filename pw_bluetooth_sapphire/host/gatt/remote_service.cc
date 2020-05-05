@@ -708,22 +708,55 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
     return;
   }
 
-  auto read_cb = [self = fbl::RefPtr(this), type, end, values_accum = std::move(values),
-                  cb = std::move(callback), dispatcher](
-                     att::Status status, std::vector<Client::ReadByTypeResult> values) mutable {
-    if (!status.is_success()) {
-      // Treat kAttributeNotFound error as success, since it's used to indicate when a sequence of
-      // reads has read all matching attributes.
-      if (status.is_protocol_error() &&
-          status.protocol_error() == att::ErrorCode::kAttributeNotFound) {
-        status = att::Status();
-      }
+  auto read_cb = [self = fbl::RefPtr(this), type, start, end, values_accum = std::move(values),
+                  cb = std::move(callback), dispatcher](Client::ReadByTypeResult result) mutable {
+    if (result.is_error()) {
+      att::Status status = result.error().status;
+      ZX_ASSERT(!status.is_success());
+      if (status.is_protocol_error()) {
+        switch (status.protocol_error()) {
+          case att::ErrorCode::kAttributeNotFound:
+            // Treat kAttributeNotFound error as success, since it's used to indicate when a
+            // sequence of reads has successfully read all matching attributes.
+            status = att::Status();
+            ReportValues(status, std::move(values_accum), std::move(cb), dispatcher);
+            return;
+          case att::ErrorCode::kRequestNotSupported:
+          case att::ErrorCode::kInsufficientResources:
+          case att::ErrorCode::kInvalidPDU:
+            // Pass up these protocol errors as they aren't handle specific or recoverable.
+            break;
+          default:
+            // Other errors may correspond to reads of specific handles, so treat them as a result
+            // and continue reading after the error.
 
-      ReportValues(status, std::move(values_accum), std::move(cb), dispatcher);
+            // A handle must be provided and in the requested read handle range.
+            if (!result.error().handle.has_value()) {
+              break;
+            }
+            att::Handle error_handle = result.error().handle.value();
+            if (error_handle < start || error_handle > end) {
+              status = att::Status(HostError::kPacketMalformed);
+              break;
+            }
+
+            values_accum.push_back(RemoteService::ReadByTypeResult{
+                CharacteristicHandle(error_handle), fit::error(status.protocol_error())});
+
+            // Start next read right after attribute causing error.
+            att::Handle start_next = error_handle + 1;
+            self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),
+                                   dispatcher);
+            return;
+        }
+      }
+      ReportValues(status, {}, std::move(cb), dispatcher);
       return;
     }
 
-    // Client checks for invalid response where status is success but no values are returned.
+    const auto& values = result.value();
+    // Client already checks for invalid response where status is success but no values are
+    // returned.
     ZX_ASSERT(!values.empty());
 
     // Convert and accumulate values.
@@ -731,10 +764,11 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
       auto buffer = NewSlabBuffer(result.value.size());
       result.value.Copy(buffer.get());
       values_accum.push_back(
-          ReadByTypeResult{CharacteristicHandle(result.handle), std::move(buffer)});
+          ReadByTypeResult{CharacteristicHandle(result.handle), fit::ok(std::move(buffer))});
     }
 
-    // Start next read right after last returned attribute.
+    // Start next read right after last returned attribute. Client already checks that value handles
+    // are ascending and in range, so we are guaranteed to make progress.
     att::Handle start_next = values.back().handle + 1;
 
     self->ReadByTypeHelper(type, start_next, end, std::move(values_accum), std::move(cb),

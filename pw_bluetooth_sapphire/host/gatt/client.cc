@@ -650,7 +650,7 @@ class Impl final : public Client {
     auto pdu = NewPDU(type_size == sizeof(uint16_t) ? sizeof(att::ReadByTypeRequestParams16)
                                                     : sizeof(att::ReadByTypeRequestParams128));
     if (!pdu) {
-      callback(att::Status(HostError::kOutOfMemory), {});
+      callback(fit::error(ReadByTypeError{att::Status(HostError::kOutOfMemory), std::nullopt}));
       return;
     }
 
@@ -673,7 +673,8 @@ class Impl final : public Client {
                                 end_handle](const att::PacketReader& rsp) {
       ZX_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
-        callback(att::Status(HostError::kPacketMalformed), {});
+        callback(
+            fit::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
         return;
       }
 
@@ -689,11 +690,12 @@ class Impl final : public Client {
       // c) Have a list size that is evenly divisible by pair size.
       if (pair_size < sizeof(att::Handle) || list_size < sizeof(att::Handle) ||
           list_size % pair_size != 0) {
-        callback(att::Status(HostError::kPacketMalformed), {});
+        callback(
+            fit::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
         return;
       }
 
-      std::vector<ReadByTypeResult> attributes;
+      std::vector<ReadByTypeValue> attributes;
       BufferView attr_list_view(params.attribute_data_list,
                                 rsp.payload_size() - sizeof(params.length));
       while (attr_list_view.size() >= params.length) {
@@ -703,37 +705,41 @@ class Impl final : public Client {
         if (handle < start_handle || handle > end_handle) {
           bt_log(SPEW, "gatt",
                  "client received read by type response with handle outside of requested range");
-          callback(att::Status(HostError::kPacketMalformed), {});
+          callback(
+              fit::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
           return;
         }
 
         if (!attributes.empty() && attributes.back().handle >= handle) {
           bt_log(SPEW, "gatt",
                  "client received read by type response with handles in non-increasing order");
-          callback(att::Status(HostError::kPacketMalformed), {});
+          callback(
+              fit::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
           return;
         }
 
         auto value_view = pair_view.view(sizeof(att::Handle));
-        attributes.push_back(ReadByTypeResult{handle, value_view});
+        attributes.push_back(ReadByTypeValue{handle, value_view});
 
         // Advance list view to next pair (or end of list).
         attr_list_view = attr_list_view.view(pair_size);
       }
       ZX_ASSERT(attr_list_view.size() == 0);
 
-      callback(att::Status(), std::move(attributes));
+      callback(fit::ok(std::move(attributes)));
     });
 
     auto error_cb =
         BindErrorCallback([callback = callback.share()](att::Status status, att::Handle handle) {
-          bt_log(TRACE, "gatt", "read by type request failed: %s, start handle %#.4x",
-                 bt_str(status), handle);
-          callback(status, {});
+          bt_log(TRACE, "gatt", "read by type request failed: %s, handle %#.4x", bt_str(status),
+                 handle);
+          // Only some errors have handles.
+          std::optional<att::Handle> cb_handle = handle ? std::optional(handle) : std::nullopt;
+          callback(fit::error(ReadByTypeError{status, cb_handle}));
         });
 
     if (!att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb))) {
-      callback(att::Status(HostError::kPacketMalformed), {});
+      callback(fit::error(ReadByTypeError{att::Status(HostError::kPacketMalformed), std::nullopt}));
     }
   }
 

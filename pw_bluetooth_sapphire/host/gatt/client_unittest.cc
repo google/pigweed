@@ -2892,8 +2892,11 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
 
   att::Status status(HostError::kFailed);
 
-  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
-    status = cb_status;
+  bool cb_called = false;
+  auto cb = [&](Client::ReadByTypeResult result) {
+    cb_called = true;
+    ASSERT_TRUE(result.is_ok());
+    const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), values[0].value));
@@ -2910,7 +2913,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
 
   fake_chan()->Receive(kExpectedResponse);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_success());
+  EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -2934,10 +2937,11 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess128BitUUID) {
                        LowerBits(kHandle1), UpperBits(kHandle1), 0x01   // attribute pair 1
       );
 
-  att::Status status(HostError::kFailed);
-
-  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
-    status = cb_status;
+  bool cb_called = false;
+  auto cb = [&](Client::ReadByTypeResult result) {
+    cb_called = true;
+    ASSERT_TRUE(result.is_ok());
+    const auto& values = result.value();
     ASSERT_EQ(2u, values.size());
     EXPECT_EQ(kHandle0, values[0].handle);
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x00), values[0].value));
@@ -2954,7 +2958,7 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess128BitUUID) {
 
   fake_chan()->Receive(kExpectedResponse);
   RunLoopUntilIdle();
-  EXPECT_TRUE(status.is_success());
+  EXPECT_TRUE(cb_called);
   EXPECT_FALSE(fake_chan()->link_error());
 }
 TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
@@ -2974,10 +2978,12 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
                        static_cast<uint8_t>(att::ErrorCode::kAttributeNotFound)  // error code
       );
 
-  att::Status status;
-  auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
-    status = cb_status;
-    EXPECT_EQ(0u, values.size());  // empty due to error
+  std::optional<att::Status> status;
+  std::optional<att::Handle> handle;
+  auto cb = [&](Client::ReadByTypeResult result) {
+    ASSERT_TRUE(result.is_error());
+    status = result.error().status;
+    handle = result.error().handle;
   };
 
   // Initiate the request in a loop task, as Expect() below blocks
@@ -2991,8 +2997,11 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestError) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status.is_protocol_error());
-  EXPECT_EQ(att::ErrorCode::kAttributeNotFound, status.protocol_error());
+  ASSERT_TRUE(status.has_value());
+  EXPECT_TRUE(status->is_protocol_error());
+  EXPECT_EQ(att::ErrorCode::kAttributeNotFound, status->protocol_error());
+  ASSERT_TRUE(handle.has_value());
+  EXPECT_EQ(kStartHandle, handle.value());
   EXPECT_FALSE(fake_chan()->link_error());
 }
 
@@ -3062,10 +3071,12 @@ TEST_F(GATT_ClientTest, ReadByTypeRequestInvalidResponses) {
 
   for (const auto& [name, invalid_rsp] : kInvalidResponses) {
     SCOPED_TRACE(fxl::StringPrintf("Invalid Response: %s", name));
+
     std::optional<att::Status> status;
-    auto cb = [&](att::Status cb_status, std::vector<Client::ReadByTypeResult> values) {
-      status = cb_status;
-      ASSERT_EQ(0u, values.size());
+    auto cb = [&](Client::ReadByTypeResult result) {
+      ASSERT_TRUE(result.is_error());
+      status = result.error().status;
+      EXPECT_FALSE(result.error().handle.has_value());
     };
 
     // Initiate the request in a loop task, as Expect() below blocks

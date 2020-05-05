@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CLIENT_H_
 
 #include <lib/fit/function.h>
+#include <lib/fit/result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
@@ -105,23 +106,32 @@ class Client {
   virtual void ReadRequest(att::Handle handle, ReadCallback callback) = 0;
 
   // Sends an ATT Read by Type Request with the requested attribute handle range |start_handle| to
-  // |end_handle| (inclusive), and returns the resulting status and attribute handle-value pairs in
-  // |callback|. Returns no values if the status is an error.
+  // |end_handle| (inclusive), and returns a ReadByTypeResult containing either the handle-value
+  // pairs successfully read, or an error status and related handle (if any).
   //
-  // Attribute values longer than 253 bytes will be truncated. ReadBlobRequest() should be used to
-  // read the complete values. (Core Spec v5.2, Vol 3, Part F, 3.4.4.2)
+  // Attribute values longer than 253 bytes will be truncated. ReadRequest() or ReadBlobRequest()
+  // should be used to read the complete values. (Core Spec v5.2, Vol 3, Part F, 3.4.4.2)
   //
-  // The attributes returned will be the attributes with the lowest handles in the handle range, and
-  // may not include all matching attributes. To read all attributes, make additional requests with
-  // an updated |start_handle| until an error response with error code "Attribute Not Found" is
-  // received. (Core Spec v5.2, Vol 3, Part F, 3.4.4.1).
-  struct ReadByTypeResult {
+  // The attributes returned will be the attributes with the lowest handles in the handle range in
+  // ascending order, and may not include all matching attributes. To read all attributes, make
+  // additional requests with an updated |start_handle| until an error response with error code
+  // "Attribute Not Found" is received, or the entire handle range has been read. (Core Spec v5.2,
+  // Vol 3, Part F, 3.4.4.1).
+  struct ReadByTypeValue {
     att::Handle handle;
     // The underlying value buffer is only valid for the duration of |callback|. Callers must make a
     // copy if they need to retain the buffer.
     BufferView value;
   };
-  using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
+  struct ReadByTypeError {
+    att::Status status;
+    // Only some att protocol errors include a handle. This handle can either be |start_handle| or
+    // the handle of the attribute causing the error, depending on the error (Core Spec v5.2, Vol 3,
+    // Part F, 3.4.4.1).
+    std::optional<att::Handle> handle;
+  };
+  using ReadByTypeResult = fit::result<std::vector<ReadByTypeValue>, ReadByTypeError>;
+  using ReadByTypeCallback = fit::function<void(ReadByTypeResult)>;
   virtual void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                                  ReadByTypeCallback callback) = 0;
 

@@ -98,19 +98,22 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
 
   // Sends a read by type request for attribute values in this service with the given |type|
   // and returns read values via |callback|. If no matching attributes are found, the callback
-  // status will indicate success and the vector of values will be empty. If an error occurs, only
-  // attributes up to the first read error are returned. The callback status will indicate the
-  // error.
+  // status will indicate success and the vector of values will be empty.
+  //
+  // If a permission error occurs for an attribute, the error and handle of the attribute that
+  // caused the error will be included in the results and the overall status will indicate success.
+  // If a general error occurs, the status will indicate the error and no results will be returned.
   //
   // |type| must be the UUID of a characteristic or descriptor value, NOT an internal GATT UUID
   // such as a service or characteristic declaration (the callback will be invoked with an error in
   // this case).
   //
-  // NOTE: The values returned are truncated to 253 bytes. ReadLongCharacteristic() and
-  // ReadLongDescriptor() should be used to read complete values.
+  // NOTE: The values returned are truncated to 253 bytes. ReadCharacteristic(),
+  // ReadLongCharacteristic(), ReadDescriptor(), and ReadLongDescriptor() should be used to read
+  // complete values.
   struct ReadByTypeResult {
     CharacteristicHandle handle;
-    ByteBufferPtr value;
+    fit::result<ByteBufferPtr, att::ErrorCode> result;
   };
   using ReadByTypeCallback = fit::function<void(att::Status, std::vector<ReadByTypeResult>)>;
   void ReadByType(const UUID& type, ReadByTypeCallback callback,
