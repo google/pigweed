@@ -110,6 +110,16 @@ def gn_host_tools(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'host_tools')
 
 
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
+def oss_fuzz_build(ctx: PresubmitContext):
+    build.gn_gen(ctx.repo_root,
+                 ctx.output_dir,
+                 oss_fuzz_enabled='true',
+                 pw_target_toolchain='"//pw_toolchain:host_clang_og"',
+                 pw_sanitizer='"address"')
+    build.ninja(ctx.output_dir)
+
+
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
@@ -315,10 +325,12 @@ BROKEN = (
     # Host tools are not broken but take long on slow internet connections.
     # They're still run in CQ, but not in 'pw presubmit'.
     gn_host_tools,
-
     # QEMU build. Currently doesn't have test runners, and can't build one
     # of the fuzzing targets.
     gn_qemu_build,
+    # Build that attempts to duplicate the build OSS-Fuzz does. Currently
+    # failing.
+    oss_fuzz_build,
 )
 
 QUICK = (
