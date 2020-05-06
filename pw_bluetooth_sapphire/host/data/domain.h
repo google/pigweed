@@ -88,8 +88,7 @@ class Domain : public fbl::RefCounted<Domain> {
                                l2cap::LinkErrorCallback link_error_callback,
                                l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
                                l2cap::LEFixedChannelsCallback channel_callback,
-                               l2cap::SecurityUpgradeCallback security_callback,
-                               async_dispatcher_t* dispatcher) = 0;
+                               l2cap::SecurityUpgradeCallback security_callback) = 0;
 
   // Removes a previously registered connection. All corresponding Channels will
   // be closed and all incoming data packets on this link will be dropped.

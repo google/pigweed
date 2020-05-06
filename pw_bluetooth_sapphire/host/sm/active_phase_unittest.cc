@@ -142,12 +142,10 @@ TEST_F(SMP_ActivePhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
 
 TEST_F(SMP_ActivePhaseTest, PairingTimeoutDisconnectsLinkAndFails) {
   bool link_disconnected = false;
-  fake_chan()->SetLinkErrorCallback([&link_disconnected]() { link_disconnected = true; },
-                                    dispatcher());
+  fake_chan()->SetLinkErrorCallback([&link_disconnected]() { link_disconnected = true; });
   ASSERT_EQ(0, listener()->pairing_error_count());
 
   active_phase()->OnPairingTimeout();
-  RunLoopUntilIdle();
 
   ASSERT_TRUE(link_disconnected);
 

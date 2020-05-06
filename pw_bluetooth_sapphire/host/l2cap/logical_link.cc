@@ -299,11 +299,9 @@ void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback
 }
 
 void LogicalLink::set_connection_parameter_update_callback(
-    LEConnectionParameterUpdateCallback callback, async_dispatcher_t* dispatcher) {
+    LEConnectionParameterUpdateCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
   connection_parameter_update_callback_ = std::move(callback);
-  connection_parameter_update_dispatcher_ = dispatcher;
 }
 
 LESignalingChannel* LogicalLink::le_signaling_channel() const {
@@ -585,8 +583,8 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
       bt_log(TRACE, "l2cap", "no callback set for LE Connection Parameter Update Request");
       return;
     }
-    async::PostTask(connection_parameter_update_dispatcher_,
-                    [cb = connection_parameter_update_callback_.share(), params]() { cb(params); });
+
+    connection_parameter_update_callback_(params);
   }
 }
 }  // namespace internal

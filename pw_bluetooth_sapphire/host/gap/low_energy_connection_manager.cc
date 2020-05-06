@@ -124,8 +124,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
             ZX_DEBUG_ASSERT(self->link_->handle() == handle);
             self->OnSecurityRequest(level, std::move(cb));
           }
-        },
-        dispatcher_);
+        });
   }
 
   // Tells the connection's pairing state to UpgradeSecurity to the desired level.

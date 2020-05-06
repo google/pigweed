@@ -20,7 +20,6 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandl
       fragmenter_(handle),
       dispatcher_(nullptr),
       send_dispatcher_(nullptr),
-      link_err_dispatcher_(nullptr),
       activate_fails_(false),
       link_error_(false),
       weak_ptr_factory_(this) {
@@ -46,11 +45,8 @@ void FakeChannel::SetSendCallback(SendCallback callback, async_dispatcher_t* dis
   send_dispatcher_ = dispatcher;
 }
 
-void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(static_cast<bool>(callback) == static_cast<bool>(dispatcher));
-
+void FakeChannel::SetLinkErrorCallback(LinkErrorCallback callback) {
   link_err_cb_ = std::move(callback);
-  link_err_dispatcher_ = dispatcher;
 }
 
 void FakeChannel::SetSecurityCallback(SecurityUpgradeCallback callback,
@@ -102,7 +98,7 @@ void FakeChannel::SignalLinkError() {
   link_error_ = true;
 
   if (link_err_cb_) {
-    async::PostTask(link_err_dispatcher_, link_err_cb_.share());
+    link_err_cb_();
   }
 }
 

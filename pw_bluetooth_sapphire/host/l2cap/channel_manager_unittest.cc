@@ -274,8 +274,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
                   LinkErrorCallback lec = DoNothing,
                   LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
                   SecurityUpgradeCallback suc = NopSecurityCallback) {
-    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(lec), std::move(suc),
-                          dispatcher());
+    chanmgr()->RegisterLE(handle, role, std::move(cpuc), std::move(lec), std::move(suc));
   }
 
   struct QueueRegisterACLRetVal {

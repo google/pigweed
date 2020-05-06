@@ -62,15 +62,14 @@ void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::
 void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
                                 LEConnectionParameterUpdateCallback conn_param_cb,
                                 LinkErrorCallback link_error_cb,
-                                SecurityUpgradeCallback security_cb,
-                                async_dispatcher_t* dispatcher) {
+                                SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   bt_log(TRACE, "l2cap", "register LE link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
   ll->set_security_upgrade_callback(std::move(security_cb));
-  ll->set_connection_parameter_update_callback(std::move(conn_param_cb), dispatcher);
+  ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
 }
 
 void ChannelManager::Unregister(hci::ConnectionHandle handle) {

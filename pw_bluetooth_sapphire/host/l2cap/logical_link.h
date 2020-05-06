@@ -139,8 +139,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Assigns the callback to be invoked when a valid Connection Parameter Update Request is received
   // on the signaling channel.
-  void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback,
-                                                async_dispatcher_t* dispatcher);
+  void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
   // Returns the dispatcher that this LogicalLink operates on.
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
@@ -251,7 +250,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   SecurityUpgradeCallback security_callback_;
 
   LEConnectionParameterUpdateCallback connection_parameter_update_callback_;
-  async_dispatcher_t* connection_parameter_update_dispatcher_;
 
   // No data packets are processed once this gets set to true.
   bool closed_;

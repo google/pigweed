@@ -64,23 +64,18 @@ class Impl final : public Domain, public TaskDomain<Impl, Domain> {
                        l2cap::LinkErrorCallback link_error_callback,
                        l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
                        l2cap::LEFixedChannelsCallback channel_callback,
-                       l2cap::SecurityUpgradeCallback security_callback,
-                       async_dispatcher_t* dispatcher) override {
+                       l2cap::SecurityUpgradeCallback security_callback) override {
     PostMessage([this, handle, role, cpc = std::move(conn_param_callback),
                  lec = std::move(link_error_callback), suc = std::move(security_callback),
-                 cc = std::move(channel_callback), dispatcher]() mutable {
+                 channel_callback = std::move(channel_callback)]() mutable {
       if (l2cap_) {
-        l2cap_->RegisterLE(handle, role, std::move(cpc), std::move(lec), std::move(suc),
-                           dispatcher);
+        l2cap_->RegisterLE(handle, role, std::move(cpc), std::move(lec), std::move(suc));
 
         auto att = l2cap_->OpenFixedChannel(handle, l2cap::kATTChannelId);
         auto smp = l2cap_->OpenFixedChannel(handle, l2cap::kLESMPChannelId);
-        ZX_DEBUG_ASSERT(att);
-        ZX_DEBUG_ASSERT(smp);
-        async::PostTask(dispatcher,
-                        [att = std::move(att), smp = std::move(smp), cb = std::move(cc)]() mutable {
-                          cb(std::move(att), std::move(smp));
-                        });
+        ZX_ASSERT(att);
+        ZX_ASSERT(smp);
+        channel_callback(std::move(att), std::move(smp));
       }
     });
   }

@@ -40,8 +40,7 @@ void FakeDomain::TriggerLEConnectionParameterUpdate(
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
-  async::PostTask(link_data.dispatcher,
-                  [params, cb = link_data.le_conn_param_cb.share()] { cb(params); });
+  link_data.le_conn_param_cb(params);
 }
 
 void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
@@ -93,7 +92,7 @@ void FakeDomain::TriggerLinkError(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(initialized_);
 
   LinkData& link_data = ConnectedLinkData(handle);
-  async::PostTask(link_data.dispatcher, [cb = link_data.link_error_cb.share()] { cb(); });
+  link_data.link_error_cb();
 }
 
 void FakeDomain::Initialize() { initialized_ = true; }
@@ -106,30 +105,25 @@ void FakeDomain::AddACLConnection(hci::ConnectionHandle handle, hci::Connection:
   if (!initialized_)
     return;
 
-  async_dispatcher_t* dispatcher = link_error_cb ? async_get_default_dispatcher() : nullptr;
-  RegisterInternal(handle, role, hci::Connection::LinkType::kACL, std::move(link_error_cb),
-                   dispatcher);
+  RegisterInternal(handle, role, hci::Connection::LinkType::kACL, std::move(link_error_cb));
 }
 
 void FakeDomain::AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                                  l2cap::LinkErrorCallback link_error_cb,
                                  l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
                                  l2cap::LEFixedChannelsCallback channel_cb,
-                                 l2cap::SecurityUpgradeCallback security_cb,
-                                 async_dispatcher_t* dispatcher) {
+                                 l2cap::SecurityUpgradeCallback security_cb) {
   if (!initialized_)
     return;
 
-  LinkData* data = RegisterInternal(handle, role, hci::Connection::LinkType::kLE,
-                                    std::move(link_error_cb), dispatcher);
+  LinkData* data =
+      RegisterInternal(handle, role, hci::Connection::LinkType::kLE, std::move(link_error_cb));
   data->le_conn_param_cb = std::move(conn_param_cb);
 
   // Open the ATT and SMP fixed channels.
   auto att = OpenFakeFixedChannel(data, l2cap::kATTChannelId);
   auto smp = OpenFakeFixedChannel(data, l2cap::kLESMPChannelId);
-  async::PostTask(dispatcher,
-                  [att = std::move(att), smp = std::move(smp),
-                   cb = std::move(channel_cb)]() mutable { cb(std::move(att), std::move(smp)); });
+  channel_cb(std::move(att), std::move(smp));
 }
 
 void FakeDomain::RemoveConnection(hci::ConnectionHandle handle) { links_.erase(handle); }
@@ -253,8 +247,7 @@ FakeDomain::~FakeDomain() {
 FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
                                                    hci::Connection::Role role,
                                                    hci::Connection::LinkType link_type,
-                                                   l2cap::LinkErrorCallback link_error_cb,
-                                                   async_dispatcher_t* dispatcher) {
+                                                   l2cap::LinkErrorCallback link_error_cb) {
   auto& data = GetLinkData(handle);
   ZX_DEBUG_ASSERT_MSG(!data.connected, "connection handle re-used (handle: %#.4x)", handle);
 
@@ -262,7 +255,6 @@ FakeDomain::LinkData* FakeDomain::RegisterInternal(hci::ConnectionHandle handle,
   data.role = role;
   data.type = link_type;
   data.link_error_cb = std::move(link_error_cb);
-  data.dispatcher = dispatcher;
 
   return &data;
 }
@@ -273,7 +265,7 @@ fbl::RefPtr<FakeChannel> FakeDomain::OpenFakeChannel(LinkData* link, l2cap::Chan
   fbl::RefPtr<FakeChannel> chan;
   if (!simulate_open_channel_failure_) {
     chan = fbl::AdoptRef(new FakeChannel(id, remote_id, link->handle, link->type, info));
-    chan->SetLinkErrorCallback(link->link_error_cb.share(), link->dispatcher);
+    chan->SetLinkErrorCallback(link->link_error_cb.share());
   }
 
   if (chan_cb_) {

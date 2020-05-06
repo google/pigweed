@@ -61,8 +61,7 @@ class FakeDomain final : public Domain {
                        l2cap::LinkErrorCallback link_error_callback,
                        l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
                        l2cap::LEFixedChannelsCallback channel_callback,
-                       l2cap::SecurityUpgradeCallback security_callback,
-                       async_dispatcher_t* dispatcher) override;
+                       l2cap::SecurityUpgradeCallback security_callback) override;
   void RemoveConnection(hci::ConnectionHandle handle) override;
   void AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
@@ -132,11 +131,10 @@ class FakeDomain final : public Domain {
   FakeDomain() = default;
   ~FakeDomain() override;
 
-  // TODO(50565): remove dispatcher argument after removing argument from all methods
   LinkData* RegisterInternal(hci::ConnectionHandle handle, hci::Connection::Role role,
                              hci::Connection::LinkType link_type,
-                             l2cap::LinkErrorCallback link_error_callback,
-                             async_dispatcher_t* dispatcher);
+                             l2cap::LinkErrorCallback link_error_callback);
+
   fbl::RefPtr<l2cap::testing::FakeChannel> OpenFakeChannel(
       LinkData* link, l2cap::ChannelId id, l2cap::ChannelId remote_id,
       l2cap::ChannelInfo info = l2cap::ChannelInfo::MakeBasicMode(l2cap::kDefaultMTU,

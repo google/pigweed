@@ -120,14 +120,11 @@ class ChannelManager final {
   // level. This can be triggered by dynamic L2CAP channel creation or by a
   // service-level client via Channel::UpgradeSecurity().
   //
-  // All callbacks will be posted onto |dispatcher|.
-  //
   // It is an error to register the same |handle| value more than once as either
   // kind of channel without first unregistering it (asserted in debug builds).
   void RegisterLE(hci::ConnectionHandle handle, hci::Connection::Role role,
                   LEConnectionParameterUpdateCallback conn_param_callback,
-                  LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback,
-                  async_dispatcher_t* dispatcher);
+                  LinkErrorCallback link_error_callback, SecurityUpgradeCallback security_callback);
 
   // Removes a connection. All incoming data packets on this link will be dropped. If the
   // connection was previously registered, all corresponding Channels will be closed.

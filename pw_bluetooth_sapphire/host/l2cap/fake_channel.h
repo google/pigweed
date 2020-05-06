@@ -41,7 +41,7 @@ class FakeChannel : public Channel {
 
   // Sets a callback to emulate the result of "SignalLinkError()". In
   // production, this callback is invoked by the link.
-  void SetLinkErrorCallback(LinkErrorCallback callback, async_dispatcher_t* dispatcher);
+  void SetLinkErrorCallback(LinkErrorCallback callback);
 
   // Sets a callback to emulate the result of "UpgradeSecurity()".
   void SetSecurityCallback(SecurityUpgradeCallback callback, async_dispatcher_t* dispatcher);
@@ -90,7 +90,6 @@ class FakeChannel : public Channel {
   async_dispatcher_t* send_dispatcher_;
 
   LinkErrorCallback link_err_cb_;
-  async_dispatcher_t* link_err_dispatcher_;
 
   bool activate_fails_;
   bool link_error_;

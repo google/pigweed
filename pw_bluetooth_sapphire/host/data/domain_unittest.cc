@@ -159,8 +159,7 @@ class DATA_DomainTest : public TestingBase {
     acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kLE);
     domain()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
-        /*channel_callback=*/[](auto, auto) {}, /*security_callback=*/[](auto, auto, auto) {},
-        dispatcher());
+        /*channel_callback=*/[](auto, auto) {}, /*security_callback=*/[](auto, auto, auto) {});
   }
 
   Domain* domain() const { return domain_.get(); }
