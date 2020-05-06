@@ -74,7 +74,6 @@ template("pw_size_report") {
   foreach(binary, invoker.binaries) {
     assert(defined(binary.label) && defined(binary.target),
            "Size report binaries must define 'label' and 'target' variables")
-
     _all_target_dependencies += [ binary.target ]
 
     _target_dir = get_label_info(binary.target, "target_out_dir")
@@ -133,7 +132,9 @@ template("pw_size_report") {
 
   _doc_rst_output = "$target_gen_dir/${target_name}"
 
-  if (host_os == "win") {
+  # TODO(frolv): Size reports are temporarily disabled pending the toolchain
+  # refactor.
+  if (true || host_os == "win") {
     # Bloaty is not yet packaged for Windows systems; display a message
     # indicating this.
     not_needed("*")
@@ -146,6 +147,10 @@ template("pw_size_report") {
       script = "$dir_pw_bloat/py/no_bloaty.py"
       args = [ _doc_rst_output ]
       outputs = [ _doc_rst_output ]
+    }
+
+    group(target_name + "_UNUSED_DEPS") {
+      deps = _all_target_dependencies
     }
   } else {
     # Create an action which runs the size report script on the provided targets.
@@ -277,7 +282,8 @@ template("pw_toolchain_size_report") {
     i += 1
   }
 
-  if (_size_report_binaries != []) {
+  # TODO(frolv): Have a way of indicating that a toolchain should build docs.
+  if (current_toolchain == default_toolchain && _size_report_binaries != []) {
     # Create the size report which runs on the binaries.
     pw_size_report(target_name) {
       forward_variables_from(invoker, [ "title" ])

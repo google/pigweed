@@ -14,6 +14,7 @@
 
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_fuzzer/oss_fuzz.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
@@ -55,6 +56,12 @@ config("oss_fuzz") {
   #-fsanitize=fuzzer-no-link and provides the fuzzing engine explicitly to be
   # passed to the linker.
   ldflags = [ getenv("LIB_FUZZING_ENGINE") ]
+}
+
+config("oss_fuzz_extra") {
+  cflags_c = oss_fuzz_extra_cflags_c
+  cflags_cc = oss_fuzz_extra_cflags_cc
+  ldflags = oss_fuzz_extra_ldflags
 }
 
 source_set("pw_fuzzer") {

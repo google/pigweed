@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_toolchain/host_clang.gni")
+import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Creates a libFuzzer-based fuzzer executable target.
@@ -37,9 +37,11 @@ template("pw_fuzzer") {
   if (can_fuzz && pw_sanitizer != "") {
     # Build the actual fuzzer using the fuzzing config.
     pw_executable(target_name) {
-      configs = []
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
+      if (!defined(configs)) {
+        configs = []
+      }
       configs += [
         "$dir_pw_fuzzer:default_config",
         "$dir_pw_fuzzer:sanitize_${pw_sanitizer}",
@@ -73,11 +75,13 @@ template("pw_fuzzer") {
       # on-device fuzz testing.
       enable_if = false
       sources = []
-      configs = []
       deps = []
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
       sources += [ "$dir_pw_fuzzer/pw_fuzzer_disabled.cc" ]
+      if (!defined(configs)) {
+        configs = []
+      }
       configs += [ "$dir_pw_fuzzer:default_config" ]
       deps += [
         "$dir_pw_log",

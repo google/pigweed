@@ -14,18 +14,43 @@
 
 import("$dir_pw_docgen/docs.gni")
 
-# The default config is applied to all targets in Pigweed's BUILDCONFIG.gn.
-config("default") {
-  configs = [
-    ":debugging",
-    ":reduced_size",
-    ":strict_warnings",
+config("colorize_output") {
+  cflags = [
+    # Colorize output. Ninja's Clang invocation disables color by default.
+    "-fdiagnostics-color",
   ]
+  ldflags = cflags
 }
 
 config("debugging") {
   # Enable debug symbol generation. This has no effect on final code size.
   cflags = [ "-g" ]
+}
+
+config("extra_debugging") {
+  # Include things like macro expansion in debug info.
+  cflags = [ "-g3" ]
+}
+
+# Optimization levels
+config("optimize_debugging") {
+  cflags = [ "-Og" ]
+  ldflags = cflags
+}
+
+config("optimize_speed") {
+  cflags = [ "-O2" ]
+  ldflags = cflags
+}
+
+config("optimize_more_speed") {
+  cflags = [ "-O3" ]
+  ldflags = cflags
+}
+
+config("optimize_size") {
+  cflags = [ "-Os" ]
+  ldflags = cflags
 }
 
 # Standard compiler flags to reduce output binary size.

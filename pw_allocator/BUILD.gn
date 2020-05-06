@@ -35,7 +35,6 @@ source_set("block") {
     "$dir_pw_status",
   ]
   sources = [ "block.cc" ]
-  sources += public
 }
 
 source_set("freelist") {
@@ -47,7 +46,6 @@ source_set("freelist") {
     "$dir_pw_status",
   ]
   sources = [ "freelist.cc" ]
-  sources += public
 }
 
 source_set("freelist_heap") {

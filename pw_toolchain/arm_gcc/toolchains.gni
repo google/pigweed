@@ -1,0 +1,144 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pigweed/modules.gni")
+
+# Specifies the tools used by ARM GCC toolchains.
+arm_gcc_toolchain_tools = {
+  _tool_name_root = "arm-none-eabi-"
+  ar = _tool_name_root + "ar"
+  cc = _tool_name_root + "gcc"
+  cxx = _tool_name_root + "g++"
+
+  link_whole_archive = true
+}
+
+# Common configs shared by all ARM GCC toolchains.
+_arm_gcc = [ "$dir_pw_toolchain/arm_gcc:disable_psabi_warning" ]
+
+# Configs specific to different architectures.
+_cortex_m3 = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m3",
+  "$dir_pw_toolchain/arm_gcc:cortex_software_fpu",
+]
+
+_cortex_m4 = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m4",
+  "$dir_pw_toolchain/arm_gcc:cortex_software_fpu",
+]
+
+_cortex_m4f = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m4",
+  "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu",
+]
+
+# Describes ARM GCC toolchains for specific targets.
+arm_gcc_toolchains = [
+  {
+    name = "arm_gcc_cortex_m3_og"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m3 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m3_o1"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = _arm_gcc + _cortex_m3 + [ "$dir_pw_build:optimize" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m3_o2"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m3 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m3_os"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m3 + [ "$dir_pw_build:optimize_size" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4_og"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4_o1"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = _arm_gcc + _cortex_m4 + [ "$dir_pw_build:optimize" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4_o2"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4_os"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4 + [ "$dir_pw_build:optimize_size" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4f_og"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4f + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4f_o1"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs = _arm_gcc + _cortex_m4f + [ "$dir_pw_build:optimize" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4f_o2"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4f + [ "$dir_pw_build:optimize_speed" ]
+    }
+  },
+  {
+    name = "arm_gcc_cortex_m4f_os"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m4f + [ "$dir_pw_build:optimize_size" ]
+    }
+  },
+]

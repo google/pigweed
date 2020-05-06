@@ -1,0 +1,92 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pigweed/modules.gni")
+
+declare_args() {
+  # Sets the sanitizer to pass to clang. Valid values are those for "-fsanitize"
+  # listed in https://clang.llvm.org/docs/UsersManual.html#id9.
+  pw_sanitizer = ""
+
+  # Indicates if this build is a part of OSS-Fuzz, which needs to be able to
+  # provide its own compiler and flags. This violates the build hermeticisim and
+  # should only be used for OSS-Fuzz.
+  oss_fuzz_enabled = false
+}
+
+# Specifies the tools used by host Clang toolchains.
+_host_clang_toolchain = {
+  # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
+  # ar. This should get updated for linux systems.
+  ar = "ar"
+
+  if (oss_fuzz_enabled) {
+    cc = getenv("CC")
+    cxx = getenv("CXX")
+  } else {
+    cc = "clang"
+    cxx = "clang++"
+  }
+
+  is_host_toolchain = true
+}
+
+# Common default scope shared by all host Clang toolchains.
+_defaults = {
+  default_configs = [
+    "$dir_pw_build:extra_debugging",
+    "$dir_pw_toolchain/host_clang:no_system_libcpp",
+    "$dir_pw_toolchain/host_clang:xcode_sysroot",
+  ]
+  if (pw_sanitizer != "") {
+    configs += [ "$dir_pw_toolchain/host_clang:sanitize_$pw_sanitizer" ]
+  }
+  if (oss_fuzz_enabled) {
+    default_configs += oss_fuzz_added_configs
+    default_configs += [ "$dir_pw_fuzzer:oss_fuzz_extra" ]
+
+    # Add the configs to be removed. They will be de-duplicated, and this
+    # ensures they are present to be removed.
+    default_configs += oss_fuzz_removed_configs
+    remove_configs = oss_fuzz_removed_configs
+  }
+}
+
+# Describes host clang toolchains.
+host_clang_toolchains = [
+  {
+    name = "host_clang_og"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+    }
+  },
+  {
+    name = "host_clang_o2"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+      default_configs += [ "$dir_pw_build:optimize_speed" ]
+    }
+  },
+  {
+    name = "host_clang_os"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+      default_configs += [ "$dir_pw_build:optimize_size" ]
+    }
+  },
+]

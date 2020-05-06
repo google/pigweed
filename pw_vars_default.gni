@@ -46,6 +46,23 @@ pw_executable_config = {
 # the previous toolchain's build before building again.
 pw_target_toolchain = ""
 
+# Defaults variables for the build target.
+#
+# Scope containing defaults to be added to GN targets for the target. With the
+# exception of "remove_configs", all variables will be automatically be
+# forwarded to GN targets with the following types:
+#   source_set
+#   executable
+#   shared_library
+#   static_library
+#
+# "remove_configs" is a special case. This variable can be set to a list of
+# configs that will be removed from the defaults, including those provided by
+# $dir_pw_build/defaults.gni.
+#
+pw_target_defaults = {
+}
+
 # List of toolchains to use in pw_toolchain_size_report templates.
 #
 # Each entry is a scope containing the following variables:

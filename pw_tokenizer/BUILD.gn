@@ -249,19 +249,21 @@ _simple_tokenize_test_configs = [
 ]
 
 pw_test("simple_tokenize_test_cpp11") {
+  remove_configs = [ "$dir_pw_build:cpp17" ]
   configs = [ "$dir_pw_build:cpp11" ] + _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
   deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("simple_tokenize_test_cpp14") {
+  remove_configs = [ "$dir_pw_build:cpp17" ]
   configs = [ "$dir_pw_build:cpp14" ] + _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
   deps = [ dir_pw_preprocessor ]
 }
 
 pw_test("simple_tokenize_test_cpp17") {
-  configs = [ "$dir_pw_build:cpp17" ] + _simple_tokenize_test_configs
+  configs = _simple_tokenize_test_configs
   sources = _simple_tokenize_test_sources
   deps = [ dir_pw_preprocessor ]
 }

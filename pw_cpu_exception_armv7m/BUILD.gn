@@ -47,6 +47,9 @@ if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
       "$dir_pw_cpu_exception",
     ]
     sources = [ "exception_entry_test.cc" ]
+
+    # TODO(frolv): Fix this test on the QEMU target.
+    enable_if = pw_executable_config.target_type != "lm3s6965evb_executable"
   }
 }
 

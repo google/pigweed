@@ -1,0 +1,252 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pigweed/modules.gni")
+
+declare_args() {
+  # Scope defining the current toolchain. Contains all of the arguments required
+  # by the generate_toolchain template.
+  pw_toolchain_scope = {
+  }
+}
+
+# Creates a toolchain target.
+#
+# Args:
+#   ar: (required) String indicating the archive tool to use.
+#   cc: (required) String indicating the C compiler to use.
+#   cxx: (required) String indicating the C++ compiler to use.
+#   is_host_toolchain: (optional) Boolean indicating if the outputs are meant
+#     for the $host_os.
+#   link_whole_archive: (optional) Boolean indicating if the linker should load
+#     all object files when resolving symbols.
+#   defaults: (required) A scope setting defaults to apply to GN
+#     targets in this toolchain, as described in pw_vars_default.gni
+#
+template("generate_toolchain") {
+  # In multi-toolchain builds from the top level, we run into issues where
+  # toolchains defined with this template are re-generated each time. To avoid
+  # collisions, the actual toolchain is only generated for the default (dummy)
+  # toolchain, and an unused target is created otherwise.
+  if (current_toolchain == default_toolchain) {
+    toolchain(target_name) {
+      assert(defined(invoker.cc), "toolchain is missing 'cc'")
+      tool("asm") {
+        depfile = "{{output}}.d"
+        command = string_join(" ",
+                              [
+                                invoker.cc,
+                                "-MMD -MF $depfile",  # Write out dependencies.
+                                "{{asmflags}}",
+                                "{{cflags}}",
+                                "{{defines}}",
+                                "{{include_dirs}}",
+                                "-c {{source}}",
+                                "-o {{output}}",
+                              ])
+        depsformat = "gcc"
+        description = "as {{output}}"
+        outputs = [
+          # Use {{source_file_part}}, which includes the extension, instead of
+          # {{source_name_part}} so that object files created from <file_name>.c
+          # and <file_name>.cc sources are unique.
+          "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
+        ]
+      }
+
+      tool("cc") {
+        depfile = "{{output}}.d"
+        command = string_join(" ",
+                              [
+                                invoker.cc,
+                                "-MMD -MF $depfile",  # Write out dependencies.
+                                "{{cflags_c}}",
+                                "{{cflags}}",
+                                "{{defines}}",
+                                "{{include_dirs}}",
+                                "-c {{source}}",
+                                "-o {{output}}",
+                              ])
+        depsformat = "gcc"
+        description = "cc {{output}}"
+        outputs = [
+          "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
+        ]
+      }
+
+      assert(defined(invoker.cxx), "toolchain is missing 'cxx'")
+      tool("cxx") {
+        depfile = "{{output}}.d"
+        command = string_join(" ",
+                              [
+                                invoker.cxx,
+                                "-MMD -MF $depfile",  # Write out dependencies.
+                                "{{cflags_cc}}",
+                                "{{cflags}}",
+                                "{{defines}}",
+                                "{{include_dirs}}",
+                                "-c {{source}}",
+                                "-o {{output}}",
+                              ])
+        depsformat = "gcc"
+        description = "c++ {{output}}"
+        outputs = [
+          "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
+        ]
+      }
+
+      assert(defined(invoker.ar), "toolchain is missing 'ar'")
+      tool("alink") {
+        command = "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
+        description = "ar {{target_output_name}}{{output_extension}}"
+        outputs =
+            [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+        default_output_extension = ".a"
+      }
+
+      lib_switch = "-l"
+      lib_dir_switch = "-L"
+
+      _link_outfile =
+          "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
+      _link_flags = [
+        invoker.cxx,
+        "{{ldflags}}",
+      ]
+
+      is_host_toolchain =
+          defined(invoker.is_host_toolchain) && invoker.is_host_toolchain
+      if (is_host_toolchain && host_os == "mac") {
+        _link_flags += [
+          # Output a map file that shows symbols and their location.
+          "-Wl,-map,$_link_mapfile",
+
+          # Delete unreferenced sections. Helpful with -ffunction-sections.
+          "-Wl,-dead_strip",
+        ]
+      } else {
+        _link_flags += [
+          # Output a map file that shows symbols and their location.
+          "-Wl,-Map,$_link_mapfile",
+
+          # Delete unreferenced sections. Helpful with -ffunction-sections.
+          "-Wl,--gc-sections",
+        ]
+      }
+
+      _link_flags += [ "{{inputs}}" ]
+
+      if (defined(invoker.link_whole_archive) && invoker.link_whole_archive) {
+        # Load all object files from all libraries to resolve symbols.
+        # Short of living in the ideal world where all dependency graphs
+        # among static libs are acyclic and all developers diligently
+        # express such graphs in terms that GN understands, this is the
+        # safest option.
+        # Make sure you use this with --gc-sections, otherwise the
+        # resulting binary will contain every symbol defined in every
+        # input file and every static library. That could be quite a lot.
+        _link_flags += [
+          "-Wl,--whole-archive",
+          "{{libs}}",
+          "-Wl,--no-whole-archive",
+        ]
+      } else {
+        _link_flags += [ "{{libs}}" ]
+      }
+
+      _link_flags += [ "-o $_link_outfile" ]
+
+      _link_command = string_join(" ", _link_flags)
+
+      tool("link") {
+        command = _link_command
+        description = "ld $_link_outfile"
+        outputs = [ _link_outfile ]
+        default_output_dir = "{{target_out_dir}}"
+
+        if (is_host_toolchain && host_os == "win") {
+          default_output_extension = ".exe"
+        } else {
+          default_output_extension = ""
+        }
+      }
+
+      tool("solink") {
+        command = _link_command + " -shared"
+        description = "ld -shared $_link_outfile"
+        outputs = [ _link_outfile ]
+        default_output_dir = "{{target_out_dir}}"
+        default_output_extension = ".so"
+      }
+
+      tool("stamp") {
+        if (host_os == "win") {
+          command = "cmd /c type nul > \"{{output}}\""
+        } else {
+          command = "touch {{output}}"
+        }
+        description = "stamp {{output}}"
+      }
+
+      tool("copy") {
+        command = "cp -af {{source}} {{output}}"
+        description = "cp {{source}} {{output}}"
+      }
+
+      # Build arguments to be overridden when compiling cross-toolchain:
+      #
+      #   pw_toolchain_defaults: A scope setting defaults to apply to GN targets
+      #     in this toolchain. It is analogous to $pw_target_defaults in
+      #     $dir_pigweed/pw_vars_default.gni.
+      #
+      #   pw_toolchain_scope: A copy of the invoker scope that defines the
+      #     toolchain. Used for generating derivative toolchains.
+      #
+      assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
+      toolchain_args = {
+        pw_toolchain_scope = {
+        }
+        pw_toolchain_scope = {
+          forward_variables_from(invoker, "*")
+        }
+        forward_variables_from(invoker.defaults, "*")
+      }
+    }
+  } else {
+    not_needed(invoker, "*")
+    group(target_name) {
+    }
+  }
+}
+
+# Creates a series of toolchain targets with common compiler options.
+#
+# Args:
+#   toolchains: List of scopes defining each of the desired toolchains.
+#     The scope must contain a "name" variable; other variables are forwarded to
+#     $generate_toolchain.
+template("generate_toolchains") {
+  not_needed([ "target_name" ])
+  assert(defined(invoker.toolchains),
+         "generate_toolchains must be called with a list of toolchains")
+
+  # Create a target for each of the desired toolchains, appending its own cflags
+  # and ldflags to the common ones.
+  foreach(_toolchain, invoker.toolchains) {
+    generate_toolchain(_toolchain.name) {
+      forward_variables_from(_toolchain, "*", [ "name" ])
+    }
+  }
+}

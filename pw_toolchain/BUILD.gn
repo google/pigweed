@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,216 +13,29 @@
 # the License.
 
 import("$dir_pw_docgen/docs.gni")
-import("arm_gcc.gni")
-import("host_clang.gni")
-import("host_gcc.gni")
+import("arm_gcc/toolchains.gni")
+import("generate_toolchain.gni")
+import("host_clang/toolchains.gni")
+import("host_gcc/toolchains.gni")
 
-# Creates a series of toolchain targets with common compiler options.
-#
-# Args:
-#   toolchain_template: The target template to use to create the toolchains.
-#   common_toolchain_cflags: cflags to be shared by all toolchains.
-#   common_toolchain_ldflags: ldflags to be shared by all toolchains.
-#   toolchains: List of scopes defining each of the desired toolchains.
-#     Each scope contains up to three variables:
-#       toolchain_name: The full target name of the toolchain.
-#       additional_cflags: Optional list of extra cflags for the toolchain.
-#       additional_ldflags: Optional list of extra ldflags for the toolchain.
-template("generate_toolchains") {
-  not_needed([ "target_name" ])
+# For each of the toolchains below, the toolchain GNI file has the corresponding
+# configs. This allows BUILDCONFIG.gn to set default target values on "flat"
+# lists of configs, i.e. not nested. This in turn allows individual targets
+# fine-grained control over which default configs they wise to override.
 
-  assert(defined(invoker.toolchain_template),
-         "generate_toolchains requires a toolchain template")
-  assert(defined(invoker.toolchains),
-         "generate_toolchains must be called with a list of toolchains")
-
-  if (defined(invoker.common_toolchain_cflags)) {
-    _common_cflags = invoker.common_toolchain_cflags
-  } else {
-    _common_cflags = []
-  }
-
-  if (defined(invoker.common_toolchain_ldflags)) {
-    _common_ldflags = invoker.common_toolchain_ldflags
-  } else {
-    _common_ldflags = []
-  }
-
-  # Create a target for each of the desired toolchains, appending its own cflags
-  # and ldflags to the common ones.
-  foreach(toolchain_config, invoker.toolchains) {
-    # GN does not allow assigning a non-empty array to a non-empty array.
-    # This must be done as two assignments, first clearing the original value.
-    _toolchain_cflags = []
-    _toolchain_cflags = _common_cflags
-    if (defined(toolchain_config.additional_cflags)) {
-      _toolchain_cflags += toolchain_config.additional_cflags
-    }
-
-    _toolchain_ldflags = []
-    _toolchain_ldflags = _common_ldflags
-    if (defined(toolchain_config.additional_ldflags)) {
-      _toolchain_ldflags += toolchain_config.additional_ldflags
-    }
-
-    target(invoker.toolchain_template, toolchain_config.toolchain_name) {
-      toolchain_cflags = _toolchain_cflags
-      toolchain_ldflags = _toolchain_ldflags
-    }
-  }
+# Generate ARM GCC toolchains
+generate_toolchains("arm_gcc_suite") {
+  toolchains = arm_gcc_toolchains
 }
 
-generate_toolchains("cortex_m3") {
-  toolchain_template = "arm_gcc_toolchain"
-
-  common_toolchain_cflags = [
-    "-mabi=aapcs",
-    "-mcpu=cortex-m3",
-    "-mfloat-abi=soft",
-    "-mthumb",
-    "-specs=nano.specs",
-    "-specs=nosys.specs",
-    "-u _printf_float",
-  ]
-
-  common_toolchain_ldflags = [
-    "-lnosys",
-    "-lc",
-  ]
-
-  toolchains = [
-    # All Cortex-M3 toolchains use software-emulated floating point.
-    {
-      toolchain_name = "arm_gcc_cortex_m3_og"
-      additional_cflags = [ "-Og" ]
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m3_o1"
-      additional_cflags = [ "-O1" ]
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m3_o2"
-      additional_cflags = [ "-O2" ]
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m3_os"
-      additional_cflags = [ "-Os" ]
-    },
-  ]
-}
-
-generate_toolchains("cortex_m4") {
-  toolchain_template = "arm_gcc_toolchain"
-
-  software_fpu_cflags = [ "-mfloat-abi=soft" ]
-
-  hardware_fpu_cflags = [
-    # When hardware FPU is enabled, PW_ARMV7M_ENABLE_FPU is set to 1.
-    # TODO(pwbug/17): Replace when there's a more sophisticated configuration
-    # system.
-    "-DPW_ARMV7M_ENABLE_FPU=1",
-    "-mfloat-abi=hard",
-    "-mfpu=fpv4-sp-d16",
-  ]
-
-  common_toolchain_cflags = [
-    "-mabi=aapcs",
-    "-mcpu=cortex-m4",
-    "-mthumb",
-    "-specs=nano.specs",
-    "-specs=nosys.specs",
-    "-u _printf_float",
-  ]
-
-  common_toolchain_ldflags = [
-    "-lnosys",
-    "-lc",
-  ]
-
-  toolchains = [
-    # Cortex-M4 toolchains that use software-emulated floating point.
-    {
-      toolchain_name = "arm_gcc_cortex_m4_og"
-      additional_cflags = [ "-Og" ]
-      additional_cflags += software_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4_o1"
-      additional_cflags = [ "-O1" ]
-      additional_cflags += software_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4_o2"
-      additional_cflags = [ "-O2" ]
-      additional_cflags += software_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4_os"
-      additional_cflags = [ "-Os" ]
-      additional_cflags += software_fpu_cflags
-    },
-
-    # Cortex-M4 toolchains that use hardware FPU instructions.
-    {
-      toolchain_name = "arm_gcc_cortex_m4f_og"
-      additional_cflags = [ "-Og" ]
-      additional_cflags += hardware_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4f_o1"
-      additional_cflags = [ "-O1" ]
-      additional_cflags += hardware_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4f_o2"
-      additional_cflags = [ "-O2" ]
-      additional_cflags += hardware_fpu_cflags
-    },
-    {
-      toolchain_name = "arm_gcc_cortex_m4f_os"
-      additional_cflags = [ "-Os" ]
-      additional_cflags += hardware_fpu_cflags
-    },
-  ]
-}
-
+# Generate Host GCC toolchains
 generate_toolchains("host_gcc_suite") {
-  toolchain_template = "host_gcc"
-
-  toolchains = [
-    {
-      toolchain_name = "host_gcc_og"
-      additional_cflags = [ "-Og" ]
-    },
-    {
-      toolchain_name = "host_gcc_o2"
-      additional_cflags = [ "-O2" ]
-    },
-    {
-      toolchain_name = "host_gcc_os"
-      additional_cflags = [ "-Os" ]
-    },
-  ]
+  toolchains = host_gcc_toolchains
 }
 
+# Generate Host Clang toolchains
 generate_toolchains("host_clang_suite") {
-  toolchain_template = "host_clang"
-  common_toolchain_cflags = [ "-g3" ]
-
-  toolchains = [
-    {
-      toolchain_name = "host_clang_og"
-      additional_cflags = [ "-Og" ]
-    },
-    {
-      toolchain_name = "host_clang_o2"
-      additional_cflags = [ "-O2" ]
-    },
-    {
-      toolchain_name = "host_clang_os"
-      additional_cflags = [ "-Os" ]
-    },
-  ]
+  toolchains = host_clang_toolchains
 }
 
 pw_doc_group("docs") {

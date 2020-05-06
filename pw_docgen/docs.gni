@@ -102,12 +102,18 @@ template("pw_doc_gen") {
     _script_args += [ get_path_info(path, "abspath") ]
   }
 
-  pw_python_script(target_name) {
-    script = "$dir_pw_docgen/py/docgen.py"
-    args = _script_args
-    deps = [ ":$_metadata_file_target" ]
-    inputs = [ invoker.conf ]
-    inputs += invoker.sources
-    stamp = true
+  # TODO(frolv): Have a way of indicating that a toolchain should build docs.
+  if (current_toolchain == default_toolchain) {
+    pw_python_script(target_name) {
+      script = "$dir_pw_docgen/py/docgen.py"
+      args = _script_args
+      deps = [ ":$_metadata_file_target" ]
+      inputs = [ invoker.conf ]
+      inputs += invoker.sources
+      stamp = true
+    }
+  } else {
+    group(target_name) {
+    }
   }
 }

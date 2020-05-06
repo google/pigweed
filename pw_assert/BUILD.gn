@@ -49,6 +49,9 @@ pw_test("assert_facade_test") {
     "pw_assert_test/fake_backend.h",
   ]
   deps = [ dir_pw_status ]
+
+  # TODO(frolv): Fix this test on the QEMU target.
+  enable_if = pw_executable_config.target_type != "lm3s6965evb_executable"
 }
 
 pw_test("assert_backend_compile_test") {

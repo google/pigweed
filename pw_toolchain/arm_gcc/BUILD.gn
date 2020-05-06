@@ -1,0 +1,70 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("$dir_pigweed/modules.gni")
+
+# Disable obnoxious ABI warning.
+#
+# GCC 7.1 adds an over-zealous ABI warning with little useful information
+# on how to resolve the issue. The warning you get is:
+#
+#   note: parameter passing for argument of type '...' changed in GCC 7.1
+#
+# There is no other information, and searching for the error is needed to
+# understand what is happening. For upstream Pigweed, we compile from
+# source so this is irrelevant; so disable it.
+#
+# See: https://gcc.gnu.org/gcc-7/changes.html (search for "psabi").
+#      https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
+config("disable_psabi_warning") {
+  cflags = [ "-Wno-psabi" ]
+}
+
+config("cortex_common") {
+  cflags = [
+    "-mabi=aapcs",
+    "-mthumb",
+    "-specs=nano.specs",
+    "-specs=nosys.specs",
+    "-u _printf_float",
+  ]
+  ldflags = cflags + [
+              "-lnosys",
+              "-lc",
+            ]
+}
+
+config("cortex_m3") {
+  cflags = [ "-mcpu=cortex-m3" ]
+  ldflags = cflags
+}
+
+config("cortex_m4") {
+  cflags = [ "-mcpu=cortex-m4" ]
+  ldflags = cflags
+}
+
+config("cortex_software_fpu") {
+  cflags = [ "-mfloat-abi=soft" ]
+  ldflags = cflags
+}
+
+config("cortex_hardware_fpu") {
+  cflags = [
+    "-mfloat-abi=hard",
+    "-mfpu=fpv4-sp-d16",
+  ]
+  defines = [ "PW_ARMV7M_ENABLE_FPU=1" ]
+  ldflags = cflags
+}
