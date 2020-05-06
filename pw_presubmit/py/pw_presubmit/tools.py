@@ -137,6 +137,24 @@ def list_git_files(commit: Optional[str] = None,
         if not any(exp.search(str(path.relative_to(root))) for exp in exclude))
 
 
+def git_has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
+    """Returns True if the Git repo has uncommitted changes in it.
+
+    This does not check for untracked files.
+    """
+    if repo is None:
+        repo = Path.cwd()
+
+    # Refresh the Git index so that the diff-index command will be accurate.
+    subprocess.run(['git', '-C', repo, 'update-index', '-q', '--refresh'],
+                   check=True)
+
+    # diff-index exits with 1 if there are uncommitted changes.
+    return subprocess.run(
+        ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD',
+         '--']).returncode == 1
+
+
 def _describe_constraints(root: Path, repo_path: Path, commit: Optional[str],
                           pathspecs: Collection[PathOrStr],
                           exclude: Collection[Pattern]) -> Iterator[str]:
