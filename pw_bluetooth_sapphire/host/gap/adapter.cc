@@ -371,16 +371,14 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   if (!data_domain_) {
     // Initialize the data Domain to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain
-    auto data_domain = data::Domain::Create(
-        hci_, adapter_node_.CreateChild(data::Domain::kInspectNodeName), dispatcher_);
+    auto data_domain =
+        data::Domain::Create(hci_, adapter_node_.CreateChild(data::Domain::kInspectNodeName));
     if (!data_domain) {
       bt_log(ERROR, "gap", "Failed to initialize Data Domain");
       CleanUp();
       callback(false);
       return;
     }
-    // Ensure the initialize task is posted to the data domain before we store it in adapter
-    data_domain->Initialize();
     data_domain_ = data_domain;
   }
 
@@ -633,11 +631,7 @@ void Adapter::CleanUp() {
 
   le_address_manager_ = nullptr;
 
-  // Clean up the data domain as it gets initialized by the Adapter.
-  if (data_domain_) {
-    data_domain_->ShutDown();
-    data_domain_ = nullptr;
-  }
+  data_domain_ = nullptr;
 
   // TODO(armansito): hci::Transport::ShutDown() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon

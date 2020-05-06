@@ -26,29 +26,18 @@ struct ChannelSocket;
 namespace data {
 
 // Represents the task domain that implements the host subsystem's data plane.
-// This domain owns its own thread on which data-path tasks are dispatched.
+// This domain runs on the thread it is created on, and is not thread-safe.
 // Protocols implemented here are:
 //
 //   a. L2CAP and SCO.
 //   b. RFCOMM.
 //   c. Data sockets that bridge out-of-process users to above protocols.
-//
-// Interactions between the data domain and other library threads is performed
-// primarily via message passing.
 class Domain : public fbl::RefCounted<Domain> {
  public:
   static constexpr const char* kInspectNodeName = "data_domain";
 
   // Constructs an uninitialized data domain that can be used in production.
-  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node,
-                                    async_dispatcher_t* dispatcher);
-
-  // These send an Initialize/ShutDown message to the data task runner. It is
-  // safe for the caller to drop its Domain reference after ShutDown is called.
-  //
-  // Operations on an uninitialized or shut-down Domain have no effect.
-  virtual void Initialize() = 0;
-  virtual void ShutDown() = 0;
+  static fbl::RefPtr<Domain> Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node);
 
   // Registers an ACL connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this

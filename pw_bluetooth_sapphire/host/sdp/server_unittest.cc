@@ -42,7 +42,6 @@ class SDP_ServerTest : public TestingBase {
   void SetUp() override {
     l2cap_ = data::testing::FakeDomain::Create();
     l2cap_->set_channel_callback([this](auto fake_chan) { channel_ = std::move(fake_chan); });
-    l2cap_->Initialize();
     l2cap_->AddACLConnection(kTestHandle1, hci::Connection::Role::kSlave, nullptr, nullptr);
     l2cap_->AddACLConnection(kTestHandle2, hci::Connection::Role::kSlave, nullptr, nullptr);
     server_ = std::make_unique<Server>(l2cap_);

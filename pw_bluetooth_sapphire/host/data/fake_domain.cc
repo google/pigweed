@@ -37,8 +37,6 @@ bool FakeDomain::IsLinkConnected(hci::ConnectionHandle handle) const {
 
 void FakeDomain::TriggerLEConnectionParameterUpdate(
     hci::ConnectionHandle handle, const hci::LEPreferredConnectionParameters& params) {
-  ZX_DEBUG_ASSERT(initialized_);
-
   LinkData& link_data = ConnectedLinkData(handle);
   link_data.le_conn_param_cb(params);
 }
@@ -46,7 +44,6 @@ void FakeDomain::TriggerLEConnectionParameterUpdate(
 void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                             l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                             l2cap::ChannelParameters params) {
-  ZX_DEBUG_ASSERT(initialized_);
   LinkData& link_data = GetLinkData(handle);
   ChannelData chan_data;
   chan_data.local_id = id;
@@ -58,10 +55,6 @@ void FakeDomain::ExpectOutboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 bool FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                             l2cap::ChannelId id, l2cap::ChannelId remote_id,
                                             uint16_t max_tx_sdu_size) {
-  if (!initialized_) {
-    return false;
-  }
-
   LinkData& link_data = ConnectedLinkData(handle);
   auto cb_iter = registered_services_.find(psm);
 
@@ -89,22 +82,13 @@ bool FakeDomain::TriggerInboundL2capChannel(hci::ConnectionHandle handle, l2cap:
 }
 
 void FakeDomain::TriggerLinkError(hci::ConnectionHandle handle) {
-  ZX_DEBUG_ASSERT(initialized_);
-
   LinkData& link_data = ConnectedLinkData(handle);
   link_data.link_error_cb();
 }
 
-void FakeDomain::Initialize() { initialized_ = true; }
-
-void FakeDomain::ShutDown() { initialized_ = false; }
-
 void FakeDomain::AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                                   l2cap::LinkErrorCallback link_error_cb,
                                   l2cap::SecurityUpgradeCallback security_cb) {
-  if (!initialized_)
-    return;
-
   RegisterInternal(handle, role, hci::Connection::LinkType::kACL, std::move(link_error_cb));
 }
 
@@ -113,9 +97,6 @@ void FakeDomain::AddLEConnection(hci::ConnectionHandle handle, hci::Connection::
                                  l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
                                  l2cap::LEFixedChannelsCallback channel_cb,
                                  l2cap::SecurityUpgradeCallback security_cb) {
-  if (!initialized_)
-    return;
-
   LinkData* data =
       RegisterInternal(handle, role, hci::Connection::LinkType::kLE, std::move(link_error_cb));
   data->le_conn_param_cb = std::move(conn_param_cb);
@@ -145,8 +126,6 @@ void FakeDomain::RequestConnectionParameterUpdate(
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                   l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
                                   async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(initialized_);
-
   LinkData& link_data = ConnectedLinkData(handle);
   auto psm_it = link_data.expected_outbound_conns.find(psm);
 
@@ -199,7 +178,6 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
 void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                  l2cap::ChannelCallback channel_callback,
                                  async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(initialized_);
   ZX_DEBUG_ASSERT(registered_services_.count(psm) == 0);
 
   // capture |dispatcher| here so it doesn't need to be stored with ServiceInfo
@@ -229,11 +207,7 @@ void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params
       async_get_default_dispatcher());
 }
 
-void FakeDomain::UnregisterService(l2cap::PSM psm) {
-  ZX_DEBUG_ASSERT(initialized_);
-
-  registered_services_.erase(psm);
-}
+void FakeDomain::UnregisterService(l2cap::PSM psm) { registered_services_.erase(psm); }
 
 FakeDomain::~FakeDomain() {
   for (auto& link_it : links_) {

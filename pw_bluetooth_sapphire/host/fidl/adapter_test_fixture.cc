@@ -14,7 +14,6 @@ void AdapterTestFixture::SetUp() {
   TestingBase::SetUp();
 
   data_plane_ = bt::data::testing::FakeDomain::Create();
-  data_plane_->Initialize();
   gatt_ = bt::gatt::testing::FakeLayer::Create();
   adapter_ = std::make_unique<bt::gap::Adapter>(transport(), gatt_, data_plane_);
 

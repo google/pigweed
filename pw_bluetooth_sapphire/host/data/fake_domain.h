@@ -52,8 +52,6 @@ class FakeDomain final : public Domain {
   void TriggerLinkError(hci::ConnectionHandle handle);
 
   // Domain overrides:
-  void Initialize() override;
-  void ShutDown() override;
   void AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                         l2cap::LinkErrorCallback link_error_callback,
                         l2cap::SecurityUpgradeCallback security_callback) override;
@@ -148,7 +146,6 @@ class FakeDomain final : public Domain {
   // yet.
   LinkData& ConnectedLinkData(hci::ConnectionHandle handle);
 
-  bool initialized_ = false;
   std::unordered_map<hci::ConnectionHandle, LinkData> links_;
   FakeChannelCallback chan_cb_;
   bool simulate_open_channel_failure_ = false;

@@ -70,7 +70,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     peer_cache_ =
         std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
     l2cap_ = data::testing::FakeDomain::Create();
-    l2cap_->Initialize();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
         transport(), &addr_delegate_, dispatcher(),
@@ -90,7 +89,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
       conn_mgr_ = nullptr;
     peer_cache_ = nullptr;
 
-    l2cap_->ShutDown();
     l2cap_ = nullptr;
 
     TestingBase::TearDown();

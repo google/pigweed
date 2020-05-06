@@ -58,9 +58,8 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = Domain::Create(
-        transport(), inspector_.GetRoot().CreateChild(Domain::kInspectNodeName), dispatcher());
-    domain_->Initialize();
+    domain_ =
+        Domain::Create(transport(), inspector_.GetRoot().CreateChild(Domain::kInspectNodeName));
 
     StartTestDevice();
 
@@ -70,7 +69,6 @@ class DATA_DomainTest : public TestingBase {
   }
 
   void TearDown() override {
-    domain_->ShutDown();
     domain_ = nullptr;
     TestingBase::TearDown();
   }
@@ -520,17 +518,6 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   RunLoopUntilIdle();
   // 1 Queued dynamic channel data packet should have been sent.
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-}
-
-using DATA_DomainLifecycleTest = TestingBase;
-
-TEST_F(DATA_DomainLifecycleTest, ShutdownWithoutInitialize) {
-  // Create an isolated domain, and shutdown without initializing
-  // We can't use the standard DATA_DomainTest fixture, as it will initialize the domain
-  auto data_domain = Domain::Create(transport(), inspect::Node(), dispatcher());
-  data_domain->ShutDown();
-  data_domain = nullptr;
-  SUCCEED();
 }
 
 TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
