@@ -86,13 +86,19 @@ def gn_arm_build(ctx: PresubmitContext):
     build.ninja(ctx.output_dir)
 
 
+_QEMU_GEN_ARGS = build.gn_args(
+    pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
+
+
+@filter_paths(endswith=format_code.C_FORMAT.extensions)
+def gn_qemu_build(ctx: PresubmitContext):
+    build.gn_gen(ctx.repo_root, ctx.output_dir, _QEMU_GEN_ARGS)
+    build.ninja(ctx.output_dir)
+
+
 def gn_docs_build(ctx: PresubmitContext):
     build.gn_gen(ctx.repo_root, ctx.output_dir, _DOCS_GEN_ARGS)
     build.ninja(ctx.output_dir, 'docs:docs')
-
-
-_QEMU_GEN_ARGS = build.gn_args(
-    pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
 
 
 def gn_host_tools(ctx: PresubmitContext):
@@ -309,6 +315,10 @@ BROKEN = (
     # Host tools are not broken but take long on slow internet connections.
     # They're still run in CQ, but not in 'pw presubmit'.
     gn_host_tools,
+
+    # QEMU build. Currently doesn't have test runners, and can't build one
+    # of the fuzzing targets.
+    gn_qemu_build,
 )
 
 QUICK = (
