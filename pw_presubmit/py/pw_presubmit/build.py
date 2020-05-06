@@ -120,11 +120,11 @@ def check_builds_for_files(
     missing: Dict[str, List[Path]] = collections.defaultdict(list)
 
     for path in (p for p in files if p.suffix in extensions_to_check):
-        if path.suffix != '.rst' and path not in bazel_builds:
+        if bazel_dirs and path.suffix != '.rst' and path not in bazel_builds:
             # TODO(pwbug/176) Replace this workaround for fuzzers.
             if 'fuzz' not in str(path):
                 missing['Bazel'].append(path)
-        if path not in gn_builds:
+        if gn_dirs and path not in gn_builds:
             missing['GN'].append(path)
 
     for builder, paths in missing.items():
