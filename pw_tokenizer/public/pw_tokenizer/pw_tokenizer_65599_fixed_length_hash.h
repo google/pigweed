@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <string_view>
 
+#include "pw_preprocessor/compiler.h"
+
 namespace pw::tokenizer {
 
 // The constant to use when generating the hash. Changing this changes the value

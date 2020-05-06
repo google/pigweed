@@ -14,6 +14,7 @@
 
 pw_add_module_library(pw_tokenizer
   SOURCES
+    encode_args.cc
     tokenize.cc
   PUBLIC_DEPS
     pw_preprocessor
@@ -43,6 +44,33 @@ pw_add_module_library(pw_tokenizer.decoder
   PRIVATE_DEPS
     pw_varint
 )
+
+pw_add_facade(pw_tokenizer.global_handler
+  SOURCES
+    tokenize_to_global_handler.cc
+  PUBLIC_DEPS
+    pw_tokenizer
+)
+
+pw_add_facade(pw_tokenizer.global_handler_with_payload
+  SOURCES
+    tokenize_to_global_handler_with_payload.cc
+  PUBLIC_DEPS
+    pw_tokenizer
+)
+
+# TODO(hepler): Use an empty backend that makes tests possible, for now.
+add_library(pw_tokenizer.global_handler.backend INTERFACE)
+target_link_libraries(pw_tokenizer.global_handler.backend
+  INTERFACE
+    pw_tokenizer.test_backend)
+
+add_library(pw_tokenizer.global_handler_with_payload.backend INTERFACE)
+target_link_libraries(pw_tokenizer.global_handler_with_payload.backend
+  INTERFACE
+    pw_tokenizer.test_backend)
+
+add_library(pw_tokenizer.test_backend INTERFACE)
 
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.
@@ -99,6 +127,18 @@ pw_add_test(pw_tokenizer.detokenize_test
     detokenize_test.cc
   DEPS
     pw_tokenizer.decoder
+  GROUPS
+    modules
+    pw_tokenizer
+)
+
+pw_add_test(pw_tokenizer.global_handlers_test
+  SOURCES
+    global_handlers_test.c
+    global_handlers_test.cc
+  DEPS
+    pw_tokenizer.global_handler
+    pw_tokenizer.global_handler_with_payload
   GROUPS
     modules
     pw_tokenizer

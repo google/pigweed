@@ -162,9 +162,11 @@ Tokenize to a handler function
 ``PW_TOKENIZE_TO_GLOBAL_HANDLER`` is the most efficient tokenization function,
 since it takes the fewest arguments. It encodes a tokenized string to a
 buffer on the stack. The size of the buffer is set with
-``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``. It then calls the C-linkage
-function ``pw_TokenizerHandleEncodedMessage``, which must be defined by the
-project.
+``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
+
+This macro is provided by the ``pw_tokenizer:global_handler`` facade. The
+backend for this facade must define the ``pw_TokenizerHandleEncodedMessage``
+C-linkage function.
 
 .. code-block:: cpp
 
@@ -174,8 +176,12 @@ project.
                                         size_t size_bytes);
 
 ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` is similar, but passes a
-``void*`` argument to the global handler function. Values like a log level can
-be packed into the ``void*``.
+``uintptr_t`` argument to the global handler function. Values like a log level
+can be packed into the ``uintptr_t``.
+
+This macro is provided by the ``pw_tokenizer:global_handler_with_payload``
+facade. The backend for this facade must define the
+``pw_TokenizerHandleEncodedMessageWithPayload`` C-linkage function.
 
 .. code-block:: cpp
 
@@ -183,11 +189,11 @@ be packed into the ``void*``.
                                              format_string_literal,
                                              arguments...);
 
-  void pw_TokenizerHandleEncodedMessageWithPayload(void* payload,
+  void pw_TokenizerHandleEncodedMessageWithPayload(uintptr_t payload,
                                                    const uint8_t encoded_message[],
                                                    size_t size_bytes);
 
-.. admonition:: When to use this macro
+.. admonition:: When to use these macros
 
   Use anytime a global handler is sufficient, particularly for widely expanded
   macros, like a logging macro. ``PW_TOKENIZE_TO_GLOBAL_HANDLER`` or
@@ -269,14 +275,14 @@ timestamp and transmits the message with ``TransmitLog``.
 
   #define LOG_INFO(format, ...)                   \
       PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD( \
-          (void*)LogLevel_INFO,                   \
+          (uintptr_t)LogLevel_INFO,                   \
           __FILE_NAME__ ":%d " format,            \
           __LINE__,                               \
           __VA_ARGS__);                           \
 
   extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
-      void* level, const uint8_t encoded_message[], size_t size_bytes) {
-    if (reinterpret_cast<LogLevel>(level) >= current_log_level) {
+      uintptr_t level, const uint8_t encoded_message[], size_t size_bytes) {
+    if (static_cast<LogLevel>(level) >= current_log_level) {
       TransmitLog(TimeSinceBootMillis(), encoded_message, size_bytes);
     }
   }

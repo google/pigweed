@@ -17,6 +17,8 @@
 
 #include "gtest/gtest.h"
 #include "pw_tokenizer/tokenize.h"
+#include "pw_tokenizer/tokenize_to_global_handler.h"
+#include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 namespace pw {
 namespace tokenizer {
@@ -126,8 +128,6 @@ TEST_F(TokenizeToCallback, Variety) {
   EXPECT_TRUE(std::memcmp(expected.data(), message_, expected.size()) == 0);
 }
 
-#if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER
-
 class TokenizeToGlobalHandler : public GlobalMessage<TokenizeToGlobalHandler> {
 };
 
@@ -143,10 +143,6 @@ extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t* encoded_message,
                                                  size_t size_bytes) {
   TokenizeToGlobalHandler::SetMessage(encoded_message, size_bytes);
 }
-
-#endif  // PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER
-
-#if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
 
 class TokenizeToGlobalHandlerWithPayload
     : public GlobalMessage<TokenizeToGlobalHandlerWithPayload> {
@@ -194,8 +190,6 @@ extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
   TokenizeToGlobalHandlerWithPayload::SetMessage(encoded_message, size_bytes);
   TokenizeToGlobalHandlerWithPayload::SetPayload(payload);
 }
-
-#endif  // PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
 
 }  // namespace
 }  // namespace tokenizer

@@ -26,6 +26,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_tokenizer",
     srcs = [
+        "encode_args.cc",
         "public/pw_tokenizer/config.h",
         "public/pw_tokenizer/internal/argument_types.h",
         "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
@@ -34,6 +35,7 @@ pw_cc_library(
         "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
         "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
         "public/pw_tokenizer/internal/tokenize_string.h",
+        "pw_tokenizer_private/encode_args.h",
         "tokenize.cc",
     ],
     hdrs = [
@@ -46,6 +48,36 @@ pw_cc_library(
         "//pw_preprocessor",
         "//pw_span",
         "//pw_varint",
+    ],
+)
+
+# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
+PW_TOKENIZER_GLOBAL_HANDLER_BACKEND = "//pw_tokenizer:test_backend"
+
+PW_TOKENIZER_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "//pw_tokenizer:test_backend"
+
+pw_cc_library(
+    name = "test_backend",
+    visibility = ["//visibility:private"],
+)
+
+pw_cc_library(
+    name = "global_handler",
+    srcs = ["tokenize_to_global_handler.cc"],
+    hdrs = ["public/pw_tokenizer/tokenize_to_global_handler.h"],
+    deps = [
+        ":pw_tokenizer",
+        PW_TOKENIZER_GLOBAL_HANDLER_BACKEND,
+    ],
+)
+
+pw_cc_library(
+    name = "global_handler_with_payload",
+    srcs = ["tokenize_to_global_handler_with_payload.cc"],
+    hdrs = ["public/pw_tokenizer/tokenize_to_global_handler_with_payload.h"],
+    deps = [
+        ":pw_tokenizer",
+        PW_TOKENIZER_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND,
     ],
 )
 
@@ -164,6 +196,19 @@ pw_cc_test(
     deps = [
         ":decoder",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "global_handlers_test",
+    srcs = [
+        "global_handlers_test.c",
+        "global_handlers_test.cc",
+        "pw_tokenizer_private/tokenize_test.h",
+    ],
+    deps = [
+        ":global_handler",
+        ":global_handler_with_payload",
     ],
 )
 

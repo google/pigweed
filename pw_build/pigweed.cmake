@@ -118,11 +118,10 @@ function(pw_add_module_library NAME)
   # Check that the library's name is prefixed by the module name.
   get_filename_component(module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
 
-  if(NOT "${NAME}" MATCHES "^${module}(\\.[^\\.]+)?$")
+  if(NOT "${NAME}" MATCHES "^${module}(\\.[^\\.]+)?(\\.facade|\\.backend)?$")
     message(FATAL_ERROR
         "Module libraries must match the module name or be in the form "
-        "'MODULE_NAME.LIBRARY_NAME'. "
-        "The library '${NAME}' does not match the module '${module}'."
+        "'MODULE_NAME.LIBRARY_NAME'. The library '${NAME}' does not match."
     )
   endif()
 
@@ -150,16 +149,16 @@ endfunction(pw_add_module_library)
 # MODULE_NAME.facade.
 #
 # pw_add_facade accepts the same arguments as pw_add_module_library.
-function(pw_add_facade MODULE)
-  pw_add_module_library("${MODULE}.facade" ${ARGN})
+function(pw_add_facade NAME)
+  pw_add_module_library("${NAME}.facade" ${ARGN})
 
   # Use a library with an empty source instead of an INTERFACE library so that
   # the library can have a private dependency on the backend.
-  add_library("${MODULE}" OBJECT EXCLUDE_FROM_ALL "${_pw_empty_source_file}")
-  target_link_libraries("${MODULE}"
+  add_library("${NAME}" OBJECT EXCLUDE_FROM_ALL "${_pw_empty_source_file}")
+  target_link_libraries("${NAME}"
     PUBLIC
-      "${MODULE}.facade"
-      "${MODULE}.backend"
+      "${NAME}.facade"
+      "${NAME}.backend"
   )
 endfunction(pw_add_facade)
 

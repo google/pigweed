@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -23,15 +24,16 @@ config("default_config") {
 source_set("pw_tokenizer") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
+    dir_pw_preprocessor,
+    dir_pw_span,
   ]
-  deps = [ "$dir_pw_varint" ]
+  deps = [ dir_pw_varint ]
   public = [
     "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
     "public/pw_tokenizer/tokenize.h",
   ]
   sources = [
+    "encode_args.cc",
     "public/pw_tokenizer/config.h",
     "public/pw_tokenizer/internal/argument_types.h",
     "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
@@ -40,9 +42,49 @@ source_set("pw_tokenizer") {
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
     "public/pw_tokenizer/internal/tokenize_string.h",
+    "pw_tokenizer_private/encode_args.h",
     "tokenize.cc",
   ]
   friend = [ ":*" ]
+}
+
+# As a temporary workaround, if no backend is set, use an empty test backend so
+# that the test can define the handler function.
+# TODO(hepler): Switch this to a facade test when available.
+if (dir_pw_tokenizer_global_handler_backend == "" &&
+    dir_pw_tokenizer_global_handler_with_payload_backend == "") {
+  # This is an empty library to use as the backend for global_handler and
+  # global_handler_with_payload tests.
+  source_set("test_backend") {
+    visibility = [ ":*" ]
+  }
+
+  dir_pw_tokenizer_global_handler_backend = ":test_backend"
+  dir_pw_tokenizer_global_handler_with_payload_backend = ":test_backend"
+
+  enable_global_handler_test = true
+} else {
+  enable_global_handler_test = false
+}
+
+pw_facade("global_handler") {
+  facade_name = "global_handler_facade"
+  backend = dir_pw_tokenizer_global_handler_backend
+
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_tokenizer/tokenize_to_global_handler.h" ]
+  sources = [ "tokenize_to_global_handler.cc" ]
+  public_deps = [ ":pw_tokenizer" ]
+}
+
+pw_facade("global_handler_with_payload") {
+  facade_name = "global_handler_with_payload_facade"
+  backend = dir_pw_tokenizer_global_handler_with_payload_backend
+
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
+  sources = [ "tokenize_to_global_handler_with_payload.cc" ]
+  public_deps = [ ":pw_tokenizer" ]
 }
 
 source_set("base64") {
@@ -50,16 +92,16 @@ source_set("base64") {
   public = [ "public/pw_tokenizer/base64.h" ]
   sources = [ "base64.cc" ]
   public_deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
+    dir_pw_preprocessor,
+    dir_pw_span,
   ]
-  deps = [ "$dir_pw_base64" ]
+  deps = [ dir_pw_base64 ]
 }
 
 source_set("decoder") {
   public_configs = [ ":default_config" ]
-  public_deps = [ "$dir_pw_span" ]
-  deps = [ "$dir_pw_varint" ]
+  public_deps = [ dir_pw_span ]
+  deps = [ dir_pw_varint ]
   public = [
     "public/pw_tokenizer/detokenize.h",
     "public/pw_tokenizer/token_database.h",
@@ -79,7 +121,7 @@ executable("generate_decoding_test_data") {
   deps = [
     ":decoder",
     ":pw_tokenizer",
-    "$dir_pw_varint",
+    dir_pw_varint,
   ]
   sources = [
     "generate_decoding_test_data.cc",
@@ -105,6 +147,7 @@ pw_test_group("tests") {
     ":decode_test",
     ":detokenize_fuzzer",
     ":detokenize_test",
+    ":global_handlers_test",
     ":hash_test",
     ":simple_tokenize_test_cpp11",
     ":simple_tokenize_test_cpp14",
@@ -152,6 +195,21 @@ pw_test("detokenize_test") {
   deps = [ ":decoder" ]
 }
 
+pw_test("global_handlers_test") {
+  sources = [
+    "global_handlers_test.c",
+    "global_handlers_test.cc",
+    "pw_tokenizer_private/tokenize_test.h",
+  ]
+  deps = [
+    ":global_handler",
+    ":global_handler_with_payload",
+  ]
+
+  # TODO(hepler): Switch this to a facade test when available.
+  enable_if = enable_global_handler_test
+}
+
 pw_test("hash_test") {
   sources = [
     "hash_test.cc",
@@ -166,6 +224,7 @@ pw_test("hash_test") {
 _simple_tokenize_test_sources = [
   "$dir_pw_varint/public/pw_varint/varint.h",
   "$dir_pw_varint/varint.cc",
+  "encode_args.cc",
   "public/pw_tokenizer/config.h",
   "public/pw_tokenizer/internal/argument_types.h",
   "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
@@ -176,8 +235,13 @@ _simple_tokenize_test_sources = [
   "public/pw_tokenizer/internal/tokenize_string.h",
   "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
   "public/pw_tokenizer/tokenize.h",
+  "public/pw_tokenizer/tokenize_to_global_handler.h",
+  "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h",
+  "pw_tokenizer_private/encode_args.h",
   "simple_tokenize_test.cc",
   "tokenize.cc",
+  "tokenize_to_global_handler.cc",
+  "tokenize_to_global_handler_with_payload.cc",
 ]
 _simple_tokenize_test_configs = [
   ":default_config",

@@ -28,7 +28,7 @@ source_set("pw_log_tokenized") {
     ":backend_config",
     ":default_config",
   ]
-  public_deps = [ dir_pw_tokenizer ]
+  public_deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
   deps = [ ":core" ]
   public = [
     "public/pw_log_tokenized/log_tokenized.h",
@@ -42,6 +42,7 @@ source_set("core") {
     "$dir_pw_log:facade",
     dir_pw_preprocessor,
   ]
+  visibility = [ ":*" ]
 }
 
 pw_test_group("tests") {
@@ -51,6 +52,9 @@ pw_test_group("tests") {
 pw_test("test") {
   sources = [ "test.cc" ]
   deps = [ ":pw_log_tokenized" ]
+
+  # TODO(hepler): Switch this to a facade test when available.
+  enable_if = dir_pw_tokenizer_global_handler_with_payload_backend == ""
 }
 
 pw_doc_group("docs") {

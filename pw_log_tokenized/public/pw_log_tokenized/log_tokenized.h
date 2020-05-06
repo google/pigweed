@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #include "pw_preprocessor/util.h"
-#include "pw_tokenizer/tokenize.h"
+#include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 // This macro implements PW_LOG, using
 // PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD. The log level, module token, and

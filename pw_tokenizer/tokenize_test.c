@@ -74,51 +74,6 @@ void pw_TokenizeToCallbackTest_SequentialZigZag(
                           (signed char)-7);
 }
 
-#if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER
-
-void pw_TokenizeToGlobalHandlerTest_SequentialZigZag(void) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER(TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
-                                0u,
-                                -1,
-                                1u,
-                                (unsigned)-2,
-                                (unsigned short)2u,
-                                (signed char)-3,
-                                3,
-                                -4l,
-                                4ul,
-                                -5ll,
-                                5ull,
-                                (signed char)-6,
-                                (char)6,
-                                (signed char)-7);
-}
-
-#endif  // PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER
-
-#if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
-
-void pw_TokenizeToGlobalHandlerWithPayloadTest_SequentialZigZag(void) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD((pw_TokenizerPayload)600613,
-                                             TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
-                                             0u,
-                                             -1,
-                                             1u,
-                                             (unsigned)-2,
-                                             (unsigned short)2u,
-                                             (signed char)-3,
-                                             3,
-                                             -4l,
-                                             4ul,
-                                             -5ll,
-                                             5ull,
-                                             (signed char)-6,
-                                             (char)6,
-                                             (signed char)-7);
-}
-
-#endif  // PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
-
 void pw_TokenizeToBufferTest_Requires8(void* buffer, size_t* buffer_size) {
   PW_TOKENIZE_TO_BUFFER(buffer, buffer_size, TEST_FORMAT_REQUIRES_8, "hi", -7);
 }

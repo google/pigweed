@@ -115,6 +115,11 @@ dir_pw_log_backend = ""
 # Backend for the pw_sys_io module.
 dir_pw_sys_io_backend = ""
 
+# Backends for the pw_tokenizer:global_handler and
+# pw_tokenizer:global_handler_with_payload facades.
+dir_pw_tokenizer_global_handler_backend = ""
+dir_pw_tokenizer_global_handler_with_payload_backend = ""
+
 ############################## MODULE CONFIGS ##################################
 
 # Module configuration options for pw_boot_armv7m.

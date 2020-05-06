@@ -49,8 +49,6 @@ static_assert(test3.level() == 63);
 static_assert(test3.module() == 65535);
 static_assert(test3.flags() == 1023);
 
-#if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
-
 TEST(LogTokenized, LogMetadata_Zero) {
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, 0, "hello");
   EXPECT_EQ(metadata.level(), 0u);
@@ -71,8 +69,6 @@ TEST(LogTokenized, LogMetadata_MaxValues) {
   EXPECT_EQ(metadata.flags(), 1023u);
   EXPECT_EQ(encoded_data_size, 4u /* token */ + 1u /* encoded integer */);
 }
-
-#endif  // PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
 
 }  // namespace
 }  // namespace pw::log_tokenized
