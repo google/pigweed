@@ -24,6 +24,7 @@
 #define PW_ASSERT_USE_SHORT_NAMES 1
 
 #include "pw_assert/assert.h"
+#include "pw_status/status.h"
 
 #ifdef __cplusplus
 #error "This file must be compiled as plain C to verify C compilation works."
@@ -181,5 +182,14 @@ void AssertBackendCompileTestsInC() {
 
     CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
     CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
+  }
+
+  {  // Compile tests for PW_ASSERT_OK().
+    PW_CHECK_OK(PW_STATUS_OK);
+    PW_CHECK_OK(PW_STATUS_OK, "msg");
+    PW_CHECK_OK(PW_STATUS_OK, "msg: %d", 5);
+    PW_DCHECK_OK(PW_STATUS_OK);
+    PW_DCHECK_OK(PW_STATUS_OK, "msg");
+    PW_DCHECK_OK(PW_STATUS_OK, "msg: %d", 5);
   }
 }

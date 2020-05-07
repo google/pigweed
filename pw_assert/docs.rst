@@ -174,22 +174,29 @@ invoke to assert.
 
   .. attention::
 
-    Don't use use ``PW_CHECK`` for binary comparisons!
+    Don't use use ``PW_CHECK`` for binary comparisons or status checks!
 
     Instead, use the ``PW_CHECK_<TYPE>_<OP>`` macros. These macros enable
     capturing the value of the operands, and also tokenizing them if using a
     tokenizing assert backend. For example, if ``x`` and ``b`` are integers,
     use instead ``PW_CHECK_INT_LT(x, b)``.
 
-    +---------------------------------+-------------------------------------+
-    | **Do NOT do this**              | **Do this instead**                 |
-    +---------------------------------+-------------------------------------+
-    | ``PW_CHECK(a_int < b_int)``     | ``PW_CHECK_INT_LT(a_int, b_int)``   |
-    +---------------------------------+-------------------------------------+
-    | ``PW_CHECK(a_ptr <= b_ptr)``    | ``PW_CHECK_PTR_LE(a_ptr, b_ptr)``   |
-    +---------------------------------+-------------------------------------+
-    | ``PW_CHECK(Temp() <= 10.0)``    | ``PW_CHECK_FLOAT_LE(Temp(), 10.0)`` |
-    +---------------------------------+-------------------------------------+
+    Additionally, use ``PW_CHECK_OK(status)`` when checking for a
+    ``Status::OK``, since it enables showing a human-readable status string
+    rather than an integer (e.g. ``status == RESOURCE_EXHAUSTED`` instead of
+    ``status == 5``.
+
+    +------------------------------------+-------------------------------------+
+    | **Do NOT do this**                 | **Do this instead**                 |
+    +------------------------------------+-------------------------------------+
+    | ``PW_CHECK(a_int < b_int)``        | ``PW_CHECK_INT_LT(a_int, b_int)``   |
+    +------------------------------------+-------------------------------------+
+    | ``PW_CHECK(a_ptr <= b_ptr)``       | ``PW_CHECK_PTR_LE(a_ptr, b_ptr)``   |
+    +------------------------------------+-------------------------------------+
+    | ``PW_CHECK(Temp() <= 10.0)``       | ``PW_CHECK_FLOAT_LE(Temp(), 10.0)`` |
+    +------------------------------------+-------------------------------------+
+    | ``PW_CHECK(Foo() == Status::OK)``  | ``PW_CHECK_OK(Foo())``              |
+    +------------------------------------+-------------------------------------+
 
 .. cpp:function:: PW_CHECK_NOTNULL(ptr)
 .. cpp:function:: PW_CHECK_NOTNULL(ptr, format, ...)
@@ -207,7 +214,7 @@ invoke to assert.
     Foo* foo = GetTheFoo()
     PW_CHECK_NOTNULL(foo);
 
-    Bar* bar = GetSomeBar()
+    Bar* bar = GetSomeBar();
     PW_CHECK_NOTNULL(bar, "Weirdly got NULL bar; state: %d", MyState());
 
 .. cpp:function:: PW_CHECK_TYPE_OP(a, b)
@@ -347,6 +354,37 @@ invoke to assert.
   +--------------------+--------------+-----------+-----------------------+
   | PW_DCHECK_FLOAT_NE | float        | a != b    | %f                    |
   +--------------------+--------------+-----------+-----------------------+
+
+.. cpp:function:: PW_CHECK_OK(status)
+.. cpp:function:: PW_CHECK_OK(status, format, ...)
+.. cpp:function:: PW_DCHECK_OK(status)
+.. cpp:function:: PW_DCHECK_OK(status, format, ...)
+
+  Assert that ``status`` evaluates to ``pw::Status::OK`` (in C++) or
+  ``PW_STATUS_OK`` (in C). Optionally include a message with arguments to
+  report.
+
+  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
+  entire statement is removed (and the expression not evaluated).
+
+  .. code-block:: cpp
+
+    pw::Status operation_status = DoSomeOperation();
+    PW_CHECK_OK(operation_status);
+
+    // Any expression that evaluates to a pw::Status or pw_Status works.
+    PW_CHECK_OK(DoTheThing(), "System state: %s", SystemState());
+
+    // C works too.
+    pw_Status c_status = DoMoreThings();
+    PW_CHECK_OK(c_status, "System state: %s", SystemState());
+
+  .. note::
+
+    Using ``PW_CHECK_OK(status)`` instead of ``PW_CHECK(status == Status::OK)``
+    enables displaying an error message with a string version of the error
+    code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
+    5``.
 
 ----------------------------
 Assert backend API reference

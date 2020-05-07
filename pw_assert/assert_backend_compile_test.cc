@@ -40,6 +40,7 @@
 #include "pw_assert/assert.h"
 // clang-format on
 
+#include "pw_status/status.h"
 #include "gtest/gtest.h"
 
 // This is a global constant to feed into the formatter for tests.
@@ -195,6 +196,32 @@ TEST(Check, ShortNamesWork) {
 
   CHECK_INT_LE(Add3(1, 2, 3), Add3(1, 2, 3), "INT: " FAIL_IF_DISPLAYED);
   CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
+}
+
+pw::Status MakeStatus(pw::Status status) { return status; }
+
+TEST(Check, CheckOkMacrosCompile) {
+  MAYBE_SKIP_TEST;
+  pw::Status status = pw::Status::UNKNOWN;
+
+  // Typical case with long names.
+  PW_CHECK_OK(status);
+  PW_CHECK_OK(status, "msg");
+  PW_CHECK_OK(status, "msg: %d", 5);
+
+  // Short names.
+  CHECK_OK(status);
+  CHECK_OK(status, "msg");
+  CHECK_OK(status, "msg: %d", 5);
+
+  // Status from a literal.
+  PW_CHECK_OK(pw::Status::OK);
+
+  // Status from a function.
+  PW_CHECK_OK(MakeStatus(pw::Status::OK));
+
+  // Status from C enums.
+  PW_CHECK_OK(PW_STATUS_OK);
 }
 
 // These are defined in assert_test.c, to test C compatibility.

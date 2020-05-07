@@ -58,9 +58,13 @@ PW_EXTERN_C_END
 
 // clang-format off
 // This is too hairy for clang format to handle and retain readability.
-#define PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(                   \
-    arg_a_str, arg_a_val, comparison_op_str, arg_b_str, arg_b_val, \
-    type_fmt, message, ...)                                        \
+#define PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,         \
+                                                arg_a_val,         \
+                                                comparison_op_str, \
+                                                arg_b_str,         \
+                                                arg_b_val,         \
+                                                type_fmt,          \
+                                                message, ...)      \
   pw_Crash(__FILE__,                                               \
            __LINE__,                                               \
            __func__,                                               \

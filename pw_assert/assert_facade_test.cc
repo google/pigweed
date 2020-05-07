@@ -420,6 +420,65 @@ TEST(Check, ShortNamesWork) {
   CHECK_INT_LE(1, 2, "msg: %d", 5);
 }
 
+// Verify PW_CHECK_OK, including message handling.
+TEST_F(AssertFail, StatusNotOK) {
+  pw::Status status = pw::Status::UNKNOWN;
+  PW_CHECK_OK(status);
+  EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). ");
+}
+
+TEST_F(AssertFail, StatusNotOKMessageNoArguments) {
+  pw::Status status = pw::Status::UNKNOWN;
+  PW_CHECK_OK(status, "msg");
+  EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). msg");
+}
+
+TEST_F(AssertFail, StatusNotOKMessageArguments) {
+  pw::Status status = pw::Status::UNKNOWN;
+  PW_CHECK_OK(status, "msg: %d", 5);
+  EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). msg: 5");
+}
+
+// Example expression for the test below.
+pw::Status DoTheThing() { return pw::Status::RESOURCE_EXHAUSTED; }
+
+TEST_F(AssertFail, NonTrivialExpression) {
+  PW_CHECK_OK(DoTheThing());
+  EXPECT_MESSAGE(
+      "Check failed: DoTheThing() (=RESOURCE_EXHAUSTED) == Status::OK (=OK). ");
+}
+
+// Note: This function seems pointless but it is not, since pw::Status::FOO
+// constants are not actually status objects, but code objects. This way we can
+// ensure the macros work with both real status objects and literals.
+pw::Status MakeStatus(pw::Status status) { return status; }
+TEST_F(AssertPass, Constant) { PW_CHECK_OK(pw::Status::OK); }
+TEST_F(AssertPass, Dynamic) { PW_CHECK_OK(MakeStatus(pw::Status::OK)); }
+TEST_F(AssertPass, Enum) { PW_CHECK_OK(PW_STATUS_OK); }
+TEST_F(AssertFail, Constant) { PW_CHECK_OK(pw::Status::UNKNOWN); }
+TEST_F(AssertFail, Dynamic) { PW_CHECK_OK(MakeStatus(pw::Status::UNKNOWN)); }
+TEST_F(AssertFail, Enum) { PW_CHECK_OK(PW_STATUS_UNKNOWN); }
+
+#if PW_ASSERT_ENABLE_DCHECK
+
+// In debug mode, the asserts should check their arguments.
+TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
+TEST_F(AssertPass, DCheckDynamic) { PW_DCHECK_OK(MakeStatus(pw::Status::OK)); }
+TEST_F(AssertFail, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
+TEST_F(AssertFail, DCheckDynamic) {
+  PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
+}
+#else  // PW_ASSERT_ENABLE_DCHECK
+
+// In release mode, all the asserts should pass.
+TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
+TEST_F(AssertPass, DCheckDynamic) { PW_DCHECK_OK(MakeStatus(pw::Status::OK)); }
+TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
+TEST_F(AssertPass, DCheckDynamic) {
+  PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
+}
+#endif  // PW_ASSERT_ENABLE_DCHECK
+
 // TODO: Figure out how to run some of these tests is C.
 
 }  // namespace

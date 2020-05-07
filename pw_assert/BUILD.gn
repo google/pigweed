@@ -48,6 +48,7 @@ pw_test("assert_facade_test") {
     "public/pw_assert/internal/assert_impl.h",
     "pw_assert_test/fake_backend.h",
   ]
+  deps = [ dir_pw_status ]
 }
 
 pw_test("assert_backend_compile_test") {
@@ -55,6 +56,7 @@ pw_test("assert_backend_compile_test") {
   deps = [
     ":pw_assert",
     dir_pw_assert_backend,
+    dir_pw_status,
   ]
   sources = [
     "assert_backend_compile_test.c",

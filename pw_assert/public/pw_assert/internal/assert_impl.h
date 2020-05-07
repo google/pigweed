@@ -128,6 +128,21 @@
 
 // clang-format on
 
+// PW_CHECK - If condition evaluates to false, crash. Message optional.
+#define PW_CHECK_OK(status, ...)                          \
+  do {                                                    \
+    if (status != PW_STATUS_OK) {                         \
+      _PW_CHECK_OK_SELECT_MACRO(#status,                  \
+                                pw_StatusString(status),  \
+                                PW_HAS_ARGS(__VA_ARGS__), \
+                                __VA_ARGS__);             \
+    }                                                     \
+  } while (0)
+
+#define PW_DCHECK_OK(...)      \
+  if (PW_ASSERT_ENABLE_DCHECK) \
+  PW_CHECK_OK(__VA_ARGS__)
+
 // =========================================================================
 // Implementation for PW_CHECK
 
@@ -223,8 +238,6 @@
 //
 // The macro avoids evaluating the arguments multiple times at the cost of some
 // macro complexity.
-//
-// TODO: Concat names with __LINE__; requires an extra layer of macros.
 #define _PW_CHECK_BINARY_CMP_IMPL(                                       \
     argument_a, comparison_op, argument_b, type_decl, type_fmt, ...)     \
   do {                                                                   \
@@ -242,13 +255,44 @@
     }                                                                    \
   } while (0)
 
+// =========================================================================
+// Implementation for PW_CHECK_OK
+
+// TODO: Explain why we must expand another time.
+#define _PW_CHECK_OK_SELECT_MACRO(                    \
+    status_expr_str, status_value_str, has_args, ...) \
+  _PW_CHECK_OK_SELECT_MACRO_EXPANDED(                 \
+      status_expr_str, status_value_str, has_args, __VA_ARGS__)
+
+// Delegate to the macro
+#define _PW_CHECK_OK_SELECT_MACRO_EXPANDED(           \
+    status_expr_str, status_value_str, has_args, ...) \
+  _PW_CHECK_OK_HAS_MSG_##has_args(                    \
+      status_expr_str, status_value_str, __VA_ARGS__)
+
+// PW_CHECK_OK version 1: No message or args
+#define _PW_CHECK_OK_HAS_MSG_0(status_expr_str, status_value_str, ignored_arg) \
+  PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(                                     \
+      status_expr_str, status_value_str, "==", "Status::OK", "OK", "%s", "")
+
+// PW_CHECK_OK version 2: With message (and maybe args)
+#define _PW_CHECK_OK_HAS_MSG_1(status_expr_str, status_value_str, ...) \
+  PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(status_expr_str,             \
+                                          status_value_str,            \
+                                          "==",                        \
+                                          "Status::OK",                \
+                                          "OK",                        \
+                                          "%s",                        \
+                                          __VA_ARGS__)
+
 // Define short, usable names if requested. Note that the CHECK() macro will
 // conflict with Google Log, which expects stream style logs.
-//
-// TODO(pwbug/17): Convert this to the config system when available.
 #ifndef PW_ASSERT_USE_SHORT_NAMES
 #define PW_ASSERT_USE_SHORT_NAMES 0
 #endif
+
+// =========================================================================
+// Short name definitions (optional)
 
 // clang-format off
 #if PW_ASSERT_USE_SHORT_NAMES
@@ -281,6 +325,7 @@
 #define CHECK_FLOAT_GT  PW_CHECK_FLOAT_GT
 #define CHECK_FLOAT_EQ  PW_CHECK_FLOAT_EQ
 #define CHECK_FLOAT_NE  PW_CHECK_FLOAT_NE
+#define CHECK_OK        PW_CHECK_OK
 
 // Checks that are disabled if NDEBUG is not defined.
 #define DCHECK          PW_DCHECK
@@ -309,6 +354,7 @@
 #define DCHECK_FLOAT_GT PW_DCHECK_FLOAT_GT
 #define DCHECK_FLOAT_EQ PW_DCHECK_FLOAT_EQ
 #define DCHECK_FLOAT_NE PW_DCHECK_FLOAT_NE
+#define DCHECK_OK       PW_DCHECK_OK
 
 #endif  // PW_ASSERT_SHORT_NAMES
 // clang-format on
