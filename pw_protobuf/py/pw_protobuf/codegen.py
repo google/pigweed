@@ -103,11 +103,8 @@ class OutputFile:
             self._output._indentation -= OutputFile.INDENT_WIDTH
 
 
-def generate_code_for_message(
-        message: ProtoNode,
-        root: ProtoNode,
-        output: OutputFile,
-) -> None:
+def generate_code_for_message(message: ProtoNode, root: ProtoNode,
+                              output: OutputFile) -> None:
     """Creates a C++ class for a protobuf message."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
@@ -149,11 +146,8 @@ def generate_code_for_message(
     output.write_line('};')
 
 
-def define_not_in_class_methods(
-        message: ProtoNode,
-        root: ProtoNode,
-        output: OutputFile,
-) -> None:
+def define_not_in_class_methods(message: ProtoNode, root: ProtoNode,
+                                output: OutputFile) -> None:
     """Defines methods for a message class that were previously declared."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
@@ -175,11 +169,8 @@ def define_not_in_class_methods(
             output.write_line('}')
 
 
-def generate_code_for_enum(
-        enum: ProtoNode,
-        root: ProtoNode,
-        output: OutputFile,
-) -> None:
+def generate_code_for_enum(enum: ProtoNode, root: ProtoNode,
+                           output: OutputFile) -> None:
     """Creates a C++ enum for a proto enum."""
     assert enum.type() == ProtoNode.Type.ENUM
 
@@ -190,11 +181,8 @@ def generate_code_for_enum(
     output.write_line('};')
 
 
-def forward_declare(
-        node: ProtoNode,
-        root: ProtoNode,
-        output: OutputFile,
-) -> None:
+def forward_declare(node: ProtoNode, root: ProtoNode,
+                    output: OutputFile) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
     if node.type() != ProtoNode.Type.MESSAGE:
         return
@@ -270,11 +258,8 @@ def add_enum_fields(enum: ProtoNode, proto_enum) -> None:
         enum.add_value(value.name, value.number)
 
 
-def add_message_fields(
-        root: ProtoNode,
-        message: ProtoNode,
-        proto_message,
-) -> None:
+def add_message_fields(root: ProtoNode, message: ProtoNode,
+                       proto_message) -> None:
     """Adds fields from a protobuf message descriptor to a message node."""
     assert message.type() == ProtoNode.Type.MESSAGE
 

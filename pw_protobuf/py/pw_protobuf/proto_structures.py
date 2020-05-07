@@ -147,11 +147,8 @@ class ProtoNode(abc.ABC):
             for child in child_iterator:
                 yield child
 
-    def _attr_hierarchy(
-            self,
-            attr_accessor: Callable[['ProtoNode'], T],
-            root: Optional['ProtoNode'],
-    ) -> Iterator[T]:
+    def _attr_hierarchy(self, attr_accessor: Callable[['ProtoNode'], T],
+                        root: Optional['ProtoNode']) -> Iterator[T]:
         """Fetches node attributes at each level of the tree from the root.
 
         Args:

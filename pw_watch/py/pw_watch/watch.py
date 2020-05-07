@@ -384,8 +384,8 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
         if not build_target.build_dir.is_dir():
             _die("Build directory doesn't exist: %s", build_target)
         else:
-            _LOG.info(
-                'Will build [%d/%d]: %s', i, len(build_commands), build_target)
+            _LOG.info('Will build [%d/%d]: %s', i, len(build_commands),
+                      build_target)
 
     _LOG.debug('Patterns: %s', patterns)
 

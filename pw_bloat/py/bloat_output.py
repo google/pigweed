@@ -81,13 +81,14 @@ class TableOutput(Output):
     LABEL_COLUMN = 'Label'
 
     def __init__(
-        self,
-        title: Optional[str],
-        diffs: Collection[BinaryDiff] = (),
-        charset: Union[Type[AsciiCharset], Type[LineCharset]] = AsciiCharset,
-        preprocess: Callable[[str], str] = identity,
-        # TODO(frolv): Make this a Literal type.
-        justify: str = 'rjust'):
+            self,
+            title: Optional[str],
+            diffs: Collection[BinaryDiff] = (),
+            charset: Union[Type[AsciiCharset],
+                           Type[LineCharset]] = AsciiCharset,
+            preprocess: Callable[[str], str] = identity,
+            # TODO(frolv): Make this a Literal type.
+            justify: str = 'rjust'):
         self._cs = charset
         self._preprocess = preprocess
         self._justify = justify

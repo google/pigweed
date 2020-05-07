@@ -146,9 +146,9 @@ class Database:
                      if len(entries) > 1)
 
     def mark_removals(
-        self,
-        all_strings: Iterable[str],
-        removal_date: Optional[datetime] = None
+            self,
+            all_strings: Iterable[str],
+            removal_date: Optional[datetime] = None
     ) -> List[TokenizedStringEntry]:
         """Marks strings missing from all_strings as having been removed.
 

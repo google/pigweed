@@ -85,12 +85,12 @@ def _find_files_by_name(roots, name):
 
 
 def install(
-    venv_path,
-    full_envsetup=True,
-    requirements=(),
-    python=sys.executable,
-    setup_py_roots=(),
-    env=None,
+        venv_path,
+        full_envsetup=True,
+        requirements=(),
+        python=sys.executable,
+        setup_py_roots=(),
+        env=None,
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
