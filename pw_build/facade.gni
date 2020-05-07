@@ -81,25 +81,35 @@ template("pw_facade") {
 
   if (invoker.backend == "") {
     # If backend is not set to anything, create a script that emits an error.
-    pw_python_script(target_name) {
+    # This will be added as a data dependency to the actual target, so that
+    # attempting to build the facade without a backend fails with a relevant
+    # error message.
+    _main_target_name = target_name
+
+    pw_python_script(_main_target_name + "_NO_BACKEND_SET") {
       stamp = true
       script = "$dir_pw_build/py/null_backend.py"
-      args = [ target_name ]
+      args = [ _main_target_name ]
       not_needed(invoker, "*")
     }
-  } else {
-    # When a backend is set, create a target defining the facade library.
-    source_set(target_name) {
-      # The main library contains everything else specified in the template.
-      _ignore_vars = [ "backend" ] + _facade_vars
-      forward_variables_from(invoker, "*", _ignore_vars)
+  }
 
-      public_deps = [
-        ":$_facade_name",
+  # Create a target that defines the main facade library. Always emit this
+  # target, even if the backend isn't defined, so that the dependency graph is
+  # correctly expressed for gn check.
+  source_set(target_name) {
+    # The main library contains everything else specified in the template.
+    _ignore_vars = [ "backend" ] + _facade_vars
+    forward_variables_from(invoker, "*", _ignore_vars)
 
-        # Inject the backend as a dependency.
-        invoker.backend,
-      ]
+    public_deps = [ ":$_facade_name" ]
+
+    # If the backend is set, inject it as a dependency.
+    if (invoker.backend != "") {
+      public_deps += [ invoker.backend ]
+    } else {
+      # If the backend is not set, depend on the *_NO_BACKEND_SET target.
+      public_deps += [ ":$_main_target_name" + "_NO_BACKEND_SET" ]
     }
   }
 }
