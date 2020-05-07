@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
 #include "pw_unit_test/framework.h"
 
@@ -361,6 +362,70 @@ void DeringTest(bool preload) {
 
 TEST(PrefixedEntryRingBuffer, Dering) { DeringTest(true); }
 TEST(PrefixedEntryRingBuffer, DeringNoPreload) { DeringTest(false); }
+
+template <typename T>
+Status PushBack(PrefixedEntryRingBuffer& ring, T element) {
+  union {
+    std::array<byte, sizeof(element)> buffer;
+    T item;
+  } aliased;
+  aliased.item = element;
+  return ring.PushBack(span(aliased.buffer));
+}
+
+template <typename T>
+Status TryPushBack(PrefixedEntryRingBuffer& ring, T element) {
+  union {
+    std::array<byte, sizeof(element)> buffer;
+    T item;
+  } aliased;
+  aliased.item = element;
+  return ring.TryPushBack(span(aliased.buffer));
+}
+
+template <typename T>
+T PeekFront(PrefixedEntryRingBuffer& ring) {
+  union {
+    std::array<byte, sizeof(T)> buffer;
+    T item;
+  } aliased;
+  size_t bytes_read = 0;
+  PW_CHECK_INT_EQ(ring.PeekFront(span(aliased.buffer), &bytes_read),
+                  Status::OK);
+  PW_CHECK_INT_EQ(bytes_read, sizeof(T));
+  return aliased.item;
+}
+
+TEST(PrefixedEntryRingBuffer, TryPushBack) {
+  PrefixedEntryRingBuffer ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::OK);
+
+  // Fill up the ring buffer with a constant.
+  int total_items = 0;
+  while (true) {
+    Status status = TryPushBack<int>(ring, 5);
+    if (status.ok()) {
+      total_items++;
+    } else {
+      EXPECT_EQ(status, Status::RESOURCE_EXHAUSTED);
+      break;
+    }
+  }
+  EXPECT_EQ(PeekFront<int>(ring), 5);
+
+  // Should be unable to push more items.
+  for (int i = 0; i < total_items; ++i) {
+    EXPECT_EQ(TryPushBack<int>(ring, 100), Status::RESOURCE_EXHAUSTED);
+    EXPECT_EQ(PeekFront<int>(ring), 5);
+  }
+
+  // Fill up the ring buffer with a constant.
+  for (int i = 0; i < total_items; ++i) {
+    EXPECT_EQ(PushBack<int>(ring, 100), Status::OK);
+  }
+  EXPECT_EQ(PeekFront<int>(ring), 100);
+}
 
 }  // namespace
 }  // namespace ring_buffer

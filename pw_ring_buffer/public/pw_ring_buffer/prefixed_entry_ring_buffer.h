@@ -23,9 +23,9 @@ namespace ring_buffer {
 
 // A circular ring buffer for arbitrary length data entries. Each PushBack()
 // produces a buffer entry. Each entry consists of a preamble followed by an
-// arbitrary length data chunk/blob. The preamble is comprised of an optional
-// user preamble byte and an always present varint. The varint encodes the
-// number of bytes in the data chunk/blob.
+// arbitrary length data chunk. The preamble is comprised of an optional user
+// preamble byte and an always present varint. The varint encodes the number of
+// bytes in the data chunk.
 //
 // The ring buffer holds the most recent entries stored in the buffer. Once
 // filled to capacity, incoming entries bump out the oldest entries to make
@@ -52,8 +52,8 @@ class PrefixedEntryRingBuffer {
   // Removes all data from the ring buffer.
   void Clear();
 
-  // Write a chunk/blob of data to the ring buffer. If available space is less
-  // than size of data chunk to be written then silently pop and discard oldest
+  // Write a chunk of data to the ring buffer. If available space is less than
+  // size of data chunk to be written then silently pop and discard oldest
   // stored data chunks until space is available.
   //
   // Preamble argument is a caller-provided value prepended to the front of the
@@ -66,9 +66,29 @@ class PrefixedEntryRingBuffer {
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - Size of data is greater than buffer size.
   Status PushBack(span<const std::byte> data,
-                  std::byte user_preamble_data = std::byte(0));
+                  std::byte user_preamble_data = std::byte(0)) {
+    return InternalPushBack(data, user_preamble_data, true);
+  }
 
-  // Read the oldest stored data chunk/blob of data from the ring buffer to
+  // Write a chunk of data to the ring buffer if there is space available.
+  //
+  // Preamble argument is a caller-provided value prepended to the front of the
+  // entry. It is only used if user_preamble was set at class construction
+  // time.
+  //
+  // Return values:
+  // OK - Data successfully written to the ring buffer.
+  // INVALID_ARGUMENT - Size of data to write is zero bytes
+  // FAILED_PRECONDITION - Buffer not initialized.
+  // OUT_OF_RANGE - Size of data is greater than buffer size.
+  // RESOURCE_EXHAUSTED - The ring buffer doesn't have space for the data
+  // without popping off existing elements.
+  Status TryPushBack(span<const std::byte> data,
+                     std::byte user_preamble_data = std::byte(0)) {
+    return InternalPushBack(data, user_preamble_data, false);
+  }
+
+  // Read the oldest stored data chunk of data from the ring buffer to
   // the provided destination span. The number of bytes read is written to
   // bytes_read
   //
@@ -89,8 +109,7 @@ class PrefixedEntryRingBuffer {
 
   Status PeekFrontWithPreamble(ReadOutput output);
 
-  // Pop and discard the oldest stored data chunk/blob of data from the ring
-  // buffer.
+  // Pop and discard the oldest stored data chunk of data from the ring buffer.
   //
   // Return values:
   // OK - Data successfully read from the ring buffer.
@@ -114,15 +133,15 @@ class PrefixedEntryRingBuffer {
   size_t EntryCount() { return entry_count_; }
 
   // Get the size in bytes of all the current entries in the ring buffer,
-  // including preamble and data chunk/blob.
+  // including preamble and data chunk.
   size_t TotalUsedBytes() { return buffer_bytes_ - RawAvailableBytes(); }
 
-  // Get the size in bytes of the next data chunk/blob, not including
-  // preamble, to be read.
+  // Get the size in bytes of the next chunk, not including preamble, to be
+  // read.
   size_t FrontEntryDataSizeBytes();
 
-  // Get the size in bytes of the next entry, including preamble and data
-  // chunk/blob, to be read.
+  // Get the size in bytes of the next chunk, including preamble and data
+  // chunk, to be read.
   size_t FrontEntryTotalSizeBytes();
 
  private:
@@ -136,8 +155,14 @@ class PrefixedEntryRingBuffer {
   template <typename T>
   Status InternalRead(T read_output, bool get_preamble);
 
-  // Get info struct with the size of the preamble and data chunk/blob for the
-  // next entry to be read.
+  // Push back implementation, which optionally discards front elements to fit
+  // the incoming element.
+  Status InternalPushBack(span<const std::byte> data,
+                          std::byte user_preamble_data,
+                          bool pop_front_if_needed);
+
+  // Get info struct with the size of the preamble and data chunk for the next
+  // entry to be read.
   EntryInfo FrontEntryInfo();
 
   // Get the raw number of available bytes free in the ring buffer. This is

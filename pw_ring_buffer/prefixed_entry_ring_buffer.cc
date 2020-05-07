@@ -43,8 +43,9 @@ Status PrefixedEntryRingBuffer::SetBuffer(span<byte> buffer) {
   return Status::OK;
 }
 
-Status PrefixedEntryRingBuffer::PushBack(span<const byte> data,
-                                         byte user_preamble_data) {
+Status PrefixedEntryRingBuffer::InternalPushBack(span<const byte> data,
+                                                 byte user_preamble_data,
+                                                 bool drop_elements_if_needed) {
   if (buffer_ == nullptr) {
     return Status::FAILED_PRECONDITION;
   }
@@ -61,9 +62,15 @@ Status PrefixedEntryRingBuffer::PushBack(span<const byte> data,
     return Status::OUT_OF_RANGE;
   }
 
-  // Drop old entries until we have space for the new entry.
-  while (RawAvailableBytes() < total_write_bytes) {
-    PopFront();
+  if (drop_elements_if_needed) {
+    // PushBack() case: evict items as needed.
+    // Drop old entries until we have space for the new entry.
+    while (RawAvailableBytes() < total_write_bytes) {
+      PopFront();
+    }
+  } else if (RawAvailableBytes() < total_write_bytes) {
+    // TryPushBack() case: don't evict items.
+    return Status::RESOURCE_EXHAUSTED;
   }
 
   // Write the new entry into the ring buffer.
