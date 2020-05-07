@@ -48,6 +48,9 @@ template("lm3s6965evb_executable") {
 # Configuration options for Pigweed executable targets.
 pw_executable_config.target_type = "lm3s6965evb_executable"
 
+pw_automatic_test_runner =
+    get_path_info("py/lm3s6965evb_qemu_utils/unit_test_runner.py", "abspath")
+
 # Path to the bloaty config file for the output binaries.
 pw_executable_config.bloaty_config_file =
     "$dir_pw_boot_armv7m/bloaty_config.bloaty"
