@@ -137,6 +137,10 @@ class TestRunner:
 
             _LOG.info('%s: [ RUN] %s', test_counter, test.name)
             command = [self._executable, test.file_path, *self._args]
+
+            if self._executable.endswith('.py'):
+                command.insert(0, sys.executable)
+
             try:
                 process = await pw_cli.process.run_async(*command)
                 if process.returncode == 0:
