@@ -517,14 +517,15 @@ def _map_checks_to_paths(
         paths: Sequence[Path]) -> Dict['_Check', Sequence[Path]]:
     checks_to_paths: Dict[_Check, Sequence[Path]] = {}
 
+    str_paths = [path.as_posix() for path in paths]
+
     for filt, checks in filter_to_checks.items():
         exclude = [re.compile(exp) for exp in filt.exclude]
 
         filtered_paths = tuple(
-            path for path in paths
-            if any(str(path).endswith(end)
-                   for end in filt.endswith) and not any(
-                       exp.fullmatch(str(path)) for exp in exclude))
+            Path(path) for path in str_paths
+            if any(path.endswith(end) for end in filt.endswith) and not any(
+                exp.search(path) for exp in exclude))
 
         for check in checks:
             if filtered_paths or check.always_run:
@@ -674,6 +675,14 @@ class _Check:
 
         return _Result.PASS
 
+    def __call__(self, ctx: PresubmitContext, *args, **kwargs):
+        """Calling a _Check calls its underlying function directly.
+
+      This makes it possible to call functions wrapped by @filter_paths. The
+      prior filters are ignored, so new filters may be applied.
+      """
+        return self._check(ctx, *args, **kwargs)
+
 
 def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
     """Checks if a Callable can be used as a presubmit check."""
@@ -701,6 +710,11 @@ def filter_paths(endswith: Iterable[str] = (''),
                  exclude: Iterable[str] = (),
                  always_run: bool = False):
     """Decorator for filtering the paths list for a presubmit check function.
+
+    Path filters only apply when the function is used as a presubmit check.
+    Filters are ignored when the functions are called directly. This makes it
+    possible to reuse functions wrapped in @filter_paths in other presubmit
+    checks, potentially with different path filtering rules.
 
     Args:
         endswith: str or iterable of path endings to include
