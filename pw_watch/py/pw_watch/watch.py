@@ -38,6 +38,7 @@ from pw_watch.debounce import DebouncedFunction, Debouncer
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
+_ERRNO_INOTIFY_LIMIT_REACHED = 28
 
 _BUILD_MESSAGE = """
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
@@ -327,6 +328,11 @@ def add_parser_arguments(parser):
                               '-delimited list of globs to '
                               'ignore events from'))
 
+    parser.add_argument('--exclude_list',
+                        nargs='+',
+                        help=('directories to ignore during pw watch'),
+                        default=[])
+
     def build_dir_and_target(arg: str) -> BuildCommand:
         args = arg.split('#')
         return BuildCommand(pathlib.Path(args[0]), tuple(args[1:]))
@@ -342,38 +348,152 @@ def add_parser_arguments(parser):
               'targets in out/build_dir.'))
 
 
-def _exit_due_to_interrupt():
-    # To keep the log lines aligned with each other in the presence of
-    # a '^C' from the keyboard interrupt, add a newline before the log.
-    print()
-    print()
-    _LOG.info('Got Ctrl-C; exiting...')
-
+def _exit(code):
     # Note: The "proper" way to exit is via observer.stop(), then
     # running a join. However it's slower, so just exit immediately.
     #
     # Additionally, since there are several threads in the watcher, the usual
     # sys.exit approach doesn't work. Instead, run the low level exit which
     # kills all threads.
-    os._exit(0)  # pylint: disable=protected-access
+    os._exit(code)  # pylint: disable=protected-access
 
 
-def watch(build_commands=None, patterns=None, ignore_patterns=None):
+def _exit_due_to_interrupt():
+    # To keep the log lines aligned with each other in the presence of
+    # a '^C' from the keyboard interrupt, add a newline before the log.
+    print()
+    print()
+    _LOG.info('Got Ctrl-C; exiting...')
+    _exit(0)
+
+
+def _exit_due_to_inotify_limit():
+    # Show information and suggested commands in OSError: inotify limit reached.
+    _LOG.error('Inotify limit reached: run this in your terminal if you '
+               'are in Linux to temporarily increase inotify limit.  \n')
+    print(
+        _COLOR.green('        sudo sysctl fs.inotify.max_user_watches='
+                     '$NEW_LIMIT$\n'))
+    print('  Change $NEW_LIMIT$ with an integer number, '
+          'e.g., 1000 should be enough.')
+    _exit(0)
+
+
+def _exit_due_to_pigweed_not_installed():
+    # Show information and suggested commands when pigweed environment variable
+    # not found.
+    _LOG.error('Environment variable $PW_ROOT not defined or is defined '
+               'outside the current directory.')
+    _LOG.error('Did you forget to activate the Pigweed environment? '
+               'Try source ./activate.sh')
+    _LOG.error('Did you forget to install the Pigweed environment? '
+               'Try source ./bootstrap.sh')
+    _exit(1)
+
+
+def is_subdirectory(child, parent):
+    return (pathlib.Path(parent).resolve()
+            in pathlib.Path(pathlib.Path(child).resolve()).parents)
+
+
+# Go over each directory inside of the current directory.
+# If it is not on the path of elements in directories_to_exclude, add
+# (directory, True) to subdirectories_to_watch and later recursively call
+# Observer() on them.
+# Otherwise add (directory, False) to subdirectories_to_watch and later call
+# Observer() with recursion=False.
+def minimal_watch_directories(directory_to_watch, directories_to_exclude):
+    """Determine which subdirectory to watch recursively"""
+    try:
+        cur_dir = pathlib.Path(directory_to_watch)
+    except TypeError:
+        assert False, "Please watch one directory at a time."
+    subdirectories_to_watch = []
+
+    # Reformat directories_to_exclude.
+    directories_to_exclude = [
+        pathlib.Path(cur_dir, directory_to_exclude)
+        for directory_to_exclude in directories_to_exclude
+        if pathlib.Path(cur_dir, directory_to_exclude).is_dir()
+    ]
+
+    # Split the relative path of directories_to_exclude (compared to
+    # directory_to_watch), and generate all parent paths needed to be
+    # watched without recursion.
+    exclude_dir_parents = {cur_dir}
+    for directory_to_exclude in directories_to_exclude:
+        parts = list(
+            pathlib.Path(directory_to_exclude).relative_to(cur_dir).parts)[:-1]
+        dir_tmp = cur_dir
+        for part in parts:
+            dir_tmp = pathlib.Path(dir_tmp, part)
+            exclude_dir_parents.add(dir_tmp)
+
+    # Go over all layers of directory. Append those that are the parents of
+    # directories_to_exclude to the list with recursion==False, and others
+    # with recursion==True.
+    for directory in exclude_dir_parents:
+        dir_path = pathlib.Path(directory)
+        subdirectories_to_watch.append((dir_path, False))
+        for item in pathlib.Path(directory).iterdir():
+            if (item.is_dir() and item not in exclude_dir_parents
+                    and item not in directories_to_exclude):
+                subdirectories_to_watch.append((item, True))
+
+    return subdirectories_to_watch
+
+
+def get_exclude_list(exclude_list):
+    # Preset exclude list for pigweed directory.
+    pigweed_exclude_list = [
+        pathlib.Path(os.environ['PW_ROOT'], x)
+        for x in ['.cipd', '.git', 'out', '.python3-env', '.presubmit']
+    ]
+    return exclude_list + pigweed_exclude_list
+
+
+def watch(build_commands=None,
+          patterns=None,
+          ignore_patterns=None,
+          exclude_list=None):
     """TODO(keir) docstring"""
 
     _LOG.info('Starting Pigweed build watcher')
 
+    # Get pigweed directory information from environment variable PW_ROOT.
+    if os.environ['PW_ROOT'] is None:
+        _exit_due_to_pigweed_not_installed()
+    path_of_pigweed = pathlib.Path(os.environ['PW_ROOT'])
+    cur_dir = pathlib.Path(os.getcwd())
+    if (not (is_subdirectory(path_of_pigweed, cur_dir)
+             or path_of_pigweed == cur_dir)):
+        _exit_due_to_pigweed_not_installed()
+
+    # Preset exclude list for pigweed directory.
+    exclude_list = get_exclude_list(exclude_list)
+
+    subdirectories_to_watch \
+        = minimal_watch_directories(cur_dir, exclude_list)
+
     # If no build directory was specified, search the tree for GN build
     # directories and try to build them all. In the future this may cause
     # slow startup, but for now this is fast enough.
-    if not build_commands:
-        build_commands = []
+    build_commands_tmp = build_commands
+    build_commands = []
+    if not build_commands_tmp:
         _LOG.info('Searching for GN build dirs...')
         gn_args_files = glob.glob('**/args.gn', recursive=True)
         for gn_args_file in gn_args_files:
             gn_build_dir = pathlib.Path(gn_args_file).parent
             if gn_build_dir.is_dir():
                 build_commands.append(BuildCommand(gn_build_dir))
+    else:
+        # Reformat the directory of build commands to be relative to the
+        # currently directory.
+        for i, build_target in enumerate(build_commands_tmp, 1):
+            build_target_dir = path_of_pigweed / build_target.build_dir
+            build_commands.append(
+                BuildCommand(build_target_dir, build_target.targets))
 
     # Make sure we found something; if not, bail.
     if not build_commands:
@@ -389,11 +509,6 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
 
     _LOG.debug('Patterns: %s', patterns)
 
-    # TODO(keir): Change the watcher to selectively watch some
-    # subdirectories, rather than watching everything under a single path.
-    #
-    # The problem with the current approach is that Ninja's building
-    # triggers many events, which are needlessly sent to this script.
     path_of_directory_to_watch = '.'
 
     # Try to make a short display path for the watched directory that has
@@ -431,23 +546,37 @@ def watch(build_commands=None, patterns=None, ignore_patterns=None):
         # It can take awhile to configure the filesystem watcher, so have the
         # message reflect that with the "...". Run inside the try: to
         # gracefully handle the user Ctrl-C'ing out during startup.
+
         _LOG.info('Attaching filesystem watcher to %s/...', path_to_log)
-        observer = Observer()
-        observer.schedule(
-            event_handler,
-            path_of_directory_to_watch,
-            recursive=True,
-        )
-        observer.start()
+
+        # Observe changes for all files in the root directory. Whether the
+        # directory should be observed recursively or not is determined by the
+        # second element in subdirectories_to_watch.
+        observers = []
+        for directory, rec in subdirectories_to_watch:
+            observer = Observer()
+            observer.schedule(
+                event_handler,
+                str(directory),
+                recursive=rec,
+            )
+            observer.start()
+            observers.append(observer)
 
         event_handler.debouncer.press('Triggering initial build...')
+        for observer in observers:
+            while observer.isAlive():
+                observer.join(1)
 
-        while observer.isAlive():
-            observer.join(1)
     # Ctrl-C on Unix generates KeyboardInterrupt
     # Ctrl-Z on Windows generates EOFError
     except (KeyboardInterrupt, EOFError):
         _exit_due_to_interrupt()
+    except OSError as err:
+        if err.args[0] == _ERRNO_INOTIFY_LIMIT_REACHED:
+            _exit_due_to_inotify_limit()
+        else:
+            raise err
 
     _LOG.critical('Should never get here')
     observer.join()

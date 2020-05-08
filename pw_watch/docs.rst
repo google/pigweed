@@ -43,6 +43,10 @@ directories like so:
 The ``--patterns`` and ``--ignore_patterns`` arguments can be used to include
 and exclude certain file patterns that will trigger rebuilds.
 
+The ``--exclude_list`` argument can be used to exclude directories from
+being watched by your system. This can decrease the inotify number in Linux
+system.
+
 Unit Test Integration
 =====================
 
