@@ -24,6 +24,14 @@
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/internal/tokenize_string.h"
 
+// Strings may optionally be tokenized to a domain. Strings in different domains
+// can be processed separately by the token database tools. Each domain in use
+// must have a corresponding section declared in the linker script. See
+// pw_tokenizer_linker_sections.ld for more details.
+//
+// If no domain is specified, this default is used.
+#define PW_TOKENIZER_DEFAULT_DOMAIN "default"
+
 // Tokenizes a string literal and converts it to a pw_TokenizerStringToken. This
 // expression can be assigned to a local or global variable, but cannot be used
 // in another expression. For example:
@@ -37,7 +45,19 @@
 //   }
 //
 #define PW_TOKENIZE_STRING(string_literal) \
-  _PW_TOKENIZE_LITERAL_UNIQUE(__COUNTER__, string_literal)
+  PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
+
+// Same as PW_TOKENIZE_STRING, but tokenizes to the specified domain.
+#define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)                     \
+  /* assign to a variable */ PW_TOKENIZER_STRING_TOKEN(string_literal);       \
+                                                                              \
+  /* Declare the format string as an array in the special tokenized string */ \
+  /* section, which should be excluded from the final binary. Use __LINE__ */ \
+  /* to create unique names for the section and variable, which avoids     */ \
+  /* compiler warnings.                                                    */ \
+  static _PW_TOKENIZER_CONST char PW_CONCAT(                                  \
+      _pw_tokenizer_string_literal_DO_NOT_USE_,                               \
+      __LINE__)[] _PW_TOKENIZER_SECTION(domain) = string_literal
 
 // Encodes a tokenized string and arguments to the provided buffer. The size of
 // the buffer is passed via a pointer to a size_t. After encoding is complete,
@@ -60,13 +80,22 @@
 //   MyProject_EnqueueMessageForUart(buffer, size);
 //
 #define PW_TOKENIZE_TO_BUFFER(buffer, buffer_size_pointer, format, ...) \
-  do {                                                                  \
-    _PW_TOKENIZE_STRING(format, __VA_ARGS__);                           \
-    pw_TokenizeToBuffer(buffer,                                         \
-                        buffer_size_pointer,                            \
-                        _pw_tokenizer_token,                            \
-                        PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)             \
-                            PW_COMMA_ARGS(__VA_ARGS__));                \
+  PW_TOKENIZE_TO_BUFFER_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN,             \
+                               buffer,                                  \
+                               buffer_size_pointer,                     \
+                               format,                                  \
+                               __VA_ARGS__)
+
+// Same as PW_TOKENIZE_TO_BUFFER, but tokenizes to the specified domain.
+#define PW_TOKENIZE_TO_BUFFER_DOMAIN(                        \
+    domain, buffer, buffer_size_pointer, format, ...)        \
+  do {                                                       \
+    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__); \
+    _pw_TokenizeToBuffer(buffer,                             \
+                         buffer_size_pointer,                \
+                         _pw_tokenizer_token,                \
+                         PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
+                             PW_COMMA_ARGS(__VA_ARGS__));    \
   } while (0)
 
 // Encodes a tokenized string and arguments to a buffer on the stack. The
@@ -97,30 +126,34 @@
 //                             value);
 //   }
 //
-#define PW_TOKENIZE_TO_CALLBACK(callback, format, ...)        \
-  do {                                                        \
-    _PW_TOKENIZE_STRING(format, __VA_ARGS__);                 \
-    pw_TokenizeToCallback(callback,                           \
-                          _pw_tokenizer_token,                \
-                          PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
-                              PW_COMMA_ARGS(__VA_ARGS__));    \
+#define PW_TOKENIZE_TO_CALLBACK(callback, format, ...) \
+  PW_TOKENIZE_TO_CALLBACK_DOMAIN(                      \
+      PW_TOKENIZER_DEFAULT_DOMAIN, callback, format, __VA_ARGS__)
+
+#define PW_TOKENIZE_TO_CALLBACK_DOMAIN(domain, callback, format, ...) \
+  do {                                                                \
+    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);          \
+    _pw_TokenizeToCallback(callback,                                  \
+                           _pw_tokenizer_token,                       \
+                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)        \
+                               PW_COMMA_ARGS(__VA_ARGS__));           \
   } while (0)
 
 PW_EXTERN_C_START
 
 // These functions encode the tokenized strings. These should not be called
 // directly. Instead, use the corresponding PW_TOKENIZE_TO_* macros above.
-void pw_TokenizeToBuffer(void* buffer,
-                         size_t* buffer_size_bytes,  // input and output arg
-                         pw_TokenizerStringToken token,
-                         pw_TokenizerArgTypes types,
-                         ...);
+void _pw_TokenizeToBuffer(void* buffer,
+                          size_t* buffer_size_bytes,  // input and output arg
+                          pw_TokenizerStringToken token,
+                          pw_TokenizerArgTypes types,
+                          ...);
 
-void pw_TokenizeToCallback(void (*callback)(const uint8_t* encoded_message,
-                                            size_t size_bytes),
-                           pw_TokenizerStringToken token,
-                           pw_TokenizerArgTypes types,
-                           ...);
+void _pw_TokenizeToCallback(void (*callback)(const uint8_t* encoded_message,
+                                             size_t size_bytes),
+                            pw_TokenizerStringToken token,
+                            pw_TokenizerArgTypes types,
+                            ...);
 
 // This empty function allows the compiler to check the format string.
 inline void pw_TokenizerCheckFormatString(const char* format, ...)
@@ -134,24 +167,12 @@ PW_EXTERN_C_END
 
 // These macros implement string tokenization. They should not be used directly;
 // use one of the PW_TOKENIZE_* macros above instead.
-#define _PW_TOKENIZE_LITERAL_UNIQUE(id, string_literal)                     \
-  /* assign to a variable */ PW_TOKENIZER_STRING_TOKEN(string_literal);     \
-                                                                            \
-  /* Declare without nested scope so this works in or out of a function. */ \
-  static _PW_TOKENIZER_CONST char PW_CONCAT(                                \
-      _pw_tokenizer_string_literal_DO_NOT_USE_THIS_VARIABLE_,               \
-      id)[] _PW_TOKENIZER_SECTION(id) = string_literal
-
-// This macro uses __COUNTER__ to generate an identifier to use in the main
-// tokenization macro below. The identifier is unique within a compilation unit.
-#define _PW_TOKENIZE_STRING(format, ...) \
-  _PW_TOKENIZE_STRING_UNIQUE(__COUNTER__, format, __VA_ARGS__)
 
 // This macro takes a printf-style format string and corresponding arguments. It
 // checks that the arguments are correct, stores the format string in a special
 // section, and calculates the string's token at compile time.
 // clang-format off
-#define _PW_TOKENIZE_STRING_UNIQUE(id, format, ...)                            \
+#define _PW_TOKENIZE_FORMAT_STRING(domain, format, ...)                     \
   if (0) { /* Do not execute to prevent double evaluation of the arguments. */ \
     pw_TokenizerCheckFormatString(format PW_COMMA_ARGS(__VA_ARGS__));          \
   }                                                                            \
@@ -164,15 +185,9 @@ PW_EXTERN_C_END
       PW_STRINGIFY(PW_ARG_COUNT(__VA_ARGS__)) " arguments were used for "      \
       #format " (" #__VA_ARGS__ ")");                                          \
                                                                                \
-  /* Declare the format string as an array in the special tokenized string */  \
-  /* section, which should be excluded from the final binary. Use unique   */  \
-  /* names for the section and variable to avoid compiler warnings.        */  \
-  static _PW_TOKENIZER_CONST char PW_CONCAT(                                   \
-      _pw_tokenizer_format_string_, id)[] _PW_TOKENIZER_SECTION(id) = format;  \
-                                                                               \
   /* Tokenize the string to a pw_TokenizerStringToken at compile time. */      \
   _PW_TOKENIZER_CONST pw_TokenizerStringToken _pw_tokenizer_token =            \
-      PW_TOKENIZER_STRING_TOKEN(format)
+      PW_TOKENIZE_STRING_DOMAIN(domain, format)
 
 // clang-format on
 
@@ -182,41 +197,43 @@ PW_EXTERN_C_END
 #define _PW_TOKENIZER_CONST const
 #endif  // __cplusplus
 
-// _PW_TOKENIZER_SECTION places the format string in a special .tokenized.#
+// _PW_TOKENIZER_SECTION places the format string in a special .pw_tokenized
 // linker section. Host-side decoding tools read the strings from this section
 // to build a database of tokenized strings.
 //
 // This section should be declared as type INFO so that it is excluded from the
-// final binary. To declare the section, as well as the .tokenizer_info section,
-// used for tokenizer metadata, add the following to the linker
-// script's SECTIONS command:
+// final binary. To declare the section, as well as the .pw_tokenizer_info
+// metadata section, add the following to the linker script's SECTIONS command:
 //
-//   .tokenized 0x00000000 (INFO) :
+//   .pw_tokenizer_info 0x0 (INFO) :
 //   {
-//     KEEP(*(.tokenized))
-//     KEEP(*(.tokenized.*))
+//     KEEP(*(.pw_atokenizer_info))
 //   }
 //
-//   .tokenizer_info 0x00000000 (INFO) :
+//   .pw_tokenized.default 0x0 (INFO) :
 //   {
-//     KEEP(*(.tokenizer_info))
+//     KEEP(*(.pw_tokenized.default.*))
 //   }
 //
-// Any address could be used for this section, but it should not map to a real
-// device to avoid confusion. 0x00000000 is a reasonable default. An address
-// such as 0xFF000000 that is outside of the ARMv7m memory map could also be
-// used.
+//
+// If custom tokenization domains are used, a section must be declared for each
+// domain:
+//
+//   .pw_tokenized.YOUR_CUSTOM_TOKENIZATION_DOMAIN 0x0 (INFO) :
+//   {
+//     KEEP(*(.pw_tokenized.YOUR_CUSTOM_TOKENIZATION_DOMAIN.*))
+//   }
 //
 // A linker script snippet that provides these sections is provided in the file
-// tokenizer_linker_sections.ld. This file may be directly included into
+// pw_tokenizer_linker_sections.ld. This file may be directly included into
 // existing linker scripts.
 //
 // The tokenized string sections can also be managed without linker script
 // modifications, though this is not recommended. The section can be extracted
 // and removed from the ELF with objcopy:
 //
-//   objcopy --only-section .tokenize* <ORIGINAL_ELF> <OUTPUT_ELF>
-//   objcopy --remove-section .tokenize* <ORIGINAL_ELF>
+//   objcopy --only-section .pw_tokenize* <ORIGINAL_ELF> <OUTPUT_ELF>
+//   objcopy --remove-section .pw_tokenize* <ORIGINAL_ELF>
 //
 // OUTPUT_ELF will be an ELF with only the tokenized strings, and the original
 // ELF file will have the sections removed.
@@ -225,5 +242,14 @@ PW_EXTERN_C_END
 // option (--gc-sections) removes the tokenized string sections. To avoid
 // editing the target linker script, a separate metadata ELF can be linked
 // without --gc-sections to preserve the tokenized data.
-#define _PW_TOKENIZER_SECTION(unique) \
-  PW_KEEP_IN_SECTION(PW_STRINGIFY(PW_CONCAT(.tokenized., unique)))
+//
+// pw_tokenizer is intended for use with ELF files only. Mach-O files (macOS
+// executables) do not support section names longer than 16 characters, so a
+// short, dummy section name is used on macOS.
+#if __APPLE__
+#define _PW_TOKENIZER_SECTION(unused_domain) \
+  PW_KEEP_IN_SECTION(".pw." PW_STRINGIFY(__LINE__))
+#else
+#define _PW_TOKENIZER_SECTION(domain) \
+  PW_KEEP_IN_SECTION(".pw_tokenized." domain "." PW_STRINGIFY(__LINE__))
+#endif  // __APPLE__

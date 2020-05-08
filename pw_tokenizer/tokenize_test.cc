@@ -242,6 +242,18 @@ TEST_F(TokenizeToBuffer, NullptrString_BufferTooSmall_EncodesTruncatedNull) {
   EXPECT_EQ(std::memcmp(result.data(), buffer_, result.size()), 0);
 }
 
+TEST_F(TokenizeToBuffer, Domain_String) {
+  size_t message_size = sizeof(buffer_);
+
+  PW_TOKENIZE_TO_BUFFER_DOMAIN(
+      "TEST_DOMAIN", buffer_, &message_size, "The answer was: %s", "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer was: %s");
+
+  ASSERT_EQ(expected.size(), message_size);
+  EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
+}
+
 TEST_F(TokenizeToBuffer, TruncateArgs) {
   // Args that can't fit are dropped completely
   size_t message_size = 6;
@@ -381,6 +393,15 @@ TEST_F(TokenizeToCallback, Strings) {
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
 
+TEST_F(TokenizeToCallback, Domain_Strings) {
+  PW_TOKENIZE_TO_CALLBACK_DOMAIN(
+      "TEST_DOMAIN", SetMessage, "The answer is: %s", "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
 TEST_F(TokenizeToCallback, C_SequentialZigZag) {
   pw_TokenizeToCallbackTest_SequentialZigZag(SetMessage);
 
@@ -389,6 +410,59 @@ TEST_F(TokenizeToCallback, C_SequentialZigZag) {
           TEST_FORMAT_SEQUENTIAL_ZIG_ZAG);
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
+// Hijack the PW_TOKENIZE_STRING_DOMAIN macro to capture the domain name.
+#undef PW_TOKENIZE_STRING_DOMAIN
+#define PW_TOKENIZE_STRING_DOMAIN(domain, string)                 \
+  /* assigned to a variable */ PW_TOKENIZER_STRING_TOKEN(string); \
+  tokenizer_domain = domain;                                      \
+  string_literal = string
+
+TEST_F(TokenizeToBuffer, Domain_Default) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  size_t message_size = sizeof(buffer_);
+
+  PW_TOKENIZE_TO_BUFFER(buffer_, &message_size, "The answer is: %s", "5432!");
+
+  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
+  EXPECT_STREQ(string_literal, "The answer is: %s");
+}
+
+TEST_F(TokenizeToBuffer, Domain_Specified) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  size_t message_size = sizeof(buffer_);
+
+  PW_TOKENIZE_TO_BUFFER_DOMAIN(
+      "._.", buffer_, &message_size, "The answer is: %s", "5432!");
+
+  EXPECT_STREQ(tokenizer_domain, "._.");
+  EXPECT_STREQ(string_literal, "The answer is: %s");
+}
+
+TEST_F(TokenizeToCallback, Domain_Default) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_CALLBACK(SetMessage, "The answer is: %s", "5432!");
+
+  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
+  EXPECT_STREQ(string_literal, "The answer is: %s");
+}
+
+TEST_F(TokenizeToCallback, Domain_Specified) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_CALLBACK_DOMAIN(
+      "ThisIsTheDomain", SetMessage, "The answer is: %s", "5432!");
+
+  EXPECT_STREQ(tokenizer_domain, "ThisIsTheDomain");
+  EXPECT_STREQ(string_literal, "The answer is: %s");
 }
 
 }  // namespace

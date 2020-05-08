@@ -27,10 +27,10 @@ namespace {
 // Store metadata about this compilation's string tokenization in the ELF.
 //
 // The tokenizer metadata will not go into the on-device executable binary code.
-// This metadata will be present in the ELF file's .tokenizer_info section, from
-// which the host-side tooling (Python, Java, etc.) can understand how to decode
-// tokenized strings for the given binary. Only attributes that affect the
-// decoding process are recorded.
+// This metadata will be present in the ELF file's .pw_tokenizer_info section,
+// from which the host-side tooling (Python, Java, etc.) can understand how to
+// decode tokenized strings for the given binary. Only attributes that affect
+// the decoding process are recorded.
 //
 // Tokenizer metadata is stored in an array of key-value pairs. Each Metadata
 // object is 32 bytes: a 24-byte string and an 8-byte value. Metadata structs
@@ -42,8 +42,16 @@ PW_PACKED(struct) Metadata {
 
 static_assert(sizeof(Metadata) == 32);
 
-// Store tokenization metadata in its own section.
-constexpr Metadata metadata[] PW_KEEP_IN_SECTION(".tokenzier_info") = {
+// Store tokenization metadata in its own section. Mach-O files are not
+// supported by pw_tokenizer, but a short, Mach-O compatible section name is
+// used on macOS so that this file can at least compile.
+#if __APPLE__
+#define PW_TOKENIZER_INFO_SECTION PW_KEEP_IN_SECTION(".pw_info")
+#else
+#define PW_TOKENIZER_INFO_SECTION PW_KEEP_IN_SECTION(".pw_tokenzier_info")
+#endif  // __APPLE__
+
+constexpr Metadata metadata[] PW_TOKENIZER_INFO_SECTION = {
     {"hash_length_bytes", PW_TOKENIZER_CFG_HASH_LENGTH},
     {"sizeof_long", sizeof(long)},            // %l conversion specifier
     {"sizeof_intmax_t", sizeof(intmax_t)},    // %j conversion specifier

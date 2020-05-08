@@ -94,6 +94,15 @@ TEST_F(TokenizeToGlobalHandler, Strings) {
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
 
+TEST_F(TokenizeToGlobalHandler, Domain_Strings) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN(
+      "TEST_DOMAIN", "The answer is: %s", "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
 TEST_F(TokenizeToGlobalHandler, C_SequentialZigZag) {
   pw_TokenizeToGlobalHandlerTest_SequentialZigZag();
 
@@ -148,22 +157,35 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Variety) {
   EXPECT_EQ(payload_, -543);
 }
 
-TEST_F(TokenizeToGlobalHandlerWithPayload, Strings) {
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
+constexpr std::array<uint8_t, 10> kExpected =
+    ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
 
+TEST_F(TokenizeToGlobalHandlerWithPayload, Strings_ZeroPayload) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD({}, "The answer is: %s", "5432!");
+
+  ASSERT_EQ(kExpected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(kExpected.data(), message_, kExpected.size()), 0);
+  EXPECT_EQ(payload_, 0);
+}
+
+TEST_F(TokenizeToGlobalHandlerWithPayload, Strings_NonZeroPayload) {
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
       static_cast<pw_TokenizerPayload>(5432), "The answer is: %s", "5432!");
 
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+  ASSERT_EQ(kExpected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(kExpected.data(), message_, kExpected.size()), 0);
   EXPECT_EQ(payload_, 5432);
+}
 
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD({}, "The answer is: %s", "5432!");
-
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-  EXPECT_EQ(payload_, 0);
+TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Strings) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(
+      "TEST_DOMAIN",
+      static_cast<pw_TokenizerPayload>(5432),
+      "The answer is: %s",
+      "5432!");
+  ASSERT_EQ(kExpected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(kExpected.data(), message_, kExpected.size()), 0);
+  EXPECT_EQ(payload_, 5432);
 }
 
 struct Foo {
@@ -205,6 +227,55 @@ extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
     size_t size_bytes) {
   TokenizeToGlobalHandlerWithPayload::SetMessage(encoded_message, size_bytes);
   TokenizeToGlobalHandlerWithPayload::SetPayload(payload);
+}
+
+// Hijack the PW_TOKENIZE_STRING_DOMAIN macro to capture the tokenizer domain.
+#undef PW_TOKENIZE_STRING_DOMAIN
+#define PW_TOKENIZE_STRING_DOMAIN(domain, string)                 \
+  /* assigned to a variable */ PW_TOKENIZER_STRING_TOKEN(string); \
+  tokenizer_domain = domain;                                      \
+  string_literal = string
+
+TEST_F(TokenizeToGlobalHandler, Domain_Default) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_GLOBAL_HANDLER("404");
+
+  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
+  EXPECT_STREQ(string_literal, "404");
+}
+
+TEST_F(TokenizeToGlobalHandler, Domain_Specified) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN("www.google.com", "404");
+
+  EXPECT_STREQ(tokenizer_domain, "www.google.com");
+  EXPECT_STREQ(string_literal, "404");
+}
+
+TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Default) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      static_cast<pw_TokenizerPayload>(123), "Wow%s", "???");
+
+  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
+  EXPECT_STREQ(string_literal, "Wow%s");
+}
+
+TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Specified) {
+  const char* tokenizer_domain = nullptr;
+  const char* string_literal = nullptr;
+
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(
+      "THEDOMAIN", static_cast<pw_TokenizerPayload>(123), "1234567890");
+
+  EXPECT_STREQ(tokenizer_domain, "THEDOMAIN");
+  EXPECT_STREQ(string_literal, "1234567890");
 }
 
 }  // namespace

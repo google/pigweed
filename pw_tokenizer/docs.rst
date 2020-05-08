@@ -120,7 +120,7 @@ These steps can be adapted as needed.
      are provided. For Make or other build systems, add the files specified in
      the BUILD.gn's ``pw_tokenizer`` target to the build.
   2. Use the tokenization macros in your code. See `Tokenization`_.
-  3. Add the contents of ``tokenizer_linker_sections.ld`` to your project's
+  3. Add the contents of ``pw_tokenizer_linker_sections.ld`` to your project's
      linker script.
   4. Compile your code to produce an ELF file.
   5. Run ``database.py create`` on the ELF file to generate a CSV token
@@ -340,6 +340,36 @@ due to the complexity of the hashing macros. C++ macros use a constexpr
 function instead of a macro, so the compilation time impact is minimal. Projects
 primarily in C++ may use a large value for ``PW_TOKENIZER_CFG_HASH_LENGTH``
 (perhaps even ``std::numeric_limits<size_t>::max()``).
+
+Tokenization domains
+--------------------
+``pw_tokenizer`` supports having multiple tokenization domains. Strings from
+each tokenization domain are stored in separate sections in the ELF file. This
+allows projects to keep tokens from different sources separate. Potential use
+cases include the following:
+
+* Keep large sets of tokenized strings separate to avoid collisions.
+* Create a separate database for a small number of strings that use truncated
+  tokens, for example only 10 or 16 bits instead of the full 32 bits.
+
+Strings are tokenized by default into the "default" domain. For many projects,
+a single tokenization domain is sufficient, so no additional configuration is
+required.
+
+To support other multiple domains, add a ``pw_tokenized.<new domain name>``
+linker section, as described in ``pw_tokenizer_linker_sections.ld``. Strings are
+tokenized into a domain by providing the domain name as a string literal to the
+``*_DOMAIN`` versions of the tokenization macros. Domain names must be comprised
+of alphanumeric characters and underscores; spaces and special characters are
+not permitted.
+
+.. code-block:: cpp
+
+  // Tokenizes this string to the "default" domain.
+  PW_TOKENIZE_STRING("Hello, world!");
+
+  // Tokenizes this string to the "my_custom_domain" domain.
+  PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
 
 Token databases
 ===============
@@ -750,9 +780,9 @@ device performed the tokenization.
 
 Supporting detokenization of strings tokenized on 64-bit targets would be
 simple. This could be done by adding an option to switch the 32-bit types to
-64-bit. The tokenizer stores the sizes of these types in the ``.tokenizer_info``
-ELF section, so the sizes of these types can be verified by checking the ELF
-file, if necessary.
+64-bit. The tokenizer stores the sizes of these types in the
+``.pw_tokenizer_info`` ELF section, so the sizes of these types can be verified
+by checking the ELF file, if necessary.
 
 Tokenization in headers
 -----------------------

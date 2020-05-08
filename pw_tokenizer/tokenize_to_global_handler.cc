@@ -19,9 +19,9 @@
 namespace pw {
 namespace tokenizer {
 
-extern "C" void pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
-                                           pw_TokenizerArgTypes types,
-                                           ...) {
+extern "C" void _pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
+                                            pw_TokenizerArgTypes types,
+                                            ...) {
   EncodedMessage encoded;
   encoded.token = token;
 

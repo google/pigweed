@@ -13,6 +13,9 @@
 // the License.
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/tokenize.h"
 
@@ -39,22 +42,31 @@
 //     MyProject_EnqueueMessageForUart(buffer, size_bytes);
 //   }
 //
-#define PW_TOKENIZE_TO_GLOBAL_HANDLER(format, ...)                 \
-  do {                                                             \
-    _PW_TOKENIZE_STRING(format, __VA_ARGS__);                      \
-    pw_TokenizeToGlobalHandler(_pw_tokenizer_token,                \
-                               PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
-                                   PW_COMMA_ARGS(__VA_ARGS__));    \
+#define PW_TOKENIZE_TO_GLOBAL_HANDLER(format, ...) \
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN(            \
+      PW_TOKENIZER_DEFAULT_DOMAIN, format, __VA_ARGS__)
+
+// Same as PW_TOKENIZE_TO_GLOBAL_HANDLER, but tokenizes to the specified domain.
+#define PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN(domain, format, ...)   \
+  do {                                                              \
+    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);        \
+    _pw_TokenizeToGlobalHandler(_pw_tokenizer_token,                \
+                                PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
+                                    PW_COMMA_ARGS(__VA_ARGS__));    \
   } while (0)
+
+PW_EXTERN_C_START
 
 // This function must be defined by the pw_tokenizer:global_handler backend.
 // This function is called with the encoded message by
 // pw_TokenizeToGlobalHandler.
-PW_EXTERN_C void pw_TokenizerHandleEncodedMessage(
-    const uint8_t encoded_message[], size_t size_bytes);
+void pw_TokenizerHandleEncodedMessage(const uint8_t encoded_message[],
+                                      size_t size_bytes);
 
 // This function encodes the tokenized strings. Do not call it directly;
 // instead, use the PW_TOKENIZE_TO_GLOBAL_HANDLER macro.
-PW_EXTERN_C void pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
-                                            pw_TokenizerArgTypes types,
-                                            ...);
+void _pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
+                                 pw_TokenizerArgTypes types,
+                                 ...);
+
+PW_EXTERN_C_END

@@ -19,7 +19,7 @@
 namespace pw {
 namespace tokenizer {
 
-extern "C" void pw_TokenizeToGlobalHandlerWithPayload(
+extern "C" void _pw_TokenizeToGlobalHandlerWithPayload(
     const pw_TokenizerPayload payload,
     pw_TokenizerStringToken token,
     pw_TokenizerArgTypes types,
