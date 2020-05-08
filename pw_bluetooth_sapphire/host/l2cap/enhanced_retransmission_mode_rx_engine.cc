@@ -71,7 +71,9 @@ bool IsMpsValid(const PDU& pdu) {
 using Engine = EnhancedRetransmissionModeRxEngine;
 
 Engine::EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback)
-    : next_seqnum_(0), send_frame_callback_(std::move(send_frame_callback)) {}
+    : next_seqnum_(0),
+      remote_is_busy_(false),
+      send_frame_callback_(std::move(send_frame_callback)) {}
 
 ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   // A note on validation (see Vol 3, Part A, 3.3.7):
@@ -151,19 +153,29 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
 }
 
 ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu) {
-  if (sframe.function() == SupervisoryFunction::ReceiverReady && sframe.is_poll_request()) {
-    // TODO(quiche): Propagate ReqSeq to the transmit engine.
-    // See Core Spec, v5, Vol 3, Part A, Section 8.6.5.9, Table 8.6, "Recv RR(P=1)".
-    //
-    // Note, however, that there may be additional work to do if we're in the
-    // REJ_SENT state. See Core Spec, v5, Vol 3, Part A, Section 8.6.5.10, Table 8.7, "Recv
-    // RR(P=1)".
-    SimpleReceiverReadyFrame poll_response;
-    poll_response.set_is_poll_response();
-    poll_response.set_receive_seq_num(next_seqnum_);
-    send_frame_callback_(
-        std::make_unique<DynamicByteBuffer>(BufferView(&poll_response, sizeof(poll_response))));
-    return nullptr;
+  if (sframe.function() == SupervisoryFunction::ReceiverReady ||
+      sframe.function() == SupervisoryFunction::ReceiverNotReady) {
+    const bool remote_is_busy = sframe.function() == SupervisoryFunction::ReceiverNotReady;
+    if (remote_is_busy && !remote_is_busy_) {
+      if (remote_busy_set_callback_) {
+        remote_busy_set_callback_();
+      }
+    }
+    remote_is_busy_ = remote_is_busy;
+
+    if (sframe.is_poll_request()) {
+      // See Core Spec, v5, Vol 3, Part A, Section 8.6.5.9, Table 8.6, "Recv RR(P=1)".
+      //
+      // Note, however, that there may be additional work to do if we're in the
+      // REJ_SENT state. See Core Spec, v5, Vol 3, Part A, Section 8.6.5.10, Table 8.7, "Recv
+      // RR(P=1)".
+      SimpleReceiverReadyFrame poll_response;
+      poll_response.set_is_poll_response();
+      poll_response.set_receive_seq_num(next_seqnum_);
+      send_frame_callback_(
+          std::make_unique<DynamicByteBuffer>(BufferView(&poll_response, sizeof(poll_response))));
+      return nullptr;
+    }
   }
 
   // TODO(quiche): Implement handling of other S-frames.

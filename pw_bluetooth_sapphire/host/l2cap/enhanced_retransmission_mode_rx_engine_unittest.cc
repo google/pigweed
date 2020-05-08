@@ -18,6 +18,7 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlPBitMask = 0b1001'0000;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
+constexpr uint8_t kExtendedControlReceiverNotReadyBits = 0b0000'1000;
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
@@ -345,6 +346,62 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallb
 
   // We should now expect the next (second) frame to have a sequence number of 1.
   EXPECT_EQ(1, ack_seq_num.value());
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+     ProcessPduCallsSetRemoteBusyCallbackOnReceiverNotReady) {
+  Engine rx_engine(NopTxCallback);
+
+  bool remote_busy_set_called = false;
+  auto remote_busy_set_callback = [&remote_busy_set_called] { remote_busy_set_called = true; };
+  rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
+
+  const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
+  auto local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
+  EXPECT_TRUE(remote_busy_set_called);
+
+  remote_busy_set_called = false;
+  local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
+
+  // Second RNR should not invoke the callback.
+  EXPECT_FALSE(remote_busy_set_called);
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+     ProcessPduCallsSetRemoteBusyCallbackOnReceiverNotReadyAfterReceiverReadyClearedBusy) {
+  Engine rx_engine(NopTxCallback);
+
+  const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
+  auto local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
+
+  // This RR should clear RemoteBusy.
+  const StaticByteBuffer receiver_ready(0b1, 0);
+  local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverReady frame.
+
+  bool remote_busy_set_called = false;
+  auto remote_busy_set_callback = [&remote_busy_set_called] { remote_busy_set_called = true; };
+  rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
+
+  // Receive a second RNR.
+  local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
+
+  // Second RNR should invoke the callback because it's setting RemoteBusy once again.
+  EXPECT_TRUE(remote_busy_set_called);
 }
 
 }  // namespace
