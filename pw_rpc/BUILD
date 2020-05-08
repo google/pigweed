@@ -31,7 +31,19 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         "//pw_assert",
+        "//pw_log",
         "//pw_span",
+        "//pw_status",
+    ],
+    srcs = [
+      "channel.cc",
+      "packet.cc",
+      "public/pw_rpc/internal/packet.h",
+      "public/pw_rpc/internal/service.h",
+      "public/pw_rpc/internal/service_registry.h",
+      "server.cc",
+      "service.cc",
+      "service_registry.cc",
     ],
 )
 
@@ -39,6 +51,16 @@ pw_cc_test(
     name = "server_test",
     srcs = [
         "server_test.cc",
+    ],
+    deps = [
+        ":pw_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "packet_test",
+    srcs = [
+        "packet_test.cc",
     ],
     deps = [
         ":pw_rpc",

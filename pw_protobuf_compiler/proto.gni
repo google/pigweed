@@ -64,6 +64,7 @@ template("_pw_pwpb_proto_library") {
   source_set(target_name) {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ] + invoker.deps
+    public_deps = [ dir_pw_protobuf ]
     sources = get_target_outputs(":$_gen_target")
     public = filter_include(sources, [ "*.pwpb.h" ])
   }

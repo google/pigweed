@@ -16,17 +16,36 @@
 #include <cstddef>
 
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/service_registry.h"
 
 namespace pw::rpc {
 
 class Server {
  public:
-  constexpr Server(span<const Channel> channels) : channels_(channels) {}
+  constexpr Server(span<Channel> channels) : channels_(channels) {}
+
+  Server(const Server& other) = delete;
+  Server& operator=(const Server& other) = delete;
+
+  // Registers a service with the server. This should not be called directly
+  // with an internal::Service; instead, use a generated class which inherits
+  // from it.
+  void RegisterService(internal::Service& service) {
+    services_.Register(service);
+  }
+
+  void ProcessPacket(span<const std::byte> packet, ChannelOutput& interface);
 
   constexpr size_t channel_count() const { return channels_.size(); }
 
  private:
-  span<const Channel> channels_;
+  using Service = internal::Service;
+  using ServiceRegistry = internal::ServiceRegistry;
+
+  Channel* FindChannel(uint32_t id);
+
+  span<Channel> channels_;
+  ServiceRegistry services_;
 };
 
 }  // namespace pw::rpc

@@ -16,11 +16,14 @@
 #include <cstdint>
 
 #include "pw_span/span.h"
+#include "pw_status/status.h"
 
 namespace pw::rpc {
 
 class ChannelOutput {
  public:
+  constexpr ChannelOutput(uint32_t id) : id_(id) {}
+
   virtual ~ChannelOutput() = default;
 
   // Acquire a buffer into which to write an outgoing RPC packet.
@@ -28,6 +31,11 @@ class ChannelOutput {
 
   // Sends the contents of the buffer from AcquireBuffer().
   virtual void SendAndReleaseBuffer(size_t size) = 0;
+
+  uint32_t id() const { return id_; }
+
+ private:
+  uint32_t id_;
 };
 
 class Channel {
@@ -43,7 +51,10 @@ class Channel {
 
   constexpr uint32_t id() const { return id_; }
 
-  void Write(span<std::byte> packet);
+  span<std::byte> AcquireBuffer() const { return output_->AcquireBuffer(); }
+  void SendAndReleaseBuffer(size_t size) const {
+    output_->SendAndReleaseBuffer(size);
+  }
 
  private:
   static constexpr uint32_t kUnassignedChannelId = 0;

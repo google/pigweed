@@ -19,13 +19,55 @@
 namespace pw::rpc {
 namespace {
 
+using std::byte;
+
+template <size_t buffer_size>
+class TestOutput : public ChannelOutput {
+ public:
+  constexpr TestOutput(uint32_t id) : ChannelOutput(id), sent_packet_({}) {}
+
+  span<byte> AcquireBuffer() override { return buffer_; }
+
+  void SendAndReleaseBuffer(size_t size) override {
+    sent_packet_ = {buffer_, size};
+  }
+
+  span<const byte> sent_packet() const { return sent_packet_; }
+
+ private:
+  byte buffer_[buffer_size];
+  span<const byte> sent_packet_;
+};
+
+TestOutput<512> output(1);
+
+// clang-format off
+constexpr uint8_t encoded_packet[] = {
+  // type = PacketType::kRpc
+  0x08, 0x00,
+  // channel_id = 1
+  0x10, 0x01,
+  // service_id = 42
+  0x18, 0x2a,
+  // method_id = 27
+  0x20, 0x1b,
+  // payload
+  0x82, 0x02, 0xff, 0xff,
+};
+// clang-format on
+
 TEST(Server, DoesStuff) {
-  constexpr Channel channels[] = {
-      Channel(1, nullptr),
-      Channel(2, nullptr),
+  Channel channels[] = {
+      Channel(1, &output),
+      Channel(2, &output),
   };
   Server server(channels);
-  ASSERT_EQ(server.channel_count(), 2u);
+  internal::Service service(42, {});
+  server.RegisterService(service);
+
+  server.ProcessPacket(as_bytes(span(encoded_packet)), output);
+  auto packet = output.sent_packet();
+  EXPECT_GT(packet.size(), 0u);
 }
 
 }  // namespace
