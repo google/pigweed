@@ -22,6 +22,7 @@
 #include <type_traits>
 
 #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+#include "pw_assert/assert.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
@@ -619,7 +620,7 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
   Entry entry;
   TRY(ReadEntry(metadata, entry));
 
-  return WriteEntry(key, value, new_state, &metadata, entry.size());
+  return WriteEntry(key, value, new_state, &metadata, &entry);
 }
 
 Status KeyValueStore::WriteEntryForNewKey(string_view key,
@@ -637,22 +638,46 @@ Status KeyValueStore::WriteEntry(string_view key,
                                  span<const byte> value,
                                  EntryState new_state,
                                  EntryMetadata* prior_metadata,
-                                 size_t prior_size) {
-  const size_t entry_size = Entry::size(partition_, key, value);
+                                 const Entry* prior_entry) {
+  Entry entry = CreateEntry(key, value, new_state);
+
+  // If new entry and prior entry have matching value size, state, and checksum,
+  // check if the values match. Directly compare the prior and new values
+  // because the checksum can not be depended on to establish equality, it can
+  // only be depended on to establish inequality.
+  if (prior_entry != nullptr &&
+      prior_entry->value_size() == entry.value_size() &&
+      prior_metadata->state() == new_state &&
+      prior_entry->checksum() == entry.checksum() &&
+      prior_entry->ValueMatches(value).ok()) {
+    // The new value matches the prior value, don't need to write anything.
+    // Just keep the existing entry.
+    DBG("Write for key 0x%08x with matching value skipped",
+        unsigned(prior_metadata->hash()));
+    return Status::OK;
+  }
 
   // List of addresses for sectors with space for this entry.
   Address* reserved_addresses = entry_cache_.TempReservedAddressesForWrite();
 
   // Find addresses to write the entry to. This may involve garbage collecting
   // one or more sectors.
+  const size_t entry_size = Entry::size(partition_, key, value);
   TRY(GetAddressesForWrite(reserved_addresses, entry_size));
 
+  // Commiting to do the write, time to update last_transaction_id_. Update
+  // here, rather in CreateEntry, so last_transaction_id_ only increments for
+  // writes that are actually attempted.
+  last_transaction_id_ += 1;
+  PW_CHECK(last_transaction_id_ == entry.transaction_id());
+
   // Write the entry at the first address that was found.
-  Entry entry = CreateEntry(reserved_addresses[0], key, value, new_state);
+  entry.set_address(reserved_addresses[0]);
   TRY(AppendEntry(entry, key, value));
 
   // After writing the first entry successfully, update the key descriptors.
   // Once a single new the entry is written, the old entries are invalidated.
+  size_t prior_size = prior_entry != nullptr ? prior_entry->size() : 0;
   EntryMetadata new_metadata =
       CreateOrUpdateKeyDescriptor(entry, key, prior_metadata, prior_size);
 
@@ -1181,8 +1206,7 @@ Status KeyValueStore::Repair() {
   return FixErrors();
 }
 
-KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
-                                                string_view key,
+KeyValueStore::Entry KeyValueStore::CreateEntry(string_view key,
                                                 span<const byte> value,
                                                 EntryState state) {
   // Always bump the transaction ID when creating a new entry.
@@ -1196,19 +1220,20 @@ KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
   //   2. The transaction ID is NOT incremented, because of the failure
   //   3. (later) A new entry is written, re-using the transaction ID (oops)
   //
-  // By always burning transaction IDs, the above problem can't happen.
-  last_transaction_id_ += 1;
+  // By always burning transaction IDs, the above problem can't happen. The
+  // actual updating of last_transaction_id_ is done once the write method is
+  // ready to commit to attempting an actual write.
+  uint32_t new_transaction_id = last_transaction_id_ + 1;
+
+  // Set address to zero, the address of the entry is set later.
+  const Address address = 0;
 
   if (state == EntryState::kDeleted) {
     return Entry::Tombstone(
-        partition_, address, formats_.primary(), key, last_transaction_id_);
+        partition_, address, formats_.primary(), key, new_transaction_id);
   }
-  return Entry::Valid(partition_,
-                      address,
-                      formats_.primary(),
-                      key,
-                      value,
-                      last_transaction_id_);
+  return Entry::Valid(
+      partition_, address, formats_.primary(), key, value, new_transaction_id);
 }
 
 void KeyValueStore::LogDebugInfo() const {

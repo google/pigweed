@@ -122,6 +122,8 @@ class Entry {
   StatusWithSize ReadValue(span<std::byte> buffer,
                            size_t offset_bytes = 0) const;
 
+  Status ValueMatches(span<const std::byte> value) const;
+
   Status VerifyChecksum(std::string_view key,
                         span<const std::byte> value) const;
 
@@ -155,6 +157,8 @@ class Entry {
   }
 
   uint32_t magic() const { return header_.magic; }
+
+  uint32_t checksum() const { return header_.checksum; }
 
   uint32_t transaction_id() const { return header_.transaction_id; }
 

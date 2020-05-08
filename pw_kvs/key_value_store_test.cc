@@ -717,7 +717,7 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
                                                           format);
   ASSERT_OK(kvs.Init());
 
-  // Add two entries with different keys and values.
+  // Add one entry.
   const char* key = "Key1";
   DBG("PUT value for key: %s", key);
   uint8_t written_value = 0xDA;
@@ -730,6 +730,38 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
   EXPECT_EQ(actual_value, written_value);
 
   EXPECT_EQ(kvs.size(), 1u);
+}
+
+TEST(InMemoryKvs, WriteOneKeyValueMultipleTimes) {
+  // Create and erase the fake flash.
+  Flash flash;
+  ASSERT_OK(flash.partition.Erase());
+
+  // Create and initialize the KVS.
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
+                                                          format);
+  ASSERT_OK(kvs.Init());
+
+  // Add one entry, with the same key and value, multiple times.
+  const char* key = "Key1";
+  uint8_t written_value = 0xDA;
+  for (int i = 0; i < 50; i++) {
+    DBG("PUT [%d] value for key: %s", i, key);
+    ASSERT_OK(kvs.Put(key, written_value));
+    EXPECT_EQ(kvs.size(), 1u);
+  }
+
+  DBG("GET value for key: %s", key);
+  uint8_t actual_value;
+  ASSERT_OK(kvs.Get(key, &actual_value));
+  EXPECT_EQ(actual_value, written_value);
+
+  // Verify that only one entry was written to the KVS.
+  EXPECT_EQ(kvs.size(), 1u);
+  EXPECT_EQ(kvs.transaction_count(), 1u);
+  KeyValueStore::StorageStats stats = kvs.GetStorageStats();
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
 }
 
 TEST(InMemoryKvs, Basic) {

@@ -398,7 +398,7 @@ class KeyValueStore {
                     span<const std::byte> value,
                     EntryState new_state,
                     EntryMetadata* prior_metadata = nullptr,
-                    size_t prior_size = 0);
+                    const internal::Entry* prior_entry = nullptr);
 
   EntryMetadata CreateOrUpdateKeyDescriptor(const Entry& new_entry,
                                             std::string_view key,
@@ -459,8 +459,7 @@ class KeyValueStore {
 
   Status Repair();
 
-  internal::Entry CreateEntry(Address address,
-                              std::string_view key,
+  internal::Entry CreateEntry(std::string_view key,
                               span<const std::byte> value,
                               EntryState state);
 

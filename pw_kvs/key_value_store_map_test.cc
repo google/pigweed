@@ -197,7 +197,7 @@ class KvsTester {
     std::cout << "Entries: " << map_.size() << '\n';
     std::cout << "------------------------------------------------\n";
     for (const auto& [key, value] : map_) {
-      std::cout << key << " = " << value << '\n';
+      std::cout << key << " = [" << value << "]\n";
       map_keys.insert(key);
     }
     std::cout << "\\===============================================/\n";

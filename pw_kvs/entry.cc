@@ -151,6 +151,31 @@ StatusWithSize Entry::ReadValue(span<byte> buffer, size_t offset_bytes) const {
   return StatusWithSize(read_size);
 }
 
+Status Entry::ValueMatches(span<const std::byte> value) const {
+  if (value_size() != value.size_bytes()) {
+    return Status::NOT_FOUND;
+  }
+
+  Address address = address_ + sizeof(EntryHeader) + key_length();
+  Address end = address + value_size();
+  const std::byte* value_ptr = value.data();
+
+  std::array<std::byte, 2 * kMinAlignmentBytes> buffer;
+  while (address < end) {
+    const size_t read_size = std::min(size_t(end - address), buffer.size());
+    TRY(partition_->Read(address, span(buffer).first(read_size)));
+
+    if (std::memcmp(buffer.data(), value_ptr, read_size) != 0) {
+      return Status::NOT_FOUND;
+    }
+
+    address += read_size;
+    value_ptr += read_size;
+  }
+
+  return Status::OK;
+}
+
 Status Entry::VerifyChecksum(string_view key, span<const byte> value) const {
   if (checksum_algo_ == nullptr) {
     return header_.checksum == 0 ? Status::OK : Status::DATA_LOSS;

@@ -52,6 +52,7 @@ source_set("pw_kvs") {
     dir_pw_status,
   ]
   deps = [
+    dir_pw_assert,
     dir_pw_checksum,
     dir_pw_log,
   ]
