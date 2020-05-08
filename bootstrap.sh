@@ -161,8 +161,12 @@ if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   PW_CARGO_PACKAGE_FILES="$PW_ROOT/pw_env_setup/py/pw_env_setup/cargo_setup/packages.txt:$PW_CARGO_PACKAGE_FILES"
   export PW_CARGO_PACKAGE_FILES
 
-  "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH"
-
+  # _PW_ENV_SETUP=$("$PW_ROOT/pw_env_setup/get_pw_env_setup.sh")
+  # if [ -n "$_PW_ENV_SETUP" ]; then
+  #   "$_PW_ENV_SETUP" --shell-file "$SETUP_SH"
+  # else
+    "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH"
+  # fi
 
   PW_CIPD_PACKAGE_FILES="$_PW_OLD_CIPD_PACKAGE_FILES"
   PW_VIRTUALENV_REQUIREMENTS="$_PW_OLD_VIRTUALENV_REQUIREMENTS"
@@ -193,6 +197,7 @@ else
   _pw_red "Error during $_PW_NAME--see messages above."
 fi
 
+unset _PW_ENV_SETUP
 unset _PW_IS_BOOTSTRAP
 unset _PW_NAME
 unset _PIGWEED_BANNER
