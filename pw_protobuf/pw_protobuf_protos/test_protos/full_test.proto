@@ -26,7 +26,6 @@ enum Bool {
 
 // A message!
 message Pigweed {
-
   // Nested messages and enums.
   message Pigweed {
     enum Binary {

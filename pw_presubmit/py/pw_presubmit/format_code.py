@@ -107,12 +107,12 @@ def _clang_format(*args: str, **kwargs) -> bytes:
                    **kwargs).stdout
 
 
-def check_c_format(files: Iterable[Path]) -> Dict[Path, str]:
+def clang_format_check(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(files, lambda path, _: _clang_format(path))
 
 
-def fix_c_format(files: Iterable) -> None:
+def clang_format_fix(files: Iterable) -> None:
     """Fixes formatting for the provided files in place."""
     _clang_format('-i', *files)
 
@@ -251,7 +251,17 @@ class CodeFormat(NamedTuple):
 
 C_FORMAT: CodeFormat = CodeFormat(
     'C and C++', frozenset(['.h', '.hh', '.hpp', '.c', '.cc', '.cpp']),
-    check_c_format, fix_c_format)
+    clang_format_check, clang_format_fix)
+
+PROTO_FORMAT: CodeFormat = CodeFormat('Protocol buffer', ('.proto', ),
+                                      clang_format_check, clang_format_fix)
+
+JAVA_FORMAT: CodeFormat = CodeFormat('Java', ('.java', ), clang_format_check,
+                                     clang_format_fix)
+
+JAVASCRIPT_FORMAT: CodeFormat = CodeFormat('JavaScript', ('.js', ),
+                                           clang_format_check,
+                                           clang_format_fix)
 
 GO_FORMAT: CodeFormat = CodeFormat('Go', ('.go', ), check_go_format,
                                    fix_go_format)
@@ -278,6 +288,9 @@ MARKDOWN_FORMAT: CodeFormat = CodeFormat('Markdown', ('.md', ),
 
 CODE_FORMATS: Sequence[CodeFormat] = (
     C_FORMAT,
+    JAVA_FORMAT,
+    JAVASCRIPT_FORMAT,
+    PROTO_FORMAT,
     GO_FORMAT,
     PYTHON_FORMAT,
     GN_FORMAT,
