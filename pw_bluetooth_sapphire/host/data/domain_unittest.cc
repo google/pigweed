@@ -153,11 +153,12 @@ class DATA_DomainTest : public TestingBase {
     return cmd_ids;
   }
 
-  void QueueLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role) {
+  Domain::LEFixedChannels QueueLEConnection(hci::ConnectionHandle handle,
+                                            hci::Connection::Role role) {
     acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kLE);
-    domain()->AddLEConnection(
+    return domain()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
-        /*channel_callback=*/[](auto, auto) {}, /*security_callback=*/[](auto, auto, auto) {});
+        /*security_callback=*/[](auto, auto, auto) {});
   }
 
   Domain* domain() const { return domain_.get(); }
@@ -615,6 +616,15 @@ TEST_F(DATA_DomainTest, InspectHierarchy) {
   auto domain_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
                               ChildrenMatch(::testing::IsEmpty()));
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(domain_matcher))));
+}
+
+TEST_F(DATA_DomainTest, AddLEConnectionReturnsFixedChannels) {
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+  auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
+  ASSERT_TRUE(channels.att);
+  EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
+  ASSERT_TRUE(channels.smp);
+  EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
 }  // namespace

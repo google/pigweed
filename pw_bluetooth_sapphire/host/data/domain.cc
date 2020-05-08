@@ -57,11 +57,10 @@ class Impl final : public Domain {
                                   std::move(security_callback));
   }
 
-  void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
-                       l2cap::LinkErrorCallback link_error_callback,
-                       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
-                       l2cap::LEFixedChannelsCallback channel_callback,
-                       l2cap::SecurityUpgradeCallback security_callback) override {
+  LEFixedChannels AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
+                                  l2cap::LinkErrorCallback link_error_callback,
+                                  l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+                                  l2cap::SecurityUpgradeCallback security_callback) override {
     channel_manager_->RegisterLE(handle, role, std::move(conn_param_callback),
                                  std::move(link_error_callback), std::move(security_callback));
 
@@ -69,7 +68,7 @@ class Impl final : public Domain {
     auto smp = channel_manager_->OpenFixedChannel(handle, l2cap::kLESMPChannelId);
     ZX_ASSERT(att);
     ZX_ASSERT(smp);
-    channel_callback(std::move(att), std::move(smp));
+    return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
   }
 
   void RemoveConnection(hci::ConnectionHandle handle) override {

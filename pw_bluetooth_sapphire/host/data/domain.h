@@ -69,15 +69,18 @@ class Domain : public fbl::RefCounted<Domain> {
   // level. This can be triggered by dynamic L2CAP channel creation or by a
   // service-level client via Channel::UpgradeSecurity().
   //
-  // Upon successful registration of the link, |channel_callback| will be called
-  // with the ATT and SMP fixed channels.
+  // Returns the ATT and SMP fixed channels of this link.
   //
   // Has no effect if this Domain is uninitialized or shut down.
-  virtual void AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
-                               l2cap::LinkErrorCallback link_error_callback,
-                               l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
-                               l2cap::LEFixedChannelsCallback channel_callback,
-                               l2cap::SecurityUpgradeCallback security_callback) = 0;
+  struct LEFixedChannels {
+    fbl::RefPtr<l2cap::Channel> att;
+    fbl::RefPtr<l2cap::Channel> smp;
+  };
+  virtual LEFixedChannels AddLEConnection(
+      hci::ConnectionHandle handle, hci::Connection::Role role,
+      l2cap::LinkErrorCallback link_error_callback,
+      l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
+      l2cap::SecurityUpgradeCallback security_callback) = 0;
 
   // Removes a previously registered connection. All corresponding Channels will
   // be closed and all incoming data packets on this link will be dropped.

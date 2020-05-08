@@ -111,13 +111,8 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
   void InitializeFixedChannels(l2cap::LEConnectionParameterUpdateCallback cp_cb,
                                l2cap::LinkErrorCallback link_error_cb, BondableMode bondable_mode) {
     auto self = weak_ptr_factory_.GetWeakPtr();
-    data_domain_->AddLEConnection(
+    auto fixed_channels = data_domain_->AddLEConnection(
         link_->handle(), link_->role(), std::move(link_error_cb), std::move(cp_cb),
-        [self, bondable_mode](auto att, auto smp) {
-          if (self) {
-            self->OnL2capFixedChannelsOpened(std::move(att), std::move(smp), bondable_mode);
-          }
-        },
         [self](auto handle, auto level, auto cb) {
           if (self) {
             bt_log(TRACE, "gap-le", "received security upgrade request on L2CAP channel");
@@ -125,6 +120,9 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
             self->OnSecurityRequest(level, std::move(cb));
           }
         });
+
+    OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
+                               bondable_mode);
   }
 
   // Tells the connection's pairing state to UpgradeSecurity to the desired level.
