@@ -63,11 +63,11 @@ source_set("sources") {
     "//src/connectivity/bluetooth/fidl:host",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/fxl",
-    "//zircon/public/lib/ddk",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/trace-driver",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/ddk",
   ]
 }
 
