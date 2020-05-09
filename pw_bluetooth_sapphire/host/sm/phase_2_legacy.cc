@@ -31,10 +31,9 @@ bool IsSupportedLegacyMethod(PairingMethod method) {
 }  // namespace
 
 Phase2Legacy::Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                           hci::Connection::Role role, PairingFeatures features,
-                           const ByteBuffer& preq, const ByteBuffer& pres,
-                           const DeviceAddress& initiator_add, const DeviceAddress& responder_add,
-                           OnPhase2KeyGeneratedCallback cb)
+                           Role role, PairingFeatures features, const ByteBuffer& preq,
+                           const ByteBuffer& pres, const DeviceAddress& initiator_add,
+                           const DeviceAddress& responder_add, OnPhase2KeyGeneratedCallback cb)
     : ActivePhase(std::move(chan), std::move(listener), role),
       sent_local_confirm_(false),
       sent_local_rand_(false),
@@ -138,7 +137,7 @@ void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
   //    a. send it now if the peer has sent us its confirm value while we were
   //    waiting for the TK.
   //    b. send it later when we receive Mconfirm.
-  if (is_initiator() || peer_confirm_.has_value()) {
+  if (role() == Role::kInitiator || peer_confirm_.has_value()) {
     SendConfirmValue();
   }
 }
@@ -168,7 +167,7 @@ void Phase2Legacy::OnPairingConfirm(PairingConfirmValue confirm) {
 
   peer_confirm_ = confirm;
 
-  if (is_initiator()) {
+  if (role() == Role::kInitiator) {
     // We MUST have a TK and have previously generated an Mconfirm - this was implicitly checked in
     // CanReceivePairingConfirm by checking whether we've sent the confirm value.
     ZX_ASSERT(tk_.has_value());
@@ -220,19 +219,15 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
   util::C1(tk_.value(), peer_rand_.value(), preq_, pres_, initiator_addr_, responder_addr_,
            &peer_confirm_check);
   if (peer_confirm_check != peer_confirm_) {
-    bt_log(ERROR, "sm", "%sconfirm value does not match!", is_initiator() ? "S" : "M");
+    bt_log(ERROR, "sm", "%sconfirm value does not match!", role() == Role::kInitiator ? "S" : "M");
     Abort(ErrorCode::kConfirmValueFailed);
     return;
   }
 
   // Generate the STK.
   UInt128 stk;
-  UInt128* initiator_rand = &local_rand_.value();
-  UInt128* responder_rand = &peer_rand_.value();
-  if (is_responder()) {
-    std::swap(initiator_rand, responder_rand);
-  }
-  util::S1(tk_.value(), *responder_rand, *initiator_rand, &stk);
+  auto [initiator_rand, responder_rand] = util::MapToRoles(*local_rand_, *peer_rand_, role());
+  util::S1(tk_.value(), responder_rand, initiator_rand, &stk);
 
   // Mask the key based on the requested encryption key size.
   uint8_t key_size = features_.encryption_key_size;
@@ -247,7 +242,7 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
   // As responder, we choose to notify the STK to the higher layer before sending our SRand. We
   // expect the peer initiator to request encryption immediately after receiving SRand, and we want
   // to ensure the STK is available at the hci::Connection layer when this occurs.
-  if (is_responder()) {
+  if (role() == Role::kResponder) {
     SendRandomValue();
   }
 }
@@ -263,7 +258,8 @@ ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
   // confirm value and abort if
   //    a. we are the initiator, and have not yet sent our confirm value.
   //    b. we are the responder, and have already sent our confirm value.
-  if ((is_initiator() && !sent_local_confirm_) || (is_responder() && sent_local_confirm_)) {
+  if ((role() == Role::kInitiator && !sent_local_confirm_) ||
+      (role() == Role::kResponder && sent_local_confirm_)) {
     bt_log(WARN, "sm", "abort pairing due to confirm value received out of order");
     return ErrorCode::kUnspecifiedReason;
   }
@@ -310,7 +306,7 @@ ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
     return ErrorCode::kUnspecifiedReason;
   }
 
-  if (is_initiator()) {
+  if (role() == Role::kInitiator) {
     // The initiator distributes both values before the responder sends Srandom.
     if (!sent_local_rand_ || !sent_local_confirm_) {
       bt_log(WARN, "sm", "\"Pairing Random\" received in wrong order!");

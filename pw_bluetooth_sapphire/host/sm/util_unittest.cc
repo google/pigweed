@@ -38,6 +38,17 @@ TEST(SMP_UtilTest, ConvertSmIoCapabilityToHci) {
   }
 }
 
+TEST(SMP_UtilTest, MapToRolesCorrectly) {
+  UInt128 local_val = {1}, peer_val = {2};
+  auto [initiator_val, responder_val] = MapToRoles(local_val, peer_val, Role::kInitiator);
+  EXPECT_EQ(local_val, initiator_val);
+  EXPECT_EQ(peer_val, responder_val);
+
+  std::tie(initiator_val, responder_val) = MapToRoles(local_val, peer_val, Role::kResponder);
+  EXPECT_EQ(local_val, responder_val);
+  EXPECT_EQ(peer_val, initiator_val);
+}
+
 TEST(SMP_UtilTest, SelectPairingMethodOOB) {
   // In SC OOB is selected if either device has OOB data.
   EXPECT_EQ(

@@ -13,7 +13,7 @@ namespace bt {
 namespace sm {
 
 ActivePhase::ActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                         hci::Connection::Role role)
+                         Role role)
     : PairingPhase(std::move(chan), std::move(listener), role), has_failed_(false) {}
 
 void ActivePhase::OnFailure(Status status) {

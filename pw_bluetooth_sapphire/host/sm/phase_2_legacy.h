@@ -33,10 +33,10 @@ class Phase2Legacy final : public ActivePhase, public PairingChannelHandler {
   // |initiator_addr|, |responder_addr|: 48-bit bd-address of the initiator and responder, used
   //                                     used for cryptographic hashing
   // |cb|: Callback that is notified when the Phase2 has negotiated a new encryption key.
-  Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-               hci::Connection::Role role, PairingFeatures features, const ByteBuffer& preq,
-               const ByteBuffer& pres, const DeviceAddress& initiator_addr,
-               const DeviceAddress& responder_addr, OnPhase2KeyGeneratedCallback cb);
+  Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+               PairingFeatures features, const ByteBuffer& preq, const ByteBuffer& pres,
+               const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
+               OnPhase2KeyGeneratedCallback cb);
   ~Phase2Legacy() override = default;
 
   // Begin Phase 2 of LE legacy pairing. This is called after LE pairing features are exchanged

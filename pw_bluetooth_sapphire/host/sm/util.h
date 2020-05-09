@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace sm {
@@ -37,6 +38,16 @@ hci::IOCapability IOCapabilityForHci(IOCapability capability);
 
 // Utility function to heap allocate a new PDU.
 MutableByteBufferPtr NewPdu(size_t param_size);
+
+// Returns a std::pair<initiator_value, responder_value> based on |local_value|, |peer_value| and
+// the local SMP Role |role|.
+template <typename T>
+std::pair<T, T> MapToRoles(const T& local_value, const T& peer_value, Role role) {
+  if (role == Role::kInitiator) {
+    return {local_value, peer_value};
+  }
+  return {peer_value, local_value};
+}
 
 // Used to select the key generation method as described in Vol 3, Part H,
 // 2.3.5.1 based on local and peer authentication parameters:

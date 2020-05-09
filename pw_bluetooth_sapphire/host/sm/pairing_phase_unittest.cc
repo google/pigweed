@@ -30,8 +30,7 @@ using PairingChannelHandler = PairingChannel::Handler;
 class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
  public:
   ConcretePairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                       hci::Connection::Role role,
-                       size_t max_packet_size = sizeof(PairingPublicKeyParams))
+                       Role role, size_t max_packet_size = sizeof(PairingPublicKeyParams))
       : PairingPhase(std::move(chan), std::move(listener), role), weak_ptr_factory_(this) {
     // All concrete pairing phases should set themselves as the pairing channel handler.
     sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
@@ -67,7 +66,7 @@ class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { pairing_phase_ = nullptr; }
 
-  void NewPairingPhase(hci::Connection::Role role = hci::Connection::Role::kMaster,
+  void NewPairingPhase(Role role = Role::kInitiator,
                        hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;

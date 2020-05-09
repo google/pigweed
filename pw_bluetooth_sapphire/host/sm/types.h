@@ -200,6 +200,15 @@ struct LocalPairingParams {
   KeyDistGenField remote_keys;
 };
 
+// These roles correspond to the device which starts pairing.
+enum class Role {
+  // The LMP Master device is always kInitiator (V5.0 Vol. 3 Part H Appendix C.1).
+  kInitiator,
+
+  // The LMP Slave device is always kResponder (V5.0 Vol. 3 Part H Appendix C.1).
+  kResponder
+};
+
 // Used by Phase 2 classes to notify their owner that a new encryption key is ready. For Legacy
 // Pairing, this is the STK which may only be used for the current session. For Secure Connections,
 // this is the LTK which may be persisted.

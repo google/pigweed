@@ -22,7 +22,7 @@ namespace bt {
 namespace sm {
 
 PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                           hci::Connection::Role role)
+                           Role role)
     : chan_(std::move(chan)), listener_(std::move(listener)), role_(role) {
   ZX_ASSERT(listener_);
   ZX_ASSERT(chan_);

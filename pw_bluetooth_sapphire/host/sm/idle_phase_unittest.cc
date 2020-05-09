@@ -35,7 +35,7 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { idle_phase_ = nullptr; }
 
-  void NewIdlePhase(hci::Connection::Role role = hci::Connection::Role::kMaster,
+  void NewIdlePhase(Role role = Role::kInitiator,
                     hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
@@ -74,8 +74,8 @@ TEST_F(SMP_IdlePhaseTest, HandlesChannelClosedGracefully) {
   RunLoopUntilIdle();
 }
 
-TEST_F(SMP_IdlePhaseTest, PairingRequestAsSlavePassedThrough) {
-  NewIdlePhase(hci::Connection::Role::kSlave);
+TEST_F(SMP_IdlePhaseTest, PairingRequestAsResponderPassedThrough) {
+  NewIdlePhase(Role::kResponder);
   StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
   auto preq = PairingRequestParams{.auth_req = 0x01, .responder_key_dist_gen = 0x03};
@@ -88,7 +88,7 @@ TEST_F(SMP_IdlePhaseTest, PairingRequestAsSlavePassedThrough) {
   ASSERT_EQ(0, memcmp(&last_preq, &preq, sizeof(PairingRequestParams)));
 }
 
-TEST_F(SMP_IdlePhaseTest, PairingRequestAsMasterSendsPairingFailed) {
+TEST_F(SMP_IdlePhaseTest, PairingRequestAsInitiatorSendsPairingFailed) {
   StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq_packet;
   PacketWriter writer(kPairingRequest, &preq_packet);
   auto preq = PairingRequestParams{.auth_req = 0x01, .responder_key_dist_gen = 0x03};
@@ -112,7 +112,7 @@ TEST_F(SMP_IdlePhaseTest, PairingRequestAsMasterSendsPairingFailed) {
   ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
 }
 
-TEST_F(SMP_IdlePhaseTest, SecurityRequestAsMasterPassedThrough) {
+TEST_F(SMP_IdlePhaseTest, SecurityRequestAsInitiatorPassedThrough) {
   AuthReqField generic_auth_req = 0x03;
   auto security_req = CreateStaticByteBuffer(kSecurityRequest, generic_auth_req);
   ASSERT_FALSE(last_security_req().has_value());
@@ -123,8 +123,8 @@ TEST_F(SMP_IdlePhaseTest, SecurityRequestAsMasterPassedThrough) {
   ASSERT_EQ(generic_auth_req, last_security_req_payload);
 }
 
-TEST_F(SMP_IdlePhaseTest, SecurityRequestAsSlaveSendsPairingFailed) {
-  NewIdlePhase(hci::Connection::Role::kSlave);
+TEST_F(SMP_IdlePhaseTest, SecurityRequestAsResponderSendsPairingFailed) {
+  NewIdlePhase(Role::kResponder);
   AuthReqField generic_auth_req = 0x03;
   auto security_req = CreateStaticByteBuffer(kSecurityRequest, generic_auth_req);
 

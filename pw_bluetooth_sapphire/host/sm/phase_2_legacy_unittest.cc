@@ -89,8 +89,7 @@ class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
-    auto role = phase_args.features.initiator ? hci::Connection::Role::kMaster
-                                              : hci::Connection::Role::kSlave;
+    auto role = phase_args.features.initiator ? Role::kInitiator : Role::kResponder;
     StaticByteBuffer<PacketSize<PairingRequestParams>()> preq, pres;
     preq.WriteObj(phase_args.preq);
     pres.WriteObj(phase_args.pres);

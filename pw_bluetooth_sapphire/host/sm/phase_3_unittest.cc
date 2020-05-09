@@ -80,8 +80,7 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
-    auto role = phase_args.features.initiator ? hci::Connection::Role::kMaster
-                                              : hci::Connection::Role::kSlave;
+    auto role = phase_args.features.initiator ? Role::kInitiator : Role::kResponder;
     phase_3_ = std::make_unique<Phase3>(sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), role,
                                         phase_args.features, phase_args.le_props,
                                         [this](PairingData pairing_results) {

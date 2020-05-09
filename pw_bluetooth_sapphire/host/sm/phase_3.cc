@@ -24,8 +24,8 @@ namespace bt {
 
 namespace sm {
 
-Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-               hci::Connection::Role role, PairingFeatures features, SecurityProperties le_sec,
+Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+               PairingFeatures features, SecurityProperties le_sec,
                Phase3CompleteCallback on_complete)
     : ActivePhase(std::move(chan), std::move(listener), role),
       features_(features),
@@ -52,13 +52,13 @@ void Phase3::Start() {
   ZX_ASSERT(!KeyExchangeComplete());
   // TODO(fxbug.dev/49371): The spec allows both the initiator & responder to distribute distinct
   // LTKs in Legacy pairing, but our stack currently only supports a single responder LTK.
-  if (is_initiator() ? ShouldSendLtk() : ShouldReceiveLtk()) {
+  if (role() == Role::kInitiator ? ShouldSendLtk() : ShouldReceiveLtk()) {
     bt_log(WARN, "sm", "We do not support to distributing LTK from initiator to responder");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
 
-  if (is_initiator() && !RequestedKeysObtained()) {
+  if (role() == Role::kInitiator && !RequestedKeysObtained()) {
     bt_log(TRACE, "sm", "waiting to receive keys from the responder");
     return;
   }
@@ -137,7 +137,7 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
     return;
   }
   // We only support receiving encryption information as initiator
-  ZX_ASSERT(is_initiator());
+  ZX_ASSERT(role() == Role::kInitiator);
 
   // EDIV and Rand must be sent AFTER the LTK (Vol 3, Part H, 3.6.1).
   if (!ltk_bytes_.has_value()) {
@@ -233,7 +233,7 @@ void Phase3::OnExpectedKeyReceived() {
     return;
   }
 
-  if (is_initiator() && !LocalKeysSent() && !SendLocalKeys()) {
+  if (role() == Role::kInitiator && !LocalKeysSent() && !SendLocalKeys()) {
     bt_log(TRACE, "sm", "unable to send local keys to peer");
     Abort(ErrorCode::kUnspecifiedReason);
     return;

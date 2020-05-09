@@ -27,8 +27,7 @@ using PairingChannelHandler = PairingChannel::Handler;
 
 class ConcreteActivePhase : public ActivePhase, public PairingChannelHandler {
  public:
-  ConcreteActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                      hci::Connection::Role role,
+  ConcreteActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
                       size_t max_packet_size = sizeof(PairingPublicKeyParams))
       : ActivePhase(std::move(chan), std::move(listener), role), weak_ptr_factory_(this) {
     // All concrete pairing phases should set themselves as the pairing channel handler.
@@ -65,7 +64,7 @@ class SMP_ActivePhaseTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { active_phase_ = nullptr; }
 
-  void NewActivePhase(hci::Connection::Role role = hci::Connection::Role::kMaster,
+  void NewActivePhase(Role role = Role::kInitiator,
                       hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;

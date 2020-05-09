@@ -41,8 +41,7 @@ class ActivePhase : public PairingPhase {
   void HandleChannelClosed();
 
   // Just delegates to the PairingPhase constructor.
-  ActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-              hci::Connection::Role role);
+  ActivePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role);
 
   // To ZX_ASSERT that methods are not called on a PairingPhase that has already failed.
   bool has_failed() const { return has_failed_; }

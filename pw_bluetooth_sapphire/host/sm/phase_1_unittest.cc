@@ -43,8 +43,7 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { phase_1_ = nullptr; }
 
-  void NewPhase1(hci::Connection::Role role = hci::Connection::Role::kMaster,
-                 Phase1Args phase_args = Phase1Args(),
+  void NewPhase1(Role role = Role::kInitiator, Phase1Args phase_args = Phase1Args(),
                  hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
     l2cap::ChannelId cid =
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
@@ -55,7 +54,7 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
-    if (role == hci::Connection::Role::kMaster) {
+    if (role == Role::kInitiator) {
       phase_1_ = Phase1::CreatePhase1Initiator(
           sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), phase_args.io_capability,
           phase_args.bondable_mode, phase_args.mitm_required,
@@ -124,7 +123,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartCustomParams) {
                                .bondable_mode = BondableMode::NonBondable,
                                .mitm_required = true,
                                .sc_supported = true};
-  NewPhase1(hci::Connection::Role::kMaster, phase_args);
+  NewPhase1(Role::kInitiator, phase_args);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -319,7 +318,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeFailureMalformedRequest) {
 TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   Phase1Args args;
   args.sc_supported = true;
-  NewPhase1(hci::Connection::Role::kMaster, args);
+  NewPhase1(Role::kInitiator, args);
   // clang-format off
   const auto kRequest = StaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -362,7 +361,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
 TEST_F(SMP_Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   Phase1Args args;
   args.sc_supported = true;
-  NewPhase1(hci::Connection::Role::kMaster, args);
+  NewPhase1(Role::kInitiator, args);
   // clang-format off
   const auto kRequest = StaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -447,7 +446,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
 
 TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kDisplayYesNo};
-  NewPhase1(hci::Connection::Role::kMaster, phase_args);
+  NewPhase1(Role::kInitiator, phase_args);
 
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
@@ -541,7 +540,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
   const auto kFailure = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
                                                ErrorCode::kUnspecifiedReason);
 
-  NewPhase1(hci::Connection::Role::kMaster);
+  NewPhase1(Role::kInitiator);
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -559,7 +558,7 @@ TEST_F(SMP_Phase1Test, Phase1ResponderRejectsPairingRequest) {
   const auto kFailure = CreateStaticByteBuffer(0x05,  // code: Pairing Failed
                                                ErrorCode::kUnspecifiedReason);
 
-  NewPhase1(hci::Connection::Role::kSlave);
+  NewPhase1(Role::kResponder);
   EXPECT_TRUE(ReceiveAndExpect(kRequest, kFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -585,7 +584,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
                           .responder_key_dist_gen = 0x01  // enc key
                       },
                   .sc_supported = true};
-  NewPhase1(hci::Connection::Role::kSlave, args);
+  NewPhase1(Role::kResponder, args);
   // Initiate the request in a loop task for Expect to detect it.
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -620,7 +619,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
                           .responder_key_dist_gen = 0x01  // enc key
                       },
                   .sc_supported = true};
-  NewPhase1(hci::Connection::Role::kSlave, args);
+  NewPhase1(Role::kResponder, args);
   // Initiate the request in a loop task for Expect to detect it.
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -655,7 +654,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalResponderRespectsInitiator) {
   );
   // clang-format on
 
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
 
@@ -685,7 +684,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderDistributesIdKey) {
   );
   // clang-format on
 
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   listener()->set_identity_info(IdentityInfo());
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -719,7 +718,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
   );
   // clang-format on
 
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   listener()->set_identity_info(IdentityInfo());
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -747,7 +746,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderFailedAuthenticationRequirements)
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .io_capability = IOCapability::kNoInputNoOutput};
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
 
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kFailure));
@@ -781,7 +780,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderJustWorks) {
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .io_capability = IOCapability::kNoInputNoOutput};
 
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
 
@@ -828,7 +827,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .io_capability = IOCapability::kNoInputNoOutput};
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
 
   ASSERT_TRUE(Expect(kResponse));
@@ -859,7 +858,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderMITM) {
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .io_capability = IOCapability::kDisplayYesNo};
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
 
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -954,7 +953,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
 
 TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
   auto phase_args = Phase1Args{.bondable_mode = BondableMode::NonBondable};
-  NewPhase1(hci::Connection::Role::kMaster, phase_args);
+  NewPhase1(Role::kInitiator, phase_args);
   // clang-format off
   const auto kRequest = CreateStaticByteBuffer(
       0x01,  // code: Pairing Request
@@ -1016,7 +1015,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
                                .bondable_mode = BondableMode::NonBondable};
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   // Initiate the request in a loop task for Expect to detect it.
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -1054,7 +1053,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
       .preq = reader.payload<PairingRequestParams>(),
       .bondable_mode = BondableMode::Bondable,  // local mode is bondable, although peer is not
   };
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   // Initiate the request in a loop task for Expect to detect it.
   async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
   ASSERT_TRUE(Expect(kResponse));
@@ -1081,7 +1080,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
 
   auto reader = PacketReader(&kRequest);
   auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>()};
-  NewPhase1(hci::Connection::Role::kSlave, phase_args);
+  NewPhase1(Role::kResponder, phase_args);
   // Initiate the request in a loop task for Expect to detect it.
   phase_1()->Start();
   RunLoopUntilIdle();

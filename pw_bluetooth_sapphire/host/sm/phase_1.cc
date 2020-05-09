@@ -23,9 +23,9 @@ std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
     BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
-  return std::unique_ptr<Phase1>(
-      new Phase1(std::move(chan), std::move(listener), hci::Connection::Role::kMaster, std::nullopt,
-                 io_capability, bondable_mode, mitm_required, std::move(on_complete)));
+  return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener), Role::kInitiator,
+                                            std::nullopt, io_capability, bondable_mode,
+                                            mitm_required, std::move(on_complete)));
 }
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
@@ -34,15 +34,14 @@ std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
     CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
-  return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener),
-                                            hci::Connection::Role::kSlave, preq, io_capability,
-                                            bondable_mode, mitm_required, std::move(on_complete)));
+  return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener), Role::kResponder,
+                                            preq, io_capability, bondable_mode, mitm_required,
+                                            std::move(on_complete)));
 }
 
-Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-               hci::Connection::Role role, std::optional<PairingRequestParams> preq,
-               IOCapability io_capability, BondableMode bondable_mode, bool mitm_required,
-               CompleteCallback on_complete)
+Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+               std::optional<PairingRequestParams> preq, IOCapability io_capability,
+               BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete)
     : ActivePhase(std::move(chan), std::move(listener), role),
       peer_request_params_(preq),
       oob_available_(false),
@@ -52,14 +51,14 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(!(is_initiator() && peer_request_params_.has_value()));
-  ZX_ASSERT(!(is_responder() && !peer_request_params_.has_value()));
+  ZX_ASSERT(!(role == Role::kInitiator && peer_request_params_.has_value()));
+  ZX_ASSERT(!(role == Role::kResponder && !peer_request_params_.has_value()));
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase1::Start() {
   ZX_ASSERT(!has_failed());
-  if (is_responder()) {
+  if (role() == Role::kResponder) {
     ZX_ASSERT(peer_request_params_.has_value());
     RespondToPairingRequest(*peer_request_params_);
     return;
@@ -70,7 +69,7 @@ void Phase1::Start() {
 
 void Phase1::InitiateFeatureExchange() {
   // Only the initiator can initiate the feature exchange.
-  ZX_ASSERT(is_initiator());
+  ZX_ASSERT(role() == Role::kInitiator);
   // Pairing should not be in progress when this function is called
   ZX_ASSERT(!feature_exchange_pending_);
   auto pdu = util::NewPdu(sizeof(PairingRequestParams));
@@ -97,8 +96,9 @@ void Phase1::InitiateFeatureExchange() {
 }
 
 void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
-  // We should only be in this state when pairing is initiated by the remote i.e. we are the slave.
-  ZX_ASSERT(is_responder());
+  // We should only be in this state when pairing is initiated by the remote i.e. we are the
+  // responder.
+  ZX_ASSERT(role() == Role::kResponder);
   ZX_ASSERT(!feature_exchange_pending_);
   feature_exchange_pending_ = true;
 
@@ -164,12 +164,11 @@ LocalPairingParams Phase1::BuildPairingParameters() {
       local_params.local_keys |= KeyDistGen::kIdKey;
     }
 
-    // When we are the master, we request that the peer send us encryption information as it is
+    // When we are the initiator, we request that the peer send us encryption information as it is
     // required to do so (Vol 3, Part H, 2.4.2.3). Otherwise we always request to distribute it.
-    // While Vol 3 Part H Section 3.6.1 says that the master may distribute their LTK as well, this
-    // conditional check here ensures that only the responder will send their LTK. Our stack will
-    // not handle both sides sending their LTK correctly, and one will be overwritten.
-    if (is_initiator()) {
+    // Per spec Vol. 3 Part H Section 3.6.1, the initiator may distribute the LTK as well, but
+    // Fuchsia does not yet handle this case - see TODO(fxbug.dev/49371).
+    if (role() == Role::kInitiator) {
       local_params.remote_keys |= KeyDistGen::kEncKey;
     } else {
       local_params.local_keys |= KeyDistGen::kEncKey;
@@ -268,7 +267,7 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
 
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
   // Support receiving a pairing response only as the initiator.
-  if (is_responder()) {
+  if (role() == Role::kResponder) {
     bt_log(TRACE, "sm", "received pairing response when acting as responder");
     Abort(ErrorCode::kCommandNotSupported);
     return;

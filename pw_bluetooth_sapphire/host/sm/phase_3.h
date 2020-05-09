@@ -41,9 +41,8 @@ class Phase3 final : public ActivePhase, public PairingChannelHandler {
   //     some keys to distribute if Phase3 exists - construction will panic if both the local &
   //     remote key_distribution fields of features are 0.
   //   - |le_sec|: The current security properties of key encrypting the link.
-  Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-         hci::Connection::Role role, PairingFeatures features, SecurityProperties le_sec,
-         Phase3CompleteCallback on_complete);
+  Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+         PairingFeatures features, SecurityProperties le_sec, Phase3CompleteCallback on_complete);
   ~Phase3() override = default;
 
   // Performs the key distribution phase of pairing.

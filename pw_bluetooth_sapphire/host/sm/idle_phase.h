@@ -15,7 +15,7 @@ namespace bt {
 namespace sm {
 
 // Represents the state an SMP pairing not in progress. Its only responsibilites are accepting and
-// passing up Security Requests as master / Pairing Requests as slave.
+// passing up Security Requests as initiator / Pairing Requests as responder.
 //
 // This class is not thread safe and is meant to be accessed on the thread it was created on. All
 // callbacks will be run by the default dispatcher of an IdlePhase's creation thread.
@@ -30,9 +30,8 @@ class IdlePhase final : public PairingPhase, public PairingChannelHandler {
   //   - |role|: The local connection role.
   //   - |on_pairing_req|: callback which signals the receiption of an SMP Pairing Request.
   //   - |on_security_req|: callback which handles the reception of an SMP Security Request.
-  IdlePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-            hci::Connection::Role role, PairingRequestCallback on_pairing_req,
-            SecurityRequestCallback on_security_req);
+  IdlePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+            PairingRequestCallback on_pairing_req, SecurityRequestCallback on_security_req);
 
   ~IdlePhase() override = default;
 

@@ -65,8 +65,8 @@ class PairingPhase {
 
   virtual ~PairingPhase() = default;
 
-  // Returns the connection role.
-  hci::Connection::Role role() const { return role_; }
+  // Returns the SMP role.
+  Role role() const { return role_; }
 
  protected:
   // Protected constructor as PairingPhases should not be created directly. Initializes this
@@ -74,8 +74,7 @@ class PairingPhase {
   //   - |chan|: The L2CAP SMP fixed channel.
   //   - |listener|: The class that will handle higher-level requests from the current phase.
   //   - |role|: The local connection role.
-  PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-               hci::Connection::Role role);
+  PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role);
 
   // Concrete classes of PairingPhase must be PairingChannelHandlers and set the channel's handler
   // to a weak pointer to themselves. This abstract method forces concrete PairingPhases to vend
@@ -90,15 +89,12 @@ class PairingPhase {
     return *chan_;
   }
 
-  bool is_initiator() const { return role_ == hci::Connection::Role::kMaster; }
-  bool is_responder() const { return role_ == hci::Connection::Role::kSlave; }
-
   fxl::WeakPtr<Listener> listener() { return listener_; }
 
  private:
   fxl::WeakPtr<PairingChannel> chan_;
   fxl::WeakPtr<Listener> listener_;
-  hci::Connection::Role role_;
+  Role role_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
 };
