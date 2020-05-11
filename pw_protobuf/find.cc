@@ -16,7 +16,7 @@
 
 namespace pw::protobuf {
 
-Status FindDecodeHandler::ProcessField(Decoder* decoder,
+Status FindDecodeHandler::ProcessField(CallbackDecoder& decoder,
                                        uint32_t field_number) {
   if (field_number != field_number_) {
     // Continue to the next field.
@@ -29,12 +29,11 @@ Status FindDecodeHandler::ProcessField(Decoder* decoder,
   }
 
   span<const std::byte> submessage;
-  if (Status status = decoder->ReadBytes(field_number, &submessage);
-      !status.ok()) {
+  if (Status status = decoder.ReadBytes(&submessage); !status.ok()) {
     return status;
   }
 
-  Decoder subdecoder;
+  CallbackDecoder subdecoder;
   subdecoder.set_handler(nested_handler_);
   return subdecoder.Decode(submessage);
 }

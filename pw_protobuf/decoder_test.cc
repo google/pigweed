@@ -22,27 +22,28 @@ namespace {
 
 class TestDecodeHandler : public DecodeHandler {
  public:
-  Status ProcessField(Decoder* decoder, uint32_t field_number) override {
+  Status ProcessField(CallbackDecoder& decoder,
+                      uint32_t field_number) override {
     std::string_view str;
 
     switch (field_number) {
       case 1:
-        decoder->ReadInt32(field_number, &test_int32);
+        decoder.ReadInt32(&test_int32);
         break;
       case 2:
-        decoder->ReadSint32(field_number, &test_sint32);
+        decoder.ReadSint32(&test_sint32);
         break;
       case 3:
-        decoder->ReadBool(field_number, &test_bool);
+        decoder.ReadBool(&test_bool);
         break;
       case 4:
-        decoder->ReadDouble(field_number, &test_double);
+        decoder.ReadDouble(&test_double);
         break;
       case 5:
-        decoder->ReadFixed32(field_number, &test_fixed32);
+        decoder.ReadFixed32(&test_fixed32);
         break;
       case 6:
-        decoder->ReadString(field_number, &str);
+        decoder.ReadString(&str);
         std::memcpy(test_string, str.data(), str.size());
         test_string[str.size()] = '\0';
         break;
@@ -62,7 +63,101 @@ class TestDecodeHandler : public DecodeHandler {
 };
 
 TEST(Decoder, Decode) {
-  Decoder decoder;
+  // clang-format off
+  uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+    // type=bool, k=3, v=false
+    0x18, 0x00,
+    // type=double, k=4, v=3.14159
+    0x21, 0x6e, 0x86, 0x1b, 0xf0, 0xf9, 0x21, 0x09, 0x40,
+    // type=fixed32, k=5, v=0xdeadbeef
+    0x2d, 0xef, 0xbe, 0xad, 0xde,
+    // type=string, k=6, v="Hello world"
+    0x32, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
+  };
+  // clang-format on
+
+  Decoder decoder(as_bytes(span(encoded_proto)));
+
+  int32_t v1 = 0;
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 1u);
+  EXPECT_EQ(decoder.ReadInt32(&v1), Status::OK);
+  EXPECT_EQ(v1, 42);
+
+  int32_t v2 = 0;
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 2u);
+  EXPECT_EQ(decoder.ReadSint32(&v2), Status::OK);
+  EXPECT_EQ(v2, -13);
+
+  bool v3 = true;
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 3u);
+  EXPECT_EQ(decoder.ReadBool(&v3), Status::OK);
+  EXPECT_FALSE(v3);
+
+  double v4 = 0;
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 4u);
+  EXPECT_EQ(decoder.ReadDouble(&v4), Status::OK);
+  EXPECT_EQ(v4, 3.14159);
+
+  uint32_t v5 = 0;
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 5u);
+  EXPECT_EQ(decoder.ReadFixed32(&v5), Status::OK);
+  EXPECT_EQ(v5, 0xdeadbeef);
+
+  std::string_view v6;
+  char buffer[16];
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 6u);
+  EXPECT_EQ(decoder.ReadString(&v6), Status::OK);
+  std::memcpy(buffer, v6.data(), v6.size());
+  buffer[v6.size()] = '\0';
+  EXPECT_STREQ(buffer, "Hello world");
+
+  EXPECT_EQ(decoder.Next(), Status::OUT_OF_RANGE);
+}
+
+TEST(Decoder, Decode_SkipsUnusedFields) {
+  // clang-format off
+  uint8_t encoded_proto[] = {
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // type=sint32, k=2, v=-13
+    0x10, 0x19,
+    // type=bool, k=3, v=false
+    0x18, 0x00,
+    // type=double, k=4, v=3.14159
+    0x21, 0x6e, 0x86, 0x1b, 0xf0, 0xf9, 0x21, 0x09, 0x40,
+    // type=fixed32, k=5, v=0xdeadbeef
+    0x2d, 0xef, 0xbe, 0xad, 0xde,
+    // type=string, k=6, v="Hello world"
+    0x32, 0x0b, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
+  };
+  // clang-format on
+
+  Decoder decoder(as_bytes(span(encoded_proto)));
+
+  // Don't process any fields except for the fourth. Next should still iterate
+  // correctly despite field values not being consumed.
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  ASSERT_EQ(decoder.FieldNumber(), 4u);
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  EXPECT_EQ(decoder.Next(), Status::OK);
+  EXPECT_EQ(decoder.Next(), Status::OUT_OF_RANGE);
+}
+
+TEST(CallbackDecoder, Decode) {
+  CallbackDecoder decoder;
   TestDecodeHandler handler;
 
   // clang-format off
@@ -93,8 +188,8 @@ TEST(Decoder, Decode) {
   EXPECT_STREQ(handler.test_string, "Hello world");
 }
 
-TEST(Decoder, Decode_OverridesDuplicateFields) {
-  Decoder decoder;
+TEST(CallbackDecoder, Decode_OverridesDuplicateFields) {
+  CallbackDecoder decoder;
   TestDecodeHandler handler;
 
   // clang-format off
@@ -114,8 +209,8 @@ TEST(Decoder, Decode_OverridesDuplicateFields) {
   EXPECT_EQ(handler.test_int32, 44);
 }
 
-TEST(Decoder, Decode_Empty) {
-  Decoder decoder;
+TEST(CallbackDecoder, Decode_Empty) {
+  CallbackDecoder decoder;
   TestDecodeHandler handler;
 
   decoder.set_handler(&handler);
@@ -125,8 +220,8 @@ TEST(Decoder, Decode_Empty) {
   EXPECT_EQ(handler.test_sint32, 0);
 }
 
-TEST(Decoder, Decode_BadData) {
-  Decoder decoder;
+TEST(CallbackDecoder, Decode_BadData) {
+  CallbackDecoder decoder;
   TestDecodeHandler handler;
 
   // Field key without a value.
@@ -139,13 +234,14 @@ TEST(Decoder, Decode_BadData) {
 // Only processes fields numbered 1 or 3.
 class OneThreeDecodeHandler : public DecodeHandler {
  public:
-  Status ProcessField(Decoder* decoder, uint32_t field_number) override {
+  Status ProcessField(CallbackDecoder& decoder,
+                      uint32_t field_number) override {
     switch (field_number) {
       case 1:
-        EXPECT_EQ(decoder->ReadInt32(field_number, &field_one), Status::OK);
+        EXPECT_EQ(decoder.ReadInt32(&field_one), Status::OK);
         break;
       case 3:
-        EXPECT_EQ(decoder->ReadInt32(field_number, &field_three), Status::OK);
+        EXPECT_EQ(decoder.ReadInt32(&field_three), Status::OK);
         break;
       default:
         // Do nothing.
@@ -161,8 +257,8 @@ class OneThreeDecodeHandler : public DecodeHandler {
   int32_t field_three = 0;
 };
 
-TEST(Decoder, Decode_SkipsUnprocessedFields) {
-  Decoder decoder;
+TEST(CallbackDecoder, Decode_SkipsUnprocessedFields) {
+  CallbackDecoder decoder;
   OneThreeDecodeHandler handler;
 
   // clang-format off
@@ -192,16 +288,17 @@ TEST(Decoder, Decode_SkipsUnprocessedFields) {
   EXPECT_EQ(handler.field_three, 99);
 }
 
-// Only processes fields numbered 1 or 3.
+// Only processes fields numbered 1 or 3, and stops the decode after hitting 1.
 class ExitOnOneDecoder : public DecodeHandler {
  public:
-  Status ProcessField(Decoder* decoder, uint32_t field_number) override {
+  Status ProcessField(CallbackDecoder& decoder,
+                      uint32_t field_number) override {
     switch (field_number) {
       case 1:
-        EXPECT_EQ(decoder->ReadInt32(field_number, &field_one), Status::OK);
+        EXPECT_EQ(decoder.ReadInt32(&field_one), Status::OK);
         return Status::CANCELLED;
       case 3:
-        EXPECT_EQ(decoder->ReadInt32(field_number, &field_three), Status::OK);
+        EXPECT_EQ(decoder.ReadInt32(&field_three), Status::OK);
         break;
       default:
         // Do nothing.
@@ -215,8 +312,8 @@ class ExitOnOneDecoder : public DecodeHandler {
   int32_t field_three = 1111;
 };
 
-TEST(Decoder, Decode_StopsOnNonOkStatus) {
-  Decoder decoder;
+TEST(CallbackDecoder, Decode_StopsOnNonOkStatus) {
+  CallbackDecoder decoder;
   ExitOnOneDecoder handler;
 
   // clang-format off

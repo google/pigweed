@@ -41,7 +41,7 @@ constexpr uint8_t encoded_proto[] = {
 };
 
 TEST(FindDecodeHandler, SingleLevel_FindsExistingField) {
-  Decoder decoder;
+  CallbackDecoder decoder;
   FindDecodeHandler finder(3);
 
   decoder.set_handler(&finder);
@@ -52,7 +52,7 @@ TEST(FindDecodeHandler, SingleLevel_FindsExistingField) {
 }
 
 TEST(FindDecodeHandler, SingleLevel_DoesntFindNonExistingField) {
-  Decoder decoder;
+  CallbackDecoder decoder;
   FindDecodeHandler finder(8);
 
   decoder.set_handler(&finder);
@@ -63,7 +63,7 @@ TEST(FindDecodeHandler, SingleLevel_DoesntFindNonExistingField) {
 }
 
 TEST(FindDecodeHandler, MultiLevel_FindsExistingNestedField) {
-  Decoder decoder;
+  CallbackDecoder decoder;
   FindDecodeHandler nested_finder(1);
   FindDecodeHandler finder(7, &nested_finder);
 
@@ -76,7 +76,7 @@ TEST(FindDecodeHandler, MultiLevel_FindsExistingNestedField) {
 }
 
 TEST(FindDecodeHandler, MultiLevel_DoesntFindNonExistingNestedField) {
-  Decoder decoder;
+  CallbackDecoder decoder;
   FindDecodeHandler nested_finder(3);
   FindDecodeHandler finder(7, &nested_finder);
 

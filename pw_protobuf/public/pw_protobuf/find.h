@@ -29,7 +29,7 @@ class FindDecodeHandler final : public DecodeHandler {
   constexpr FindDecodeHandler(uint32_t field_number, FindDecodeHandler* nested)
       : field_number_(field_number), found_(false), nested_handler_(nested) {}
 
-  Status ProcessField(Decoder* decoder, uint32_t field_number) override;
+  Status ProcessField(CallbackDecoder& decoder, uint32_t field_number) override;
 
   bool found() const { return found_; }
 

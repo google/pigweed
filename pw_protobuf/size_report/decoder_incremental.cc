@@ -28,98 +28,50 @@ constexpr uint8_t encoded_proto[] = {
 // clang-format on
 }  // namespace
 
-class TestDecodeHandler : public pw::protobuf::DecodeHandler {
- public:
-  pw::Status ProcessField(pw::protobuf::Decoder* decoder,
-                          uint32_t field_number) override {
-    std::string_view str;
-
-    switch (field_number) {
-      case 1:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
-        }
-        break;
-      case 2:
-        if (!decoder->ReadSint32(field_number, &test_sint32).ok()) {
-          test_sint32 = 0;
-        }
-        break;
-      case 3:
-        if (!decoder->ReadBool(field_number, &test_bool).ok()) {
-          test_bool = false;
-        }
-        break;
-      case 4:
-        if (!decoder->ReadDouble(field_number, &test_double).ok()) {
-          test_double = 0;
-        }
-        break;
-      case 5:
-        if (!decoder->ReadFixed32(field_number, &test_fixed32).ok()) {
-          test_fixed32 = 0;
-        }
-        break;
-      case 6:
-        if (decoder->ReadString(field_number, &str).ok()) {
-          // In real code:
-          // assert(str.size() < sizeof(test_string));
-          std::memcpy(test_string, str.data(), str.size());
-          test_string[str.size()] = '\0';
-        }
-        break;
-
-      // Extra fields.
-      case 21:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
-        }
-        break;
-      case 22:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
-        }
-        break;
-      case 23:
-        if (!decoder->ReadInt32(field_number, &test_int32).ok()) {
-          test_int32 = 0;
-        }
-        break;
-      case 24:
-        if (!decoder->ReadSint32(field_number, &test_sint32).ok()) {
-          test_sint32 = 0;
-        }
-        break;
-      case 25:
-        if (!decoder->ReadSint32(field_number, &test_sint32).ok()) {
-          test_sint32 = 0;
-        }
-        break;
-    }
-
-    return pw::Status::OK;
-  }
-
-  int32_t test_int32 = 0;
-  int32_t test_sint32 = 0;
-  bool test_bool = false;
-  double test_double = 0;
-  uint32_t test_fixed32 = 0;
-  char test_string[16];
-};
-
 int* volatile non_optimizable_pointer;
 
 int main() {
   pw::bloat::BloatThisBinary();
 
-  pw::protobuf::Decoder decoder;
-  TestDecodeHandler handler;
+  int32_t test_int32, test_sint32;
+  std::string_view str;
+  float f;
+  double d;
+  uint32_t uint;
 
-  decoder.set_handler(&handler);
-  decoder.Decode(pw::as_bytes(pw::span(encoded_proto)));
+  pw::protobuf::Decoder decoder(pw::as_bytes(pw::span(encoded_proto)));
+  while (decoder.Next().ok()) {
+    switch (decoder.FieldNumber()) {
+      case 1:
+        decoder.ReadInt32(&test_int32);
+        break;
+      case 2:
+        decoder.ReadSint32(&test_sint32);
+        break;
+      case 3:
+        decoder.ReadString(&str);
+        break;
+      case 4:
+        decoder.ReadFloat(&f);
+        break;
+      case 5:
+        decoder.ReadDouble(&d);
+        break;
 
-  *non_optimizable_pointer = handler.test_int32 + handler.test_sint32;
+      // Extra fields over decoder_full.
+      case 21:
+        decoder.ReadInt32(&test_int32);
+        break;
+      case 22:
+        decoder.ReadUint32(&uint);
+        break;
+      case 23:
+        decoder.ReadSint32(&test_sint32);
+        break;
+    }
+  }
+
+  *non_optimizable_pointer = test_int32 + test_sint32;
 
   return 0;
 }

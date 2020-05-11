@@ -21,10 +21,8 @@
 #include "pw_varint/varint.h"
 
 // This file defines a low-level event-based protobuf wire format decoder.
-// The decoder processes an encoded message by iterating over its fields and
-// notifying a handler for each field it encounters. The handler receives a
-// reference to the decoder object and can extract the field's value from the
-// message.
+// The decoder processes an encoded message by iterating over its fields. The
+// caller can extract the values of any fields it cares about.
 //
 // The decoder does not provide any in-memory data structures to represent a
 // protobuf message's data. More sophisticated APIs can be built on top of the
@@ -32,17 +30,161 @@
 //
 // Example usage:
 //
+//   Decoder decoder(proto);
+//   while (decoder.Next().ok()) {
+//     switch (decoder.FieldNumber()) {
+//       case 1:
+//         decoder.ReadUint32(&my_uint32);
+//         break;
+//       // ... and other fields.
+//     }
+//   }
+//
+namespace pw::protobuf {
+
+class Decoder {
+ public:
+  constexpr Decoder(span<const std::byte> proto)
+      : proto_(proto), previous_field_consumed_(true) {}
+
+  Decoder(const Decoder& other) = delete;
+  Decoder& operator=(const Decoder& other) = delete;
+
+  // Advances to the next field in the proto.
+  //
+  // If Next() returns OK, there is guaranteed to be a valid protobuf field at
+  // the current cursor position.
+  //
+  // Return values:
+  //
+  //             OK: Advanced to a valid proto field.
+  //   OUT_OF_RANGE: Reached the end of the proto message.
+  //      DATA_LOSS: Invalid protobuf data.
+  //
+  Status Next();
+
+  // Returns the field number of the field at the current cursor position.
+  uint32_t FieldNumber() const;
+
+  // Reads a proto int32 value from the current cursor.
+  Status ReadInt32(int32_t* out) {
+    return ReadUint32(reinterpret_cast<uint32_t*>(out));
+  }
+
+  // Reads a proto uint32 value from the current cursor.
+  Status ReadUint32(uint32_t* out);
+
+  // Reads a proto int64 value from the current cursor.
+  Status ReadInt64(int64_t* out) {
+    return ReadVarint(reinterpret_cast<uint64_t*>(out));
+  }
+
+  // Reads a proto uint64 value from the current cursor.
+  Status ReadUint64(uint64_t* out) { return ReadVarint(out); }
+
+  // Reads a proto sint32 value from the current cursor.
+  Status ReadSint32(int32_t* out);
+
+  // Reads a proto sint64 value from the current cursor.
+  Status ReadSint64(int64_t* out);
+
+  // Reads a proto bool value from the current cursor.
+  Status ReadBool(bool* out);
+
+  // Reads a proto fixed32 value from the current cursor.
+  Status ReadFixed32(uint32_t* out) { return ReadFixed(out); }
+
+  // Reads a proto fixed64 value from the current cursor.
+  Status ReadFixed64(uint64_t* out) { return ReadFixed(out); }
+
+  // Reads a proto sfixed32 value from the current cursor.
+  Status ReadSfixed32(int32_t* out) {
+    return ReadFixed32(reinterpret_cast<uint32_t*>(out));
+  }
+
+  // Reads a proto sfixed64 value from the current cursor.
+  Status ReadSfixed64(int64_t* out) {
+    return ReadFixed64(reinterpret_cast<uint64_t*>(out));
+  }
+
+  // Reads a proto float value from the current cursor.
+  Status ReadFloat(float* out) {
+    static_assert(sizeof(float) == sizeof(uint32_t),
+                  "Float and uint32_t must be the same size for protobufs");
+    return ReadFixed(out);
+  }
+
+  // Reads a proto double value from the current cursor.
+  Status ReadDouble(double* out) {
+    static_assert(sizeof(double) == sizeof(uint64_t),
+                  "Double and uint64_t must be the same size for protobufs");
+    return ReadFixed(out);
+  }
+
+  // Reads a proto string value from the current cursor and returns a view of it
+  // in `out`. The raw protobuf data must outlive `out`. If the string field is
+  // invalid, `out` is not modified.
+  Status ReadString(std::string_view* out);
+
+  // Reads a proto bytes value from the current cursor and returns a view of it
+  // in `out`. The raw protobuf data must outlive the `out` span. If the bytes
+  // field is invalid, `out` is not modified.
+  Status ReadBytes(span<const std::byte>* out) { return ReadDelimited(out); }
+
+  // Resets the decoder to start reading a new proto message.
+  void Reset(span<const std::byte> proto) {
+    proto_ = proto;
+    previous_field_consumed_ = true;
+  }
+
+ private:
+  // Advances the cursor to the next field in the proto.
+  Status SkipField();
+
+  // Returns the size of the current field, or 0 if the field is invalid.
+  size_t FieldSize() const;
+
+  Status ConsumeKey(WireType expected_type);
+
+  // Reads a varint key-value pair from the current cursor position.
+  Status ReadVarint(uint64_t* out);
+
+  // Reads a fixed-size key-value pair from the current cursor position.
+  Status ReadFixed(std::byte* out, size_t size);
+
+  template <typename T>
+  Status ReadFixed(T* out) {
+    static_assert(
+        sizeof(T) == sizeof(uint32_t) || sizeof(T) == sizeof(uint64_t),
+        "Protobuf fixed-size fields must be 32- or 64-bit");
+    return ReadFixed(reinterpret_cast<std::byte*>(out), sizeof(T));
+  }
+
+  Status ReadDelimited(span<const std::byte>* out);
+
+  span<const std::byte> proto_;
+  bool previous_field_consumed_;
+};
+
+class DecodeHandler;
+
+// A protobuf decoder that iterates over an encoded protobuf, calling a handler
+// for each field it encounters.
+//
+// Example usage:
+//
 //   class FooProtoHandler : public DecodeHandler {
 //    public:
-//     Status ProcessField(Decoder* decoder, uint32_t field_number) override {
+//     Status ProcessField(CallbackDecoder& decoder,
+//                         uint32_t field_number) override {
 //       switch (field_number) {
 //         case FooFields::kBar:
-//           if (!decoder->ReadSint32(field_number, &bar).ok()) {
+//           if (!decoder.ReadSint32(&bar).ok()) {
 //             bar = 0;
 //           }
 //           break;
 //         case FooFields::kBaz:
-//           if (!decoder->ReadUint32(field_number, &baz).ok()) {
+//           if (!decoder.ReadUint32(&baz).ok()) {
 //             baz = 0;
 //           }
 //           break;
@@ -68,19 +210,13 @@
 //              handler.bar, handler.baz);
 //   }
 //
-
-namespace pw::protobuf {
-
-class DecodeHandler;
-
-// A protobuf decoder that iterates over an encoded protobuf, calling a handler
-// for each field it encounters.
-class Decoder {
+class CallbackDecoder {
  public:
-  constexpr Decoder() : handler_(nullptr), state_(kReady) {}
+  constexpr CallbackDecoder()
+      : decoder_({}), handler_(nullptr), state_(kReady) {}
 
-  Decoder(const Decoder& other) = delete;
-  Decoder& operator=(const Decoder& other) = delete;
+  CallbackDecoder(const CallbackDecoder& other) = delete;
+  CallbackDecoder& operator=(const CallbackDecoder& other) = delete;
 
   void set_handler(DecodeHandler* handler) { handler_ = handler; }
 
@@ -89,123 +225,54 @@ class Decoder {
   Status Decode(span<const std::byte> proto);
 
   // Reads a proto int32 value from the current cursor.
-  Status ReadInt32(uint32_t field_number, int32_t* out) {
-    return ReadUint32(field_number, reinterpret_cast<uint32_t*>(out));
-  }
+  Status ReadInt32(int32_t* out) { return decoder_.ReadInt32(out); }
 
   // Reads a proto uint32 value from the current cursor.
-  Status ReadUint32(uint32_t field_number, uint32_t* out) {
-    uint64_t value = 0;
-    Status status = ReadUint64(field_number, &value);
-    if (!status.ok()) {
-      return status;
-    }
-    if (value > std::numeric_limits<uint32_t>::max()) {
-      return Status::OUT_OF_RANGE;
-    }
-    *out = value;
-    return Status::OK;
-  }
+  Status ReadUint32(uint32_t* out) { return decoder_.ReadUint32(out); }
 
   // Reads a proto int64 value from the current cursor.
-  Status ReadInt64(uint32_t field_number, int64_t* out) {
-    return ReadVarint(field_number, reinterpret_cast<uint64_t*>(out));
-  }
+  Status ReadInt64(int64_t* out) { return decoder_.ReadInt64(out); }
 
   // Reads a proto uint64 value from the current cursor.
-  Status ReadUint64(uint32_t field_number, uint64_t* out) {
-    return ReadVarint(field_number, out);
-  }
-
-  // Reads a proto sint32 value from the current cursor.
-  Status ReadSint32(uint32_t field_number, int32_t* out) {
-    int64_t value = 0;
-    Status status = ReadSint64(field_number, &value);
-    if (!status.ok()) {
-      return status;
-    }
-    if (value > std::numeric_limits<int32_t>::max()) {
-      return Status::OUT_OF_RANGE;
-    }
-    *out = value;
-    return Status::OK;
-  }
+  Status ReadUint64(uint64_t* out) { return decoder_.ReadUint64(out); }
 
   // Reads a proto sint64 value from the current cursor.
-  Status ReadSint64(uint32_t field_number, int64_t* out) {
-    uint64_t value = 0;
-    Status status = ReadUint64(field_number, &value);
-    if (!status.ok()) {
-      return status;
-    }
-    *out = varint::ZigZagDecode(value);
-    return Status::OK;
-  }
+  Status ReadSint32(int32_t* out) { return decoder_.ReadSint32(out); }
+
+  // Reads a proto sint64 value from the current cursor.
+  Status ReadSint64(int64_t* out) { return decoder_.ReadSint64(out); }
 
   // Reads a proto bool value from the current cursor.
-  Status ReadBool(uint32_t field_number, bool* out) {
-    uint64_t value = 0;
-    Status status = ReadUint64(field_number, &value);
-    if (!status.ok()) {
-      return status;
-    }
-    *out = value;
-    return Status::OK;
-  }
+  Status ReadBool(bool* out) { return decoder_.ReadBool(out); }
 
   // Reads a proto fixed32 value from the current cursor.
-  Status ReadFixed32(uint32_t field_number, uint32_t* out) {
-    return ReadFixed(field_number, out);
-  }
+  Status ReadFixed32(uint32_t* out) { return decoder_.ReadFixed32(out); }
 
   // Reads a proto fixed64 value from the current cursor.
-  Status ReadFixed64(uint32_t field_number, uint64_t* out) {
-    return ReadFixed(field_number, out);
-  }
+  Status ReadFixed64(uint64_t* out) { return decoder_.ReadFixed64(out); }
 
   // Reads a proto sfixed32 value from the current cursor.
-  Status ReadSfixed32(uint32_t field_number, int32_t* out) {
-    return ReadFixed32(field_number, reinterpret_cast<uint32_t*>(out));
-  }
+  Status ReadSfixed32(int32_t* out) { return decoder_.ReadSfixed32(out); }
 
   // Reads a proto sfixed64 value from the current cursor.
-  Status ReadSfixed64(uint32_t field_number, int64_t* out) {
-    return ReadFixed64(field_number, reinterpret_cast<uint64_t*>(out));
-  }
+  Status ReadSfixed64(int64_t* out) { return decoder_.ReadSfixed64(out); }
 
   // Reads a proto float value from the current cursor.
-  Status ReadFloat(uint32_t field_number, float* out) {
-    static_assert(sizeof(float) == sizeof(uint32_t),
-                  "Float and uint32_t must be the same size for protobufs");
-    return ReadFixed(field_number, out);
-  }
+  Status ReadFloat(float* out) { return decoder_.ReadFloat(out); }
 
   // Reads a proto double value from the current cursor.
-  Status ReadDouble(uint32_t field_number, double* out) {
-    static_assert(sizeof(double) == sizeof(uint64_t),
-                  "Double and uint64_t must be the same size for protobufs");
-    return ReadFixed(field_number, out);
-  }
+  Status ReadDouble(double* out) { return decoder_.ReadDouble(out); }
 
   // Reads a proto string value from the current cursor and returns a view of it
   // in `out`. The raw protobuf data must outlive `out`. If the string field is
   // invalid, `out` is not modified.
-  Status ReadString(uint32_t field_number, std::string_view* out) {
-    span<const std::byte> bytes;
-    Status status = ReadDelimited(field_number, &bytes);
-    if (!status.ok()) {
-      return status;
-    }
-    *out = std::string_view(reinterpret_cast<const char*>(bytes.data()),
-                            bytes.size());
-    return Status::OK;
-  }
+  Status ReadString(std::string_view* out) { return decoder_.ReadString(out); }
 
   // Reads a proto bytes value from the current cursor and returns a view of it
   // in `out`. The raw protobuf data must outlive the `out` span. If the bytes
   // field is invalid, `out` is not modified.
-  Status ReadBytes(uint32_t field_number, span<const std::byte>* out) {
-    return ReadDelimited(field_number, out);
+  Status ReadBytes(span<const std::byte>* out) {
+    return decoder_.ReadBytes(out);
   }
 
   bool cancelled() const { return state_ == kDecodeCancelled; };
@@ -218,43 +285,14 @@ class Decoder {
     kDecodeFailed,
   };
 
-  // Reads a varint key-value pair from the current cursor position.
-  Status ReadVarint(uint32_t field_number, uint64_t* out);
-
-  // Reads a fixed-size key-value pair from the current cursor position.
-  Status ReadFixed(uint32_t field_number, std::byte* out, size_t size);
-
-  template <typename T>
-  Status ReadFixed(uint32_t field_number, T* out) {
-    static_assert(
-        sizeof(T) == sizeof(uint32_t) || sizeof(T) == sizeof(uint64_t),
-        "Protobuf fixed-size fields must be 32- or 64-bit");
-    union {
-      T value;
-      std::byte bytes[sizeof(T)];
-    };
-    Status status = ReadFixed(field_number, bytes, sizeof(bytes));
-    if (!status.ok()) {
-      return status;
-    }
-    *out = value;
-    return Status::OK;
-  }
-
-  Status ReadDelimited(uint32_t field_number, span<const std::byte>* out);
-
-  Status ConsumeKey(uint32_t field_number, WireType expected_type);
-
-  // Advances the cursor to the next field in the proto.
-  void SkipField();
-
+  Decoder decoder_;
   DecodeHandler* handler_;
 
   State state_;
-  span<const std::byte> proto_;
 };
 
-// The event-handling interface implemented for a proto decoding operation.
+// The event-handling interface implemented for a proto callback decoding
+// operation.
 class DecodeHandler {
  public:
   virtual ~DecodeHandler() = default;
@@ -266,7 +304,8 @@ class DecodeHandler {
   // If the status returned is not Status::OK, the decode operation is exited
   // with the provided status. Returning Status::CANCELLED allows a convenient
   // way of stopping a decode early (for example, if a desired field is found).
-  virtual Status ProcessField(Decoder* decoder, uint32_t field_number) = 0;
+  virtual Status ProcessField(CallbackDecoder& decoder,
+                              uint32_t field_number) = 0;
 };
 
 }  // namespace pw::protobuf
