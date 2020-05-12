@@ -18,6 +18,7 @@ import csv
 from datetime import datetime
 import io
 import logging
+from pathlib import Path
 import re
 import struct
 from typing import BinaryIO, Callable, Dict, Iterable, List, NamedTuple
@@ -52,6 +53,9 @@ def default_hash(string: Union[str, bytes]) -> int:
     return pw_tokenizer_65599_fixed_length_hash(string, DEFAULT_HASH_LENGTH)
 
 
+_EntryKey = Tuple[int, str]  # Key for uniquely referring to an entry
+
+
 class TokenizedStringEntry:
     """A tokenized string with its metadata."""
     def __init__(self,
@@ -62,7 +66,7 @@ class TokenizedStringEntry:
         self.string = string
         self.date_removed = date_removed
 
-    def key(self) -> Tuple[int, str]:
+    def key(self) -> _EntryKey:
         """The key determines uniqueness for a tokenized string."""
         return self.token, self.string
 
@@ -103,7 +107,10 @@ class Database:
                  tokenize: Callable[[str], int] = default_hash):
         """Creates a token database."""
         # The database dict stores each unique (token, string) entry.
-        self._database: dict = {entry.key(): entry for entry in entries}
+        self._database: Dict[_EntryKey, TokenizedStringEntry] = {
+            entry.key(): entry
+            for entry in entries
+        }
         self.tokenize = tokenize
 
         # This is a cache for fast token lookup that is built as needed.
@@ -211,12 +218,12 @@ class Database:
             date_removed_cutoff = datetime.max
 
         to_delete = [
-            key for key, entry in self._database.items()
+            entry for _, entry in self._database.items()
             if entry.date_removed and entry.date_removed <= date_removed_cutoff
         ]
 
-        for key in to_delete:
-            del self._database[key]
+        for entry in to_delete:
+            del self._database[entry.key()]
 
         return to_delete
 
@@ -242,7 +249,7 @@ class Database:
     """
         self._cache = None
 
-        to_delete: List[Tuple] = []
+        to_delete: List[_EntryKey] = []
 
         if include:
             include_re = [re.compile(pattern) for pattern in include]
@@ -393,22 +400,22 @@ class DatabaseFile(Database):
   This class adds the write_to_file() method that writes to file from which it
   was created in the correct format (CSV or binary).
   """
-    def __init__(self, path: str):
-        self.path = path
+    def __init__(self, path: Union[Path, str]):
+        self.path = Path(path)
 
         # Read the path as a packed binary file.
-        with open(self.path, 'rb') as fd:
+        with self.path.open('rb') as fd:
             if file_is_binary_database(fd):
                 super().__init__(parse_binary(fd))
                 self._export = write_binary
                 return
 
         # Read the path as a CSV file.
-        with open(self.path, 'r', newline='') as file:
+        with self.path.open('r', newline='') as file:
             super().__init__(parse_csv(file))
             self._export = write_csv
 
-    def write_to_file(self, path: Optional[str] = None) -> None:
+    def write_to_file(self, path: Optional[Union[Path, str]] = None) -> None:
         """Exports in the original format to the original or provided path."""
         with open(self.path if path is None else path, 'wb') as fd:
             self._export(self, fd)

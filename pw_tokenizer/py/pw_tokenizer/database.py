@@ -23,10 +23,11 @@ from datetime import datetime
 import glob
 import logging
 import os
+from pathlib import Path
 import re
 import struct
 import sys
-from typing import Dict, Iterable
+from typing import Callable, Dict, Iterable, List
 
 try:
     from pw_tokenizer import elf_reader, tokens
@@ -39,22 +40,36 @@ except ImportError:
 
 _LOG = logging.getLogger('pw_tokenizer')
 
+DEFAULT_DOMAIN = 'default'
+
 
 def _elf_reader(elf) -> elf_reader.Elf:
     return elf if isinstance(elf, elf_reader.Elf) else elf_reader.Elf(elf)
 
 
-def _read_strings_from_elf(elf) -> Iterable[str]:
+def _read_strings_from_elf(elf, domain: str) -> Iterable[str]:
     """Reads the tokenized strings from an elf_reader.Elf or ELF file object."""
-    sections = _elf_reader(elf).dump_sections(r'\.tokenized(\.\d+)?')
+    _LOG.debug('Reading tokenized strings in domain "%s" from %s', domain, elf)
+
+    sections = _elf_reader(elf).dump_sections(
+        rf'^\.pw_tokenized\.{domain}(?:\.\d+)?$')
     if sections is not None:
         for string in sections.split(b'\0'):
             yield string.decode()
 
 
+def tokenization_domains(elf) -> Iterable[str]:
+    """Lists all tokenization domains in an ELF file."""
+    tokenized_section = re.compile(r'\.pw_tokenized\.(?P<domain>.+)(?:\.\d+)?')
+    for section in _elf_reader(elf).sections:
+        match = tokenized_section.match(section.name)
+        if match:
+            yield match.group('domain')
+
+
 def read_tokenizer_metadata(elf) -> Dict[str, int]:
     """Reads the metadata entries from an ELF."""
-    sections = _elf_reader(elf).dump_sections(r'\.tokenized\.meta')
+    sections = _elf_reader(elf).dump_sections(r'\.pw_tokenizer_info')
 
     metadata: Dict[str, int] = {}
     if sections is not None:
@@ -68,7 +83,7 @@ def read_tokenizer_metadata(elf) -> Dict[str, int]:
     return metadata
 
 
-def _load_token_database(db) -> tokens.Database:
+def _load_token_database(db, domain: str) -> tokens.Database:
     """Loads a Database from a database object, ELF, CSV, or binary database."""
     if db is None:
         return tokens.Database()
@@ -77,25 +92,26 @@ def _load_token_database(db) -> tokens.Database:
         return db
 
     if isinstance(db, elf_reader.Elf):
-        return tokens.Database.from_strings(_read_strings_from_elf(db))
+        return tokens.Database.from_strings(_read_strings_from_elf(db, domain))
 
     # If it's a str, it might be a path. Check if it's an ELF or CSV.
-    if isinstance(db, str):
+    if isinstance(db, (str, Path)):
         if not os.path.exists(db):
             raise FileNotFoundError(
-                '"{}" is not a path to a token database'.format(db))
+                f'"{db}" is not a path to a token database')
 
         # Read the path as an ELF file.
         with open(db, 'rb') as fd:
             if elf_reader.compatible_file(fd):
-                return tokens.Database.from_strings(_read_strings_from_elf(fd))
+                return tokens.Database.from_strings(
+                    _read_strings_from_elf(fd, domain))
 
         # Read the path as a packed binary or CSV file.
         return tokens.DatabaseFile(db)
 
     # Assume that it's a file object and check if it's an ELF.
     if elf_reader.compatible_file(db):
-        return tokens.Database.from_strings(_read_strings_from_elf(db))
+        return tokens.Database.from_strings(_read_strings_from_elf(db, domain))
 
     # Read the database as CSV or packed binary from a file object's path.
     if hasattr(db, 'name') and os.path.exists(db.name):
@@ -105,9 +121,10 @@ def _load_token_database(db) -> tokens.Database:
     return tokens.Database(tokens.parse_csv(db))
 
 
-def load_token_database(*databases) -> tokens.Database:
+def load_token_database(*databases,
+                        domain: str = DEFAULT_DOMAIN) -> tokens.Database:
     """Loads a Database from database objects, ELFs, CSVs, or binary files."""
-    return tokens.Database.merged(*(_load_token_database(db)
+    return tokens.Database.merged(*(_load_token_database(db, domain)
                                     for db in databases))
 
 
@@ -126,8 +143,7 @@ def generate_report(db: tokens.Database) -> Dict[str, int]:
     }
 
 
-def _handle_create(elf_or_token_database, database, force, output_type,
-                   include, exclude):
+def _handle_create(databases, database, force, output_type, include, exclude):
     """Creates a token database file from one or more ELF files."""
 
     if database == '-':
@@ -135,12 +151,11 @@ def _handle_create(elf_or_token_database, database, force, output_type,
         fd = sys.stdout.buffer
     elif not force and os.path.exists(database):
         raise FileExistsError(
-            'The file {} already exists! Use --force to overwrite.'.format(
-                database))
+            f'The file {database} already exists! Use --force to overwrite.')
     else:
         fd = open(database, 'wb')
 
-    database = tokens.Database.merged(*elf_or_token_database)
+    database = tokens.Database.merged(*databases)
     database.filter(include, exclude)
 
     with fd:
@@ -149,16 +164,16 @@ def _handle_create(elf_or_token_database, database, force, output_type,
         elif output_type == 'binary':
             tokens.write_binary(database, fd)
         else:
-            raise ValueError('Unknown database type "{}"'.format(output_type))
+            raise ValueError(f'Unknown database type "{output_type}"')
 
     _LOG.info('Wrote database with %d entries to %s as %s', len(database),
               fd.name, output_type)
 
 
-def _handle_add(token_database, elf_or_token_database):
+def _handle_add(token_database, databases):
     initial = len(token_database)
 
-    for source in elf_or_token_database:
+    for source in databases:
         token_database.add((entry.string for entry in source.entries()))
 
     token_database.write_to_file()
@@ -167,10 +182,10 @@ def _handle_add(token_database, elf_or_token_database):
               len(token_database) - initial, token_database.path)
 
 
-def _handle_mark_removals(token_database, elf_or_token_database, date):
+def _handle_mark_removals(token_database, databases, date):
     marked_removed = token_database.mark_removals(
         (entry.string
-         for entry in tokens.Database.merged(*elf_or_token_database).entries()
+         for entry in tokens.Database.merged(*databases).entries()
          if not entry.date_removed), date)
 
     token_database.write_to_file()
@@ -186,57 +201,98 @@ def _handle_purge(token_database, before):
     _LOG.info('Removed %d entries from %s', len(purged), token_database.path)
 
 
-def _handle_report(database, output):
-    for path, db in database:
-        output.write('{name}\n'
-                     '        Entries present: {present_entries}\n'
-                     '        Size of strings: {present_size_bytes} B\n'
-                     '          Total entries: {total_entries}\n'
-                     '  Total size of strings: {total_size_bytes} B\n'
-                     '             Collisions: {collisions} tokens\n'.format(
-                         name=path, **generate_report(db)))
+def _handle_report(token_database_or_elf, output):
+    for path in token_database_or_elf:
+        with path.open('rb') as file:
+            if elf_reader.compatible_file(file):
+                domains = list(tokenization_domains(file))
+            else:
+                domains = [path.name]
+
+        for domain in domains:
+            output.write(
+                '[{name}]\n'
+                '                 Domain: {domain}\n'
+                '        Entries present: {present_entries}\n'
+                '        Size of strings: {present_size_bytes} B\n'
+                '          Total entries: {total_entries}\n'
+                '  Total size of strings: {total_size_bytes} B\n'
+                '             Collisions: {collisions} tokens\n'.format(
+                    name=path,
+                    domain=domain,
+                    **generate_report(load_token_database(path,
+                                                          domain=domain))))
 
 
-def expand_paths_or_globs(paths_or_globs: Iterable[str]) -> Iterable[str]:
+def expand_paths_or_globs(*paths_or_globs: str) -> Iterable[Path]:
     """Expands any globs in a list of paths; raises FileNotFoundError."""
     for path_or_glob in paths_or_globs:
         if os.path.exists(path_or_glob):
             # This is a valid path; yield it without evaluating it as a glob.
-            yield path_or_glob
+            yield Path(path_or_glob)
         else:
             paths = glob.glob(path_or_glob)
             if not paths:
-                raise FileNotFoundError(
-                    '{} is not a valid path'.format(path_or_glob))
+                raise FileNotFoundError(f'{path_or_glob} is not a valid path')
 
             for path in paths:
-                yield path
+                yield Path(path)
 
 
-class LoadTokenDatabase(argparse.Action):
-    """Argparse action that reads tokenized logs from paths or glob patterns."""
-    def __init__(self, option_strings, dest, include_paths=False, **kwargs):
-        """Accepts arguments passed in add_argument.
+class ExpandGlobs(argparse.Action):
+    """Argparse action that expands and appends paths."""
+    def __call__(self, parser, namespace, values, unused_option_string=None):
+        setattr(namespace, self.dest, list(expand_paths_or_globs(*values)))
 
-    Args:
-      option_strings: Forwarded to base argparse.Action.
-      dest: The name of the argument to set; forwarded to base argparse.Action.
-      include_paths: Whether to include the paths to the files for each database
-        in addition to the database itself; if True, a list of (path, database)
-        tuples is produced.
-      **kwargs: Any other arguments to add_argument.
-    """
-        super(LoadTokenDatabase, self).__init__(option_strings, dest, **kwargs)
 
-        if include_paths:  # Make a (path, tokens.Database) tuple for each path.
-            self._load_db = lambda path: (path, load_token_database(path))
-        else:
-            self._load_db = load_token_database
+def _read_elf_with_domain(elf: str, domain: str) -> Iterable[tokens.Database]:
+    for path in expand_paths_or_globs(elf):
+        with path.open('rb') as file:
+            if not elf_reader.compatible_file(file):
+                raise ValueError(f'{elf} is not an ELF file, '
+                                 f'but the "{domain}" domain was specified')
 
+            yield tokens.Database.from_strings(
+                _read_strings_from_elf(file, domain))
+
+
+class _LoadTokenDatabases(argparse.Action):
+    """Argparse action that reads tokenize databases from paths or globs."""
     def __call__(self, parser, namespace, values, option_string=None):
-        setattr(
-            namespace, self.dest,
-            [self._load_db(path) for path in expand_paths_or_globs(values)])
+        databases: List[tokens.Database] = []
+        paths: List[Path] = []
+
+        try:
+            for value in values:
+                if value.count('#') == 1:
+                    databases.extend(_read_elf_with_domain(*value.split('#')))
+                else:
+                    paths.extend(expand_paths_or_globs(value))
+
+            databases += (load_token_database(path) for path in paths)
+        except (FileNotFoundError, ValueError) as err:
+            parser.error(f'argument elf_or_token_database: {err}')
+
+        setattr(namespace, self.dest, databases)
+
+
+def token_databases_parser() -> argparse.ArgumentParser:
+    """Returns an argument parser for reading token databases.
+
+    These arguments can be added to another parser using the parents arg.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        'databases',
+        metavar='elf_or_token_database',
+        nargs='+',
+        action=_LoadTokenDatabases,
+        help=('ELF or token database files from which to read strings and '
+              'tokens. For ELF files, the tokenization domain to read from '
+              'may specified after the path as #domain_name (e.g. '
+              'foo.elf#TEST_DOMAIN). Unless specified, only the default '
+              'domain is read from ELF files; .* reads all domains.'))
+    return parser
 
 
 def _parse_args():
@@ -258,14 +314,7 @@ def _parse_args():
                            required=True,
                            help='The database file to update.')
 
-    option_tokens = argparse.ArgumentParser(add_help=False)
-    option_tokens.add_argument(
-        'elf_or_token_database',
-        nargs='+',
-        action=LoadTokenDatabase,
-        help=(
-            'ELF files or token database files from which to read strings and '
-            'tokens.'))
+    option_tokens = token_databases_parser()
 
     # Top-level argument parser.
     parser = argparse.ArgumentParser(
@@ -358,10 +407,9 @@ def _parse_args():
                                       help='Prints a report about a database.')
     subparser.set_defaults(handler=_handle_report)
     subparser.add_argument(
-        'database',
+        'token_database_or_elf',
         nargs='+',
-        action=LoadTokenDatabase,
-        include_paths=True,
+        action=ExpandGlobs,
         help='The ELF files or token databases about which to generate reports.'
     )
     subparser.add_argument(
@@ -371,7 +419,12 @@ def _parse_args():
         default=sys.stdout,
         help='The file to which to write the output; use - for stdout.')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    handler = args.handler
+    del args.handler
+
+    return handler, args
 
 
 def _init_logging(level: int) -> None:
@@ -386,15 +439,11 @@ def _init_logging(level: int) -> None:
     _LOG.addHandler(log_to_stderr)
 
 
-def _main(args: argparse.Namespace) -> int:
+def _main(handler: Callable, args: argparse.Namespace) -> int:
     _init_logging(logging.INFO)
-
-    handler = args.handler
-    del args.handler
-
     handler(**vars(args))
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(_main(_parse_args()))
+    sys.exit(_main(*_parse_args()))

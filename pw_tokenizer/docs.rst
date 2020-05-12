@@ -371,6 +371,18 @@ not permitted.
   // Tokenizes this string to the "my_custom_domain" domain.
   PW_TOKENIZE_STRING_DOMAIN("my_custom_domain", "Hello, world!");
 
+The database and detokenization command line tools default to reading from the
+default domain. The domain may be specified for ELF files by appending
+``#DOMAIN_NAME`` to the file path. Use ``#.*`` to read from all domains. For
+example, the following reads strings in ``some_domain`` from ``my_image.elf``.
+
+.. code-block:: sh
+
+  ./database.py create --database my_db.csv path/to/my_image.elf#some_domain
+
+See `Managing token databases`_ for information about the ``database.py``
+command line tool.
+
 Token databases
 ===============
 Token databases store a mapping of tokens to the strings they represent. An ELF
@@ -440,7 +452,7 @@ used to extract tokens from compilation artifacts and manage database files.
 Invoke ``database.py`` with ``-h`` for full usage information.
 
 An example ELF file with tokenized logs is provided at
-``pw_tokenizer/py/example_binary_with_tokenized_logs.elf``. You can use that
+``pw_tokenizer/py/example_binary_with_tokenized_strings.elf``. You can use that
 file to experiment with the ``database.py`` commands.
 
 Create a database

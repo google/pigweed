@@ -438,15 +438,12 @@ def _parse_args():
     subparsers = parser.add_subparsers(help='Encoding of the input.')
 
     base64_help = 'Detokenize Base64-encoded data from a file or stdin.'
-    subparser = subparsers.add_parser('base64',
-                                      description=base64_help,
-                                      help=base64_help)
+    subparser = subparsers.add_parser(
+        'base64',
+        description=base64_help,
+        parents=[database.token_databases_parser()],
+        help=base64_help)
     subparser.set_defaults(handler=_handle_base64)
-    subparser.add_argument(
-        'databases',
-        nargs='+',
-        action=database.LoadTokenDatabase,
-        help='Databases (ELF, binary, or CSV) to use to lookup tokens.')
     subparser.add_argument(
         '-i',
         '--input',
