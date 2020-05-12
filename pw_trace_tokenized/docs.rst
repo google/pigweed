@@ -1,0 +1,158 @@
+.. _chapter-pw-trace_tokenized:
+
+.. default-domain:: cpp
+
+.. highlight:: cpp
+
+==================
+pw_trace_tokenized
+==================
+Pigweed's tracing module provides facilities for applications to trace
+information about the execution of their application. The module is split into
+two components:
+
+1. The facade, provided elsewhere, which is only a macro interface layer
+2. The backend (this module), is one implemention of the low level tracing.
+
+------
+Status
+------
+This module is currently in development, and is therefore still undergoing
+significant changes.
+
+Future work will add:
+
+1. Add an optional ring buffer to store the data.
+2. Add a Python library to decode the trace data.
+3. Add examples with sample output (especially for filtering and triggering).
+4. Add tools to retrieve trace data.
+5. Add more sinks, such as RTT.
+6. Add support to more platforms.
+7. Improve the locking behaviour and provide default trace locking
+   implementions.
+
+--------
+Overview
+--------
+The tokenized trace backend aims to be a reasonable tradeoff of trace features
+and event size for most applications. It works by encoding all compile time data
+for a trace event into a tokenized number. This provides a good amount of
+compression, while maintaining the full trace feature set.
+
+In addition the tokenized trace backend adds flexibility through callbacks,
+which allows the application to do things such as filtering trace_events and
+triggering tracing to turn on and off. This flexibility can help maximize the
+effectiveness of a limited trace buffer as well as be a valuable tool while
+debugging.
+
+
+Compatibility
+-------------
+Most of this module is compatible with C and C++, the only exception to this is
+the ``RegisterCallbackWhenCreated`` helper class.
+
+Dependencies
+------------
+``pw_assert``
+``pw_log``
+``pw_preprocessor``
+``pw_status``
+``pw_tokenizer``
+``pw_trace:facade``
+``pw_varint``
+
+---------
+Macro API
+---------
+All code should use the trace API facade directly, this backend fully
+implements all features of the tracing facade.
+
+
+Event Callbacks & Data Sinks
+----------------------------
+The tokenized trace module adds both event callbacks and data sinks which
+provide hooks into tracing.
+
+The *event callbacks* are called when trace events occur, with the trace event
+data. Using the return flags, these callbacks can be used to adjust the trace
+behaviour at runtime in response to specific events. If requested (using
+``called_on_every_event``) the callback will be called on every trace event
+regardless if tracing is currently enabled or not. Using this, the application
+can trigger tracing on or off when specific traces or patterns of traces are
+observed, or can selectively filter traces to preserve the trace buffer.
+
+The event callback is a single function which is provided the details of the
+trace as arguments, and returns ``pw_trace_TraceEventReturnFlags``, which can be
+used to change how the trace is handled.
+
+.. cpp:function:: pw_trace_TraceEventReturnFlags pw_trace_EventCallback( \
+    void* user_data, \
+    uint32_t trace_ref, \
+    pw_trace_EventType event_type, \
+    const char* module, \
+    uint32_t trace_id, \
+    uint8_t flags)
+.. cpp:function:: pw_Status pw_trace_RegisterEventCallback( \
+    pw_trace_EventCallback callback, \
+    bool called_on_every_event, \
+    void* user_data, \
+    pw_trace_EventCallbackHandle* handle)
+.. cpp:function:: pw_Status pw_trace_UnregisterEventCallback( \
+    pw_trace_EventCallbackHandle handle)
+
+
+The *data sinks* are called only for trace events which get processed (tracing
+is enabled, and the sample not skipped). The sink callback is called with the
+encoded bytes of the trace event, which can be used by the application to
+connect different data sinks. The callback is broken into three callbacks
+``pw_trace_SinkStartBlock``, ``pw_trace_SinkAddBytes``, and
+``pw_trace_SinkEndBlock``. ``Start`` is called with the size of the block,
+before any bytes are emitted and can be used if needed to allocate space.
+``AddBytes`` is then called multiple times with chunks of bytes. Finally ``End``
+is called to allow any cleanup to be done by the sink if neccessary. Not all
+callbacks are required, it is acceptible to provide nullptr for any callbacks
+which you don't require.
+
+.. cpp:function:: void pw_trace_SinkStartBlock(void* user_data, size_t size)
+.. cpp:function:: void pw_trace_SinkAddBytes( \
+    void* user_data, \
+    const void* bytes, \
+    size_t size)
+.. cpp:function:: void pw_trace_SinkEndBlock(void* user_data)
+.. cpp:function:: pw_Status pw_trace_RegisterSink( \
+    pw_trace_SinkStartBlock start, \
+    pw_trace_SinkAddBytes add_bytes, \
+    pw_trace_SinkEndBlock end_block, \
+    void* user_data, \
+    pw_trace_SinkHandle* handle)
+.. cpp:function:: pw_Status pw_trace_UnregisterSink(pw_trace_SinkHandle handle)
+
+Trace Reference
+---------------
+Some use-cases might involve referencing a specific trace event, for example
+to use it as a trigger or filtering. Since the trace events are tokenized, a
+macro is provided to generate the token to use as a reference. All the fields
+must match exactly to generate the correct trace reference. If the trace does
+not have a group, use ``PW_TRACE_GROUP_LABEL_DEFAULT``.
+
+.. cpp:function:: PW_TRACE_REF(event_type, module, label, flags, group)
+.. cpp:function:: PW_TRACE_REF_DATA( \
+   event_type, module, label, flags, group, type)
+
+
+-----------
+Time source
+-----------
+Tracing rquires the platform to provide the time source for tracing, this can
+be done in one of a few ways.
+
+1. Create a file with the default time functions, and provide as build variable
+   ``pw_trace_tokenized_time``, which will get pulled in as a dependency.
+2. Provide time functions elsewhere in project, and ensure they are included.
+3. Redefine the trace time macros to something else, other then the default
+   trace time functions.
+
+.. cpp:function:: PW_TRACE_TIME_TYPE pw_trace_GetTraceTime()
+.. cpp:function:: PW_TRACE_GET_TIME()
+.. cpp:function:: size_t pw_trace_GetTraceTimeTicksPerSecond()
+.. cpp:function:: PW_TRACE_GET_TIME_TICKS_PER_SECOND()

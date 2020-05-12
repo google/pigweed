@@ -67,6 +67,7 @@ declare_args() {
   dir_pw_tokenizer = get_path_info("pw_tokenizer", "abspath")
   dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
   dir_pw_trace = get_path_info("pw_trace", "abspath")
+  dir_pw_trace_tokenized = get_path_info("pw_trace_tokenized", "abspath")
   dir_pw_unit_test = get_path_info("pw_unit_test", "abspath")
   dir_pw_varint = get_path_info("pw_varint", "abspath")
   dir_pw_watch = get_path_info("pw_watch", "abspath")

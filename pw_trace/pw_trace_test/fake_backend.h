@@ -41,7 +41,7 @@ typedef enum {
   DurationEnd,
   DurationGroupStart,
   DurationGroupEnd,
-} PwTraceEvent;
+} pw_trace_EventType;
 
 // Define a helper class for holding events and checking equality.
 class Event {
@@ -56,7 +56,7 @@ class Event {
         data_format_string_(nullptr),
         data_(nullptr),
         data_size_(0) {}
-  Event(PwTraceEvent event_type,
+  Event(pw_trace_EventType event_type,
         uint8_t flags,
         const char* label,
         const char* group,
@@ -70,7 +70,7 @@ class Event {
         data_format_string_(nullptr),
         data_(nullptr),
         data_size_(0) {}
-  Event(PwTraceEvent event_type,
+  Event(pw_trace_EventType event_type,
         uint8_t flags,
         const char* label,
         const char* group,
@@ -109,7 +109,7 @@ class Event {
   }
 
  private:
-  PwTraceEvent event_type_;
+  pw_trace_EventType event_type_;
   uint8_t flags_;
   const char* label_;
   const char* group_;

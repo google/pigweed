@@ -1,0 +1,93 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# gn-format disable
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  # Tokenizer trace time, gets included if provided
+  pw_trace_tokenizer_time = ""
+}
+
+config("default_config") {
+  include_dirs = [ "public" ]
+}
+
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":trace_tokenized_test" ]
+}
+
+pw_source_set("pw_trace_tokenized") {
+  public_configs = [
+    ":backend_config",
+    ":default_config",
+  ]
+  public_deps = [
+    ":pw_trace_tokenized_core",
+    "$dir_pw_tokenizer",
+  ]
+
+  if (pw_trace_tokenizer_time != "") {
+    deps = [ "$pw_trace_tokenizer_time" ]
+  }
+
+  public = [ "public_overrides/pw_trace_backend/trace_backend.h" ]
+  sources = public
+}
+
+pw_test("trace_tokenized_test") {
+  enable_if = pw_trace_tokenizer_time != ""
+  deps = [
+    ":pw_trace_tokenized_core",
+    "$dir_pw_trace",
+  ]
+
+  sources = [ "trace_test.cc" ]
+}
+
+pw_source_set("fake_trace_time") {
+  deps = [ ":pw_trace_tokenized_core" ]
+  sources = [ "fake_trace_time.cc" ]
+}
+
+pw_source_set("pw_trace_tokenized_core") {
+  public_configs = [
+    ":backend_config",
+    ":default_config",
+  ]
+  public_deps = [ "$dir_pw_tokenizer" ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_ring_buffer",
+    "$dir_pw_status",
+    "$dir_pw_trace:facade",
+    "$dir_pw_varint",
+  ]
+  public = [
+    "public/pw_trace_tokenized/internal/trace_tokenized_internal.h",
+    "public/pw_trace_tokenized/trace_callback.h",
+    "public/pw_trace_tokenized/trace_tokenized.h",
+  ]
+  sources = public + [ "trace.cc" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

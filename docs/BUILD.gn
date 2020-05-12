@@ -104,6 +104,7 @@ pw_doc_gen("docs") {
     "$dir_pw_tokenizer:docs",
     "$dir_pw_toolchain:docs",
     "$dir_pw_trace:docs",
+    "$dir_pw_trace_tokenized:docs",
     "$dir_pw_unit_test:docs",
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",
