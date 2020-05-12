@@ -404,6 +404,49 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_TRUE(remote_busy_set_called);
 }
 
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+     ProcessPduCallsClearRemoteBusyCallbackOnReceiverReadyAfterReceiverNotReady) {
+  Engine rx_engine(NopTxCallback);
+
+  int remote_busy_set_calls = 0;
+  auto remote_busy_set_callback = [&remote_busy_set_calls] { remote_busy_set_calls++; };
+  rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
+
+  int remote_busy_cleared_calls = 0;
+  auto remote_busy_cleared_callback = [&remote_busy_cleared_calls] { remote_busy_cleared_calls++; };
+  rx_engine.set_remote_busy_cleared_callback(remote_busy_cleared_callback);
+
+  const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
+  auto local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
+
+  EXPECT_EQ(1, remote_busy_set_calls);
+  EXPECT_EQ(0, remote_busy_cleared_calls);
+
+  // This RR should clear RemoteBusy.
+  const StaticByteBuffer receiver_ready(0b1, 0);
+  local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverReady frame.
+
+  EXPECT_EQ(1, remote_busy_set_calls);
+  EXPECT_EQ(1, remote_busy_cleared_calls);
+
+  // Receive a second RR.
+  local_sdu = rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverReady frame.
+
+  EXPECT_EQ(1, remote_busy_set_calls);
+  EXPECT_EQ(1, remote_busy_cleared_calls);
+
+  // Second RR shouldn't invoke either callback because RemoteBusy remains cleared.
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

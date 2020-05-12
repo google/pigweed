@@ -156,9 +156,15 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
   if (sframe.function() == SupervisoryFunction::ReceiverReady ||
       sframe.function() == SupervisoryFunction::ReceiverNotReady) {
     const bool remote_is_busy = sframe.function() == SupervisoryFunction::ReceiverNotReady;
+
+    // Signal changes to our RemoteBusy variable.
     if (remote_is_busy && !remote_is_busy_) {
       if (remote_busy_set_callback_) {
         remote_busy_set_callback_();
+      }
+    } else if (!remote_is_busy && remote_is_busy_) {
+      if (remote_busy_cleared_callback_) {
+        remote_busy_cleared_callback_();
       }
     }
     remote_is_busy_ = remote_is_busy;

@@ -44,11 +44,15 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
     ack_seq_num_callback_ = std::move(ack_seq_num_callback);
   }
 
-  // Set a callback to be invoked when the RemoteBusy state variable (Core Spec v5.0, Vol 3, Part A,
-  // Section 8.6.5.3) is set to "TRUE" to indicate that the peer can't receive additional I-Frames.
+  // Set callbacks to be invoked when the RemoteBusy state variable (Core Spec v5.0, Vol 3, Part A,
+  // Section 8.6.5.3) changes to indicate whether the peer can receive additional I-Frames.
   using RemoteBusyChangedCallback = fit::closure;
   void set_remote_busy_set_callback(RemoteBusyChangedCallback remote_busy_set_callback) {
     remote_busy_set_callback_ = std::move(remote_busy_set_callback);
+  }
+
+  void set_remote_busy_cleared_callback(RemoteBusyChangedCallback remote_busy_cleared_callback) {
+    remote_busy_cleared_callback_ = std::move(remote_busy_cleared_callback);
   }
 
  private:
@@ -72,6 +76,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   ReceiveSeqNumCallback receive_seq_num_callback_;
   AckSeqNumCallback ack_seq_num_callback_;
   RemoteBusyChangedCallback remote_busy_set_callback_;
+  RemoteBusyChangedCallback remote_busy_cleared_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };
