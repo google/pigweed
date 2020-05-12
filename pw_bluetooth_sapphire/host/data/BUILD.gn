@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/fuzzing/fuzzer.gni")
+
 static_library("data") {
   sources = [
     "domain.cc",
@@ -53,5 +55,14 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
+  ]
+}
+
+fuzzer("data_fuzzer") {
+  sources = [ "data_fuzztest.cc" ]
+  deps = [
+    ":data",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 }

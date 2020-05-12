@@ -158,6 +158,7 @@ executable("tests") {
 fuzzers_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
+    "data:data_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_rx_engine_fuzzer",
   ]
