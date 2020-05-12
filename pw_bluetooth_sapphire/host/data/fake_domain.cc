@@ -124,8 +124,7 @@ void FakeDomain::RequestConnectionParameterUpdate(
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
-                                  async_dispatcher_t* dispatcher) {
+                                  l2cap::ChannelParameters params, l2cap::ChannelCallback cb) {
   LinkData& link_data = ConnectedLinkData(handle);
   auto psm_it = link_data.expected_outbound_conns.find(psm);
 
@@ -152,27 +151,21 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
 
   auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, channel_info);
 
-  async::PostTask(dispatcher,
+  // Simulate async channel creation process.
+  async::PostTask(async_get_default_dispatcher(),
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
 }
 
 void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelParameters params, SocketCallback socket_callback,
-                                  async_dispatcher_t* cb_dispatcher) {
-  ZX_DEBUG_ASSERT(cb_dispatcher);
-  OpenL2capChannel(
-      handle, psm, params,
-      [this, cb = std::move(socket_callback), handle, cb_dispatcher](auto channel) mutable {
-        zx::socket s = socket_factory_.MakeSocketForChannel(channel);
-        auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-        l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
+                                  l2cap::ChannelParameters params, SocketCallback socket_callback) {
+  OpenL2capChannel(handle, psm, params,
+                   [this, cb = std::move(socket_callback), handle](auto channel) {
+                     zx::socket s = socket_factory_.MakeSocketForChannel(channel);
+                     auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
+                     l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
 
-        // Called every time the service is connected, cb must be shared.
-        async::PostTask(cb_dispatcher,
-                        [chan_sock = std::move(chan_sock), cb = cb.share(),
-                         handle = handle]() mutable { cb(std::move(chan_sock), handle); });
-      },
-      async_get_default_dispatcher());
+                     cb(std::move(chan_sock), handle);
+                   });
 }
 
 void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,

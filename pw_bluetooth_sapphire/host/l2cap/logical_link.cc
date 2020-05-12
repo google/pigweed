@@ -142,21 +142,19 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   return chan;
 }
 
-void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback,
-                              async_dispatcher_t* dispatcher) {
+void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
   // TODO(NET-1437): Implement channels for LE credit-based connections
   if (type_ == hci::Connection::LinkType::kLE) {
     bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
-    CompleteDynamicOpen(nullptr, std::move(callback), dispatcher);
+    CompleteDynamicOpen(nullptr, std::move(callback));
     return;
   }
 
-  auto create_channel = [this, cb = std::move(callback),
-                         dispatcher](const DynamicChannel* dyn_chan) mutable {
-    CompleteDynamicOpen(dyn_chan, std::move(cb), dispatcher);
+  auto create_channel = [this, cb = std::move(callback)](const DynamicChannel* dyn_chan) mutable {
+    CompleteDynamicOpen(dyn_chan, std::move(cb));
   };
   dynamic_registry_->OpenOutbound(psm, params, std::move(create_channel));
 }
@@ -403,7 +401,7 @@ std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest
 
   auto channel_cb =
       [this, chan_cb = std::move(result->channel_cb)](const DynamicChannel* dyn_chan) mutable {
-        CompleteDynamicOpen(dyn_chan, std::move(chan_cb), nullptr);
+        CompleteDynamicOpen(dyn_chan, std::move(chan_cb));
       };
   return DynamicChannelRegistry::ServiceInfo(result->channel_params, std::move(channel_cb));
 }
@@ -434,13 +432,12 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   channel->OnClosed();
 }
 
-void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb,
-                                      async_dispatcher_t* dispatcher) {
+void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
   if (!dyn_chan) {
-    RunOrPost(std::bind(std::move(open_cb), nullptr), dispatcher);
+    open_cb(nullptr);
     return;
   }
 
@@ -452,7 +449,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   auto chan =
       ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, fbl::RefPtr(this), dyn_chan->info());
   channels_[local_cid] = chan;
-  RunOrPost(std::bind(std::move(open_cb), std::move(chan)), dispatcher);
+  open_cb(std::move(chan));
 }
 
 void LogicalLink::SendFixedChannelsSupportedInformationRequest() {

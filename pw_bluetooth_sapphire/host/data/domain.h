@@ -116,21 +116,19 @@ class Domain : public fbl::RefCounted<Domain> {
   // parameters |params|. If the peer requires different higher priority parameters, the local
   // device will accept those instead.
   //
-  // |cb| will be called on |dispatcher| with the channel created to the remote,
-  // or nullptr if the channel creation resulted in an error.
+  // |cb| will be called with the channel created to the remote, or nullptr if the channel creation
+  // resulted in an error.
   //
   // Has no effect if this Domain is uninitialized or shut down.
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
-                                async_dispatcher_t* dispatcher) = 0;
+                                l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
   // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
   // parameters |params|.
   //
-  // |socket_callback| will be called on |dispatcher| with a zx::socket corresponding to the
-  // channel created to the remote or ZX_INVALID_HANDLE if the channel creation resulted in an
-  // error.
+  // |socket_callback| will be called with a zx::socket corresponding to the channel created to the
+  // remote or ZX_INVALID_HANDLE if the channel creation resulted in an error.
   //
   // Regardless of success, |link_handle| will be the same as the initial
   // |handle| argument.
@@ -141,8 +139,8 @@ class Domain : public fbl::RefCounted<Domain> {
   using SocketCallback =
       fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle link_handle)>;
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                l2cap::ChannelParameters params, SocketCallback socket_callback,
-                                async_dispatcher_t* dispatcher) = 0;
+                                l2cap::ChannelParameters params,
+                                SocketCallback socket_callback) = 0;
 
   // Registers a handler for peer-initiated dynamic channel requests that have
   // the Protocol/Service Multiplexing (PSM) code |psm|. The local device will attempt to configure

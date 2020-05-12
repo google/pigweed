@@ -334,7 +334,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
         activated_cb(std::move(chan));
       }
     };
-    chanmgr()->OpenChannel(conn_handle, psm, chan_params, std::move(open_cb), dispatcher());
+    chanmgr()->OpenChannel(conn_handle, psm, chan_params, std::move(open_cb));
   }
 
   // Set an expectation for an outbound ACL data packet. Packets are expected in the order that

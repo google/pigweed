@@ -87,11 +87,10 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   fbl::RefPtr<Channel> OpenFixedChannel(ChannelId channel_id);
 
   // Opens a dynamic channel to the requested |psm| with the preferred parameters |params| and
-  // returns a channel asynchronously via |callback| (posted on the given |dispatcher|).
+  // returns a channel asynchronously via |callback|.
   //
   // The link MUST not be closed when this is called.
-  void OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback,
-                   async_dispatcher_t* dispatcher);
+  void OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback);
 
   // Takes ownership of |packet| for PDU processing and routes it to its target
   // channel. This must be called on this object's creation thread.
@@ -204,14 +203,12 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // This MUST not be called on a closed link.
   void OnChannelDisconnectRequest(const DynamicChannel* dyn_chan);
 
-  // Given a newly-opened dynamic channel as reported by this link's
-  // DynamicChannelRegistry, create a ChannelImpl for it to carry user data,
-  // then pass a pointer to it through |open_cb| on |dispatcher|. If |dyn_chan|
-  // is null, then pass nullptr into |open_cb|.
+  // Given a newly-opened dynamic channel as reported by this link's DynamicChannelRegistry, create
+  // a ChannelImpl for it to carry user data, then pass a pointer to it through |open_cb|. If
+  // |dyn_chan| is null, then pass nullptr into |open_cb|.
   //
   // This MUST not be called on a closed link.
-  void CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb,
-                           async_dispatcher_t* dispatcher);
+  void CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb);
 
   // Send an Information Request signaling packet of type Fixed Channels Supported.
   void SendFixedChannelsSupportedInformationRequest();

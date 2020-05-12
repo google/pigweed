@@ -124,7 +124,7 @@ class DATA_DomainTest : public TestingBase {
     QueueConfigNegotiation(handle, local_params, peer_params, local_cid, remote_cid, kConfigReqId,
                            kPeerConfigReqId);
 
-    domain()->OpenL2capChannel(handle, psm, local_params, std::move(open_cb), dispatcher());
+    domain()->OpenL2capChannel(handle, psm, local_params, std::move(open_cb));
   }
 
   struct QueueAclConnectionRetVal {
@@ -421,8 +421,7 @@ TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
     EXPECT_EQ(kLinkHandle, handle);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb),
-                             dispatcher());
+  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(sock_cb));
 
   RunLoopUntilIdle();
 

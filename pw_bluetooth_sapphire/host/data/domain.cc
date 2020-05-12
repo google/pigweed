@@ -89,28 +89,21 @@ class Impl final : public Domain {
   }
 
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
-                        async_dispatcher_t* dispatcher) override {
-    ZX_DEBUG_ASSERT(dispatcher);
-    channel_manager_->OpenChannel(handle, psm, params, std::move(cb), dispatcher);
+                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
+    channel_manager_->OpenChannel(handle, psm, params, std::move(cb));
   }
 
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, SocketCallback socket_callback,
-                        async_dispatcher_t* cb_dispatcher) override {
-    ZX_DEBUG_ASSERT(cb_dispatcher);
-    OpenL2capChannel(
-        handle, psm, params,
-        [this, handle, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
-          // MakeSocketForChannel makes invalid sockets for null channels (i.e.
-          // that have failed to open).
-          zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-          l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-          async::PostTask(cb_dispatcher, [chan_sock = std::move(chan_sock), cb = std::move(cb),
-                                          handle]() mutable { cb(std::move(chan_sock), handle); });
-        },
-        dispatcher_);
+                        l2cap::ChannelParameters params, SocketCallback socket_callback) override {
+    OpenL2capChannel(handle, psm, params,
+                     [this, handle, cb = std::move(socket_callback)](auto channel) {
+                       // MakeSocketForChannel makes invalid sockets for null channels (i.e.
+                       // that have failed to open).
+                       zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
+                       auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
+                       l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
+                       cb(std::move(chan_sock), handle);
+                     });
   }
 
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,

@@ -147,9 +147,9 @@ class ChannelManager final {
 
   // Opens an out-bound connection-oriented L2CAP channel on the link specified by |handle| to the
   // requested |psm| with the preferred parameters |params|.
-  // Returns a channel asynchronously via |callback| (posted on the given |dispatcher|).
+  // Returns a channel asynchronously via |callback|.
   void OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
-                   ChannelCallback cb, async_dispatcher_t* dispatcher);
+                   ChannelCallback cb);
 
   // Register/Unregister a callback for incoming service connections.
   // Incoming channels will be configured using using the preferred parameters |params|.

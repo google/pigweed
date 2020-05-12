@@ -69,11 +69,9 @@ class FakeDomain final : public Domain {
                                         l2cap::ConnectionParameterUpdateRequestCallback request_cb,
                                         async_dispatcher_t* dispatcher) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb,
-                        async_dispatcher_t* dispatcher) override;
+                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, SocketCallback socket_callback,
-                        async_dispatcher_t* dispatcher) override;
+                        l2cap::ChannelParameters params, SocketCallback socket_callback) override;
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                        l2cap::ChannelCallback channel_callback,
                        async_dispatcher_t* dispatcher) override;

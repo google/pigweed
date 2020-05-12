@@ -1691,8 +1691,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
       kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
   test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
-                              async_get_default_dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1716,8 +1715,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
                                             kChannelParams);
 
   // A second connection request should not require another authentication.
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
-                              async_get_default_dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
   RunLoopUntilIdle();
 
@@ -1760,8 +1758,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   test_device()->QueueCommandTransaction(
       CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
-                              async_get_default_dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
   RunLoopUntilIdle();
 
@@ -1826,8 +1823,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   test_device()->QueueCommandTransaction(
       CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
-                              async_get_default_dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
   RunLoopUntilIdle();
 
@@ -1905,8 +1901,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
       kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
   test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
 
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb,
-                              async_get_default_dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1992,8 +1987,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
     EXPECT_FALSE(chan_sock);
     socket_cb_called = true;
   };
-  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_fails_cb,
-                              dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_fails_cb);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(socket_cb_called);
@@ -2800,7 +2794,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
     EXPECT_TRUE(chan_sock);
     chan_info = chan_sock.params;
   };
-  connmgr()->OpenL2capChannel(peer->identifier(), kPSM, params, sock_cb, dispatcher());
+  connmgr()->OpenL2capChannel(peer->identifier(), kPSM, params, sock_cb);
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, sock_cb_count);
