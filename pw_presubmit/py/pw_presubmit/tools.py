@@ -87,9 +87,9 @@ def plural(items_or_count,
 
 
 def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
-    return subprocess.run(('git', '-C', repo, *args),
-                          stdout=subprocess.PIPE,
-                          check=True).stdout.decode().strip()
+    return log_run(['git', '-C', repo, *args],
+                   stdout=subprocess.PIPE,
+                   check=True).stdout.decode().strip()
 
 
 def _git_ls_files(args: Collection[PathOrStr], repo: Path) -> List[Path]:
@@ -146,13 +146,11 @@ def git_has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
         repo = Path.cwd()
 
     # Refresh the Git index so that the diff-index command will be accurate.
-    subprocess.run(['git', '-C', repo, 'update-index', '-q', '--refresh'],
-                   check=True)
+    log_run(['git', '-C', repo, 'update-index', '-q', '--refresh'], check=True)
 
     # diff-index exits with 1 if there are uncommitted changes.
-    return subprocess.run(
-        ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD',
-         '--']).returncode == 1
+    return log_run(['git', '-C', repo, 'diff-index', '--quiet', 'HEAD',
+                    '--']).returncode == 1
 
 
 def _describe_constraints(root: Path, repo_path: Path, commit: Optional[str],
@@ -731,11 +729,16 @@ def filter_paths(endswith: Iterable[str] = (''),
     return filter_paths_for_function
 
 
-def log_run(*args, **kwargs) -> subprocess.CompletedProcess:
-    """Logs a command then runs it with subprocess.run."""
-    _LOG.debug('[COMMAND] %s\n%s',
-               ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-               ' '.join(shlex.quote(str(arg)) for arg in args))
+def log_run(args, **kwargs) -> subprocess.CompletedProcess:
+    """Logs a command then runs it with subprocess.run.
+
+    Takes the same arguments as subprocess.run.
+    """
+    _LOG.debug(
+        '[COMMAND] %s\n%s',
+        ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
+        args if isinstance(args, str) else ' '.join(
+            shlex.quote(str(arg)) for arg in args))
     return subprocess.run(args, **kwargs)
 
 

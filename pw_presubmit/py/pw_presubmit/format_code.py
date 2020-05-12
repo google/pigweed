@@ -99,9 +99,7 @@ def _check_files(files, formatter: Formatter) -> Dict[Path, str]:
 
 
 def _clang_format(*args: str, **kwargs) -> bytes:
-    return log_run('clang-format',
-                   '--style=file',
-                   *args,
+    return log_run(['clang-format', '--style=file', *args],
                    stdout=subprocess.PIPE,
                    check=True,
                    **kwargs).stdout
@@ -120,9 +118,7 @@ def clang_format_fix(files: Iterable) -> None:
 def check_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
-        files, lambda _, data: log_run('gn',
-                                       'format',
-                                       '--stdin',
+        files, lambda _, data: log_run(['gn', 'format', '--stdin'],
                                        input=data,
                                        stdout=subprocess.PIPE,
                                        check=True).stdout)
@@ -130,27 +126,23 @@ def check_gn_format(files: Iterable[Path]) -> Dict[Path, str]:
 
 def fix_gn_format(files: Iterable[Path]) -> None:
     """Fixes formatting for the provided files in place."""
-    log_run('gn', 'format', *files, check=True)
+    log_run(['gn', 'format', *files], check=True)
 
 
 def check_go_format(files: Iterable[Path]) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
         files, lambda path, _: log_run(
-            'gofmt', path, stdout=subprocess.PIPE, check=True).stdout)
+            ['gofmt', path], stdout=subprocess.PIPE, check=True).stdout)
 
 
 def fix_go_format(files: Iterable[Path]) -> None:
     """Fixes formatting for the provided files in place."""
-    log_run('gofmt', '-w', *files, check=True)
+    log_run(['gofmt', '-w', *files], check=True)
 
 
 def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
-    return log_run('python',
-                   '-m',
-                   'yapf',
-                   '--parallel',
-                   *args,
+    return log_run(['python', '-m', 'yapf', '--parallel', *args],
                    capture_output=True,
                    **kwargs)
 

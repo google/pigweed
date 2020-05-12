@@ -67,7 +67,7 @@ def env_with_clang_vars() -> Mapping[str, str]:
 
 def _get_paths_from_command(source_dir: Path, *args, **kwargs) -> Set[Path]:
     """Runs a command and reads Bazel or GN //-style paths from it."""
-    process = log_run(*args,
+    process = log_run(args,
                       stdout=subprocess.PIPE,
                       stderr=subprocess.DEVNULL,
                       cwd=source_dir,
