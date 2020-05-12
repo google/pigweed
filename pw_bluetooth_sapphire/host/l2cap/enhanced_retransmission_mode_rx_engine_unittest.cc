@@ -352,8 +352,16 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsSetRemoteBusyCallbackOnReceiverNotReady) {
   Engine rx_engine(NopTxCallback);
 
+  bool ack_seq_num_called = false;
+  auto ack_seq_num_callback = [&ack_seq_num_called](uint8_t) { ack_seq_num_called = true; };
+  rx_engine.set_ack_seq_num_callback(ack_seq_num_callback);
+
   bool remote_busy_set_called = false;
-  auto remote_busy_set_callback = [&remote_busy_set_called] { remote_busy_set_called = true; };
+  auto remote_busy_set_callback = [&ack_seq_num_called, &remote_busy_set_called] {
+    // RemoteBusy state should be updated before AckSeqNum to immediately suppress retransmissions.
+    EXPECT_FALSE(ack_seq_num_called);
+    remote_busy_set_called = true;
+  };
   rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
 
   const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
@@ -408,12 +416,20 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsClearRemoteBusyCallbackOnReceiverReadyAfterReceiverNotReady) {
   Engine rx_engine(NopTxCallback);
 
+  bool ack_seq_num_called = false;
+  auto ack_seq_num_callback = [&ack_seq_num_called](uint8_t) { ack_seq_num_called = true; };
+  rx_engine.set_ack_seq_num_callback(ack_seq_num_callback);
+
   int remote_busy_set_calls = 0;
   auto remote_busy_set_callback = [&remote_busy_set_calls] { remote_busy_set_calls++; };
   rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
 
   int remote_busy_cleared_calls = 0;
-  auto remote_busy_cleared_callback = [&remote_busy_cleared_calls] { remote_busy_cleared_calls++; };
+  auto remote_busy_cleared_callback = [&ack_seq_num_called, &remote_busy_cleared_calls] {
+    // RemoteBusy state should be updated before AckSeqNum to immediately resume retransmissions.
+    EXPECT_FALSE(ack_seq_num_called);
+    remote_busy_cleared_calls++;
+  };
   rx_engine.set_remote_busy_cleared_callback(remote_busy_cleared_callback);
 
   const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);

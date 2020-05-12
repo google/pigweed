@@ -99,12 +99,19 @@ ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
 
   auto header = GetFrameHeaderFromPdu(pdu);
   auto frame_processor = [this, pdu = std::move(pdu)](auto header) mutable {
+    // Run ProcessFrame first so it can perform the highest-priority actions like assigning
+    // RemoteBusy (Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.9).
+    auto sdu = ProcessFrame(header, std::move(pdu));
+
+    // This implements the PassToTx action ("Pass the ReqSeq and F-bit value") per Core Spec v5.0,
+    // Vol 3, Part A, 8.6.5.6 and must come after updates to the RemoteBusy variable in order to
+    // avoid transmitting frames when the peer can't accept them.
     if constexpr (kContainsEnhancedControlField<decltype(header)>) {
       if (receive_seq_num_callback_) {
         receive_seq_num_callback_(header.receive_seq_num(), header.is_poll_response());
       }
     }
-    return ProcessFrame(header, std::move(pdu));
+    return sdu;
   };
   return std::visit(std::move(frame_processor), header);
 }
